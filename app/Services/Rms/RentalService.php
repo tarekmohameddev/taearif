@@ -208,37 +208,48 @@ class RentalService
                 });
             })
             ->when($request->payment_status, function($q) use ($request) {
-                $q->whereHas('installments', function($installmentQuery) use ($request) {
-                    $today = now()->toDateString();
-                    
-                    switch($request->payment_status) {
-                        case 'paid':
-                            // Has at least one fully paid installment
-                            $installmentQuery->whereColumn('paid_amount', '>=', 'amount')
-                                             ->where('amount', '>', 0);
-                            break;
-                        case 'partial':
-                            // Has at least one partially paid installment
+                $today = now()->toDateString();
+                
+                switch($request->payment_status) {
+                    case 'paid':
+                        // All installments from active contract must be fully paid
+                        // (no unpaid or partially paid installments exist in active contract)
+                        $q->whereHas('activeContract', function($contractQuery) {
+                            $contractQuery->whereDoesntHave('installments', function($installmentQuery) {
+                                $installmentQuery->whereColumn('paid_amount', '<', 'amount')
+                                                 ->where('amount', '>', 0);
+                            });
+                        });
+                        break;
+                    case 'partial':
+                        // Has at least one partially paid installment in active contract
+                        $q->whereHas('activeContract.installments', function($installmentQuery) {
                             $installmentQuery->whereColumn('paid_amount', '<', 'amount')
                                              ->where('paid_amount', '>', 0);
-                            break;
-                        case 'overdue':
-                            // Has at least one overdue installment (unpaid or partially paid past due date)
+                        });
+                        break;
+                    case 'overdue':
+                        // Has at least one overdue installment in active contract (unpaid or partially paid past due date)
+                        $q->whereHas('activeContract.installments', function($installmentQuery) use ($today) {
                             $installmentQuery->whereColumn('paid_amount', '<', 'amount')
                                              ->whereDate('due_date', '<', $today);
-                            break;
-                        case 'pending':
-                            // Has at least one pending installment (unpaid, not yet due)
+                        });
+                        break;
+                    case 'pending':
+                        // Has at least one pending installment in active contract (unpaid, not yet due)
+                        $q->whereHas('activeContract.installments', function($installmentQuery) use ($today) {
                             $installmentQuery->where('paid_amount', 0)
                                              ->whereDate('due_date', '>=', $today);
-                            break;
-                        case 'unpaid':
-                            // Has at least one unpaid installment (regardless of due date)
+                        });
+                        break;
+                    case 'unpaid':
+                        // Has at least one unpaid installment in active contract (regardless of due date)
+                        $q->whereHas('activeContract.installments', function($installmentQuery) {
                             $installmentQuery->where('paid_amount', 0)
                                              ->where('amount', '>', 0);
-                            break;
-                    }
-                });
+                        });
+                        break;
+                }
             })
             ->orderBy($sortBy, $sortOrder);
 
