@@ -58,6 +58,11 @@ database/seeds/RentalDashboardTestSeeder833.php
 
 # Test scripts folder
 /test-scripts/
+# Customers Hub local-only test scripts (do not push)
+test_data_inspector.php
+test_endpoints.php
+test_real_customer_lifecycle.php
+test_write_operations.php
 test-webhook.php
 Credit_Management_API_Postman_Collection.json
 Marketing_Channels_API_Postman_Collection.json
@@ -87,4 +92,5 @@ tests/api-scripts/*
 111/*
 
 /the_test_db
+phpunit.xml
 phpunit.xml
