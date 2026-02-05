@@ -1076,6 +1076,75 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
 // Direct public route for property categories (bypassing tenant.resolve middleware)
 Route::get('v1/tenant-website/{tenantId}/properties/categories/direct', [PropertyController::class, 'properties_categories']);
 
+// =============================================================================
+// CUSTOMERS HUB API (v2) - Unified Customer Management System
+// =============================================================================
+Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function () {
+
+    // 1. REQUESTS/ACTIONS CENTER
+    Route::prefix('requests')->group(function () {
+        // List with filtering (POST for complex filter payloads)
+        Route::post('/list', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'list']);
+
+        // Filter options (cached)
+        Route::get('/filter-options', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'filterOptions']);
+
+        // Bulk operations
+        Route::post('/bulk-complete', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'bulkComplete']);
+        Route::post('/bulk-dismiss', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'bulkDismiss']);
+
+        // Single action detail
+        Route::get('/{requestId}', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'show']);
+        Route::get('/{requestId}/stats', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'actionStats']);
+
+        // Action operations
+        Route::post('/{requestId}/complete', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'complete']);
+        Route::post('/{requestId}/dismiss', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'dismiss']);
+    });
+
+    // 2. CUSTOMERS LIST
+    Route::prefix('list')->group(function () {
+        // Main list endpoint (supports list, stats actions)
+        Route::post('/', [\App\Http\Controllers\Api\V2\CustomersHub\ListController::class, 'list']);
+
+        // Filter options
+        Route::get('/filter-options', [\App\Http\Controllers\Api\V2\CustomersHub\ListController::class, 'filterOptions']);
+
+        // Bulk operations
+        Route::post('/bulk', [\App\Http\Controllers\Api\V2\CustomersHub\ListController::class, 'bulk']);
+    });
+
+    // 3. PIPELINE (KANBAN BOARD)
+    Route::prefix('pipeline')->group(function () {
+        // Main pipeline endpoint (board data + analytics)
+        Route::post('/', [\App\Http\Controllers\Api\V2\CustomersHub\PipelineController::class, 'index']);
+
+        // Move operations
+        Route::post('/move', [\App\Http\Controllers\Api\V2\CustomersHub\PipelineController::class, 'move']);
+        Route::post('/bulk-move', [\App\Http\Controllers\Api\V2\CustomersHub\PipelineController::class, 'bulkMove']);
+    });
+
+    // 4. ANALYTICS DASHBOARD
+    Route::post('/analytics', [\App\Http\Controllers\Api\V2\CustomersHub\AnalyticsController::class, 'index']);
+
+    // 5. CUSTOMER DETAIL
+    Route::prefix('customers')->group(function () {
+        // Get customer details (customer + tasks + properties + preferences)
+        Route::get('/{customerId}', [\App\Http\Controllers\Api\V2\CustomersHub\DetailController::class, 'show']);
+
+        // Update customer
+        Route::put('/{customerId}', [\App\Http\Controllers\Api\V2\CustomersHub\DetailController::class, 'update']);
+
+        // Tasks management
+        Route::post('/{customerId}/tasks', [\App\Http\Controllers\Api\V2\CustomersHub\DetailController::class, 'addTask']);
+        Route::put('/{customerId}/tasks/{taskId}', [\App\Http\Controllers\Api\V2\CustomersHub\DetailController::class, 'updateTask']);
+        Route::delete('/{customerId}/tasks/{taskId}', [\App\Http\Controllers\Api\V2\CustomersHub\DetailController::class, 'deleteTask']);
+
+        // Preferences/Requirements
+        Route::put('/{customerId}/preferences', [\App\Http\Controllers\Api\V2\CustomersHub\DetailController::class, 'updatePreferences']);
+    });
+});
+
 // Owner Rental Management System Routes (v1)
 // User Dashboard - Managing Owner Rentals (requires user authentication)
 Route::prefix('v1/user/owner-rentals')->middleware('auth:sanctum')->group(function () {
