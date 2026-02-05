@@ -856,7 +856,7 @@ class RentalController extends BaseApiController
                 ->whereNotNull('project_id')
                 ->distinct()
                 ->pluck('project_id');
-            
+
             $projects = Project::where('user_id', $ownerId)
                 ->whereIn('id', $projectIds)
                 ->with(['contents' => function($q) {
