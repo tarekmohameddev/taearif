@@ -313,7 +313,7 @@ class CustomerController extends Controller
         $formattedCustomers = $customers->map(function ($customer) use ($mapInquiryTypeToArabic, $mapPropertyTypeToArabic, $mapCustomerTypeToArabic, $allInterestedCategories, $allInterestedProperties, $allInquiries) {
             $district = $customer->district;
             $city = $customer->city;
-            
+
             // Get pre-loaded data (same format as before)
             $interestedCategories = $allInterestedCategories->get($customer->id, collect());
             $interestedProperties = $allInterestedProperties->get($customer->id, collect());
@@ -617,38 +617,38 @@ class CustomerController extends Controller
         }
 
         $customerData = $customer->toArray();
-        
+
         // Remove the _id fields from the response
         unset($customerData['type_id']);
         unset($customerData['city_id']);
         unset($customerData['district_id']);
         unset($customerData['stage_id']);
-        
+
         // Add nested objects for type, city, district, and stage
         $customerData['type'] = $customer->type ? [
             'id' => $customer->type->id,
             'arabic' => $customer->type->name,
             'english' => $customer->type->name,
         ] : null;
-        
+
         $customerData['city'] = $customer->city ? [
             'id' => $customer->city->id,
             'arabic' => $customer->city->name_ar,
             'english' => $customer->city->name_en,
         ] : null;
-        
+
         $customerData['district'] = $customer->district ? [
             'id' => $customer->district->id,
             'arabic' => $customer->district->name_ar,
             'english' => $customer->district->name_en,
         ] : null;
-        
+
         $customerData['stage'] = $customer->stage ? [
             'id' => $customer->stage->id,
             'arabic' => $customer->stage->stage_name,
             'english' => $customer->stage->stage_name,
         ] : null;
-        
+
         if ($customer->responsibleEmployee) {
             $customerData['responsible_employee'] = [
                 'id' => $customer->responsibleEmployee->id,
@@ -1060,7 +1060,7 @@ class CustomerController extends Controller
 
     /**
      * Search customers by name, email or phone
-     * 
+     *
      * Filters:
      * - q: text search on name, email, phone_number
      * - city_id, district_id, type_id, priority_id, procedure_id: exact match
@@ -1147,7 +1147,25 @@ class CustomerController extends Controller
                 });
         }
 
-        $customers = $paginator->getCollection()->map(function ($customer) use ($catRows, $propRows, $allCustomerInquiries) {
+        $mapCustomerTypeToArabic = function ($type) {
+            if (is_null($type) || $type === '') return null;
+            $val = trim($type);
+            // If already contains Arabic characters, keep as-is
+            if (preg_match('/\p{Arabic}/u', $val)) {
+                return $val;
+            }
+            $t = mb_strtolower($val);
+            $map = [
+                'rent'   => 'إيجار',
+                'sale'   => 'بيع',
+                'rented' => 'مؤجر',
+                'sold'   => 'مباع',
+                'both'   => 'كلاهما',
+            ];
+            return $map[$t] ?? $val;
+        };
+
+        $customers = $paginator->getCollection()->map(function ($customer) use ($catRows, $propRows, $allCustomerInquiries, $mapCustomerTypeToArabic) {
             $city = $customer->city;
             $district = $customer->district;
 
