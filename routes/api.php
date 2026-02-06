@@ -1149,6 +1149,27 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
         // Preferences/Requirements
         Route::put('/{customerId}/preferences', [\App\Http\Controllers\Api\V2\CustomersHub\DetailController::class, 'updatePreferences']);
     });
+
+    // 6. ASSIGNMENT
+    Route::prefix('assignment')->group(function () {
+        // Get employees with workload stats
+        Route::get('/employees', [\App\Http\Controllers\Api\V2\CustomersHub\AssignmentController::class, 'employees']);
+
+        // Get unassigned count
+        Route::get('/unassigned-count', [\App\Http\Controllers\Api\V2\CustomersHub\AssignmentController::class, 'unassignedCount']);
+
+        // Auto assign customers
+        Route::post('/auto-assign', [\App\Http\Controllers\Api\V2\CustomersHub\AssignmentController::class, 'autoAssign']);
+
+        // Manual assign customers
+        Route::post('/assign', [\App\Http\Controllers\Api\V2\CustomersHub\AssignmentController::class, 'assign']);
+
+        // Save assignment rules
+        Route::post('/rules', [\App\Http\Controllers\Api\V2\CustomersHub\AssignmentController::class, 'saveRules']);
+
+        // Get assignment rules
+        Route::get('/rules', [\App\Http\Controllers\Api\V2\CustomersHub\AssignmentController::class, 'getRules']);
+    });
 });
 
 // Owner Rental Management System Routes (v1)
