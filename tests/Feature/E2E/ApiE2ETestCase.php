@@ -14,7 +14,7 @@ use Tests\TestCase;
  * E2E testing strategy lock: NEVER use migrations. Assume schema exists; never run migrations.
  *
  * - Uses DatabaseTransactions for isolation (never RefreshDatabase).
- * - Do NOT run migrate or migrate:fresh for E2E; schema comes from dump only.
+ * - Do NOT run migrate:fresh for E2E; schema comes from dump only.
  * - Restore DB from the_test_db/taearif_testing.sql before running E2E tests.
  */
 abstract class ApiE2ETestCase extends TestCase
