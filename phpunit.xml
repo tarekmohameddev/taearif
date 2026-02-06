@@ -8,8 +8,30 @@
             <directory suffix="Test.php">./tests/Unit</directory>
         </testsuite>
 
+        <!-- All Feature tests (includes Admin) -->
         <testsuite name="Feature">
             <directory suffix="Test.php">./tests/Feature</directory>
+        </testsuite>
+        <!-- API-only: routes/api.php related. Excludes Admin (admin-api), web-only tests. -->
+        <testsuite name="FeatureApi">
+            <file>./tests/Feature/ContractControllerTest.php</file>
+            <file>./tests/Feature/DashboardReservationsTest.php</file>
+            <file>./tests/Feature/ExampleTest.php</file>
+            <file>./tests/Feature/MembershipRenewalTest.php</file>
+            <file>./tests/Feature/MembershipServiceTest.php</file>
+            <file>./tests/Feature/MigrationTest.php</file>
+            <file>./tests/Feature/PropertyVideoSizeLimitTest.php</file>
+            <file>./tests/Feature/RentalContractRelationshipTest.php</file>
+            <file>./tests/Feature/RentalControllerTest.php</file>
+            <file>./tests/Feature/RentalStoreIntegrationTest.php</file>
+            <file>./tests/Feature/RentalStoreManualTest.php</file>
+            <file>./tests/Feature/TenantWebsiteApiTest.php</file>
+            <file>./tests/Feature/TenantWebsiteReservationTest.php</file>
+            <file>./tests/Feature/UserPropertiesCompletionIntegrityTest.php</file>
+            <file>./tests/Feature/WhatsappAddonsFlowTest.php</file>
+            <file>./tests/Feature/WhatsappAddonsTest.php</file>
+            <directory suffix="Test.php">./tests/Feature/Crm</directory>
+            <directory suffix="Test.php">./tests/Feature/E2E</directory>
         </testsuite>
     </testsuites>
     <filter>
