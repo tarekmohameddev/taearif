@@ -30,7 +30,8 @@ class AssignmentService
                 DB::raw('(SELECT COUNT(*) FROM api_customers WHERE responsible_employee_id = u.id AND user_id = ?) as customer_count'),
                 DB::raw('(SELECT COUNT(*) FROM api_customers WHERE responsible_employee_id = u.id AND user_id = ? AND deleted_at IS NULL) as active_count')
             ])
-            ->setBindings([$userId, $userId])
+            ->addBinding($userId, 'select')
+            ->addBinding($userId, 'select')
             ->get();
 
         return array_map(function ($employee) {
@@ -290,7 +291,7 @@ class AssignmentService
                 'u.max_capacity',
                 DB::raw('(SELECT COUNT(*) FROM api_customers WHERE responsible_employee_id = u.id AND user_id = ?) as customer_count')
             ])
-            ->setBindings([$userId])
+            ->addBinding($userId, 'select')
             ->get();
 
         foreach ($employees as $employee) {
