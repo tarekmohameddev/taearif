@@ -49,24 +49,41 @@ class CustomersListService
      */
     public function getStats(int $userId, array $filters = []): array
     {
-        $query = $this->buildQuery($userId, $filters);
+        // Build base query with filters
+        $baseQuery = $this->buildQuery($userId, $filters);
+        
+        // Use distinct count to avoid duplicates from joins
+        $total = $baseQuery->distinct('api_customers.id')->count('api_customers.id');
 
-        $total = $query->count();
+        // New today
+        $newToday = (clone $baseQuery)
+            ->where('api_customers.created_at', '>=', Carbon::today())
+            ->distinct('api_customers.id')
+            ->count('api_customers.id');
+
+        // New this week
+        $newThisWeek = (clone $baseQuery)
+            ->where('api_customers.created_at', '>=', Carbon::now()->startOfWeek())
+            ->distinct('api_customers.id')
+            ->count('api_customers.id');
 
         // New this month
-        $newThisMonth = (clone $query)
+        $newThisMonth = (clone $baseQuery)
             ->where('api_customers.created_at', '>=', Carbon::now()->startOfMonth())
-            ->count();
+            ->distinct('api_customers.id')
+            ->count('api_customers.id');
 
         // Total deal value (if column exists, otherwise 0)
         $dealValue = 0;
         try {
-            $dealValue = (clone $query)
+            $dealValue = (clone $baseQuery)
                 ->whereIn('api_customers.stage_id', function ($q) use ($userId) {
                     $q->select('id')->from('users_api_customers_stages')
                         ->where('user_id', $userId)
-                        ->where('stage_name', 'LIKE', '%closing%')
-                        ->orWhere('stage_name', 'LIKE', '%post_sale%');
+                        ->where(function($query) {
+                            $query->where('stage_name', 'LIKE', '%closing%')
+                                  ->orWhere('stage_name', 'LIKE', '%post_sale%');
+                        });
                 })
                 ->sum(DB::raw('COALESCE(deal_value, 0)'));
         } catch (\Exception $e) {
@@ -75,47 +92,90 @@ class CustomersListService
         }
 
         // Closed this month
-        $closedThisMonth = (clone $query)
+        $closedThisMonth = (clone $baseQuery)
             ->whereIn('api_customers.stage_id', function ($q) use ($userId) {
                 $q->select('id')->from('users_api_customers_stages')
                     ->where('user_id', $userId)
                     ->where('stage_name', 'LIKE', '%post_sale%');
             })
             ->where('api_customers.updated_at', '>=', Carbon::now()->startOfMonth())
-            ->count();
+            ->distinct('api_customers.id')
+            ->count('api_customers.id');
 
         // Conversion rate
         $conversionRate = $newThisMonth > 0 ? ($closedThisMonth / $newThisMonth) * 100 : 0;
 
         // Average days in pipeline
-        $avgDaysQuery = DB::table('api_customers')
-            ->where('api_customers.user_id', $userId)
+        $avgDaysQuery = (clone $baseQuery)
             ->whereNotIn('api_customers.stage_id', function ($q) use ($userId) {
                 $q->select('id')->from('users_api_customers_stages')
                     ->where('user_id', $userId)
                     ->where('stage_name', 'LIKE', '%post_sale%');
-            })
-            ->selectRaw('AVG(DATEDIFF(NOW(), api_customers.created_at)) as avg_days');
+            });
         
-        $avgDays = $avgDaysQuery->value('avg_days');
+        $avgDays = $avgDaysQuery->selectRaw('AVG(DATEDIFF(NOW(), api_customers.created_at)) as avg_days')->value('avg_days');
 
-        // By stage
-        $byStage = DB::table('api_customers')
+        // Average days in current stage (using base query to respect filters)
+        $avgDaysInStage = (clone $baseQuery)
+            ->selectRaw('AVG(DATEDIFF(NOW(), api_customers.updated_at)) as avg_days')
+            ->value('avg_days');
+
+        // By stage - transform stage names to snake_case keys
+        $byStageRaw = DB::table('api_customers')
             ->join('users_api_customers_stages as s', 'api_customers.stage_id', '=', 's.id')
             ->where('api_customers.user_id', $userId)
             ->groupBy('s.id', 's.stage_name')
             ->select('s.stage_name', DB::raw('COUNT(*) as count'))
-            ->pluck('count', 'stage_name')
-            ->toArray();
+            ->get();
+
+        $byStage = [];
+        foreach ($byStageRaw as $item) {
+            // Convert stage name to snake_case key
+            $key = strtolower(str_replace([' ', '-'], '_', $item->stage_name));
+            $byStage[$key] = $item->count;
+        }
+
+        // By priority
+        $byPriorityRaw = DB::table('api_customers')
+            ->join('users_api_customers_priorities as p', 'api_customers.priority_id', '=', 'p.id')
+            ->where('api_customers.user_id', $userId)
+            ->groupBy('p.id', 'p.name')
+            ->select('p.name', DB::raw('COUNT(*) as count'))
+            ->get();
+
+        $byPriority = [];
+        foreach ($byPriorityRaw as $item) {
+            $key = strtolower($item->name);
+            $byPriority[$key] = $item->count;
+        }
+
+        // By type
+        $byTypeRaw = DB::table('api_customers')
+            ->join('users_api_customers_types as t', 'api_customers.type_id', '=', 't.id')
+            ->where('api_customers.user_id', $userId)
+            ->groupBy('t.id', 't.name')
+            ->select('t.name', DB::raw('COUNT(*) as count'))
+            ->get();
+
+        $byType = [];
+        foreach ($byTypeRaw as $item) {
+            $key = strtolower($item->name);
+            $byType[$key] = $item->count;
+        }
 
         return [
-            'total' => $total,
+            'totalCustomers' => $total,
+            'newToday' => $newToday,
+            'newThisWeek' => $newThisWeek,
             'newThisMonth' => $newThisMonth,
             'totalDealValue' => (float) $dealValue,
             'closedThisMonth' => $closedThisMonth,
             'conversionRate' => round($conversionRate, 2),
             'avgDaysInPipeline' => $avgDays ? (int) round($avgDays) : 0,
+            'avgDaysInStage' => $avgDaysInStage ? (int) round($avgDaysInStage) : 0,
             'byStage' => $byStage,
+            'byPriority' => $byPriority,
+            'byType' => $byType,
         ];
     }
 

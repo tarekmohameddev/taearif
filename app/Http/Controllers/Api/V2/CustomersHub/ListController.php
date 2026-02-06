@@ -138,6 +138,21 @@ class ListController extends ApiController
     }
 
     /**
+     * GET /api/v2/customers-hub/list/stats
+     * 
+     * Get comprehensive customer statistics.
+     */
+    public function stats(Request $request): JsonResponse
+    {
+        $userId = $this->getTenantUserId($request);
+        $stats = $this->listService->getStats($userId);
+        
+        return $this->success([
+            'stats' => $stats
+        ]);
+    }
+
+    /**
      * Get the tenant user ID from request.
      */
     private function getTenantUserId(Request $request): int

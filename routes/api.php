@@ -1107,6 +1107,9 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
         // Main list endpoint (supports list, stats actions)
         Route::post('/', [\App\Http\Controllers\Api\V2\CustomersHub\ListController::class, 'list']);
 
+        // Statistics endpoint
+        Route::get('/stats', [\App\Http\Controllers\Api\V2\CustomersHub\ListController::class, 'stats']);
+
         // Filter options
         Route::get('/filter-options', [\App\Http\Controllers\Api\V2\CustomersHub\ListController::class, 'filterOptions']);
 
