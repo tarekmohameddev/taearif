@@ -46,38 +46,37 @@ class CustomersListService
 
     /**
      * Get customer statistics.
+     * Uses fresh minimal queries for aggregate calculations to avoid SQL errors
+     * and improve performance (no unnecessary JOINs for aggregates).
      */
     public function getStats(int $userId, array $filters = []): array
     {
-        // Build base query with filters
-        $baseQuery = $this->buildQuery($userId, $filters);
+        // Build base filter query (minimal, no JOINs) for aggregate calculations
+        $baseFilterQuery = $this->buildBaseFilterQuery($userId, $filters);
         
-        // Use distinct count to avoid duplicates from joins
-        $total = $baseQuery->distinct('api_customers.id')->count('api_customers.id');
+        // Total count - use simple count without DISTINCT (no JOINs means no duplicates)
+        $total = $baseFilterQuery->count();
 
         // New today
-        $newToday = (clone $baseQuery)
-            ->where('api_customers.created_at', '>=', Carbon::today())
-            ->distinct('api_customers.id')
-            ->count('api_customers.id');
+        $newToday = (clone $baseFilterQuery)
+            ->where('created_at', '>=', Carbon::today())
+            ->count();
 
         // New this week
-        $newThisWeek = (clone $baseQuery)
-            ->where('api_customers.created_at', '>=', Carbon::now()->startOfWeek())
-            ->distinct('api_customers.id')
-            ->count('api_customers.id');
+        $newThisWeek = (clone $baseFilterQuery)
+            ->where('created_at', '>=', Carbon::now()->startOfWeek())
+            ->count();
 
         // New this month
-        $newThisMonth = (clone $baseQuery)
-            ->where('api_customers.created_at', '>=', Carbon::now()->startOfMonth())
-            ->distinct('api_customers.id')
-            ->count('api_customers.id');
+        $newThisMonth = (clone $baseFilterQuery)
+            ->where('created_at', '>=', Carbon::now()->startOfMonth())
+            ->count();
 
         // Total deal value (if column exists, otherwise 0)
         $dealValue = 0;
         try {
-            $dealValue = (clone $baseQuery)
-                ->whereIn('api_customers.stage_id', function ($q) use ($userId) {
+            $dealValue = (clone $baseFilterQuery)
+                ->whereIn('stage_id', function ($q) use ($userId) {
                     $q->select('id')->from('users_api_customers_stages')
                         ->where('user_id', $userId)
                         ->where(function($query) {
@@ -92,33 +91,30 @@ class CustomersListService
         }
 
         // Closed this month
-        $closedThisMonth = (clone $baseQuery)
-            ->whereIn('api_customers.stage_id', function ($q) use ($userId) {
+        $closedThisMonth = (clone $baseFilterQuery)
+            ->whereIn('stage_id', function ($q) use ($userId) {
                 $q->select('id')->from('users_api_customers_stages')
                     ->where('user_id', $userId)
                     ->where('stage_name', 'LIKE', '%post_sale%');
             })
-            ->where('api_customers.updated_at', '>=', Carbon::now()->startOfMonth())
-            ->distinct('api_customers.id')
-            ->count('api_customers.id');
+            ->where('updated_at', '>=', Carbon::now()->startOfMonth())
+            ->count();
 
         // Conversion rate
         $conversionRate = $newThisMonth > 0 ? ($closedThisMonth / $newThisMonth) * 100 : 0;
 
-        // Average days in pipeline
-        $avgDaysQuery = (clone $baseQuery)
-            ->whereNotIn('api_customers.stage_id', function ($q) use ($userId) {
+        // Average days in pipeline - use fresh query with direct aggregate method
+        $avgDays = (clone $baseFilterQuery)
+            ->whereNotIn('stage_id', function ($q) use ($userId) {
                 $q->select('id')->from('users_api_customers_stages')
                     ->where('user_id', $userId)
                     ->where('stage_name', 'LIKE', '%post_sale%');
-            });
-        
-        $avgDays = $avgDaysQuery->selectRaw('AVG(DATEDIFF(NOW(), api_customers.created_at)) as avg_days')->value('avg_days');
+            })
+            ->avg(DB::raw('DATEDIFF(NOW(), created_at)'));
 
-        // Average days in current stage (using base query to respect filters)
-        $avgDaysInStage = (clone $baseQuery)
-            ->selectRaw('AVG(DATEDIFF(NOW(), api_customers.updated_at)) as avg_days')
-            ->value('avg_days');
+        // Average days in current stage - use fresh query with direct aggregate method
+        $avgDaysInStage = (clone $baseFilterQuery)
+            ->avg(DB::raw('DATEDIFF(NOW(), updated_at)'));
 
         // By stage - transform stage names to snake_case keys
         $byStageRaw = DB::table('api_customers')
@@ -227,6 +223,64 @@ class CustomersListService
             ->whereIn('id', $customerIds);
 
         return $query->update(array_merge($data, ['updated_at' => Carbon::now()]));
+    }
+
+    /**
+     * Build a minimal query with only WHERE filters (no JOINs, no SELECT).
+     * Use for aggregate calculations to avoid mixing aggregates with non-aggregate columns.
+     * 
+     * @param int $userId
+     * @param array $filters
+     * @return \Illuminate\Database\Query\Builder
+     */
+    private function buildBaseFilterQuery(int $userId, array $filters): \Illuminate\Database\Query\Builder
+    {
+        $query = DB::table('api_customers')
+            ->where('user_id', $userId);
+        
+        // Apply only filters that work on api_customers table directly
+        if (!empty($filters['search'])) {
+            $search = '%' . $filters['search'] . '%';
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', $search)
+                  ->orWhere('phone_number', 'like', $search)
+                  ->orWhere('email', 'like', $search);
+            });
+        }
+        
+        if (!empty($filters['stage']) && is_array($filters['stage'])) {
+            $query->whereIn('stage_id', $filters['stage']);
+        }
+        
+        if (!empty($filters['priority']) && is_array($filters['priority'])) {
+            $query->whereIn('priority_id', $filters['priority']);
+        }
+        
+        if (!empty($filters['type']) && is_array($filters['type'])) {
+            $query->whereIn('type_id', $filters['type']);
+        }
+        
+        if (!empty($filters['source']) && is_array($filters['source'])) {
+            $query->whereIn('source', $filters['source']);
+        }
+        
+        if (!empty($filters['assignedEmployeeId'])) {
+            $query->where('responsible_employee_id', $filters['assignedEmployeeId']);
+        }
+        
+        if (!empty($filters['city'])) {
+            $query->where('city_id', $filters['city']);
+        }
+        
+        if (!empty($filters['createdFrom'])) {
+            $query->where('created_at', '>=', $filters['createdFrom']);
+        }
+        
+        if (!empty($filters['createdTo'])) {
+            $query->where('created_at', '<=', $filters['createdTo']);
+        }
+        
+        return $query;
     }
 
     /**

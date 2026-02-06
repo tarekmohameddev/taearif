@@ -65,16 +65,16 @@ class AnalyticsService
             $totalDealValue = 0;
         }
 
-        // Average days in pipeline
-        $avgDays = (clone $query)
+        // Average days in pipeline - use direct aggregate method for better performance
+        $avgDays = DB::table('api_customers')
+            ->where('user_id', $userId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->whereNotIn('stage_id', function ($q) use ($userId) {
                 $q->select('id')->from('users_api_customers_stages')
                     ->where('user_id', $userId)
                     ->where('stage_name', 'LIKE', '%post_sale%');
             })
-            ->selectRaw('AVG(DATEDIFF(NOW(), created_at)) as avg_days')
-            ->value('avg_days');
+            ->avg(DB::raw('DATEDIFF(NOW(), created_at)'));
 
         // New/closed this month
         $monthStart = Carbon::now()->startOfMonth();
