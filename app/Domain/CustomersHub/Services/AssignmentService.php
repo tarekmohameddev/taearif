@@ -235,13 +235,13 @@ class AssignmentService
             ->orderBy('employee_id')
             ->get();
 
-        return array_map(function ($rule) {
+        return $rules->map(function ($rule) {
             return [
                 'employeeId' => (string) $rule->employee_id,
                 'isActive' => $rule->is_active,
                 'rules' => $rule->rules,
             ];
-        }, $rules->toArray());
+        })->values()->all();
     }
 
     /**
