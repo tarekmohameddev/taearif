@@ -1126,6 +1126,9 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
 
     // 4. ANALYTICS DASHBOARD
     Route::post('/analytics', [\App\Http\Controllers\Api\V2\CustomersHub\AnalyticsController::class, 'index']);
+    Route::post('/analytics/trends', [\App\Http\Controllers\Api\V2\CustomersHub\AnalyticsController::class, 'trends']);
+    Route::post('/analytics/sources', [\App\Http\Controllers\Api\V2\CustomersHub\AnalyticsController::class, 'sources']);
+    Route::post('/analytics/performance', [\App\Http\Controllers\Api\V2\CustomersHub\AnalyticsController::class, 'performance']);
 
     // 5. CUSTOMER DETAIL
     Route::prefix('customers')->group(function () {

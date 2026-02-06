@@ -80,6 +80,83 @@ class AnalyticsController extends ApiController
     }
 
     /**
+     * POST /api/v2/customers-hub/analytics/trends
+     * 
+     * Get analytics trends data.
+     */
+    public function trends(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'timeRange' => 'nullable|array',
+            'timeRange.timeRange' => 'nullable|in:today,yesterday,last7days,last30days,thisMonth,lastMonth,thisQuarter,lastQuarter,thisYear,lastYear,custom',
+            'timeRange.customStartDate' => 'nullable|date',
+            'timeRange.customEndDate' => 'nullable|date',
+            'metrics' => 'nullable|array',
+        ]);
+
+        $userId = $this->getTenantUserId($request);
+        $timeRange = $validated['timeRange'] ?? ['timeRange' => 'last30days'];
+        $metrics = $validated['metrics'] ?? ['newCustomers', 'completedTasks', 'appointments'];
+
+        $trends = $this->analyticsService->getTrends($userId, $timeRange, $metrics);
+
+        return $this->success([
+            'trends' => $trends,
+            'timeRange' => $this->analyticsService->getTimeRangeDates($timeRange),
+        ]);
+    }
+
+    /**
+     * POST /api/v2/customers-hub/analytics/sources
+     * 
+     * Get analytics by sources.
+     */
+    public function sources(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'timeRange' => 'nullable|array',
+            'timeRange.timeRange' => 'nullable|in:today,yesterday,last7days,last30days,thisMonth,lastMonth,thisQuarter,lastQuarter,thisYear,lastYear,custom',
+            'timeRange.customStartDate' => 'nullable|date',
+            'timeRange.customEndDate' => 'nullable|date',
+        ]);
+
+        $userId = $this->getTenantUserId($request);
+        $timeRange = $validated['timeRange'] ?? ['timeRange' => 'last30days'];
+
+        $sources = $this->analyticsService->getSources($userId, $timeRange);
+
+        return $this->success([
+            'sources' => $sources,
+            'timeRange' => $this->analyticsService->getTimeRangeDates($timeRange),
+        ]);
+    }
+
+    /**
+     * POST /api/v2/customers-hub/analytics/performance
+     * 
+     * Get performance analytics.
+     */
+    public function performance(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'timeRange' => 'nullable|array',
+            'timeRange.timeRange' => 'nullable|in:today,yesterday,last7days,last30days,thisMonth,lastMonth,thisQuarter,lastQuarter,thisYear,lastYear,custom',
+            'timeRange.customStartDate' => 'nullable|date',
+            'timeRange.customEndDate' => 'nullable|date',
+        ]);
+
+        $userId = $this->getTenantUserId($request);
+        $timeRange = $validated['timeRange'] ?? ['timeRange' => 'last30days'];
+
+        $performance = $this->analyticsService->getPerformance($userId, $timeRange);
+
+        return $this->success([
+            'employees' => $performance,
+            'timeRange' => $this->analyticsService->getTimeRangeDates($timeRange),
+        ]);
+    }
+
+    /**
      * Get the tenant user ID from request.
      */
     private function getTenantUserId(Request $request): int
