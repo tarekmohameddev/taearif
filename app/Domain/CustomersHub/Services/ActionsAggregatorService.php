@@ -398,6 +398,7 @@ class ActionsAggregatorService
                 DB::raw("JSON_OBJECT(
                     'inquiryId', aci.id,
                     'propertyType', aci.property_type,
+                    'propertyCategory', aci.property_type,
                     'budget', aci.budget,
                     'bedrooms', aci.bedrooms,
                     'bathrooms', aci.bathrooms,
@@ -407,6 +408,8 @@ class ActionsAggregatorService
                 DB::raw("'api_customer_inquiry' as sourceTable"),
                 'aci.id as sourceId',
                 'aci.user_id as userId',
+                'aci.property_type as propertyCategory',
+                DB::raw("NULL as propertyType"),
             ]);
     }
 
@@ -448,6 +451,7 @@ class ActionsAggregatorService
                 DB::raw("JSON_OBJECT(
                     'propertyRequestId', upr.id,
                     'propertyType', upr.property_type,
+                    'propertyCategory', upr.category_id,
                     'budgetFrom', upr.budget_from,
                     'budgetTo', upr.budget_to,
                     'purpose', upr.purpose,
@@ -456,6 +460,8 @@ class ActionsAggregatorService
                 DB::raw("'users_property_requests' as sourceTable"),
                 'upr.id as sourceId',
                 'upr.user_id as userId',
+                'upr.category_id as propertyCategory',
+                'upr.property_type as propertyType',
             ]);
     }
 
@@ -502,6 +508,8 @@ class ActionsAggregatorService
                 DB::raw("'reminders' as sourceTable"),
                 'r.id as sourceId',
                 'r.user_id as userId',
+                DB::raw("NULL as propertyCategory"),
+                DB::raw("NULL as propertyType"),
             ]);
     }
 
@@ -543,6 +551,8 @@ class ActionsAggregatorService
                 DB::raw("'users_api_customers_appointments' as sourceTable"),
                 'a.id as sourceId',
                 'a.user_id as userId',
+                DB::raw("NULL as propertyCategory"),
+                DB::raw("NULL as propertyType"),
             ]);
     }
 
@@ -580,6 +590,8 @@ class ActionsAggregatorService
                 DB::raw("'users_api_customers_reminders' as sourceTable"),
                 'cr.id as sourceId',
                 'cr.user_id as userId',
+                DB::raw("NULL as propertyCategory"),
+                DB::raw("NULL as propertyType"),
             ]);
     }
 
@@ -664,6 +676,16 @@ class ActionsAggregatorService
             }
         }
 
+        // Property categories filter (villa, apartment, etc.)
+        if (!empty($filters['property_categories']) && is_array($filters['property_categories'])) {
+            $query->whereIn('propertyCategory', $filters['property_categories']);
+        }
+
+        // Property types filter (Residential, Commercial, etc.)
+        if (!empty($filters['property_types']) && is_array($filters['property_types'])) {
+            $query->whereIn('propertyType', $filters['property_types']);
+        }
+
         // Date range filter
         if (!empty($filters['date_from'])) {
             $query->where('createdAt', '>=', $filters['date_from']);
@@ -713,6 +735,8 @@ class ActionsAggregatorService
             'completedBy' => $item->completedBy,
             'assignedTo' => $item->assignedTo,
             'assignedToName' => trim($item->assignedToName ?? ''),
+            'propertyCategory' => $item->propertyCategory ?? null,
+            'propertyType' => $item->propertyType ?? null,
             'metadata' => $metadata,
             'sourceTable' => $item->sourceTable,
             'sourceId' => $item->sourceId,
