@@ -335,8 +335,11 @@ class AnalyticsService
 
         // Get all employees for this user
         $employees = DB::table('users')
-            ->where('parent_id', $userId)
-            ->orWhere('id', $userId)
+            ->where(function($query) use ($userId) {
+                $query->where('tenant_id', $userId)
+                      ->where('account_type', 'employee');
+            })
+            ->orWhere('id', $userId)  // Include the tenant owner themselves
             ->select('id', 'username as name')
             ->get();
 
