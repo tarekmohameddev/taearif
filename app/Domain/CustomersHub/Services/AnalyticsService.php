@@ -249,7 +249,7 @@ class AnalyticsService
                         $trendData['completedTasks'] = DB::table('reminders')
                             ->where('user_id', $userId)
                             ->whereBetween('created_at', [$dayStart, $dayEnd])
-                            ->whereNotNull('completed_at')
+                            ->where('status', 'completed')
                             ->whereNull('deleted_at')
                             ->count();
                         break;
@@ -337,7 +337,7 @@ class AnalyticsService
         $employees = DB::table('users')
             ->where('parent_id', $userId)
             ->orWhere('id', $userId)
-            ->select('id', 'name')
+            ->select('id', 'username as name')
             ->get();
 
         $result = [];
@@ -347,29 +347,30 @@ class AnalyticsService
             // Customers managed
             $customersManaged = DB::table('api_customers')
                 ->where('user_id', $userId)
-                ->where('employee_id', $employeeId)
+                ->where('responsible_employee_id', $employeeId)
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->count();
 
-            // Tasks completed
+            // Tasks completed (join through customers since reminders don't have employee_id)
             $tasksCompleted = DB::table('reminders')
-                ->where('user_id', $userId)
-                ->where('employee_id', $employeeId)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->whereNotNull('completed_at')
-                ->whereNull('deleted_at')
+                ->join('api_customers', 'reminders.customer_id', '=', 'api_customers.id')
+                ->where('reminders.user_id', $userId)
+                ->where('api_customers.responsible_employee_id', $employeeId)
+                ->whereBetween('reminders.created_at', [$startDate, $endDate])
+                ->where('reminders.status', 'completed')
+                ->whereNull('reminders.deleted_at')
                 ->count();
 
             // Conversion rate
             $totalCustomers = DB::table('api_customers')
                 ->where('user_id', $userId)
-                ->where('employee_id', $employeeId)
+                ->where('responsible_employee_id', $employeeId)
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->count();
 
             $closedDeals = DB::table('api_customers')
                 ->where('user_id', $userId)
-                ->where('employee_id', $employeeId)
+                ->where('responsible_employee_id', $employeeId)
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->whereIn('stage_id', function ($q) use ($userId) {
                     $q->select('id')->from('users_api_customers_stages')
@@ -383,14 +384,15 @@ class AnalyticsService
 
             $conversionRate = $totalCustomers > 0 ? round(($closedDeals / $totalCustomers) * 100, 2) : 0;
 
-            // Average response time (simplified - using reminder response times)
+            // Average response time (using updated_at when status changed to completed)
             $avgResponseTime = DB::table('reminders')
-                ->where('user_id', $userId)
-                ->where('employee_id', $employeeId)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->whereNotNull('completed_at')
-                ->whereNull('deleted_at')
-                ->selectRaw('AVG(TIMESTAMPDIFF(HOUR, created_at, completed_at)) as avg_hours')
+                ->join('api_customers', 'reminders.customer_id', '=', 'api_customers.id')
+                ->where('reminders.user_id', $userId)
+                ->where('api_customers.responsible_employee_id', $employeeId)
+                ->whereBetween('reminders.created_at', [$startDate, $endDate])
+                ->where('reminders.status', 'completed')
+                ->whereNull('reminders.deleted_at')
+                ->selectRaw('AVG(TIMESTAMPDIFF(HOUR, reminders.created_at, reminders.updated_at)) as avg_hours')
                 ->value('avg_hours');
 
             $result[] = [
