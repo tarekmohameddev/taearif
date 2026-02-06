@@ -340,7 +340,7 @@ class AnalyticsService
                       ->where('account_type', 'employee');
             })
             ->orWhere('id', $userId)  // Include the tenant owner themselves
-            ->select('id', 'username as name')
+            ->selectRaw('id, CASE WHEN account_type = "employee" THEN CONCAT(first_name, " ", last_name) ELSE username END as name')
             ->get();
 
         $result = [];
