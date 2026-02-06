@@ -22,6 +22,8 @@ use Illuminate\Support\Facades\Cache;
  * - POST /api/v2/customers-hub/requests/list
  * - GET  /api/v2/customers-hub/requests/filter-options
  * - GET  /api/v2/customers-hub/requests/{requestId}
+ * - PATCH /api/v2/customers-hub/requests/{requestId}
+ * - POST /api/v2/customers-hub/requests/{requestId}/notes
  * - POST /api/v2/customers-hub/requests/{requestId}/complete
  * - POST /api/v2/customers-hub/requests/{requestId}/dismiss
  * - POST /api/v2/customers-hub/requests/bulk-complete
@@ -292,6 +294,77 @@ class RequestsController extends ApiController
 
         return $this->success([
             'message' => 'Action dismissed successfully',
+            'actionId' => $requestId,
+        ]);
+    }
+
+    /**
+     * PATCH /api/v2/customers-hub/requests/{requestId}
+     *
+     * Update an action (partial update).
+     */
+    public function update(Request $request, string $requestId): JsonResponse
+    {
+        $validated = $request->validate([
+            'title' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'due_date' => 'nullable|date',
+            'priority' => 'nullable|in:low,medium,high',
+            'notes' => 'nullable|string',
+            'duration' => 'nullable|integer|min:0',
+        ]);
+
+        $userId = $this->getTenantUserId($request);
+
+        $action = $this->aggregator->getById($userId, $requestId);
+        if (!$action) {
+            return $this->error('Action not found', 404);
+        }
+
+        $success = $this->aggregator->updateAction($userId, $requestId, $validated);
+        if (!$success) {
+            return $this->error('Failed to update action', 422);
+        }
+
+        $this->invalidateFilterOptionsCache($userId);
+
+        $updated = $this->aggregator->getById($userId, $requestId);
+
+        return $this->success([
+            'message' => 'Action updated successfully',
+            'actionId' => $requestId,
+            'action' => $updated,
+        ]);
+    }
+
+    /**
+     * POST /api/v2/customers-hub/requests/{requestId}/notes
+     *
+     * Append a note to an action.
+     */
+    public function addNote(Request $request, string $requestId): JsonResponse
+    {
+        $validated = $request->validate([
+            'note' => 'required|string',
+            'addedBy' => 'nullable|string|max:255',
+        ]);
+
+        $userId = $this->getTenantUserId($request);
+
+        $action = $this->aggregator->getById($userId, $requestId);
+        if (!$action) {
+            return $this->error('Action not found', 404);
+        }
+
+        $addedBy = $validated['addedBy'] ?? 'current_user';
+        $success = $this->aggregator->addNoteToAction($userId, $requestId, $validated['note'], $addedBy);
+
+        if (!$success) {
+            return $this->error('Action not found or notes not supported for this request type', 422);
+        }
+
+        return $this->success([
+            'message' => 'Note added successfully',
             'actionId' => $requestId,
         ]);
     }

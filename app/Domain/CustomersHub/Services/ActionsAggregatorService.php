@@ -316,6 +316,208 @@ class ActionsAggregatorService
     }
 
     /**
+     * Update an action (partial update by source table).
+     */
+    public function updateAction(int $userId, string $actionId, array $data): bool
+    {
+        $parsed = $this->parseActionId($actionId);
+        if (!$parsed) {
+            return false;
+        }
+
+        $now = Carbon::now();
+        $payload = ['updated_at' => $now];
+
+        switch ($parsed['table']) {
+            case 'reminders':
+                if (array_key_exists('title', $data)) {
+                    $payload['title'] = $data['title'];
+                }
+                if (array_key_exists('description', $data)) {
+                    $payload['description'] = $data['description'];
+                }
+                if (array_key_exists('due_date', $data)) {
+                    $payload['datetime'] = $data['due_date'];
+                }
+                if (array_key_exists('priority', $data)) {
+                    $payload['priority'] = $this->mapPriorityReminders($data['priority']);
+                }
+                if (array_key_exists('notes', $data)) {
+                    $payload['notes'] = $data['notes'];
+                }
+                if (count($payload) <= 1) {
+                    return true;
+                }
+                return DB::table('reminders')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->whereNull('deleted_at')
+                    ->update($payload) > 0;
+
+            case 'users_property_requests':
+                if (array_key_exists('notes', $data)) {
+                    $payload['notes'] = $data['notes'];
+                }
+                if (count($payload) <= 1) {
+                    return true;
+                }
+                return DB::table('users_property_requests')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->update($payload) > 0;
+
+            case 'users_api_customers_appointments':
+                if (array_key_exists('title', $data)) {
+                    $payload['title'] = $data['title'];
+                }
+                if (array_key_exists('notes', $data)) {
+                    $payload['note'] = $data['notes'];
+                }
+                if (array_key_exists('due_date', $data)) {
+                    $payload['datetime'] = $data['due_date'];
+                }
+                if (array_key_exists('priority', $data)) {
+                    $payload['priority'] = $this->mapPriorityAppointments($data['priority']);
+                }
+                if (array_key_exists('duration', $data)) {
+                    $payload['duration'] = (int) $data['duration'];
+                }
+                if (count($payload) <= 1) {
+                    return true;
+                }
+                return DB::table('users_api_customers_appointments')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->update($payload) > 0;
+
+            case 'api_customer_inquiry':
+                // Only message if needed; no notes column
+                if (array_key_exists('message', $data)) {
+                    $payload['message'] = $data['message'];
+                }
+                if (count($payload) <= 1) {
+                    return true;
+                }
+                return DB::table('api_customer_inquiry')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->update($payload) > 0;
+
+            case 'users_api_customers_reminders':
+                if (array_key_exists('title', $data)) {
+                    $payload['title'] = $data['title'];
+                }
+                if (array_key_exists('due_date', $data)) {
+                    $payload['datetime'] = $data['due_date'];
+                }
+                if (array_key_exists('priority', $data)) {
+                    $payload['priority'] = $this->mapPriorityAppointments($data['priority']);
+                }
+                if (count($payload) <= 1) {
+                    return true;
+                }
+                return DB::table('users_api_customers_reminders')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->update($payload) > 0;
+        }
+
+        return false;
+    }
+
+    /**
+     * Append a note to an action (only for tables with notes/note column).
+     */
+    public function addNoteToAction(int $userId, string $actionId, string $note, string $addedBy): bool
+    {
+        $parsed = $this->parseActionId($actionId);
+        if (!$parsed) {
+            return false;
+        }
+
+        $now = Carbon::now();
+        $line = '[' . $now->format('Y-m-d H:i') . '] ' . $addedBy . ': ' . $note . "\n";
+
+        switch ($parsed['table']) {
+            case 'reminders':
+                $row = DB::table('reminders')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->whereNull('deleted_at')
+                    ->first(['notes']);
+                if (!$row) {
+                    return false;
+                }
+                $notes = ($row->notes ?? '') . $line;
+                return DB::table('reminders')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->whereNull('deleted_at')
+                    ->update(['notes' => $notes, 'updated_at' => $now]) > 0;
+
+            case 'users_property_requests':
+                $row = DB::table('users_property_requests')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->first(['notes']);
+                if (!$row) {
+                    return false;
+                }
+                $notes = ($row->notes ?? '') . $line;
+                return DB::table('users_property_requests')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->update(['notes' => $notes, 'updated_at' => $now]) > 0;
+
+            case 'users_api_customers_appointments':
+                $row = DB::table('users_api_customers_appointments')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->first(['note']);
+                if (!$row) {
+                    return false;
+                }
+                $noteContent = ($row->note ?? '') . $line;
+                return DB::table('users_api_customers_appointments')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->update(['note' => $noteContent, 'updated_at' => $now]) > 0;
+
+            case 'api_customer_inquiry':
+            case 'users_api_customers_reminders':
+                return false;
+        }
+
+        return false;
+    }
+
+    /**
+     * Map API priority to reminders table (0=low, 1=medium, 2=high).
+     */
+    private function mapPriorityReminders(?string $priority): int
+    {
+        return match ($priority) {
+            'high' => 2,
+            'medium' => 1,
+            'low' => 0,
+            default => 1,
+        };
+    }
+
+    /**
+     * Map API priority to appointments/customer_reminders (1=low, 2=medium, 3=high).
+     */
+    private function mapPriorityAppointments(?string $priority): int
+    {
+        return match ($priority) {
+            'high' => 3,
+            'medium' => 2,
+            'low' => 1,
+            default => 2,
+        };
+    }
+
+    /**
      * Bulk complete actions.
      */
     public function bulkComplete(int $userId, array $actionIds): array
