@@ -1172,6 +1172,14 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
         // Get assignment rules
         Route::get('/rules', [\App\Http\Controllers\Api\V2\CustomersHub\AssignmentController::class, 'getRules']);
     });
+
+    // 7. STAGES (dynamic stages for pipeline)
+    Route::prefix('stages')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\V2\CustomersHub\StagesController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\V2\CustomersHub\StagesController::class, 'store']);
+        Route::put('/{stage_id}', [\App\Http\Controllers\Api\V2\CustomersHub\StagesController::class, 'update']);
+        Route::delete('/{stage_id}', [\App\Http\Controllers\Api\V2\CustomersHub\StagesController::class, 'destroy']);
+    });
 });
 
 // Owner Rental Management System Routes (v1)

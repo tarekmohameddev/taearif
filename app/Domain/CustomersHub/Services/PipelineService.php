@@ -14,11 +14,11 @@ class PipelineService
 {
     /**
      * Get pipeline board data (stages with customers).
+     * Uses customers_hub_stages and api_customers.customers_hub_stage_id.
      */
     public function getPipelineBoard(int $userId, array $filters = []): array
     {
-        $stages = DB::table('users_api_customers_stages')
-            ->where('user_id', $userId)
+        $stages = DB::table('customers_hub_stages')
             ->where('is_active', true)
             ->orderBy('order')
             ->get();
@@ -28,7 +28,7 @@ class PipelineService
         foreach ($stages as $stage) {
             $customersQuery = DB::table('api_customers')
                 ->where('api_customers.user_id', $userId)
-                ->where('api_customers.stage_id', $stage->id);
+                ->where('api_customers.customers_hub_stage_id', $stage->stage_id);
 
             // Apply filters
             $this->applyFilters($customersQuery, $filters);
@@ -48,13 +48,14 @@ class PipelineService
                 ->get();
 
             $stagesData[] = [
-                'id' => $stage->id,
-                'name' => $stage->stage_name,
+                'id' => $stage->stage_id,
+                'stage_id' => $stage->stage_id,
+                'name' => $stage->stage_name_ar,
+                'nameEn' => $stage->stage_name_en,
                 'color' => $stage->color,
-                'icon' => $stage->icon,
-                'order' => $stage->order,
+                'order' => (int) $stage->order,
                 'count' => count($customers),
-                'customers' => $customers->map(fn($c) => [
+                'customers' => $customers->map(fn ($c) => [
                     'id' => $c->id,
                     'name' => $c->name,
                     'phone' => $c->phone_number,
@@ -151,30 +152,33 @@ class PipelineService
     }
 
     /**
-     * Move customer to new stage.
+     * Move customer to new hub stage (stage_id string from customers_hub_stages).
      */
-    public function moveCustomerToStage(int $userId, int $customerId, int $newStageId): bool
+    public function moveCustomerToStage(int $userId, int $customerId, string $newStageId): bool
     {
         return DB::table('api_customers')
             ->where('id', $customerId)
             ->where('user_id', $userId)
             ->update([
-                'stage_id' => $newStageId,
+                'customers_hub_stage_id' => $newStageId,
+                'customers_hub_stage_changed_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ]) > 0;
     }
 
     /**
-     * Bulk move customers to stage.
+     * Bulk move customers to hub stage (stage_id string from customers_hub_stages).
      */
-    public function bulkMoveToStage(int $userId, array $customerIds, int $newStageId): int
+    public function bulkMoveToStage(int $userId, array $customerIds, string $newStageId): int
     {
+        $now = Carbon::now();
         return DB::table('api_customers')
             ->where('user_id', $userId)
             ->whereIn('id', $customerIds)
             ->update([
-                'stage_id' => $newStageId,
-                'updated_at' => Carbon::now(),
+                'customers_hub_stage_id' => $newStageId,
+                'customers_hub_stage_changed_at' => $now,
+                'updated_at' => $now,
             ]);
     }
 

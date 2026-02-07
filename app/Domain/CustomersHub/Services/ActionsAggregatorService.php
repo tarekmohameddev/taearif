@@ -107,6 +107,9 @@ class ActionsAggregatorService
             return $this->transformAction($item);
         });
 
+        // Enrich with customer hub stage (stage_id + stage object)
+        $items = $this->enrichItemsWithHubStage($items, $userId);
+
         return [
             'items' => $items,
             'total' => $total,
@@ -160,7 +163,10 @@ class ActionsAggregatorService
             return null;
         }
 
-        return $this->transformAction($item);
+        $transformed = $this->transformAction($item);
+        $enriched = $this->enrichItemsWithHubStage(collect([$transformed]), $userId);
+
+        return $enriched->first();
     }
 
     /**
@@ -906,6 +912,55 @@ class ActionsAggregatorService
                     ->orWhere('customerPhone', 'like', $search);
             });
         }
+    }
+
+    /**
+     * Enrich action items with customer hub stage (stage_id and stage object).
+     */
+    private function enrichItemsWithHubStage(Collection $items, int $userId): Collection
+    {
+        $customerIds = $items->pluck('customerId')->filter()->unique()->values()->all();
+        if (empty($customerIds)) {
+            return $items->map(function ($item) {
+                $item->stage_id = null;
+                $item->stage = null;
+                return $item;
+            });
+        }
+
+        $customerStageIds = DB::table('api_customers')
+            ->whereIn('id', $customerIds)
+            ->where('user_id', $userId)
+            ->get(['id', 'customers_hub_stage_id']);
+
+        $stageIds = $customerStageIds->pluck('customers_hub_stage_id')->filter()->unique()->values()->all();
+        $stageRows = [];
+        if (!empty($stageIds)) {
+            $stages = DB::table('customers_hub_stages')->whereIn('stage_id', $stageIds)->get();
+            foreach ($stages as $s) {
+                $stageRows[$s->stage_id] = (object) [
+                    'stage_id' => $s->stage_id,
+                    'stage_name_ar' => $s->stage_name_ar,
+                    'stage_name_en' => $s->stage_name_en,
+                    'color' => $s->color,
+                    'order' => (int) $s->order,
+                ];
+            }
+        }
+
+        $customerStages = [];
+        foreach ($customerStageIds as $row) {
+            $customerStages[$row->id] = $row->customers_hub_stage_id !== null
+                ? ($stageRows[$row->customers_hub_stage_id] ?? null)
+                : null;
+        }
+
+        return $items->map(function ($item) use ($customerStages) {
+            $stageData = $customerStages[$item->customerId] ?? null;
+            $item->stage_id = $stageData ? $stageData->stage_id : null;
+            $item->stage = $stageData;
+            return $item;
+        });
     }
 
     /**

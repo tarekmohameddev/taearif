@@ -59,6 +59,7 @@ class DetailController extends ApiController
             'phone_number' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'stage_id' => 'nullable|integer',
+            'customers_hub_stage_id' => ['nullable', 'string', 'max:50', \Illuminate\Validation\Rule::exists('customers_hub_stages', 'stage_id')],
             'priority_id' => 'nullable|integer',
             'type_id' => 'nullable|integer',
             'city_id' => 'nullable|integer',

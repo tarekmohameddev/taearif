@@ -65,13 +65,13 @@ class PipelineController extends ApiController
     /**
      * POST /api/v2/customers-hub/pipeline/move
      * 
-     * Move customer to a new stage.
+     * Move customer to a new stage (customers_hub_stages.stage_id string).
      */
     public function move(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'customerId' => 'required|integer',
-            'newStageId' => 'required|integer',
+            'newStageId' => ['required', 'string', 'max:50', \Illuminate\Validation\Rule::exists('customers_hub_stages', 'stage_id')],
         ]);
 
         $userId = $this->getTenantUserId($request);
@@ -96,14 +96,14 @@ class PipelineController extends ApiController
     /**
      * POST /api/v2/customers-hub/pipeline/bulk-move
      * 
-     * Bulk move customers to a new stage.
+     * Bulk move customers to a new stage (customers_hub_stages.stage_id string).
      */
     public function bulkMove(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'customerIds' => 'required|array|min:1',
             'customerIds.*' => 'integer',
-            'newStageId' => 'required|integer',
+            'newStageId' => ['required', 'string', 'max:50', \Illuminate\Validation\Rule::exists('customers_hub_stages', 'stage_id')],
         ]);
 
         $userId = $this->getTenantUserId($request);

@@ -312,6 +312,7 @@ class RequestsController extends ApiController
             'priority' => 'nullable|in:low,medium,high',
             'notes' => 'nullable|string',
             'duration' => 'nullable|integer|min:0',
+            'stage_id' => ['nullable', 'string', 'max:50', \Illuminate\Validation\Rule::exists('customers_hub_stages', 'stage_id')->where('is_active', true)],
         ]);
 
         $userId = $this->getTenantUserId($request);
@@ -321,8 +322,21 @@ class RequestsController extends ApiController
             return $this->error('Action not found', 404);
         }
 
+        // Update customer's hub stage when stage_id is provided and action has a customer
+        if (array_key_exists('stage_id', $validated) && $validated['stage_id'] !== null && !empty($action->customerId)) {
+            \Illuminate\Support\Facades\DB::table('api_customers')
+                ->where('id', $action->customerId)
+                ->where('user_id', $userId)
+                ->update([
+                    'customers_hub_stage_id' => $validated['stage_id'],
+                    'customers_hub_stage_changed_at' => now(),
+                ]);
+        }
+
+        unset($validated['stage_id']);
+
         $success = $this->aggregator->updateAction($userId, $requestId, $validated);
-        if (!$success) {
+        if (!$success && !empty($validated)) {
             return $this->error('Failed to update action', 422);
         }
 

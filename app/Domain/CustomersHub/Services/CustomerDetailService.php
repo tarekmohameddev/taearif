@@ -20,14 +20,16 @@ class CustomerDetailService
         $customer = DB::table('api_customers')
             ->where('api_customers.id', $customerId)
             ->where('api_customers.user_id', $userId)
-            ->leftJoin('users_api_customers_stages as stage', 'api_customers.stage_id', '=', 'stage.id')
+            ->leftJoin('customers_hub_stages as stage', 'api_customers.customers_hub_stage_id', '=', 'stage.stage_id')
             ->leftJoin('users_api_customers_priorities as priority', 'api_customers.priority_id', '=', 'priority.id')
             ->leftJoin('users_api_customers_types as type', 'api_customers.type_id', '=', 'type.id')
             ->leftJoin('user_cities as city', 'api_customers.city_id', '=', 'city.id')
             ->leftJoin('user_districts as district', 'api_customers.district_id', '=', 'district.id')
             ->select([
                 'api_customers.*',
-                'stage.stage_name',
+                'stage.stage_id as hub_stage_id',
+                'stage.stage_name_ar as stage_name',
+                'stage.stage_name_en as stage_name_en',
                 'stage.color as stage_color',
                 'priority.name as priority_name',
                 'type.name as type_name',
@@ -68,9 +70,10 @@ class CustomerDetailService
                 'whatsapp' => $customer->whatsapp_number ?? $customer->phone_number,
                 'email' => $customer->email,
                 'stage' => [
-                    'id' => $customer->stage_id,
-                    'name' => $customer->stage_name,
-                    'color' => $customer->stage_color,
+                    'id' => $customer->hub_stage_id ?? $customer->customers_hub_stage_id ?? null,
+                    'name' => $customer->stage_name ?? null,
+                    'nameEn' => $customer->stage_name_en ?? null,
+                    'color' => $customer->stage_color ?? null,
                 ],
                 'priority' => [
                     'id' => $customer->priority_id,
@@ -104,12 +107,12 @@ class CustomerDetailService
         // Only update fields that exist in api_customers table
         $allowedFields = [
             'name', 'phone_number', 'email', 'source', 'note',
-            'stage_id', 'priority_id', 'type_id', 'procedure_id',
+            'stage_id', 'customers_hub_stage_id', 'priority_id', 'type_id', 'procedure_id',
             'responsible_employee_id', 'city_id', 'district_id'
         ];
-        
+
         $updateData = [];
-        
+
         foreach ($data as $key => $value) {
             // Convert camelCase to snake_case
             $snakeKey = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $key));
@@ -117,11 +120,15 @@ class CustomerDetailService
                 $updateData[$snakeKey] = $value;
             }
         }
-        
+
         if (empty($updateData)) {
             return false;
         }
-        
+
+        if (array_key_exists('customers_hub_stage_id', $updateData)) {
+            $updateData['customers_hub_stage_changed_at'] = Carbon::now();
+        }
+
         return DB::table('api_customers')
             ->where('id', $customerId)
             ->where('user_id', $userId)

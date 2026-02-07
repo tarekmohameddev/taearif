@@ -425,6 +425,91 @@ class AnalyticsService
     }
 
     /**
+     * Get pipeline health data (dynamic stages with count, percentage, totalValue, avgDays).
+     */
+    public function getPipelineHealth(int $userId, array $timeRange, array $filters = []): array
+    {
+        [$startDate, $endDate] = $this->parseTimeRange($timeRange);
+
+        $stages = DB::table('customers_hub_stages')
+            ->where('is_active', true)
+            ->orderBy('order')
+            ->get(['stage_id', 'stage_name_ar', 'stage_name_en', 'color', 'order']);
+
+        $stageCounts = [];
+        $stageValues = [];
+        $stageAvgDays = [];
+        $total = 0;
+
+        foreach ($stages as $stage) {
+            $baseQuery = DB::table('api_customers')
+                ->where('user_id', $userId)
+                ->where('customers_hub_stage_id', $stage->stage_id)
+                ->whereBetween('created_at', [$startDate, $endDate]);
+
+            $this->applyPipelineHealthFilters($baseQuery, $filters);
+
+            $count = (clone $baseQuery)->count();
+            $stageCounts[$stage->stage_id] = $count;
+            $total += $count;
+
+            $totalValue = 0;
+            try {
+                $totalValue = (clone $baseQuery)->sum(DB::raw('COALESCE(deal_value, 0)'));
+            } catch (\Exception $e) {
+                // deal_value column may not exist
+            }
+            $stageValues[$stage->stage_id] = (float) $totalValue;
+
+            $avgDays = (clone $baseQuery)->avg(DB::raw(
+                'DATEDIFF(NOW(), COALESCE(customers_hub_stage_changed_at, updated_at))'
+            ));
+            $stageAvgDays[$stage->stage_id] = $avgDays !== null ? (int) round($avgDays) : 0;
+        }
+
+        $stagesData = [];
+        foreach ($stages as $stage) {
+            $count = $stageCounts[$stage->stage_id] ?? 0;
+            $percentage = $total > 0 ? round(($count / $total) * 100, 1) : 0.0;
+
+            $stagesData[] = [
+                'stageId' => $stage->stage_id,
+                'stageName' => $stage->stage_name_ar,
+                'stageNameEn' => $stage->stage_name_en,
+                'count' => $count,
+                'percentage' => $percentage,
+                'totalValue' => $stageValues[$stage->stage_id] ?? 0,
+                'avgDays' => $stageAvgDays[$stage->stage_id] ?? 0,
+                'color' => $stage->color,
+            ];
+        }
+
+        return [
+            'pipelineHealth' => [
+                'stages' => $stagesData,
+                'total' => $total,
+            ],
+            'timeRange' => [
+                'start' => $startDate->toIso8601String(),
+                'end' => $endDate->toIso8601String(),
+            ],
+        ];
+    }
+
+    /**
+     * Apply filters to pipeline health base query.
+     */
+    private function applyPipelineHealthFilters(\Illuminate\Database\Query\Builder $query, array $filters): void
+    {
+        if (!empty($filters['priority']) && is_array($filters['priority'])) {
+            $query->whereIn('priority_id', $filters['priority']);
+        }
+        if (!empty($filters['source']) && is_array($filters['source'])) {
+            $query->whereIn('source', $filters['source']);
+        }
+    }
+
+    /**
      * Parse time range array to start/end dates.
      */
     private function parseTimeRange(array $timeRange): array

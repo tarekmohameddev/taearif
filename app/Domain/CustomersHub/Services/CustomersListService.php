@@ -116,18 +116,17 @@ class CustomersListService
         $avgDaysInStage = (clone $baseFilterQuery)
             ->avg(DB::raw('DATEDIFF(NOW(), updated_at)'));
 
-        // By stage - transform stage names to snake_case keys
+        // By stage (customers_hub_stages)
         $byStageRaw = DB::table('api_customers')
-            ->join('users_api_customers_stages as s', 'api_customers.stage_id', '=', 's.id')
+            ->leftJoin('customers_hub_stages as s', 'api_customers.customers_hub_stage_id', '=', 's.stage_id')
             ->where('api_customers.user_id', $userId)
-            ->groupBy('s.id', 's.stage_name')
-            ->select('s.stage_name', DB::raw('COUNT(*) as count'))
+            ->groupBy('s.stage_id', 's.stage_name_ar')
+            ->select('s.stage_id', 's.stage_name_ar as stage_name', DB::raw('COUNT(*) as count'))
             ->get();
 
         $byStage = [];
         foreach ($byStageRaw as $item) {
-            // Convert stage name to snake_case key
-            $key = strtolower(str_replace([' ', '-'], '_', $item->stage_name));
+            $key = $item->stage_id ?? 'unassigned';
             $byStage[$key] = $item->count;
         }
 
@@ -181,11 +180,15 @@ class CustomersListService
     public function getFilterOptions(int $userId): array
     {
         return [
-            'stages' => DB::table('users_api_customers_stages')
-                ->where('user_id', $userId)
+            'stages' => DB::table('customers_hub_stages')
                 ->where('is_active', true)
                 ->orderBy('order')
-                ->get(['id', 'stage_name as label', 'color', 'icon']),
+                ->get([
+                    DB::raw('stage_id as id'),
+                    'stage_name_ar as label',
+                    'stage_name_en as labelEn',
+                    'color',
+                ]),
             
             'priorities' => DB::table('users_api_customers_priorities')
                 ->where('user_id', $userId)
@@ -249,7 +252,7 @@ class CustomersListService
         }
         
         if (!empty($filters['stage']) && is_array($filters['stage'])) {
-            $query->whereIn('stage_id', $filters['stage']);
+            $query->whereIn('customers_hub_stage_id', $filters['stage']);
         }
         
         if (!empty($filters['priority']) && is_array($filters['priority'])) {
@@ -290,13 +293,15 @@ class CustomersListService
     {
         $query = DB::table('api_customers')
             ->where('api_customers.user_id', $userId)
-            ->leftJoin('users_api_customers_stages as stage', 'api_customers.stage_id', '=', 'stage.id')
+            ->leftJoin('customers_hub_stages as stage', 'api_customers.customers_hub_stage_id', '=', 'stage.stage_id')
             ->leftJoin('users_api_customers_priorities as priority', 'api_customers.priority_id', '=', 'priority.id')
             ->leftJoin('users_api_customers_types as type', 'api_customers.type_id', '=', 'type.id')
             ->leftJoin('users as employee', 'api_customers.responsible_employee_id', '=', 'employee.id')
             ->select([
                 'api_customers.*',
-                'stage.stage_name',
+                'stage.stage_id as hub_stage_id',
+                'stage.stage_name_ar as stage_name',
+                'stage.stage_name_en as stage_name_en',
                 'stage.color as stage_color',
                 'priority.name as priority_name',
                 'priority.color as priority_color',
@@ -315,7 +320,7 @@ class CustomersListService
         }
 
         if (!empty($filters['stage']) && is_array($filters['stage'])) {
-            $query->whereIn('api_customers.stage_id', $filters['stage']);
+            $query->whereIn('api_customers.customers_hub_stage_id', $filters['stage']);
         }
 
         if (!empty($filters['priority']) && is_array($filters['priority'])) {
@@ -366,9 +371,10 @@ class CustomersListService
             'email' => $customer->email,
             'source' => $customer->source,
             'stage' => [
-                'id' => $customer->stage_id,
-                'name' => $customer->stage_name,
-                'color' => $customer->stage_color,
+                'id' => $customer->hub_stage_id ?? $customer->customers_hub_stage_id ?? null,
+                'name' => $customer->stage_name ?? null,
+                'nameEn' => $customer->stage_name_en ?? null,
+                'color' => $customer->stage_color ?? null,
             ],
             'priority' => [
                 'id' => $customer->priority_id,

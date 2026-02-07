@@ -32,18 +32,28 @@ class AnalyticsController extends ApiController
     public function index(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'action' => 'nullable|in:metrics,distributions,time_series,activity',
+            'action' => 'nullable|in:metrics,distributions,time_series,activity,pipeline_health',
             'timeRange' => 'nullable|array',
             'timeRange.timeRange' => 'nullable|in:today,yesterday,last7days,last30days,thisMonth,lastMonth,thisQuarter,lastQuarter,thisYear,lastYear,custom',
+            'timeRange.range' => 'nullable|in:today,yesterday,last7days,last30days,thisMonth,lastMonth,thisQuarter,lastQuarter,thisYear,lastYear,custom',
             'timeRange.customStartDate' => 'nullable|date',
             'timeRange.customEndDate' => 'nullable|date',
             'interval' => 'nullable|in:day,week,month',
+            'filters' => 'nullable|array',
+            'filters.priority' => 'nullable|array',
+            'filters.priority.*' => 'integer',
+            'filters.source' => 'nullable|array',
+            'filters.source.*' => 'string|max:50',
         ]);
 
         $userId = $this->getTenantUserId($request);
         $action = $validated['action'] ?? 'metrics';
         $timeRange = $validated['timeRange'] ?? ['timeRange' => 'last30days'];
+        if (isset($timeRange['range']) && !isset($timeRange['timeRange'])) {
+            $timeRange['timeRange'] = $timeRange['range'];
+        }
         $interval = $validated['interval'] ?? 'day';
+        $filters = $validated['filters'] ?? [];
 
         $response = [];
 
@@ -63,6 +73,12 @@ class AnalyticsController extends ApiController
 
             case 'activity':
                 $response['activityMetrics'] = $this->analyticsService->getActivityMetrics($userId, $timeRange);
+                break;
+
+            case 'pipeline_health':
+                $pipelineResult = $this->analyticsService->getPipelineHealth($userId, $timeRange, $filters);
+                $response['pipelineHealth'] = $pipelineResult['pipelineHealth'];
+                $response['timeRange'] = $pipelineResult['timeRange'];
                 break;
 
             default:
