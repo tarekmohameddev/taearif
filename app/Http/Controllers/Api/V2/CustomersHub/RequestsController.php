@@ -85,9 +85,16 @@ class RequestsController extends ApiController
         // Get stats
         $stats = $this->aggregator->getStats($userId, $filters);
 
+        try {
+            $stages = $this->aggregator->getStageStats($userId, $filters);
+        } catch (\Throwable $e) {
+            $stages = [];
+        }
+
         return $this->success([
             'actions' => $result['items'],
             'stats' => $stats,
+            'stages' => $stages,
             'pagination' => [
                 'total' => $result['total'],
                 'limit' => $result['limit'],

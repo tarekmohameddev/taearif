@@ -5,6 +5,7 @@ namespace App\Domain\CustomersHub\Services;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
+use App\Models\CustomersHub\CustomersHubStage;
 
 /**
  * ActionsAggregatorService
@@ -143,6 +144,54 @@ class ActionsAggregatorService
             'today' => (int) ($stats->today ?? 0),
             'completed' => (int) ($stats->completed ?? 0),
         ];
+    }
+
+    /**
+     * Get stage statistics for the filtered actions (request count and percentage per stage).
+     * Returns all active Customer Hub stages; stages with 0 requests are included.
+     */
+    public function getStageStats(int $userId, array $filters = []): array
+    {
+        try {
+            $stages = CustomersHubStage::where('is_active', true)
+                ->orderBy('order')
+                ->get(['id', 'stage_id', 'stage_name_ar', 'stage_name_en', 'color', 'order']);
+
+            if ($stages->isEmpty()) {
+                return [];
+            }
+
+            $query = $this->getUnifiedQuery($userId, $filters);
+            $query->join('api_customers as ac', 'ac.id', '=', 'actions.customerId')
+                ->where('ac.user_id', $userId)
+                ->whereNotNull('ac.customers_hub_stage_id')
+                ->groupBy('ac.customers_hub_stage_id')
+                ->selectRaw('ac.customers_hub_stage_id as stage_id, COUNT(*) as request_count');
+
+            $counts = $query->get()->keyBy('stage_id');
+            $total = $counts->sum('request_count');
+
+            $result = [];
+            foreach ($stages as $stage) {
+                $row = $counts->get($stage->stage_id);
+                $requestCount = $row ? (int) $row->request_count : 0;
+                $percentage = $total > 0 ? round(($requestCount / $total) * 100, 1) : 0.0;
+
+                $result[] = [
+                    'stage_id' => $stage->stage_id,
+                    'stage_name_ar' => $stage->stage_name_ar,
+                    'stage_name_en' => $stage->stage_name_en,
+                    'color' => $stage->color,
+                    'order' => (int) $stage->order,
+                    'requestCount' => $requestCount,
+                    'percentage' => $percentage,
+                ];
+            }
+
+            return $result;
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 
     /**
