@@ -33,11 +33,11 @@ class StagesController extends ApiController
     public function index(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'active_only' => 'nullable|boolean',
+            'active_only' => 'nullable|in:true,false,1,0',
             'order_by' => 'nullable|string|in:order,created_at',
         ]);
 
-        $activeOnly = (bool) ($validated['active_only'] ?? false);
+        $activeOnly = in_array(strtolower((string) ($validated['active_only'] ?? '')), ['true', '1'], true);
         $orderBy = $validated['order_by'] ?? 'order';
 
         $result = $this->stagesService->getAll($activeOnly, $orderBy);
