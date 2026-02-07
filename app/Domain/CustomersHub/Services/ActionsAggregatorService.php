@@ -498,12 +498,12 @@ class ActionsAggregatorService
     }
 
     /**
-     * Map API priority to reminders table (0=low, 1=medium, 2=high).
+     * Map API priority to reminders table (0=low, 1=medium, 2=high). Urgent maps to high.
      */
     private function mapPriorityReminders(?string $priority): int
     {
         return match ($priority) {
-            'high' => 2,
+            'urgent', 'high' => 2,
             'medium' => 1,
             'low' => 0,
             default => 1,
@@ -511,16 +511,244 @@ class ActionsAggregatorService
     }
 
     /**
-     * Map API priority to appointments/customer_reminders (1=low, 2=medium, 3=high).
+     * Map API priority to appointments/customer_reminders (1=low, 2=medium, 3=high). Urgent maps to high.
      */
     private function mapPriorityAppointments(?string $priority): int
     {
         return match ($priority) {
-            'high' => 3,
+            'urgent', 'high' => 3,
             'medium' => 2,
             'low' => 1,
             default => 2,
         };
+    }
+
+    /**
+     * Unified bulk action dispatcher. Returns success/failed IDs and failures with reasons.
+     *
+     * @return array{success: string[], failed: string[], failures: array<int, array{actionId: string, reason: string}>, meta: array}
+     */
+    public function bulkAction(int $userId, string $action, array $actionIds, array $data): array
+    {
+        $actionIds = array_values(array_unique(array_slice($actionIds, 0, 1000)));
+        $result = ['success' => [], 'failed' => [], 'failures' => [], 'meta' => []];
+
+        $now = Carbon::now();
+        $result['meta'][$action === 'complete' ? 'completedAt' : ($action === 'dismiss' ? 'dismissedAt' : ($action === 'snooze' ? 'snoozedAt' : ($action === 'assign' ? 'assignedAt' : 'changedAt')))] = $now->toIso8601String();
+
+        switch ($action) {
+            case 'complete':
+                foreach ($actionIds as $actionId) {
+                    if (!empty($data['notes'])) {
+                        $this->addNoteToAction($userId, $actionId, $data['notes'], (string) ($data['completedBy'] ?? 'current_user'));
+                    }
+                    if ($this->completeAction($userId, $actionId)) {
+                        $result['success'][] = $actionId;
+                    } else {
+                        $result['failed'][] = $actionId;
+                        $result['failures'][] = ['actionId' => $actionId, 'reason' => 'ACTION_NOT_FOUND_OR_INVALID_STATE'];
+                    }
+                }
+                break;
+            case 'dismiss':
+                foreach ($actionIds as $actionId) {
+                    if (!empty($data['reason'])) {
+                        $this->addNoteToAction($userId, $actionId, $data['reason'], (string) ($data['dismissedBy'] ?? 'current_user'));
+                    }
+                    if ($this->dismissAction($userId, $actionId)) {
+                        $result['success'][] = $actionId;
+                    } else {
+                        $result['failed'][] = $actionId;
+                        $result['failures'][] = ['actionId' => $actionId, 'reason' => 'ACTION_NOT_FOUND_OR_INVALID_STATE'];
+                    }
+                }
+                break;
+            case 'snooze':
+                foreach ($actionIds as $actionId) {
+                    if ($this->snoozeAction($userId, $actionId, $data['snoozedUntil'], (int) $data['snoozedBy'])) {
+                        $result['success'][] = $actionId;
+                    } else {
+                        $result['failed'][] = $actionId;
+                        $result['failures'][] = ['actionId' => $actionId, 'reason' => 'SNOOZE_NOT_SUPPORTED_OR_NOT_FOUND'];
+                    }
+                }
+                break;
+            case 'assign':
+                $customerMap = $this->getCustomerIdsForActionIds($userId, $actionIds);
+                $assignedTo = (int) $data['assignedTo'];
+                foreach ($actionIds as $actionId) {
+                    $customerId = $customerMap[$actionId] ?? null;
+                    if ($customerId === null) {
+                        $result['failed'][] = $actionId;
+                        $result['failures'][] = ['actionId' => $actionId, 'reason' => 'NO_CUSTOMER'];
+                        continue;
+                    }
+                    $updated = DB::table('api_customers')
+                        ->where('id', $customerId)
+                        ->where('user_id', $userId)
+                        ->update(['responsible_employee_id' => $assignedTo, 'updated_at' => $now]);
+                    if ($updated > 0) {
+                        $result['success'][] = $actionId;
+                    } else {
+                        $result['failed'][] = $actionId;
+                        $result['failures'][] = ['actionId' => $actionId, 'reason' => 'UPDATE_FAILED'];
+                    }
+                }
+                break;
+            case 'change_priority':
+                foreach ($actionIds as $actionId) {
+                    if ($this->updateAction($userId, $actionId, ['priority' => $data['priority']])) {
+                        $result['success'][] = $actionId;
+                    } else {
+                        $result['failed'][] = $actionId;
+                        $result['failures'][] = ['actionId' => $actionId, 'reason' => 'ACTION_NOT_FOUND_OR_PRIORITY_NOT_SUPPORTED'];
+                    }
+                }
+                break;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Resolve action IDs to customer IDs (for bulk assign). Returns actionId => customerId|null.
+     *
+     * @return array<string, int|null>
+     */
+    public function getCustomerIdsForActionIds(int $userId, array $actionIds): array
+    {
+        $out = [];
+        $byTable = [];
+        foreach ($actionIds as $actionId) {
+            $parsed = $this->parseActionId($actionId);
+            if (!$parsed) {
+                $out[$actionId] = null;
+                continue;
+            }
+            $byTable[$parsed['table']][$parsed['sourceId']] = $actionId;
+        }
+
+        foreach ($byTable as $table => $idMap) {
+            $ids = array_keys($idMap);
+            if ($table === 'api_customer_inquiry') {
+                $rows = DB::table('api_customer_inquiry')
+                    ->where('user_id', $userId)
+                    ->whereIn('id', $ids)
+                    ->get(['id', 'customer_id']);
+                foreach ($rows as $r) {
+                    $actionId = $idMap[$r->id] ?? null;
+                    if ($actionId !== null) {
+                        $out[$actionId] = $r->customer_id;
+                    }
+                }
+            } elseif ($table === 'users_property_requests') {
+                $rows = DB::table('users_property_requests as upr')
+                    ->leftJoin('api_customers as ac', function ($j) {
+                        $j->on('upr.user_id', '=', 'ac.user_id')->on('upr.phone', '=', 'ac.phone_number');
+                    })
+                    ->where('upr.user_id', $userId)
+                    ->whereIn('upr.id', $ids)
+                    ->get(['upr.id', 'ac.id as customer_id']);
+                foreach ($rows as $r) {
+                    $actionId = $idMap[$r->id] ?? null;
+                    if ($actionId !== null) {
+                        $out[$actionId] = $r->customer_id;
+                    }
+                }
+            } elseif ($table === 'reminders') {
+                $rows = DB::table('reminders')
+                    ->where('user_id', $userId)
+                    ->whereIn('id', $ids)
+                    ->whereNull('deleted_at')
+                    ->get(['id', 'customer_id']);
+                foreach ($rows as $r) {
+                    $actionId = $idMap[$r->id] ?? null;
+                    if ($actionId !== null) {
+                        $out[$actionId] = $r->customer_id;
+                    }
+                }
+            } elseif ($table === 'users_api_customers_appointments') {
+                $rows = DB::table('users_api_customers_appointments')
+                    ->where('user_id', $userId)
+                    ->whereIn('id', $ids)
+                    ->get(['id', 'customer_id']);
+                foreach ($rows as $r) {
+                    $actionId = $idMap[$r->id] ?? null;
+                    if ($actionId !== null) {
+                        $out[$actionId] = $r->customer_id;
+                    }
+                }
+            } elseif ($table === 'users_api_customers_reminders') {
+                $rows = DB::table('users_api_customers_reminders')
+                    ->where('user_id', $userId)
+                    ->whereIn('id', $ids)
+                    ->get(['id', 'customer_id']);
+                foreach ($rows as $r) {
+                    $actionId = $idMap[$r->id] ?? null;
+                    if ($actionId !== null) {
+                        $out[$actionId] = $r->customer_id;
+                    }
+                }
+            }
+        }
+
+        foreach ($actionIds as $actionId) {
+            if (!array_key_exists($actionId, $out)) {
+                $out[$actionId] = null;
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Snooze a single action (reminders, users_api_customers_reminders, users_api_customers_appointments only).
+     */
+    private function snoozeAction(int $userId, string $actionId, string $snoozedUntil, int $snoozedBy): bool
+    {
+        $parsed = $this->parseActionId($actionId);
+        if (!$parsed) {
+            return false;
+        }
+        $until = Carbon::parse($snoozedUntil);
+        $now = Carbon::now();
+
+        switch ($parsed['table']) {
+            case 'reminders':
+                return DB::table('reminders')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->whereNull('deleted_at')
+                    ->update([
+                        'snoozed_until' => $until,
+                        'snoozed_at' => $now,
+                        'snoozed_by' => $snoozedBy,
+                        'updated_at' => $now,
+                    ]) > 0;
+            case 'users_api_customers_reminders':
+                return DB::table('users_api_customers_reminders')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->update([
+                        'snoozed_until' => $until,
+                        'snoozed_at' => $now,
+                        'snoozed_by' => $snoozedBy,
+                        'updated_at' => $now,
+                    ]) > 0;
+            case 'users_api_customers_appointments':
+                return DB::table('users_api_customers_appointments')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->update([
+                        'snoozed_until' => $until,
+                        'snoozed_at' => $now,
+                        'snoozed_by' => $snoozedBy,
+                        'updated_at' => $now,
+                    ]) > 0;
+            case 'api_customer_inquiry':
+            case 'users_property_requests':
+                return false;
+        }
+        return false;
     }
 
     /**
@@ -696,13 +924,14 @@ class ActionsAggregatorService
                     ELSE 'low'
                 END as priority"),
                 DB::raw("CASE
+                    WHEN r.snoozed_until IS NOT NULL AND r.snoozed_until > NOW() THEN 'snoozed'
                     WHEN r.status = 'completed' THEN 'completed'
                     WHEN r.status = 'cancelled' THEN 'dismissed'
                     ELSE 'pending'
                 END as status"),
                 DB::raw("'manual' as source"),
                 'r.datetime as dueDate',
-                DB::raw("NULL as snoozedUntil"),
+                'r.snoozed_until as snoozedUntil',
                 'r.created_at as createdAt',
                 DB::raw("CASE WHEN r.status = 'completed' THEN r.updated_at ELSE NULL END as completedAt"),
                 DB::raw("NULL as completedBy"),
@@ -742,10 +971,14 @@ class ActionsAggregatorService
                     WHEN 2 THEN 'medium'
                     ELSE 'low'
                 END as priority"),
-                DB::raw("CASE WHEN a.datetime < NOW() THEN 'completed' ELSE 'pending' END as status"),
+                DB::raw("CASE
+                    WHEN a.snoozed_until IS NOT NULL AND a.snoozed_until > NOW() THEN 'snoozed'
+                    WHEN a.datetime < NOW() THEN 'completed'
+                    ELSE 'pending'
+                END as status"),
                 DB::raw("'manual' as source"),
                 'a.datetime as dueDate',
-                DB::raw("NULL as snoozedUntil"),
+                'a.snoozed_until as snoozedUntil',
                 'a.created_at as createdAt',
                 DB::raw("CASE WHEN a.datetime < NOW() THEN a.updated_at ELSE NULL END as completedAt"),
                 DB::raw("NULL as completedBy"),
@@ -785,10 +1018,13 @@ class ActionsAggregatorService
                     WHEN 2 THEN 'medium'
                     ELSE 'low'
                 END as priority"),
-                DB::raw("'pending' as status"),
+                DB::raw("CASE
+                    WHEN cr.snoozed_until IS NOT NULL AND cr.snoozed_until > NOW() THEN 'snoozed'
+                    ELSE 'pending'
+                END as status"),
                 DB::raw("'manual' as source"),
                 'cr.datetime as dueDate',
-                DB::raw("NULL as snoozedUntil"),
+                'cr.snoozed_until as snoozedUntil',
                 'cr.created_at as createdAt',
                 DB::raw("NULL as completedAt"),
                 DB::raw("NULL as completedBy"),

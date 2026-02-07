@@ -1089,7 +1089,8 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
         // Filter options (cached)
         Route::get('/filter-options', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'filterOptions']);
 
-        // Bulk operations
+        // Bulk operations (unified endpoint - must be before /{requestId})
+        Route::post('/bulk', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'bulk']);
         Route::post('/bulk-complete', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'bulkComplete']);
         Route::post('/bulk-dismiss', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'bulkDismiss']);
 

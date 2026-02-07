@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Cache;
  * - POST /api/v2/customers-hub/requests/{requestId}/notes
  * - POST /api/v2/customers-hub/requests/{requestId}/complete
  * - POST /api/v2/customers-hub/requests/{requestId}/dismiss
+ * - POST /api/v2/customers-hub/requests/bulk
  * - POST /api/v2/customers-hub/requests/bulk-complete
  * - POST /api/v2/customers-hub/requests/bulk-dismiss
  */
@@ -50,7 +51,7 @@ class RequestsController extends ApiController
             'types' => 'nullable|array',
             'types.*' => 'string|in:new_inquiry,callback_request,whatsapp_incoming,property_match,follow_up,site_visit',
             'statuses' => 'nullable|array',
-            'statuses.*' => 'string|in:pending,in_progress,completed,dismissed',
+            'statuses.*' => 'string|in:pending,in_progress,completed,dismissed,snoozed',
             'sources' => 'nullable|array',
             'sources.*' => 'string|in:inquiry,manual,whatsapp,import,referral,property_request',
             'priorities' => 'nullable|array',
@@ -122,6 +123,7 @@ class RequestsController extends ApiController
             $statuses = [
                 ['id' => 'pending', 'label' => 'قيد الانتظار', 'labelEn' => 'Pending'],
                 ['id' => 'in_progress', 'label' => 'قيد التنفيذ', 'labelEn' => 'In Progress'],
+                ['id' => 'snoozed', 'label' => 'مؤجل', 'labelEn' => 'Snoozed'],
                 ['id' => 'completed', 'label' => 'مكتمل', 'labelEn' => 'Completed'],
                 ['id' => 'dismissed', 'label' => 'مرفوض', 'labelEn' => 'Dismissed'],
             ];
@@ -381,6 +383,194 @@ class RequestsController extends ApiController
             'message' => 'Note added successfully',
             'actionId' => $requestId,
         ]);
+    }
+
+    /**
+     * POST /api/v2/customers-hub/requests/bulk
+     *
+     * Unified bulk actions: complete, dismiss, snooze, assign, change_priority.
+     */
+    public function bulk(Request $request): JsonResponse
+    {
+        $baseRules = [
+            'action' => 'required|string|in:complete,dismiss,snooze,assign,change_priority',
+            'actionIds' => 'required|array|min:1|max:1000',
+            'actionIds.*' => 'string',
+            'data' => 'required|array',
+        ];
+        $validated = $request->validate($baseRules);
+        $userId = $this->getTenantUserId($request);
+        $action = $validated['action'];
+        $data = $validated['data'];
+
+        // Action-specific validation
+        $employeeIdRules = ['nullable', 'integer', function ($attr, $value, $fail) use ($userId) {
+            if ($value === null) return;
+            if (!$this->isValidTenantUserOrEmployee($userId, (int) $value)) {
+                $fail(__('validation.exists', ['attribute' => $attr]));
+            }
+        }];
+        $requiredEmployeeRule = ['required', 'integer', function ($attr, $value, $fail) use ($userId) {
+            if (!$this->isValidTenantUserOrEmployee($userId, (int) $value)) {
+                $fail(__('validation.exists', ['attribute' => $attr]));
+            }
+        }];
+
+        if ($action === 'complete') {
+            $request->validate(['data.completedBy' => $requiredEmployeeRule, 'data.notes' => 'nullable|string']);
+        } elseif ($action === 'dismiss') {
+            $request->validate(['data.dismissedBy' => $requiredEmployeeRule, 'data.reason' => 'nullable|string']);
+        } elseif ($action === 'snooze') {
+            $request->validate([
+                'data.snoozedUntil' => 'required|date|after:now',
+                'data.snoozedBy' => $requiredEmployeeRule,
+                'data.reason' => 'nullable|string',
+            ]);
+        } elseif ($action === 'assign') {
+            $request->validate([
+                'data.assignedTo' => $requiredEmployeeRule,
+                'data.assignedBy' => $requiredEmployeeRule,
+            ]);
+        } elseif ($action === 'change_priority') {
+            $request->validate([
+                'data.priority' => 'required|in:urgent,high,medium,low',
+                'data.changedBy' => $requiredEmployeeRule,
+            ]);
+        }
+
+        $result = $this->aggregator->bulkAction($userId, $action, $validated['actionIds'], $data);
+        $this->invalidateFilterOptionsCache($userId);
+
+        $successIds = $result['success'];
+        $failedIds = $result['failed'];
+        $failures = $result['failures'] ?? [];
+        $meta = $result['meta'] ?? [];
+        $successCount = count($successIds);
+        $failedCount = count($failedIds);
+
+        $httpStatus = $failedCount > 0 && $successCount > 0 ? 207 : ($successCount > 0 ? 200 : ($failedCount > 0 ? 404 : 422));
+        $responseStatus = $failedCount > 0 && $successCount > 0 ? 'partial_success' : ($successCount > 0 ? 'success' : 'error');
+        $message = $this->bulkResponseMessage($action, $successCount, $failedCount, $responseStatus);
+
+        $responseData = [
+            'action' => $action,
+            'updatedCount' => $successCount,
+            'successCount' => $successCount,
+            'failedCount' => $failedCount,
+            'actionIds' => $successIds,
+            'failedActionIds' => $failedIds,
+            'failures' => $failures,
+        ];
+
+        $responseData = array_merge($responseData, $this->bulkResponseMeta($action, $data, $meta));
+        $timestamp = now()->toIso8601String();
+
+        return response()->json([
+            'status' => $responseStatus,
+            'code' => $httpStatus,
+            'message' => $message,
+            'data' => $responseData,
+            'timestamp' => $timestamp,
+        ], $httpStatus);
+    }
+
+    /**
+     * Build human-readable message for bulk response.
+     */
+    private function bulkResponseMessage(string $action, int $successCount, int $failedCount, string $responseStatus): string
+    {
+        if ($responseStatus === 'error') {
+            return $failedCount > 0 ? __('Bulk operation failed for all actions.') : __('Validation failed.');
+        }
+        $actionMessages = [
+            'complete' => ['تم إكمال %d إجراء بنجاح', 'تم إكمال %d إجراءات بنجاح'],
+            'dismiss' => ['تم رفض إجراء واحد بنجاح', 'تم رفض %d إجراءات بنجاح'],
+            'snooze' => ['تم تأجيل إجراء واحد بنجاح', 'تم تأجيل %d إجراءات بنجاح'],
+            'assign' => ['تم تعيين إجراء واحد بنجاح', 'تم تعيين %d إجراءات بنجاح'],
+            'change_priority' => ['تم تغيير أولوية إجراء واحد بنجاح', 'تم تغيير أولوية %d إجراءات بنجاح'],
+        ];
+        $tpl = $actionMessages[$action] ?? ['%d action(s) processed', '%d actions processed'];
+        $msg = $successCount === 1 ? $tpl[0] : sprintf($tpl[1], $successCount);
+        if ($failedCount > 0) {
+            $msg .= '، ' . sprintf(__('%d failed'), $failedCount);
+        }
+        return $msg;
+    }
+
+    /**
+     * Add operation-specific meta (completedBy, dismissedBy, etc.) to response data.
+     */
+    private function bulkResponseMeta(string $action, array $data, array $meta): array
+    {
+        $out = [];
+        $userId = null;
+        $fieldMap = [
+            'complete' => ['completedBy', 'completedAt'],
+            'dismiss' => ['dismissedBy', 'dismissedAt'],
+            'snooze' => ['snoozedBy', 'snoozedAt', 'snoozedUntil', 'reason'],
+            'assign' => ['assignedTo', 'assignedBy', 'assignedAt'],
+            'change_priority' => ['changedBy', 'changedAt', 'priority'],
+        ];
+        $userFields = ['complete' => 'completedBy', 'dismiss' => 'dismissedBy', 'snooze' => 'snoozedBy', 'assign' => ['assignedTo', 'assignedBy'], 'change_priority' => 'changedBy'];
+        $now = now()->toIso8601String();
+        if ($action === 'complete') {
+            $id = $data['completedBy'] ?? null;
+            if ($id) {
+                $u = User::find($id);
+                $out['completedBy'] = $u ? ['id' => $u->id, 'name' => trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? ''))] : null;
+            }
+            $out['completedAt'] = $meta['completedAt'] ?? $now;
+        } elseif ($action === 'dismiss') {
+            $id = $data['dismissedBy'] ?? null;
+            if ($id) {
+                $u = User::find($id);
+                $out['dismissedBy'] = $u ? ['id' => $u->id, 'name' => trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? ''))] : null;
+            }
+            $out['dismissedAt'] = $meta['dismissedAt'] ?? $now;
+            if (isset($data['reason'])) $out['reason'] = $data['reason'];
+        } elseif ($action === 'snooze') {
+            $id = $data['snoozedBy'] ?? null;
+            if ($id) {
+                $u = User::find($id);
+                $out['snoozedBy'] = $u ? ['id' => $u->id, 'name' => trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? ''))] : null;
+            }
+            $out['snoozedAt'] = $meta['snoozedAt'] ?? $now;
+            $out['snoozedUntil'] = $data['snoozedUntil'] ?? null;
+            if (isset($data['reason'])) $out['reason'] = $data['reason'];
+        } elseif ($action === 'assign') {
+            foreach (['assignedTo', 'assignedBy'] as $f) {
+                $id = $data[$f] ?? null;
+                if ($id) {
+                    $u = User::find($id);
+                    $out[$f] = $u ? ['id' => $u->id, 'name' => trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? '')), 'email' => $u->email ?? null] : null;
+                }
+            }
+            $out['assignedAt'] = $meta['assignedAt'] ?? $now;
+        } elseif ($action === 'change_priority') {
+            $id = $data['changedBy'] ?? null;
+            if ($id) {
+                $u = User::find($id);
+                $out['changedBy'] = $u ? ['id' => $u->id, 'name' => trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? ''))] : null;
+            }
+            $out['changedAt'] = $meta['changedAt'] ?? $now;
+            $out['priority'] = $data['priority'] ?? null;
+        }
+        return $out;
+    }
+
+    /**
+     * Check that the given user ID is the tenant owner or an active employee of the tenant.
+     */
+    private function isValidTenantUserOrEmployee(int $tenantUserId, int $employeeId): bool
+    {
+        if ($employeeId === $tenantUserId) {
+            return true;
+        }
+        return User::where('id', $employeeId)
+            ->where('tenant_id', $tenantUserId)
+            ->where('account_type', 'employee')
+            ->where('active', true)
+            ->exists();
     }
 
     /**
