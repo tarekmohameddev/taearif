@@ -2724,7 +2724,8 @@ class PropertyController extends Controller
         $allowedFields = [
             'id', 'visits', 'title', 'address', 'slug', 'price', 'type', 'beds', 'bath',
             'area', 'transaction_type', 'features', 'status', 'featured_image', 'featured',
-            'show_reservations', 'created_at', 'updated_at', 'payment_method', 'creator'
+            'show_reservations', 'created_at', 'updated_at', 'payment_method', 'creator',
+            'latitude', 'longitude'
         ];
 
         $fieldsToInclude = null;
@@ -2786,6 +2787,8 @@ class PropertyController extends Controller
                 'created_at'       => $property->created_at->toISOString(),
                 'updated_at'       => $property->updated_at->toISOString(),
                 'payment_method'   => $property->payment_method,
+                'latitude'         => $property->latitude !== null ? (float) $property->latitude : null,
+                'longitude'        => $property->longitude !== null ? (float) $property->longitude : null,
                 'project'          => $projectData,
                 'creator' => $property->creator ? [
                     'id'   => $property->creator->id,
