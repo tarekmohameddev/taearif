@@ -260,6 +260,7 @@ class UserApiCustomerReminderController extends Controller
 
         // Always set user_id to tenantOwnerId (users cannot create default reminders)
         $validated['user_id'] = $tenantId;
+        $validated['source'] = $request->input('source', 'manual');
 
         try {
             $reminder = DB::transaction(function () use ($validated) {

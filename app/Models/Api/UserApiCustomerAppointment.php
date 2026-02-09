@@ -13,6 +13,7 @@ class UserApiCustomerAppointment extends Model
     protected $table = 'users_api_customers_appointments';
     protected $fillable = [
         'user_id',
+        'source',
         'customer_id',
         'title',
         'type', // e.g., meeting, call, follow-up

@@ -35,6 +35,7 @@ class UserPropertyRequest extends Model
 // wants_similar_offers purchase_method region
     protected $fillable = [
         'user_id',
+        'source',
         'region', // nullable
         'purpose',
         'property_type',

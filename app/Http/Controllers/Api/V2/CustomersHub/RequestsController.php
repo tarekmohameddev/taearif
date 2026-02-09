@@ -59,6 +59,7 @@ class RequestsController extends ApiController
             'states' => $request->input('selectedStates') ?? $request->input('states'),
             'budget_min' => $request->input('budgetMin') ?? $request->input('budget_min'),
             'budget_max' => $request->input('budgetMax') ?? $request->input('budget_max'),
+            'objectTypes' => $request->input('selectedObjectTypes') ?? $request->input('objectTypes'),
         ]);
 
         $validated = $request->validate([
@@ -92,6 +93,8 @@ class RequestsController extends ApiController
             'sort_dir' => 'nullable|in:asc,desc',
             'limit' => 'nullable|integer|min:1|max:100',
             'offset' => 'nullable|integer|min:0',
+            'objectTypes' => 'nullable|array',
+            'objectTypes.*' => 'string|in:inquiry,property_request,reminder,appointment,customer_reminder',
         ]);
 
         $userId = $this->getTenantUserId($request);
@@ -182,6 +185,15 @@ class RequestsController extends ApiController
                 ['id' => 'no_date', 'label' => 'بدون موعد', 'labelEn' => 'No Date'],
             ];
 
+            // Object types (for filtering by kind of record)
+            $objectTypes = [
+                ['id' => 'inquiry', 'label' => 'استفسار', 'labelEn' => 'Inquiry'],
+                ['id' => 'property_request', 'label' => 'طلب عقار', 'labelEn' => 'Property Request'],
+                ['id' => 'reminder', 'label' => 'تذكير', 'labelEn' => 'Reminder'],
+                ['id' => 'appointment', 'label' => 'موعد', 'labelEn' => 'Appointment'],
+                ['id' => 'customer_reminder', 'label' => 'تذكير عميل', 'labelEn' => 'Customer Reminder'],
+            ];
+
             // Customer stages (user-defined)
             $stages = UserApiCustomerStage::where('user_id', $userId)
                 ->where('is_active', true)
@@ -214,6 +226,7 @@ class RequestsController extends ApiController
                 'statuses' => $statuses,
                 'priorities' => $priorities,
                 'sources' => $sources,
+                'objectTypes' => $objectTypes,
                 'dueDateBuckets' => $dueDateBuckets,
                 'stages' => $stages,
                 'customerTypes' => $customerTypes,

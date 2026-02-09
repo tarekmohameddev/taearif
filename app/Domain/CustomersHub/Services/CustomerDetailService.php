@@ -179,6 +179,7 @@ class CustomerDetailService
             'status' => 'pending',
             'priority' => $data['priority'] ?? 0,
             'reminder_type_id' => 1, // Default reminder type
+            'source' => $data['source'] ?? 'manual',
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),
         ]);

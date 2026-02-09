@@ -170,6 +170,8 @@ class PropertyRequestController extends Controller
 
         $validated['contact_on_whatsapp']  = $request->boolean('contact_on_whatsapp', true);
 
+        $validated['source'] = 'manual';
+
         UserPropertyRequest::create($validated);
 
         return back()->with('success', 'تم إرسال الطلب بنجاح، سنقوم بالتواصل معك قريبًا.');

@@ -873,6 +873,7 @@ class ActionsAggregatorService
                     ELSE 'pending'
                 END as status"),
                 DB::raw("COALESCE(ac.source, 'inquiry') as source"),
+                DB::raw("'inquiry' as objectType"),
                 DB::raw("NULL as dueDate"),
                 DB::raw("NULL as snoozedUntil"),
                 'aci.created_at as createdAt',
@@ -930,7 +931,8 @@ class ActionsAggregatorService
                     WHEN upr.is_read = 1 THEN 'in_progress'
                     ELSE 'pending'
                 END as status"),
-                DB::raw("'property_request' as source"),
+                DB::raw("COALESCE(upr.source, 'website') as source"),
+                DB::raw("'property_request' as objectType"),
                 DB::raw("NULL as dueDate"),
                 DB::raw("NULL as snoozedUntil"),
                 'upr.created_at as createdAt',
@@ -987,7 +989,8 @@ class ActionsAggregatorService
                     WHEN r.status = 'cancelled' THEN 'dismissed'
                     ELSE 'pending'
                 END as status"),
-                DB::raw("'manual' as source"),
+                DB::raw("COALESCE(r.source, 'manual') as source"),
+                DB::raw("'reminder' as objectType"),
                 'r.datetime as dueDate',
                 'r.snoozed_until as snoozedUntil',
                 'r.created_at as createdAt',
@@ -1038,7 +1041,8 @@ class ActionsAggregatorService
                     WHEN a.datetime < NOW() THEN 'completed'
                     ELSE 'pending'
                 END as status"),
-                DB::raw("'manual' as source"),
+                DB::raw("COALESCE(a.source, 'manual') as source"),
+                DB::raw("'appointment' as objectType"),
                 'a.datetime as dueDate',
                 'a.snoozed_until as snoozedUntil',
                 'a.created_at as createdAt',
@@ -1088,7 +1092,8 @@ class ActionsAggregatorService
                     WHEN cr.snoozed_until IS NOT NULL AND cr.snoozed_until > NOW() THEN 'snoozed'
                     ELSE 'pending'
                 END as status"),
-                DB::raw("'manual' as source"),
+                DB::raw("COALESCE(cr.source, 'manual') as source"),
+                DB::raw("'customer_reminder' as objectType"),
                 'cr.datetime as dueDate',
                 'cr.snoozed_until as snoozedUntil',
                 'cr.created_at as createdAt',
@@ -1147,6 +1152,11 @@ class ActionsAggregatorService
         // Sources filter
         if (!empty($filters['sources']) && is_array($filters['sources'])) {
             $query->whereIn('source', $filters['sources']);
+        }
+
+        // Object types filter
+        if (!empty($filters['objectTypes']) && is_array($filters['objectTypes'])) {
+            $query->whereIn('objectType', $filters['objectTypes']);
         }
 
         // Priorities filter
@@ -1321,7 +1331,8 @@ class ActionsAggregatorService
             'description' => $item->description,
             'priority' => $item->priority,
             'status' => $item->status,
-            'source' => $item->source,
+            'source' => $item->source ?? '',
+            'objectType' => $item->objectType ?? '',
             'dueDate' => $item->dueDate ? Carbon::parse($item->dueDate)->toIso8601String() : null,
             'snoozedUntil' => $item->snoozedUntil ? Carbon::parse($item->snoozedUntil)->toIso8601String() : null,
             'createdAt' => $item->createdAt ? Carbon::parse($item->createdAt)->toIso8601String() : null,

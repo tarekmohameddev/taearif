@@ -23,6 +23,7 @@ class UserApiCustomerReminder extends Model
      */
     protected $fillable = [
         'user_id',
+        'source',
         'customer_id',
         'title',
         'priority',

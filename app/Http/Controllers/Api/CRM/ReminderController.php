@@ -125,6 +125,8 @@ class ReminderController extends Controller
                 $validated['priority'] = 1; // Medium
             }
 
+            $validated['source'] = $validated['source'] ?? 'manual';
+
             $reminder = $this->repository->create($validated);
             
             // Refresh with relationships
