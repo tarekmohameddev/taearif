@@ -46,6 +46,21 @@ class RequestsController extends ApiController
      */
     public function list(Request $request): JsonResponse
     {
+        // Normalize frontend parameter names so both naming conventions work
+        $request->merge([
+            'tab' => $request->input('activeTab') ?? $request->input('tab'),
+            'types' => $request->input('selectedTypes') ?? $request->input('types'),
+            'sources' => $request->input('selectedSources') ?? $request->input('sources'),
+            'priorities' => $request->input('selectedPriorities') ?? $request->input('priorities'),
+            'assignees' => $request->input('selectedAssignees') ?? $request->input('assignees'),
+            'due_date_bucket' => $request->input('dueDateFilter') ?? $request->input('due_date_bucket'),
+            'property_categories' => $request->input('selectedPropertyTypes') ?? $request->input('property_categories'),
+            'cities' => $request->input('selectedCities') ?? $request->input('cities'),
+            'states' => $request->input('selectedStates') ?? $request->input('states'),
+            'budget_min' => $request->input('budgetMin') ?? $request->input('budget_min'),
+            'budget_max' => $request->input('budgetMax') ?? $request->input('budget_max'),
+        ]);
+
         $validated = $request->validate([
             'tab' => 'nullable|in:inbox,followups,all,completed',
             'types' => 'nullable|array',
@@ -64,6 +79,12 @@ class RequestsController extends ApiController
             'property_categories.*' => 'string',
             'property_types' => 'nullable|array',
             'property_types.*' => 'string',
+            'cities' => 'nullable|array',
+            'cities.*' => 'string',
+            'states' => 'nullable|array',
+            'states.*' => 'string',
+            'budget_min' => 'nullable|numeric|min:0',
+            'budget_max' => 'nullable|numeric|min:0',
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date',
             'search' => 'nullable|string|max:255',

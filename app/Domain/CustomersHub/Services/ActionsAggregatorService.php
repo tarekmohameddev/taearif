@@ -895,6 +895,10 @@ class ActionsAggregatorService
                 'aci.user_id as userId',
                 'aci.property_type as propertyCategory',
                 DB::raw("NULL as propertyType"),
+                'aci.city as city',
+                'aci.region_name as state',
+                'aci.budget as budgetMin',
+                'aci.budget as budgetMax',
             ]);
     }
 
@@ -908,6 +912,7 @@ class ActionsAggregatorService
                 $join->on('upr.user_id', '=', 'ac.user_id')
                     ->on('upr.phone', '=', 'ac.phone_number');
             })
+            ->leftJoin('user_cities as uc', 'upr.city_id', '=', 'uc.id')
             ->leftJoin('users as u2', 'ac.responsible_employee_id', '=', 'u2.id')
             ->where('upr.user_id', $userId)
             ->where('upr.is_active', 1)
@@ -947,6 +952,10 @@ class ActionsAggregatorService
                 'upr.user_id as userId',
                 'upr.category_id as propertyCategory',
                 'upr.property_type as propertyType',
+                DB::raw('uc.name_ar as city'),
+                'upr.region as state',
+                'upr.budget_from as budgetMin',
+                'upr.budget_to as budgetMax',
             ]);
     }
 
@@ -996,6 +1005,10 @@ class ActionsAggregatorService
                 'r.user_id as userId',
                 DB::raw("NULL as propertyCategory"),
                 DB::raw("NULL as propertyType"),
+                DB::raw("NULL as city"),
+                DB::raw("NULL as state"),
+                DB::raw("NULL as budgetMin"),
+                DB::raw("NULL as budgetMax"),
             ]);
     }
 
@@ -1043,6 +1056,10 @@ class ActionsAggregatorService
                 'a.user_id as userId',
                 DB::raw("NULL as propertyCategory"),
                 DB::raw("NULL as propertyType"),
+                DB::raw("NULL as city"),
+                DB::raw("NULL as state"),
+                DB::raw("NULL as budgetMin"),
+                DB::raw("NULL as budgetMax"),
             ]);
     }
 
@@ -1085,6 +1102,10 @@ class ActionsAggregatorService
                 'cr.user_id as userId',
                 DB::raw("NULL as propertyCategory"),
                 DB::raw("NULL as propertyType"),
+                DB::raw("NULL as city"),
+                DB::raw("NULL as state"),
+                DB::raw("NULL as budgetMin"),
+                DB::raw("NULL as budgetMax"),
             ]);
     }
 
@@ -1197,6 +1218,37 @@ class ActionsAggregatorService
                     ->orWhere('customerPhone', 'like', $search);
             });
         }
+
+        // Cities filter (request-level)
+        if (!empty($filters['cities']) && is_array($filters['cities'])) {
+            $query->whereIn('city', $filters['cities']);
+        }
+
+        // States filter (request-level)
+        if (!empty($filters['states']) && is_array($filters['states'])) {
+            $query->whereIn('state', $filters['states']);
+        }
+
+        // Budget range filter: request's budget range overlaps [budget_min, budget_max]
+        $budgetMin = isset($filters['budget_min']) && $filters['budget_min'] !== '' ? (float) $filters['budget_min'] : null;
+        $budgetMax = isset($filters['budget_max']) && $filters['budget_max'] !== '' ? (float) $filters['budget_max'] : null;
+        if ($budgetMin !== null || $budgetMax !== null) {
+            $query->where(function ($q) use ($budgetMin, $budgetMax) {
+                $q->whereNotNull('budgetMin');
+                if ($budgetMin !== null && $budgetMax !== null) {
+                    $q->where('budgetMin', '<=', $budgetMax)
+                        ->where(function ($q2) use ($budgetMin) {
+                            $q2->where('budgetMax', '>=', $budgetMin)->orWhereNull('budgetMax');
+                        });
+                } elseif ($budgetMin !== null) {
+                    $q->where(function ($q2) use ($budgetMin) {
+                        $q2->where('budgetMax', '>=', $budgetMin)->orWhereNull('budgetMax');
+                    });
+                } else {
+                    $q->where('budgetMin', '<=', $budgetMax);
+                }
+            });
+        }
     }
 
     /**
@@ -1279,6 +1331,10 @@ class ActionsAggregatorService
             'assignedToName' => trim($item->assignedToName ?? ''),
             'propertyCategory' => $item->propertyCategory ?? null,
             'propertyType' => $item->propertyType ?? null,
+            'city' => $item->city ?? null,
+            'state' => $item->state ?? null,
+            'budgetMin' => isset($item->budgetMin) && $item->budgetMin !== null ? (float) $item->budgetMin : null,
+            'budgetMax' => isset($item->budgetMax) && $item->budgetMax !== null ? (float) $item->budgetMax : null,
             'metadata' => $metadata,
             'sourceTable' => $item->sourceTable,
             'sourceId' => $item->sourceId,
