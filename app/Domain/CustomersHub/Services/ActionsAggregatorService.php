@@ -1262,36 +1262,70 @@ class ActionsAggregatorService
     }
 
     /**
-     * Enrich action items with customer hub stage (stage_id and stage object).
+     * Enrich action items with stage (stage_id and stage object).
+     * For property_request items uses pipeline stage (users_property_requests.status_id → property_request_statuses).
+     * For other items uses customer hub stage (api_customers.customers_hub_stage_id → customers_hub_stages).
      */
     private function enrichItemsWithHubStage(Collection $items, int $userId): Collection
     {
-        $customerIds = $items->pluck('customerId')->filter()->unique()->values()->all();
-        if (empty($customerIds)) {
-            return $items->map(function ($item) {
-                $item->stage_id = null;
-                $item->stage = null;
-                return $item;
-            });
+        $items = $items->values();
+        $propertyRequestIds = $items->filter(function ($item) {
+            return ($item->sourceTable ?? '') === 'users_property_requests';
+        })->pluck('sourceId')->filter()->unique()->values()->all();
+
+        // Pipeline stage for property_request items (property_request_statuses)
+        $requestStageMap = [];
+        if (!empty($propertyRequestIds)) {
+            $requestStatuses = DB::table('users_property_requests')
+                ->where('user_id', $userId)
+                ->whereIn('id', $propertyRequestIds)
+                ->get(['id', 'status_id']);
+            $statusIds = $requestStatuses->pluck('status_id')->filter()->unique()->values()->all();
+            if (!empty($statusIds)) {
+                $stages = DB::table('property_request_statuses')
+                    ->whereIn('id', $statusIds)
+                    ->where('is_active', true)
+                    ->get(['id', 'name_ar', 'name_en']);
+                $stageById = $stages->keyBy('id');
+                foreach ($requestStatuses as $row) {
+                    if ($row->status_id === null) {
+                        $requestStageMap[$row->id] = null;
+                        continue;
+                    }
+                    $s = $stageById->get($row->status_id);
+                    $requestStageMap[$row->id] = $s ? (object) [
+                        'id' => (int) $s->id,
+                        'nameAr' => $s->name_ar,
+                        'nameEn' => $s->name_en ?? $s->name_ar,
+                    ] : null;
+                }
+            }
         }
 
-        $customerStageIds = DB::table('api_customers')
-            ->whereIn('id', $customerIds)
-            ->where('user_id', $userId)
-            ->get(['id', 'customers_hub_stage_id']);
+        // Customer hub stage for non–property_request items
+        $customerIds = $items->reject(function ($item) {
+            return ($item->sourceTable ?? '') === 'users_property_requests';
+        })->pluck('customerId')->filter()->unique()->values()->all();
 
-        $stageIds = $customerStageIds->pluck('customers_hub_stage_id')->filter()->unique()->values()->all();
+        $customerStageIds = [];
         $stageRows = [];
-        if (!empty($stageIds)) {
-            $stages = DB::table('customers_hub_stages')->whereIn('stage_id', $stageIds)->get();
-            foreach ($stages as $s) {
-                $stageRows[$s->stage_id] = (object) [
-                    'stage_id' => $s->stage_id,
-                    'stage_name_ar' => $s->stage_name_ar,
-                    'stage_name_en' => $s->stage_name_en,
-                    'color' => $s->color,
-                    'order' => (int) $s->order,
-                ];
+        if (!empty($customerIds)) {
+            $customerStageIds = DB::table('api_customers')
+                ->whereIn('id', $customerIds)
+                ->where('user_id', $userId)
+                ->get(['id', 'customers_hub_stage_id']);
+            $stageIds = $customerStageIds->pluck('customers_hub_stage_id')->filter()->unique()->values()->all();
+            if (!empty($stageIds)) {
+                $stages = DB::table('customers_hub_stages')->whereIn('stage_id', $stageIds)->get();
+                foreach ($stages as $s) {
+                    $stageRows[$s->stage_id] = (object) [
+                        'stage_id' => $s->stage_id,
+                        'stage_name_ar' => $s->stage_name_ar,
+                        'stage_name_en' => $s->stage_name_en,
+                        'color' => $s->color,
+                        'order' => (int) $s->order,
+                    ];
+                }
             }
         }
 
@@ -1302,7 +1336,13 @@ class ActionsAggregatorService
                 : null;
         }
 
-        return $items->map(function ($item) use ($customerStages) {
+        return $items->map(function ($item) use ($requestStageMap, $customerStages) {
+            if (($item->sourceTable ?? '') === 'users_property_requests') {
+                $stageData = $requestStageMap[$item->sourceId] ?? null;
+                $item->stage_id = $stageData ? $stageData->id : null;
+                $item->stage = $stageData;
+                return $item;
+            }
             $stageData = $customerStages[$item->customerId] ?? null;
             $item->stage_id = $stageData ? $stageData->stage_id : null;
             $item->stage = $stageData;
