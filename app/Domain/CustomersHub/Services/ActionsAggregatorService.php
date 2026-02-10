@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
 use App\Models\CustomersHub\CustomersHubStage;
+use App\Models\PropertyRequestStatus;
 
 /**
  * ActionsAggregatorService
@@ -149,9 +150,15 @@ class ActionsAggregatorService
     /**
      * Get stage statistics for the filtered actions (request count and percentage per stage).
      * Returns all active Customer Hub stages; stages with 0 requests are included.
+     * When objectTypes is only ['property_request'], uses property request status pipeline instead.
      */
     public function getStageStats(int $userId, array $filters = []): array
     {
+        $objectTypes = $filters['objectTypes'] ?? null;
+        if (is_array($objectTypes) && count($objectTypes) === 1 && $objectTypes[0] === 'property_request') {
+            return $this->getPropertyRequestStageStats($userId, $filters);
+        }
+
         try {
             $stages = CustomersHubStage::where('is_active', true)
                 ->orderBy('order')
@@ -192,6 +199,268 @@ class ActionsAggregatorService
         } catch (\Throwable $e) {
             return [];
         }
+    }
+
+    /**
+     * Get stage statistics for property-request-only list: count by users_property_requests.status_id.
+     * Applies same filters as list; returns property_request_statuses with requestCount and percentage.
+     */
+    private function getPropertyRequestStageStats(int $userId, array $filters): array
+    {
+        try {
+            [$counts, $total] = $this->getPropertyRequestStageCounts($userId, $filters);
+            return $this->buildPropertyRequestStagesArray($counts, $total);
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Build base query on users_property_requests, apply filters, return counts by status_id and total.
+     *
+     * @return array{0: \Illuminate\Support\Collection, 1: int} [counts keyed by status_id, total]
+     */
+    private function getPropertyRequestStageCounts(int $userId, array $filters): array
+    {
+        $query = DB::table('users_property_requests as upr')
+            ->where('upr.user_id', $userId)
+            ->where('upr.is_active', 1);
+
+        $this->applyPropertyRequestFilters($query, $filters);
+
+        $query->whereNotNull('upr.status_id')
+            ->groupBy('upr.status_id')
+            ->selectRaw('upr.status_id as status_id, COUNT(*) as request_count');
+
+        $counts = $query->get()->keyBy('status_id');
+        $total = (int) $counts->sum('request_count');
+
+        return [$counts, $total];
+    }
+
+    /**
+     * Build stages array from property_request_statuses with requestCount and percentage.
+     *
+     * @param  \Illuminate\Support\Collection  $counts  keyed by status_id (numeric)
+     */
+    private function buildPropertyRequestStagesArray(\Illuminate\Support\Collection $counts, int $total): array
+    {
+        $statuses = PropertyRequestStatus::active()->ordered()->get();
+
+        if ($statuses->isEmpty()) {
+            return [];
+        }
+
+        $colorMap = [
+            'new' => '#3b82f6',
+            'follow_up' => '#8b5cf6',
+            'property_found' => '#f59e0b',
+            'contract_signed' => '#22c55e',
+            'cancelled' => '#6b7280',
+        ];
+
+        $result = [];
+        foreach ($statuses as $status) {
+            $requestCount = (int) ($counts->get($status->id)?->request_count ?? 0);
+            $percentage = $total > 0 ? round(($requestCount / $total) * 100, 1) : 0.0;
+
+            $result[] = [
+                'stage_id' => $status->slug,
+                'stage_name_ar' => $status->name_ar,
+                'stage_name_en' => $status->name_en ?? $status->name_ar,
+                'color' => $colorMap[$status->slug] ?? '#6b7280',
+                'order' => (int) $status->display_order,
+                'requestCount' => $requestCount,
+                'percentage' => $percentage,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Apply list filters to a query on users_property_requests (upr).
+     * Adds joins only when required by filters (cities -> user_cities; assignees/customer_id -> api_customers).
+     */
+    private function applyPropertyRequestFilters(\Illuminate\Database\Query\Builder $query, array $filters): void
+    {
+        $hasCities = !empty($filters['cities']) && is_array($filters['cities']);
+        $hasAssignees = !empty($filters['assignees']) && is_array($filters['assignees']);
+        $hasCustomerId = !empty($filters['customer_id']);
+        $needsAc = $hasAssignees || $hasCustomerId;
+
+        if ($hasCities && !$this->queryHasJoin($query, 'user_cities')) {
+            $query->leftJoin('user_cities as uc', 'upr.city_id', '=', 'uc.id');
+        }
+        if ($needsAc && !$this->queryHasJoin($query, 'api_customers')) {
+            $query->leftJoin('api_customers as ac', function ($join) {
+                $join->on('upr.user_id', '=', 'ac.user_id')
+                    ->on('upr.phone', '=', 'ac.phone_number');
+            });
+        }
+
+        // Tab filter
+        if (!empty($filters['tab'])) {
+            switch ($filters['tab']) {
+                case 'all':
+                    $query->where('upr.is_archived', 0);
+                    break;
+                case 'completed':
+                    $query->where('upr.is_archived', 1);
+                    break;
+                case 'inbox':
+                case 'followups':
+                    // Property requests only; treat same as all
+                    $query->where('upr.is_archived', 0);
+                    break;
+            }
+        }
+
+        // Types: property_request type is always property_match; if types exclude it, no rows
+        if (!empty($filters['types']) && is_array($filters['types']) && !in_array('property_match', $filters['types'])) {
+            $query->whereRaw('1 = 0');
+        }
+
+        // Statuses: map API status to upr is_archived / is_read
+        if (!empty($filters['statuses']) && is_array($filters['statuses'])) {
+            $query->where(function ($q) use ($filters) {
+                $statuses = $filters['statuses'];
+                $ors = [];
+                if (in_array('dismissed', $statuses) || in_array('completed', $statuses)) {
+                    $ors[] = function ($q2) {
+                        $q2->where('upr.is_archived', 1);
+                    };
+                }
+                if (in_array('in_progress', $statuses)) {
+                    $ors[] = function ($q2) {
+                        $q2->where('upr.is_archived', 0)->where('upr.is_read', 1);
+                    };
+                }
+                if (in_array('pending', $statuses)) {
+                    $ors[] = function ($q2) {
+                        $q2->where('upr.is_archived', 0)->where('upr.is_read', 0);
+                    };
+                }
+                if (!empty($ors)) {
+                    foreach ($ors as $or) {
+                        $q->orWhere($or);
+                    }
+                }
+            });
+        }
+
+        // Priorities: map API priority to upr.seriousness
+        if (!empty($filters['priorities']) && is_array($filters['priorities'])) {
+            $seriousnessMap = [
+                'urgent' => 'مستعد فورًا',
+                'high' => 'خلال شهر',
+                'medium' => 'خلال 3 أشهر',
+                'low' => 'لاحقًا / استكشاف فقط',
+            ];
+            $seriousness = [];
+            foreach ($filters['priorities'] as $p) {
+                if (isset($seriousnessMap[$p])) {
+                    $seriousness[] = $seriousnessMap[$p];
+                }
+            }
+            if (!empty($seriousness)) {
+                $query->whereIn('upr.seriousness', $seriousness);
+            }
+        }
+
+        // Sources
+        if (!empty($filters['sources']) && is_array($filters['sources'])) {
+            $query->whereIn(DB::raw('COALESCE(upr.source, \'website\')'), $filters['sources']);
+        }
+
+        // Assignees (requires ac join)
+        if ($hasAssignees) {
+            $query->whereIn('ac.responsible_employee_id', $filters['assignees']);
+        }
+
+        // Customer ID (requires ac join)
+        if ($hasCustomerId) {
+            $query->where('ac.id', $filters['customer_id']);
+        }
+
+        // Property categories
+        if (!empty($filters['property_categories']) && is_array($filters['property_categories'])) {
+            $query->whereIn('upr.category_id', $filters['property_categories']);
+        }
+
+        // Property types
+        if (!empty($filters['property_types']) && is_array($filters['property_types'])) {
+            $query->whereIn('upr.property_type', $filters['property_types']);
+        }
+
+        // Cities (requires user_cities join)
+        if ($hasCities) {
+            $query->whereIn('uc.name_ar', $filters['cities']);
+        }
+
+        // States
+        if (!empty($filters['states']) && is_array($filters['states'])) {
+            $query->whereIn('upr.region', $filters['states']);
+        }
+
+        // Budget range
+        $budgetMin = isset($filters['budget_min']) && $filters['budget_min'] !== '' ? (float) $filters['budget_min'] : null;
+        $budgetMax = isset($filters['budget_max']) && $filters['budget_max'] !== '' ? (float) $filters['budget_max'] : null;
+        if ($budgetMin !== null || $budgetMax !== null) {
+            $query->where(function ($q) use ($budgetMin, $budgetMax) {
+                $q->whereNotNull('upr.budget_from');
+                if ($budgetMin !== null && $budgetMax !== null) {
+                    $q->where('upr.budget_from', '<=', $budgetMax)
+                        ->where(function ($q2) use ($budgetMin) {
+                            $q2->where('upr.budget_to', '>=', $budgetMin)->orWhereNull('upr.budget_to');
+                        });
+                } elseif ($budgetMin !== null) {
+                    $q->where(function ($q2) use ($budgetMin) {
+                        $q2->where('upr.budget_to', '>=', $budgetMin)->orWhereNull('upr.budget_to');
+                    });
+                } else {
+                    $q->where('upr.budget_from', '<=', $budgetMax);
+                }
+            });
+        }
+
+        // Date range
+        if (!empty($filters['date_from'])) {
+            $query->where('upr.created_at', '>=', $filters['date_from']);
+        }
+        if (!empty($filters['date_to'])) {
+            $query->where('upr.created_at', '<=', $filters['date_to']);
+        }
+
+        // Search (upr columns only)
+        if (!empty($filters['search'])) {
+            $search = '%' . $filters['search'] . '%';
+            $query->where(function ($q) use ($search) {
+                $q->where('upr.full_name', 'like', $search)
+                    ->orWhere('upr.notes', 'like', $search)
+                    ->orWhere('upr.phone', 'like', $search);
+            });
+        }
+    }
+
+    /**
+     * Check if the query already has a join to the given table (by alias or name).
+     */
+    private function queryHasJoin(\Illuminate\Database\Query\Builder $query, string $table): bool
+    {
+        $table = strtolower($table);
+        foreach ($query->joins ?? [] as $join) {
+            $joinTable = $join->table;
+            if (is_string($joinTable) && strtolower($joinTable) === $table) {
+                return true;
+            }
+            if (is_string($joinTable) && preg_match('/^\s*(\w+)\s+as\s+(\w+)/i', $joinTable, $m)) {
+                if (strtolower($m[1]) === $table || strtolower($m[2]) === $table) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
