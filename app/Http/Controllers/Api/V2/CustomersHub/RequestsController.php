@@ -11,6 +11,8 @@ use App\Models\Api\UserApiCustomerType;
 use App\Models\Api\UserApiCustomerPriority;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 /**
  * RequestsController
@@ -106,6 +108,43 @@ class RequestsController extends ApiController
         // Get list
         $result = $this->aggregator->getList($userId, $filters, $limit, $offset);
 
+        $items = $result['items'];
+        $propertyRequestSourceIds = $items->filter(function ($item) {
+            return ($item->objectType ?? '') === 'property_request';
+        })->pluck('sourceId')->filter()->unique()->values()->all();
+
+        $appointmentsByRequest = [];
+        $remindersByRequest = [];
+        if (!empty($propertyRequestSourceIds)) {
+            $appointmentRows = DB::table('property_request_appointments')
+                ->where('user_id', $userId)
+                ->whereIn('property_request_id', $propertyRequestSourceIds)
+                ->orderBy('datetime', 'asc')
+                ->get();
+            $now = Carbon::now();
+            foreach ($appointmentRows as $row) {
+                $appointmentsByRequest[$row->property_request_id][] = $this->formatPropertyRequestAppointment($row);
+            }
+            $reminderRows = DB::table('property_request_reminders')
+                ->where('user_id', $userId)
+                ->whereIn('property_request_id', $propertyRequestSourceIds)
+                ->orderBy('datetime', 'asc')
+                ->get();
+            foreach ($reminderRows as $row) {
+                $remindersByRequest[$row->property_request_id][] = $this->formatPropertyRequestReminder($row, $now);
+            }
+        }
+
+        $items->each(function ($item) use ($appointmentsByRequest, $remindersByRequest) {
+            if (($item->objectType ?? '') === 'property_request' && isset($item->sourceId)) {
+                $item->appointments = $appointmentsByRequest[$item->sourceId] ?? [];
+                $item->reminders = $remindersByRequest[$item->sourceId] ?? [];
+            } else {
+                $item->appointments = [];
+                $item->reminders = [];
+            }
+        });
+
         // Get stats
         $stats = $this->aggregator->getStats($userId, $filters);
 
@@ -116,7 +155,7 @@ class RequestsController extends ApiController
         }
 
         return $this->success([
-            'actions' => $result['items'],
+            'actions' => $items,
             'stats' => $stats,
             'stages' => $stages,
             'pagination' => [
@@ -251,6 +290,25 @@ class RequestsController extends ApiController
 
         if (!$action) {
             return $this->error('Action not found', 404);
+        }
+
+        if (($action->objectType ?? '') === 'property_request' && !empty($action->sourceId)) {
+            $now = Carbon::now();
+            $appointmentRows = DB::table('property_request_appointments')
+                ->where('user_id', $userId)
+                ->where('property_request_id', $action->sourceId)
+                ->orderBy('datetime', 'asc')
+                ->get();
+            $reminderRows = DB::table('property_request_reminders')
+                ->where('user_id', $userId)
+                ->where('property_request_id', $action->sourceId)
+                ->orderBy('datetime', 'asc')
+                ->get();
+            $action->appointments = $appointmentRows->map(fn ($row) => $this->formatPropertyRequestAppointment($row))->values()->all();
+            $action->reminders = $reminderRows->map(fn ($row) => $this->formatPropertyRequestReminder($row, $now))->values()->all();
+        } else {
+            $action->appointments = [];
+            $action->reminders = [];
         }
 
         // Get related actions for the same customer
@@ -424,6 +482,172 @@ class RequestsController extends ApiController
             'message' => 'Note added successfully',
             'actionId' => $requestId,
         ]);
+    }
+
+    /**
+     * POST /api/v2/customers-hub/requests/{requestId}/appointments
+     *
+     * Create an appointment linked to a property request.
+     */
+    public function createAppointmentForPropertyRequest(Request $request, string $requestId): JsonResponse
+    {
+        $userId = $this->getTenantUserId($request);
+
+        $validated = $request->validate([
+            'type' => 'required|string|in:site_visit,office_meeting,phone_call,video_call,contract_signing,other',
+            'datetime' => 'required|date',
+            'duration' => 'nullable|integer|min:1',
+            'notes' => 'nullable|string',
+            'title' => 'nullable|string|max:255',
+            'priority' => 'nullable|string|in:low,medium,high,urgent',
+        ]);
+
+        if (Carbon::parse($validated['datetime'])->isPast()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'INVALID_DATETIME',
+                    'message' => 'Datetime must be in the future',
+                    'message_ar' => 'التاريخ والوقت يجب أن يكون في المستقبل',
+                ],
+            ], 422);
+        }
+
+        $resolved = $this->resolvePropertyRequestAndCustomer($requestId, $userId);
+        if ($resolved === null) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'INVALID_REQUEST_ID',
+                    'message' => 'Property request not found',
+                    'message_ar' => 'طلب العقار غير موجود',
+                ],
+            ], 404);
+        }
+
+        $title = !empty($validated['title']) ? $validated['title'] : (
+            $validated['type'] === 'site_visit' ? 'معاينة عقار' : 'موعد طلب عقار'
+        );
+        $duration = (int) ($validated['duration'] ?? 30);
+        $priorityDb = $this->mapPriorityAppointmentToDb($validated['priority'] ?? 'medium');
+
+        $id = DB::table('property_request_appointments')->insertGetId([
+            'user_id' => $userId,
+            'property_request_id' => $resolved['propertyRequestId'],
+            'customer_id' => $resolved['customerId'],
+            'title' => $title,
+            'type' => $validated['type'],
+            'datetime' => $validated['datetime'],
+            'duration' => $duration,
+            'status' => 'scheduled',
+            'priority' => $priorityDb,
+            'notes' => $validated['notes'] ?? null,
+            'created_at' => $now = now(),
+            'updated_at' => $now,
+        ]);
+
+        $row = (object) [
+            'id' => $id,
+            'property_request_id' => $resolved['propertyRequestId'],
+            'customer_id' => $resolved['customerId'],
+            'title' => $title,
+            'type' => $validated['type'],
+            'datetime' => $validated['datetime'],
+            'duration' => $duration,
+            'status' => 'scheduled',
+            'priority' => $priorityDb,
+            'notes' => $validated['notes'] ?? null,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+
+        $appointment = $this->formatPropertyRequestAppointmentForResponse($row, $requestId);
+
+        return response()->json([
+            'success' => true,
+            'data' => ['appointment' => $appointment],
+        ], 201);
+    }
+
+    /**
+     * POST /api/v2/customers-hub/requests/{requestId}/reminders
+     *
+     * Create a reminder linked to a property request.
+     */
+    public function createReminderForPropertyRequest(Request $request, string $requestId): JsonResponse
+    {
+        $userId = $this->getTenantUserId($request);
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'datetime' => 'required|date',
+            'priority' => 'required|string|in:low,medium,high,urgent',
+            'type' => 'required|string|in:follow_up,payment_due,document_required,other',
+            'notes' => 'nullable|string',
+        ]);
+
+        if (Carbon::parse($validated['datetime'])->isPast()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'INVALID_DATETIME',
+                    'message' => 'Datetime must be in the future',
+                    'message_ar' => 'التاريخ والوقت يجب أن يكون في المستقبل',
+                ],
+            ], 422);
+        }
+
+        $resolved = $this->resolvePropertyRequestAndCustomer($requestId, $userId);
+        if ($resolved === null) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'INVALID_REQUEST_ID',
+                    'message' => 'Property request not found',
+                    'message_ar' => 'طلب العقار غير موجود',
+                ],
+            ], 404);
+        }
+
+        $priorityDb = $this->mapPriorityReminderToDb($validated['priority']);
+
+        $id = DB::table('property_request_reminders')->insertGetId([
+            'user_id' => $userId,
+            'property_request_id' => $resolved['propertyRequestId'],
+            'customer_id' => $resolved['customerId'],
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'datetime' => $validated['datetime'],
+            'priority' => $priorityDb,
+            'type' => $validated['type'],
+            'status' => 'pending',
+            'notes' => $validated['notes'] ?? null,
+            'created_at' => $now = now(),
+            'updated_at' => $now,
+        ]);
+
+        $row = (object) [
+            'id' => $id,
+            'property_request_id' => $resolved['propertyRequestId'],
+            'customer_id' => $resolved['customerId'],
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'datetime' => $validated['datetime'],
+            'priority' => $priorityDb,
+            'type' => $validated['type'],
+            'status' => 'pending',
+            'notes' => $validated['notes'] ?? null,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+
+        $reminder = $this->formatPropertyRequestReminderForResponse($row, $requestId);
+
+        return response()->json([
+            'success' => true,
+            'data' => ['reminder' => $reminder],
+        ], 201);
     }
 
     /**
@@ -693,5 +917,165 @@ class RequestsController extends ApiController
     private function invalidateFilterOptionsCache(int $userId): void
     {
         Cache::forget("ch:reqs:filter-options:{$userId}");
+    }
+
+    /**
+     * Resolve property request and optional customer from requestId.
+     * Returns ['propertyRequestId' => int, 'customerId' => int|null] or null if not found / not a property_request.
+     */
+    private function resolvePropertyRequestAndCustomer(string $requestId, int $userId): ?array
+    {
+        $parsed = $this->aggregator->parseActionId($requestId);
+        if ($parsed === null || ($parsed['table'] ?? '') !== 'users_property_requests') {
+            return null;
+        }
+        $sourceId = (int) $parsed['sourceId'];
+
+        $exists = DB::table('users_property_requests')
+            ->where('user_id', $userId)
+            ->where('id', $sourceId)
+            ->where('is_active', 1)
+            ->exists();
+        if (!$exists) {
+            return null;
+        }
+
+        $row = DB::table('users_property_requests as upr')
+            ->leftJoin('api_customers as ac', function ($join) {
+                $join->on('upr.user_id', '=', 'ac.user_id')
+                    ->on('upr.phone', '=', 'ac.phone_number');
+            })
+            ->where('upr.user_id', $userId)
+            ->where('upr.id', $sourceId)
+            ->select('upr.id as property_request_id', 'ac.id as customer_id')
+            ->first();
+
+        return [
+            'propertyRequestId' => (int) $row->property_request_id,
+            'customerId' => $row->customer_id !== null ? (int) $row->customer_id : null,
+        ];
+    }
+
+    /**
+     * Map API priority string to appointments table (1=low, 2=medium, 3=high, 4=urgent).
+     */
+    private function mapPriorityAppointmentToDb(?string $priority): int
+    {
+        return match ($priority) {
+            'urgent' => 4,
+            'high' => 3,
+            'medium' => 2,
+            'low' => 1,
+            default => 2,
+        };
+    }
+
+    /**
+     * Map API priority string to reminders table (0=low, 1=medium, 2=high, 3=urgent).
+     */
+    private function mapPriorityReminderToDb(?string $priority): int
+    {
+        return match ($priority) {
+            'urgent' => 3,
+            'high' => 2,
+            'medium' => 1,
+            'low' => 0,
+            default => 1,
+        };
+    }
+
+    /**
+     * Map DB priority (appointments 1-4) to API string.
+     */
+    private function mapPriorityAppointmentToString(int $priority): string
+    {
+        return match ($priority) {
+            4 => 'urgent',
+            3 => 'high',
+            2 => 'medium',
+            1 => 'low',
+            default => 'medium',
+        };
+    }
+
+    /**
+     * Map DB priority (reminders 0-3) to API string.
+     */
+    private function mapPriorityReminderToString(int $priority): string
+    {
+        return match ($priority) {
+            3 => 'urgent',
+            2 => 'high',
+            1 => 'medium',
+            0 => 'low',
+            default => 'medium',
+        };
+    }
+
+    /**
+     * Format appointment row for list/single (no requestId/customerId).
+     */
+    private function formatPropertyRequestAppointment(object $row): array
+    {
+        return [
+            'id' => $row->id,
+            'title' => $row->title,
+            'type' => $row->type,
+            'datetime' => Carbon::parse($row->datetime)->toIso8601String(),
+            'duration' => (int) $row->duration,
+            'status' => $row->status ?? 'scheduled',
+            'priority' => $this->mapPriorityAppointmentToString((int) ($row->priority ?? 2)),
+            'notes' => $row->notes,
+            'createdAt' => Carbon::parse($row->created_at)->toIso8601String(),
+        ];
+    }
+
+    /**
+     * Format appointment for create response (with requestId, customerId).
+     */
+    private function formatPropertyRequestAppointmentForResponse(object $row, string $requestId): array
+    {
+        $base = $this->formatPropertyRequestAppointment($row);
+        $base['requestId'] = $requestId;
+        $base['customerId'] = $row->customer_id !== null ? (int) $row->customer_id : null;
+        $base['updatedAt'] = Carbon::parse($row->updated_at)->toIso8601String();
+        return $base;
+    }
+
+    /**
+     * Format reminder row for list/single (with isOverdue, daysUntilDue).
+     */
+    private function formatPropertyRequestReminder(object $row, Carbon $now): array
+    {
+        $dt = Carbon::parse($row->datetime);
+        $isOverdue = $dt->lt($now);
+        $daysUntilDue = $isOverdue ? 0 : (int) $now->diffInDays($dt, false);
+
+        return [
+            'id' => $row->id,
+            'title' => $row->title,
+            'description' => $row->description,
+            'datetime' => $dt->toIso8601String(),
+            'priority' => $this->mapPriorityReminderToString((int) ($row->priority ?? 1)),
+            'type' => $row->type ?? 'follow_up',
+            'status' => $row->status ?? 'pending',
+            'notes' => $row->notes,
+            'isOverdue' => $isOverdue,
+            'daysUntilDue' => $daysUntilDue,
+            'createdAt' => Carbon::parse($row->created_at)->toIso8601String(),
+        ];
+    }
+
+    /**
+     * Format reminder for create response (with requestId, customerId, updatedAt).
+     */
+    private function formatPropertyRequestReminderForResponse(object $row, string $requestId): array
+    {
+        $now = Carbon::now();
+        $base = $this->formatPropertyRequestReminder($row, $now);
+        $base['requestId'] = $requestId;
+        $base['customerId'] = $row->customer_id !== null ? (int) $row->customer_id : null;
+        $base['updatedAt'] = Carbon::parse($row->updated_at)->toIso8601String();
+        return $base;
     }
 }
