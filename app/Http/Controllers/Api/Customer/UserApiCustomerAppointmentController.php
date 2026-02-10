@@ -84,6 +84,7 @@ class UserApiCustomerAppointmentController extends Controller
         }
 
         $validated['user_id'] = $user->id;
+        $validated['source'] = $request->input('source', 'manual');
 
         $appointment = UserApiCustomerAppointment::create($validated);
 

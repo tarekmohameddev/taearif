@@ -1098,7 +1098,8 @@ class PropertyController extends Controller
                     'galleryImages:id,property_id,image',
                     'UserPropertyCharacteristics',
                     'creator:id,first_name,last_name,username,email,account_type',
-                    'building:id,name,image,deed_number,deed_image,water_meter_number',
+                    'building:id,name,image,deed_number,deed_image',
+                    'building.meters',
                     'project.contents',
                 ])->whereIn('user_id', $allowedUserIds)->findOrFail($id);
 
@@ -1918,7 +1919,7 @@ class PropertyController extends Controller
 
             // Capture owner ID before delete for cache invalidation
             $ownerId = $property->user_id;
-            
+
             $property->delete();
 
             // Invalidate cache for this property (all days variants)
@@ -1956,14 +1957,14 @@ class PropertyController extends Controller
 
             $property->featured = !$property->featured;
             $property->save();
-            
+
             // Invalidate property list cache (featured status affects list display)
             $user = $property->user;
             if ($user && method_exists($user, 'tenantOwnerId')) {
                 $ownerId = $user->tenantOwnerId();
                 PropertyListCacheVersionService::incrementVersion($ownerId);
             }
-            
+
             Audit::property($property->user_id, $property->id, 'custom', "toggle featured -> ".($property->featured ? 'on' : 'off'));
 
             return response()->json([
@@ -1991,14 +1992,14 @@ class PropertyController extends Controller
 
             $property->status = !$property->status;
             $property->save();
-            
+
             // Invalidate property list cache (status affects list visibility)
             $user = $property->user;
             if ($user && method_exists($user, 'tenantOwnerId')) {
                 $ownerId = $user->tenantOwnerId();
                 PropertyListCacheVersionService::incrementVersion($ownerId);
             }
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Property status updated successfully',
@@ -2500,7 +2501,7 @@ class PropertyController extends Controller
         // Sort filters to ensure consistent cache keys regardless of parameter order
         $filters = $request->except(['page', 'per_page', 'include_views', 'include_filters', 'simple_pagination']);
         ksort($filters); // Sort by key for consistent hashing
-        
+
         // Build hash of filters/pagination (unchanged logic)
         $hash = md5(serialize([
             'filters' => $filters,
@@ -2508,7 +2509,7 @@ class PropertyController extends Controller
             'per_page' => $perPage,
             'simple_pagination' => $useSimplePagination
         ]));
-        
+
         // Build versioned cache key: properties_list_{ownerId}_v{version}_{hash}
         $cacheKey = PropertyListCacheVersionService::buildCacheKey($ownerId, $hash);
 
@@ -2723,7 +2724,8 @@ class PropertyController extends Controller
         $allowedFields = [
             'id', 'visits', 'title', 'address', 'slug', 'price', 'type', 'beds', 'bath',
             'area', 'transaction_type', 'features', 'status', 'featured_image', 'featured',
-            'show_reservations', 'created_at', 'updated_at', 'payment_method', 'creator'
+            'show_reservations', 'created_at', 'updated_at', 'payment_method', 'creator',
+            'latitude', 'longitude'
         ];
 
         $fieldsToInclude = null;
@@ -2785,6 +2787,8 @@ class PropertyController extends Controller
                 'created_at'       => $property->created_at->toISOString(),
                 'updated_at'       => $property->updated_at->toISOString(),
                 'payment_method'   => $property->payment_method,
+                'latitude'         => $property->latitude !== null ? (float) $property->latitude : null,
+                'longitude'        => $property->longitude !== null ? (float) $property->longitude : null,
                 'project'          => $projectData,
                 'creator' => $property->creator ? [
                     'id'   => $property->creator->id,

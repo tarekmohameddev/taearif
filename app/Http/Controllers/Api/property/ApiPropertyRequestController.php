@@ -101,6 +101,7 @@ class ApiPropertyRequestController extends Controller
 
         $data['is_read'] = false;
         $data['is_active'] = true;
+        $data['source'] = 'website';
 
         if ($request->filled('status_id')) {
             $data['status_id'] = (int) $request->input('status_id');

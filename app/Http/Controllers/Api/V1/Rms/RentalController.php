@@ -376,7 +376,7 @@ class RentalController extends BaseApiController
         ]);
 
         // Step 6: Return response with auto-selection details
-        return $this->created([
+        return $this->success([
             'payments' => PaymentResource::collection($processedPayments),
             'total_amount' => collect($processedPayments)->sum('amount'),
             'payment_count' => count($processedPayments),
@@ -404,7 +404,7 @@ class RentalController extends BaseApiController
             'payment_count' => count($processedPayments),
         ]);
 
-        return $this->created([
+        return $this->success([
             'payments' => PaymentResource::collection($processedPayments),
             'total_amount' => collect($processedPayments)->sum('amount'),
             'payment_count' => count($processedPayments),
@@ -514,7 +514,7 @@ class RentalController extends BaseApiController
                 'payment_method' => $data['payment_method'],
                 'payment_date' => $data['payment_date'] ?? now()->toDateString(),
                 'reference' => $uniqueReference,
-                'notes' => $paymentData['notes'] ?? $data['notes'],
+                'notes' => $paymentData['notes'] ?? ($data['notes'] ?? null),
                 'bank_name' => $data['bank_name'] ?? null,
                 'receipt_image_path' => $data['receipt_image_path'] ?? null,
                 'transfer_to' => $data['transfer_to'],
@@ -856,7 +856,7 @@ class RentalController extends BaseApiController
                 ->whereNotNull('project_id')
                 ->distinct()
                 ->pluck('project_id');
-            
+
             $projects = Project::where('user_id', $ownerId)
                 ->whereIn('id', $projectIds)
                 ->with(['contents' => function($q) {

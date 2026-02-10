@@ -56,7 +56,7 @@ composer.lock
 database/seeders/RentalDashboardTestSeeder833.php
 database/seeds/RentalDashboardTestSeeder833.php
 
-# Test scripts folder
+# Test scripts folder (local only, do not push)
 /test-scripts/
 test-webhook.php
 Credit_Management_API_Postman_Collection.json

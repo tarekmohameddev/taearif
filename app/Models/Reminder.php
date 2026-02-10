@@ -23,6 +23,7 @@ class Reminder extends Model
         'priority',
         'status',
         'notes',
+        'source',
     ];
 
     protected $casts = [

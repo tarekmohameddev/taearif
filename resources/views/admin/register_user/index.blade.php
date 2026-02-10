@@ -112,7 +112,7 @@
                             {{ __('Delete') }}</button>
                         <button class="btn btn-primary float-lg-right float-none btn-sm ml-2 mt-1" data-toggle="modal" data-target="#addUserModal"><i class="fas fa-plus"></i> {{ __('Add User') }}</button>
                         <form action="{{ url()->full() }}" class="float-lg-right float-none">
-                            <input type="text" name="term" class="form-control min-w-250" value="{{ request()->input('term') }}" placeholder="{{ __('Search by Username') }} / {{ __('email') }}">
+                            <input type="text" name="term" class="form-control min-w-250" value="{{ request()->input('term') }}" placeholder="{{ __('Search by name / email / phone number') }}">
                         </form>
                     </div>
 

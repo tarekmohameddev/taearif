@@ -68,6 +68,7 @@ class StoreReminderRequest extends FormRequest
             ],
             'priority' => 'nullable|integer|in:0,1,2',
             'notes' => 'nullable|string',
+            'source' => 'nullable|string|in:manual,website,whatsapp,affiliate',
         ];
     }
 

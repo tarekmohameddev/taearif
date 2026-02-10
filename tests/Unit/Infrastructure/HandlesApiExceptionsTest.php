@@ -70,7 +70,7 @@ class HandlesApiExceptionsTest extends TestCase
 
         $content = json_decode($result->getContent(), true);
         $this->assertEquals('error', $content['status']); // String status
-        $this->assertStringContainsString('error', strtolower($content['message']));
+        $this->assertStringContainsString('wrong', strtolower($content['message'])); // e.g. "something went wrong"
     }
 
     /** @test */

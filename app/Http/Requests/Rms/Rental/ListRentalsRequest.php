@@ -42,6 +42,8 @@ class ListRentalsRequest extends FormRequest
             'payment_status' => 'nullable|string|in:paid,partial,overdue,pending,unpaid',
             'contract_created_from_date' => 'nullable|date',
             'contract_created_to_date' => 'nullable|date|after_or_equal:contract_created_from_date',
+            'contract_start_period' => 'nullable|string|in:today,week,month,quarter,year',
+            'contract_end_period' => 'nullable|string|in:today,week,month,quarter,year',
         ];
     }
 
@@ -61,7 +63,7 @@ class ListRentalsRequest extends FormRequest
             'sort_by.in' => 'Invalid sort field.',
             'sort_order.in' => 'Sort order must be either "asc" or "desc".',
             'q.max' => 'Search query cannot exceed 255 characters.',
-            'status.in' => 'Invalid rental status.',
+            'status.in' => 'Invalid rental status. Valid values are: active, inactive, terminated, ended, cancelled, draft. For contract status, use contract_status parameter instead.',
             'paying_plan.in' => 'Invalid payment plan.',
             'filter_by_month.min' => 'Month must be between 1 and 12.',
             'filter_by_month.max' => 'Month must be between 1 and 12.',
@@ -100,6 +102,8 @@ class ListRentalsRequest extends FormRequest
             'to_date' => 'to date',
             'contract_created_from_date' => 'contract created from date',
             'contract_created_to_date' => 'contract created to date',
+            'contract_start_period' => 'contract start period',
+            'contract_end_period' => 'contract end period',
         ];
     }
 }
