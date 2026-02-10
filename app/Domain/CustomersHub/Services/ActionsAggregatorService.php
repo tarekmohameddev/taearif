@@ -410,6 +410,12 @@ class ActionsAggregatorService
                     ->update($payload) > 0;
 
             case 'users_property_requests':
+                if (array_key_exists('priority', $data)) {
+                    $seriousness = $this->mapPriorityPropertyRequestsToSeriousness($data['priority']);
+                    if ($seriousness !== null) {
+                        $payload['seriousness'] = $seriousness;
+                    }
+                }
                 if (array_key_exists('notes', $data)) {
                     $payload['notes'] = $data['notes'];
                 }
@@ -569,6 +575,21 @@ class ActionsAggregatorService
             'medium' => 2,
             'low' => 1,
             default => 2,
+        };
+    }
+
+    /**
+     * Map API priority to users_property_requests.seriousness (Arabic labels).
+     * Default null when unsupported, so callers can decide on a fallback.
+     */
+    private function mapPriorityPropertyRequestsToSeriousness(?string $priority): ?string
+    {
+        return match ($priority) {
+            self::PRIORITY_URGENT => 'مستعد فورًا',
+            self::PRIORITY_HIGH => 'خلال شهر',
+            self::PRIORITY_MEDIUM => 'خلال 3 أشهر',
+            self::PRIORITY_LOW => 'لاحقًا / استكشاف فقط',
+            default => null,
         };
     }
 
@@ -925,7 +946,13 @@ class ActionsAggregatorService
                 DB::raw("'property_match' as type"),
                 DB::raw("CONCAT('عقار مطابق: ', COALESCE(ac.name, upr.full_name)) as title"),
                 'upr.notes as description',
-                DB::raw("'low' as priority"),
+                DB::raw("CASE upr.seriousness
+                    WHEN 'مستعد فورًا' THEN 'urgent'
+                    WHEN 'خلال شهر' THEN 'high'
+                    WHEN 'خلال 3 أشهر' THEN 'medium'
+                    WHEN 'لاحقًا / استكشاف فقط' THEN 'low'
+                    ELSE 'medium'
+                END as priority"),
                 DB::raw("CASE
                     WHEN upr.is_archived = 1 THEN 'dismissed'
                     WHEN upr.is_read = 1 THEN 'in_progress'
