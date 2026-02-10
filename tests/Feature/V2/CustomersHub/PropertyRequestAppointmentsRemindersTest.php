@@ -45,7 +45,7 @@ class PropertyRequestAppointmentsRemindersTest extends TestCase
         $prId = $this->createPropertyRequestForUser($tenant->id);
         Sanctum::actingAs($tenant);
 
-        $datetime = now()->addDays(2)->format('Y-m-d\TH:i:s\Z');
+        $datetime = now()->addDays(2)->format('Y-m-d H:i:s');
 
         $res = $this->postJson("/api/v2/customers-hub/requests/property_request_{$prId}/appointments", [
             'type' => 'site_visit',
@@ -55,9 +55,9 @@ class PropertyRequestAppointmentsRemindersTest extends TestCase
             'title' => 'معاينة عقار',
         ]);
 
-        $res->assertStatus(201)
-            ->assertJsonPath('success', true)
-            ->assertJsonPath('data.appointment.requestId', "property_request_{$prId}")
+        $res->assertStatus(201);
+        $res->assertJsonPath('success', true);
+        $res->assertJsonPath('data.appointment.requestId', "property_request_{$prId}")
             ->assertJsonPath('data.appointment.title', 'معاينة عقار')
             ->assertJsonPath('data.appointment.type', 'site_visit')
             ->assertJsonPath('data.appointment.status', 'scheduled')
@@ -79,7 +79,7 @@ class PropertyRequestAppointmentsRemindersTest extends TestCase
         $prId = $this->createPropertyRequestForUser($tenant->id);
         Sanctum::actingAs($tenant);
 
-        $datetime = now()->addDays(5)->format('Y-m-d\TH:i:s\Z');
+        $datetime = now()->addDays(5)->format('Y-m-d H:i:s');
 
         $res = $this->postJson("/api/v2/customers-hub/requests/property_request_{$prId}/reminders", [
             'title' => 'متابعة طلب العقار',
