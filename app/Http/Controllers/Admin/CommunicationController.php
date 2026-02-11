@@ -463,7 +463,7 @@ class CommunicationController extends Controller
         try {
             $whatsappService = new WhatsAppService();
             $testCode = rand(100000, 999999);
-            $resetUrl = env('FRONTEND_URL', 'https://app.taearif.com') . '/reset';
+            $resetUrl = config('app.frontend_url') . '/reset';
 
             $whatsappService->sendPasswordResetCode($request->test_phone, $testCode, 'مستخدم تجريبي', 'ar', $resetUrl, 'password_reset');
 

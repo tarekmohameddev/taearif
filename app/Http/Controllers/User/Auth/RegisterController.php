@@ -95,7 +95,7 @@ class RegisterController extends Controller
             $user->update();
             
             // Get frontend URL from .env or use default
-            $frontendUrl = env('FRONTEND_URL', 'https://app.taearif.com');
+            $frontendUrl = config('app.frontend_url');
             
             if ($mode === "online"){
                 // Redirect to frontend with success message and login the user
@@ -107,7 +107,7 @@ class RegisterController extends Controller
             }
         } else {
             // Invalid token - redirect to frontend with error
-            $frontendUrl = env('FRONTEND_URL', 'https://app.taearif.com');
+            $frontendUrl = config('app.frontend_url');
             return redirect($frontendUrl . '?verified=error&message=' . urlencode('Invalid verification link'));
         }
     }

@@ -139,7 +139,7 @@ class ForgotPasswordController extends Controller
                 $phone = preg_replace('/[^0-9+]/', '', $phone);
                 
                 // Get frontend URL for reset link
-                $frontendUrl = rtrim(env('FRONTEND_URL', url('/')), '/');
+                $frontendUrl = config('app.frontend_url');
                 $resetUrl = $frontendUrl . '/reset';
                 
                 $settings = BasicExtended::first();

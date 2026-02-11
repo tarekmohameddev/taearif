@@ -481,7 +481,7 @@ class RegisterUserController extends Controller
                 $pat->save();
             }
 
-            $frontend = rtrim(env('FRONTEND_URL', url('/')), '/'); // https://app.taearif.com
+            $frontend = config('app.frontend_url');
             $url = $frontend . '/login?token=' . $plainTextToken;
 
             if ($request->filled('redirect')) {
