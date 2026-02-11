@@ -173,6 +173,16 @@ class WebhookController extends Controller
                 $messageId = $message['reaction']['message_id'] ?? '';
                 return $emoji ? "[Reaction: {$emoji}]" : '[Reaction]';
             
+            case 'edit':
+                // Edit messages contain a nested message structure
+                // Extract content from edit.message based on its type
+                if (isset($message['edit']['message'])) {
+                    $nestedMessage = $message['edit']['message'];
+                    $nestedType = $nestedMessage['type'] ?? 'text';
+                    return $this->extractMessageContent($nestedMessage, $nestedType);
+                }
+                return '[Edited message]';
+            
             default:
                 return "[Unsupported message type: {$type}]";
         }
