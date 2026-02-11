@@ -187,7 +187,7 @@ class CustomerController extends Controller
             'employee_whatsapp_number' => 'nullable|string|max:20',
             'created_from'  => 'nullable|date',
             'created_to'    => 'nullable|date',
-            'sort_by'       => 'nullable|in:name,created_at,priority_id',
+            'sort_by'       => 'nullable|in:name,created_at,updated_at,priority_id',
             'sort_dir'      => 'nullable|in:asc,desc',
             'interested_category_ids'   => 'nullable|array',
             'interested_category_ids.*' => 'integer',
@@ -1103,7 +1103,7 @@ class CustomerController extends Controller
             'created_to'    => 'nullable|date',
             'page'          => 'nullable|integer|min:1',
             'per_page'      => 'nullable|integer|min:1|max:100',
-            'sort_by'       => 'nullable|in:name,created_at,priority_id',
+            'sort_by'       => 'nullable|in:name,created_at,updated_at,priority_id',
             'sort_dir'      => 'nullable|in:asc,desc',
         ]);
 
