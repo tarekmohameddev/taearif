@@ -1089,6 +1089,7 @@ class CustomerController extends Controller
         ]);
 
         $request->validate([
+            'q'             => 'nullable|string|max:255',
             'city_id'       => 'nullable|integer',
             'district_id'   => 'nullable|integer',
             'type_id'       => 'nullable|integer',
@@ -1107,7 +1108,7 @@ class CustomerController extends Controller
         ]);
 
         $perPage = (int) ($request->input('per_page') ?: 10);
-        $query = $this->buildCustomerListQuery($request, $user, true);
+        $query = $this->buildCustomerListQuery($request, $user, false);
         $paginator = $query->paginate($perPage);
 
         $customerIds = $paginator->getCollection()->pluck('id')->all();
@@ -1243,7 +1244,7 @@ class CustomerController extends Controller
             ];
         })->values();
 
-        $totalAll = \App\Models\ApiCustomer::where('user_id', $user->id)->count();
+        $totalAll = $paginator->total();
 
         return response()->json([
             'status' => 'success',
