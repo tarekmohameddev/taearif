@@ -187,7 +187,7 @@ class CustomerController extends Controller
             'employee_whatsapp_number' => 'nullable|string|max:20',
             'created_from'  => 'nullable|date',
             'created_to'    => 'nullable|date',
-            'sort_by'       => 'nullable|in:name,created_at,priority_id',
+            'sort_by'       => 'nullable|in:name,created_at,updated_at,priority_id',
             'sort_dir'      => 'nullable|in:asc,desc',
             'interested_category_ids'   => 'nullable|array',
             'interested_category_ids.*' => 'integer',
@@ -1089,6 +1089,7 @@ class CustomerController extends Controller
         ]);
 
         $request->validate([
+            'q'             => 'nullable|string|max:255',
             'city_id'       => 'nullable|integer',
             'district_id'   => 'nullable|integer',
             'type_id'       => 'nullable|integer',
@@ -1102,12 +1103,12 @@ class CustomerController extends Controller
             'created_to'    => 'nullable|date',
             'page'          => 'nullable|integer|min:1',
             'per_page'      => 'nullable|integer|min:1|max:100',
-            'sort_by'       => 'nullable|in:name,created_at,priority_id',
+            'sort_by'       => 'nullable|in:name,created_at,updated_at,priority_id',
             'sort_dir'      => 'nullable|in:asc,desc',
         ]);
 
         $perPage = (int) ($request->input('per_page') ?: 10);
-        $query = $this->buildCustomerListQuery($request, $user, true);
+        $query = $this->buildCustomerListQuery($request, $user, false);
         $paginator = $query->paginate($perPage);
 
         $customerIds = $paginator->getCollection()->pluck('id')->all();
@@ -1243,7 +1244,7 @@ class CustomerController extends Controller
             ];
         })->values();
 
-        $totalAll = \App\Models\ApiCustomer::where('user_id', $user->id)->count();
+        $totalAll = $paginator->total();
 
         return response()->json([
             'status' => 'success',
