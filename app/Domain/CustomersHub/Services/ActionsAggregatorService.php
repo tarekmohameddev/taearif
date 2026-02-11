@@ -150,15 +150,9 @@ class ActionsAggregatorService
     /**
      * Get stage statistics for the filtered actions (request count and percentage per stage).
      * Returns all active Customer Hub stages; stages with 0 requests are included.
-     * When objectTypes is only ['property_request'], uses property request status pipeline instead.
      */
     public function getStageStats(int $userId, array $filters = []): array
     {
-        $objectTypes = $filters['objectTypes'] ?? null;
-        if (is_array($objectTypes) && count($objectTypes) === 1 && $objectTypes[0] === 'property_request') {
-            return $this->getPropertyRequestStageStats($userId, $filters);
-        }
-
         try {
             $stages = CustomersHubStage::where('is_active', true)
                 ->orderBy('order')
