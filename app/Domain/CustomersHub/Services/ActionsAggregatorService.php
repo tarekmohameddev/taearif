@@ -80,7 +80,7 @@ class ActionsAggregatorService
         $query = DB::query()->fromSub($unionQuery, 'actions');
 
         // Apply filters
-        $this->applyFilters($query, $filters);
+        $this->applyFilters($query, $filters, $userId);
 
         return $query;
     }
@@ -1413,7 +1413,7 @@ class ActionsAggregatorService
     /**
      * Apply filters to the query.
      */
-    private function applyFilters(\Illuminate\Database\Query\Builder $query, array $filters): void
+    private function applyFilters(\Illuminate\Database\Query\Builder $query, array $filters, int $userId): void
     {
         // Tab filter (predefined filter sets)
         if (!empty($filters['tab'])) {
@@ -1468,6 +1468,15 @@ class ActionsAggregatorService
         // Customer ID filter
         if (!empty($filters['customer_id'])) {
             $query->where('customerId', $filters['customer_id']);
+        }
+
+        // Stages filter (customer hub stage: restrict to actions whose customer is in one of the given stages)
+        if (!empty($filters['stages']) && is_array($filters['stages'])) {
+            $customerIds = DB::table('api_customers')
+                ->where('user_id', $userId)
+                ->whereIn('customers_hub_stage_id', $filters['stages'])
+                ->pluck('id');
+            $query->whereIn('customerId', $customerIds);
         }
 
         // Exclude specific action ID

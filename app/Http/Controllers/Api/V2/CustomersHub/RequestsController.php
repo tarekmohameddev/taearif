@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Api\ApiController;
 use App\Domain\CustomersHub\Services\ActionsAggregatorService;
-use App\Models\Api\UserApiCustomerStage;
+use App\Domain\CustomersHub\Services\CustomersHubStagesService;
 use App\Models\Api\UserApiCustomerType;
 use App\Models\Api\UserApiCustomerPriority;
 use App\Models\User;
@@ -35,10 +35,12 @@ use Carbon\Carbon;
 class RequestsController extends ApiController
 {
     private ActionsAggregatorService $aggregator;
+    private CustomersHubStagesService $stagesService;
 
-    public function __construct(ActionsAggregatorService $aggregator)
+    public function __construct(ActionsAggregatorService $aggregator, CustomersHubStagesService $stagesService)
     {
         $this->aggregator = $aggregator;
+        $this->stagesService = $stagesService;
     }
 
     /**
@@ -62,6 +64,7 @@ class RequestsController extends ApiController
             'budget_min' => $request->input('budgetMin') ?? $request->input('budget_min'),
             'budget_max' => $request->input('budgetMax') ?? $request->input('budget_max'),
             'objectTypes' => $request->input('selectedObjectTypes') ?? $request->input('objectTypes'),
+            'stages' => $request->input('selectedStages') ?? $request->input('stages'),
         ]);
 
         $validated = $request->validate([
@@ -97,6 +100,8 @@ class RequestsController extends ApiController
             'offset' => 'nullable|integer|min:0',
             'objectTypes' => 'nullable|array',
             'objectTypes.*' => 'string|in:inquiry,property_request,reminder,appointment,customer_reminder',
+            'stages' => 'nullable|array',
+            'stages.*' => 'string|max:50',
         ]);
 
         $userId = $this->getTenantUserId($request);
@@ -233,11 +238,16 @@ class RequestsController extends ApiController
                 ['id' => 'customer_reminder', 'label' => 'تذكير عميل', 'labelEn' => 'Customer Reminder'],
             ];
 
-            // Customer stages (user-defined)
-            $stages = UserApiCustomerStage::where('user_id', $userId)
-                ->where('is_active', true)
-                ->orderBy('order')
-                ->get(['id', 'stage_name as label', 'color', 'icon']);
+            // Customer stages (same as /v2/customers-hub/stages)
+            $stages = $this->stagesService->getActiveStages()
+                ->map(fn ($s) => [
+                    'id' => $s->stage_id,
+                    'label' => $s->stage_name_ar,
+                    'labelEn' => $s->stage_name_en,
+                    'color' => $s->color,
+                ])
+                ->values()
+                ->all();
 
             // Customer types (user-defined)
             $customerTypes = UserApiCustomerType::where('user_id', $userId)
