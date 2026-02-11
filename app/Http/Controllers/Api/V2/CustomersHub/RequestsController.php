@@ -530,6 +530,7 @@ class RequestsController extends ApiController
         );
         $duration = (int) ($validated['duration'] ?? 30);
         $priorityDb = $this->mapPriorityAppointmentToDb($validated['priority'] ?? 'medium');
+        $datetime = Carbon::parse($validated['datetime'])->toDateTimeString();
 
         $id = DB::table('property_request_appointments')->insertGetId([
             'user_id' => $userId,
@@ -537,7 +538,7 @@ class RequestsController extends ApiController
             'customer_id' => $resolved['customerId'],
             'title' => $title,
             'type' => $validated['type'],
-            'datetime' => $validated['datetime'],
+            'datetime' => $datetime,
             'duration' => $duration,
             'status' => 'scheduled',
             'priority' => $priorityDb,
@@ -552,7 +553,7 @@ class RequestsController extends ApiController
             'customer_id' => $resolved['customerId'],
             'title' => $title,
             'type' => $validated['type'],
-            'datetime' => $validated['datetime'],
+            'datetime' => $datetime,
             'duration' => $duration,
             'status' => 'scheduled',
             'priority' => $priorityDb,
@@ -611,6 +612,7 @@ class RequestsController extends ApiController
         }
 
         $priorityDb = $this->mapPriorityReminderToDb($validated['priority']);
+        $datetime = Carbon::parse($validated['datetime'])->toDateTimeString();
 
         $id = DB::table('property_request_reminders')->insertGetId([
             'user_id' => $userId,
@@ -618,7 +620,7 @@ class RequestsController extends ApiController
             'customer_id' => $resolved['customerId'],
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
-            'datetime' => $validated['datetime'],
+            'datetime' => $datetime,
             'priority' => $priorityDb,
             'type' => $validated['type'],
             'status' => 'pending',
@@ -633,7 +635,7 @@ class RequestsController extends ApiController
             'customer_id' => $resolved['customerId'],
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
-            'datetime' => $validated['datetime'],
+            'datetime' => $datetime,
             'priority' => $priorityDb,
             'type' => $validated['type'],
             'status' => 'pending',
