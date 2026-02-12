@@ -195,10 +195,11 @@ class PropertyRequestCustomerService
                     'procedure_id' => $defaults['procedure_id'],
                     'created_by_type' => 'system',
                     'created_by_id' => null,
-                    'property_request_id' => $propertyRequest->id,
                     'source' => 'property_request',
                     'source_id' => $propertyRequest->id,
                 ]);
+
+                $customer->propertyRequests()->attach($propertyRequest->id);
 
                 Log::info('Customer auto-created from property request', [
                     'property_request_id' => $propertyRequest->id,
@@ -257,17 +258,18 @@ class PropertyRequestCustomerService
                 ->where('phone_number', $normalizedPhone)
                 ->first();
 
-            // If customer exists and is not linked, link it
-            if ($existingCustomer && $existingCustomer->property_request_id === null) {
+            // If customer exists and is not linked to any request, link it to this one
+            if ($existingCustomer && !$existingCustomer->propertyRequests()->exists()) {
                 return $this->linkExistingCustomer($existingCustomer, $propertyRequest);
             }
 
-            // If customer exists but is already linked, return null
+            // If customer exists but is already linked to at least one request, return null
             if ($existingCustomer) {
+                $firstRequestId = $existingCustomer->propertyRequests()->value('id');
                 Log::info('Customer already linked to another property request', [
                     'property_request_id' => $propertyRequest->id,
                     'customer_id' => $existingCustomer->id,
-                    'existing_property_request_id' => $existingCustomer->property_request_id,
+                    'existing_property_request_id' => $firstRequestId,
                 ]);
                 return null;
             }
@@ -307,8 +309,7 @@ class PropertyRequestCustomerService
     public function linkExistingCustomer(ApiCustomer $customer, UserPropertyRequest $propertyRequest): ApiCustomer
     {
         return DB::transaction(function () use ($customer, $propertyRequest) {
-            // Link the customer
-            $customer->property_request_id = $propertyRequest->id;
+            $customer->propertyRequests()->syncWithoutDetaching([$propertyRequest->id]);
 
             // Update source only if not already set (preserve original source)
             if (!$customer->source || $customer->source === 'manual') {

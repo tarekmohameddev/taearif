@@ -253,7 +253,14 @@ class AssignmentService
     private function getUnassignedCustomers(int $userId)
     {
         return DB::table('api_customers as c')
-            ->leftJoin('users_property_requests as pr', 'c.property_request_id', '=', 'pr.id')
+            ->leftJoinSub(
+                DB::table('api_customer_property_request')->select('customer_id')->selectRaw('MIN(property_request_id) as property_request_id')->groupBy('customer_id'),
+                'acpr',
+                'acpr.customer_id',
+                '=',
+                'c.id'
+            )
+            ->leftJoin('users_property_requests as pr', 'pr.id', '=', 'acpr.property_request_id')
             ->leftJoin('user_districts as d', 'c.city_id', '=', 'd.id')
             ->where('c.user_id', $userId)
             ->whereNull('c.responsible_employee_id')

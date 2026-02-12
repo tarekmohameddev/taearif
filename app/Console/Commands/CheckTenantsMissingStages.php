@@ -39,7 +39,7 @@ class CheckTenantsMissingStages extends Command
         if ($unlinkedOnly) {
             // Get tenants from property requests that don't have linked customers
             $tenantIds = UserPropertyRequest::whereNotNull('phone')
-                ->whereDoesntHave('customer')
+                ->whereDoesntHave('customers')
                 ->distinct()
                 ->pluck('user_id')
                 ->toArray();
@@ -85,7 +85,7 @@ class CheckTenantsMissingStages extends Command
             // Count unlinked property requests for this tenant
             $unlinkedRequests = UserPropertyRequest::where('user_id', $tenantId)
                 ->whereNotNull('phone')
-                ->whereDoesntHave('customer')
+                ->whereDoesntHave('customers')
                 ->count();
 
             $hasStage = $activeStages > 0;

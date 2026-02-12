@@ -90,9 +90,22 @@ class UserPropertyRequest extends Model
         return $this->belongsTo(\App\Models\PropertyRequestStatus::class, 'status_id');
     }
 
-    public function customer()
+    public function customers()
     {
-        return $this->hasOne(ApiCustomer::class, 'property_request_id');
+        return $this->belongsToMany(ApiCustomer::class, 'api_customer_property_request')
+            ->withTimestamps();
+    }
+
+    /**
+     * First linked customer (for backward compatibility). Eager load 'customers' then use $request->customer.
+     */
+    public function getCustomerAttribute(): ?ApiCustomer
+    {
+        $customers = $this->getRelationValue('customers');
+        if ($customers !== null) {
+            return $customers->first();
+        }
+        return $this->customers()->first();
     }
 
     public function district()

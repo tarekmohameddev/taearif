@@ -43,7 +43,6 @@ class ApiCustomer extends Authenticatable
         'phone_number',
         'password',
         'remember_token',
-        'property_request_id',
         'source',
         'source_id',
     ];
@@ -128,6 +127,13 @@ class ApiCustomer extends Authenticatable
     {
         return $this->belongsTo(\App\Models\Api\UserApiCustomerPriority::class, 'priority_id');
     }
+
+    public function propertyRequests()
+    {
+        return $this->belongsToMany(\App\Models\Api\UserPropertyRequest::class, 'api_customer_property_request')
+            ->withTimestamps();
+    }
+
     //  type_id with name
     public function typeWithName()
     {

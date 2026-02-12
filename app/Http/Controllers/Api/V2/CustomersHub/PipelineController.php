@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Api\ApiController;
 use App\Domain\CustomersHub\Services\PipelineService;
 use App\Models\ApiCustomer;
+use App\Models\Api\UserPropertyRequest;
 
 /**
  * PipelineController
@@ -128,9 +129,10 @@ class PipelineController extends ApiController
             return $this->error('Failed to move request', 422);
         }
 
-        $customerId = ApiCustomer::where('property_request_id', $requestId)
-            ->where('user_id', $userId)
-            ->value('id');
+        $customerId = UserPropertyRequest::find($requestId)
+            ?->customers()
+            ->where('api_customers.user_id', $userId)
+            ->value('api_customers.id');
 
         $user = $request->user();
         $movedBy = [
