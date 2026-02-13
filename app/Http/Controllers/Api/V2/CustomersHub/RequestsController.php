@@ -6,9 +6,12 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Api\ApiController;
 use App\Domain\CustomersHub\Services\ActionsAggregatorService;
-use App\Domain\CustomersHub\Services\CustomersHubStagesService;
+use App\Models\Api\ApiCustomerInquiry;
+use App\Models\PropertyRequestStatus;
 use App\Models\Api\UserApiCustomerType;
 use App\Models\Api\UserApiCustomerPriority;
+use App\Models\Api\UserPropertyRequest;
+use App\Models\CustomersHub\CrmHubNote;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -35,12 +38,10 @@ use Carbon\Carbon;
 class RequestsController extends ApiController
 {
     private ActionsAggregatorService $aggregator;
-    private CustomersHubStagesService $stagesService;
 
-    public function __construct(ActionsAggregatorService $aggregator, CustomersHubStagesService $stagesService)
+    public function __construct(ActionsAggregatorService $aggregator)
     {
         $this->aggregator = $aggregator;
-        $this->stagesService = $stagesService;
     }
 
     /**
@@ -99,9 +100,9 @@ class RequestsController extends ApiController
             'limit' => 'nullable|integer|min:1|max:100',
             'offset' => 'nullable|integer|min:0',
             'objectTypes' => 'nullable|array',
-            'objectTypes.*' => 'string|in:inquiry,property_request,reminder,appointment,customer_reminder',
+            'objectTypes.*' => 'string|in:inquiry,property_request,reminder,request_appointment,request_reminder',
             'stages' => 'nullable|array',
-            'stages.*' => 'string|max:50',
+            'stages.*' => 'integer',
         ]);
 
         $userId = $this->getTenantUserId($request);
@@ -234,17 +235,16 @@ class RequestsController extends ApiController
                 ['id' => 'inquiry', 'label' => 'استفسار', 'labelEn' => 'Inquiry'],
                 ['id' => 'property_request', 'label' => 'طلب عقار', 'labelEn' => 'Property Request'],
                 ['id' => 'reminder', 'label' => 'تذكير', 'labelEn' => 'Reminder'],
-                ['id' => 'appointment', 'label' => 'موعد', 'labelEn' => 'Appointment'],
-                ['id' => 'customer_reminder', 'label' => 'تذكير عميل', 'labelEn' => 'Customer Reminder'],
+                ['id' => 'request_appointment', 'label' => 'موعد طلب', 'labelEn' => 'Request Appointment'],
+                ['id' => 'request_reminder', 'label' => 'تذكير طلب', 'labelEn' => 'Request Reminder'],
             ];
 
-            // Customer stages (same as /v2/customers-hub/stages)
-            $stages = $this->stagesService->getActiveStages()
+            // Pipeline stages (property_request_statuses) for request list filtering
+            $stages = PropertyRequestStatus::active()->ordered()->get()
                 ->map(fn ($s) => [
-                    'id' => $s->stage_id,
-                    'label' => $s->stage_name_ar,
-                    'labelEn' => $s->stage_name_en,
-                    'color' => $s->color,
+                    'id' => $s->id,
+                    'label' => $s->name_ar,
+                    'labelEn' => $s->name_en ?? $s->name_ar,
                 ])
                 ->values()
                 ->all();
@@ -423,7 +423,7 @@ class RequestsController extends ApiController
             'priority' => 'nullable|in:low,medium,high',
             'notes' => 'nullable|string',
             'duration' => 'nullable|integer|min:0',
-            'stage_id' => ['nullable', 'string', 'max:50', \Illuminate\Validation\Rule::exists('customers_hub_stages', 'stage_id')->where('is_active', true)],
+            'status_id' => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('property_request_statuses', 'id')->where('is_active', true)],
         ]);
 
         $userId = $this->getTenantUserId($request);
@@ -433,18 +433,15 @@ class RequestsController extends ApiController
             return $this->error('Action not found', 404);
         }
 
-        // Update customer's hub stage when stage_id is provided and action has a customer
-        if (array_key_exists('stage_id', $validated) && $validated['stage_id'] !== null && !empty($action->customerId)) {
-            \Illuminate\Support\Facades\DB::table('api_customers')
-                ->where('id', $action->customerId)
+        // Update pipeline stage (property request only) when status_id is provided
+        if (array_key_exists('status_id', $validated) && $validated['status_id'] !== null && ($action->sourceTable ?? '') === 'users_property_requests' && !empty($action->sourceId)) {
+            DB::table('users_property_requests')
+                ->where('id', $action->sourceId)
                 ->where('user_id', $userId)
-                ->update([
-                    'customers_hub_stage_id' => $validated['stage_id'],
-                    'customers_hub_stage_changed_at' => now(),
-                ]);
+                ->update(['status_id' => $validated['status_id'], 'updated_at' => now()]);
         }
 
-        unset($validated['stage_id']);
+        unset($validated['status_id']);
 
         $success = $this->aggregator->updateAction($userId, $requestId, $validated);
         if (!$success && !empty($validated)) {
@@ -465,7 +462,8 @@ class RequestsController extends ApiController
     /**
      * POST /api/v2/customers-hub/requests/{requestId}/notes
      *
-     * Append a note to an action.
+     * Append a note to an action. For property_request_{id} and inquiry_{id}, saves to crm_hub_notes.
+     * For other types (reminder, appointment, etc.) uses legacy note column where supported.
      */
     public function addNote(Request $request, string $requestId): JsonResponse
     {
@@ -475,19 +473,55 @@ class RequestsController extends ApiController
         ]);
 
         $userId = $this->getTenantUserId($request);
+        $employeeId = $request->user()->id;
+        $parsed = $this->aggregator->parseActionId($requestId);
 
+        // Request-level leads: save to crm_hub_notes (polymorphic)
+        if ($parsed !== null) {
+            if ($parsed['table'] === 'users_property_requests') {
+                $noteable = UserPropertyRequest::where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->first();
+                if (!$noteable) {
+                    return $this->error('Action not found', 404);
+                }
+                $noteable->hubNotes()->create([
+                    'employee_id' => $employeeId,
+                    'note' => $validated['note'],
+                ]);
+                return $this->success([
+                    'message' => 'Note added successfully',
+                    'actionId' => $requestId,
+                ]);
+            }
+            if ($parsed['table'] === 'api_customer_inquiry') {
+                $noteable = ApiCustomerInquiry::where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->first();
+                if (!$noteable) {
+                    return $this->error('Action not found', 404);
+                }
+                $noteable->hubNotes()->create([
+                    'employee_id' => $employeeId,
+                    'note' => $validated['note'],
+                ]);
+                return $this->success([
+                    'message' => 'Note added successfully',
+                    'actionId' => $requestId,
+                ]);
+            }
+        }
+
+        // Legacy: reminder, appointment, etc. (append to notes/note column where supported)
         $action = $this->aggregator->getById($userId, $requestId);
         if (!$action) {
             return $this->error('Action not found', 404);
         }
-
         $addedBy = $validated['addedBy'] ?? 'current_user';
         $success = $this->aggregator->addNoteToAction($userId, $requestId, $validated['note'], $addedBy);
-
         if (!$success) {
             return $this->error('Action not found or notes not supported for this request type', 422);
         }
-
         return $this->success([
             'message' => 'Note added successfully',
             'actionId' => $requestId,

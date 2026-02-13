@@ -57,7 +57,7 @@ class CustomerDetailService
             ->where('customer_id', $customerId)
             ->count();
 
-        $totalAppointments = DB::table('users_api_customers_appointments')
+        $totalAppointments = DB::table('property_request_appointments')
             ->where('user_id', $userId)
             ->where('customer_id', $customerId)
             ->count();

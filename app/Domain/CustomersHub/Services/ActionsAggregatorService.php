@@ -5,7 +5,6 @@ namespace App\Domain\CustomersHub\Services;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
-use App\Models\CustomersHub\CustomersHubStage;
 use App\Models\PropertyRequestStatus;
 
 /**
@@ -18,8 +17,8 @@ use App\Models\PropertyRequestStatus;
  * - api_customer_inquiry (inquiries, callbacks, whatsapp)
  * - users_property_requests (property matches)
  * - reminders (follow-ups)
- * - users_api_customers_reminders (customer reminders)
- * - users_api_customers_appointments (site visits)
+ * - property_request_appointments (request-level site visits)
+ * - property_request_reminders (request-level reminders)
  */
 class ActionsAggregatorService
 {
@@ -55,8 +54,8 @@ class ActionsAggregatorService
     public const PREFIX_INQUIRY = 'inquiry_';
     public const PREFIX_PROPERTY_REQUEST = 'property_request_';
     public const PREFIX_REMINDER = 'reminder_';
-    public const PREFIX_CUSTOMER_REMINDER = 'customer_reminder_';
-    public const PREFIX_APPOINTMENT = 'appointment_';
+    public const PREFIX_REQUEST_APPOINTMENT = 'request_appointment_';
+    public const PREFIX_REQUEST_REMINDER = 'request_reminder_';
 
     /**
      * Get the unified UNION ALL query for customer actions.
@@ -66,15 +65,15 @@ class ActionsAggregatorService
         $inquiriesQuery = $this->getInquiriesSubquery($userId);
         $propertyRequestsQuery = $this->getPropertyRequestsSubquery($userId);
         $remindersQuery = $this->getRemindersSubquery($userId);
-        $appointmentsQuery = $this->getAppointmentsSubquery($userId);
-        $customerRemindersQuery = $this->getCustomerRemindersSubquery($userId);
+        $requestAppointmentsQuery = $this->getRequestAppointmentsSubquery($userId);
+        $requestRemindersQuery = $this->getRequestRemindersSubquery($userId);
 
         // Build UNION ALL
         $unionQuery = $inquiriesQuery
             ->unionAll($propertyRequestsQuery)
             ->unionAll($remindersQuery)
-            ->unionAll($appointmentsQuery)
-            ->unionAll($customerRemindersQuery);
+            ->unionAll($requestAppointmentsQuery)
+            ->unionAll($requestRemindersQuery);
 
         // Wrap in subquery for filtering and ordering
         $query = DB::query()->fromSub($unionQuery, 'actions');
@@ -148,51 +147,12 @@ class ActionsAggregatorService
     }
 
     /**
-     * Get stage statistics for the filtered actions (request count and percentage per stage).
-     * Returns all active Customer Hub stages; stages with 0 requests are included.
+     * Get stage statistics for the filtered actions (pipeline only: property_request_statuses).
+     * Returns request count and percentage per pipeline stage.
      */
     public function getStageStats(int $userId, array $filters = []): array
     {
-        try {
-            $stages = CustomersHubStage::where('is_active', true)
-                ->orderBy('order')
-                ->get(['id', 'stage_id', 'stage_name_ar', 'stage_name_en', 'color', 'order']);
-
-            if ($stages->isEmpty()) {
-                return [];
-            }
-
-            $query = $this->getUnifiedQuery($userId, $filters);
-            $query->join('api_customers as ac', 'ac.id', '=', 'actions.customerId')
-                ->where('ac.user_id', $userId)
-                ->whereNotNull('ac.customers_hub_stage_id')
-                ->groupBy('ac.customers_hub_stage_id')
-                ->selectRaw('ac.customers_hub_stage_id as stage_id, COUNT(*) as request_count');
-
-            $counts = $query->get()->keyBy('stage_id');
-            $total = $counts->sum('request_count');
-
-            $result = [];
-            foreach ($stages as $stage) {
-                $row = $counts->get($stage->stage_id);
-                $requestCount = $row ? (int) $row->request_count : 0;
-                $percentage = $total > 0 ? round(($requestCount / $total) * 100, 1) : 0.0;
-
-                $result[] = [
-                    'stage_id' => $stage->stage_id,
-                    'stage_name_ar' => $stage->stage_name_ar,
-                    'stage_name_en' => $stage->stage_name_en,
-                    'color' => $stage->color,
-                    'order' => (int) $stage->order,
-                    'requestCount' => $requestCount,
-                    'percentage' => $percentage,
-                ];
-            }
-
-            return $result;
-        } catch (\Throwable $e) {
-            return [];
-        }
+        return $this->getPropertyRequestStageStats($userId, $filters);
     }
 
     /**
@@ -507,8 +467,8 @@ class ActionsAggregatorService
             'inquiry_' => 'api_customer_inquiry',
             'property_request_' => 'users_property_requests',
             'reminder_' => 'reminders',
-            'customer_reminder_' => 'users_api_customers_reminders',
-            'appointment_' => 'users_api_customers_appointments',
+            'request_appointment_' => 'property_request_appointments',
+            'request_reminder_' => 'property_request_reminders',
         ];
 
         foreach ($prefixMap as $prefix => $table) {
@@ -568,13 +528,17 @@ class ActionsAggregatorService
                         'updated_at' => $now,
                     ]) > 0;
 
-            case 'users_api_customers_reminders':
-                // No status column - treat as no-op or delete
-                return true;
+            case 'property_request_appointments':
+                return DB::table('property_request_appointments')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->update(['status' => 'completed', 'updated_at' => $now]) > 0;
 
-            case 'users_api_customers_appointments':
-                // No status column - appointments complete when datetime < NOW()
-                return true;
+            case 'property_request_reminders':
+                return DB::table('property_request_reminders')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->update(['status' => 'completed', 'updated_at' => $now]) > 0;
         }
 
         return false;
@@ -621,13 +585,17 @@ class ActionsAggregatorService
                         'updated_at' => $now,
                     ]) > 0;
 
-            case 'users_api_customers_reminders':
-                // Optional: soft delete or no-op
-                return true;
+            case 'property_request_appointments':
+                return DB::table('property_request_appointments')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->update(['status' => 'cancelled', 'updated_at' => $now]) > 0;
 
-            case 'users_api_customers_appointments':
-                // No dismiss action for appointments
-                return true;
+            case 'property_request_reminders':
+                return DB::table('property_request_reminders')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->update(['status' => 'cancelled', 'updated_at' => $now]) > 0;
         }
 
         return false;
@@ -690,18 +658,18 @@ class ActionsAggregatorService
                     ->where('user_id', $userId)
                     ->update($payload) > 0;
 
-            case 'users_api_customers_appointments':
+            case 'property_request_appointments':
                 if (array_key_exists('title', $data)) {
                     $payload['title'] = $data['title'];
                 }
                 if (array_key_exists('notes', $data)) {
-                    $payload['note'] = $data['notes'];
+                    $payload['notes'] = $data['notes'];
                 }
                 if (array_key_exists('due_date', $data)) {
                     $payload['datetime'] = $data['due_date'];
                 }
                 if (array_key_exists('priority', $data)) {
-                    $payload['priority'] = $this->mapPriorityAppointments($data['priority']);
+                    $payload['priority'] = $this->mapPriorityRequestAppointments($data['priority']);
                 }
                 if (array_key_exists('duration', $data)) {
                     $payload['duration'] = (int) $data['duration'];
@@ -709,7 +677,31 @@ class ActionsAggregatorService
                 if (count($payload) <= 1) {
                     return true;
                 }
-                return DB::table('users_api_customers_appointments')
+                return DB::table('property_request_appointments')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->update($payload) > 0;
+
+            case 'property_request_reminders':
+                if (array_key_exists('title', $data)) {
+                    $payload['title'] = $data['title'];
+                }
+                if (array_key_exists('description', $data)) {
+                    $payload['description'] = $data['description'];
+                }
+                if (array_key_exists('due_date', $data)) {
+                    $payload['datetime'] = $data['due_date'];
+                }
+                if (array_key_exists('priority', $data)) {
+                    $payload['priority'] = $this->mapPriorityRequestReminders($data['priority']);
+                }
+                if (array_key_exists('notes', $data)) {
+                    $payload['notes'] = $data['notes'];
+                }
+                if (count($payload) <= 1) {
+                    return true;
+                }
+                return DB::table('property_request_reminders')
                     ->where('id', $parsed['sourceId'])
                     ->where('user_id', $userId)
                     ->update($payload) > 0;
@@ -727,23 +719,6 @@ class ActionsAggregatorService
                     ->where('user_id', $userId)
                     ->update($payload) > 0;
 
-            case 'users_api_customers_reminders':
-                if (array_key_exists('title', $data)) {
-                    $payload['title'] = $data['title'];
-                }
-                if (array_key_exists('due_date', $data)) {
-                    $payload['datetime'] = $data['due_date'];
-                }
-                if (array_key_exists('priority', $data)) {
-                    $payload['priority'] = $this->mapPriorityAppointments($data['priority']);
-                }
-                if (count($payload) <= 1) {
-                    return true;
-                }
-                return DB::table('users_api_customers_reminders')
-                    ->where('id', $parsed['sourceId'])
-                    ->where('user_id', $userId)
-                    ->update($payload) > 0;
         }
 
         return false;
@@ -793,22 +768,35 @@ class ActionsAggregatorService
                     ->where('user_id', $userId)
                     ->update(['notes' => $notes, 'updated_at' => $now]) > 0;
 
-            case 'users_api_customers_appointments':
-                $row = DB::table('users_api_customers_appointments')
+            case 'property_request_appointments':
+                $row = DB::table('property_request_appointments')
                     ->where('id', $parsed['sourceId'])
                     ->where('user_id', $userId)
-                    ->first(['note']);
+                    ->first(['notes']);
                 if (!$row) {
                     return false;
                 }
-                $noteContent = ($row->note ?? '') . $line;
-                return DB::table('users_api_customers_appointments')
+                $notes = ($row->notes ?? '') . $line;
+                return DB::table('property_request_appointments')
                     ->where('id', $parsed['sourceId'])
                     ->where('user_id', $userId)
-                    ->update(['note' => $noteContent, 'updated_at' => $now]) > 0;
+                    ->update(['notes' => $notes, 'updated_at' => $now]) > 0;
+
+            case 'property_request_reminders':
+                $row = DB::table('property_request_reminders')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->first(['notes']);
+                if (!$row) {
+                    return false;
+                }
+                $notes = ($row->notes ?? '') . $line;
+                return DB::table('property_request_reminders')
+                    ->where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->update(['notes' => $notes, 'updated_at' => $now]) > 0;
 
             case 'api_customer_inquiry':
-            case 'users_api_customers_reminders':
                 return false;
         }
 
@@ -829,7 +817,7 @@ class ActionsAggregatorService
     }
 
     /**
-     * Map API priority to appointments/customer_reminders (1=low, 2=medium, 3=high). Urgent maps to high.
+     * Map API priority to appointments (1=low, 2=medium, 3=high). Urgent maps to high.
      */
     private function mapPriorityAppointments(?string $priority): int
     {
@@ -838,6 +826,34 @@ class ActionsAggregatorService
             'medium' => 2,
             'low' => 1,
             default => 2,
+        };
+    }
+
+    /**
+     * Map API priority to property_request_appointments (1=low, 2=medium, 3=high, 4=urgent).
+     */
+    private function mapPriorityRequestAppointments(?string $priority): int
+    {
+        return match ($priority) {
+            'urgent' => 4,
+            'high' => 3,
+            'medium' => 2,
+            'low' => 1,
+            default => 2,
+        };
+    }
+
+    /**
+     * Map API priority to property_request_reminders (0=low, 1=medium, 2=high, 3=urgent).
+     */
+    private function mapPriorityRequestReminders(?string $priority): int
+    {
+        return match ($priority) {
+            'urgent' => 3,
+            'high' => 2,
+            'medium' => 1,
+            'low' => 0,
+            default => 1,
         };
     }
 
@@ -1000,8 +1016,8 @@ class ActionsAggregatorService
                         $out[$actionId] = $r->customer_id;
                     }
                 }
-            } elseif ($table === 'users_api_customers_appointments') {
-                $rows = DB::table('users_api_customers_appointments')
+            } elseif ($table === 'property_request_appointments') {
+                $rows = DB::table('property_request_appointments')
                     ->where('user_id', $userId)
                     ->whereIn('id', $ids)
                     ->get(['id', 'customer_id']);
@@ -1011,8 +1027,8 @@ class ActionsAggregatorService
                         $out[$actionId] = $r->customer_id;
                     }
                 }
-            } elseif ($table === 'users_api_customers_reminders') {
-                $rows = DB::table('users_api_customers_reminders')
+            } elseif ($table === 'property_request_reminders') {
+                $rows = DB::table('property_request_reminders')
                     ->where('user_id', $userId)
                     ->whereIn('id', $ids)
                     ->get(['id', 'customer_id']);
@@ -1034,7 +1050,7 @@ class ActionsAggregatorService
     }
 
     /**
-     * Snooze a single action (reminders, users_api_customers_reminders, users_api_customers_appointments only).
+     * Snooze a single action (reminders, property_request_appointments, property_request_reminders only).
      */
     private function snoozeAction(int $userId, string $actionId, string $snoozedUntil, int $snoozedBy): bool
     {
@@ -1057,8 +1073,8 @@ class ActionsAggregatorService
                         'snoozed_by' => $snoozedBy,
                         'updated_at' => $now,
                     ]) > 0;
-            case 'users_api_customers_reminders':
-                return DB::table('users_api_customers_reminders')
+            case 'property_request_reminders':
+                return DB::table('property_request_reminders')
                     ->where('id', $parsed['sourceId'])
                     ->where('user_id', $userId)
                     ->update([
@@ -1067,8 +1083,8 @@ class ActionsAggregatorService
                         'snoozed_by' => $snoozedBy,
                         'updated_at' => $now,
                     ]) > 0;
-            case 'users_api_customers_appointments':
-                return DB::table('users_api_customers_appointments')
+            case 'property_request_appointments':
+                return DB::table('property_request_appointments')
                     ->where('id', $parsed['sourceId'])
                     ->where('user_id', $userId)
                     ->update([
@@ -1306,46 +1322,50 @@ class ActionsAggregatorService
     }
 
     /**
-     * Build appointments subquery.
+     * Build request-level appointments subquery (property_request_appointments).
      */
-    private function getAppointmentsSubquery(int $userId): \Illuminate\Database\Query\Builder
+    private function getRequestAppointmentsSubquery(int $userId): \Illuminate\Database\Query\Builder
     {
-        return DB::table('users_api_customers_appointments as a')
-            ->join('api_customers as ac', 'a.customer_id', '=', 'ac.id')
+        return DB::table('property_request_appointments as a')
+            ->leftJoin('api_customers as ac', 'a.customer_id', '=', 'ac.id')
+            ->leftJoin('users_property_requests as upr', 'a.property_request_id', '=', 'upr.id')
             ->where('a.user_id', $userId)
             ->select([
-                DB::raw("CONCAT('appointment_', a.id) as id"),
+                DB::raw("CONCAT('request_appointment_', a.id) as id"),
                 'a.customer_id as customerId',
-                'ac.name as customerName',
-                'ac.phone_number as customerPhone',
+                DB::raw('COALESCE(ac.name, upr.full_name) as customerName'),
+                DB::raw('COALESCE(ac.phone_number, upr.phone) as customerPhone'),
                 DB::raw("'site_visit' as type"),
                 'a.title as title',
-                'a.note as description',
+                'a.notes as description',
                 DB::raw("CASE a.priority
+                    WHEN 4 THEN 'urgent'
                     WHEN 3 THEN 'high'
                     WHEN 2 THEN 'medium'
                     ELSE 'low'
                 END as priority"),
                 DB::raw("CASE
                     WHEN a.snoozed_until IS NOT NULL AND a.snoozed_until > NOW() THEN 'snoozed'
-                    WHEN a.datetime < NOW() THEN 'completed'
+                    WHEN a.status = 'completed' THEN 'completed'
+                    WHEN a.status IN ('cancelled', 'no_show') THEN 'dismissed'
                     ELSE 'pending'
                 END as status"),
-                DB::raw("COALESCE(a.source, 'manual') as source"),
-                DB::raw("'appointment' as objectType"),
+                DB::raw("'manual' as source"),
+                DB::raw("'request_appointment' as objectType"),
                 'a.datetime as dueDate',
                 'a.snoozed_until as snoozedUntil',
                 'a.created_at as createdAt',
-                DB::raw("CASE WHEN a.datetime < NOW() THEN a.updated_at ELSE NULL END as completedAt"),
+                DB::raw("CASE WHEN a.status = 'completed' THEN a.updated_at ELSE NULL END as completedAt"),
                 DB::raw("NULL as completedBy"),
                 DB::raw("NULL as assignedTo"),
                 DB::raw("NULL as assignedToName"),
                 DB::raw("JSON_OBJECT(
                     'appointmentId', a.id,
+                    'propertyRequestId', a.property_request_id,
                     'type', a.type,
                     'duration', a.duration
                 ) as metadata"),
-                DB::raw("'users_api_customers_appointments' as sourceTable"),
+                DB::raw("'property_request_appointments' as sourceTable"),
                 'a.id as sourceId',
                 'a.user_id as userId',
                 DB::raw("NULL as propertyCategory"),
@@ -1358,43 +1378,51 @@ class ActionsAggregatorService
     }
 
     /**
-     * Build customer reminders subquery.
+     * Build request-level reminders subquery (property_request_reminders).
      */
-    private function getCustomerRemindersSubquery(int $userId): \Illuminate\Database\Query\Builder
+    private function getRequestRemindersSubquery(int $userId): \Illuminate\Database\Query\Builder
     {
-        return DB::table('users_api_customers_reminders as cr')
-            ->join('api_customers as ac', 'cr.customer_id', '=', 'ac.id')
-            ->where('cr.user_id', $userId)
+        return DB::table('property_request_reminders as r')
+            ->leftJoin('api_customers as ac', 'r.customer_id', '=', 'ac.id')
+            ->leftJoin('users_property_requests as upr', 'r.property_request_id', '=', 'upr.id')
+            ->where('r.user_id', $userId)
             ->select([
-                DB::raw("CONCAT('customer_reminder_', cr.id) as id"),
-                'cr.customer_id as customerId',
-                'ac.name as customerName',
-                'ac.phone_number as customerPhone',
+                DB::raw("CONCAT('request_reminder_', r.id) as id"),
+                'r.customer_id as customerId',
+                DB::raw('COALESCE(ac.name, upr.full_name) as customerName'),
+                DB::raw('COALESCE(ac.phone_number, upr.phone) as customerPhone'),
                 DB::raw("'follow_up' as type"),
-                'cr.title as title',
-                DB::raw("NULL as description"),
-                DB::raw("CASE cr.priority
-                    WHEN 3 THEN 'high'
-                    WHEN 2 THEN 'medium'
+                'r.title as title',
+                'r.description as description',
+                DB::raw("CASE r.priority
+                    WHEN 3 THEN 'urgent'
+                    WHEN 2 THEN 'high'
+                    WHEN 1 THEN 'medium'
                     ELSE 'low'
                 END as priority"),
                 DB::raw("CASE
-                    WHEN cr.snoozed_until IS NOT NULL AND cr.snoozed_until > NOW() THEN 'snoozed'
+                    WHEN r.snoozed_until IS NOT NULL AND r.snoozed_until > NOW() THEN 'snoozed'
+                    WHEN r.status = 'completed' THEN 'completed'
+                    WHEN r.status = 'cancelled' THEN 'dismissed'
                     ELSE 'pending'
                 END as status"),
-                DB::raw("COALESCE(cr.source, 'manual') as source"),
-                DB::raw("'customer_reminder' as objectType"),
-                'cr.datetime as dueDate',
-                'cr.snoozed_until as snoozedUntil',
-                'cr.created_at as createdAt',
-                DB::raw("NULL as completedAt"),
+                DB::raw("'manual' as source"),
+                DB::raw("'request_reminder' as objectType"),
+                'r.datetime as dueDate',
+                'r.snoozed_until as snoozedUntil',
+                'r.created_at as createdAt',
+                DB::raw("CASE WHEN r.status = 'completed' THEN r.updated_at ELSE NULL END as completedAt"),
                 DB::raw("NULL as completedBy"),
                 DB::raw("NULL as assignedTo"),
                 DB::raw("NULL as assignedToName"),
-                DB::raw("JSON_OBJECT('reminderId', cr.id) as metadata"),
-                DB::raw("'users_api_customers_reminders' as sourceTable"),
-                'cr.id as sourceId',
-                'cr.user_id as userId',
+                DB::raw("JSON_OBJECT(
+                    'reminderId', r.id,
+                    'propertyRequestId', r.property_request_id,
+                    'type', r.type
+                ) as metadata"),
+                DB::raw("'property_request_reminders' as sourceTable"),
+                'r.id as sourceId',
+                'r.user_id as userId',
                 DB::raw("NULL as propertyCategory"),
                 DB::raw("NULL as propertyType"),
                 DB::raw("NULL as city"),
@@ -1464,13 +1492,15 @@ class ActionsAggregatorService
             $query->where('customerId', $filters['customer_id']);
         }
 
-        // Stages filter (customer hub stage: restrict to actions whose customer is in one of the given stages)
+        // Stages filter (pipeline: only property_request actions in given status_id)
         if (!empty($filters['stages']) && is_array($filters['stages'])) {
-            $customerIds = DB::table('api_customers')
-                ->where('user_id', $userId)
-                ->whereIn('customers_hub_stage_id', $filters['stages'])
-                ->pluck('id');
-            $query->whereIn('customerId', $customerIds);
+            $statusIds = array_map('intval', $filters['stages']);
+            $query->where('sourceTable', 'users_property_requests')
+                ->whereIn('sourceId', function ($sub) use ($userId, $statusIds) {
+                    $sub->select('id')->from('users_property_requests')
+                        ->where('user_id', $userId)
+                        ->whereIn('status_id', $statusIds);
+                });
         }
 
         // Exclude specific action ID
@@ -1561,9 +1591,9 @@ class ActionsAggregatorService
     }
 
     /**
-     * Enrich action items with stage (stage_id and stage object).
-     * For property_request items uses pipeline stage (users_property_requests.status_id → property_request_statuses).
-     * For other items uses customer hub stage (api_customers.customers_hub_stage_id → customers_hub_stages).
+     * Enrich action items with pipeline stage (property_request_statuses only).
+     * For property_request items uses users_property_requests.status_id.
+     * Other items get stage_id and stage null.
      */
     private function enrichItemsWithHubStage(Collection $items, int $userId): Collection
     {
@@ -1572,7 +1602,6 @@ class ActionsAggregatorService
             return ($item->sourceTable ?? '') === 'users_property_requests';
         })->pluck('sourceId')->filter()->unique()->values()->all();
 
-        // Pipeline stage for property_request items (property_request_statuses)
         $requestStageMap = [];
         if (!empty($propertyRequestIds)) {
             $requestStatuses = DB::table('users_property_requests')
@@ -1601,50 +1630,15 @@ class ActionsAggregatorService
             }
         }
 
-        // Customer hub stage for non–property_request items
-        $customerIds = $items->reject(function ($item) {
-            return ($item->sourceTable ?? '') === 'users_property_requests';
-        })->pluck('customerId')->filter()->unique()->values()->all();
-
-        $customerStageIds = [];
-        $stageRows = [];
-        if (!empty($customerIds)) {
-            $customerStageIds = DB::table('api_customers')
-                ->whereIn('id', $customerIds)
-                ->where('user_id', $userId)
-                ->get(['id', 'customers_hub_stage_id']);
-            $stageIds = $customerStageIds->pluck('customers_hub_stage_id')->filter()->unique()->values()->all();
-            if (!empty($stageIds)) {
-                $stages = DB::table('customers_hub_stages')->whereIn('stage_id', $stageIds)->get();
-                foreach ($stages as $s) {
-                    $stageRows[$s->stage_id] = (object) [
-                        'stage_id' => $s->stage_id,
-                        'stage_name_ar' => $s->stage_name_ar,
-                        'stage_name_en' => $s->stage_name_en,
-                        'color' => $s->color,
-                        'order' => (int) $s->order,
-                    ];
-                }
-            }
-        }
-
-        $customerStages = [];
-        foreach ($customerStageIds as $row) {
-            $customerStages[$row->id] = $row->customers_hub_stage_id !== null
-                ? ($stageRows[$row->customers_hub_stage_id] ?? null)
-                : null;
-        }
-
-        return $items->map(function ($item) use ($requestStageMap, $customerStages) {
+        return $items->map(function ($item) use ($requestStageMap) {
             if (($item->sourceTable ?? '') === 'users_property_requests') {
                 $stageData = $requestStageMap[$item->sourceId] ?? null;
                 $item->stage_id = $stageData ? $stageData->id : null;
                 $item->stage = $stageData;
                 return $item;
             }
-            $stageData = $customerStages[$item->customerId] ?? null;
-            $item->stage_id = $stageData ? $stageData->stage_id : null;
-            $item->stage = $stageData;
+            $item->stage_id = null;
+            $item->stage = null;
             return $item;
         });
     }

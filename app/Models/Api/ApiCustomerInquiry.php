@@ -2,10 +2,11 @@
 
 namespace App\Models\Api;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use App\Models\ApiCustomer;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\CustomersHub\CrmHubNote;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Class ApiCustomerInquiry
@@ -69,5 +70,10 @@ class ApiCustomerInquiry extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function hubNotes()
+    {
+        return $this->morphMany(CrmHubNote::class, 'noteable');
     }
 }

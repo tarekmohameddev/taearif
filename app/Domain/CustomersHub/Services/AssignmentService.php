@@ -9,13 +9,18 @@ use Carbon\Carbon;
 class AssignmentService
 {
     /**
-     * Get all employees with their workload statistics.
+     * Get all employees with their workload statistics (request-level: count of property requests assigned).
      *
      * @param int $userId Tenant owner ID
      * @return array
      */
     public function getEmployees(int $userId): array
     {
+        $requestCountSub = 'SELECT COUNT(DISTINCT upr.id) FROM users_property_requests upr ' .
+            'INNER JOIN api_customer_property_request acpr ON acpr.property_request_id = upr.id ' .
+            'INNER JOIN api_customers ac ON ac.id = acpr.customer_id AND ac.user_id = upr.user_id ' .
+            'WHERE ac.responsible_employee_id = u.id AND upr.user_id = ? AND upr.is_active = 1';
+
         $employees = DB::table('users as u')
             ->where('u.tenant_id', $userId)
             ->where('u.account_type', 'employee')
@@ -27,26 +32,24 @@ class AssignmentService
                 'u.phone',
                 'u.active as is_active',
                 'u.max_capacity',
-                DB::raw('(SELECT COUNT(*) FROM api_customers WHERE responsible_employee_id = u.id AND user_id = ?) as customer_count'),
-                DB::raw('(SELECT COUNT(*) FROM api_customers WHERE responsible_employee_id = u.id AND user_id = ? AND deleted_at IS NULL) as active_count')
+                DB::raw("({$requestCountSub}) as request_count"),
             ])
-            ->addBinding($userId, 'select')
             ->addBinding($userId, 'select')
             ->get();
 
         return array_map(function ($employee) {
-            $customerCount = $employee->customer_count ?? 0;
+            $requestCount = $employee->request_count ?? 0;
             $maxCapacity = $employee->max_capacity ?? 50;
-            $loadPercentage = $maxCapacity > 0 ? round(($customerCount / $maxCapacity) * 100, 2) : 0;
+            $loadPercentage = $maxCapacity > 0 ? round(($requestCount / $maxCapacity) * 100, 2) : 0;
 
             return [
                 'id' => (string) $employee->id,
                 'name' => trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? '')),
-                'role' => 'Sales Agent', // Could be enhanced to pull from a role field
+                'role' => 'Sales Agent',
                 'email' => $employee->email,
                 'phone' => $employee->phone,
-                'customerCount' => $customerCount,
-                'activeCount' => $employee->active_count ?? 0,
+                'customerCount' => $requestCount,
+                'activeCount' => $requestCount,
                 'maxCapacity' => $maxCapacity,
                 'isActive' => (bool) $employee->is_active,
                 'loadPercentage' => $loadPercentage,
@@ -55,22 +58,27 @@ class AssignmentService
     }
 
     /**
-     * Get count of unassigned customers.
+     * Get count of unassigned property requests (request-level: requests whose linked customer has no assignee).
      *
      * @param int $userId Tenant owner ID
      * @return int
      */
     public function getUnassignedCount(int $userId): int
     {
-        return DB::table('api_customers')
-            ->where('user_id', $userId)
-            ->whereNull('responsible_employee_id')
-            ->whereNull('deleted_at')
-            ->count();
+        return (int) DB::table('users_property_requests as upr')
+            ->join('api_customer_property_request as acpr', 'acpr.property_request_id', '=', 'upr.id')
+            ->join('api_customers as ac', function ($j) use ($userId) {
+                $j->on('ac.id', '=', 'acpr.customer_id')->where('ac.user_id', '=', $userId);
+            })
+            ->where('upr.user_id', $userId)
+            ->where('upr.is_active', 1)
+            ->whereNull('ac.responsible_employee_id')
+            ->selectRaw('COUNT(DISTINCT upr.id) as c')
+            ->value('c');
     }
 
     /**
-     * Auto-assign customers based on employee rules.
+     * Auto-assign property requests (leads) based on employee rules. Assigns via linked customer.
      *
      * @param int $userId Tenant owner ID
      * @param array $employeeRules Array of employee rules configuration
@@ -82,40 +90,30 @@ class AssignmentService
         $failedCount = 0;
         $assignments = [];
 
-        // Get unassigned customers with related data
-        $customers = $this->getUnassignedCustomers($userId);
-
-        // Get employee capacities
+        $requests = $this->getUnassignedPropertyRequests($userId);
         $employeeCapacities = $this->getEmployeeCapacities($userId);
 
-        foreach ($customers as $customer) {
+        foreach ($requests as $requestRow) {
             $assigned = false;
-            
-            // Find matching employees (sorted by load percentage)
-            $matchingEmployees = $this->findMatchingEmployees($customer, $employeeRules, $employeeCapacities);
+            $matchingEmployees = $this->findMatchingEmployees($requestRow, $employeeRules, $employeeCapacities);
 
             foreach ($matchingEmployees as $employeeId) {
-                // Check if employee has capacity
                 if ($this->hasCapacity($employeeId, $employeeCapacities)) {
-                    // Assign customer
-                    $success = $this->assignCustomer($userId, $customer->id, $employeeId);
-                    
+                    $success = $this->assignCustomer($userId, $requestRow->customer_id, $employeeId);
                     if ($success) {
                         $assignedCount++;
                         $assignments[] = [
-                            'customerId' => (string) $customer->id,
+                            'requestId' => (string) $requestRow->id,
+                            'customerId' => (string) $requestRow->customer_id,
                             'employeeId' => (string) $employeeId,
                             'assignedAt' => Carbon::now()->toIso8601String(),
                         ];
-                        
-                        // Update capacity tracking
                         $employeeCapacities[$employeeId]['current']++;
                         $assigned = true;
                         break;
                     }
                 }
             }
-
             if (!$assigned) {
                 $failedCount++;
             }
@@ -129,16 +127,15 @@ class AssignmentService
     }
 
     /**
-     * Manually assign customers to an employee.
+     * Manually assign property requests (leads) to an employee. Resolves each request to linked customer.
      *
      * @param int $userId Tenant owner ID
-     * @param array $customerIds Array of customer IDs
+     * @param array $requestIds Array of property request IDs (or customer IDs for backward compat, resolved as request)
      * @param string $employeeId Employee ID
      * @return array
      */
-    public function manualAssign(int $userId, array $customerIds, string $employeeId): array
+    public function manualAssign(int $userId, array $requestIds, string $employeeId): array
     {
-        // Validate employee exists and is active
         $employee = DB::table('users')
             ->where('id', $employeeId)
             ->where('tenant_id', $userId)
@@ -153,12 +150,16 @@ class AssignmentService
         $assignedCount = 0;
         $assignments = [];
 
-        foreach ($customerIds as $customerId) {
+        foreach ($requestIds as $requestOrCustomerId) {
+            $customerId = $this->resolveRequestToCustomerId($userId, (int) $requestOrCustomerId);
+            if ($customerId === null) {
+                continue;
+            }
             $success = $this->assignCustomer($userId, $customerId, $employeeId);
-            
             if ($success) {
                 $assignedCount++;
                 $assignments[] = [
+                    'requestId' => (string) $requestOrCustomerId,
                     'customerId' => (string) $customerId,
                     'employeeId' => (string) $employeeId,
                     'assignedAt' => Carbon::now()->toIso8601String(),
@@ -170,6 +171,27 @@ class AssignmentService
             'assignedCount' => $assignedCount,
             'assignments' => $assignments,
         ];
+    }
+
+    /**
+     * Resolve a property request ID (or customer ID if linked to single request) to customer ID for assignment.
+     */
+    private function resolveRequestToCustomerId(int $userId, int $requestOrCustomerId): ?int
+    {
+        $customerId = DB::table('api_customer_property_request as acpr')
+            ->join('users_property_requests as upr', 'upr.id', '=', 'acpr.property_request_id')
+            ->where('upr.user_id', $userId)
+            ->where('upr.is_active', 1)
+            ->where('acpr.property_request_id', $requestOrCustomerId)
+            ->value('acpr.customer_id');
+        if ($customerId !== null) {
+            return (int) $customerId;
+        }
+        $asCustomer = DB::table('api_customers')
+            ->where('id', $requestOrCustomerId)
+            ->where('user_id', $userId)
+            ->value('id');
+        return $asCustomer !== null ? (int) $asCustomer : null;
     }
 
     /**
@@ -245,42 +267,39 @@ class AssignmentService
     }
 
     /**
-     * Get unassigned customers with related data for rule matching.
+     * Get unassigned property requests with linked customer and request data for rule matching.
      *
      * @param int $userId Tenant owner ID
      * @return \Illuminate\Support\Collection
      */
-    private function getUnassignedCustomers(int $userId)
+    private function getUnassignedPropertyRequests(int $userId)
     {
-        return DB::table('api_customers as c')
-            ->leftJoinSub(
-                DB::table('api_customer_property_request')->select('customer_id')->selectRaw('MIN(property_request_id) as property_request_id')->groupBy('customer_id'),
-                'acpr',
-                'acpr.customer_id',
-                '=',
-                'c.id'
-            )
-            ->leftJoin('users_property_requests as pr', 'pr.id', '=', 'acpr.property_request_id')
-            ->leftJoin('user_districts as d', 'c.city_id', '=', 'd.id')
-            ->where('c.user_id', $userId)
+        $sub = DB::table('users_property_requests as upr')
+            ->join('api_customer_property_request as acpr', 'acpr.property_request_id', '=', 'upr.id')
+            ->join('api_customers as c', function ($j) use ($userId) {
+                $j->on('c.id', '=', 'acpr.customer_id')->where('c.user_id', '=', $userId);
+            })
+            ->leftJoin('user_cities as uc', 'upr.city_id', '=', 'uc.id')
+            ->where('upr.user_id', $userId)
+            ->where('upr.is_active', 1)
             ->whereNull('c.responsible_employee_id')
             ->whereNull('c.deleted_at')
             ->select([
-                'c.id',
-                'c.name',
+                'upr.id',
+                'c.id as customer_id',
                 'c.source',
-                'c.city_id',
-                'd.city_name_ar as city_name',
-                'pr.budget_from',
-                'pr.budget_to',
-                'pr.category_id',
-                'pr.property_type',
-            ])
-            ->get();
+                'upr.budget_from',
+                'upr.budget_to',
+                'upr.category_id',
+                'upr.property_type',
+                DB::raw('uc.name_ar as city_name'),
+            ]);
+
+        return $sub->get()->unique('id')->values();
     }
 
     /**
-     * Get employee capacities (current customer count and max capacity).
+     * Get employee capacities (current request count and max capacity).
      *
      * @param int $userId Tenant owner ID
      * @return array
@@ -289,6 +308,11 @@ class AssignmentService
     {
         $capacities = [];
         
+        $requestCountSub = 'SELECT COUNT(DISTINCT upr.id) FROM users_property_requests upr ' .
+            'INNER JOIN api_customer_property_request acpr ON acpr.property_request_id = upr.id ' .
+            'INNER JOIN api_customers ac ON ac.id = acpr.customer_id AND ac.user_id = upr.user_id ' .
+            'WHERE ac.responsible_employee_id = u.id AND upr.user_id = ? AND upr.is_active = 1';
+
         $employees = DB::table('users as u')
             ->where('u.tenant_id', $userId)
             ->where('u.account_type', 'employee')
@@ -296,14 +320,14 @@ class AssignmentService
             ->select([
                 'u.id',
                 'u.max_capacity',
-                DB::raw('(SELECT COUNT(*) FROM api_customers WHERE responsible_employee_id = u.id AND user_id = ?) as customer_count')
+                DB::raw("({$requestCountSub}) as request_count"),
             ])
             ->addBinding($userId, 'select')
             ->get();
 
         foreach ($employees as $employee) {
             $capacities[$employee->id] = [
-                'current' => $employee->customer_count ?? 0,
+                'current' => $employee->request_count ?? 0,
                 'max' => $employee->max_capacity ?? 50,
             ];
         }

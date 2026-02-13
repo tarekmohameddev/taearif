@@ -109,30 +109,39 @@ class AssignmentController extends ApiController
 
     /**
      * POST /api/v2/customers-hub/assignment/assign
-     * 
-     * Manually assign customers to an employee.
+     *
+     * Manually assign property requests (leads) to an employee. Accepts requestIds or customerIds (backward compat).
      */
     public function assign(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'customerIds' => 'required|array|min:1',
-            'customerIds.*' => 'required|string',
+            'requestIds' => 'nullable|array|min:1',
+            'requestIds.*' => 'integer',
+            'customerIds' => 'nullable|array|min:1',
+            'customerIds.*' => 'string',
             'employeeId' => 'required|string|exists:users,id',
         ]);
+
+        $ids = !empty($validated['requestIds'])
+            ? array_map('intval', $validated['requestIds'])
+            : array_map('intval', $validated['customerIds'] ?? []);
+        if (empty($ids)) {
+            return $this->errorWithSpec('At least one of requestIds or customerIds is required', 422);
+        }
 
         $userId = $this->getTenantUserId($request);
 
         try {
             $result = $this->assignmentService->manualAssign(
                 $userId,
-                $validated['customerIds'],
+                $ids,
                 $validated['employeeId']
             );
 
             // Invalidate caches
             Cache::forget("ch:assignment:employees:{$userId}");
 
-            return $this->successWithSpec($result, 'Customers assigned successfully');
+            return $this->successWithSpec($result, 'Requests assigned successfully');
         } catch (\InvalidArgumentException $e) {
             return $this->errorWithSpec($e->getMessage(), 404);
         } catch (\Exception $e) {

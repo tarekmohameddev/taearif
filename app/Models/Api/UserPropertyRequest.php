@@ -3,6 +3,7 @@
 namespace App\Models\Api;
 
 use App\Models\ApiCustomer;
+use App\Models\CustomersHub\CrmHubNote;
 use App\Models\User;
 use App\Support\PropertyRequestFilterOptionsCache;
 use Illuminate\Database\Eloquent\Model;
@@ -94,6 +95,11 @@ class UserPropertyRequest extends Model
     {
         return $this->belongsToMany(ApiCustomer::class, 'api_customer_property_request')
             ->withTimestamps();
+    }
+
+    public function hubNotes()
+    {
+        return $this->morphMany(CrmHubNote::class, 'noteable');
     }
 
     /**
