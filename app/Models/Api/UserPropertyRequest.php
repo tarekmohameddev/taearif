@@ -93,7 +93,7 @@ class UserPropertyRequest extends Model
 
     public function customers()
     {
-        return $this->belongsToMany(ApiCustomer::class, 'api_customer_property_request')
+        return $this->belongsToMany(ApiCustomer::class, 'api_customer_property_request', 'property_request_id', 'customer_id')
             ->withTimestamps();
     }
 

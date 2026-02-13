@@ -130,7 +130,7 @@ class ApiCustomer extends Authenticatable
 
     public function propertyRequests()
     {
-        return $this->belongsToMany(\App\Models\Api\UserPropertyRequest::class, 'api_customer_property_request')
+        return $this->belongsToMany(\App\Models\Api\UserPropertyRequest::class, 'api_customer_property_request', 'customer_id', 'property_request_id')
             ->withTimestamps();
     }
 
