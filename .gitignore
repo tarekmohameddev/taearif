@@ -84,6 +84,6 @@ database/seeders/AdminSeeder.php
 .cursor/rules
 tests/api-scripts/*
 *.bat
-111/*
 
 /the_test_db
+ai/api-export/*
