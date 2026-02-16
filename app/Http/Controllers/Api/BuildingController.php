@@ -40,7 +40,7 @@ class BuildingController extends Controller
                                 $q->where('language_id', $languageId);
                             }
                         },
-                        'contents.city:id,name',
+                        'contents.district:id,name_ar,name_en,city_id,city_name_ar,city_name_en',
                         'contents.state:id,name',
                         'contents.country:id,name'
                     ]);
@@ -74,8 +74,10 @@ class BuildingController extends Controller
                     'property_status' => $property->property_status,
                     'featured' => (bool)$property->featured,
                     'featured_image' => $property->featured_image ? asset($property->featured_image) : null,
-                    'city' => $content && $content->city ? $content->city->name : 'N/A',
-                    'state' => $content && $content->state ? $content->state->name : 'N/A',
+                    'city' => $content && $content->district ? $content->district->city_name_ar : 'N/A',
+                    'state' => $content && $content->district
+                        ? $content->district->name_ar
+                        : ($content && $content->state ? $content->state->name : 'N/A'),
                     'country' => $content && $content->country ? $content->country->name : 'N/A',
                     'created_at' => $property->created_at->toISOString(),
                 ];
@@ -194,7 +196,7 @@ class BuildingController extends Controller
                                 $q->where('language_id', $languageId);
                             }
                         },
-                        'contents.city:id,name',
+                        'contents.district:id,name_ar,name_en,city_id,city_name_ar,city_name_en',
                         'contents.state:id,name',
                         'contents.country:id,name'
                     ]);
@@ -227,8 +229,10 @@ class BuildingController extends Controller
                 'property_status' => $property->property_status,
                 'featured' => (bool)$property->featured,
                 'featured_image' => $property->featured_image ? asset($property->featured_image) : null,
-                'city' => $content && $content->city ? $content->city->name : 'N/A',
-                'state' => $content && $content->state ? $content->state->name : 'N/A',
+                'city' => $content && $content->district ? $content->district->city_name_ar : 'N/A',
+                'state' => $content && $content->district
+                    ? $content->district->name_ar
+                    : ($content && $content->state ? $content->state->name : 'N/A'),
                 'country' => $content && $content->country ? $content->country->name : 'N/A',
                 'created_at' => $property->created_at->toISOString(),
             ];
