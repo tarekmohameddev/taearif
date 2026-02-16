@@ -27,60 +27,60 @@
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card border-0 h-100 stat-card" style="background: #3498db;">
-                <div class="card-body text-white p-4">
+            <div class="card border-0 h-100 stat-card" style="background: #3498db !important;">
+                <div class="card-body p-4" style="color: #ffffff !important;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px;">Total Packages</p>
-                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem;">{{ $totalPackages }}</h2>
+                            <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px; color: #ffffff !important;">Total Packages</p>
+                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem; color: #ffffff !important;">{{ $totalPackages }}</h2>
                         </div>
                         <div class="stat-icon">
-                            <i class="fas fa-box fa-3x" style="opacity: 0.3;"></i>
+                            <i class="fas fa-box fa-3x" style="opacity: 0.3; color: #ffffff !important;"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 h-100 stat-card" style="background: #2ecc71;">
-                <div class="card-body text-white p-4">
+            <div class="card border-0 h-100 stat-card" style="background: #2ecc71 !important;">
+                <div class="card-body p-4" style="color: #ffffff !important;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px;">Active Packages</p>
-                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem;">{{ $activePackagesCount }}</h2>
+                            <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px; color: #ffffff !important;">Active Packages</p>
+                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem; color: #ffffff !important;">{{ $activePackagesCount }}</h2>
                         </div>
                         <div class="stat-icon">
-                            <i class="fas fa-check-circle fa-3x" style="opacity: 0.3;"></i>
+                            <i class="fas fa-check-circle fa-3x" style="opacity: 0.3; color: #ffffff !important;"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 h-100 stat-card" style="background: #f39c12;">
-                <div class="card-body text-white p-4">
+            <div class="card border-0 h-100 stat-card" style="background: #f39c12 !important;">
+                <div class="card-body p-4" style="color: #ffffff !important;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px;">Channel Types</p>
-                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem;">{{ $totalChannels }}</h2>
+                            <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px; color: #ffffff !important;">Channel Types</p>
+                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem; color: #ffffff !important;">{{ $totalChannels }}</h2>
                         </div>
                         <div class="stat-icon">
-                            <i class="fas fa-broadcast-tower fa-3x" style="opacity: 0.3;"></i>
+                            <i class="fas fa-broadcast-tower fa-3x" style="opacity: 0.3; color: #ffffff !important;"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 h-100 stat-card" style="background: #e74c3c;">
-                <div class="card-body text-white p-4">
+            <div class="card border-0 h-100 stat-card" style="background: #e74c3c !important;">
+                <div class="card-body p-4" style="color: #ffffff !important;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px;">Active Channels</p>
-                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem;">{{ $activeChannelsCount }}</h2>
+                            <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px; color: #ffffff !important;">Active Channels</p>
+                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem; color: #ffffff !important;">{{ $activeChannelsCount }}</h2>
                         </div>
                         <div class="stat-icon">
-                            <i class="fas fa-signal fa-3x" style="opacity: 0.3;"></i>
+                            <i class="fas fa-signal fa-3x" style="opacity: 0.3; color: #ffffff !important;"></i>
                         </div>
                     </div>
                 </div>
