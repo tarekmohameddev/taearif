@@ -302,20 +302,16 @@ class RequestsController extends ApiController
             return $this->error('Action not found', 404);
         }
 
-        if (($action->objectType ?? '') === 'property_request' && !empty($action->sourceId)) {
-            $now = Carbon::now();
-            $appointmentRows = DB::table('property_request_appointments')
-                ->where('user_id', $userId)
-                ->where('property_request_id', $action->sourceId)
-                ->orderBy('datetime', 'asc')
-                ->get();
-            $reminderRows = DB::table('property_request_reminders')
-                ->where('user_id', $userId)
-                ->where('property_request_id', $action->sourceId)
-                ->orderBy('datetime', 'asc')
-                ->get();
-            $action->appointments = $appointmentRows->map(fn ($row) => $this->formatPropertyRequestAppointment($row))->values()->all();
-            $action->reminders = $reminderRows->map(fn ($row) => $this->formatPropertyRequestReminder($row, $now))->values()->all();
+        $isPropertyRequestAction = (($action->objectType ?? '') === 'property_request')
+            && (($action->sourceTable ?? '') === 'users_property_requests')
+            && !empty($action->sourceId);
+
+        if ($isPropertyRequestAction) {
+            $fullAction = $this->buildFullPropertyRequestAction($userId, $action);
+            if ($fullAction === null) {
+                return $this->error('Action not found', 404);
+            }
+            $action = $fullAction;
         } else {
             $action->appointments = [];
             $action->reminders = [];
@@ -1000,6 +996,195 @@ class RequestsController extends ApiController
             'propertyRequestId' => (int) $row->property_request_id,
             'customerId' => $row->customer_id !== null ? (int) $row->customer_id : null,
         ];
+    }
+
+    /**
+     * Build full property request payload for show endpoint.
+     */
+    private function buildFullPropertyRequestAction(int $userId, object $action): ?array
+    {
+        $propertyRequestId = (int) ($action->sourceId ?? 0);
+        if ($propertyRequestId <= 0) {
+            return null;
+        }
+
+        $propertyRequest = DB::table('users_property_requests')
+            ->where('user_id', $userId)
+            ->where('id', $propertyRequestId)
+            ->where('is_active', 1)
+            ->first();
+
+        if (!$propertyRequest) {
+            return null;
+        }
+
+        $now = Carbon::now();
+        $appointmentRows = DB::table('property_request_appointments')
+            ->where('user_id', $userId)
+            ->where('property_request_id', $propertyRequestId)
+            ->orderBy('datetime', 'asc')
+            ->get();
+        $reminderRows = DB::table('property_request_reminders')
+            ->where('user_id', $userId)
+            ->where('property_request_id', $propertyRequestId)
+            ->orderBy('datetime', 'asc')
+            ->get();
+
+        $appointments = $appointmentRows
+            ->map(fn ($row) => $this->formatPropertyRequestAppointment($row))
+            ->values()
+            ->all();
+        $reminders = $reminderRows
+            ->map(fn ($row) => $this->formatPropertyRequestReminder($row, $now))
+            ->values()
+            ->all();
+
+        $stageId = null;
+        $stage = null;
+        if (!empty($propertyRequest->status_id)) {
+            $stageRow = DB::table('property_request_statuses')
+                ->where('id', $propertyRequest->status_id)
+                ->where('is_active', true)
+                ->first(['id', 'name_ar', 'name_en']);
+            if ($stageRow) {
+                $stageId = (int) $stageRow->id;
+                $stage = [
+                    'id' => (int) $stageRow->id,
+                    'nameAr' => $stageRow->name_ar,
+                    'nameEn' => $stageRow->name_en ?? $stageRow->name_ar,
+                ];
+            }
+        }
+
+        $city = null;
+        if (!empty($propertyRequest->city_id)) {
+            $city = DB::table('user_cities')
+                ->where('id', $propertyRequest->city_id)
+                ->value('name_ar');
+        }
+
+        $propertyCategory = null;
+        if (!empty($propertyRequest->category_id)) {
+            $propertyCategory = DB::table('api_user_categories')
+                ->where('id', $propertyRequest->category_id)
+                ->value('name');
+        }
+
+        $assignedTo = isset($action->assignedTo) && $action->assignedTo !== null && $action->assignedTo !== ''
+            ? (int) $action->assignedTo
+            : null;
+        $assignedToName = trim((string) ($action->assignedToName ?? ''));
+
+        if ($assignedTo === null || $assignedToName === '') {
+            $assignee = DB::table('api_customers as ac')
+                ->leftJoin('users as u', 'ac.responsible_employee_id', '=', 'u.id')
+                ->where('ac.user_id', $userId)
+                ->where('ac.phone_number', $propertyRequest->phone)
+                ->select([
+                    'ac.responsible_employee_id',
+                    DB::raw("CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as assigned_to_name"),
+                ])
+                ->first();
+
+            if ($assignedTo === null && $assignee && $assignee->responsible_employee_id !== null) {
+                $assignedTo = (int) $assignee->responsible_employee_id;
+            }
+            if ($assignedToName === '' && $assignee) {
+                $assignedToName = trim((string) ($assignee->assigned_to_name ?? ''));
+            }
+        }
+
+        $fullAction = array_merge((array) $action, (array) $propertyRequest);
+
+        // Keep existing action identifier contract and expose DB id explicitly too.
+        $fullAction['id'] = $action->id ?? ('property_request_' . $propertyRequestId);
+        $fullAction['property_request_id'] = $propertyRequestId;
+        $fullAction['sourceId'] = $propertyRequestId;
+        $fullAction['sourceTable'] = 'users_property_requests';
+        $fullAction['objectType'] = 'property_request';
+        $fullAction['source'] = $action->source ?? ($propertyRequest->source ?? 'website');
+
+        $fullAction['notes'] = $propertyRequest->notes;
+        $fullAction['stage_id'] = $stageId;
+        $fullAction['stage'] = $stage;
+        $fullAction['priority'] = $this->mapPropertyRequestPriorityToString($propertyRequest->seriousness ?? null);
+        $fullAction['status'] = $this->mapPropertyRequestStatusToString(
+            (bool) ($propertyRequest->is_archived ?? false),
+            (bool) ($propertyRequest->is_read ?? false)
+        );
+        $fullAction['propertyCategory'] = $propertyCategory;
+        $fullAction['propertyType'] = $propertyRequest->property_type;
+        $fullAction['city'] = $city;
+        $fullAction['state'] = $propertyRequest->region;
+        $fullAction['budgetMin'] = $propertyRequest->budget_from !== null ? (float) $propertyRequest->budget_from : null;
+        $fullAction['budgetMax'] = $propertyRequest->budget_to !== null ? (float) $propertyRequest->budget_to : null;
+        $fullAction['assignedTo'] = $assignedTo;
+        $fullAction['assignedToName'] = $assignedToName;
+        $fullAction['completedAt'] = null;
+        $fullAction['completedBy'] = null;
+        $fullAction['snoozedUntil'] = null;
+        $fullAction['dueDate'] = null;
+        $fullAction['appointments'] = $appointments;
+        $fullAction['reminders'] = $reminders;
+        $fullAction['metadata'] = $this->buildPropertyRequestMetadata($propertyRequest, $action->metadata ?? []);
+
+        return $fullAction;
+    }
+
+    /**
+     * Map users_property_requests.seriousness value to API priority.
+     */
+    private function mapPropertyRequestPriorityToString(?string $seriousness): string
+    {
+        return match ($seriousness) {
+            'مستعد فورًا' => 'urgent',
+            'خلال شهر' => 'high',
+            'خلال 3 أشهر' => 'medium',
+            'لاحقًا / استكشاف فقط' => 'low',
+            default => 'medium',
+        };
+    }
+
+    /**
+     * Map property request read/archive flags to API status.
+     */
+    private function mapPropertyRequestStatusToString(bool $isArchived, bool $isRead): string
+    {
+        if ($isArchived) {
+            return 'dismissed';
+        }
+        if ($isRead) {
+            return 'in_progress';
+        }
+        return 'pending';
+    }
+
+    /**
+     * Build metadata object for property request response.
+     */
+    private function buildPropertyRequestMetadata(object $propertyRequest, mixed $existingMetadata): array
+    {
+        $metadata = [];
+        if (is_array($existingMetadata)) {
+            $metadata = $existingMetadata;
+        } elseif (is_object($existingMetadata)) {
+            $metadata = (array) $existingMetadata;
+        } elseif (is_string($existingMetadata)) {
+            $decoded = json_decode($existingMetadata, true);
+            $metadata = is_array($decoded) ? $decoded : [];
+        }
+
+        $defaults = [
+            'propertyRequestId' => (int) $propertyRequest->id,
+            'propertyType' => $propertyRequest->property_type,
+            'propertyCategory' => $propertyRequest->category_id,
+            'budgetFrom' => $propertyRequest->budget_from !== null ? (float) $propertyRequest->budget_from : null,
+            'budgetTo' => $propertyRequest->budget_to !== null ? (float) $propertyRequest->budget_to : null,
+            'purpose' => $propertyRequest->purpose,
+            'seriousness' => $propertyRequest->seriousness,
+        ];
+
+        return array_replace($defaults, $metadata);
     }
 
     /**
