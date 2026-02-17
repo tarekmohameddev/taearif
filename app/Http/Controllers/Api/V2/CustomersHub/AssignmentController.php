@@ -116,16 +116,16 @@ class AssignmentController extends ApiController
     {
         $validated = $request->validate([
             'requestIds' => 'nullable|array|min:1',
-            'requestIds.*' => 'integer',
+            'requestIds.*' => 'string', // composite IDs e.g. property_request_42, inquiry_17 or numeric string
             'customerIds' => 'nullable|array|min:1',
             'customerIds.*' => 'string',
             'employeeId' => 'required|string|exists:users,id',
         ]);
 
-        $ids = !empty($validated['requestIds'])
-            ? array_map('intval', $validated['requestIds'])
-            : array_map('intval', $validated['customerIds'] ?? []);
-        if (empty($ids)) {
+        $requestIds = !empty($validated['requestIds'])
+            ? $validated['requestIds']
+            : ($validated['customerIds'] ?? []);
+        if (empty($requestIds)) {
             return $this->errorWithSpec('At least one of requestIds or customerIds is required', 422);
         }
 
@@ -134,7 +134,7 @@ class AssignmentController extends ApiController
         try {
             $result = $this->assignmentService->manualAssign(
                 $userId,
-                $ids,
+                $requestIds,
                 $validated['employeeId']
             );
 

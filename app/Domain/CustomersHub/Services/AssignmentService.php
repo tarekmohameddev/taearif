@@ -127,10 +127,10 @@ class AssignmentService
     }
 
     /**
-     * Manually assign property requests (leads) to an employee. Resolves each request to linked customer.
+     * Manually assign property requests or inquiries (leads) to an employee. Resolves each to linked customer.
      *
      * @param int $userId Tenant owner ID
-     * @param array $requestIds Array of property request IDs (or customer IDs for backward compat, resolved as request)
+     * @param array $requestIds Array of composite IDs (e.g. property_request_42, inquiry_17) or numeric strings/ints
      * @param string $employeeId Employee ID
      * @return array
      */
@@ -151,7 +151,8 @@ class AssignmentService
         $assignments = [];
 
         foreach ($requestIds as $requestOrCustomerId) {
-            $customerId = $this->resolveRequestToCustomerId($userId, (int) $requestOrCustomerId);
+            $idString = is_string($requestOrCustomerId) ? $requestOrCustomerId : (string) $requestOrCustomerId;
+            $customerId = $this->resolveCompositeRequestIdToCustomerId($userId, $idString);
             if ($customerId === null) {
                 continue;
             }
@@ -159,7 +160,7 @@ class AssignmentService
             if ($success) {
                 $assignedCount++;
                 $assignments[] = [
-                    'requestId' => (string) $requestOrCustomerId,
+                    'requestId' => $idString,
                     'customerId' => (string) $customerId,
                     'employeeId' => (string) $employeeId,
                     'assignedAt' => Carbon::now()->toIso8601String(),
@@ -171,6 +172,30 @@ class AssignmentService
             'assignedCount' => $assignedCount,
             'assignments' => $assignments,
         ];
+    }
+
+    /**
+     * Resolve composite request ID (inquiry_17, property_request_42) or numeric ID to customer ID.
+     */
+    private function resolveCompositeRequestIdToCustomerId(int $userId, string $compositeOrNumericId): ?int
+    {
+        if (str_starts_with($compositeOrNumericId, 'inquiry_')) {
+            $inquiryId = (int) substr($compositeOrNumericId, 7);
+            if ($inquiryId <= 0) {
+                return null;
+            }
+            $customerId = DB::table('api_customer_inquiry')
+                ->where('user_id', $userId)
+                ->where('id', $inquiryId)
+                ->value('customer_id');
+            return $customerId !== null ? (int) $customerId : null;
+        }
+        if (str_starts_with($compositeOrNumericId, 'property_request_')) {
+            $requestId = (int) substr($compositeOrNumericId, 17);
+            return $requestId > 0 ? $this->resolveRequestToCustomerId($userId, $requestId) : null;
+        }
+        $numeric = (int) $compositeOrNumericId;
+        return $numeric > 0 ? $this->resolveRequestToCustomerId($userId, $numeric) : null;
     }
 
     /**

@@ -1591,8 +1591,9 @@ class ActionsAggregatorService
     }
 
     /**
-     * Enrich action items with pipeline stage (property_request_statuses only).
+     * Enrich action items with pipeline stage (property_request_statuses).
      * For property_request items uses users_property_requests.status_id.
+     * For inquiry items uses api_customer_inquiry.status_id.
      * Other items get stage_id and stage null.
      */
     private function enrichItemsWithHubStage(Collection $items, int $userId): Collection
@@ -1602,16 +1603,29 @@ class ActionsAggregatorService
             return ($item->sourceTable ?? '') === 'users_property_requests';
         })->pluck('sourceId')->filter()->unique()->values()->all();
 
+        $inquiryIds = $items->filter(function ($item) {
+            return ($item->sourceTable ?? '') === 'api_customer_inquiry';
+        })->pluck('sourceId')->filter()->unique()->values()->all();
+
         $requestStageMap = [];
+        $inquiryStageMap = [];
+
+        $statusIdsToLoad = [];
+
         if (!empty($propertyRequestIds)) {
             $requestStatuses = DB::table('users_property_requests')
                 ->where('user_id', $userId)
                 ->whereIn('id', $propertyRequestIds)
                 ->get(['id', 'status_id']);
-            $statusIds = $requestStatuses->pluck('status_id')->filter()->unique()->values()->all();
-            if (!empty($statusIds)) {
+            foreach ($requestStatuses as $row) {
+                if ($row->status_id !== null) {
+                    $statusIdsToLoad[] = $row->status_id;
+                }
+            }
+            $statusIdsToLoad = array_unique($statusIdsToLoad);
+            if (!empty($statusIdsToLoad)) {
                 $stages = DB::table('property_request_statuses')
-                    ->whereIn('id', $statusIds)
+                    ->whereIn('id', $statusIdsToLoad)
                     ->where('is_active', true)
                     ->get(['id', 'name_ar', 'name_en']);
                 $stageById = $stages->keyBy('id');
@@ -1630,9 +1644,42 @@ class ActionsAggregatorService
             }
         }
 
-        return $items->map(function ($item) use ($requestStageMap) {
+        if (!empty($inquiryIds)) {
+            $inquiryStatuses = DB::table('api_customer_inquiry')
+                ->where('user_id', $userId)
+                ->whereIn('id', $inquiryIds)
+                ->get(['id', 'status_id']);
+            $inquiryStatusIds = $inquiryStatuses->pluck('status_id')->filter()->unique()->values()->all();
+            if (!empty($inquiryStatusIds)) {
+                $stages = DB::table('property_request_statuses')
+                    ->whereIn('id', $inquiryStatusIds)
+                    ->where('is_active', true)
+                    ->get(['id', 'name_ar', 'name_en']);
+                $stageById = $stages->keyBy('id');
+                foreach ($inquiryStatuses as $row) {
+                    if ($row->status_id === null) {
+                        $inquiryStageMap[$row->id] = null;
+                        continue;
+                    }
+                    $s = $stageById->get($row->status_id);
+                    $inquiryStageMap[$row->id] = $s ? (object) [
+                        'id' => (int) $s->id,
+                        'nameAr' => $s->name_ar,
+                        'nameEn' => $s->name_en ?? $s->name_ar,
+                    ] : null;
+                }
+            }
+        }
+
+        return $items->map(function ($item) use ($requestStageMap, $inquiryStageMap) {
             if (($item->sourceTable ?? '') === 'users_property_requests') {
                 $stageData = $requestStageMap[$item->sourceId] ?? null;
+                $item->stage_id = $stageData ? $stageData->id : null;
+                $item->stage = $stageData;
+                return $item;
+            }
+            if (($item->sourceTable ?? '') === 'api_customer_inquiry') {
+                $stageData = $inquiryStageMap[$item->sourceId] ?? null;
                 $item->stage_id = $stageData ? $stageData->id : null;
                 $item->stage = $stageData;
                 return $item;

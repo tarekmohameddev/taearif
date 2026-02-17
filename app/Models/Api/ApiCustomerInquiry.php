@@ -23,6 +23,7 @@ class ApiCustomerInquiry extends Model
     protected $fillable = [
         'user_id',
         'customer_id',
+        'status_id',
         'phone_number',
         'message',
         'inquiry_type',

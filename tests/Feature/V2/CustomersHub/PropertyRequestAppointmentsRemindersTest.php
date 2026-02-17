@@ -460,7 +460,9 @@ class PropertyRequestAppointmentsRemindersTest extends TestCase
         foreach ($actions as $a) {
             $this->assertArrayHasKey('appointments', $a);
             $this->assertArrayHasKey('reminders', $a);
-            if (($a['objectType'] ?? '') !== 'property_request') {
+            $objectType = $a['objectType'] ?? '';
+            // property_request and inquiry can have non-empty appointments/reminders; others are empty
+            if ($objectType !== 'property_request' && $objectType !== 'inquiry') {
                 $this->assertSame([], $a['appointments']);
                 $this->assertSame([], $a['reminders']);
             }
