@@ -158,9 +158,14 @@
                                         <span class="sub-item">{{ __('Credit Transactions') }}</span>
                                     </a>
                                 </li>
-                                <li class="@if (request()->is('admin/credit-management*')) active @endif">
+                                <li class="@if (request()->is('admin/credit-management*') && !request()->is('admin/credit-management/providers*')) active @endif">
                                     <a href="{{ route('admin.credit-management.index') }}">
                                         <span class="sub-item">{{ __('Credit Management') }}</span>
+                                    </a>
+                                </li>
+                                <li class="@if (request()->is('admin/credit-management/providers*')) active @endif">
+                                    <a href="{{ route('admin.credit.providers.index') }}">
+                                        <span class="sub-item">{{ __('Communication Providers') }}</span>
                                     </a>
                                 </li>
                                 <li class="@if (request()->is('admin/whatsapp-addons*') || request()->is('whatsapp-addons*')) active @endif">
