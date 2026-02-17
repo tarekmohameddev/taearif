@@ -121,7 +121,7 @@ class Handler extends ExceptionHandler
             // Authorization/Permission denied
             if ($exception instanceof AuthorizationException) {
                 \Log::warning('Authorization failed', [
-                    'exception' => get_class($exception),
+                    'exception_class' => get_class($exception),
                     'message' => $exception->getMessage(),
                     'url' => $request->fullUrl(),
                     'method' => $request->method(),
@@ -140,7 +140,7 @@ class Handler extends ExceptionHandler
             // DB - SECURITY: Never expose SQL in production
             if ($exception instanceof QueryException) {
                 \Log::error('Database error', [
-                    'exception' => get_class($exception),
+                    'exception_class' => get_class($exception),
                     'message' => $exception->getMessage(),
                     'sql' => $exception->getSql() ?? 'N/A',
                     'bindings' => $exception->getBindings() ?? [],
@@ -160,7 +160,7 @@ class Handler extends ExceptionHandler
 
             // Fallback - Log the error for debugging
             \Log::error('Unhandled API exception', [
-                'exception' => get_class($exception),
+                'exception_class' => get_class($exception),
                 'message' => $exception->getMessage(),
                 'file' => $exception->getFile(),
                 'line' => $exception->getLine(),
@@ -187,7 +187,7 @@ class Handler extends ExceptionHandler
         // Handle BusinessLogicException for web requests
         if ($exception instanceof \App\Exceptions\BusinessLogicException) {
             \Log::warning('Business logic violation', [
-                'exception' => get_class($exception),
+                'exception_class' => get_class($exception),
                 'message' => $exception->getMessage(),
                 'error_code' => $exception->getErrorCode(),
                 'url' => $request->fullUrl(),
@@ -207,7 +207,7 @@ class Handler extends ExceptionHandler
         // Handle ResourceNotFoundException for web requests
         if ($exception instanceof \App\Exceptions\ResourceNotFoundException) {
             \Log::warning('Resource not found', [
-                'exception' => get_class($exception),
+                'exception_class' => get_class($exception),
                 'message' => $exception->getMessage(),
                 'url' => $request->fullUrl(),
                 'user_id' => auth()->id(),

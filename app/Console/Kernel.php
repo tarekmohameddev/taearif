@@ -26,6 +26,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\SendCrmAppointmentReminders::class,
         \App\Console\Commands\BackfillInvoiceUuids::class,
         \App\Console\Commands\CleanupOldPageviewsCommand::class,
+        \App\Console\Commands\ProcessScheduledSmsCampaigns::class,
     ];
 
     /**
@@ -79,6 +80,25 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->runInBackground();
 
+        $schedule->command('sms:process-scheduled-campaigns')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        $schedule->command('communication:process-retries')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        $schedule->command('communication:reconcile-delivery')
+            ->everyFifteenMinutes()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        $schedule->command('communication:prune-reliability-data')
+            ->daily()
+            ->withoutOverlapping()
+            ->onOneServer();
     }
 
     /**

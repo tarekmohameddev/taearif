@@ -19,7 +19,9 @@ use App\Models\User\RealestateManagement\ApiUserCategory;
 use App\Models\User\UserCity;
 use App\Models\ApiCustomer;
 use App\Models\Api\ApiCustomerInquiry;
+use App\Models\User;
 use App\Models\WhatsappUser;
+use App\Domain\Communication\Contracts\CommunicationService;
 use Illuminate\Support\Str;
 
 
@@ -35,8 +37,11 @@ class ChatController extends Controller
     protected string $evolutionApiKey;
     protected string $evolutionApiInstance;
 
-    public function __construct()
+    protected CommunicationService $communicationService;
+
+    public function __construct(CommunicationService $communicationService)
     {
+        $this->communicationService = $communicationService;
         $this->openai = OpenAIClient::client(env('OPENAI_API_KEY'));
         $this->systemInstructions = implode("\n", [
             'أنت موظف دعم عملاء في شركة إدارة عقارات في السعودية.',
@@ -91,9 +96,9 @@ class ChatController extends Controller
 
 public function handleEvolutionWebhook(Request $request)
 {
-    
+
     $payload = $request->all();
-   
+
  //Log::info('Evolution API Webhook received: ' . json_encode($payload));
     // ---- VALIDATE THE WEBHOOK (IMPORTANT FOR SECURITY) ----
     // Evolution API might have a way to verify webhooks (e.g., a secret token in headers).
@@ -129,18 +134,37 @@ public function handleEvolutionWebhook(Request $request)
         // Clean sender number if it has @s.whatsapp.net
         $senderNumber = str_replace('@s.whatsapp.net', '', $senderNumber);
 
-        // You need to map the $senderNumber to a $userId in your system
-        // This is a placeholder; implement your own user lookup logic
-        // Prepare a request object or parameters to call your existing chat logic
+        $tenantOwnerId = null;
+        $evolutionNumber = config('communication.evolution_instance_number');
+        if ($evolutionNumber) {
+            $whatsappUser = WhatsappUser::where('number', $evolutionNumber)->first();
+            if ($whatsappUser) {
+                $owner = User::find($whatsappUser->user_id);
+                $tenantOwnerId = $owner && method_exists($owner, 'tenantOwnerId') ? $owner->tenantOwnerId() : null;
+            }
+        }
+
+        if ($tenantOwnerId !== null) {
+            try {
+                $this->communicationService->recordInboundMessage(
+                    userId: (int) $tenantOwnerId,
+                    externalPartyIdentifier: $senderNumber,
+                    content: $messageContent,
+                    channel: 'whatsapp',
+                    providerMessageId: $data['key']['id'] ?? null,
+                    meta: ['source' => 'evolution_webhook', 'context' => ['instance' => $this->evolutionApiInstance ?? '']]
+                );
+            } catch (\Throwable $e) {
+                Log::warning('Evolution webhook: recordInboundMessage failed', ['message' => $e->getMessage()]);
+            }
+        }
+
         $internalRequest = new Request([
             'message' => $messageContent,
-            'user_id' => 922, // Pass the identified or created user ID
-            'whatsapp_number' => $senderNumber // Pass the sender's WhatsApp number for the reply
+            'user_id' => $tenantOwnerId ?? 922,
+            'whatsapp_number' => $senderNumber
         ]);
 
-        // Call your chat processing logic
-        // Make sure the 'chat' method can handle being called this way
-        // and that it knows to use $recipientWhatsappNumber for the reply
         $this->chat($internalRequest);
 
         return response()->json(['status' => 'received_and_processing']);
@@ -155,7 +179,7 @@ public function handleWhatsappWebhook(Request $request)
     try {
         $payload = $request->all();
 
-     
+
         if (isset($payload['whatsapp_number']) && isset($payload['message']) && isset($payload['inquiry_type'])) {
             // Normalize data
             $whatsappNumber = $payload['whatsapp_number'];
@@ -165,7 +189,7 @@ public function handleWhatsappWebhook(Request $request)
             $sourceChannel = $payload['source_channel'] ?? 'whatsapp';
             $extra = $payload['extra'] ?? null;
             $lang = $payload['lang'] ?? 'ar';
-            
+
             // Extract detected entities
             $detectedEntities = $payload['detected_entities'] ?? [];
             $budget = $detectedEntities['budget'] ?? null;
@@ -177,7 +201,7 @@ public function handleWhatsappWebhook(Request $request)
             $maxAreaSqm = $detectedEntities['max_area_sqm'] ?? null;
             $furnished = $detectedEntities['furnished'] ?? null;
             $urgency = $detectedEntities['urgency'] ?? null;
-            
+
             // Extract normalized location data
             $locationNormalized = $detectedEntities['location_normalized'] ?? [];
             $countryCode = $locationNormalized['country_code'] ?? null;
@@ -203,6 +227,23 @@ public function handleWhatsappWebhook(Request $request)
 			$customer = $this->findCustomerByPhoneVariants($phoneVariants, $ownerUserId);
 			$userId = $ownerUserId ?? ($customer ? $customer->user_id : null);
 
+			$ownerUser = $userId !== null ? User::find($userId) : null;
+			$tenantOwnerId = $ownerUser && method_exists($ownerUser, 'tenantOwnerId') ? $ownerUser->tenantOwnerId() : null;
+			if ($tenantOwnerId !== null) {
+				try {
+					$this->communicationService->recordInboundMessage(
+						userId: (int) $tenantOwnerId,
+						externalPartyIdentifier: $whatsappNumber,
+						content: $message,
+						channel: 'whatsapp',
+						providerMessageId: $payload['message_id'] ?? null,
+						meta: ['source' => 'whatsapp_webhook']
+					);
+				} catch (\Throwable $e) {
+					Log::warning('WhatsApp webhook: recordInboundMessage failed', ['message' => $e->getMessage()]);
+				}
+			}
+
             // Prepare data for saving
             $inquiryData = [
                 'user_id'        => $userId,
@@ -213,7 +254,7 @@ public function handleWhatsappWebhook(Request $request)
                 'property_type'  => $propertyType,
                 'budget'         => $budget,
                 'location'       => $location,
-                
+
                 // New monetary/preference fields
                 'currency'       => $currency,
                 'bedrooms'       => $bedrooms,
@@ -222,7 +263,7 @@ public function handleWhatsappWebhook(Request $request)
                 'max_area_sqm'   => $maxAreaSqm,
                 'furnished'      => $furnished,
                 'urgency'        => $urgency,
-                
+
                 // Normalized location fields
                 'country_code'   => $countryCode,
                 'region_code'    => $regionCode,
@@ -232,7 +273,7 @@ public function handleWhatsappWebhook(Request $request)
                 'latitude'       => $latitude,
                 'longitude'      => $longitude,
                 'location_confidence' => $locationConfidence,
-                
+
                 // Meta fields
                 'source_channel' => $sourceChannel,
                 'lang'           => $lang,
@@ -261,7 +302,7 @@ public function handleWhatsappWebhook(Request $request)
             ], 201);
         }
 
-    
+
         $entry = $payload['entry'][0]['changes'][0]['value'] ?? null;
         if (!$entry) {
             return response()->json(['status' => 'ignored', 'message' => 'Invalid payload structure'], 400);
@@ -285,6 +326,33 @@ public function handleWhatsappWebhook(Request $request)
         }
 
         $userId = $whatsappUser->user_id;
+
+        $metaMessage = $entry['messages'][0] ?? null;
+        $messageText = null;
+        $providerMessageId = null;
+        if ($metaMessage) {
+            $messageText = $metaMessage['text']['body'] ?? $metaMessage['text'] ?? null;
+            if (is_array($messageText)) {
+                $messageText = $metaMessage['text']['body'] ?? '';
+            }
+            $providerMessageId = $metaMessage['id'] ?? null;
+        }
+        $tenantOwner = User::find($userId);
+        $metaTenantOwnerId = $tenantOwner && method_exists($tenantOwner, 'tenantOwnerId') ? $tenantOwner->tenantOwnerId() : null;
+        if ($metaTenantOwnerId !== null && $messageText !== null && $messageText !== '') {
+            try {
+                $this->communicationService->recordInboundMessage(
+                    userId: (int) $metaTenantOwnerId,
+                    externalPartyIdentifier: $fromNumber,
+                    content: (string) $messageText,
+                    channel: 'whatsapp',
+                    providerMessageId: $providerMessageId,
+                    meta: ['source' => 'meta_webhook', 'display_phone' => $displayPhone]
+                );
+            } catch (\Throwable $e) {
+                Log::warning('WhatsApp webhook (Meta): recordInboundMessage failed', ['message' => $e->getMessage()]);
+            }
+        }
 
         // Check if customer already exists
         $existing = ApiCustomer::where('user_id', $userId)
@@ -372,7 +440,7 @@ public function handleWhatsappWebhook(Request $request)
                             'purpose' => ['type' => 'string'],
                             'page' => ['type' => 'integer'],
                             'per_page' => ['type' => 'integer'],
-                            
+
                         ],
                         'required' => ['location'],
                     ],
@@ -469,7 +537,7 @@ public function handleWhatsappWebhook(Request $request)
             if (!empty($args['location'])) {
                 $location = $this->normalizeArabic($args['location']);
                 $tokens = explode(' ', preg_replace('/\s+/', ' ', trim($location)));
-            
+
                 $query->whereHas('contents', function ($q) use ($location, $tokens) {
                     $q->where(function ($qq) use ($location, $tokens) {
                         $qq->where('city_id', $this->mapCity($location))
@@ -483,20 +551,20 @@ public function handleWhatsappWebhook(Request $request)
                     });
                 });
             }
-            
+
             if (!empty($args['min_bedrooms'])) {
                 $query->where('beds', '>=', $args['min_bedrooms']);
             }
-            
+
             if (!empty($args['max_price'])) {
                 $query->where('price', '<=', $args['max_price']);
             }
-            
-            
+
+
             if (!empty($args['purpose'])) {
                 $query->where('purpose', $args['purpose']);
             }
-            
+
                 if (!empty($args['type'])) {
                     log::info($args['type']);
                     log::info($this->mapCategory($args['type']));
@@ -504,13 +572,13 @@ public function handleWhatsappWebhook(Request $request)
                         $q->where('category_id', $this->mapCategory($args['type']));
                     });
                 }
-            
+
             // Pagination
             $perPage = $args['page_size'] ?? 10;
             $page = $args['page'] ?? 1;
-            
+
             $paginated = $query->paginate($perPage, ['*'], 'page', $page);
-            
+
             // Format results
             $formatted = $paginated->getCollection()->map(fn($p) => [
                 'id'               => $p->id,

@@ -94,7 +94,18 @@ use App\Http\Controllers\Api\CRM\{
     ReminderController,
 };
 
+use App\Http\Controllers\Api\V1\WhatsApp\{
+    NumberController as WhatsAppNumberController,
+    ConversationController as WhatsAppConversationController,
+    MessageController as WhatsAppMessageController,
+    TemplateController as WhatsAppTemplateController,
+    AutomationRuleController as WhatsAppAutomationRuleController,
+    AiConfigController as WhatsAppAiConfigController,
+    WebhookController as WhatsAppWebhookController,
+};
 use App\Http\Controllers\Api\V1\{
+    ConversationController,
+    MessageController,
     Em\EmployeeAuthController,
     LogController,
     // RoleController,
@@ -1073,6 +1084,85 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
     });
 });
 
+// Communication read path (Phase 2) + write path (Phase 3)
+Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
+    Route::get('conversations', [ConversationController::class, 'index']);
+    Route::get('conversations/{id}', [ConversationController::class, 'show']);
+    Route::get('conversations/{id}/messages', [MessageController::class, 'index']);
+    Route::post('messages/send', [MessageController::class, 'send']);
+
+    Route::prefix('communication/ops')->group(function () {
+        Route::get('health', [\App\Http\Controllers\Api\V1\Communication\Ops\HealthController::class, '__invoke']);
+        Route::get('reconciliation-summary', [\App\Http\Controllers\Api\V1\Communication\Ops\ReconciliationSummaryController::class, '__invoke']);
+        Route::get('delivery-attempts', [\App\Http\Controllers\Api\V1\Communication\Ops\DeliveryAttemptsController::class, '__invoke']);
+        Route::get('webhook-events', [\App\Http\Controllers\Api\V1\Communication\Ops\WebhookEventsController::class, '__invoke']);
+        Route::get('stuck-items', [\App\Http\Controllers\Api\V1\Communication\Ops\StuckItemsController::class, '__invoke']);
+    });
+
+    Route::prefix('sms')->group(function () {
+        Route::get('campaigns', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'index']);
+        Route::get('campaigns/{id}', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'show']);
+        Route::post('campaigns', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'store']);
+        Route::patch('campaigns/{id}', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'update']);
+        Route::delete('campaigns/{id}', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'destroy']);
+        Route::post('campaigns/{id}/send', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'send']);
+
+        Route::get('templates', [\App\Http\Controllers\Api\V1\Sms\TemplateController::class, 'index']);
+        Route::get('templates/{id}', [\App\Http\Controllers\Api\V1\Sms\TemplateController::class, 'show']);
+        Route::post('templates', [\App\Http\Controllers\Api\V1\Sms\TemplateController::class, 'store']);
+        Route::patch('templates/{id}', [\App\Http\Controllers\Api\V1\Sms\TemplateController::class, 'update']);
+        Route::delete('templates/{id}', [\App\Http\Controllers\Api\V1\Sms\TemplateController::class, 'destroy']);
+
+        Route::post('messages/send', [\App\Http\Controllers\Api\V1\Sms\MessageController::class, 'send']);
+        Route::get('logs', [\App\Http\Controllers\Api\V1\Sms\LogController::class, 'index']);
+        Route::get('stats', [\App\Http\Controllers\Api\V1\Sms\StatsController::class, 'index']);
+    });
+
+    Route::prefix('whatsapp')->group(function () {
+        Route::get('numbers', [WhatsAppNumberController::class, 'index']);
+        Route::get('numbers/{id}', [WhatsAppNumberController::class, 'show']);
+        Route::post('numbers', [WhatsAppNumberController::class, 'store']);
+        Route::put('numbers/{id}', [WhatsAppNumberController::class, 'update']);
+
+        Route::get('conversations', [WhatsAppConversationController::class, 'index']);
+        Route::get('conversations/{id}', [WhatsAppConversationController::class, 'show']);
+        Route::post('conversations', [WhatsAppConversationController::class, 'store']);
+        Route::patch('conversations/{id}', [WhatsAppConversationController::class, 'update']);
+        Route::post('conversations/{id}/read', [WhatsAppConversationController::class, 'read']);
+        Route::post('conversations/{id}/star', [WhatsAppConversationController::class, 'star']);
+
+        Route::get('conversations/{id}/messages', [WhatsAppMessageController::class, 'index']);
+        Route::post('conversations/{id}/messages', [WhatsAppMessageController::class, 'send']);
+        Route::post('conversations/{id}/messages/template', [WhatsAppMessageController::class, 'sendTemplate']);
+
+        Route::get('templates', [WhatsAppTemplateController::class, 'index']);
+        Route::get('templates/{id}', [WhatsAppTemplateController::class, 'show']);
+        Route::post('templates', [WhatsAppTemplateController::class, 'store']);
+        Route::put('templates/{id}', [WhatsAppTemplateController::class, 'update']);
+        Route::delete('templates/{id}', [WhatsAppTemplateController::class, 'destroy']);
+
+        Route::get('automation/rules', [WhatsAppAutomationRuleController::class, 'index']);
+        Route::get('automation/rules/{id}', [WhatsAppAutomationRuleController::class, 'show']);
+        Route::post('automation/rules', [WhatsAppAutomationRuleController::class, 'store']);
+        Route::put('automation/rules/{id}', [WhatsAppAutomationRuleController::class, 'update']);
+        Route::patch('automation/rules/{id}/toggle', [WhatsAppAutomationRuleController::class, 'toggle']);
+        Route::delete('automation/rules/{id}', [WhatsAppAutomationRuleController::class, 'destroy']);
+        Route::get('automation/stats', [WhatsAppAutomationRuleController::class, 'stats']);
+
+        Route::get('ai/config/{numberId}', [WhatsAppAiConfigController::class, 'show']);
+        Route::put('ai/config/{numberId}', [WhatsAppAiConfigController::class, 'update']);
+        Route::patch('ai/config/{numberId}/toggle', [WhatsAppAiConfigController::class, 'toggle']);
+        Route::get('ai/stats', [WhatsAppAiConfigController::class, 'stats']);
+    });
+});
+
+Route::post('v1/sms/webhooks/delivery', [\App\Http\Controllers\Api\V1\Sms\WebhookController::class, 'delivery']);
+
+Route::get('v1/whatsapp/webhook/verify', [WhatsAppWebhookController::class, 'verify']);
+Route::post('v1/whatsapp/webhook/incoming', [WhatsAppWebhookController::class, 'incoming']);
+Route::post('v1/whatsapp/webhook/status', [WhatsAppWebhookController::class, 'status']);
+Route::post('v1/whatsapp/webhook/verify', [WhatsAppWebhookController::class, 'verifyPost']);
+
 // Direct public route for property categories (bypassing tenant.resolve middleware)
 Route::get('v1/tenant-website/{tenantId}/properties/categories/direct', [PropertyController::class, 'properties_categories']);
 
@@ -1239,4 +1329,3 @@ Route::prefix('v1/owner-rental')->group(function () {
         Route::get('/maintenance-requests', [\App\Http\Controllers\OwnerRental\DashboardController::class, 'maintenanceRequests']);
     });
 });
-

@@ -34,7 +34,10 @@ use App\Models\User\UserItemCategory;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use App\Http\Helpers\UserPermissionHelper;
+use App\Models\Message;
+use App\Models\SmsMessageLog;
 use App\Models\User\Language as UserLanguage;
 use App\Models\Api\ApiPixel;
 use App\Models\Api\CustomerDropdownSetting;
@@ -54,7 +57,46 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        $this->app->bind(
+            \App\Domain\Communication\Contracts\CommunicationService::class,
+            \App\Domain\Communication\Services\CommunicationServiceImpl::class
+        );
+        $this->app->bind(
+            \App\Domain\Communication\Contracts\MessageDispatcher::class,
+            \App\Domain\Communication\Services\MessageDispatcherImpl::class
+        );
+        $this->app->bind(
+            \App\Domain\Communication\Contracts\CreditService::class,
+            \App\Domain\Communication\Services\CreditServiceImpl::class
+        );
+        $this->app->singleton(
+            \App\Domain\Communication\Services\IdempotencyService::class
+        );
+        $this->app->bind(
+            \App\Domain\Communication\Sms\Contracts\SmsGatewayClient::class,
+            \App\Domain\Communication\Sms\Services\Gateways\ConfiguredSmsGatewayClient::class
+        );
+        $this->app->bind(
+            \App\Domain\Communication\Sms\Contracts\SmsDispatcher::class,
+            \App\Domain\Communication\Sms\Services\SmsDispatcherService::class
+        );
+
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Services\WhatsAppNumberService::class);
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Services\WhatsAppConversationService::class);
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Services\WhatsAppTemplateService::class);
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Services\WhatsAppAutomationRuleService::class);
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Services\WhatsAppAiConfigService::class);
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Services\WhatsAppWebhookService::class);
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Services\WhatsAppStatsService::class);
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Services\WhatsAppChannelSender::class);
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Services\WhatsAppServiceDispatchAdapter::class);
+        $this->app->singleton(\App\Domain\Communication\Services\DeliveryAttemptRecorder::class);
+        $this->app->singleton(\App\Domain\Communication\Services\CommunicationRetrySender::class);
+
+        $this->app->singleton(\App\Domain\Communication\Services\WebhookEventNormalizer::class);
+        $this->app->singleton(\App\Domain\Communication\Services\StatusTransitionGuard::class);
+        $this->app->singleton(\App\Domain\Communication\Services\RetryPolicyHelper::class);
+        $this->app->singleton(\App\Domain\Communication\Services\WebhookEventJournal::class);
     }
 
     /**
@@ -64,6 +106,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        Relation::enforceMorphMap([
+            User::class => User::class,
+            'message' => Message::class,
+            'sms_message_log' => SmsMessageLog::class,
+        ]);
 
         Paginator::useBootstrap();
         if (!app()->runningInConsole()) {

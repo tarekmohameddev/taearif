@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\BaseApiController;
 use App\Models\Api\markting\MarketingChannel;
 use App\Http\Controllers\Api\markting\CreditController;
 use App\Models\Api\markting\UserCredit;
+use App\Domain\Communication\Contracts\CommunicationService;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -14,6 +16,13 @@ use Illuminate\Support\Facades\Log;
 
 class MarketingChannelController extends BaseApiController
 {
+    protected CommunicationService $communicationService;
+
+    public function __construct(CommunicationService $communicationService)
+    {
+        $this->communicationService = $communicationService;
+    }
+
     /**
      * Get all marketing channels for the authenticated user
      */
@@ -746,8 +755,22 @@ class MarketingChannelController extends BaseApiController
         $text = $message['text']['body'] ?? '';
         $from = $message['from'] ?? '';
 
-        // Here you can implement your business logic
-        // For example: auto-reply, save to database, trigger workflows, etc.
+        $owner = User::find($channel->user_id);
+        $tenantOwnerId = $owner && method_exists($owner, 'tenantOwnerId') ? $owner->tenantOwnerId() : null;
+        if ($tenantOwnerId !== null && $text !== '') {
+            try {
+                $this->communicationService->recordInboundMessage(
+                    userId: (int) $tenantOwnerId,
+                    externalPartyIdentifier: (string) $from,
+                    content: $text,
+                    channel: 'whatsapp',
+                    providerMessageId: $message['id'] ?? null,
+                    meta: ['source' => 'marketing_webhook', 'channel_id' => $channel->id]
+                );
+            } catch (\Throwable $e) {
+                Log::warning('Marketing webhook: recordInboundMessage failed', ['message' => $e->getMessage()]);
+            }
+        }
 
         Log::info('Text message received', [
             'channel_id' => $channel->id,
