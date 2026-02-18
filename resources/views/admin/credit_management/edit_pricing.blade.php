@@ -124,6 +124,19 @@
 
                     <div class="row">
                         <div class="col-lg-12">
+                            <div class="form-group">
+                                <label for="description_ar">Description (Arabic)</label>
+                                <textarea class="form-control @error('description_ar') is-invalid @enderror"
+                                          id="description_ar" name="description_ar" rows="3">{{ old('description_ar', $pricing->description_ar) }}</textarea>
+                                @error('description_ar')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-12">
                             <div class="alert alert-info">
                                 <h6><i class="fas fa-info-circle"></i> How Pricing Works</h6>
                                 <ul class="mb-0">

@@ -105,6 +105,8 @@ class CreditManagementController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
+            'name_ar' => 'nullable|string|max:255',
+            'description_ar' => 'nullable|string',
             'credits' => 'required|integer|min:1',
             'price' => 'required|numeric|min:0',
             'currency' => 'required|string|max:3',
@@ -121,6 +123,8 @@ class CreditManagementController extends Controller
 
         $package = CreditPackage::create([
             'name' => $request->name,
+            'name_ar' => $request->name_ar,
+            'description_ar' => $request->description_ar,
             'credits' => $request->credits,
             'price' => $request->price,
             'currency' => $request->currency,
@@ -150,6 +154,7 @@ class CreditManagementController extends Controller
             'credits_per_message' => 'required|integer|min:1',
             'price_per_credit' => 'required|numeric|min:0',
             'currency' => 'required|string|max:3',
+            'description_ar' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -170,6 +175,7 @@ class CreditManagementController extends Controller
                 'price_per_credit' => $request->price_per_credit,
                 'effective_price_per_message' => $request->credits_per_message * $request->price_per_credit,
                 'currency' => $request->currency,
+                'description_ar' => $request->description_ar,
                 'is_active' => true,
             ]);
 
@@ -187,6 +193,7 @@ class CreditManagementController extends Controller
             'price_per_credit' => $request->price_per_credit,
             'effective_price_per_message' => $request->credits_per_message * $request->price_per_credit,
             'currency' => $request->currency,
+            'description_ar' => $request->description_ar,
             'is_active' => true,
         ]);
 
@@ -206,6 +213,8 @@ class CreditManagementController extends Controller
         
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
+            'name_ar' => 'nullable|string|max:255',
+            'description_ar' => 'nullable|string',
             'credits' => 'required|integer|min:1',
             'price' => 'required|numeric|min:0',
             'currency' => 'required|string|max:3',
@@ -223,6 +232,8 @@ class CreditManagementController extends Controller
 
         $package->update([
             'name' => $request->name,
+            'name_ar' => $request->name_ar,
+            'description_ar' => $request->description_ar,
             'credits' => $request->credits,
             'price' => $request->price,
             'currency' => $request->currency,
@@ -248,6 +259,7 @@ class CreditManagementController extends Controller
             'credits_per_message' => 'required|integer|min:1',
             'price_per_credit' => 'required|numeric|min:0',
             'currency' => 'required|string|max:3',
+            'description_ar' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
 
@@ -264,6 +276,7 @@ class CreditManagementController extends Controller
             'price_per_credit' => $request->price_per_credit,
             'effective_price_per_message' => $request->credits_per_message * $request->price_per_credit,
             'currency' => $request->currency,
+            'description_ar' => $request->description_ar,
             'is_active' => $request->boolean('is_active'),
         ]);
 
@@ -387,6 +400,8 @@ class CreditManagementController extends Controller
         
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
+            'name_ar' => 'nullable|string|max:255',
+            'description_ar' => 'nullable|string',
             'credits' => 'required|integer|min:1',
             'price' => 'required|numeric|min:0',
             'currency' => 'required|string|max:3',
@@ -399,6 +414,8 @@ class CreditManagementController extends Controller
 
         $package->update([
             'name' => $request->name,
+            'name_ar' => $request->name_ar,
+            'description_ar' => $request->description_ar,
             'credits' => $request->credits,
             'price' => $request->price,
             'currency' => $request->currency,
@@ -426,6 +443,7 @@ class CreditManagementController extends Controller
             'credits_per_message' => 'required|integer|min:1',
             'price_per_credit' => 'required|numeric|min:0',
             'currency' => 'required|string|max:3',
+            'description_ar' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -437,6 +455,7 @@ class CreditManagementController extends Controller
             'price_per_credit' => $request->price_per_credit,
             'effective_price_per_message' => $request->credits_per_message * $request->price_per_credit,
             'currency' => $request->currency,
+            'description_ar' => $request->description_ar,
             'is_active' => $request->boolean('is_active'),
         ]);
 

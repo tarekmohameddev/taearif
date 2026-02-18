@@ -152,7 +152,7 @@
                                     <div class="text-white p-3 me-3" style="background: {{ $packageColor }}; min-width: 50px; text-align: center;">
                                         <i class="fas fa-box fa-lg"></i>
                                     </div>
-                                    <h6 class="mb-0 me-3 fw-bold text-dark px-2">{{ $package->name }}</h6>
+                                    <h6 class="mb-0 me-3 fw-bold text-dark px-2">{{ $package->getLocalizedName('ar') }}</h6>
                                 </div>
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-primary btn-sm btn-edit-package" data-package-id="{{ $package->id }}" title="Edit Package">
@@ -396,6 +396,14 @@
                         <label class="form-label">Package Name</label>
                         <input type="text" class="form-control" name="name" required>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Package Name (Arabic)</label>
+                        <input type="text" class="form-control" name="name_ar">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description (Arabic)</label>
+                        <textarea class="form-control" name="description_ar" rows="3"></textarea>
+                    </div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -473,6 +481,10 @@
                         <select class="form-control" name="currency" required>
                             <option value="SAR" selected>SAR</option>
                         </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description (Arabic)</label>
+                        <textarea class="form-control" name="description_ar" rows="3"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
