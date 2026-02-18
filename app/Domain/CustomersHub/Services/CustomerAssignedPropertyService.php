@@ -77,13 +77,20 @@ class CustomerAssignedPropertyService
             ->where('acap.customer_id', $customerId)
             ->join('user_properties as p', 'acap.property_id', '=', 'p.id')
             ->where('p.user_id', $userId)
+            ->leftJoin(
+                DB::raw('(SELECT property_id, MIN(id) AS content_id FROM user_property_contents GROUP BY property_id) AS first_pc'),
+                'first_pc.property_id',
+                '=',
+                'p.id'
+            )
             ->leftJoin('user_property_contents as pc', function ($join) {
-                $join->on('p.id', '=', 'pc.property_id')
-                    ->whereRaw('pc.language_id = (SELECT id FROM languages WHERE is_default = 1 AND user_id = p.user_id LIMIT 1)');
+                $join->on('pc.property_id', '=', 'p.id')
+                    ->on('pc.id', '=', DB::raw('first_pc.content_id'));
             })
             ->select([
                 'p.id',
                 'pc.title',
+                'pc.address',
                 'p.price',
                 'p.purpose',
                 'p.type',
@@ -102,6 +109,7 @@ class CustomerAssignedPropertyService
             return [
                 'id' => $row->id,
                 'title' => $row->title,
+                'address' => $row->address,
                 'price' => $row->price,
                 'purpose' => $row->purpose,
                 'type' => $row->type,
