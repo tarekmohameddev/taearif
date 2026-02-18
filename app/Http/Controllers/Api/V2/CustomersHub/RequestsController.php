@@ -1181,6 +1181,7 @@ class RequestsController extends ApiController
 
         $hubNoteRows = CrmHubNote::where('noteable_type', UserPropertyRequest::class)
             ->where('noteable_id', $propertyRequestId)
+            ->with('employee')
             ->orderBy('created_at')
             ->get();
 
@@ -1318,6 +1319,7 @@ class RequestsController extends ApiController
 
         $inquiryHubNoteRows = CrmHubNote::where('noteable_type', ApiCustomerInquiry::class)
             ->where('noteable_id', $inquiryId)
+            ->with('employee')
             ->orderBy('created_at')
             ->get();
 
@@ -1570,16 +1572,35 @@ class RequestsController extends ApiController
      * Format hub notes (crm_hub_notes) for API response.
      *
      * @param  \Illuminate\Support\Collection<int, CrmHubNote>  $notes
-     * @return array<int, array{id: int, note: string, addedBy: string, createdAt: string, updatedAt: string}>
+     * @return array<int, array{id: int, note: string, addedBy: string, addedByName: string|null, addedByType: string|null, createdAt: string, updatedAt: string}>
      */
     private function formatHubNotes(\Illuminate\Support\Collection $notes): array
     {
-        return $notes->map(fn (CrmHubNote $note) => [
-            'id' => (int) $note->id,
-            'note' => (string) $note->note,
-            'addedBy' => (string) $note->employee_id,
-            'createdAt' => Carbon::parse($note->created_at)->toIso8601String(),
-            'updatedAt' => Carbon::parse($note->updated_at)->toIso8601String(),
-        ])->values()->all();
+        return $notes->map(function (CrmHubNote $note) {
+            $user = $note->employee;
+            $addedByType = null;
+            $addedByName = null;
+            if ($user !== null) {
+                $addedByType = $user->isTenant() ? 'tenant' : 'employee';
+                $fullName = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
+                if ($user->isTenant()) {
+                    $addedByName = trim((string) ($user->company_name ?? ''));
+                    if ($addedByName === '') {
+                        $addedByName = $fullName !== '' ? $fullName : ($user->email ?? null);
+                    }
+                } else {
+                    $addedByName = $fullName !== '' ? $fullName : ($user->email ?? null);
+                }
+            }
+            return [
+                'id' => (int) $note->id,
+                'note' => (string) $note->note,
+                'addedBy' => (string) $note->employee_id,
+                'addedByName' => $addedByName,
+                'addedByType' => $addedByType,
+                'createdAt' => Carbon::parse($note->created_at)->toIso8601String(),
+                'updatedAt' => Carbon::parse($note->updated_at)->toIso8601String(),
+            ];
+        })->values()->all();
     }
 }
