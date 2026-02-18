@@ -43,6 +43,7 @@ use App\Models\Api\ApiPixel;
 use App\Models\Api\CustomerDropdownSetting;
 use App\Models\Api\UserPropertyRequest;
 use App\Models\Api\ApiCustomerInquiry;
+use App\Models\Api\Post;
 use App\Models\Api\UserApiCustomerReminder;
 use App\Observers\Matching\UsersPropertyRequestObserver;
 use App\Observers\Matching\ApiCustomerInquiryObserver;
@@ -112,6 +113,7 @@ class AppServiceProvider extends ServiceProvider
             'sms_message_log' => SmsMessageLog::class,
             UserPropertyRequest::class => UserPropertyRequest::class,
             ApiCustomerInquiry::class => ApiCustomerInquiry::class,
+            Post::class => Post::class,
         ]);
 
         Paginator::useBootstrap();
