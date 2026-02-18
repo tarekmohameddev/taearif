@@ -149,6 +149,7 @@ class AssignmentService
             throw new \InvalidArgumentException('Employee not found or inactive');
         }
 
+        $userId = (int) $userId;
         $assignedCount = 0;
         $assignments = [];
         $now = Carbon::now();
@@ -157,7 +158,7 @@ class AssignmentService
             $idString = is_string($requestOrCustomerId) ? $requestOrCustomerId : (string) $requestOrCustomerId;
 
             if (str_starts_with($idString, 'inquiry_')) {
-                $inquiryId = (int) substr($idString, 7);
+                $inquiryId = (int) substr($idString, strlen('inquiry_'));
                 if ($inquiryId <= 0) {
                     continue;
                 }
@@ -168,7 +169,14 @@ class AssignmentService
                         'responsible_employee_id' => $employeeId,
                         'updated_at' => $now,
                     ]);
-                if ($updated > 0) {
+                // MySQL may return 0 rows affected when the value is unchanged (already assigned to this employee)
+                $existsCheck = $updated === 0 && DB::table('api_customer_inquiry')
+                    ->where('user_id', $userId)
+                    ->where('id', $inquiryId)
+                    ->where('responsible_employee_id', (int) $employeeId)
+                    ->exists();
+                $alreadyAssigned = $existsCheck;
+                if ($updated > 0 || $alreadyAssigned) {
                     $assignedCount++;
                     $inquiry = DB::table('api_customer_inquiry')
                         ->where('user_id', $userId)
@@ -212,7 +220,7 @@ class AssignmentService
     private function resolveCompositeRequestIdToCustomerId(int $userId, string $compositeOrNumericId): ?int
     {
         if (str_starts_with($compositeOrNumericId, 'inquiry_')) {
-            $inquiryId = (int) substr($compositeOrNumericId, 7);
+            $inquiryId = (int) substr($compositeOrNumericId, strlen('inquiry_'));
             if ($inquiryId <= 0) {
                 return null;
             }
@@ -223,7 +231,7 @@ class AssignmentService
             return $customerId !== null ? (int) $customerId : null;
         }
         if (str_starts_with($compositeOrNumericId, 'property_request_')) {
-            $requestId = (int) substr($compositeOrNumericId, 17);
+            $requestId = (int) substr($compositeOrNumericId, strlen('property_request_'));
             return $requestId > 0 ? $this->resolveRequestToCustomerId($userId, $requestId) : null;
         }
         $numeric = (int) $compositeOrNumericId;
