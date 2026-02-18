@@ -13,6 +13,7 @@ use App\Models\Api\UserApiCustomerPriority;
 use App\Models\Api\UserPropertyRequest;
 use App\Models\CustomersHub\CrmHubNote;
 use App\Models\User;
+use App\Models\User\BasicSetting;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -523,13 +524,15 @@ class RequestsController extends ApiController
                 if (!$noteable) {
                     return $this->error('Action not found', 404);
                 }
-                $noteable->hubNotes()->create([
+                $note = $noteable->hubNotes()->create([
                     'employee_id' => $employeeId,
                     'note' => $validated['note'],
                 ]);
+                $note->load('employee.basic_setting');
                 return $this->success([
                     'message' => 'Note added successfully',
                     'actionId' => $requestId,
+                    'note' => $this->formatHubNote($note),
                 ]);
             }
             if ($parsed['table'] === 'api_customer_inquiry') {
@@ -539,13 +542,15 @@ class RequestsController extends ApiController
                 if (!$noteable) {
                     return $this->error('Action not found', 404);
                 }
-                $noteable->hubNotes()->create([
+                $note = $noteable->hubNotes()->create([
                     'employee_id' => $employeeId,
                     'note' => $validated['note'],
                 ]);
+                $note->load('employee.basic_setting');
                 return $this->success([
                     'message' => 'Note added successfully',
                     'actionId' => $requestId,
+                    'note' => $this->formatHubNote($note),
                 ]);
             }
         }
@@ -1181,7 +1186,7 @@ class RequestsController extends ApiController
 
         $hubNoteRows = CrmHubNote::where('noteable_type', UserPropertyRequest::class)
             ->where('noteable_id', $propertyRequestId)
-            ->with('employee')
+            ->with('employee.basic_setting')
             ->orderBy('created_at')
             ->get();
 
@@ -1319,7 +1324,7 @@ class RequestsController extends ApiController
 
         $inquiryHubNoteRows = CrmHubNote::where('noteable_type', ApiCustomerInquiry::class)
             ->where('noteable_id', $inquiryId)
-            ->with('employee')
+            ->with('employee.basic_setting')
             ->orderBy('created_at')
             ->get();
 
@@ -1569,38 +1574,48 @@ class RequestsController extends ApiController
     }
 
     /**
+     * Format a single hub note for API response (with addedByName fallback when empty).
+     *
+     * @return array{id: int, note: string, addedBy: string, addedByName: string, addedByType: string|null, createdAt: string, updatedAt: string}
+     */
+    private function formatHubNote(CrmHubNote $note): array
+    {
+        $user = $note->employee;
+        $addedByType = null;
+        $addedByName = null;
+        if ($user !== null) {
+            $addedByType = $user->isTenant() ? 'tenant' : 'employee';
+            $fullName = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
+            if ($user->isTenant()) {
+                $addedByName = trim((string) ($user->basic_setting?->company_name ?? ''));
+                if ($addedByName === '') {
+                    $addedByName = $fullName !== '' ? $fullName : ($user->email ?? null);
+                }
+            } else {
+                $addedByName = $fullName !== '' ? $fullName : ($user->email ?? null);
+            }
+        }
+        $addedByName = $addedByName !== null && $addedByName !== '' ? $addedByName : ('User #' . $note->employee_id);
+
+        return [
+            'id' => (int) $note->id,
+            'note' => (string) $note->note,
+            'addedBy' => (string) $note->employee_id,
+            'addedByName' => $addedByName,
+            'addedByType' => $addedByType,
+            'createdAt' => Carbon::parse($note->created_at)->toIso8601String(),
+            'updatedAt' => Carbon::parse($note->updated_at)->toIso8601String(),
+        ];
+    }
+
+    /**
      * Format hub notes (crm_hub_notes) for API response.
      *
      * @param  \Illuminate\Support\Collection<int, CrmHubNote>  $notes
-     * @return array<int, array{id: int, note: string, addedBy: string, addedByName: string|null, addedByType: string|null, createdAt: string, updatedAt: string}>
+     * @return array<int, array{id: int, note: string, addedBy: string, addedByName: string, addedByType: string|null, createdAt: string, updatedAt: string}>
      */
     private function formatHubNotes(\Illuminate\Support\Collection $notes): array
     {
-        return $notes->map(function (CrmHubNote $note) {
-            $user = $note->employee;
-            $addedByType = null;
-            $addedByName = null;
-            if ($user !== null) {
-                $addedByType = $user->isTenant() ? 'tenant' : 'employee';
-                $fullName = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
-                if ($user->isTenant()) {
-                    $addedByName = trim((string) ($user->company_name ?? ''));
-                    if ($addedByName === '') {
-                        $addedByName = $fullName !== '' ? $fullName : ($user->email ?? null);
-                    }
-                } else {
-                    $addedByName = $fullName !== '' ? $fullName : ($user->email ?? null);
-                }
-            }
-            return [
-                'id' => (int) $note->id,
-                'note' => (string) $note->note,
-                'addedBy' => (string) $note->employee_id,
-                'addedByName' => $addedByName,
-                'addedByType' => $addedByType,
-                'createdAt' => Carbon::parse($note->created_at)->toIso8601String(),
-                'updatedAt' => Carbon::parse($note->updated_at)->toIso8601String(),
-            ];
-        })->values()->all();
+        return $notes->map(fn (CrmHubNote $note) => $this->formatHubNote($note))->values()->all();
     }
 }
