@@ -54,8 +54,8 @@
               <i class="fab fa-whatsapp text-success"></i> {{ __('WhatsApp Meta Cloud') }}
             </h4>
             <div class="custom-control custom-switch">
-              <input type="checkbox" class="custom-control-input provider-toggle" 
-                     id="enable-meta" 
+              <input type="checkbox" class="custom-control-input provider-toggle"
+                     id="enable-meta"
                      data-provider="whatsapp_meta"
                      {{$providers['whatsapp_meta']->is_enabled ? 'checked' : ''}}>
               <label class="custom-control-label" for="enable-meta">
@@ -67,7 +67,7 @@
         <div class="card-body">
           @if($providers['whatsapp_meta']->status === 'active')
             <div class="alert alert-success">
-              <i class="fas fa-check-circle"></i> {{ __('Provider is connected and active.') }} 
+              <i class="fas fa-check-circle"></i> {{ __('Provider is connected and active.') }}
               {{ __('Last tested') }}: {{$providers['whatsapp_meta']->last_tested_at ? $providers['whatsapp_meta']->last_tested_at->diffForHumans() : __('Never')}}
             </div>
           @elseif($providers['whatsapp_meta']->status === 'error')
@@ -82,7 +82,7 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label>{{ __('Phone Number ID') }} <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control" name="phone_number_id" 
+                  <input type="text" class="form-control" name="phone_number_id"
                          value="{{$providers['whatsapp_meta']->phone_number_id}}"
                          placeholder="123456789012345">
                   <small class="text-muted">{{ __('Your WhatsApp Business Account Phone Number ID from Meta') }}</small>
@@ -91,7 +91,7 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label>{{ __('Business Account ID') }} <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control" name="business_account_id" 
+                  <input type="text" class="form-control" name="business_account_id"
                          value="{{$providers['whatsapp_meta']->business_account_id}}"
                          placeholder="987654321098765">
                   <small class="text-muted">{{ __('WhatsApp Business Account ID from Meta') }}</small>
@@ -103,7 +103,7 @@
               <div class="col-md-12">
                 <div class="form-group">
                   <label>{{ __('API URL') }} <span class="text-danger">*</span></label>
-                  <input type="url" class="form-control" name="api_url" 
+                  <input type="url" class="form-control" name="api_url"
                          value="{{$providers['whatsapp_meta']->api_url}}"
                          placeholder="https://graph.facebook.com/v18.0">
                 </div>
@@ -114,7 +114,7 @@
               <div class="col-md-12">
                 <div class="form-group">
                   <label>{{ __('Access Token') }} <span class="text-danger">*</span></label>
-                  <input type="password" class="form-control" name="access_token" 
+                  <input type="password" class="form-control" name="access_token"
                          placeholder="{{ __('Enter Meta Cloud access token') }}">
                   <small class="text-muted">{{ __('Current') }}: {{$providers['whatsapp_meta']->getMaskedApiKey()}}</small>
                 </div>
@@ -125,7 +125,7 @@
               <div class="col-md-12">
                 <div class="form-group">
                   <label>{{ __('Webhook Verify Token') }}</label>
-                  <input type="text" class="form-control" name="webhook_verify_token" 
+                  <input type="text" class="form-control" name="webhook_verify_token"
                          value="{{$providers['whatsapp_meta']->webhook_verify_token}}"
                          placeholder="{{ __('Optional webhook verify token') }}">
                 </div>
@@ -156,8 +156,8 @@
               <i class="fab fa-whatsapp text-success"></i> {{ __('WhatsApp Evolution API') }}
             </h4>
             <div class="custom-control custom-switch">
-              <input type="checkbox" class="custom-control-input provider-toggle" 
-                     id="enable-evolution" 
+              <input type="checkbox" class="custom-control-input provider-toggle"
+                     id="enable-evolution"
                      data-provider="whatsapp_evolution"
                      {{$providers['whatsapp_evolution']->is_enabled ? 'checked' : ''}}>
               <label class="custom-control-label" for="enable-evolution">
@@ -169,7 +169,7 @@
         <div class="card-body">
           @if($providers['whatsapp_evolution']->status === 'active')
             <div class="alert alert-success">
-              <i class="fas fa-check-circle"></i> {{ __('Provider is connected and active.') }} 
+              <i class="fas fa-check-circle"></i> {{ __('Provider is connected and active.') }}
               {{ __('Last tested') }}: {{$providers['whatsapp_evolution']->last_tested_at ? $providers['whatsapp_evolution']->last_tested_at->diffForHumans() : __('Never')}}
             </div>
           @elseif($providers['whatsapp_evolution']->status === 'error')
@@ -184,7 +184,7 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label>{{ __('Instance Name') }} <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control" name="instance_name" 
+                  <input type="text" class="form-control" name="instance_name"
                          value="{{$providers['whatsapp_evolution']->instance_name}}"
                          placeholder="business_instance">
                   <small class="text-muted">{{ __('Your Evolution API instance name') }}</small>
@@ -193,7 +193,7 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label>{{ __('API URL') }} <span class="text-danger">*</span></label>
-                  <input type="url" class="form-control" name="api_url" 
+                  <input type="url" class="form-control" name="api_url"
                          value="{{$providers['whatsapp_evolution']->api_url}}"
                          placeholder="https://evolution-api.yourdomain.com">
                 </div>
@@ -204,7 +204,7 @@
               <div class="col-md-12">
                 <div class="form-group">
                   <label>{{ __('API Key') }} <span class="text-danger">*</span></label>
-                  <input type="password" class="form-control" name="evolution_api_key" 
+                  <input type="password" class="form-control" name="evolution_api_key"
                          placeholder="{{ __('Enter Evolution API key') }}">
                   <small class="text-muted">{{ __('Current') }}: {{$providers['whatsapp_evolution']->getMaskedApiKey()}}</small>
                 </div>
@@ -235,8 +235,8 @@
               <i class="fas fa-sms text-primary"></i> {{ __('SMS Gateway') }}
             </h4>
             <div class="custom-control custom-switch">
-              <input type="checkbox" class="custom-control-input provider-toggle" 
-                     id="enable-sms" 
+              <input type="checkbox" class="custom-control-input provider-toggle"
+                     id="enable-sms"
                      data-provider="sms"
                      {{$providers['sms']->is_enabled ? 'checked' : ''}}>
               <label class="custom-control-label" for="enable-sms">
@@ -248,7 +248,7 @@
         <div class="card-body">
           @if($providers['sms']->status === 'active')
             <div class="alert alert-success">
-              <i class="fas fa-check-circle"></i> {{ __('Provider is configured and active.') }} 
+              <i class="fas fa-check-circle"></i> {{ __('Provider is configured and active.') }}
               {{ __('Last tested') }}: {{$providers['sms']->last_tested_at ? $providers['sms']->last_tested_at->diffForHumans() : __('Never')}}
             </div>
           @elseif($providers['sms']->status === 'error')
@@ -274,7 +274,7 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label>{{ __('Account SID') }} <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control" name="account_sid" 
+                  <input type="text" class="form-control" name="account_sid"
                          value="{{$providers['sms']->account_sid}}"
                          placeholder="ACxxxxxxxxxxxx">
                   <small class="text-muted">{{ __('Account ID or SID from your SMS provider') }}</small>
@@ -286,7 +286,7 @@
               <div class="col-md-12">
                 <div class="form-group">
                   <label>{{ __('API URL') }} <span class="text-danger">*</span></label>
-                  <input type="url" class="form-control" name="api_url" 
+                  <input type="url" class="form-control" name="api_url"
                          value="{{$providers['sms']->api_url}}"
                          placeholder="https://api.twilio.com">
                 </div>
@@ -297,7 +297,7 @@
               <div class="col-md-12">
                 <div class="form-group">
                   <label>{{ __('API Key / Auth Token') }} <span class="text-danger">*</span></label>
-                  <input type="password" class="form-control" name="api_key" 
+                  <input type="password" class="form-control" name="api_key"
                          placeholder="{{ __('Enter API key or auth token') }}">
                   <small class="text-muted">{{ __('Current') }}: {{$providers['sms']->getMaskedApiKey()}}</small>
                 </div>
@@ -308,7 +308,7 @@
               <div class="col-md-12">
                 <div class="form-group">
                   <label>{{ __('From Number') }}</label>
-                  <input type="text" class="form-control" name="from_number" 
+                  <input type="text" class="form-control" name="from_number"
                          value="{{$providers['sms']->from_number}}"
                          placeholder="+1234567890">
                   <small class="text-muted">{{ __('Default sender phone number (optional)') }}</small>
@@ -341,7 +341,7 @@ $(document).ready(function() {
         const isEnabled = $(this).is(':checked');
         const $switch = $(this);
         const $label = $switch.next('label').find('strong');
-        
+
         $.post(`/admin/credit-management/providers/${provider}/toggle`, {
             _token: '{{csrf_token()}}'
         })
@@ -365,9 +365,9 @@ $(document).ready(function() {
         const provider = form.data('provider');
         const submitBtn = form.find('button[type="submit"]');
         const originalText = submitBtn.html();
-        
+
         submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> {{ __('Saving...') }}');
-        
+
         $.post(`/admin/credit-management/providers/${provider}`, form.serialize())
         .done(function(response) {
             if (response.success) {
@@ -389,9 +389,9 @@ $(document).ready(function() {
         const provider = $(this).data('provider');
         const btn = $(this);
         const originalText = btn.html();
-        
+
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> {{ __('Testing...') }}');
-        
+
         $.post(`/admin/credit-management/providers/${provider}/test`, {
             _token: '{{csrf_token()}}'
         })
