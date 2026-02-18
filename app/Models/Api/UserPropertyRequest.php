@@ -4,6 +4,7 @@ namespace App\Models\Api;
 
 use App\Models\ApiCustomer;
 use App\Models\CustomersHub\CrmHubNote;
+use App\Models\CustomersHub\CustomersHubStage;
 use App\Models\User;
 use App\Support\PropertyRequestFilterOptionsCache;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,12 @@ class UserPropertyRequest extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (UserPropertyRequest $model): void {
+            if (!isset($model->customers_hub_stage_id) || $model->customers_hub_stage_id === null) {
+                $model->customers_hub_stage_id = CustomersHubStage::getDefaultStageId();
+            }
+        });
+
         $forgetStats = function (UserPropertyRequest $model): void {
             $ids = array_filter(
                 [$model->getOriginal('user_id'), $model->user_id],
@@ -59,6 +66,7 @@ class UserPropertyRequest extends Model
         'is_archived',
         'is_active',
         'status_id',
+        'customers_hub_stage_id',
     ];
 
     protected $casts = [

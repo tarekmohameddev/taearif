@@ -2,10 +2,9 @@
 
 namespace App\Domain\CustomersHub\Services;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Collection;
 use Carbon\Carbon;
-use App\Models\PropertyRequestStatus;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * ActionsAggregatorService
@@ -147,83 +146,82 @@ class ActionsAggregatorService
     }
 
     /**
-     * Get stage statistics for the filtered actions (pipeline only: property_request_statuses).
-     * Returns request count and percentage per pipeline stage.
+     * Get stage statistics for the filtered actions (pipeline: customers_hub_stages).
+     * Returns request count and percentage per pipeline stage (requests + inquiries).
      */
     public function getStageStats(int $userId, array $filters = []): array
     {
-        return $this->getPropertyRequestStageStats($userId, $filters);
-    }
-
-    /**
-     * Get stage statistics for property-request-only list: count by users_property_requests.status_id.
-     * Applies same filters as list; returns property_request_statuses with requestCount and percentage.
-     */
-    private function getPropertyRequestStageStats(int $userId, array $filters): array
-    {
         try {
-            [$counts, $total] = $this->getPropertyRequestStageCounts($userId, $filters);
-            return $this->buildPropertyRequestStagesArray($counts, $total);
+            [$countsRequests, $countsInquiries, $total] = $this->getHubStageCounts($userId, $filters);
+            return $this->buildHubStagesArray($countsRequests, $countsInquiries, $total);
         } catch (\Throwable $e) {
             return [];
         }
     }
 
     /**
-     * Build base query on users_property_requests, apply filters, return counts by status_id and total.
+     * Count by customers_hub_stage_id (requests) and stage_id (inquiries).
      *
-     * @return array{0: \Illuminate\Support\Collection, 1: int} [counts keyed by status_id, total]
+     * @return array{0: \Illuminate\Support\Collection, 1: \Illuminate\Support\Collection, 2: int}
      */
-    private function getPropertyRequestStageCounts(int $userId, array $filters): array
+    private function getHubStageCounts(int $userId, array $filters): array
     {
-        $query = DB::table('users_property_requests as upr')
+        $requestQuery = DB::table('users_property_requests as upr')
             ->where('upr.user_id', $userId)
             ->where('upr.is_active', 1);
 
-        $this->applyPropertyRequestFilters($query, $filters);
+        $this->applyPropertyRequestFilters($requestQuery, $filters);
 
-        $query->whereNotNull('upr.status_id')
-            ->groupBy('upr.status_id')
-            ->selectRaw('upr.status_id as status_id, COUNT(*) as request_count');
+        $countsRequests = (clone $requestQuery)
+            ->whereNotNull('upr.customers_hub_stage_id')
+            ->groupBy('upr.customers_hub_stage_id')
+            ->selectRaw('upr.customers_hub_stage_id as stage_id, COUNT(*) as request_count')
+            ->get()
+            ->keyBy('stage_id');
 
-        $counts = $query->get()->keyBy('status_id');
-        $total = (int) $counts->sum('request_count');
+        $inquiryQuery = DB::table('api_customer_inquiry as aci')
+            ->where('aci.user_id', $userId);
+        $countsInquiries = (clone $inquiryQuery)
+            ->whereNotNull('aci.stage_id')
+            ->groupBy('aci.stage_id')
+            ->selectRaw('aci.stage_id as stage_id, COUNT(*) as inquiry_count')
+            ->get()
+            ->keyBy('stage_id');
 
-        return [$counts, $total];
+        $totalRequests = (int) $countsRequests->sum('request_count');
+        $totalInquiries = (int) $countsInquiries->sum('inquiry_count');
+        $total = $totalRequests + $totalInquiries;
+
+        return [$countsRequests, $countsInquiries, $total];
     }
 
     /**
-     * Build stages array from property_request_statuses with requestCount and percentage.
-     *
-     * @param  \Illuminate\Support\Collection  $counts  keyed by status_id (numeric)
+     * Build stages array from customers_hub_stages with requestCount + inquiry count and percentage.
      */
-    private function buildPropertyRequestStagesArray(\Illuminate\Support\Collection $counts, int $total): array
+    private function buildHubStagesArray(\Illuminate\Support\Collection $countsRequests, \Illuminate\Support\Collection $countsInquiries, int $total): array
     {
-        $statuses = PropertyRequestStatus::active()->ordered()->get();
+        $stages = DB::table('customers_hub_stages')
+            ->where('is_active', true)
+            ->orderBy('order')
+            ->get(['stage_id', 'stage_name_ar', 'stage_name_en', 'color', 'order']);
 
-        if ($statuses->isEmpty()) {
+        if ($stages->isEmpty()) {
             return [];
         }
 
-        $colorMap = [
-            'new' => '#3b82f6',
-            'follow_up' => '#8b5cf6',
-            'property_found' => '#f59e0b',
-            'contract_signed' => '#22c55e',
-            'cancelled' => '#6b7280',
-        ];
-
         $result = [];
-        foreach ($statuses as $status) {
-            $requestCount = (int) ($counts->get($status->id)?->request_count ?? 0);
+        foreach ($stages as $stage) {
+            $reqCount = (int) ($countsRequests->get($stage->stage_id)?->request_count ?? 0);
+            $inqCount = (int) ($countsInquiries->get($stage->stage_id)?->inquiry_count ?? 0);
+            $requestCount = $reqCount + $inqCount;
             $percentage = $total > 0 ? round(($requestCount / $total) * 100, 1) : 0.0;
 
             $result[] = [
-                'stage_id' => $status->slug,
-                'stage_name_ar' => $status->name_ar,
-                'stage_name_en' => $status->name_en ?? $status->name_ar,
-                'color' => $colorMap[$status->slug] ?? '#6b7280',
-                'order' => (int) $status->display_order,
+                'stage_id' => $stage->stage_id,
+                'stage_name_ar' => $stage->stage_name_ar,
+                'stage_name_en' => $stage->stage_name_en ?? $stage->stage_name_ar,
+                'color' => $stage->color ?? '#6b7280',
+                'order' => (int) $stage->order,
                 'requestCount' => $requestCount,
                 'percentage' => $percentage,
             ];
@@ -1506,15 +1504,28 @@ class ActionsAggregatorService
             $query->where('customerId', $filters['customer_id']);
         }
 
-        // Stages filter (pipeline: only property_request actions in given status_id)
+        // Stages filter (pipeline: requests and inquiries in given customers_hub stage_id or id)
         if (!empty($filters['stages']) && is_array($filters['stages'])) {
-            $statusIds = array_map('intval', $filters['stages']);
-            $query->where('sourceTable', 'users_property_requests')
-                ->whereIn('sourceId', function ($sub) use ($userId, $statusIds) {
-                    $sub->select('id')->from('users_property_requests')
-                        ->where('user_id', $userId)
-                        ->whereIn('status_id', $statusIds);
+            $stageIdStrings = $this->resolveStagesFilterToStageIds($filters['stages']);
+            if (!empty($stageIdStrings)) {
+                $query->where(function ($q) use ($userId, $stageIdStrings) {
+                    $q->where(function ($q2) use ($userId, $stageIdStrings) {
+                        $q2->where('sourceTable', 'users_property_requests')
+                            ->whereIn('sourceId', function ($sub) use ($userId, $stageIdStrings) {
+                                $sub->select('id')->from('users_property_requests')
+                                    ->where('user_id', $userId)
+                                    ->whereIn('customers_hub_stage_id', $stageIdStrings);
+                            });
+                    })->orWhere(function ($q2) use ($userId, $stageIdStrings) {
+                        $q2->where('sourceTable', 'api_customer_inquiry')
+                            ->whereIn('sourceId', function ($sub) use ($userId, $stageIdStrings) {
+                                $sub->select('id')->from('api_customer_inquiry')
+                                    ->where('user_id', $userId)
+                                    ->whereIn('stage_id', $stageIdStrings);
+                            });
+                    });
                 });
+            }
         }
 
         // Exclude specific action ID
@@ -1631,10 +1642,9 @@ class ActionsAggregatorService
     }
 
     /**
-     * Enrich action items with pipeline stage (property_request_statuses).
-     * For property_request items uses users_property_requests.status_id.
-     * For inquiry items uses api_customer_inquiry.status_id.
-     * Other items get stage_id and stage null.
+     * Enrich action items with pipeline stage (customers_hub_stages).
+     * For property_request items uses users_property_requests.customers_hub_stage_id.
+     * For inquiry items uses api_customer_inquiry.stage_id.
      */
     private function enrichItemsWithHubStage(Collection $items, int $userId): Collection
     {
@@ -1650,62 +1660,57 @@ class ActionsAggregatorService
         $requestStageMap = [];
         $inquiryStageMap = [];
 
-        $statusIdsToLoad = [];
-
         if (!empty($propertyRequestIds)) {
-            $requestStatuses = DB::table('users_property_requests')
+            $requestRows = DB::table('users_property_requests')
                 ->where('user_id', $userId)
                 ->whereIn('id', $propertyRequestIds)
-                ->get(['id', 'status_id']);
-            foreach ($requestStatuses as $row) {
-                if ($row->status_id !== null) {
-                    $statusIdsToLoad[] = $row->status_id;
-                }
-            }
-            $statusIdsToLoad = array_unique($statusIdsToLoad);
-            if (!empty($statusIdsToLoad)) {
-                $stages = DB::table('property_request_statuses')
-                    ->whereIn('id', $statusIdsToLoad)
+                ->get(['id', 'customers_hub_stage_id']);
+            $stageIdsToLoad = $requestRows->pluck('customers_hub_stage_id')->filter()->unique()->values()->all();
+            if (!empty($stageIdsToLoad)) {
+                $stages = DB::table('customers_hub_stages')
+                    ->whereIn('stage_id', $stageIdsToLoad)
                     ->where('is_active', true)
-                    ->get(['id', 'name_ar', 'name_en']);
-                $stageById = $stages->keyBy('id');
-                foreach ($requestStatuses as $row) {
-                    if ($row->status_id === null) {
+                    ->get(['id', 'stage_id', 'stage_name_ar', 'stage_name_en']);
+                $stageByStageId = $stages->keyBy('stage_id');
+                foreach ($requestRows as $row) {
+                    if ($row->customers_hub_stage_id === null) {
                         $requestStageMap[$row->id] = null;
                         continue;
                     }
-                    $s = $stageById->get($row->status_id);
+                    $s = $stageByStageId->get($row->customers_hub_stage_id);
                     $requestStageMap[$row->id] = $s ? (object) [
                         'id' => (int) $s->id,
-                        'nameAr' => $s->name_ar,
-                        'nameEn' => $s->name_en ?? $s->name_ar,
+                        'stage_id' => $s->stage_id,
+                        'nameAr' => $s->stage_name_ar,
+                        'nameEn' => $s->stage_name_en ?? $s->stage_name_ar,
                     ] : null;
                 }
             }
         }
 
         if (!empty($inquiryIds)) {
-            $inquiryStatuses = DB::table('api_customer_inquiry')
+            $inquiryRows = DB::table('api_customer_inquiry')
                 ->where('user_id', $userId)
                 ->whereIn('id', $inquiryIds)
-                ->get(['id', 'status_id']);
-            $inquiryStatusIds = $inquiryStatuses->pluck('status_id')->filter()->unique()->values()->all();
-            if (!empty($inquiryStatusIds)) {
-                $stages = DB::table('property_request_statuses')
-                    ->whereIn('id', $inquiryStatusIds)
+                ->get(['id', 'stage_id']);
+            $inquiryStageIds = $inquiryRows->pluck('stage_id')->filter()->unique()->values()->all();
+            if (!empty($inquiryStageIds)) {
+                $stages = DB::table('customers_hub_stages')
+                    ->whereIn('stage_id', $inquiryStageIds)
                     ->where('is_active', true)
-                    ->get(['id', 'name_ar', 'name_en']);
-                $stageById = $stages->keyBy('id');
-                foreach ($inquiryStatuses as $row) {
-                    if ($row->status_id === null) {
+                    ->get(['id', 'stage_id', 'stage_name_ar', 'stage_name_en']);
+                $stageByStageId = $stages->keyBy('stage_id');
+                foreach ($inquiryRows as $row) {
+                    if ($row->stage_id === null) {
                         $inquiryStageMap[$row->id] = null;
                         continue;
                     }
-                    $s = $stageById->get($row->status_id);
+                    $s = $stageByStageId->get($row->stage_id);
                     $inquiryStageMap[$row->id] = $s ? (object) [
                         'id' => (int) $s->id,
-                        'nameAr' => $s->name_ar,
-                        'nameEn' => $s->name_en ?? $s->name_ar,
+                        'stage_id' => $s->stage_id,
+                        'nameAr' => $s->stage_name_ar,
+                        'nameEn' => $s->stage_name_en ?? $s->stage_name_ar,
                     ] : null;
                 }
             }
@@ -1714,13 +1719,13 @@ class ActionsAggregatorService
         return $items->map(function ($item) use ($requestStageMap, $inquiryStageMap) {
             if (($item->sourceTable ?? '') === 'users_property_requests') {
                 $stageData = $requestStageMap[$item->sourceId] ?? null;
-                $item->stage_id = $stageData ? $stageData->id : null;
+                $item->stage_id = $stageData ? $stageData->stage_id : null;
                 $item->stage = $stageData;
                 return $item;
             }
             if (($item->sourceTable ?? '') === 'api_customer_inquiry') {
                 $stageData = $inquiryStageMap[$item->sourceId] ?? null;
-                $item->stage_id = $stageData ? $stageData->id : null;
+                $item->stage_id = $stageData ? $stageData->stage_id : null;
                 $item->stage = $stageData;
                 return $item;
             }
@@ -1770,5 +1775,31 @@ class ActionsAggregatorService
             'sourceTable' => $item->sourceTable,
             'sourceId' => $item->sourceId,
         ];
+    }
+
+    /**
+     * Resolve stages filter (array of stage_id strings or numeric ids) to array of stage_id strings.
+     *
+     * @param  array  $values
+     * @return array<string>
+     */
+    private function resolveStagesFilterToStageIds(array $values): array
+    {
+        if (empty($values)) {
+            return [];
+        }
+        $stageIds = [];
+        foreach ($values as $v) {
+            if (is_int($v) || (is_string($v) && ctype_digit($v))) {
+                $sid = DB::table('customers_hub_stages')->where('id', (int) $v)->where('is_active', true)->value('stage_id');
+                if ($sid !== null) {
+                    $stageIds[] = $sid;
+                }
+            } else {
+                $stageIds[] = (string) $v;
+            }
+        }
+
+        return array_values(array_unique($stageIds));
     }
 }

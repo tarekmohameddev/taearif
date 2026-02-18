@@ -7,11 +7,11 @@ use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Api\ApiController;
 use App\Domain\CustomersHub\Services\ActionsAggregatorService;
 use App\Models\Api\ApiCustomerInquiry;
-use App\Models\PropertyRequestStatus;
 use App\Models\Api\UserApiCustomerType;
 use App\Models\Api\UserApiCustomerPriority;
 use App\Models\Api\UserPropertyRequest;
 use App\Models\CustomersHub\CrmHubNote;
+use App\Models\CustomersHub\CustomersHubStage;
 use App\Models\User;
 use App\Models\User\BasicSetting;
 use Illuminate\Support\Facades\Cache;
@@ -266,12 +266,16 @@ class RequestsController extends ApiController
                 ['id' => 'request_reminder', 'label' => 'تذكير طلب', 'labelEn' => 'Request Reminder'],
             ];
 
-            // Pipeline stages (property_request_statuses) for request list filtering
-            $stages = PropertyRequestStatus::active()->ordered()->get()
+            // Pipeline stages (customers_hub_stages) for request list filtering
+            $stages = DB::table('customers_hub_stages')
+                ->where('is_active', true)
+                ->orderBy('order')
+                ->get(['id', 'stage_id', 'stage_name_ar', 'stage_name_en'])
                 ->map(fn ($s) => [
-                    'id' => $s->id,
-                    'label' => $s->name_ar,
-                    'labelEn' => $s->name_en ?? $s->name_ar,
+                    'id' => (int) $s->id,
+                    'stage_id' => $s->stage_id,
+                    'label' => $s->stage_name_ar,
+                    'labelEn' => $s->stage_name_en ?? $s->stage_name_ar,
                 ])
                 ->values()
                 ->all();
@@ -455,7 +459,8 @@ class RequestsController extends ApiController
             'priority' => 'nullable|in:low,medium,high',
             'notes' => 'nullable|string',
             'duration' => 'nullable|integer|min:0',
-            'status_id' => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('property_request_statuses', 'id')->where('is_active', true)],
+            'status_id' => 'nullable|integer',
+            'stage_id' => 'nullable|string|max:50',
         ]);
 
         $userId = $this->getTenantUserId($request);
@@ -465,22 +470,29 @@ class RequestsController extends ApiController
             return $this->error('Action not found', 404);
         }
 
-        // Update pipeline stage when status_id is provided (property request or inquiry)
-        if (array_key_exists('status_id', $validated) && $validated['status_id'] !== null) {
+        // Resolve pipeline stage: stage_id (string) or status_id (integer -> lookup customers_hub_stages.id)
+        $stageIdString = null;
+        if (array_key_exists('stage_id', $validated) && $validated['stage_id'] !== null && $validated['stage_id'] !== '') {
+            $stageIdString = DB::table('customers_hub_stages')->where('stage_id', $validated['stage_id'])->where('is_active', true)->value('stage_id');
+        } elseif (array_key_exists('status_id', $validated) && $validated['status_id'] !== null) {
+            $stageIdString = DB::table('customers_hub_stages')->where('id', (int) $validated['status_id'])->where('is_active', true)->value('stage_id');
+        }
+
+        if ($stageIdString !== null) {
             if (($action->sourceTable ?? '') === 'users_property_requests' && !empty($action->sourceId)) {
                 DB::table('users_property_requests')
                     ->where('id', $action->sourceId)
                     ->where('user_id', $userId)
-                    ->update(['status_id' => $validated['status_id'], 'updated_at' => now()]);
+                    ->update(['customers_hub_stage_id' => $stageIdString, 'updated_at' => now()]);
             } elseif (($action->sourceTable ?? '') === 'api_customer_inquiry' && !empty($action->sourceId)) {
                 DB::table('api_customer_inquiry')
                     ->where('id', $action->sourceId)
                     ->where('user_id', $userId)
-                    ->update(['status_id' => $validated['status_id'], 'updated_at' => now()]);
+                    ->update(['stage_id' => $stageIdString, 'updated_at' => now()]);
             }
         }
 
-        unset($validated['status_id']);
+        unset($validated['status_id'], $validated['stage_id']);
 
         $success = $this->aggregator->updateAction($userId, $requestId, $validated);
         if (!$success && !empty($validated)) {
@@ -1192,17 +1204,18 @@ class RequestsController extends ApiController
 
         $stageId = null;
         $stage = null;
-        if (!empty($propertyRequest->status_id)) {
-            $stageRow = DB::table('property_request_statuses')
-                ->where('id', $propertyRequest->status_id)
+        if (!empty($propertyRequest->customers_hub_stage_id)) {
+            $stageRow = DB::table('customers_hub_stages')
+                ->where('stage_id', $propertyRequest->customers_hub_stage_id)
                 ->where('is_active', true)
-                ->first(['id', 'name_ar', 'name_en']);
+                ->first(['id', 'stage_id', 'stage_name_ar', 'stage_name_en']);
             if ($stageRow) {
-                $stageId = (int) $stageRow->id;
+                $stageId = $stageRow->stage_id;
                 $stage = [
                     'id' => (int) $stageRow->id,
-                    'nameAr' => $stageRow->name_ar,
-                    'nameEn' => $stageRow->name_en ?? $stageRow->name_ar,
+                    'stage_id' => $stageRow->stage_id,
+                    'nameAr' => $stageRow->stage_name_ar,
+                    'nameEn' => $stageRow->stage_name_en ?? $stageRow->stage_name_ar,
                 ];
             }
         }
@@ -1330,17 +1343,18 @@ class RequestsController extends ApiController
 
         $stageId = null;
         $stage = null;
-        if (!empty($inquiry->status_id)) {
-            $stageRow = DB::table('property_request_statuses')
-                ->where('id', $inquiry->status_id)
+        if (!empty($inquiry->stage_id)) {
+            $stageRow = DB::table('customers_hub_stages')
+                ->where('stage_id', $inquiry->stage_id)
                 ->where('is_active', true)
-                ->first(['id', 'name_ar', 'name_en']);
+                ->first(['id', 'stage_id', 'stage_name_ar', 'stage_name_en']);
             if ($stageRow) {
-                $stageId = (int) $stageRow->id;
+                $stageId = $stageRow->stage_id;
                 $stage = [
                     'id' => (int) $stageRow->id,
-                    'nameAr' => $stageRow->name_ar,
-                    'nameEn' => $stageRow->name_en ?? $stageRow->name_ar,
+                    'stage_id' => $stageRow->stage_id,
+                    'nameAr' => $stageRow->stage_name_ar,
+                    'nameEn' => $stageRow->stage_name_en ?? $stageRow->stage_name_ar,
                 ];
             }
         }

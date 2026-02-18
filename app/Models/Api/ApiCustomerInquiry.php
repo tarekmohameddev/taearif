@@ -4,6 +4,7 @@ namespace App\Models\Api;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\ApiCustomer;
 use App\Models\CustomersHub\CrmHubNote;
+use App\Models\CustomersHub\CustomersHubStage;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,6 +25,7 @@ class ApiCustomerInquiry extends Model
         'user_id',
         'customer_id',
         'status_id',
+        'stage_id',
         'responsible_employee_id',
         'phone_number',
         'message',
@@ -58,6 +60,15 @@ class ApiCustomerInquiry extends Model
         'is_read',
         'is_archived',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (ApiCustomerInquiry $model): void {
+            if (!isset($model->stage_id) || $model->stage_id === null) {
+                $model->stage_id = CustomersHubStage::getDefaultStageId();
+            }
+        });
+    }
 
     protected $casts = [
         'is_read' => 'boolean',

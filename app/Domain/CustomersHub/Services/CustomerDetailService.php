@@ -2,8 +2,9 @@
 
 namespace App\Domain\CustomersHub\Services;
 
-use Illuminate\Support\Facades\DB;
+use App\Models\CustomersHub\CustomersHubStage;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * CustomerDetailService
@@ -285,6 +286,7 @@ class CustomerDetailService
         return DB::table('api_customer_inquiry')->insertGetId([
             'user_id' => $userId,
             'customer_id' => $customerId,
+            'stage_id' => CustomersHubStage::getDefaultStageId(),
             'property_type' => $data['propertyType'] ?? null,
             'budget' => $data['budget'] ?? null,
             'bedrooms' => $data['bedrooms'] ?? null,
