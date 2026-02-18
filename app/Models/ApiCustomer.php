@@ -134,6 +134,19 @@ class ApiCustomer extends Authenticatable
             ->withTimestamps();
     }
 
+    /**
+     * Assigned properties (listings) via pivot api_customer_assigned_property.
+     */
+    public function assignedProperties()
+    {
+        return $this->belongsToMany(
+            \App\Models\User\RealestateManagement\Property::class,
+            'api_customer_assigned_property',
+            'customer_id',
+            'property_id'
+        )->withTimestamps();
+    }
+
     //  type_id with name
     public function typeWithName()
     {

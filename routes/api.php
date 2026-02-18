@@ -1245,6 +1245,11 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
 
         // Preferences/Requirements
         Route::put('/{customerId}/preferences', [\App\Http\Controllers\Api\V2\CustomersHub\DetailController::class, 'updatePreferences']);
+
+        // Assigned properties (pivot api_customer_assigned_property)
+        Route::post('/{customerId}/properties', [\App\Http\Controllers\Api\V2\CustomersHub\CustomerPropertiesController::class, 'addProperty']);
+        Route::get('/{customerId}/properties', [\App\Http\Controllers\Api\V2\CustomersHub\CustomerPropertiesController::class, 'listProperties']);
+        Route::delete('/{customerId}/properties/{propertyId}', [\App\Http\Controllers\Api\V2\CustomersHub\CustomerPropertiesController::class, 'removeProperty']);
     });
 
     // 6. ASSIGNMENT
