@@ -1516,8 +1516,34 @@ class ActionsAggregatorService
                         ->where('dueDate', '<', Carbon::now());
                     break;
                 case 'today':
-                    $query->whereNotNull('dueDate')
-                        ->whereDate('dueDate', Carbon::today());
+                    $today = Carbon::today();
+                    $query->where(function ($q) use ($userId, $today) {
+                        // Inquiry with at least one appointment today
+                        $q->orWhere(function ($q2) use ($userId, $today) {
+                            $q2->where('objectType', 'inquiry')
+                                ->whereIn('sourceId', function ($sub) use ($userId, $today) {
+                                    $sub->select('inquiry_id')
+                                        ->from('inquiry_appointments')
+                                        ->where('user_id', $userId)
+                                        ->whereDate('datetime', $today);
+                                });
+                        })
+                        // Property request with at least one appointment today
+                        ->orWhere(function ($q2) use ($userId, $today) {
+                            $q2->where('objectType', 'property_request')
+                                ->whereIn('sourceId', function ($sub) use ($userId, $today) {
+                                    $sub->select('property_request_id')
+                                        ->from('property_request_appointments')
+                                        ->where('user_id', $userId)
+                                        ->whereDate('datetime', $today);
+                                });
+                        })
+                        // Other types: row has dueDate = today (reminder, request_appointment, request_reminder)
+                        ->orWhere(function ($q2) use ($today) {
+                            $q2->whereNotNull('dueDate')
+                                ->whereDate('dueDate', $today);
+                        });
+                    });
                     break;
                 case 'week':
                     $query->whereNotNull('dueDate')

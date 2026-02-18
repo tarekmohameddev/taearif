@@ -468,4 +468,109 @@ class PropertyRequestAppointmentsRemindersTest extends TestCase
             }
         }
     }
+
+    /** @test */
+    public function list_with_due_date_bucket_today_includes_requests_and_inquiries_with_appointment_today(): void
+    {
+        $this->requirePropertyRequestTables();
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        Sanctum::actingAs($tenant);
+
+        $now = now();
+        $todayAt10 = $now->copy()->startOfDay()->addHours(10);
+        $tomorrowAt10 = $now->copy()->addDay()->startOfDay()->addHours(10);
+
+        // Property request WITH appointment today — should appear when filtering by today
+        $prIdWithToday = $this->createPropertyRequestForUser($tenant->id);
+        DB::table('property_request_appointments')->insert([
+            'user_id' => $tenant->id,
+            'property_request_id' => $prIdWithToday,
+            'customer_id' => null,
+            'title' => 'Apt today',
+            'type' => 'site_visit',
+            'datetime' => $todayAt10,
+            'duration' => 30,
+            'status' => 'scheduled',
+            'priority' => 2,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        // Property request with appointment TOMORROW — should NOT appear when filtering by today
+        $prIdWithTomorrow = $this->createPropertyRequestForUser($tenant->id);
+        DB::table('property_request_appointments')->insert([
+            'user_id' => $tenant->id,
+            'property_request_id' => $prIdWithTomorrow,
+            'customer_id' => null,
+            'title' => 'Apt tomorrow',
+            'type' => 'site_visit',
+            'datetime' => $tomorrowAt10,
+            'duration' => 30,
+            'status' => 'scheduled',
+            'priority' => 2,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $res = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'due_date_bucket' => 'today',
+            'objectTypes' => ['inquiry', 'property_request'],
+            'limit' => 50,
+            'offset' => 0,
+        ]);
+
+        $res->assertOk()->assertJsonPath('status', 'success');
+        $actions = $res->json('data.actions');
+        $this->assertIsArray($actions);
+
+        $ids = array_column($actions, 'id');
+        $this->assertContains("property_request_{$prIdWithToday}", $ids, 'Property request with appointment today should be in list');
+        $this->assertNotContains("property_request_{$prIdWithTomorrow}", $ids, 'Property request with appointment tomorrow should not be in list');
+
+        // If inquiry_appointments and api_customer_inquiry exist, assert inquiry with appointment today is included
+        if (Schema::hasTable('inquiry_appointments') && Schema::hasTable('api_customer_inquiry')) {
+            $phone = '+9665' . (string) random_int(10000000, 99999999);
+            $customerId = DB::table('api_customers')->insertGetId([
+                'user_id' => $tenant->id,
+                'name' => 'Inquiry Customer',
+                'phone_number' => $phone,
+                'password' => bcrypt('secret'),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            $inquiryId = DB::table('api_customer_inquiry')->insertGetId([
+                'user_id' => $tenant->id,
+                'customer_id' => $customerId,
+                'message' => 'Test inquiry',
+                'inquiry_type' => 'general',
+                'is_read' => 0,
+                'is_archived' => 0,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            DB::table('inquiry_appointments')->insert([
+                'user_id' => $tenant->id,
+                'inquiry_id' => $inquiryId,
+                'customer_id' => $customerId,
+                'title' => 'Inquiry apt today',
+                'type' => 'office_meeting',
+                'datetime' => $todayAt10,
+                'duration' => 30,
+                'status' => 'scheduled',
+                'priority' => 2,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            $res2 = $this->postJson('/api/v2/customers-hub/requests/list', [
+                'due_date_bucket' => 'today',
+                'objectTypes' => ['inquiry', 'property_request'],
+                'limit' => 50,
+                'offset' => 0,
+            ]);
+            $res2->assertOk();
+            $ids2 = array_column($res2->json('data.actions'), 'id');
+            $this->assertContains('inquiry_' . $inquiryId, $ids2, 'Inquiry with appointment today should be in list');
+        }
+    }
 }
