@@ -60,7 +60,17 @@ class CreditManagementController extends Controller
             $pricingQuery->where('channel_type', 'like', "%{$search}%");
         }
         
-        $channelPricing = $pricingQuery->orderBy('channel_type')->paginate(10, ['*'], 'pricing_page');
+        // Order channels with SMS below WhatsApp, then others alphabetically
+        $channelPricing = $pricingQuery->orderByRaw("
+            CASE channel_type 
+                WHEN 'whatsapp' THEN 1
+                WHEN 'sms' THEN 2
+                WHEN 'facebook' THEN 3
+                WHEN 'telegram' THEN 4
+                WHEN 'instagram' THEN 5
+                ELSE 6
+            END
+        ")->paginate(10, ['*'], 'pricing_page');
         
         // Get channel types for dropdowns
         $channelTypes = MarketingChannelPricing::getChannelTypes();

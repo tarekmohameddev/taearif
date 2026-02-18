@@ -142,7 +142,8 @@ class SmsCampaignService
                 throw new InvalidArgumentException('No valid recipients found.');
             }
 
-            $requiredCredits = count($recipients);
+            $creditsPerMessage = UserCredit::getCostForMessageType('sms');
+            $requiredCredits = count($recipients) * $creditsPerMessage;
             if (!$this->creditService->hasSufficientCredits($userId, $requiredCredits)) {
                 throw new InsufficientCreditsException($userId, $requiredCredits);
             }

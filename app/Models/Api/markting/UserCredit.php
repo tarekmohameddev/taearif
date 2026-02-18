@@ -186,6 +186,7 @@ class UserCredit extends Model
 
     /**
      * Get credit costs for different message types
+     * @deprecated Use getCostForMessageType() which reads from database
      */
     public static function getMessageTypeCosts()
     {
@@ -199,11 +200,23 @@ class UserCredit extends Model
     }
 
     /**
-     * Get cost for message type
+     * Get cost for message type from MarketingChannelPricing table
+     * Requires pricing to be configured - throws exception if not found
+     * 
+     * @param string $messageType The channel type (e.g., 'sms', 'whatsapp')
+     * @return int Credits required per message
+     * @throws \App\Domain\Communication\Exceptions\ChannelPricingNotConfiguredException If pricing is not configured for the channel type
      */
     public static function getCostForMessageType($messageType)
     {
-        $costs = self::getMessageTypeCosts();
-        return $costs[$messageType] ?? 1;
+        $pricing = MarketingChannelPricing::active()
+            ->forChannel($messageType)
+            ->first();
+        
+        if (!$pricing) {
+            throw new \App\Domain\Communication\Exceptions\ChannelPricingNotConfiguredException($messageType);
+        }
+        
+        return $pricing->credits_per_message;
     }
 }
