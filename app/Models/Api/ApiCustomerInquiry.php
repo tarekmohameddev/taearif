@@ -24,6 +24,7 @@ class ApiCustomerInquiry extends Model
         'user_id',
         'customer_id',
         'status_id',
+        'responsible_employee_id',
         'phone_number',
         'message',
         'inquiry_type',
@@ -71,6 +72,11 @@ class ApiCustomerInquiry extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function responsibleEmployee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'responsible_employee_id');
     }
 
     public function hubNotes()

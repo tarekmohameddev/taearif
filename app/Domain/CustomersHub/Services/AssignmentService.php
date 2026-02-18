@@ -127,7 +127,9 @@ class AssignmentService
     }
 
     /**
-     * Manually assign property requests or inquiries (leads) to an employee. Resolves each to linked customer.
+     * Manually assign property requests or inquiries (leads) to an employee.
+     * For inquiry_* IDs: sets responsible_employee_id on the inquiry row.
+     * For other IDs: resolves to linked customer and sets api_customers.responsible_employee_id.
      *
      * @param int $userId Tenant owner ID
      * @param array $requestIds Array of composite IDs (e.g. property_request_42, inquiry_17) or numeric strings/ints
@@ -149,9 +151,39 @@ class AssignmentService
 
         $assignedCount = 0;
         $assignments = [];
+        $now = Carbon::now();
 
         foreach ($requestIds as $requestOrCustomerId) {
             $idString = is_string($requestOrCustomerId) ? $requestOrCustomerId : (string) $requestOrCustomerId;
+
+            if (str_starts_with($idString, 'inquiry_')) {
+                $inquiryId = (int) substr($idString, 7);
+                if ($inquiryId <= 0) {
+                    continue;
+                }
+                $updated = DB::table('api_customer_inquiry')
+                    ->where('user_id', $userId)
+                    ->where('id', $inquiryId)
+                    ->update([
+                        'responsible_employee_id' => $employeeId,
+                        'updated_at' => $now,
+                    ]);
+                if ($updated > 0) {
+                    $assignedCount++;
+                    $inquiry = DB::table('api_customer_inquiry')
+                        ->where('user_id', $userId)
+                        ->where('id', $inquiryId)
+                        ->first(['customer_id']);
+                    $assignments[] = [
+                        'requestId' => $idString,
+                        'customerId' => $inquiry && $inquiry->customer_id !== null ? (string) $inquiry->customer_id : null,
+                        'employeeId' => (string) $employeeId,
+                        'assignedAt' => $now->toIso8601String(),
+                    ];
+                }
+                continue;
+            }
+
             $customerId = $this->resolveCompositeRequestIdToCustomerId($userId, $idString);
             if ($customerId === null) {
                 continue;
@@ -163,7 +195,7 @@ class AssignmentService
                     'requestId' => $idString,
                     'customerId' => (string) $customerId,
                     'employeeId' => (string) $employeeId,
-                    'assignedAt' => Carbon::now()->toIso8601String(),
+                    'assignedAt' => $now->toIso8601String(),
                 ];
             }
         }

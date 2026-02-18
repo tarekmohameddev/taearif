@@ -926,6 +926,20 @@ class ActionsAggregatorService
                 $customerMap = $this->getCustomerIdsForActionIds($userId, $actionIds);
                 $assignedTo = (int) $data['assignedTo'];
                 foreach ($actionIds as $actionId) {
+                    $parsed = $this->parseActionId($actionId);
+                    if ($parsed && $parsed['table'] === 'api_customer_inquiry') {
+                        $updated = DB::table('api_customer_inquiry')
+                            ->where('id', $parsed['sourceId'])
+                            ->where('user_id', $userId)
+                            ->update(['responsible_employee_id' => $assignedTo, 'updated_at' => $now]);
+                        if ($updated > 0) {
+                            $result['success'][] = $actionId;
+                        } else {
+                            $result['failed'][] = $actionId;
+                            $result['failures'][] = ['actionId' => $actionId, 'reason' => 'UPDATE_FAILED'];
+                        }
+                        continue;
+                    }
                     $customerId = $customerMap[$actionId] ?? null;
                     if ($customerId === null) {
                         $result['failed'][] = $actionId;
@@ -1147,7 +1161,7 @@ class ActionsAggregatorService
     {
         return DB::table('api_customer_inquiry as aci')
             ->join('api_customers as ac', 'aci.customer_id', '=', 'ac.id')
-            ->leftJoin('users as u', 'ac.responsible_employee_id', '=', 'u.id')
+            ->leftJoin('users as u', 'aci.responsible_employee_id', '=', 'u.id')
             ->where('aci.user_id', $userId)
             ->select([
                 DB::raw("CONCAT('inquiry_', aci.id) as id"),
@@ -1179,7 +1193,7 @@ class ActionsAggregatorService
                 'aci.created_at as createdAt',
                 DB::raw("NULL as completedAt"),
                 DB::raw("NULL as completedBy"),
-                'ac.responsible_employee_id as assignedTo',
+                'aci.responsible_employee_id as assignedTo',
                 DB::raw("CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as assignedToName"),
                 DB::raw("JSON_OBJECT(
                     'inquiryId', aci.id,
