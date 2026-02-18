@@ -1179,6 +1179,11 @@ class RequestsController extends ApiController
             ->values()
             ->all();
 
+        $hubNoteRows = CrmHubNote::where('noteable_type', UserPropertyRequest::class)
+            ->where('noteable_id', $propertyRequestId)
+            ->orderBy('created_at')
+            ->get();
+
         $stageId = null;
         $stage = null;
         if (!empty($propertyRequest->status_id)) {
@@ -1244,7 +1249,7 @@ class RequestsController extends ApiController
         $fullAction['objectType'] = 'property_request';
         $fullAction['source'] = $action->source ?? ($propertyRequest->source ?? 'website');
 
-        $fullAction['notes'] = $propertyRequest->notes;
+        $fullAction['notes'] = $this->formatHubNotes($hubNoteRows);
         $fullAction['stage_id'] = $stageId;
         $fullAction['stage'] = $stage;
         $fullAction['priority'] = $this->mapPropertyRequestPriorityToString($propertyRequest->seriousness ?? null);
@@ -1311,6 +1316,11 @@ class RequestsController extends ApiController
             ->values()
             ->all();
 
+        $inquiryHubNoteRows = CrmHubNote::where('noteable_type', ApiCustomerInquiry::class)
+            ->where('noteable_id', $inquiryId)
+            ->orderBy('created_at')
+            ->get();
+
         $stageId = null;
         $stage = null;
         if (!empty($inquiry->status_id)) {
@@ -1372,6 +1382,7 @@ class RequestsController extends ApiController
         $fullAction['assignedToName'] = $assignedToName;
         $fullAction['appointments'] = $appointments;
         $fullAction['reminders'] = $reminders;
+        $fullAction['notes'] = $this->formatHubNotes($inquiryHubNoteRows);
 
         return $fullAction;
     }
@@ -1553,5 +1564,22 @@ class RequestsController extends ApiController
         $base['customerId'] = $row->customer_id !== null ? (int) $row->customer_id : null;
         $base['updatedAt'] = Carbon::parse($row->updated_at)->toIso8601String();
         return $base;
+    }
+
+    /**
+     * Format hub notes (crm_hub_notes) for API response.
+     *
+     * @param  \Illuminate\Support\Collection<int, CrmHubNote>  $notes
+     * @return array<int, array{id: int, note: string, addedBy: string, createdAt: string, updatedAt: string}>
+     */
+    private function formatHubNotes(\Illuminate\Support\Collection $notes): array
+    {
+        return $notes->map(fn (CrmHubNote $note) => [
+            'id' => (int) $note->id,
+            'note' => (string) $note->note,
+            'addedBy' => (string) $note->employee_id,
+            'createdAt' => Carbon::parse($note->created_at)->toIso8601String(),
+            'updatedAt' => Carbon::parse($note->updated_at)->toIso8601String(),
+        ])->values()->all();
     }
 }
