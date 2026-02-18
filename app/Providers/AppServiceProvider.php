@@ -110,6 +110,8 @@ class AppServiceProvider extends ServiceProvider
             User::class => User::class,
             'message' => Message::class,
             'sms_message_log' => SmsMessageLog::class,
+            UserPropertyRequest::class => UserPropertyRequest::class,
+            ApiCustomerInquiry::class => ApiCustomerInquiry::class,
         ]);
 
         Paginator::useBootstrap();
