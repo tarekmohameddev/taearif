@@ -62,12 +62,13 @@ return [
             'oauth2_callback' => 'api/oauth2-callback',
 
             /*
-             * Middleware allows to prevent unexpected access to API documentation
+             * Middleware allows to prevent unexpected access to API documentation.
+             * Swagger UI and docs are blocked in production (404).
              */
             'middleware' => [
-                'api' => [],
-                'asset' => [],
-                'docs' => [],
+                'api' => ['prevent.swagger.production'],
+                'asset' => ['prevent.swagger.production'],
+                'docs' => ['prevent.swagger.production'],
                 'oauth2_callback' => [],
             ],
 

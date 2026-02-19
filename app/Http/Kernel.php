@@ -103,6 +103,7 @@ class Kernel extends HttpKernel
         'tenant.resolve' => \App\Http\Middleware\TenantResolution::class,
         'owner-rental.auth' => \App\Http\Middleware\OwnerRentalAuth::class,
         'tenant.id.response' => \App\Http\Middleware\AddTenantIdToResponse::class,
+        'prevent.swagger.production' => \App\Http\Middleware\PreventSwaggerInProduction::class,
 
     ];
 
