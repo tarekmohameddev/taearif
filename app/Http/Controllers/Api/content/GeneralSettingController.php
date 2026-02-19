@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Content;
+namespace App\Http\Controllers\Api\content;
 
 use Illuminate\Http\Request;
 use App\Models\User\BasicSetting;
