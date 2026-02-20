@@ -28,6 +28,12 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_affiliate_register_0",
  *         tags={"Affiliate"},
  *         summary="register", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"fullname","bank_name","bank_account_number","iban"},
+ *             @OA\Property(property="fullname", type="string", maxLength=255),
+ *             @OA\Property(property="bank_name", type="string", maxLength=255),
+ *             @OA\Property(property="bank_account_number", type="string", maxLength=30),
+ *             @OA\Property(property="iban", type="string", maxLength=34),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -140,6 +146,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_apps_install_0",
  *         tags={"Apps"},
  *         summary="install", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -154,6 +163,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_apps_payment_callback_gateway_0",
  *         tags={"Apps"},
  *         summary="handle Callback",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -182,6 +194,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_apps_uninstall_app_d_0",
  *         tags={"Apps"},
  *         summary="uninstall", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -210,6 +225,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_apps_whatsapp_install_0",
  *         tags={"Apps"},
  *         summary="install Whatsapp", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -224,6 +242,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_apps_whatsapp_uninstall_0",
  *         tags={"Apps"},
  *         summary="uninstall Whatsapp", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -238,6 +259,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_apps_app_d_payment_verify_0",
  *         tags={"Apps"},
  *         summary="verify Payment", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -266,6 +290,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_auth_forgot_password_0",
  *         tags={"Auth"},
  *         summary="forgot Password",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -308,6 +335,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_auth_verify_reset_code_0",
  *         tags={"Auth"},
  *         summary="verify Reset Code",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -336,6 +366,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_blogs_0",
  *         tags={"Blogs"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -357,6 +390,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_blogs_upload_image_0",
  *         tags={"Blogs"},
  *         summary="upload Image", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -371,6 +407,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_blogs_id_0",
  *         tags={"Blogs"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -406,6 +445,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_buildings_1",
  *         tags={"Buildings"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -420,6 +462,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_buildings_upload_deed_image_0",
  *         tags={"Buildings"},
  *         summary="upload Deed Image", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -434,6 +479,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_buildings_upload_image_0",
  *         tags={"Buildings"},
  *         summary="upload Building Image", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -455,6 +503,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_buildings_id_1",
  *         tags={"Buildings"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -483,6 +534,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_categories_1",
  *         tags={"Categories"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"name"},
+ *             @OA\Property(property="name", type="string", maxLength=255),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -504,6 +558,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_categories_slug_1",
  *         tags={"Categories"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"name"},
+ *             @OA\Property(property="name", type="string", maxLength=255),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -539,6 +596,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_chat_0",
  *         tags={"Chat"},
  *         summary="chat", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -560,6 +620,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_content_about_1",
  *         tags={"Content"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -581,6 +644,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_content_banner_1",
  *         tags={"Content"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -602,6 +668,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_content_customer_dropdown_1",
  *         tags={"Content"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -616,6 +685,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_content_customer_dropdown_toggle_visibility_0",
  *         tags={"Content"},
  *         summary="toggle Visibility", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -637,6 +709,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_content_footer_1",
  *         tags={"Content"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -658,6 +733,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_content_general_1",
  *         tags={"Content"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -672,6 +750,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_content_general_toggle_show_properties_0",
  *         tags={"Content"},
  *         summary="Show Properties", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -693,6 +774,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_content_menu_1",
  *         tags={"Content"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -728,6 +812,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_contracts_1",
  *         tags={"Contracts"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -791,6 +878,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_contracts_id_1",
  *         tags={"Contracts"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -833,6 +923,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_customer_appointments_1",
  *         tags={"Crm"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -854,6 +947,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_crm_customer_appointments_customer_appointment_1",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -861,6 +957,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_crm_customer_appointments_customer_appointment_2",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -889,6 +988,13 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_customer_reminders_1",
  *         tags={"Crm"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"datetime"},
+ *             @OA\Property(property="customer_id", type="integer"),
+ *             @OA\Property(property="title", type="string", maxLength=255),
+ *             @OA\Property(property="priority", type="integer", enum={"1","2","3"}),
+ *             @OA\Property(property="datetime", type="string"),
+ *             @OA\Property(property="reminder_id", type="integer"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -924,6 +1030,12 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_crm_customer_reminders_customer_reminder_1",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="title", type="string", maxLength=255),
+ *             @OA\Property(property="priority", type="integer", enum={"1","2","3"}),
+ *             @OA\Property(property="datetime", type="string"),
+ *             @OA\Property(property="customer_id", type="integer"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -931,6 +1043,12 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_crm_customer_reminders_customer_reminder_2",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="title", type="string", maxLength=255),
+ *             @OA\Property(property="priority", type="integer", enum={"1","2","3"}),
+ *             @OA\Property(property="datetime", type="string"),
+ *             @OA\Property(property="customer_id", type="integer"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -980,6 +1098,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_customers_import_0",
  *         tags={"Crm"},
  *         summary="bulk Import", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1022,6 +1143,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_customers_id_change_priority_0",
  *         tags={"Crm"},
  *         summary="change Customer Priority", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1036,6 +1160,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_customers_id_change_procedure_0",
  *         tags={"Crm"},
  *         summary="change Customer Procedure", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1050,6 +1177,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_customers_id_change_stage_0",
  *         tags={"Crm"},
  *         summary="change Customer Stage", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1064,6 +1194,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_customers_id_change_type_0",
  *         tags={"Crm"},
  *         summary="change Customer Type", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1085,6 +1218,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_priorities_1",
  *         tags={"Crm"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1099,6 +1235,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_priorities_reorder_0",
  *         tags={"Crm"},
  *         summary="reorder Priorities", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1113,6 +1252,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_priorities_id_move_0",
  *         tags={"Crm"},
  *         summary="move Priority", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1134,6 +1276,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_crm_priorities_priority_1",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -1141,6 +1286,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_crm_priorities_priority_2",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -1169,6 +1317,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_procedures_1",
  *         tags={"Crm"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1183,6 +1334,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_procedures_reorder_0",
  *         tags={"Crm"},
  *         summary="reorder Procedures", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1197,6 +1351,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_procedures_id_move_0",
  *         tags={"Crm"},
  *         summary="move Procedure", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1218,6 +1375,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_crm_procedures_procedure_1",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -1225,6 +1385,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_crm_procedures_procedure_2",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -1253,6 +1416,10 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_crm_property_requests_settings_1",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"auto_create_customer"},
+ *             @OA\Property(property="auto_create_customer", type="boolean"),
+ *             @OA\Property(property="default_stage_id", type="integer"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1274,6 +1441,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_reminder_types_1",
  *         tags={"Crm"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1295,6 +1465,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_crm_reminder_types_reminder_type_1",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -1302,6 +1475,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_crm_reminder_types_reminder_type_2",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -1330,6 +1506,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_reminders_1",
  *         tags={"Crm"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1351,6 +1530,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_crm_reminders_reminder_1",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -1358,6 +1540,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_crm_reminders_reminder_2",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -1386,6 +1571,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_stages_1",
  *         tags={"Crm"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1400,6 +1588,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_stages_reorder_0",
  *         tags={"Crm"},
  *         summary="reorder Stages", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1414,6 +1605,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_stages_id_move_0",
  *         tags={"Crm"},
  *         summary="move Stage", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1435,6 +1629,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_crm_stages_stage_1",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -1442,6 +1639,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_crm_stages_stage_2",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -1470,6 +1670,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_types_1",
  *         tags={"Crm"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1484,6 +1687,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_types_reorder_0",
  *         tags={"Crm"},
  *         summary="reorder Types", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1498,6 +1704,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_crm_types_id_move_0",
  *         tags={"Crm"},
  *         summary="move Types", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1519,6 +1728,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_crm_types_type_1",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -1526,6 +1738,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_crm_types_type_2",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -1554,6 +1769,21 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_customers_1",
  *         tags={"Customers"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"name","phone_number","type_id"},
+ *             @OA\Property(property="name", type="string", maxLength=255),
+ *             @OA\Property(property="email", type="string", format="email"),
+ *             @OA\Property(property="phone_number", type="string", maxLength=20),
+ *             @OA\Property(property="city_id", type="integer"),
+ *             @OA\Property(property="district_id", type="integer"),
+ *             @OA\Property(property="note", type="string"),
+ *             @OA\Property(property="type_id", type="integer"),
+ *             @OA\Property(property="responsible_employee_id", type="integer"),
+ *             @OA\Property(property="stage_id", type="integer"),
+ *             @OA\Property(property="procedure_id", type="integer"),
+ *             @OA\Property(property="password", type="string", minLength=6),
+ *             @OA\Property(property="interested_category_ids", type="array", @OA\Items(type="integer")),
+ *             @OA\Property(property="interested_property_ids", type="array", @OA\Items(type="integer")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1582,6 +1812,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_customers_bulk_import_0",
  *         tags={"Customers"},
  *         summary="bulk Import", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1596,6 +1829,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_customers_bulk_import_template_0",
  *         tags={"Customers"},
  *         summary="download Template",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1659,6 +1895,21 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_customers_id_1",
  *         tags={"Customers"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="name", type="string", maxLength=255),
+ *             @OA\Property(property="email", type="string", format="email"),
+ *             @OA\Property(property="phone_number", type="string", maxLength=20),
+ *             @OA\Property(property="city_id", type="integer"),
+ *             @OA\Property(property="district_id", type="integer"),
+ *             @OA\Property(property="note", type="string"),
+ *             @OA\Property(property="type_id", type="integer"),
+ *             @OA\Property(property="stage_id", type="integer"),
+ *             @OA\Property(property="responsible_employee_id", type="integer"),
+ *             @OA\Property(property="procedure_id", type="integer"),
+ *             @OA\Property(property="password", type="string", minLength=6),
+ *             @OA\Property(property="interested_category_ids", type="array", @OA\Items(type="integer")),
+ *             @OA\Property(property="interested_property_ids", type="array", @OA\Items(type="integer")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -1834,6 +2085,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_dashboard_visitors_0",
  *         tags={"Dashboard"},
  *         summary="visitors", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1862,6 +2116,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_delete_file_0",
  *         tags={"Delete File"},
  *         summary="delete", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1890,6 +2147,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_embeddings_0",
  *         tags={"Embeddings"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1911,6 +2171,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_employee_addons_1",
  *         tags={"Employee"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1939,6 +2202,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_impersonate_user_0",
  *         tags={"Impersonate"},
  *         summary="start", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1953,6 +2219,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_impersonate_user_revoke_0",
  *         tags={"Impersonate"},
  *         summary="stop", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1981,6 +2250,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_isthara_0",
  *         tags={"Isthara"},
  *         summary="store",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -1995,6 +2267,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_login_0",
  *         tags={"Login"},
  *         summary="login",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2009,6 +2284,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_logout_0",
  *         tags={"Logout"},
  *         summary="logout", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2023,6 +2301,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_make_payment_0",
  *         tags={"Make Payment"},
  *         summary="checkout", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2037,6 +2318,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_make_payment_app_0",
  *         tags={"Make Payment App"},
  *         summary="checkout App", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2051,6 +2335,11 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_media_0",
  *         tags={"Media"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\MediaType(mediaType="multipart/form-data", @OA\Schema(type="object", required={"file"},
+ *             @OA\Property(property="file", type="string", format="binary", maxLength=51200),
+ *             @OA\Property(property="mediable_type", type="string", enum={"App\\Models\\Api\\Post"}),
+ *             @OA\Property(property="mediable_id", type="integer"),
+ *         ))),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2079,6 +2368,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_onboarding_0",
  *         tags={"Onboarding"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2100,6 +2392,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_pixels_1",
  *         tags={"Pixels"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2121,6 +2416,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_pixels_id_1",
  *         tags={"Pixels"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -2142,6 +2440,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_pixels_id_toggle_status_0",
  *         tags={"Pixels"},
  *         summary="toggle Status", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2163,6 +2464,16 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_posts_1",
  *         tags={"Posts"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"title","content"},
+ *             @OA\Property(property="title", type="string", maxLength=255),
+ *             @OA\Property(property="slug", type="string", maxLength=255),
+ *             @OA\Property(property="content", type="string", maxLength=100000),
+ *             @OA\Property(property="excerpt", type="string", maxLength=500),
+ *             @OA\Property(property="status", type="string", enum={"draft","published"}),
+ *             @OA\Property(property="category_ids", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="media_ids", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="thumbnail_id", type="integer"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2184,6 +2495,16 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_posts_slug_1",
  *         tags={"Posts"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="title", type="string", maxLength=255),
+ *             @OA\Property(property="slug", type="string", maxLength=255),
+ *             @OA\Property(property="content", type="string", maxLength=100000),
+ *             @OA\Property(property="excerpt", type="string", maxLength=500),
+ *             @OA\Property(property="status", type="string", enum={"draft","published"}),
+ *             @OA\Property(property="category_ids", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="media_ids", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="thumbnail_id", type="integer"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -2212,6 +2533,26 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_projects_1",
  *         tags={"Projects"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"featured_image"},
+ *             @OA\Property(property="featured_image", type="string"),
+ *             @OA\Property(property="video_url", type="string"),
+ *             @OA\Property(property="address", type="string"),
+ *             @OA\Property(property="description", type="string", minLength=15),
+ *             @OA\Property(property="complete_status", type="string"),
+ *             @OA\Property(property="units", type="integer"),
+ *             @OA\Property(property="completion_date", type="string"),
+ *             @OA\Property(property="developer", type="string", maxLength=255),
+ *             @OA\Property(property="gallery_images", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="floorplan_images", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="min_price", type="number"),
+ *             @OA\Property(property="max_price", type="number"),
+ *             @OA\Property(property="featured", type="boolean"),
+ *             @OA\Property(property="status", type="string"),
+ *             @OA\Property(property="latitude", type="number"),
+ *             @OA\Property(property="longitude", type="number"),
+ *             @OA\Property(property="label", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="value", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2233,6 +2574,24 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_projects_id_1",
  *         tags={"Projects"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"featured_image"},
+ *             @OA\Property(property="featured_image", type="string"),
+ *             @OA\Property(property="video_url", type="string"),
+ *             @OA\Property(property="address", type="string"),
+ *             @OA\Property(property="description", type="string", minLength=15),
+ *             @OA\Property(property="gallery_images", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="floorplan_images", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="min_price", type="number"),
+ *             @OA\Property(property="max_price", type="number"),
+ *             @OA\Property(property="featured", type="boolean"),
+ *             @OA\Property(property="status", type="string"),
+ *             @OA\Property(property="latitude", type="number"),
+ *             @OA\Property(property="longitude", type="number"),
+ *             @OA\Property(property="label", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="value", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="complete_status", type="string"),
+ *             @OA\Property(property="units", type="integer"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -2254,6 +2613,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_projects_id_toggle_featured_0",
  *         tags={"Projects"},
  *         summary="toggle Featured", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2275,6 +2637,69 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_properties_1",
  *         tags={"Properties"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"title","address","description","featured_image"},
+ *             @OA\Property(property="payment_method", type="string"),
+ *             @OA\Property(property="title", type="string", maxLength=255),
+ *             @OA\Property(property="address", type="string"),
+ *             @OA\Property(property="description", type="string"),
+ *             @OA\Property(property="featured_image", type="string"),
+ *             @OA\Property(property="gallery", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="floor_planning_image", type="string"),
+ *             @OA\Property(property="video_image", type="string"),
+ *             @OA\Property(property="video_url", type="string"),
+ *             @OA\Property(property="virtual_tour", type="string"),
+ *             @OA\Property(property="price", type="number"),
+ *             @OA\Property(property="pricePerMeter", type="number"),
+ *             @OA\Property(property="beds", type="string"),
+ *             @OA\Property(property="bath", type="string"),
+ *             @OA\Property(property="purpose", type="string"),
+ *             @OA\Property(property="area", type="string"),
+ *             @OA\Property(property="status", type="string"),
+ *             @OA\Property(property="latitude", type="number"),
+ *             @OA\Property(property="longitude", type="number"),
+ *             @OA\Property(property="project_id", type="string"),
+ *             @OA\Property(property="city_id", type="string"),
+ *             @OA\Property(property="state_id", type="string"),
+ *             @OA\Property(property="featured", type="boolean"),
+ *             @OA\Property(property="amenities", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="type", type="string"),
+ *             @OA\Property(property="faqs", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="category_id", type="integer"),
+ *             @OA\Property(property="facade_id", type="number"),
+ *             @OA\Property(property="length", type="number"),
+ *             @OA\Property(property="width", type="number"),
+ *             @OA\Property(property="street_width_north", type="number"),
+ *             @OA\Property(property="street_width_south", type="number"),
+ *             @OA\Property(property="street_width_east", type="number"),
+ *             @OA\Property(property="street_width_west", type="number"),
+ *             @OA\Property(property="building_age", type="integer"),
+ *             @OA\Property(property="rooms", type="integer"),
+ *             @OA\Property(property="bathrooms", type="integer"),
+ *             @OA\Property(property="floors", type="integer"),
+ *             @OA\Property(property="floor_number", type="integer"),
+ *             @OA\Property(property="driver_room", type="integer"),
+ *             @OA\Property(property="maid_room", type="integer"),
+ *             @OA\Property(property="dining_room", type="integer"),
+ *             @OA\Property(property="living_room", type="integer"),
+ *             @OA\Property(property="majlis", type="integer"),
+ *             @OA\Property(property="storage_room", type="integer"),
+ *             @OA\Property(property="basement", type="integer"),
+ *             @OA\Property(property="swimming_pool", type="integer"),
+ *             @OA\Property(property="kitchen", type="integer"),
+ *             @OA\Property(property="balcony", type="integer"),
+ *             @OA\Property(property="garden", type="integer"),
+ *             @OA\Property(property="annex", type="integer"),
+ *             @OA\Property(property="elevator", type="integer"),
+ *             @OA\Property(property="private_parking", type="integer"),
+ *             @OA\Property(property="size", type="integer"),
+ *             @OA\Property(property="building_id", type="integer"),
+ *             @OA\Property(property="water_meter_number", type="string"),
+ *             @OA\Property(property="electricity_meter_number", type="string"),
+ *             @OA\Property(property="deed_number", type="string"),
+ *             @OA\Property(property="advertising_license", type="string"),
+ *             @OA\Property(property="owner_number", type="string"),
+ *             @OA\Property(property="video_file", type="string"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2303,6 +2728,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_properties_bulk_import_0",
  *         tags={"Properties"},
  *         summary="bulk Import", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2373,6 +2801,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_properties_drafts_bulk_complete_0",
  *         tags={"Properties"},
  *         summary="bulk Complete Drafts", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2394,6 +2825,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_properties_drafts_id_1",
  *         tags={"Properties"},
  *         summary="update Draft", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2408,6 +2842,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_properties_drafts_id_complete_0",
  *         tags={"Properties"},
  *         summary="complete Draft", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2464,6 +2901,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_properties_reorder_0",
  *         tags={"Properties"},
  *         summary="properties_reorder", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2478,6 +2918,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_properties_reorder_featured_0",
  *         tags={"Properties"},
  *         summary="properties_reorder_featured", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2492,6 +2935,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_properties_upload_deed_image_0",
  *         tags={"Properties"},
  *         summary="upload Deed Image", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2513,6 +2959,63 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_properties_id_1",
  *         tags={"Properties"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"title","address","description","featured_image"},
+ *             @OA\Property(property="payment_method", type="string"),
+ *             @OA\Property(property="title", type="string", maxLength=255),
+ *             @OA\Property(property="address", type="string"),
+ *             @OA\Property(property="description", type="string"),
+ *             @OA\Property(property="featured_image", type="string"),
+ *             @OA\Property(property="gallery", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="floor_planning_image", type="string"),
+ *             @OA\Property(property="video_image", type="string"),
+ *             @OA\Property(property="price", type="number"),
+ *             @OA\Property(property="pricePerMeter", type="number"),
+ *             @OA\Property(property="beds", type="string"),
+ *             @OA\Property(property="bath", type="string"),
+ *             @OA\Property(property="purpose", type="string"),
+ *             @OA\Property(property="area", type="string"),
+ *             @OA\Property(property="status", type="string"),
+ *             @OA\Property(property="latitude", type="number"),
+ *             @OA\Property(property="longitude", type="number"),
+ *             @OA\Property(property="project_id", type="string"),
+ *             @OA\Property(property="city_id", type="string"),
+ *             @OA\Property(property="state_id", type="string"),
+ *             @OA\Property(property="amenities", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="category_id", type="integer"),
+ *             @OA\Property(property="facade_id", type="number"),
+ *             @OA\Property(property="length", type="number"),
+ *             @OA\Property(property="width", type="number"),
+ *             @OA\Property(property="street_width_north", type="number"),
+ *             @OA\Property(property="street_width_south", type="number"),
+ *             @OA\Property(property="street_width_east", type="number"),
+ *             @OA\Property(property="street_width_west", type="number"),
+ *             @OA\Property(property="building_age", type="integer"),
+ *             @OA\Property(property="rooms", type="integer"),
+ *             @OA\Property(property="bathrooms", type="integer"),
+ *             @OA\Property(property="floors", type="integer"),
+ *             @OA\Property(property="floor_number", type="integer"),
+ *             @OA\Property(property="driver_room", type="integer"),
+ *             @OA\Property(property="maid_room", type="integer"),
+ *             @OA\Property(property="dining_room", type="integer"),
+ *             @OA\Property(property="living_room", type="integer"),
+ *             @OA\Property(property="majlis", type="integer"),
+ *             @OA\Property(property="storage_room", type="integer"),
+ *             @OA\Property(property="basement", type="integer"),
+ *             @OA\Property(property="swimming_pool", type="integer"),
+ *             @OA\Property(property="kitchen", type="integer"),
+ *             @OA\Property(property="balcony", type="integer"),
+ *             @OA\Property(property="garden", type="integer"),
+ *             @OA\Property(property="annex", type="integer"),
+ *             @OA\Property(property="elevator", type="integer"),
+ *             @OA\Property(property="private_parking", type="integer"),
+ *             @OA\Property(property="size", type="integer"),
+ *             @OA\Property(property="building_id", type="integer"),
+ *             @OA\Property(property="water_meter_number", type="string"),
+ *             @OA\Property(property="electricity_meter_number", type="string"),
+ *             @OA\Property(property="deed_number", type="string"),
+ *             @OA\Property(property="advertising_license", type="string"),
+ *             @OA\Property(property="owner_number", type="string"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -2534,6 +3037,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_properties_id_toggle_featured_0",
  *         tags={"Properties"},
  *         summary="toggle Featured", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2548,6 +3054,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_properties_id_toggle_status_0",
  *         tags={"Properties"},
  *         summary="toggle Status", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2562,6 +3071,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_properties_property_d_duplicate_0",
  *         tags={"Properties"},
  *         summary="duplicate", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2786,6 +3298,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_register_0",
  *         tags={"Register"},
  *         summary="register",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2807,6 +3322,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_rental_contracts_1",
  *         tags={"Rental Contracts"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2898,6 +3416,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_rental_contracts_id_1",
  *         tags={"Rental Contracts"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -2919,6 +3440,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_rental_contracts_id_status_0",
  *         tags={"Rental Contracts"},
  *         summary="change Status", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2933,6 +3457,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_rental_contracts_id_terminate_0",
  *         tags={"Rental Contracts"},
  *         summary="terminate", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2954,6 +3481,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_settings_domain_1",
  *         tags={"Settings"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2968,6 +3498,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_settings_domain_request_ssl_0",
  *         tags={"Settings"},
  *         summary="request Ssl", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2982,6 +3515,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_settings_domain_set_primary_0",
  *         tags={"Settings"},
  *         summary="set Primary", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -2996,6 +3532,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_settings_domain_ssl_status_0",
  *         tags={"Settings"},
  *         summary="update Ssl Status", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3010,6 +3549,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_settings_domain_verify_0",
  *         tags={"Settings"},
  *         summary="verify", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3087,6 +3629,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_settings_theme_purchase_0",
  *         tags={"Settings"},
  *         summary="purchase", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3101,6 +3646,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_settings_theme_set_active_0",
  *         tags={"Settings"},
  *         summary="set Active Theme", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3115,6 +3663,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_steps_complete_0",
  *         tags={"Steps"},
  *         summary="complete Step", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3150,6 +3701,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_themes_payment_cancel_user_theme_id_gateway_1",
  *         tags={"Themes"},
  *         summary="payment Cancel",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3171,6 +3725,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_themes_payment_success_user_theme_id_gateway_1",
  *         tags={"Themes"},
  *         summary="payment Success",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3185,6 +3742,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_upload_0",
  *         tags={"Upload"},
  *         summary="upload", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3199,6 +3759,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_upload_multiple_0",
  *         tags={"Upload Multiple"},
  *         summary="upload Multiple", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3227,6 +3790,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_user_read_message_0",
  *         tags={"User Read Message"},
  *         summary="read_message", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3248,6 +3814,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_user_categories_1",
  *         tags={"User"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3374,6 +3943,13 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_analytics_page_view_0",
  *         tags={"Analytics"},
  *         summary="track",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"tenant_id","slug","path","page_type"},
+ *             @OA\Property(property="tenant_id", type="string", maxLength=255),
+ *             @OA\Property(property="slug", type="string", maxLength=255),
+ *             @OA\Property(property="dynamic_slug", type="string", maxLength=255),
+ *             @OA\Property(property="path", type="string", maxLength=500),
+ *             @OA\Property(property="page_type", type="string", enum={"page","post","project","property"}),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3430,6 +4006,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_auth_logout_0",
  *         tags={"Auth"},
  *         summary="logout", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3640,6 +4219,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_credits_purchase_0",
  *         tags={"Credits"},
  *         summary="purchase Package", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3675,6 +4257,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_crm_cards_1",
  *         tags={"Crm"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3696,6 +4281,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_crm_cards_id_1",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -3703,6 +4291,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_crm_cards_id_2",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -3745,6 +4336,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_crm_requests_1",
  *         tags={"Crm"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3759,6 +4353,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_crm_requests_reorder_0",
  *         tags={"Crm"},
  *         summary="reorder", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3773,6 +4370,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_crm_requests_id_change_stage_0",
  *         tags={"Crm"},
  *         summary="change Stage", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3808,6 +4408,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_crm_requests_request_1",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -3815,6 +4418,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_crm_requests_request_2",
  *         tags={"Crm"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -3857,6 +4463,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_customers_1",
  *         tags={"Customers"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3878,6 +4487,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_customers_customer_1",
  *         tags={"Customers"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -3885,6 +4497,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_customers_customer_2",
  *         tags={"Customers"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -3927,6 +4542,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_employee_addons_payment_cancel_addon_id_gateway_1",
  *         tags={"Employee Addons"},
  *         summary="payment Cancel",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3948,6 +4566,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_employee_addons_payment_success_addon_id_gateway_1",
  *         tags={"Employee Addons"},
  *         summary="payment Success",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -3969,6 +4590,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_employees_1",
  *         tags={"Employees"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4018,6 +4642,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_employees_employee_1",
  *         tags={"Employees"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -4025,6 +4652,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_employees_employee_2",
  *         tags={"Employees"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -4109,6 +4739,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_marketing_channels_1",
  *         tags={"Marketing"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4123,6 +4756,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_marketing_channels_send_whatsapp_to_customer_0",
  *         tags={"Marketing"},
  *         summary="send Whats App To Customer", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4172,6 +4808,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_marketing_channels_id_1",
  *         tags={"Marketing"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -4193,6 +4832,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_marketing_channels_id_send_message_0",
  *         tags={"Marketing"},
  *         summary="send Message", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4214,6 +4856,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_marketing_channels_id_settings_1",
  *         tags={"Marketing"},
  *         summary="update Marketing Settings", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4256,6 +4901,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_marketing_channels_id_status_0",
  *         tags={"Marketing"},
  *         summary="update Status", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4270,6 +4918,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_marketing_channels_id_sync_verified_0",
  *         tags={"Marketing"},
  *         summary="sync Verified", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4284,6 +4935,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_marketing_channels_id_system_integrations_0",
  *         tags={"Marketing"},
  *         summary="update System Integration Settings", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4312,6 +4966,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_marketing_webhooks_whatsapp_0",
  *         tags={"Marketing"},
  *         summary="whatsapp Webhook", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4389,6 +5046,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_matching_requests_type_id_1",
  *         tags={"Matching"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4403,6 +5063,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_matching_requests_type_id_archive_0",
  *         tags={"Matching"},
  *         summary="archive", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4417,6 +5080,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_matching_requests_type_id_read_0",
  *         tags={"Matching"},
  *         summary="mark As Read", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4431,6 +5097,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_matching_requests_type_id_unarchive_0",
  *         tags={"Matching"},
  *         summary="unarchive", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4445,6 +5114,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_matching_requests_type_id_unread_0",
  *         tags={"Matching"},
  *         summary="mark As Unread", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4473,6 +5145,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_messages_send_0",
  *         tags={"Messages"},
  *         summary="send", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4529,6 +5204,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_owner_rental_forgot_password_0",
  *         tags={"Owner Rental"},
  *         summary="forgot Password",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4543,6 +5221,10 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_owner_rental_login_0",
  *         tags={"Owner Rental"},
  *         summary="login",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"email","password"},
+ *             @OA\Property(property="email", type="string", format="email"),
+ *             @OA\Property(property="password", type="string"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4557,6 +5239,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_owner_rental_logout_0",
  *         tags={"Owner Rental"},
  *         summary="logout",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4641,6 +5326,11 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_owner_rental_reset_password_0",
  *         tags={"Owner Rental"},
  *         summary="reset Password",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"token","email","password"},
+ *             @OA\Property(property="token", type="string"),
+ *             @OA\Property(property="email", type="string", format="email"),
+ *             @OA\Property(property="password", type="string"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4676,6 +5366,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_permissions_1",
  *         tags={"Permissions"},
  *         summary="store Permission", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4690,6 +5383,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_permissions_id_0",
  *         tags={"Permissions"},
  *         summary="update Permission", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -4760,6 +5456,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_pms_purchase_requests_1",
  *         tags={"Pms"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4781,6 +5480,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_pms_purchase_requests_id_1",
  *         tags={"Pms"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -4802,6 +5504,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_pms_purchase_requests_id_simple_transition_stage_0",
  *         tags={"Pms"},
  *         summary="simple Transition Stage", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4816,6 +5521,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_pms_purchase_requests_id_transition_stage_0",
  *         tags={"Pms"},
  *         summary="transition Stage", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4844,6 +5552,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_pms_purchase_requests_purchase_equest_d_stages_bulk_update_0",
  *         tags={"Pms"},
  *         summary="bulk Update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4886,6 +5597,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_pms_purchase_requests_purchase_equest_d_stages_stage_d_mark_completed_0",
  *         tags={"Pms"},
  *         summary="mark Completed", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4900,6 +5614,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_pms_purchase_requests_purchase_equest_d_stages_stage_d_mark_in_progress_0",
  *         tags={"Pms"},
  *         summary="mark In Progress", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4914,6 +5631,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_pms_purchase_requests_purchase_equest_d_stages_stage_d_mark_pending_0",
  *         tags={"Pms"},
  *         summary="mark Pending", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4928,6 +5648,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_pms_purchase_requests_purchase_equest_d_stages_stage_d_notes_0",
  *         tags={"Pms"},
  *         summary="update Notes", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4942,6 +5665,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_pms_purchase_requests_purchase_equest_d_stages_stage_d_status_0",
  *         tags={"Pms"},
  *         summary="update Status", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5012,6 +5738,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_property_request_settings_bulk_0",
  *         tags={"Property Request Settings"},
  *         summary="bulk Upsert", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5040,6 +5769,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_property_request_settings_reset_0",
  *         tags={"Property Request Settings"},
  *         summary="reset", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5054,6 +5786,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_property_request_settings_field_0",
  *         tags={"Property Request Settings"},
  *         summary="update One", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5075,6 +5810,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_property_requests_1",
  *         tags={"Property Requests"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5089,6 +5827,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_property_requests_customer_customer_employee_0",
  *         tags={"Property Requests"},
  *         summary="assign Employee To Customer", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5117,6 +5858,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_property_requests_public_0",
  *         tags={"Property Requests"},
  *         summary="store",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5145,6 +5889,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_property_requests_id_2",
  *         tags={"Property Requests"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5159,6 +5906,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_property_requests_id_employee_0",
  *         tags={"Property Requests"},
  *         summary="update Employee", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5173,6 +5923,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_property_requests_id_status_0",
  *         tags={"Property Requests"},
  *         summary="update Status", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5201,6 +5954,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rbac_employees_sync_perms_employee_perms_0",
  *         tags={"Rbac"},
  *         summary="sync Perms", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5215,6 +5971,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rbac_employees_sync_roles_employee_roles_0",
  *         tags={"Rbac"},
  *         summary="sync Roles", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5236,6 +5995,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rbac_permissions_1",
  *         tags={"Rbac"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5250,6 +6012,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_rbac_permissions_permission_0",
  *         tags={"Rbac"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -5292,6 +6057,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rbac_roles_1",
  *         tags={"Rbac"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5306,6 +6074,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_rbac_roles_role_0",
  *         tags={"Rbac"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -5355,6 +6126,11 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_reservations_bulk_action_0",
  *         tags={"Reservations"},
  *         summary="bulk Action", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"action","reservationIds"},
+ *             @OA\Property(property="action", type="string", enum={"accept","reject"}),
+ *             @OA\Property(property="reservationIds", type="array", minLength=1, @OA\Items(type="string")),
+ *             @OA\Property(property="notes", type="string", maxLength=1000),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5411,6 +6187,11 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_reservations_id_accept_0",
  *         tags={"Reservations"},
  *         summary="accept", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="confirmPayment", type="boolean"),
+ *             @OA\Property(property="notes", type="string", maxLength=1000),
+ *             @OA\Property(property="reason", type="string", maxLength=255),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5425,6 +6206,11 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_reservations_id_reject_0",
  *         tags={"Reservations"},
  *         summary="reject", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="confirmPayment", type="boolean"),
+ *             @OA\Property(property="notes", type="string", maxLength=1000),
+ *             @OA\Property(property="reason", type="string", maxLength=255),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5453,6 +6239,17 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_rms_contracts_id_0",
  *         tags={"Rms"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="start_date", type="string"),
+ *             @OA\Property(property="end_date", type="string"),
+ *             @OA\Property(property="status", type="string", enum={"pending","active","expired","terminated"}),
+ *             @OA\Property(property="file_path", type="string", maxLength=255),
+ *             @OA\Property(property="property_id", type="integer", minimum=1),
+ *             @OA\Property(property="project_id", type="integer", minimum=1),
+ *             @OA\Property(property="property_name", type="string", maxLength=150),
+ *             @OA\Property(property="project_name", type="string", maxLength=150),
+ *             @OA\Property(property="grace_period_months", type="integer", minimum=0, maximum=2),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5467,6 +6264,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_rms_contracts_id_status_0",
  *         tags={"Rms"},
  *         summary="change Status", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5481,6 +6281,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rms_contracts_id_terminate_0",
  *         tags={"Rms"},
  *         summary="terminate", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5523,6 +6326,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rms_expenses_upload_image_0",
  *         tags={"Rms"},
  *         summary="upload Image", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\MediaType(mediaType="multipart/form-data", @OA\Schema(type="object", required={"image"},
+ *             @OA\Property(property="image", type="string", format="binary", maxLength=2048),
+ *         ))),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5551,6 +6357,13 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_rms_installments_id_0",
  *         tags={"Rms"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="status", type="string", enum={"pending","paid","partial","overdue","void"}),
+ *             @OA\Property(property="paid_amount", type="number", minimum=0),
+ *             @OA\Property(property="paid_at", type="string"),
+ *             @OA\Property(property="reference", type="string", maxLength=100),
+ *             @OA\Property(property="notes", type="string", maxLength=255),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5572,6 +6385,19 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rms_maintenance_1",
  *         tags={"Rms"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"rental_id","category","priority","title","description"},
+ *             @OA\Property(property="rental_id", type="integer"),
+ *             @OA\Property(property="category", type="string", maxLength=50),
+ *             @OA\Property(property="priority", type="string", enum={"low","medium","high","critical"}),
+ *             @OA\Property(property="title", type="string", maxLength=150),
+ *             @OA\Property(property="description", type="string"),
+ *             @OA\Property(property="estimated_cost", type="number"),
+ *             @OA\Property(property="payer", type="string", enum={"landlord","tenant","shared"}),
+ *             @OA\Property(property="payer_share_percent", type="integer", minimum=0, maximum=100),
+ *             @OA\Property(property="scheduled_date", type="string"),
+ *             @OA\Property(property="assigned_to_vendor_id", type="integer"),
+ *             @OA\Property(property="notes", type="string"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5593,6 +6419,16 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_rms_maintenance_id_1",
  *         tags={"Rms"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="title", type="string", maxLength=150),
+ *             @OA\Property(property="description", type="string"),
+ *             @OA\Property(property="estimated_cost", type="number"),
+ *             @OA\Property(property="payer", type="string", enum={"landlord","tenant","shared"}),
+ *             @OA\Property(property="payer_share_percent", type="integer", minimum=0, maximum=100),
+ *             @OA\Property(property="scheduled_date", type="string"),
+ *             @OA\Property(property="assigned_to_vendor_id", type="integer"),
+ *             @OA\Property(property="notes", type="string"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -5614,6 +6450,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rms_maintenance_id_status_0",
  *         tags={"Rms"},
  *         summary="update Status", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5698,6 +6537,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rms_reminders_id_dismiss_0",
  *         tags={"Rms"},
  *         summary="dismiss", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5712,6 +6554,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rms_reminders_id_snooze_0",
  *         tags={"Rms"},
  *         summary="snooze", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"snooze_until"},
+ *             @OA\Property(property="snooze_until", type="string"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5733,6 +6578,26 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rms_rentals_1",
  *         tags={"Rms"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"tenant_full_name","tenant_phone","rental_type","rental_duration","paying_plan","total_rental_amount"},
+ *             @OA\Property(property="tenant_full_name", type="string", maxLength=150),
+ *             @OA\Property(property="tenant_phone", type="string", maxLength=32),
+ *             @OA\Property(property="tenant_email", type="string", format="email"),
+ *             @OA\Property(property="tenant_job_title", type="string", maxLength=120),
+ *             @OA\Property(property="tenant_social_status", type="string", enum={"single","married","divorced","widowed","other"}),
+ *             @OA\Property(property="tenant_national_id", type="string", maxLength=20),
+ *             @OA\Property(property="unit_id", type="integer"),
+ *             @OA\Property(property="project_id", type="integer"),
+ *             @OA\Property(property="building_id", type="string"),
+ *             @OA\Property(property="move_in_date", type="string"),
+ *             @OA\Property(property="rental_type", type="string", enum={"monthly","annual"}),
+ *             @OA\Property(property="rental_duration", type="integer", minimum=1),
+ *             @OA\Property(property="paying_plan", type="string", enum={"monthly","quarterly","semi_annual","annual"}),
+ *             @OA\Property(property="total_rental_amount", type="number", minimum=0),
+ *             @OA\Property(property="currency", type="string"),
+ *             @OA\Property(property="contract_number", type="string", maxLength=255),
+ *             @OA\Property(property="notes", type="string"),
+ *             @OA\Property(property="cost_items", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5761,6 +6626,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rms_rentals_upload_receipt_image_0",
  *         tags={"Rms"},
  *         summary="upload Receipt Image", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\MediaType(mediaType="multipart/form-data", @OA\Schema(type="object", required={"receipt_image"},
+ *             @OA\Property(property="receipt_image", type="string", format="binary", maxLength=5120),
+ *         ))),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5782,6 +6650,28 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_rms_rentals_id_1",
  *         tags={"Rms"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="tenant_full_name", type="string", maxLength=150),
+ *             @OA\Property(property="tenant_phone", type="string", maxLength=32),
+ *             @OA\Property(property="tenant_email", type="string", format="email"),
+ *             @OA\Property(property="tenant_job_title", type="string", maxLength=120),
+ *             @OA\Property(property="tenant_social_status", type="string", enum={"single","married","divorced","widowed","other"}),
+ *             @OA\Property(property="tenant_national_id", type="string", maxLength=20),
+ *             @OA\Property(property="unit_id", type="integer"),
+ *             @OA\Property(property="project_id", type="integer"),
+ *             @OA\Property(property="building_id", type="string"),
+ *             @OA\Property(property="move_in_date", type="string"),
+ *             @OA\Property(property="rental_type", type="string", enum={"monthly","annual"}),
+ *             @OA\Property(property="rental_duration", type="integer", minimum=1),
+ *             @OA\Property(property="paying_plan", type="string", enum={"monthly","quarterly","semi_annual","annual"}),
+ *             @OA\Property(property="total_rental_amount", type="number", minimum=0),
+ *             @OA\Property(property="currency", type="string"),
+ *             @OA\Property(property="contract_number", type="string", maxLength=255),
+ *             @OA\Property(property="notes", type="string"),
+ *             @OA\Property(property="cost_items", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="payments", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="regenerate_schedule", type="boolean"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -5803,6 +6693,21 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rms_rentals_id_collect_payment_0",
  *         tags={"Rms"},
  *         summary="collect Payment", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"payment_method","transfer_to"},
+ *             @OA\Property(property="auto_select", type="boolean"),
+ *             @OA\Property(property="auto_select_amount", type="number", minimum=0),
+ *             @OA\Property(property="auto_select_strategy", type="string", enum={"overdue_first","oldest_first","sequential"}),
+ *             @OA\Property(property="amount", type="number", minimum=0),
+ *             @OA\Property(property="payment_amount", type="number", minimum=0),
+ *             @OA\Property(property="payments", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="payment_method", type="string", enum={"cash","bank_transfer","credit_card","online_payment","check","other"}),
+ *             @OA\Property(property="payment_date", type="string"),
+ *             @OA\Property(property="reference", type="string", maxLength=100),
+ *             @OA\Property(property="notes", type="string", maxLength=255),
+ *             @OA\Property(property="bank_name", type="string", maxLength=100),
+ *             @OA\Property(property="receipt_image_path", type="string", maxLength=500),
+ *             @OA\Property(property="transfer_to", type="string", enum={"منصة ناجز","المالك","المكتب"}),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5859,6 +6764,11 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rms_rentals_id_end_contract_0",
  *         tags={"Rms"},
  *         summary="end Contract", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"end_date"},
+ *             @OA\Property(property="end_date", type="string"),
+ *             @OA\Property(property="termination_reason", type="string", maxLength=255),
+ *             @OA\Property(property="notes", type="string", maxLength=500),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5901,6 +6811,15 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rms_rentals_id_renew_0",
  *         tags={"Rms"},
  *         summary="renew Rental", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"rental_type","rental_duration","paying_plan","total_rental_amount"},
+ *             @OA\Property(property="rental_type", type="string", enum={"monthly","annual"}),
+ *             @OA\Property(property="rental_duration", type="integer", minimum=1),
+ *             @OA\Property(property="paying_plan", type="string", enum={"monthly","quarterly","semi_annual","annual"}),
+ *             @OA\Property(property="total_rental_amount", type="number", minimum=0),
+ *             @OA\Property(property="currency", type="string"),
+ *             @OA\Property(property="notes", type="string"),
+ *             @OA\Property(property="cost_items", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5915,6 +6834,12 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_rms_rentals_id_status_0",
  *         tags={"Rms"},
  *         summary="update Status", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"status"},
+ *             @OA\Property(property="status", type="string", enum={"active","inactive","terminated","ended","cancelled","draft"}),
+ *             @OA\Property(property="end_date", type="string"),
+ *             @OA\Property(property="termination_reason", type="string", maxLength=500),
+ *             @OA\Property(property="notes", type="string", maxLength=500),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5936,6 +6861,18 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rms_rentals_rental_d_contracts_1",
  *         tags={"Rms"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"start_date","end_date","status"},
+ *             @OA\Property(property="start_date", type="string"),
+ *             @OA\Property(property="end_date", type="string"),
+ *             @OA\Property(property="status", type="string", enum={"pending","active"}),
+ *             @OA\Property(property="file_path", type="string", maxLength=255),
+ *             @OA\Property(property="generate_schedule", type="boolean"),
+ *             @OA\Property(property="property_id", type="integer", minimum=1),
+ *             @OA\Property(property="project_id", type="integer", minimum=1),
+ *             @OA\Property(property="property_name", type="string", maxLength=150),
+ *             @OA\Property(property="project_name", type="string", maxLength=150),
+ *             @OA\Property(property="grace_period_months", type="integer", minimum=0, maximum=2),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5957,6 +6894,14 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rms_rentals_rental_d_expenses_1",
  *         tags={"Rms"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"expense_name","amount_type","amount_value","cost_center"},
+ *             @OA\Property(property="expense_name", type="string", maxLength=255),
+ *             @OA\Property(property="image_path", type="string"),
+ *             @OA\Property(property="amount_type", type="string", enum={"percentage","fixed"}),
+ *             @OA\Property(property="amount_value", type="number", minimum=0),
+ *             @OA\Property(property="cost_center", type="string", enum={"tenant","owner"}),
+ *             @OA\Property(property="is_active", type="boolean"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5985,6 +6930,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rms_rentals_rental_d_installments_regenerate_0",
  *         tags={"Rms"},
  *         summary="regenerate", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5999,6 +6947,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rms_rentals_rental_payments_payment_reverse_0",
  *         tags={"Rms"},
  *         summary="reverse Payment", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6020,6 +6971,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_roles_1",
  *         tags={"Roles"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6041,6 +6995,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_roles_role_1",
  *         tags={"Roles"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -6048,6 +7005,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_roles_role_2",
  *         tags={"Roles"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -6076,6 +7036,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_sms_campaigns_1",
  *         tags={"Sms"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6097,6 +7060,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_sms_campaigns_id_1",
  *         tags={"Sms"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -6118,6 +7084,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_sms_campaigns_id_send_0",
  *         tags={"Sms"},
  *         summary="send", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6146,6 +7115,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_sms_messages_send_0",
  *         tags={"Sms"},
  *         summary="send", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6181,6 +7153,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_sms_templates_1",
  *         tags={"Sms"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6202,6 +7177,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_sms_templates_id_1",
  *         tags={"Sms"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -6223,6 +7201,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_sms_webhooks_delivery_0",
  *         tags={"Sms"},
  *         summary="delivery",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6251,6 +7232,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_tenant_website_get_enant_0",
  *         tags={"Tenant Website"},
  *         summary="store",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6265,6 +7249,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_tenant_website_save_pages_0",
  *         tags={"Tenant Website"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6321,6 +7308,12 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_tenant_website_tenant_d_forms_contact_0",
  *         tags={"Tenant Website"},
  *         summary="store",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"name","message"},
+ *             @OA\Property(property="name", type="string", maxLength=255),
+ *             @OA\Property(property="email", type="string", format="email", maxLength=255),
+ *             @OA\Property(property="phone", type="string", maxLength=50),
+ *             @OA\Property(property="message", type="string"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6335,6 +7328,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_tenant_website_tenant_d_globals_0",
  *         tags={"Tenant Website"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"data"},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6349,6 +7345,13 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_tenant_website_tenant_d_job_applications_0",
  *         tags={"Tenant Website"},
  *         summary="store",
+ *         @OA\RequestBody(required=true, @OA\MediaType(mediaType="multipart/form-data", @OA\Schema(type="object", required={"name","phone","email","pdf"},
+ *             @OA\Property(property="name", type="string", maxLength=255),
+ *             @OA\Property(property="phone", type="string", maxLength=40),
+ *             @OA\Property(property="email", type="string", format="email", maxLength=255),
+ *             @OA\Property(property="description", type="string", maxLength=2000),
+ *             @OA\Property(property="pdf", type="string", format="binary", maxLength=5120),
+ *         ))),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6363,6 +7366,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_tenant_website_tenant_d_media_0",
  *         tags={"Tenant Website"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\MediaType(mediaType="multipart/form-data", @OA\Schema(type="object", required={"file"},
+ *             @OA\Property(property="file", type="string", format="binary", maxLength=51200),
+ *         ))),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6384,6 +7390,10 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_tenant_website_tenant_d_pages_1",
  *         tags={"Tenant Website"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"pageId","components"},
+ *             @OA\Property(property="pageId", type="string"),
+ *             @OA\Property(property="components", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6405,6 +7415,10 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_tenant_website_tenant_d_pages_page_d_1",
  *         tags={"Tenant Website"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"pageId","components"},
+ *             @OA\Property(property="pageId", type="string"),
+ *             @OA\Property(property="components", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -6412,6 +7426,10 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_tenant_website_tenant_d_pages_page_d_2",
  *         tags={"Tenant Website"},
  *         summary="patch", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"pageId","components"},
+ *             @OA\Property(property="pageId", type="string"),
+ *             @OA\Property(property="components", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -6545,6 +7563,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_tenant_website_tenant_d_publish_0",
  *         tags={"Tenant Website"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6559,6 +7580,13 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_tenant_website_tenant_d_reservations_0",
  *         tags={"Tenant Website"},
  *         summary="store",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"propertySlug","customerName","customerPhone"},
+ *             @OA\Property(property="propertySlug", type="string", maxLength=200),
+ *             @OA\Property(property="customerName", type="string", maxLength=100),
+ *             @OA\Property(property="customerPhone", type="string", maxLength=40),
+ *             @OA\Property(property="desiredDate", type="string"),
+ *             @OA\Property(property="message", type="string", maxLength=1000),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6573,6 +7601,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_tenant_website_tenant_d_settings_0",
  *         tags={"Tenant Website"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"settings"},
+ *             @OA\Property(property="settings", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6594,6 +7625,16 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_user_owner_rentals_1",
  *         tags={"User"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"name","email","phone","password"},
+ *             @OA\Property(property="name", type="string", maxLength=255),
+ *             @OA\Property(property="email", type="string", format="email"),
+ *             @OA\Property(property="phone", type="string", maxLength=20),
+ *             @OA\Property(property="password", type="string"),
+ *             @OA\Property(property="id_number", type="string", maxLength=50),
+ *             @OA\Property(property="address", type="string"),
+ *             @OA\Property(property="city", type="string", maxLength=100),
+ *             @OA\Property(property="is_active", type="boolean"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6615,6 +7656,16 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_user_owner_rentals_id_1",
  *         tags={"User"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"name","email","phone"},
+ *             @OA\Property(property="name", type="string", maxLength=255),
+ *             @OA\Property(property="email", type="string", format="email"),
+ *             @OA\Property(property="phone", type="string", maxLength=20),
+ *             @OA\Property(property="password", type="string"),
+ *             @OA\Property(property="id_number", type="string", maxLength=50),
+ *             @OA\Property(property="address", type="string"),
+ *             @OA\Property(property="city", type="string", maxLength=100),
+ *             @OA\Property(property="is_active", type="boolean"),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -6636,6 +7687,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_user_owner_rentals_id_properties_0",
  *         tags={"User"},
  *         summary="assign Properties", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"property_ids"},
+ *             @OA\Property(property="property_ids", type="array", minLength=1, @OA\Items(type="integer")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -6692,6 +7746,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_whatsapp_addons_payment_cancel_addon_id_gateway_1",
  *         tags={"Whatsapp Addons"},
  *         summary="payment Cancel",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6713,6 +7770,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_whatsapp_addons_payment_success_addon_id_gateway_1",
  *         tags={"Whatsapp Addons"},
  *         summary="payment Success",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6734,6 +7794,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_whatsapp_ai_config_number_d_1",
  *         tags={"Whatsapp"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6748,6 +7811,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_whatsapp_ai_config_number_d_toggle_0",
  *         tags={"Whatsapp"},
  *         summary="toggle", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6783,6 +7849,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_whatsapp_automation_rules_1",
  *         tags={"Whatsapp"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6804,6 +7873,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_whatsapp_automation_rules_id_1",
  *         tags={"Whatsapp"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -6825,6 +7897,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_whatsapp_automation_rules_id_toggle_0",
  *         tags={"Whatsapp"},
  *         summary="toggle", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6860,6 +7935,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_whatsapp_conversations_1",
  *         tags={"Whatsapp"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6881,6 +7959,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_whatsapp_conversations_id_1",
  *         tags={"Whatsapp"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6902,6 +7983,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_whatsapp_conversations_id_messages_1",
  *         tags={"Whatsapp"},
  *         summary="send", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6916,6 +8000,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_whatsapp_conversations_id_messages_template_0",
  *         tags={"Whatsapp"},
  *         summary="send Template", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6930,6 +8017,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_whatsapp_conversations_id_read_0",
  *         tags={"Whatsapp"},
  *         summary="read", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6944,6 +8034,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_whatsapp_conversations_id_star_0",
  *         tags={"Whatsapp"},
  *         summary="star", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6965,6 +8058,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_whatsapp_numbers_1",
  *         tags={"Whatsapp"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6986,6 +8082,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_whatsapp_numbers_id_1",
  *         tags={"Whatsapp"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7007,6 +8106,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_whatsapp_templates_1",
  *         tags={"Whatsapp"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7028,6 +8130,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v1_whatsapp_templates_id_1",
  *         tags={"Whatsapp"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -7049,6 +8154,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_whatsapp_webhook_incoming_0",
  *         tags={"Whatsapp"},
  *         summary="incoming",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7063,6 +8171,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_whatsapp_webhook_status_0",
  *         tags={"Whatsapp"},
  *         summary="status",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7084,6 +8195,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_whatsapp_webhook_verify_1",
  *         tags={"Whatsapp"},
  *         summary="verify Post",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7098,6 +8212,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_analytics_0",
  *         tags={"Customers Hub"},
  *         summary="index", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7112,6 +8229,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_analytics_performance_0",
  *         tags={"Customers Hub"},
  *         summary="performance", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7126,6 +8246,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_analytics_sources_0",
  *         tags={"Customers Hub"},
  *         summary="sources", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7140,6 +8263,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_analytics_trends_0",
  *         tags={"Customers Hub"},
  *         summary="trends", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7154,6 +8280,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_assignment_assign_0",
  *         tags={"Customers Hub"},
  *         summary="assign", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7168,6 +8297,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_assignment_auto_assign_0",
  *         tags={"Customers Hub"},
  *         summary="auto Assign", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7196,6 +8328,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_assignment_rules_0",
  *         tags={"Customers Hub"},
  *         summary="save Rules", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -7238,6 +8373,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v2_customers_hub_customers_customer_d_1",
  *         tags={"Customers Hub"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7252,6 +8390,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v2_customers_hub_customers_customer_d_preferences_0",
  *         tags={"Customers Hub"},
  *         summary="update Preferences", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7266,6 +8407,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_customers_customer_d_properties_0",
  *         tags={"Customers Hub"},
  *         summary="add Property", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -7301,6 +8445,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_customers_customer_d_tasks_0",
  *         tags={"Customers Hub"},
  *         summary="add Task", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7315,6 +8462,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v2_customers_hub_customers_customer_d_tasks_task_d_0",
  *         tags={"Customers Hub"},
  *         summary="update Task", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -7336,6 +8486,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_list_0",
  *         tags={"Customers Hub"},
  *         summary="list", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7350,6 +8503,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_list_bulk_0",
  *         tags={"Customers Hub"},
  *         summary="bulk", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7392,6 +8548,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_pipeline_0",
  *         tags={"Customers Hub"},
  *         summary="index", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7406,6 +8565,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_pipeline_bulk_move_0",
  *         tags={"Customers Hub"},
  *         summary="bulk Move", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7420,6 +8582,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_pipeline_move_0",
  *         tags={"Customers Hub"},
  *         summary="move", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7434,6 +8599,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_requests_bulk_0",
  *         tags={"Customers Hub"},
  *         summary="bulk", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7448,6 +8616,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_requests_bulk_complete_0",
  *         tags={"Customers Hub"},
  *         summary="bulk Complete", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7462,6 +8633,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_requests_bulk_dismiss_0",
  *         tags={"Customers Hub"},
  *         summary="bulk Dismiss", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7490,6 +8664,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_requests_list_0",
  *         tags={"Customers Hub"},
  *         summary="list", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7511,6 +8688,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v2_customers_hub_requests_request_d_1",
  *         tags={"Customers Hub"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7525,6 +8705,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_requests_request_d_appointments_0",
  *         tags={"Customers Hub"},
  *         summary="create Appointment For Property Request", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7539,6 +8722,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_requests_request_d_complete_0",
  *         tags={"Customers Hub"},
  *         summary="complete", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7553,6 +8739,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_requests_request_d_dismiss_0",
  *         tags={"Customers Hub"},
  *         summary="dismiss", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7567,6 +8756,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_requests_request_d_notes_0",
  *         tags={"Customers Hub"},
  *         summary="add Note", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7581,6 +8773,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_requests_request_d_reminders_0",
  *         tags={"Customers Hub"},
  *         summary="create Reminder For Property Request", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7616,6 +8811,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_stages_1",
  *         tags={"Customers Hub"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7630,6 +8828,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_v2_customers_hub_stages_stage_id_0",
  *         tags={"Customers Hub"},
  *         summary="update", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -7651,6 +8852,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_video_abort_chunked_0",
  *         tags={"Video"},
  *         summary="abort Chunked Upload", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7665,6 +8869,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_video_complete_chunked_0",
  *         tags={"Video"},
  *         summary="complete Chunked Upload", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7693,6 +8900,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_video_initiate_chunked_0",
  *         tags={"Video"},
  *         summary="initiate Chunked Upload", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7707,6 +8917,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_video_signed_url_0",
  *         tags={"Video"},
  *         summary="get Signed Upload Url", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7721,6 +8934,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_video_upload_0",
  *         tags={"Video"},
  *         summary="upload Video", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7735,6 +8951,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_video_upload_chunk_0",
  *         tags={"Video"},
  *         summary="upload Chunk", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7812,6 +9031,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_whatsapp_ai_conversations_id_archive_0",
  *         tags={"Whatsapp Ai"},
  *         summary="archive", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7833,6 +9055,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_whatsapp_ai_webhook_1",
  *         tags={"Whatsapp Ai"},
  *         summary="handle",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7847,6 +9072,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_whatsapp_addons_0",
  *         tags={"Whatsapp"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7875,6 +9103,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_whatsapp_evolution_webhook_0",
  *         tags={"Whatsapp"},
  *         summary="handle Evolution Webhook",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7889,6 +9120,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_whatsapp_link_0",
  *         tags={"Whatsapp"},
  *         summary="store", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7931,6 +9165,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_whatsapp_webhook_0",
  *         tags={"Whatsapp"},
  *         summary="handle Whatsapp Webhook",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7959,6 +9196,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="put_whatsapp_id_employee_0",
  *         tags={"Whatsapp"},
  *         summary="update Employee", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
@@ -7966,6 +9206,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_whatsapp_id_employee_1",
  *         tags={"Whatsapp"},
  *         summary="update Employee", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7980,6 +9223,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_whatsapp_id_link_0",
  *         tags={"Whatsapp"},
  *         summary="link", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -7994,6 +9240,9 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_whatsapp_id_unlink_0",
  *         tags={"Whatsapp"},
  *         summary="unlink", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="data", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
