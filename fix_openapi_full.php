@@ -231,6 +231,40 @@ function buildChangeMoveReorderToggleSchema(string $path): array
 }
 
 /**
+ * Path is the RBAC permissions resource (RoleController storePermission/updatePermission).
+ */
+function isPermissionsPath(string $path): bool
+{
+    return $path === '/v1/permissions' || preg_match('#^/v1/permissions/\{[^}]+\}$#', $path) === 1;
+}
+
+/**
+ * Request body schema for POST/PUT permissions (name, description, name_ar, name_en).
+ */
+function buildPermissionsSchema(bool $allOptional): array
+{
+    $properties = [
+        'name' => [
+            'type' => 'string',
+            'maxLength' => 255,
+            'description' => 'Permission name (resource.action, e.g. properties.view)',
+            'pattern' => '^[a-z]+\.[a-z_]+$',
+        ],
+        'description' => ['type' => 'string', 'maxLength' => 500, 'nullable' => true],
+        'name_ar' => ['type' => 'string', 'maxLength' => 255, 'nullable' => true],
+        'name_en' => ['type' => 'string', 'maxLength' => 255, 'nullable' => true],
+    ];
+    if ($allOptional) {
+        $properties['name']['nullable'] = true;
+    }
+    $schema = ['type' => 'object', 'properties' => $properties];
+    if (!$allOptional) {
+        $schema['required'] = ['name'];
+    }
+    return $schema;
+}
+
+/**
  * Build CREATE schema (rule A): name/title, description, status, *_id integer, config/settings/meta object.
  */
 function buildCreateSchema(string $path, string $method): array
@@ -344,13 +378,25 @@ foreach ($paths as $pathStr => $pathItem) {
         // --- RequestBody ---
         if (isset($op['requestBody'])) {
             $rb = &$op['requestBody'];
-            if (isset($rb['content']['application/json']['schema'])) {
-                if (isInstallVerifyPurchasePayment($pathStr, $summary)) {
-                    ensureAppIdInteger($rb);
+            // Force correct schema for /v1/permissions (RoleController storePermission/updatePermission)
+            if (isPermissionsPath($pathStr) && in_array($method, ['post', 'put'], true)) {
+                $allOptional = ($method === 'put' || $method === 'patch');
+                $op['requestBody'] = [
+                    'required' => !$allOptional,
+                    'content' => [
+                        'application/json' => [
+                            'schema' => buildPermissionsSchema($allOptional),
+                        ],
+                    ],
+                ];
+            } else {
+                if (isset($rb['content']['application/json']['schema'])) {
+                    if (isInstallVerifyPurchasePayment($pathStr, $summary)) {
+                        ensureAppIdInteger($rb);
+                    }
                 }
-            }
-            if (isFallbackRequestBody($rb)) {
-            if (isWebhookOrCallback($pathStr, $summary)) {
+                if (isFallbackRequestBody($rb)) {
+                if (isWebhookOrCallback($pathStr, $summary)) {
                 $op['requestBody'] = [
                     'required' => true,
                     'content' => [
@@ -423,6 +469,7 @@ foreach ($paths as $pathStr => $pathItem) {
                         'application/json' => ['schema' => $schema],
                     ],
                 ];
+            }
             }
             }
         }

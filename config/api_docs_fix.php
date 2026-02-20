@@ -85,6 +85,12 @@ return [
             'amount' => ['type' => 'number', 'required' => false],
             'currency' => ['type' => 'string', 'required' => false],
         ],
+        'permissions' => [
+            'name' => ['type' => 'string', 'required' => true],
+            'description' => ['type' => 'string', 'required' => false],
+            'name_ar' => ['type' => 'string', 'required' => false],
+            'name_en' => ['type' => 'string', 'required' => false],
+        ],
     ],
 
     /*
