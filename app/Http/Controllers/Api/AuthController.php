@@ -52,6 +52,8 @@ use Illuminate\Support\Facades\Crypt;
 use App\Models\User\PortfolioCategory;
 use App\Models\User\UserEmailTemplate;
 use App\Models\User\UserPaymentGeteway;
+use App\Models\EmployeeAddon;
+use App\Models\WhatsappAddon;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -752,9 +754,9 @@ class AuthController extends Controller
                 $companyName = $basicSetting ? $basicSetting->company_name : null;
             }
 
-            $membershipDetails = null;
-            $isFreePlan = true;
-            $isExpired = true;
+              $membershipDetails = null;
+              $isFreePlan = true;
+              $isExpired = true;
 
             if ($membership) {
                 // Determine if membership is expired
@@ -810,12 +812,33 @@ class AuthController extends Controller
                         ];
                     }
                 }
-            }
+              }
 
-            // OPTIMIZATION: Cache permissions separately since they change less frequently
-            // Permissions cache with longer TTL (30 minutes vs 5 minutes for profile)
-            $permissionsCacheKey = "user:permissions:{$user->id}:{$owner->id}";
-            $permissionsCacheTtl = 21600; // 6 hours
+              // Avoid duplicate membership lookups by computing quotas here
+              $baseWhatsappLimit = isset($membershipDetails['package'])
+                  ? (int) $membershipDetails['package']['whatsapp_numbers_limit']
+                  : 0;
+              $baseEmployeeLimit = isset($membershipDetails['package'])
+                  ? (int) $membershipDetails['package']['employees_limit']
+                  : 0;
+
+              $whatsappAddonLimit = WhatsappAddon::whereHas('whatsappUser', function ($q) use ($owner) {
+                  $q->where('user_id', $owner->id);
+              })->where('status', WhatsappAddon::STATUS_APPROVED)
+                  ->where(function ($q) {
+                      $q->whereNull('expire_date')
+                        ->orWhere('expire_date', '>=', now());
+                  })->sum('qty');
+
+              $employeeAddonLimit = EmployeeAddon::activeFor($owner->id)->sum('qty');
+
+              $whatsappQuota = (int) ($baseWhatsappLimit + $whatsappAddonLimit + $employeeAddonLimit);
+              $employeeQuota = (int) ($baseEmployeeLimit + $employeeAddonLimit);
+
+              // OPTIMIZATION: Cache permissions separately since they change less frequently
+              // Permissions cache with longer TTL (30 minutes vs 5 minutes for profile)
+              $permissionsCacheKey = "user:permissions:{$user->id}:{$owner->id}";
+              $permissionsCacheTtl = 21600; // 6 hours
 
             if ($useOptimizations) {
                 // Try to get permissions from cache first
@@ -877,21 +900,21 @@ class AuthController extends Controller
                 'has_active_membership' => !$isExpired && $membership && (int) $membership->status === 1,
                 'message' => $user->message ?? null,
                 'created_at' => $user->created_at,
-                'updated_at' => $user->updated_at,
-                'domain' => $domain ? $domain->custom_name : "https://{$owner->username}.taearif.com/",
-                'onboarding_completed' => $user->onboarding_completed ?? false,
-                'company_name' => $companyName,
-                'whatsapp' => [
-                    'quota' => $owner->whatsapp_quota,
-                    'usage' => $owner->whatsapp_usage,
-                    'max_whatsapp_numbers' => (isset($membershipDetails['package']) ? $membershipDetails['package']['whatsapp_numbers_limit'] : 0),
-                    'is_over_limit' => $owner->whatsapp_usage >= $owner->whatsapp_quota,
-                ],
-                'employees' => [
-                    'quota' => $owner->employee_quota,
-                    'usage' => $owner->employee_usage,
-                    'max_employees' => (isset($membershipDetails['package']) ? $membershipDetails['package']['employees_limit'] : 0),
-                    'is_over_limit' => $owner->employee_usage >= $owner->employee_quota,
+                  'updated_at' => $user->updated_at,
+                  'domain' => $domain ? $domain->custom_name : "https://{$owner->username}.taearif.com/",
+                  'onboarding_completed' => $user->onboarding_completed ?? false,
+                  'company_name' => $companyName,
+                  'whatsapp' => [
+                      'quota' => $whatsappQuota,
+                      'usage' => $owner->whatsapp_usage,
+                      'max_whatsapp_numbers' => (isset($membershipDetails['package']) ? $membershipDetails['package']['whatsapp_numbers_limit'] : 0),
+                      'is_over_limit' => $owner->whatsapp_usage >= $whatsappQuota,
+                  ],
+                  'employees' => [
+                      'quota' => $employeeQuota,
+                      'usage' => $owner->employee_usage,
+                      'max_employees' => (isset($membershipDetails['package']) ? $membershipDetails['package']['employees_limit'] : 0),
+                      'is_over_limit' => $owner->employee_usage >= $employeeQuota,
                     // Use eager loaded counts if available, otherwise fallback to queries
                     'active_count' => $useOptimizations && isset($owner->active_employees_count)
                         ? $owner->active_employees_count
