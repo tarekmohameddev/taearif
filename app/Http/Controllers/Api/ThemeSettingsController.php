@@ -6,6 +6,10 @@ use Illuminate\Http\Request;
 use App\Models\User\BasicSetting;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Theme\CancelThemePaymentRequest;
+use App\Http\Requests\Api\Theme\PurchaseThemeRequest;
+use App\Http\Requests\Api\Theme\SetActiveThemeRequest;
+use App\Http\Requests\Api\Theme\ThemePaymentSuccessRequest;
 use App\Models\Api\ApiThemeSettings;
 use App\Models\UserTheme;
 use App\Models\Language;
@@ -150,20 +154,17 @@ class ThemeSettingsController extends Controller
      * Set active theme for the authenticated user
      * Checks if user has access (free or purchased) before activating
      */
-    public function setActiveTheme(Request $request)
+    public function setActiveTheme(SetActiveThemeRequest $request)
     {
         try {
+            $validated = $request->validated();
             $user = Auth::user();
 
             if (!$user) {
                 return $this->errorResponse('Unauthorized', 401);
             }
 
-            $request->validate([
-                'theme_id' => 'required|exists:api_themes_settings,theme_id',
-            ]);
-
-            $themeId = $request->theme_id;
+            $themeId = $validated['theme_id'];
             $theme = ApiThemeSettings::where('theme_id', $themeId)->firstOrFail();
 
             // Check if theme is enabled
@@ -216,7 +217,7 @@ class ThemeSettingsController extends Controller
         } catch (\Exception $e) {
             Log::error("Set Active Theme Error: " . $e->getMessage(), [
                 'user_id' => Auth::id(),
-                'theme_id' => $request->input('theme_id'),
+                'theme_id' => request()->input('theme_id'),
             ]);
             return $this->errorResponse('An error occurred while activating the theme', 500);
         }
@@ -226,10 +227,11 @@ class ThemeSettingsController extends Controller
      * Initiate theme purchase
      * Includes transaction handling and standardized error responses
      */
-    public function purchase(Request $request)
+    public function purchase(PurchaseThemeRequest $request)
     {
         try {
-            $user = $request->user();
+            $validated = $request->validated();
+            $user = auth()->user();
 
             if (!$user) {
                 return response()->json([
@@ -240,11 +242,7 @@ class ThemeSettingsController extends Controller
                 ], 401);
             }
 
-            $request->validate([
-                'theme_id' => 'required|exists:api_themes_settings,theme_id',
-        ]);
-
-            $canPurchase = $this->themeService->canPurchaseTheme($user, $request->theme_id);
+            $canPurchase = $this->themeService->canPurchaseTheme($user, $validated['theme_id']);
 
             if (!$canPurchase['can_purchase']) {
                 return response()->json([
@@ -256,7 +254,7 @@ class ThemeSettingsController extends Controller
             }
 
             // Create pending purchase (wrapped in transaction in service)
-            $userTheme = $this->themeService->createPendingPurchase($user, $request->theme_id);
+            $userTheme = $this->themeService->createPendingPurchase($user, $validated['theme_id']);
 
             // Initiate payment (similar to WhatsApp addon)
             $paymentResult = $this->initiatePayment($userTheme, $user);
@@ -307,8 +305,8 @@ class ThemeSettingsController extends Controller
             ], 422);
         } catch (\Exception $e) {
             Log::error("Theme Purchase Error: " . $e->getMessage(), [
-                'user_id' => $request->user()?->id,
-                'theme_id' => $request->input('theme_id'),
+                'user_id' => auth()->id(),
+                'theme_id' => $validated['theme_id'] ?? null,
                 'trace' => $e->getTraceAsString(),
             ]);
             return response()->json([
@@ -416,7 +414,7 @@ class ThemeSettingsController extends Controller
     /**
      * Payment success callback - activate theme purchase.
      */
-    public function paymentSuccess(Request $request, $user_theme_id, $gateway)
+    public function paymentSuccess(ThemePaymentSuccessRequest $request, $user_theme_id, $gateway)
     {
         try {
             $userTheme = UserTheme::with('theme')->findOrFail($user_theme_id);
@@ -438,7 +436,7 @@ class ThemeSettingsController extends Controller
                     $transactionId = 'TEST_' . time();
                 }
             } elseif ($gateway === 'myfatoorah') {
-                $paymentId = $request->paymentId;
+                $paymentId = request()->input('paymentId');
                 if ($paymentId) {
                     try {
                         $paymentMethod = \App\Models\PaymentGateway::where('keyword', 'myfatoorah')->first();
@@ -462,15 +460,15 @@ class ThemeSettingsController extends Controller
                 // Log ARB callback for debugging
                 Log::info('ARB Theme Payment callback', [
                     'user_theme_id' => $user_theme_id,
-                    'query' => $request->query(),
-                    'all' => $request->all(),
+                    'query' => request()->query(),
+                    'all' => request()->all(),
                 ]);
 
                 $paymentMethod = \App\Models\PaymentGateway::where('keyword', 'arb')->first();
-                if ($request->has('trandata') && $paymentMethod) {
+                if (request()->has('trandata') && $paymentMethod) {
                     $paydata = $paymentMethod->convertAutoData();
                     $arb = app(ArbController::class);
-                    $decrypted = $arb->decryption($request->trandata, $paydata['resource_key']);
+                    $decrypted = $arb->decryption((string) request()->input('trandata'), $paydata['resource_key']);
                     
                     if ($decrypted) {
                         $raw = urldecode($decrypted);
@@ -517,7 +515,7 @@ class ThemeSettingsController extends Controller
     /**
      * Payment cancel callback.
      */
-    public function paymentCancel(Request $request, $user_theme_id, $gateway)
+    public function paymentCancel(CancelThemePaymentRequest $request, $user_theme_id, $gateway)
     {
         $userTheme = UserTheme::find($user_theme_id);
         if ($userTheme && $userTheme->status === UserTheme::STATUS_PENDING) {

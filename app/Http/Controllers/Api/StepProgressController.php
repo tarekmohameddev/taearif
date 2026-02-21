@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Models\UserStep;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Onboarding\CompleteOnboardingStepRequest;
 
 class StepProgressController extends Controller
 {
@@ -72,17 +73,13 @@ class StepProgressController extends Controller
 }
 
 
-    public function completeStep(Request $request)
+    public function completeStep(CompleteOnboardingStepRequest $request)
     {
-
-        $request->validate([
-            'step' => 'required|in:banner,footer,homepage_about_update,menu_builder,projects,properties',
-        ]);
-
-        $user = $request->user();
+        $validated = $request->validated();
+        $user = auth()->user();
         $steps = UserStep::firstOrCreate(['user_id' => $user->id]);
 
-        $steps->{$request->step} = true;
+        $steps->{$validated['step']} = true;
         // Optional: check if all steps are completed now
         $stepKeys = ['banner','footer','about','menu','projects','properties'];
         $remaining = collect($steps->only($stepKeys))->filter(fn($v) => !$v);

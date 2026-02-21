@@ -26,6 +26,7 @@ use Illuminate\Support\Str;
 
 
 use OpenAI as OpenAIClient;
+use App\Http\Requests\Api\Apps\Whatsapp\ChatRequest;
 
 
 class ChatController extends Controller
@@ -395,11 +396,12 @@ public function handleWhatsappWebhook(Request $request)
 
 
 
-    public function chat(Request $request)
+    public function chat(ChatRequest $request)
     {
-        $userMessage = $request->input('message');
-        $userId = $request->input('user_id'); // Or derive from recipientWhatsappNumber if this is from a webhook
-        $recipientWhatsappNumber = $request->input('whatsapp_number'); // This needs to be provided
+        $validated = $request->validated();
+        $userMessage = $validated['message'];
+        $userId = $validated['user_id']; // Or derive from recipientWhatsappNumber if this is from a webhook
+        $recipientWhatsappNumber = $validated['whatsapp_number']; // This needs to be provided
 
 
         // Load or init chat history

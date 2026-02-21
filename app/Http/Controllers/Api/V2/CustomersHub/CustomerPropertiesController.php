@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Api\ApiController;
 use App\Domain\CustomersHub\Services\CustomerAssignedPropertyService;
+use App\Http\Requests\Api\V2\CustomersHub\AddPropertyRequest;
 
 /**
  * CustomerPropertiesController
@@ -29,12 +30,9 @@ class CustomerPropertiesController extends ApiController
      * POST /api/v2/customers-hub/customers/{customerId}/properties
      * Assign one property (listing) to the customer.
      */
-    public function addProperty(Request $request, int $customerId): JsonResponse
+    public function addProperty(AddPropertyRequest $request, int $customerId): JsonResponse
     {
-        $validated = $request->validate([
-            'propertyId' => 'required|integer|min:1',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
         $propertyId = (int) $validated['propertyId'];
 

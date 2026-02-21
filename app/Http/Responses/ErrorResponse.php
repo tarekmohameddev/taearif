@@ -61,9 +61,13 @@ class ErrorResponse
     /**
      * Set validation errors
      */
-    public function withErrors(array $errors): self
+    public function withErrors($errors): self
     {
-        $this->errors = $errors;
+        if ($errors instanceof \Illuminate\Support\Contracts\MessageProvider) {
+            $errors = $errors->getMessageBag()->toArray();
+        }
+
+        $this->errors = (array) $errors;
         $this->statusCode = 422;
         return $this;
     }

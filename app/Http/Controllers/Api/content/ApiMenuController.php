@@ -8,8 +8,8 @@ use App\Models\Api\ApiMenuItem;
 use App\Models\Api\ApiMenuSetting;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Validator;
 use App\Models\Api\ApiInstallation;
+use App\Http\Requests\Api\Content\UpdateApiMenuSettingsRequest;
 class ApiMenuController extends Controller
 {
 /**
@@ -17,7 +17,7 @@ class ApiMenuController extends Controller
      */
     public function index(Request $request)
     {
-        $user = $request->user();
+        $user = auth()->user();
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
@@ -180,51 +180,23 @@ class ApiMenuController extends Controller
     /**
      * Update menu items and settings for the authenticated user
      */
-    public function update(Request $request)
+    public function update(UpdateApiMenuSettingsRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'menuItems' => 'required|array',
-            'menuItems.*.id' => 'required|integer',
-            'menuItems.*.label' => 'required|string',
-            'menuItems.*.url' => 'required|string',
-            'menuItems.*.isExternal' => 'required|boolean',
-            'menuItems.*.isActive' => 'required|boolean',
-            'menuItems.*.order' => 'required|integer',
-            'menuItems.*.parentId' => 'nullable|integer',
-            'menuItems.*.showOnMobile' => 'required|boolean',
-            'menuItems.*.showOnDesktop' => 'required|boolean',
-
-            'settings' => 'required|array',
-            'settings.menuPosition' => 'nullable|string|in:top,bottom,left,right',
-            'settings.menuStyle' => 'nullable|string|in:buttons,underline,minimal,standard,default',
-            'settings.mobileMenuType' => 'nullable|string|in:hamburger,sidebar,fullscreen',
-            'settings.isSticky' => 'nullable|boolean',
-            'settings.isTransparent' => 'nullable|boolean',
-
-        ]);
-
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $user = $request->user();
+        $user = auth()->user();
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
         $user_id = $user->id;
+        $validated = $request->validated();
 
-        $menuItemsData = $request->menuItems;
-        $settingsData = $request->settings;
+        $menuItemsData = $validated['menuItems'];
+        $settingsData = $validated['settings'];
 
 
         DB::beginTransaction();
 
         try {
+            $parentIds = [];
 
             ApiMenuItem::where('user_id', $user_id)->delete();
 

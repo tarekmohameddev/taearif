@@ -6,6 +6,10 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Api\ApiController;
 use App\Domain\CustomersHub\Services\CustomerDetailService;
+use App\Http\Requests\Api\V2\CustomersHub\UpdateDetailRequest;
+use App\Http\Requests\Api\V2\CustomersHub\UpdatePreferencesRequest;
+use App\Http\Requests\Api\V2\CustomersHub\AddTaskRequest;
+use App\Http\Requests\Api\V2\CustomersHub\UpdateTaskRequest;
 
 /**
  * DetailController
@@ -52,23 +56,9 @@ class DetailController extends ApiController
      * 
      * Update customer information.
      */
-    public function update(Request $request, int $customerId): JsonResponse
+    public function update(UpdateDetailRequest $request, int $customerId): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'nullable|string|max:255',
-            'phone_number' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
-            'stage_id' => 'nullable|integer',
-            'customers_hub_stage_id' => ['nullable', 'string', 'max:50', \Illuminate\Validation\Rule::exists('customers_hub_stages', 'stage_id')],
-            'priority_id' => 'nullable|integer',
-            'type_id' => 'nullable|integer',
-            'city_id' => 'nullable|integer',
-            'district_id' => 'nullable|integer',
-            'source' => 'nullable|string|max:50',
-            'responsible_employee_id' => 'nullable|integer',
-            'note' => 'nullable|string',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
 
         $success = $this->detailService->updateCustomer($userId, $customerId, $validated);
@@ -88,15 +78,9 @@ class DetailController extends ApiController
      * 
      * Add new task for customer.
      */
-    public function addTask(Request $request, int $customerId): JsonResponse
+    public function addTask(AddTaskRequest $request, int $customerId): JsonResponse
     {
-        $validated = $request->validate([
-            'type' => 'required|in:contact,office_visit,property_viewing',
-            'datetime' => 'required|date',
-            'notes' => 'nullable|string',
-            'priority' => 'nullable|integer|min:0|max:3',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
 
         $taskId = $this->detailService->addTask($userId, $customerId, $validated);
@@ -112,15 +96,9 @@ class DetailController extends ApiController
      * 
      * Update existing task.
      */
-    public function updateTask(Request $request, int $customerId, int $taskId): JsonResponse
+    public function updateTask(UpdateTaskRequest $request, int $customerId, int $taskId): JsonResponse
     {
-        $validated = $request->validate([
-            'datetime' => 'nullable|date',
-            'notes' => 'nullable|string',
-            'status' => 'nullable|in:pending,completed,cancelled',
-            'priority' => 'nullable|integer|min:0|max:3',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
 
         // Map to database fields
@@ -176,18 +154,9 @@ class DetailController extends ApiController
      * 
      * Update customer preferences/requirements.
      */
-    public function updatePreferences(Request $request, int $customerId): JsonResponse
+    public function updatePreferences(UpdatePreferencesRequest $request, int $customerId): JsonResponse
     {
-        $validated = $request->validate([
-            'propertyType' => 'nullable|string|max:50',
-            'budget' => 'nullable|numeric',
-            'bedrooms' => 'nullable|integer',
-            'bathrooms' => 'nullable|integer',
-            'city' => 'nullable|string|max:100',
-            'district' => 'nullable|string|max:100',
-            'message' => 'nullable|string',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
 
         $preferenceId = $this->detailService->updatePreferences($userId, $customerId, $validated);

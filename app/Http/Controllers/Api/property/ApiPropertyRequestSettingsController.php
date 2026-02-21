@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api\property;
 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Services\PropertyRequestFormSettings;
 use App\Models\Api\UserPropertyRequestFieldSetting;
+use App\Http\Requests\Api\property\BulkUpsertPropertyRequestSettingsRequest;
+use App\Http\Requests\Api\property\ResetPropertyRequestSettingsRequest;
+use App\Http\Requests\Api\property\UpdateOnePropertyRequestSettingsRequest;
 
 class ApiPropertyRequestSettingsController extends Controller
 {
@@ -62,20 +64,10 @@ class ApiPropertyRequestSettingsController extends Controller
         ]);
     }
 
-    public function bulkUpsert(Request $request)
+    public function bulkUpsert(BulkUpsertPropertyRequestSettingsRequest $request)
     {
         $tenantId = $this->tenantId();
-
-        $payload = $request->validate([
-            'items'                 => ['required','array','min:1'],
-            'items.*.field_key'     => ['required','string', Rule::in($this->allowedKeys())],
-            'items.*.is_visible'    => ['nullable','boolean'],
-            'items.*.is_required'   => ['nullable','boolean'],
-            'items.*.sort_order'    => ['nullable','integer'],
-            'items.*.label_ar'      => ['nullable','string','max:255'],
-            'items.*.label_en'      => ['nullable','string','max:255'],
-            'items.*.meta'          => ['nullable','array'],
-        ]);
+        $payload = $request->validated();
 
         $now  = Carbon::now();
         $rows = [];
@@ -110,19 +102,12 @@ class ApiPropertyRequestSettingsController extends Controller
         ]);
     }
 
-    public function updateOne(string $field_key, Request $request)
+    public function updateOne(string $field_key, UpdateOnePropertyRequestSettingsRequest $request)
     {
         $tenantId = $this->tenantId();
         abort_unless(in_array($field_key, $this->allowedKeys(), true), 422, 'Invalid field_key');
 
-        $data = $request->validate([
-            'is_visible'    => ['nullable','boolean'],
-            'is_required'   => ['nullable','boolean'],
-            'sort_order'    => ['nullable','integer'],
-            'label_ar'      => ['nullable','string','max:255'],
-            'label_en'      => ['nullable','string','max:255'],
-            'meta'          => ['nullable','array'],
-        ]);
+        $data = $request->validated();
 
         $setting = UserPropertyRequestFieldSetting::firstOrNew([
             'user_id'   => $tenantId,
@@ -130,9 +115,11 @@ class ApiPropertyRequestSettingsController extends Controller
         ]);
 
         foreach (['is_visible','is_required','sort_order','label_ar','label_en','meta'] as $f) {
-            if ($request->has($f)) {
+            if (array_key_exists($f, $data)) {
                 $val = $data[$f];
-                if (in_array($f, ['is_visible','is_required'])) $val = (bool) $val;
+                if (in_array($f, ['is_visible','is_required'])) {
+                    $val = (bool) $val;
+                }
                 $setting->{$f} = $val;
             }
         }
@@ -146,10 +133,11 @@ class ApiPropertyRequestSettingsController extends Controller
         ]);
     }
 
-    public function reset(Request $request)
+    public function reset(ResetPropertyRequestSettingsRequest $request)
     {
         $tenantId = $this->tenantId();
-        $keys = $request->input('keys');
+        $validated = $request->validated();
+        $keys = $validated['keys'] ?? null;
 
         if (is_array($keys) && !empty($keys)) {
             UserPropertyRequestFieldSetting::where('user_id', $tenantId)

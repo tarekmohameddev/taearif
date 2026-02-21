@@ -3,24 +3,23 @@
 namespace App\Http\Controllers\Api\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Customer\MoveCustomerStageRequest;
+use App\Http\Requests\Api\Customer\ReorderCustomerStagesRequest;
+use App\Http\Requests\Api\Customer\StoreCustomerStageRequest;
+use App\Http\Requests\Api\Customer\UpdateCustomerStageRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Api\UserApiCustomerStage;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
 
 class UserApiCustomerStageController extends Controller
 {
 
-    public function moveStage(Request $request, $id)
+    public function moveStage(MoveCustomerStageRequest $request, $id)
     {
-        $user = $request->user();
+        $validated = $request->validated();
+        $ownerId = auth()->user()->tenantOwnerId();
 
-        $validated = $request->validate([
-            'direction' => 'required|in:up,down',
-        ]);
-
-        $stage = UserApiCustomerStage::where('user_id', $request->user()->tenantOwnerId())->findOrFail($id);
+        $stage = UserApiCustomerStage::where('user_id', $ownerId)->findOrFail($id);
 
         if (!$stage) {
             return response()->json([
@@ -34,12 +33,12 @@ class UserApiCustomerStageController extends Controller
 
         // Find the adjacent stage depending on direction
         if ($validated['direction'] === 'up') { // up
-            $adjacent = UserApiCustomerStage::where('user_id', $request->user()->tenantOwnerId())
+            $adjacent = UserApiCustomerStage::where('user_id', $ownerId)
                 ->where('order', '<', $currentOrder)
                 ->orderBy('order', 'desc')
                 ->first();
         } else { // down
-            $adjacent = UserApiCustomerStage::where('user_id', $request->user()->tenantOwnerId())
+            $adjacent = UserApiCustomerStage::where('user_id', $ownerId)
                 ->where('order', '>', $currentOrder)
                 ->orderBy('order', 'asc')
                 ->first();
@@ -68,18 +67,14 @@ class UserApiCustomerStageController extends Controller
         ]);
     }
 
-    public function reorderStages(Request $request)
+    public function reorderStages(ReorderCustomerStagesRequest $request)
     {
-        $user = $request->user();
+        $validated = $request->validated();
+        $ownerId = auth()->user()->tenantOwnerId();
 
-        $validated = $request->validate([
-            'order' => 'required|array',
-            'order.*' => 'integer|exists:users_api_customers_stages,id',
-        ]);
-
-        DB::transaction(function () use ($validated, $request) {
+        DB::transaction(function () use ($validated, $ownerId) {
             foreach ($validated['order'] as $index => $stageId) {
-                UserApiCustomerStage::where('user_id', $request->user()->tenantOwnerId())
+                UserApiCustomerStage::where('user_id', $ownerId)
                     ->where('id', $stageId)
                     ->update(['order' => $index + 1]);
             }
@@ -100,7 +95,7 @@ class UserApiCustomerStageController extends Controller
     {
         $user = $request->user();
 
-        $stages = UserApiCustomerStage::where('user_id', $request->user()->tenantOwnerId())
+        $stages = UserApiCustomerStage::where('user_id', $user->tenantOwnerId())
             ->orderBy('order', 'asc')
             ->get();
 
@@ -116,20 +111,11 @@ class UserApiCustomerStageController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StoreCustomerStageRequest $request)
     {
-        $user = $request->user();
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'stage_name' => 'required|string|max:255',
-            'color'      => 'nullable|string',
-            'icon'       => 'nullable|string',
-            'order'      => 'required|integer',
-            'description'=> 'nullable|string',
-            'is_active'  => 'boolean'
-        ]);
-
-        $validated['user_id'] = $request->user()->tenantOwnerId();
+        $validated['user_id'] = auth()->user()->tenantOwnerId();
 
         $stage = UserApiCustomerStage::create($validated);
 
@@ -151,7 +137,7 @@ class UserApiCustomerStageController extends Controller
         $user = $request->user();
 
         $stage = UserApiCustomerStage::where('id', $id)
-            ->where('user_id', $request->user()->tenantOwnerId())
+            ->where('user_id', $user->tenantOwnerId())
             ->firstOrFail();
 
         return response()->json([
@@ -167,22 +153,13 @@ class UserApiCustomerStageController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(UpdateCustomerStageRequest $request, $id)
     {
-        $user = $request->user();
-
+        $ownerId = auth()->user()->tenantOwnerId();
         $stage = UserApiCustomerStage::where('id', $id)
-            ->where('user_id', $request->user()->tenantOwnerId())
+            ->where('user_id', $ownerId)
             ->firstOrFail();
-
-        $validated = $request->validate([
-            'stage_name' => 'sometimes|string|max:255',
-            'color'      => 'nullable|string',
-            'icon'       => 'nullable|string',
-            'order'      => 'sometimes|integer',
-            'description'=> 'nullable|string',
-            'is_active'  => 'boolean'
-        ]);
+        $validated = $request->validated();
 
         $stage->update($validated);
 
@@ -204,7 +181,7 @@ class UserApiCustomerStageController extends Controller
         $user = $request->user();
 
         $stage = UserApiCustomerStage::where('id', $id)
-            ->where('user_id', $request->user()->tenantOwnerId())
+            ->where('user_id', $user->tenantOwnerId())
             ->firstOrFail();
 
         $stage->delete();

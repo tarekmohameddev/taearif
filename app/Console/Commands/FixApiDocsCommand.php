@@ -80,6 +80,7 @@ class FixApiDocsCommand extends Command
                 }
             $op = &$pathItem[$method];
             $this->fixOperationRequestBody($pathStr, $method, $op);
+            $this->injectRequestBodyExample($op);
             $this->fixOperationPathParameters($pathStr, $pathParams, $op);
             $this->fixOperation200Response($op);
             $this->fixOperationSecurity($pathStr, $op);
@@ -293,7 +294,7 @@ class FixApiDocsCommand extends Command
         $segments = array_values(array_filter(explode('/', trim($path, '/'))));
         $resource = null;
         foreach ($segments as $seg) {
-            if ($seg === '' || preg_match('/^\{[^}]+\}$/', $seg)) {
+            if ($seg === '' || $seg === 'v1' || $seg === 'api' || preg_match('/^\{[^}]+\}$/', $seg)) {
                 continue;
             }
             $resource = $seg;
@@ -373,6 +374,52 @@ class FixApiDocsCommand extends Command
         }
         if ($toAdd !== []) {
             $op['parameters'] = array_merge($toAdd, $existing);
+        }
+    }
+
+    /**
+     * Add example object to request body when schema has properties but no example (for Try it out in Swagger UI).
+     */
+    private function injectRequestBodyExample(array &$op): void
+    {
+        $content = $op['requestBody']['content']['application/json'] ?? null;
+        if ($content === null || ! isset($content['schema']['properties']) || isset($content['example'])) {
+            return;
+        }
+        $schema = $content['schema'];
+        $properties = $schema['properties'];
+        $required = array_flip($schema['required'] ?? []);
+        $example = [];
+        foreach ($properties as $propName => $propSpec) {
+            if (strpos($propName, '.') !== false) {
+                continue;
+            }
+            $type = $propSpec['type'] ?? 'string';
+            if ($type === 'integer') {
+                $example[$propName] = isset($propSpec['enum']) ? (int) $propSpec['enum'][0] : 1;
+            } elseif ($type === 'number') {
+                $example[$propName] = 1.0;
+            } elseif ($type === 'boolean') {
+                $example[$propName] = true;
+            } elseif ($type === 'array') {
+                $example[$propName] = [];
+            } elseif ($type === 'object' && isset($propSpec['properties']) && is_array($propSpec['properties'])) {
+                $nested = [];
+                foreach ($propSpec['properties'] as $subName => $subSpec) {
+                    $subType = $subSpec['type'] ?? 'string';
+                    $nested[$subName] = ($subType === 'integer') ? 1 : (($subType === 'boolean') ? true : 'string');
+                }
+                $example[$propName] = $nested;
+            } elseif (isset($propSpec['enum']) && is_array($propSpec['enum']) && $propSpec['enum'] !== []) {
+                $example[$propName] = (string) $propSpec['enum'][0];
+            } elseif (($propSpec['format'] ?? '') === 'email') {
+                $example[$propName] = 'user@example.com';
+            } else {
+                $example[$propName] = ($propSpec['format'] ?? '') === 'binary' ? '' : 'string';
+            }
+        }
+        if ($example !== []) {
+            $op['requestBody']['content']['application/json']['example'] = $example;
         }
     }
 

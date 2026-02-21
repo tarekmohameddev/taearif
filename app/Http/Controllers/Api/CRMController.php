@@ -2,6 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\Api\Crm\BulkImportCustomersRequest;
+use App\Http\Requests\Api\Crm\ChangeCustomerPriorityRequest;
+use App\Http\Requests\Api\Crm\ChangeCustomerProcedureRequest;
+use App\Http\Requests\Api\Crm\ChangeCustomerStageRequest;
+use App\Http\Requests\Api\Crm\ChangeCustomerTypeRequest;
+use App\Http\Requests\Api\SearchCustomersRequest;
 use App\Models\User;
 use App\Models\ApiCustomer;
 use Illuminate\Http\Request;
@@ -311,14 +317,11 @@ class CRMController extends Controller
 
 
     // changeCustomerStage
-    public function changeCustomerStage(Request $request, $id, CrmCustomerStageService $stageService)
+    public function changeCustomerStage(ChangeCustomerStageRequest $request, $id, CrmCustomerStageService $stageService)
     {
-        $user = $request->user();
-        $tenantId = $request->user()->tenantOwnerId();
-
-        $validated = $request->validate([
-            'stage_id' => 'required|integer|exists:users_api_customers_stages,id',
-        ]);
+        $user = auth()->user();
+        $tenantId = $user->tenantOwnerId();
+        $validated = $request->validated();
 
         $customer = ApiCustomer::where('id', $id)
             ->where('user_id', $tenantId)
@@ -357,14 +360,11 @@ class CRMController extends Controller
     }
 
     // changeCustomerPriority
-    public function changeCustomerPriority(Request $request, $id)
+    public function changeCustomerPriority(ChangeCustomerPriorityRequest $request, $id)
     {
-        $user = $request->user();
-        $tenantId = $request->user()->tenantOwnerId();
-
-        $validated = $request->validate([
-            'priority_id' => 'required|integer', // 1=Low, 2=Medium, 3=High
-        ]);
+        $user = auth()->user();
+        $tenantId = $user->tenantOwnerId();
+        $validated = $request->validated();
 
         $customer = ApiCustomer::where('id', $id)
             ->where('user_id', $tenantId)
@@ -393,14 +393,11 @@ class CRMController extends Controller
     }
 
     // changeCustomerType rent or sale
-    public function changeCustomerType(Request $request, $id)
+    public function changeCustomerType(ChangeCustomerTypeRequest $request, $id)
     {
-        $user = $request->user();
-        $tenantId = $request->user()->tenantOwnerId();
-
-        $validated = $request->validate([
-            'type_id' => 'required|integer',
-        ]);
+        $user = auth()->user();
+        $tenantId = $user->tenantOwnerId();
+        $validated = $request->validated();
 
         $customer = ApiCustomer::where('id', $id)
             ->where('user_id', $tenantId)
@@ -428,14 +425,11 @@ class CRMController extends Controller
     }
 
     // changeCustomerProcedure meeting visit
-    public function changeCustomerProcedure(Request $request, $id)
+    public function changeCustomerProcedure(ChangeCustomerProcedureRequest $request, $id)
     {
-        $user = $request->user();
-        $tenantId = $request->user()->tenantOwnerId();
-
-        $validated = $request->validate([
-            'procedure_id' => 'required|integer|exists:users_api_customers_procedures,id',
-        ]);
+        $user = auth()->user();
+        $tenantId = $user->tenantOwnerId();
+        $validated = $request->validated();
 
         $customer = ApiCustomer::where('id', $id)
             ->where('user_id', $tenantId)
@@ -475,7 +469,7 @@ class CRMController extends Controller
     }
 
     //  search customers + filter
-    public function searchCustomers(Request $request)
+    public function searchCustomers(SearchCustomersRequest $request)
     {
         $user  = $request->user();
         $qText = trim((string)$request->get('q', ''));
@@ -489,25 +483,6 @@ class CRMController extends Controller
         };
         $catIds  = $toIntArray($request->input('interested_category_ids'));
         $propIds = $toIntArray($request->input('interested_property_ids'));
-
-        $request->validate([
-            'name'          => 'nullable|string|max:255',
-            'email'         => 'nullable|string|max:255',
-            'phone_number'  => 'nullable|string|max:20',
-            'city_id'       => 'nullable|integer',
-            // 'district_id'   => 'nullable|integer',
-            'type_id'       => 'nullable|integer',
-            'priority_id'   => 'nullable|integer',
-            'procedure_id'  => 'nullable|integer',
-            'stage_id'      => 'nullable|integer',
-            'responsible_employee_id' => 'nullable|integer',
-            'employee_whatsapp_number' => 'nullable|string|max:20',
-
-            'page'          => 'nullable|integer|min:1',
-            'per_page'      => 'nullable|integer|min:1|max:100',
-            'sort_by'       => 'nullable|in:name,email,phone_number,created_at,priority_id,type_id,stage_id,procedure_id,city_id',
-            'sort_dir'      => 'nullable|in:asc,desc',
-        ]);
 
         $perPage = (int) ($request->input('per_page') ?: 10);
         $sortBy  = $request->input('sort_by', 'created_at');
@@ -762,16 +737,8 @@ class CRMController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function bulkImport(Request $request)
+    public function bulkImport(BulkImportCustomersRequest $request)
     {
-        $request->validate([
-            'file' => 'required|mimes:xlsx,csv|max:10240', // 10MB max
-        ], [
-            'file.required' => 'A file is required for import. Please select an Excel or CSV file.',
-            'file.mimes' => 'The file must be an Excel (.xlsx) or CSV (.csv) file.',
-            'file.max' => 'The file size must not exceed 10MB. Please use a smaller file or split it into multiple files.',
-        ]);
-
         $user = $request->user();
         $tenantId = $user->tenantOwnerId();
 

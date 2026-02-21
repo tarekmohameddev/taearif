@@ -40,7 +40,18 @@ use App\Services\AlibabaOssService;
 use App\Services\MembershipCacheService;
 use App\Services\PropertyListCacheVersionService;
 use App\Http\Resources\Api\PropertyResource;
-
+use App\Http\Requests\Api\Property\BulkCompletePropertyDraftsRequest;
+use App\Http\Requests\Api\Property\BulkImportPropertiesRequest;
+use App\Http\Requests\Api\Property\CompletePropertyDraftRequest;
+use App\Http\Requests\Api\Property\DuplicatePropertyRequest;
+use App\Http\Requests\Api\Property\ReorderFeaturedPropertiesRequest;
+use App\Http\Requests\Api\Property\ReorderPropertiesRequest;
+use App\Http\Requests\Api\Property\TogglePropertyFeaturedRequest;
+use App\Http\Requests\Api\Property\TogglePropertyStatusRequest;
+use App\Http\Requests\Api\Property\UploadPropertyDeedImageRequest;
+use App\Http\Requests\Api\Property\UpdatePropertyDraftRequest;
+use App\Http\Requests\Api\Property\StorePropertyRequest;
+use App\Http\Requests\Api\Property\UpdatePropertyRequest;
 
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\PropertiesImport;
@@ -87,19 +98,11 @@ class PropertyController extends Controller
         }
     }
 
-    public function bulkImport(Request $request)
+    public function bulkImport(BulkImportPropertiesRequest $request)
     {
         try {
-            // Validate file presence and type
-            $request->validate([
-                'file' => 'required|mimes:xlsx,csv|max:10240', // 10MB max
-            ], [
-                'file.required' => 'A file is required for import. Please select an Excel or CSV file.',
-                'file.mimes' => 'The file must be an Excel (.xlsx) or CSV (.csv) file.',
-                'file.max' => 'The file size must not exceed 10MB. Please use a smaller file or split it into multiple files.',
-            ]);
-
             $user = auth()->user();
+            $uploadedFile = request()->file('file');
 
             // Check authentication
             if (!$user) {
@@ -136,7 +139,7 @@ class PropertyController extends Controller
             // Estimate row count from uploaded file
             try {
                 // Validate file can be read
-                if (!$request->hasFile('file') || !$request->file('file')->isValid()) {
+                if (!$uploadedFile || !$uploadedFile->isValid()) {
                     return response()->json([
                         'status' => 'error',
                         'code' => 'IMPORT_FILE_INVALID',
@@ -150,8 +153,8 @@ class PropertyController extends Controller
 
                 // Smart Method: Calculate the exact number of rows with data
                 // This avoids reading thousands of empty rows
-                $filePath = $request->file('file')->getPathname();
-                $fileSize = $request->file('file')->getSize();
+                $filePath = $uploadedFile->getPathname();
+                $fileSize = $uploadedFile->getSize();
 
                 // Check file size (10MB = 10485760 bytes)
                 if ($fileSize > 10485760) {
@@ -179,7 +182,7 @@ class PropertyController extends Controller
                 // highestRow includes header, so we pass it as the limit
                 $import = new PropertiesImport($user->id, $highestRow);
 
-                $collection = Excel::toCollection($import, $request->file('file'));
+                $collection = Excel::toCollection($import, $uploadedFile);
 
                 // Count only actual data rows (excluding header which is row 1)
                 // The collection excludes the header due to WithHeadingRow trait
@@ -285,7 +288,7 @@ class PropertyController extends Controller
             try {
                 // Use the same smart limit for the actual import
                 $import = new PropertiesImport($user->id, $highestRow);
-                Excel::import($import, $request->file('file'));
+                Excel::import($import, $uploadedFile);
 
                 $failures = $import->sheetImport->failures();
                 $errors = $import->sheetImport->errors();
@@ -597,9 +600,10 @@ class PropertyController extends Controller
         $this->videoService = $ossService;
     }
 
-    public function duplicate(Request $request, $propertyId)
+    public function duplicate(DuplicatePropertyRequest $request, $propertyId)
     {
         $user = auth()->user();
+        $validated = $request->validated();
 
         // Check if user has active membership (cached)
         $membership = MembershipCacheService::getActiveMembership($user->id);
@@ -649,28 +653,9 @@ class PropertyController extends Controller
             ->where('is_default', 1)
             ->firstOrFail();
 
-        // Validation rules for optional overrides
-        $rules = [
-            'title' => 'nullable|max:255',
-            'address' => 'nullable',
-            'description' => 'nullable',
-            'price' => 'nullable|numeric',
-            'pricePerMeter' => 'nullable|numeric',
-            'featured' => 'nullable|boolean',
-        ];
-
-        $validator = Validator::make($request->all(), $rules);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'fail',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
         $duplicatedProperty = null;
 
-        DB::transaction(function () use ($request, $user, $defaultLanguage, $originalProperty, &$duplicatedProperty) {
+        DB::transaction(function () use ($request, $validated, $user, $defaultLanguage, $originalProperty, &$duplicatedProperty) {
 
             // Helper function to copy image files
             $copyImageFile = function ($originalPath) {
@@ -726,8 +711,8 @@ class PropertyController extends Controller
             // Prepare property data from original
             $propertyData = [
                 'region_id' => $originalProperty->region_id,
-                'price' => $request->price ?? $originalProperty->price,
-                'pricePerMeter' => $request->pricePerMeter ?? $originalProperty->pricePerMeter,
+                'price' => $validated['price'] ?? $originalProperty->price,
+                'pricePerMeter' => $validated['pricePerMeter'] ?? $originalProperty->pricePerMeter,
                 'purpose' => $originalProperty->purpose,
                 'type' => $originalProperty->type,
                 'beds' => $originalProperty->beds,
@@ -779,7 +764,7 @@ class PropertyController extends Controller
                 $newFeaturedImage,
                 $newFloorPlanningImages,
                 $newVideoImage,
-                $request->has('featured') ? $request->featured : $originalProperty->featured,
+                array_key_exists('featured', $validated) ? $validated['featured'] : $originalProperty->featured,
                 auth()->id()
             );
 
@@ -810,10 +795,10 @@ class PropertyController extends Controller
                     'category_id' => $originalContent->category_id,
                     'state_id' => $originalContent->state_id,
                     'city_id' => $originalContent->city_id,
-                    'title' => $request->title ?? ($originalContent->title . ' (Copy)'),
-                    'slug' => str_replace('.', '', Str::slug($request->title ?? ($originalContent->title . ' Copy'))),
-                    'address' => $request->address ?? $originalContent->address,
-                    'description' => $request->description ?? $originalContent->description,
+                    'title' => $validated['title'] ?? ($originalContent->title . ' (Copy)'),
+                    'slug' => str_replace('.', '', Str::slug($validated['title'] ?? ($originalContent->title . ' Copy'))),
+                    'address' => $validated['address'] ?? $originalContent->address,
+                    'description' => $validated['description'] ?? $originalContent->description,
                     'meta_keyword' => $originalContent->meta_keyword,
                     'meta_description' => $originalContent->meta_description,
                 ];
@@ -956,20 +941,12 @@ class PropertyController extends Controller
 
     //properties_reorder_featured
 
-    public function properties_reorder_featured(Request $request)
+    public function properties_reorder_featured(ReorderFeaturedPropertiesRequest $request)
     {
-        $user = $request->user();
-        $payload = $request->all();
-        if (isset($payload[0])) {
-            $payload = $payload[0];
-        }
-
-        $propertyId = $payload['id'] ?? null;
-        $newPosition = (int) ($payload['reorder_featured'] ?? 0);
-
-        if (!$propertyId || $newPosition <= 0) {
-            return response()->json(['status' => 'error', 'message' => 'Invalid input'], 400);
-        }
+        $validated = $request->validated();
+        $user = auth()->user();
+        $propertyId = (int) $validated['id'];
+        $newPosition = (int) $validated['reorder_featured'];
 
         $properties = Property::where('user_id', $user->id)
             ->where('featured', 1) // only reorder featured ones
@@ -1011,20 +988,12 @@ class PropertyController extends Controller
 
     // properties_reorder
 
-    public function properties_reorder(Request $request)
+    public function properties_reorder(ReorderPropertiesRequest $request)
     {
-        $user = $request->user();
-        $payload = $request->all();
-        if (isset($payload[0])) {
-            $payload = $payload[0];
-        }
-
-        $propertyId = $payload['id'] ?? null;
-        $newPosition = (int) ($payload['reorder'] ?? 0);
-
-        if (!$propertyId || $newPosition <= 0) {
-            return response()->json(['status' => 'error', 'message' => 'Invalid input'], 400);
-        }
+        $validated = $request->validated();
+        $user = auth()->user();
+        $propertyId = (int) $validated['id'];
+        $newPosition = (int) $validated['reorder'];
 
         $properties = Property::where('user_id', $user->id)
             ->orderByRaw('COALESCE(reorder, 999999) ASC') // handle nulls
@@ -1171,7 +1140,7 @@ class PropertyController extends Controller
         * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
     */
 
-    public function store(Request $request)
+    public function store(StorePropertyRequest $request)
     {
         $user = auth()->user();
 
@@ -1205,80 +1174,6 @@ class PropertyController extends Controller
         $defaultLanguage = Language::where('user_id', $owner->id)
             ->where('is_default', 1)
             ->firstOrFail();
-
-        $rules = [
-            'payment_method' => 'nullable',
-            'title' => 'required|max:255',
-            'address' => 'required',
-            'description' => 'required',
-            'featured_image' => 'required|string',
-            'gallery' => 'nullable|array',
-            'gallery.*' => 'string',
-            'floor_planning_image' => ['nullable'],
-            'video_image' => 'nullable|string',
-            'video_url' => 'nullable|string',// For direct URL or OSS URL
-            'virtual_tour' => 'nullable|string',
-            'price' => 'nullable|numeric',
-            'pricePerMeter' => 'nullable|numeric',
-            'beds' => 'nullable',
-            'bath' => 'nullable',
-            'purpose' => 'nullable',
-            'area' => 'nullable',
-            'status' => 'nullable',
-            'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
-            'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
-            'project_id' => 'nullable',
-            'city_id' => 'nullable',
-            'state_id' => 'nullable',
-            'featured' => 'nullable|boolean',
-            'amenities' => 'nullable|array',
-            'type' => 'nullable',
-            'faqs' => 'nullable|array',
-            'category_id' => 'nullable|integer',
-            'facade_id' => 'nullable|numeric',
-            'length' => 'nullable|numeric',
-            'width' => 'nullable|numeric',
-            'street_width_north' => 'nullable|numeric',
-            'street_width_south' => 'nullable|numeric',
-            'street_width_east' => 'nullable|numeric',
-            'street_width_west' => 'nullable|numeric',
-            'building_age' => 'nullable|integer',
-            'rooms' => 'nullable|integer',
-            'bathrooms' => 'nullable|integer',
-            'floors' => 'nullable|integer',
-            'floor_number' => 'nullable|integer',
-            'driver_room' => 'nullable|integer',
-            'maid_room' => 'nullable|integer',
-            'dining_room' => 'nullable|integer',
-            'living_room' => 'nullable|integer',
-            'majlis' => 'nullable|integer',
-            'storage_room' => 'nullable|integer',
-            'basement' => 'nullable|integer',
-            'swimming_pool' => 'nullable|integer',
-            'kitchen' => 'nullable|integer',
-            'balcony' => 'nullable|integer',
-            'garden' => 'nullable|integer',
-            'annex' => 'nullable|integer',
-            'elevator' => 'nullable|integer',
-            'private_parking' => 'nullable|integer',
-            'size' => 'nullable|integer',
-            'building_id' => 'nullable|integer|exists:buildings,id',
-            'water_meter_number' => 'nullable|string',
-            'electricity_meter_number' => 'nullable|string',
-            'deed_number' => 'nullable|string',
-            'advertising_license' => 'nullable|string',
-            'owner_number' => 'nullable|string',
-            'video_file' => 'nullable|file', // Video upload now handled separately via VideoUploadController
-        ];
-
-        $validator = Validator::make($request->all(), $rules);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'fail',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
 
         $property = null;
 
@@ -1577,7 +1472,7 @@ class PropertyController extends Controller
         * @throws \Throwable
     */
 
-    public function update(Request $request, $id)
+    public function update(UpdatePropertyRequest $request, $id)
     {
         $user = auth()->user();
 
@@ -1609,82 +1504,6 @@ class PropertyController extends Controller
                 'status' => 'error',
                 'message' => 'Default language not configured for this tenant',
             ], 404);
-        }
-
-        $rules = [
-            'payment_method' => 'nullable',
-            'title' => 'required|max:255',
-            'address' => 'required',
-            'description' => 'required',
-            'featured_image' => 'required|string',
-            'gallery' => 'nullable|array',
-            'gallery.*' => 'string',
-            'floor_planning_image' => 'nullable',
-            'video_image' => 'nullable|string',
-            'price' => 'nullable|numeric',
-            'pricePerMeter' => 'nullable|numeric',
-            'beds' => 'nullable',
-            'bath' => 'nullable',
-            'purpose' => 'nullable',
-            'area' => 'nullable',
-            'status' => 'nullable',
-            'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
-            'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
-            'project_id' => 'nullable',
-            'city_id' => 'nullable',
-            'state_id' => 'nullable',
-            'amenities' => 'nullable|array',
-            'category_id' => 'nullable|integer',
-            // Property Characteristics
-            'facade_id' => 'nullable|numeric',
-            'length' => 'nullable|numeric',
-            'width' => 'nullable|numeric',
-            'street_width_north' => 'nullable|numeric',
-            'street_width_south' => 'nullable|numeric',
-            'street_width_east' => 'nullable|numeric',
-            'street_width_west' => 'nullable|numeric',
-            'building_age' => 'nullable|integer',
-            'rooms' => 'nullable|integer',
-            'bathrooms' => 'nullable|integer',
-            'floors' => 'nullable|integer',
-            'floor_number' => 'nullable|integer',
-            'driver_room' => 'nullable|integer',
-            'maid_room' => 'nullable|integer',
-            'dining_room' => 'nullable|integer',
-            'living_room' => 'nullable|integer',
-            'majlis' => 'nullable|integer',
-            'storage_room' => 'nullable|integer',
-            'basement' => 'nullable|integer',
-            'swimming_pool' => 'nullable|integer',
-            'kitchen' => 'nullable|integer',
-            'balcony' => 'nullable|integer',
-            'garden' => 'nullable|integer',
-            'annex' => 'nullable|integer',
-            'elevator' => 'nullable|integer',
-            'private_parking' => 'nullable|integer',
-            'size' => 'nullable|numeric',
-            'type' => 'nullable',
-            'faqs' => 'nullable|array',
-            'building_id' => 'nullable|integer|exists:buildings,id',
-            'water_meter_number' => 'nullable|string',
-            'electricity_meter_number' => 'nullable|string',
-            'deed_number' => 'nullable|string',
-            'advertising_license' => 'nullable|string',
-            'owner_number' => 'nullable|string',
-            'video_url' => 'nullable|string',// For direct URL or OSS URL
-            'virtual_tour' => 'nullable|string',
-            'video_file' => 'nullable|file', // Video upload now handled separately via VideoUploadController
-            'show_reservations' => 'nullable|boolean',
-
-        ];
-
-        $validator = Validator::make($request->all(), $rules);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'fail',
-                'errors' => $validator->errors(),
-            ], 422);
         }
 
         DB::transaction(function () use ($request, $user, $defaultLanguage, &$property) {
@@ -1950,7 +1769,7 @@ class PropertyController extends Controller
         }
     }
 
-    public function toggleFeatured($id)
+    public function toggleFeatured(TogglePropertyFeaturedRequest $request, $id)
     {
         try {
             $property = Property::findOrFail($id);
@@ -1985,7 +1804,7 @@ class PropertyController extends Controller
         }
     }
 
-    public function toggleStatus($id)
+    public function toggleStatus(TogglePropertyStatusRequest $request, $id)
     {
         try {
             $property = Property::findOrFail($id);
@@ -2060,22 +1879,10 @@ class PropertyController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function uploadDeedImage(Request $request)
+    public function uploadDeedImage(UploadPropertyDeedImageRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'deed_image' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120', // 5MB max
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
         try {
-            $file = $request->file('deed_image');
+            $file = request()->file('deed_image');
             $extension = $file->getClientOriginalExtension();
             $fileName = 'deed_' . time() . '_' . uniqid() . '.' . $extension;
 
@@ -4034,11 +3841,12 @@ class PropertyController extends Controller
      * Update draft property (partial completion)
      * PATCH /api/properties/drafts/{id}
      */
-    public function updateDraft(Request $request, $id)
+    public function updateDraft(UpdatePropertyDraftRequest $request, $id)
     {
         try {
             $user = auth()->user();
             $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+            $validated = $request->validated();
 
             $property = Property::where('id', $id)
                 ->where('user_id', $owner->id)
@@ -4056,7 +3864,7 @@ class PropertyController extends Controller
                 ->where('is_default', 1)
                 ->firstOrFail();
 
-            DB::transaction(function () use ($property, $request, $owner, $defaultLanguage) {
+            DB::transaction(function () use ($property, $owner, $defaultLanguage, $validated) {
                 // Update property fields
                 $propertyData = [];
                 $allowedFields = ['price', 'pricePerMeter', 'purpose', 'type', 'beds', 'bath', 'area',
@@ -4065,8 +3873,8 @@ class PropertyController extends Controller
                     'advertising_license', 'latitude', 'longitude', 'category_id', 'project_id', 'building_id'];
 
                 foreach ($allowedFields as $field) {
-                    if ($request->has($field)) {
-                        $propertyData[$field] = $request->input($field);
+                    if (array_key_exists($field, $validated)) {
+                        $propertyData[$field] = $validated[$field];
                     }
                 }
 
@@ -4075,13 +3883,13 @@ class PropertyController extends Controller
                 }
 
                 // Update PropertyContent if provided
-                if ($request->has('title') || $request->has('address') || $request->has('description')) {
+                if (array_key_exists('title', $validated) || array_key_exists('address', $validated) || array_key_exists('description', $validated)) {
                     $contentData = [];
-                    if ($request->has('title')) $contentData['title'] = $request->title;
-                    if ($request->has('address')) $contentData['address'] = $request->address;
-                    if ($request->has('description')) {
-                        $contentData['description'] = $request->description;
-                        $contentData['meta_description'] = Str::limit($request->description, 150);
+                    if (array_key_exists('title', $validated)) $contentData['title'] = $validated['title'];
+                    if (array_key_exists('address', $validated)) $contentData['address'] = $validated['address'];
+                    if (array_key_exists('description', $validated)) {
+                        $contentData['description'] = $validated['description'];
+                        $contentData['meta_description'] = Str::limit((string) $validated['description'], 150);
                     }
 
                     $existingContent = PropertyContent::where('property_id', $property->id)
@@ -4152,11 +3960,12 @@ class PropertyController extends Controller
      * Complete draft property
      * POST /api/properties/drafts/{id}/complete
      */
-    public function completeDraft(Request $request, $id)
+    public function completeDraft(CompletePropertyDraftRequest $request, $id)
     {
         try {
             $user = auth()->user();
             $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+            $validated = $request->validated();
 
             // Check property limit
             $membership = MembershipCacheService::getActiveMembership($owner->id);
@@ -4200,13 +4009,13 @@ class PropertyController extends Controller
             // Collect all data for validation
             $propertyContent = $property->contents()->where('language_id', $defaultLanguage->id)->first();
             $completeData = [
-                'title' => $request->input('title') ?? $propertyContent?->title,
-                'price' => $request->input('price') ?? $property->price,
-                'address' => $request->input('address') ?? $propertyContent?->address,
-                'description' => $request->input('description') ?? $propertyContent?->description,
-                'purpose' => $request->input('purpose') ?? $property->purpose,
-                'type' => $request->input('type') ?? $property->type,
-                'area' => $request->input('area') ?? $property->area,
+                'title' => $validated['title'] ?? $propertyContent?->title,
+                'price' => $validated['price'] ?? $property->price,
+                'address' => $validated['address'] ?? $propertyContent?->address,
+                'description' => $validated['description'] ?? $propertyContent?->description,
+                'purpose' => $validated['purpose'] ?? $property->purpose,
+                'type' => $validated['type'] ?? $property->type,
+                'area' => $validated['area'] ?? $property->area,
             ];
 
             // Check for conflicts
@@ -4224,7 +4033,7 @@ class PropertyController extends Controller
                 ], 422);
             }
 
-            DB::transaction(function () use ($property, $request, $owner, $defaultLanguage, $completeData) {
+            DB::transaction(function () use ($property, $owner, $defaultLanguage, $completeData, $validated) {
                 // Update property with all data
                 $propertyData = [];
                 $allowedFields = ['price', 'pricePerMeter', 'purpose', 'type', 'beds', 'bath', 'area',
@@ -4233,8 +4042,8 @@ class PropertyController extends Controller
                     'advertising_license', 'latitude', 'longitude', 'category_id', 'project_id', 'building_id'];
 
                 foreach ($allowedFields as $field) {
-                    if ($request->has($field)) {
-                        $propertyData[$field] = $request->input($field);
+                    if (array_key_exists($field, $validated)) {
+                        $propertyData[$field] = $validated[$field];
                     }
                 }
 
@@ -4280,17 +4089,17 @@ class PropertyController extends Controller
                 }
 
                 // Handle gallery images if provided
-                if ($request->has('gallery_images') && is_array($request->gallery_images)) {
+                if (array_key_exists('gallery_images', $validated) && is_array($validated['gallery_images'])) {
                     PropertySliderImg::where('property_id', $property->id)->delete();
-                    foreach ($request->gallery_images as $imageUrl) {
+                    foreach ($validated['gallery_images'] as $imageUrl) {
                         PropertySliderImg::storeSliderImage($owner->id, $property->id, $imageUrl);
                     }
                 }
 
                 // Handle amenities if provided
-                if ($request->has('amenity_ids') && is_array($request->amenity_ids)) {
+                if (array_key_exists('amenity_ids', $validated) && is_array($validated['amenity_ids'])) {
                     PropertyAmenity::where('property_id', $property->id)->delete();
-                    foreach ($request->amenity_ids as $amenityId) {
+                    foreach ($validated['amenity_ids'] as $amenityId) {
                         PropertyAmenity::sotreAmenity($owner->id, $property->id, $amenityId);
                     }
                 }
@@ -4318,13 +4127,10 @@ class PropertyController extends Controller
      * Bulk complete draft properties
      * POST /api/properties/drafts/bulk-complete
      */
-    public function bulkCompleteDrafts(Request $request)
+    public function bulkCompleteDrafts(BulkCompletePropertyDraftsRequest $request)
     {
         try {
-            $request->validate([
-                'property_ids' => 'required|array',
-                'property_ids.*' => 'integer|exists:user_properties,id',
-            ]);
+            $validated = $request->validated();
 
             $user = auth()->user();
             $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
@@ -4343,7 +4149,7 @@ class PropertyController extends Controller
                 ->where('completion_status', 'complete')
                 ->count();
 
-            $propertyIds = $request->input('property_ids');
+            $propertyIds = $validated['property_ids'];
             $completed = 0;
             $failed = 0;
             $errors = [];

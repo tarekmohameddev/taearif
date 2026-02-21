@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Customer\StoreCustomerAppointmentRequest;
+use App\Http\Requests\Api\Customer\UpdateCustomerAppointmentRequest;
 use Illuminate\Http\Request;
 use App\Models\Api\UserApiCustomerAppointment;
 use Illuminate\Support\Facades\Auth;
@@ -50,7 +52,7 @@ class UserApiCustomerAppointmentController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StoreCustomerAppointmentRequest $request)
     {
         $user = $request->user();
 
@@ -61,15 +63,7 @@ class UserApiCustomerAppointmentController extends Controller
             ], 401);
         }
 
-        $validated = $request->validate([
-            'customer_id' => 'required|integer',
-            'title'       => 'required|string|max:255',
-            'type'        => 'required|string|max:100',
-            'priority'    => 'required|integer|in:1,2,3', // 1=low, 2=medium, 3=high
-            'note'        => 'nullable|string',
-            'datetime'    => 'required|date',
-            'duration'    => 'required|integer|min:1',
-        ]);
+        $validated = $request->validated();
 
         // Check if the customer belongs to the user
         $customer = ApiCustomer::where('id', $validated['customer_id'])
@@ -84,7 +78,7 @@ class UserApiCustomerAppointmentController extends Controller
         }
 
         $validated['user_id'] = $user->id;
-        $validated['source'] = $request->input('source', 'manual');
+        $validated['source'] = $validated['source'] ?? 'manual';
 
         $appointment = UserApiCustomerAppointment::create($validated);
 
@@ -147,21 +141,14 @@ class UserApiCustomerAppointmentController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(UpdateCustomerAppointmentRequest $request, $id)
     {
         $user = $request->user();
 
         $appointment = UserApiCustomerAppointment::where('user_id', $user->id)
             ->findOrFail($id);
 
-        $validated = $request->validate([
-            'title'       => 'sometimes|string|max:255',
-            'type'        => 'sometimes|string|max:100',
-            'priority'    => 'required|integer|in:1,2,3',
-            'note'        => 'nullable|string',
-            'datetime'    => 'sometimes|date',
-            'duration'    => 'sometimes|integer|min:1',
-        ]);
+        $validated = $request->validated();
 
         $appointment->update($validated);
 

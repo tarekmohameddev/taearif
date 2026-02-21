@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\markting;
 
 use App\Http\Controllers\Api\BaseApiController;
+use App\Http\Requests\Api\Marketing\PurchaseCreditPackageRequest;
+use App\Http\Requests\Api\markting\GetTransactionsRequest;
 use App\Models\Api\markting\UserCredit;
 use App\Models\Api\markting\CreditPackage;
 use App\Models\Api\markting\CreditTransaction;
@@ -117,19 +119,12 @@ class CreditController extends BaseApiController
     /**
      * Purchase credit package
      */
-    public function purchasePackage(Request $request): JsonResponse
+    public function purchasePackage(PurchaseCreditPackageRequest $request): JsonResponse
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'package_id' => 'required|exists:credit_packages,id',
-                'payment_method' => 'required|string',
-            ]);
+            $validated = $request->validated();
 
-            if ($validator->fails()) {
-                return $this->fail('Validation failed', 422, $validator->errors());
-            }
-
-            $package = CreditPackage::findOrFail($request->package_id);
+            $package = CreditPackage::findOrFail($validated['package_id']);
 
             if (!$package->is_active) {
                 return $this->fail('Package is not available', 400);
@@ -152,7 +147,7 @@ class CreditController extends BaseApiController
                     'credits_amount' => $package->credits,
                     'amount_paid' => $package->discounted_price,
                     'currency' => $package->currency,
-                    'payment_method' => $request->payment_method,
+                    'payment_method' => $validated['payment_method'],
                     'status' => 'pending',
                     'reference_number' => CreditTransaction::generateReferenceNumber(),
                     'description' => $this->getPurchaseDescription($package, $locale),
@@ -246,38 +241,28 @@ class CreditController extends BaseApiController
     /**
      * Get transaction history
      */
-    public function getTransactions(Request $request): JsonResponse
+    public function getTransactions(GetTransactionsRequest $request): JsonResponse
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'type' => 'nullable|in:purchase,usage,refund,admin_add,admin_remove',
-                'status' => 'nullable|in:pending,completed,failed,refunded',
-                'from_date' => 'nullable|date',
-                'to_date' => 'nullable|date|after_or_equal:from_date',
-                'per_page' => 'nullable|integer|min:1|max:100',
-            ]);
-
-            if ($validator->fails()) {
-                return $this->fail('Validation failed', 422, $validator->errors());
-            }
+            $validated = $request->validated();
 
             $query = CreditTransaction::where('user_id', Auth::id())
                 ->with(['creditPackage', 'createdBy']);
 
             // Apply filters
-            if ($request->type) {
-                $query->where('transaction_type', $request->type);
+            if (!empty($validated['type'])) {
+                $query->where('transaction_type', $validated['type']);
             }
 
-            if ($request->status) {
-                $query->where('status', $request->status);
+            if (!empty($validated['status'])) {
+                $query->where('status', $validated['status']);
             }
 
-            if ($request->from_date && $request->to_date) {
-                $query->dateRange($request->from_date, $request->to_date);
+            if (!empty($validated['from_date']) && !empty($validated['to_date'])) {
+                $query->dateRange($validated['from_date'], $validated['to_date']);
             }
 
-            $perPage = $request->get('per_page', 20);
+            $perPage = $validated['per_page'] ?? 20;
             $transactions = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
             $formattedTransactions = $transactions->map(function ($transaction) {

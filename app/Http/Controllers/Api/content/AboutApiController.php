@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api\content;
 
 use App\Models\Api\ApiAboutSettings;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Content\UpdateAboutSettingsRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 
 class AboutApiController extends Controller
@@ -13,7 +13,7 @@ class AboutApiController extends Controller
     public function index(Request $request)
     {
         // Get the about data
-        $user = $request->user();
+        $user = auth()->user();
         $about = ApiAboutSettings::where('user_id', $user->id)->first();
 
         return response()->json([
@@ -27,33 +27,10 @@ class AboutApiController extends Controller
     /**
      * Update about page content
      */
-    public function update(Request $request)
+    public function update(UpdateAboutSettingsRequest $request)
     {
-        $user = $request->user();
-
-        $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
-            'subtitle' => 'nullable|string|max:255',
-            'history' => 'nullable|string',
-            'mission' => 'nullable|string',
-            'vision' => 'nullable|string',
-            'image_path' => 'nullable|string',
-            'features' => 'required|array',
-            'features.*.id' => 'required|integer',
-            'features.*.title' => 'required|string|max:255',
-            'features.*.description' => 'required|string',
-            'status' => 'required|boolean',
-        ]);
-
-
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
+        $user = auth()->user();
+        $validated = $request->validated();
 
         try {
 
@@ -65,14 +42,14 @@ class AboutApiController extends Controller
             }
 
             // Update about data
-            $about->title = $request->title;
-            $about->subtitle = $request->subtitle;
-            $about->history = $request->history;
-            $about->mission = $request->mission;
-            $about->vision = $request->vision;
-            $about->features = $request->features;
-            $about->image_path = $request->image_path;
-            $about->status = $request->status;
+            $about->title = $validated['title'];
+            $about->subtitle = $validated['subtitle'] ?? null;
+            $about->history = $validated['history'] ?? null;
+            $about->mission = $validated['mission'] ?? null;
+            $about->vision = $validated['vision'] ?? null;
+            $about->features = $validated['features'];
+            $about->image_path = $validated['image_path'] ?? null;
+            $about->status = $validated['status'];
 
             $about->save();
 

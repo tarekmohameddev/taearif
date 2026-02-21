@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Upload\DeleteUploadFileRequest;
+use App\Http\Requests\Api\Upload\UploadFileRequest;
+use App\Http\Requests\Api\Upload\UploadMultipleFilesRequest;
 use App\Services\UploadService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class UploadController extends Controller
 {
@@ -22,27 +24,13 @@ class UploadController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function upload(Request $request)
+    public function upload(UploadFileRequest $request)
     {
-        // Validate the request
-        $validator = Validator::make($request->all(), [
-            'file' => 'required|file',
-            'context' => 'required|string',
-            'sub_folder' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
         try {
-            $file = $request->file('file');
-            $context = $request->input('context');
-            $subFolder = $request->input('sub_folder');
+            $validated = $request->validated();
+            $file = request()->file('file');
+            $context = $validated['context'];
+            $subFolder = $validated['sub_folder'] ?? null;
 
             $options = [
                 'subFolder' => $subFolder,
@@ -72,25 +60,10 @@ class UploadController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function uploadMultiple(Request $request)
+    public function uploadMultiple(UploadMultipleFilesRequest $request)
     {
-        // Validate the request
-        $validator = Validator::make($request->all(), [
-            'files' => 'required|array|min:1',
-            'files.*' => 'nullable|file', // Changed to nullable to allow empty files to pass through
-            'context' => 'required|string',
-            'sub_folder' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $files = $request->file('files');
+        $validated = $request->validated();
+        $files = request()->file('files');
         
         // Filter out null/empty file entries
         $files = array_filter($files, function($file) {
@@ -110,8 +83,8 @@ class UploadController extends Controller
             ], 400);
         }
 
-        $context = $request->input('context');
-        $subFolder = $request->input('sub_folder');
+        $context = $validated['context'];
+        $subFolder = $validated['sub_folder'] ?? null;
 
         $options = [
             'subFolder' => $subFolder,
@@ -195,21 +168,8 @@ class UploadController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function delete(Request $request)
+    public function delete(DeleteUploadFileRequest $request)
     {
-        // Validate the request
-        $validator = Validator::make($request->all(), [
-            'path' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
         try {
             $path = $request->input('path');
             $result = $this->uploadService->deleteFile($path);

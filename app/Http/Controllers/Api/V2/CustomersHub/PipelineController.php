@@ -7,6 +7,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Api\ApiController;
 use App\Domain\CustomersHub\Services\PipelineService;
+use App\Http\Requests\Api\V2\CustomersHub\PipelineIndexRequest;
+use App\Http\Requests\Api\V2\CustomersHub\PipelineMoveRequest;
+use App\Http\Requests\Api\V2\CustomersHub\PipelineBulkMoveRequest;
 use App\Models\ApiCustomer;
 use App\Models\Api\UserPropertyRequest;
 
@@ -36,27 +39,9 @@ class PipelineController extends ApiController
      *
      * Get pipeline board data (request-based) with optional analytics.
      */
-    public function index(Request $request): JsonResponse
+    public function index(PipelineIndexRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'action' => 'nullable|in:board,analytics,get_board',
-            'includeAnalytics' => 'nullable|boolean',
-            'filters' => 'nullable|array',
-            'filters.status' => 'nullable|array',
-            'filters.status.*' => 'integer',
-            'filters.status_id' => 'nullable|array',
-            'filters.stage_id' => 'nullable|array',
-            'filters.property_type' => 'nullable|array',
-            'filters.property_type.*' => 'string',
-            'filters.city_id' => 'nullable|integer',
-            'filters.district_id' => 'nullable|integer',
-            'filters.districts_id' => 'nullable|integer',
-            'filters.budget_from' => 'nullable|numeric',
-            'filters.budget_to' => 'nullable|numeric',
-            'filters.assignedEmployeeId' => 'nullable|integer',
-            'filters.search' => 'nullable|string|max:255',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
         $action = $validated['action'] ?? 'board';
         $filters = $validated['filters'] ?? [];
@@ -86,31 +71,11 @@ class PipelineController extends ApiController
      * Move a property request or inquiry to a new stage (customers_hub_stages).
      * Accepts requestId, customerId (as request id), or inquiryId. newStageId can be string (stage_id) or integer (id).
      */
-    public function move(Request $request): JsonResponse
+    public function move(PipelineMoveRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'requestId' => 'nullable|integer',
-            'customerId' => 'nullable|integer',
-            'inquiryId' => 'nullable|integer',
-            'newStageId' => 'required',
-            'notes' => 'nullable|string|max:500',
-        ]);
-
+        $validated = $request->validated();
         $requestId = isset($validated['requestId']) ? (int) $validated['requestId'] : (isset($validated['customerId']) ? (int) $validated['customerId'] : null);
         $inquiryId = isset($validated['inquiryId']) ? (int) $validated['inquiryId'] : null;
-
-        if ($requestId === null && $inquiryId === null) {
-            return $this->error('Validation failed', 422, [
-                'requestId' => ['At least one of requestId or inquiryId is required.'],
-            ]);
-        }
-
-        if ($requestId !== null && $inquiryId !== null) {
-            return $this->error('Validation failed', 422, [
-                'requestId' => ['Provide either requestId or inquiryId, not both.'],
-            ]);
-        }
-
         $userId = $this->getTenantUserId($request);
         $stageIdString = $this->pipelineService->resolveNewStageId($validated['newStageId']);
         if ($stageIdString === null) {
@@ -238,25 +203,12 @@ class PipelineController extends ApiController
      * Bulk move property requests to a new stage (customers_hub_stages).
      * Accepts requestIds or customerIds (both are request IDs). newStageId can be string or integer.
      */
-    public function bulkMove(Request $request): JsonResponse
+    public function bulkMove(PipelineBulkMoveRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'requestIds' => 'nullable|array',
-            'requestIds.*' => 'integer',
-            'customerIds' => 'nullable|array',
-            'customerIds.*' => 'integer',
-            'newStageId' => 'required',
-        ]);
-
+        $validated = $request->validated();
         $requestIds = ! empty($validated['requestIds'])
             ? array_map('intval', $validated['requestIds'])
             : array_map('intval', $validated['customerIds'] ?? []);
-
-        if (empty($requestIds)) {
-            return $this->error('Validation failed', 422, [
-                'requestIds' => ['At least one of request ids or customer ids is required.'],
-            ]);
-        }
 
         $userId = $this->getTenantUserId($request);
         $stageIdString = $this->pipelineService->resolveNewStageId($validated['newStageId']);

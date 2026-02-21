@@ -3,27 +3,27 @@
 namespace App\Http\Controllers\Api\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Customer\MoveCustomerTypeRequest;
+use App\Http\Requests\Api\Customer\ReorderCustomerTypesRequest;
+use App\Http\Requests\Api\Customer\StoreCustomerTypeRequest;
+use App\Http\Requests\Api\Customer\UpdateCustomerTypeRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use App\Models\Api\UserApiCustomerType;
 
 class UserApiCustomerTypeController extends Controller
 {
-    public function moveTypes(Request $request, $id)
+    public function moveTypes(MoveCustomerTypeRequest $request, $id)
     {
-        $user = $request->user();
+        $validated = $request->validated();
+        $ownerId = auth()->user()->tenantOwnerId();
 
-        $validated = $request->validate([
-            'direction' => 'required|in:up,down',
-        ]);
-
-        $row = UserApiCustomerType::where('user_id', $request->user()->tenantOwnerId())->findOrFail($id);
+        $row = UserApiCustomerType::where('user_id', $ownerId)->findOrFail($id);
         $currentOrder = $row->order;
 
         $adjacent = $validated['direction'] === 'up'
-            ? UserApiCustomerType::where('user_id', $request->user()->tenantOwnerId())->where('order', '<', $currentOrder)->orderBy('order', 'desc')->first()
-            : UserApiCustomerType::where('user_id', $request->user()->tenantOwnerId())->where('order', '>', $currentOrder)->orderBy('order', 'asc')->first();
+            ? UserApiCustomerType::where('user_id', $ownerId)->where('order', '<', $currentOrder)->orderBy('order', 'desc')->first()
+            : UserApiCustomerType::where('user_id', $ownerId)->where('order', '>', $currentOrder)->orderBy('order', 'asc')->first();
 
         if (!$adjacent) {
             return response()->json([
@@ -46,18 +46,14 @@ class UserApiCustomerTypeController extends Controller
         ]);
     }
 
-    public function reorderTypes(Request $request)
+    public function reorderTypes(ReorderCustomerTypesRequest $request)
     {
-        $user = $request->user();
+        $validated = $request->validated();
+        $ownerId = auth()->user()->tenantOwnerId();
 
-        $validated = $request->validate([
-            'order'   => 'required|array',
-            'order.*' => 'integer|exists:users_api_customers_types,id',
-        ]);
-
-        DB::transaction(function () use ($validated, $request) {
+        DB::transaction(function () use ($validated, $ownerId) {
             foreach ($validated['order'] as $idx => $id) {
-                UserApiCustomerType::where('user_id', $request->user()->tenantOwnerId())
+                UserApiCustomerType::where('user_id', $ownerId)
                     ->where('id', $id)
                     ->update(['order' => $idx + 1]);
             }
@@ -73,7 +69,7 @@ class UserApiCustomerTypeController extends Controller
     {
         $user = $request->user();
 
-        $rows = UserApiCustomerType::where('user_id', $request->user()->tenantOwnerId())
+        $rows = UserApiCustomerType::where('user_id', $user->tenantOwnerId())
             ->orderBy('order')
             ->get();
 
@@ -83,24 +79,11 @@ class UserApiCustomerTypeController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreCustomerTypeRequest $request)
     {
-        $user = $request->user();
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'name'  => 'required|string|max:255',
-            'value' => [
-                'required', 'string', 'max:50',
-                Rule::unique('users_api_customers_types', 'value')
-                    ->where(fn($q) => $q->where('user_id', $user->id)),
-            ],
-            'color'     => 'nullable|string|max:50',
-            'icon'      => 'nullable|string|max:50',
-            'order'     => 'required|integer|min:1',
-            'is_active' => 'boolean',
-        ]);
-
-        $validated['user_id'] = $request->user()->tenantOwnerId();
+        $validated['user_id'] = auth()->user()->tenantOwnerId();
 
         $row = UserApiCustomerType::create($validated);
 
@@ -115,7 +98,7 @@ class UserApiCustomerTypeController extends Controller
     {
         $user = $request->user();
 
-        $row = UserApiCustomerType::where('user_id', $request->user()->tenantOwnerId())->findOrFail($id);
+        $row = UserApiCustomerType::where('user_id', $user->tenantOwnerId())->findOrFail($id);
 
         return response()->json([
             'status' => 'success',
@@ -123,25 +106,11 @@ class UserApiCustomerTypeController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateCustomerTypeRequest $request, $id)
     {
-        $user = $request->user();
-
-        $row = UserApiCustomerType::where('user_id', $request->user()->tenantOwnerId())->findOrFail($id);
-
-        $validated = $request->validate([
-            'name'  => 'sometimes|string|max:255',
-            'value' => [
-                'sometimes', 'string', 'max:50',
-                Rule::unique('users_api_customers_types', 'value')
-                    ->where(fn($q) => $q->where('user_id', $user->id))
-                    ->ignore($row->id),
-            ],
-            'color'     => 'nullable|string|max:50',
-            'icon'      => 'nullable|string|max:50',
-            'order'     => 'sometimes|integer|min:1',
-            'is_active' => 'boolean',
-        ]);
+        $user = auth()->user();
+        $row = UserApiCustomerType::where('user_id', $user->tenantOwnerId())->findOrFail($id);
+        $validated = $request->validated();
 
         $row->update($validated);
 
@@ -156,7 +125,7 @@ class UserApiCustomerTypeController extends Controller
     {
         $user = $request->user();
 
-        $row = UserApiCustomerType::where('user_id', $request->user()->tenantOwnerId())->findOrFail($id);
+        $row = UserApiCustomerType::where('user_id', $user->tenantOwnerId())->findOrFail($id);
         $row->delete();
 
         return response()->json([

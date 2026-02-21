@@ -5,6 +5,14 @@ namespace App\Http\Controllers\Api\V2\CustomersHub;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Api\ApiController;
+use App\Http\Requests\Api\V2\CustomersHub\RequestsListRequest;
+use App\Http\Requests\Api\V2\CustomersHub\RequestUpdateRequest;
+use App\Http\Requests\Api\V2\CustomersHub\AddNoteRequest;
+use App\Http\Requests\Api\V2\CustomersHub\CreateAppointmentRequest;
+use App\Http\Requests\Api\V2\CustomersHub\CreateReminderRequest;
+use App\Http\Requests\Api\V2\CustomersHub\BulkCompleteRequest;
+use App\Http\Requests\Api\V2\CustomersHub\BulkDismissRequest;
+use App\Http\Requests\Api\V2\CustomersHub\RequestsBulkRequest;
 use App\Domain\CustomersHub\Services\ActionsAggregatorService;
 use App\Domain\CustomersHub\Services\PropertyRequestDetailBuilder;
 use App\Models\Api\ApiCustomerInquiry;
@@ -53,62 +61,9 @@ class RequestsController extends ApiController
      * 
      * Get paginated list of customer actions with filtering.
      */
-    public function list(Request $request): JsonResponse
+    public function list(RequestsListRequest $request): JsonResponse
     {
-        // Normalize frontend parameter names so both naming conventions work
-        $request->merge([
-            'tab' => $request->input('activeTab') ?? $request->input('tab'),
-            'types' => $request->input('selectedTypes') ?? $request->input('types'),
-            'sources' => $request->input('selectedSources') ?? $request->input('sources'),
-            'priorities' => $request->input('selectedPriorities') ?? $request->input('priorities'),
-            'assignees' => $request->input('selectedAssignees') ?? $request->input('assignees'),
-            'due_date_bucket' => $request->input('dueDateFilter') ?? $request->input('due_date_bucket'),
-            'property_categories' => $request->input('selectedPropertyTypes') ?? $request->input('property_categories'),
-            'cities' => $request->input('selectedCities') ?? $request->input('cities'),
-            'states' => $request->input('selectedStates') ?? $request->input('states'),
-            'budget_min' => $request->input('budgetMin') ?? $request->input('budget_min'),
-            'budget_max' => $request->input('budgetMax') ?? $request->input('budget_max'),
-            'objectTypes' => $request->input('selectedObjectTypes') ?? $request->input('objectTypes'),
-            'stages' => $request->input('selectedStages') ?? $request->input('stages'),
-        ]);
-
-        $validated = $request->validate([
-            'tab' => 'nullable|in:inbox,followups,all,completed',
-            'types' => 'nullable|array',
-            'types.*' => 'string|in:new_inquiry,callback_request,whatsapp_incoming,property_match,follow_up,site_visit',
-            'statuses' => 'nullable|array',
-            'statuses.*' => 'string|in:pending,in_progress,completed,dismissed,snoozed',
-            'sources' => 'nullable|array',
-            'sources.*' => 'string|in:inquiry,manual,whatsapp,import,referral,property_request',
-            'priorities' => 'nullable|array',
-            'priorities.*' => 'string|in:low,medium,high,urgent',
-            'assignees' => 'nullable|array',
-            'assignees.*' => 'integer',
-            'customer_id' => 'nullable|integer',
-            'due_date_bucket' => 'nullable|in:overdue,today,week,no_date',
-            'property_categories' => 'nullable|array',
-            'property_categories.*' => 'string',
-            'property_types' => 'nullable|array',
-            'property_types.*' => 'string',
-            'cities' => 'nullable|array',
-            'cities.*' => 'string',
-            'states' => 'nullable|array',
-            'states.*' => 'string',
-            'budget_min' => 'nullable|numeric|min:0',
-            'budget_max' => 'nullable|numeric|min:0',
-            'date_from' => 'nullable|date',
-            'date_to' => 'nullable|date',
-            'search' => 'nullable|string|max:255',
-            'sort_by' => 'nullable|in:createdAt,dueDate,priority,customerName',
-            'sort_dir' => 'nullable|in:asc,desc',
-            'limit' => 'nullable|integer|min:1|max:100',
-            'offset' => 'nullable|integer|min:0',
-            'objectTypes' => 'nullable|array',
-            'objectTypes.*' => 'string|in:inquiry,property_request,reminder,request_appointment,request_reminder',
-            'stages' => 'nullable|array',
-            'stages.*' => 'integer',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
 
         $filters = $validated;
@@ -453,19 +408,9 @@ class RequestsController extends ApiController
      *
      * Update an action (partial update).
      */
-    public function update(Request $request, string $requestId): JsonResponse
+    public function update(RequestUpdateRequest $request, string $requestId): JsonResponse
     {
-        $validated = $request->validate([
-            'title' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'due_date' => 'nullable|date',
-            'priority' => 'nullable|in:low,medium,high',
-            'notes' => 'nullable|string',
-            'duration' => 'nullable|integer|min:0',
-            'status_id' => 'nullable|integer',
-            'stage_id' => 'nullable|string|max:50',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
 
         $action = $this->aggregator->getById($userId, $requestId);
@@ -519,15 +464,11 @@ class RequestsController extends ApiController
      * Append a note to an action. For property_request_{id} and inquiry_{id}, saves to crm_hub_notes.
      * For other types (reminder, appointment, etc.) uses legacy note column where supported.
      */
-    public function addNote(Request $request, string $requestId): JsonResponse
+    public function addNote(AddNoteRequest $request, string $requestId): JsonResponse
     {
-        $validated = $request->validate([
-            'note' => 'required|string',
-            'addedBy' => 'nullable|string|max:255',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
-        $employeeId = $request->user()->id;
+        $employeeId = auth()->user()->id;
         $parsed = $this->aggregator->parseActionId($requestId);
 
         // Request-level leads: save to crm_hub_notes (polymorphic)
@@ -591,29 +532,10 @@ class RequestsController extends ApiController
      *
      * Create an appointment linked to a property request.
      */
-    public function createAppointmentForPropertyRequest(Request $request, string $requestId): JsonResponse
+    public function createAppointmentForPropertyRequest(CreateAppointmentRequest $request, string $requestId): JsonResponse
     {
         $userId = $this->getTenantUserId($request);
-
-        $validated = $request->validate([
-            'type' => 'required|string|in:site_visit,office_meeting,phone_call,video_call,contract_signing,other',
-            'datetime' => 'required|date',
-            'duration' => 'nullable|integer|min:1',
-            'notes' => 'nullable|string',
-            'title' => 'nullable|string|max:255',
-            'priority' => 'nullable|string|in:low,medium,high,urgent',
-        ]);
-
-        if (Carbon::parse($validated['datetime'])->isPast()) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'INVALID_DATETIME',
-                    'message' => 'Datetime must be in the future',
-                    'message_ar' => 'التاريخ والوقت يجب أن يكون في المستقبل',
-                ],
-            ], 422);
-        }
+        $validated = $request->validated();
 
         $resolved = $this->resolvePropertyRequestAndCustomer($requestId, $userId);
         $isInquiry = false;
@@ -717,29 +639,10 @@ class RequestsController extends ApiController
      *
      * Create a reminder linked to a property request.
      */
-    public function createReminderForPropertyRequest(Request $request, string $requestId): JsonResponse
+    public function createReminderForPropertyRequest(CreateReminderRequest $request, string $requestId): JsonResponse
     {
         $userId = $this->getTenantUserId($request);
-
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'datetime' => 'required|date',
-            'priority' => 'required|string|in:low,medium,high,urgent',
-            'type' => 'required|string|in:follow_up,payment_due,document_required,other',
-            'notes' => 'nullable|string',
-        ]);
-
-        if (Carbon::parse($validated['datetime'])->isPast()) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'INVALID_DATETIME',
-                    'message' => 'Datetime must be in the future',
-                    'message_ar' => 'التاريخ والوقت يجب أن يكون في المستقبل',
-                ],
-            ], 422);
-        }
+        $validated = $request->validated();
 
         $resolved = $this->resolvePropertyRequestAndCustomer($requestId, $userId);
         $isInquiry = false;
@@ -840,53 +743,12 @@ class RequestsController extends ApiController
      *
      * Unified bulk actions: complete, dismiss, snooze, assign, change_priority.
      */
-    public function bulk(Request $request): JsonResponse
+    public function bulk(RequestsBulkRequest $request): JsonResponse
     {
-        $baseRules = [
-            'action' => 'required|string|in:complete,dismiss,snooze,assign,change_priority',
-            'actionIds' => 'required|array|min:1|max:1000',
-            'actionIds.*' => 'string',
-            'data' => 'required|array',
-        ];
-        $validated = $request->validate($baseRules);
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
         $action = $validated['action'];
         $data = $validated['data'];
-
-        // Action-specific validation
-        $employeeIdRules = ['nullable', 'integer', function ($attr, $value, $fail) use ($userId) {
-            if ($value === null) return;
-            if (!$this->isValidTenantUserOrEmployee($userId, (int) $value)) {
-                $fail(__('validation.exists', ['attribute' => $attr]));
-            }
-        }];
-        $requiredEmployeeRule = ['required', 'integer', function ($attr, $value, $fail) use ($userId) {
-            if (!$this->isValidTenantUserOrEmployee($userId, (int) $value)) {
-                $fail(__('validation.exists', ['attribute' => $attr]));
-            }
-        }];
-
-        if ($action === 'complete') {
-            $request->validate(['data.completedBy' => $requiredEmployeeRule, 'data.notes' => 'nullable|string']);
-        } elseif ($action === 'dismiss') {
-            $request->validate(['data.dismissedBy' => $requiredEmployeeRule, 'data.reason' => 'nullable|string']);
-        } elseif ($action === 'snooze') {
-            $request->validate([
-                'data.snoozedUntil' => 'required|date|after:now',
-                'data.snoozedBy' => $requiredEmployeeRule,
-                'data.reason' => 'nullable|string',
-            ]);
-        } elseif ($action === 'assign') {
-            $request->validate([
-                'data.assignedTo' => $requiredEmployeeRule,
-                'data.assignedBy' => $requiredEmployeeRule,
-            ]);
-        } elseif ($action === 'change_priority') {
-            $request->validate([
-                'data.priority' => 'required|in:urgent,high,medium,low',
-                'data.changedBy' => $requiredEmployeeRule,
-            ]);
-        }
 
         $result = $this->aggregator->bulkAction($userId, $action, $validated['actionIds'], $data);
         $this->invalidateFilterOptionsCache($userId);
@@ -1028,13 +890,9 @@ class RequestsController extends ApiController
      * 
      * Bulk complete multiple actions.
      */
-    public function bulkComplete(Request $request): JsonResponse
+    public function bulkComplete(BulkCompleteRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'actionIds' => 'required|array|min:1|max:100',
-            'actionIds.*' => 'string',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
 
         $results = $this->aggregator->bulkComplete($userId, $validated['actionIds']);
@@ -1058,13 +916,9 @@ class RequestsController extends ApiController
      * 
      * Bulk dismiss multiple actions.
      */
-    public function bulkDismiss(Request $request): JsonResponse
+    public function bulkDismiss(BulkDismissRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'actionIds' => 'required|array|min:1|max:100',
-            'actionIds.*' => 'string',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
 
         $results = $this->aggregator->bulkDismiss($userId, $validated['actionIds']);

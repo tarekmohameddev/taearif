@@ -14,6 +14,8 @@ use App\Domain\Communication\Exceptions\WaNumberNotFoundException;
 use App\Domain\Communication\Support\CommunicationEndpoints;
 use App\Domain\Communication\WhatsApp\Services\WhatsAppTemplateService;
 use App\Http\Controllers\Api\BaseApiController;
+use App\Http\Requests\Api\V1\WhatsApp\SendWhatsAppMessageRequest;
+use App\Http\Requests\Api\V1\WhatsApp\SendWhatsAppTemplateRequest;
 use App\Models\Conversation;
 use App\Models\Message;
 use Illuminate\Http\JsonResponse;
@@ -72,22 +74,10 @@ class MessageController extends BaseApiController
         ]);
     }
 
-    public function send(Request $request, int $id): JsonResponse
+    public function send(SendWhatsAppMessageRequest $request, int $id): JsonResponse
     {
-        $idempotencyKey = $request->header('Idempotency-Key');
-        if ($idempotencyKey === null || trim((string) $idempotencyKey) === '') {
-            return response()->json([
-                'status' => 'error',
-                'code' => 'VALIDATION_ERROR',
-                'message' => 'Idempotency-Key header is required.',
-            ], 422);
-        }
-
-        $validated = $request->validate([
-            'wa_number_id' => 'required|integer',
-            'content' => 'required|string',
-        ]);
-
+        $idempotencyKey = trim((string) request()->header('Idempotency-Key', ''));
+        $validated = $request->validated();
         $tenantOwnerId = (int) auth()->user()->tenantOwnerId();
 
         $dto = new SendMessageDto(
@@ -100,7 +90,7 @@ class MessageController extends BaseApiController
         );
 
         try {
-            $message = $this->communicationService->sendMessage($dto, trim((string) $idempotencyKey));
+            $message = $this->communicationService->sendMessage($dto, $idempotencyKey);
         } catch (UnsupportedChannelException $e) {
             return response()->json(['status' => 'error', 'code' => 'VALIDATION_ERROR', 'message' => $e->getMessage()], 422);
         } catch (ConversationNotFoundException $e) {
@@ -131,23 +121,10 @@ class MessageController extends BaseApiController
         ]);
     }
 
-    public function sendTemplate(Request $request, int $id): JsonResponse
+    public function sendTemplate(SendWhatsAppTemplateRequest $request, int $id): JsonResponse
     {
-        $idempotencyKey = $request->header('Idempotency-Key');
-        if ($idempotencyKey === null || trim((string) $idempotencyKey) === '') {
-            return response()->json([
-                'status' => 'error',
-                'code' => 'VALIDATION_ERROR',
-                'message' => 'Idempotency-Key header is required.',
-            ], 422);
-        }
-
-        $validated = $request->validate([
-            'wa_number_id' => 'required|integer',
-            'template_id' => 'required|integer',
-            'variables' => 'nullable|array',
-        ]);
-
+        $idempotencyKey = trim((string) request()->header('Idempotency-Key', ''));
+        $validated = $request->validated();
         $tenantOwnerId = (int) auth()->user()->tenantOwnerId();
         $template = $this->templateService->findForUser($tenantOwnerId, (int) $validated['template_id']);
         if (! $template) {
@@ -169,7 +146,7 @@ class MessageController extends BaseApiController
         );
 
         try {
-            $message = $this->communicationService->sendMessage($dto, trim((string) $idempotencyKey));
+            $message = $this->communicationService->sendMessage($dto, $idempotencyKey);
         } catch (UnsupportedChannelException $e) {
             return response()->json(['status' => 'error', 'code' => 'VALIDATION_ERROR', 'message' => $e->getMessage()], 422);
         } catch (ConversationNotFoundException $e) {

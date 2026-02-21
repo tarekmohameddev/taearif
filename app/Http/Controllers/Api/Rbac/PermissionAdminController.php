@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Rbac;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Rbac\PermissionAdminStoreRequest;
+use App\Http\Requests\Api\Rbac\PermissionAdminUpdateRequest;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -33,19 +35,15 @@ class PermissionAdminController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(PermissionAdminStoreRequest $request)
     {
         $tenantId = $this->tenantId($request);
         app(PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
 
-        $input = $request->input('name');
+        $data = $request->validated();
+        $input = $data['name'] ?? null;
 
         if (is_array($input)) {
-            $data = $request->validate([
-                'name' => ['array','min:1'],
-                'name.*' => ['string','max:191','distinct:strict'],
-            ]);
-
             $names = collect($data['name'])
                 ->map(fn ($n) => trim($n))
                 ->filter()
@@ -78,15 +76,6 @@ class PermissionAdminController extends Controller
             ], 201);
         }
 
-        $data = $request->validate([
-            'name' => [
-                'required','string','max:191',
-                Rule::unique('api_permissions', 'name')->where(fn ($q) => $q->where('team_id', $tenantId)),
-            ],
-            'name_ar' => ['nullable','string','max:191'],
-            'name_en' => ['nullable','string','max:191'],
-        ]);
-
         $perm = Permission::create([
             'name'       => $data['name'],
             'name_ar'    => $data['name_ar'] ?? null,
@@ -102,7 +91,7 @@ class PermissionAdminController extends Controller
     }
 
 
-    public function update(Request $request, Permission $permission)
+    public function update(PermissionAdminUpdateRequest $request, Permission $permission)
     {
         $tenantId = $this->tenantId($request);
         app(PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
@@ -114,17 +103,7 @@ class PermissionAdminController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Cannot rename global permission'], 422);
         }
 
-        $data = $request->validate([
-            'name' => [
-                'required','string','max:191',
-                Rule::unique('api_permissions', 'name')
-                    ->where(fn($q) => $q->where('team_id', $tenantId))
-                    ->ignore($permission->id),
-            ],
-            'name_ar' => ['nullable','string','max:191'],
-            'name_en' => ['nullable','string','max:191'],
-        ]);
-
+        $data = $request->validated();
         $permission->name = $data['name'];
         if (isset($data['name_ar'])) {
             $permission->name_ar = $data['name_ar'];

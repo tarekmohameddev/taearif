@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\User\RealestateManagement;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\RealestateManagement\UpdateApiCategorySettingsRequest;
 use App\Models\User\RealestateManagement\ApiUserCategory;
 use App\Models\Api\ApiUserCategorySetting;
 use Illuminate\Support\Facades\Auth;
@@ -71,18 +72,12 @@ class ApiCategoryController extends Controller
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function update(Request $request)
+    public function update(UpdateApiCategorySettingsRequest $request)
     {
-        $request->validate([
-            'categories' => 'required|array',
-            'categories.*.id' => 'required|exists:api_user_categories,id',
-            'categories.*.is_active' => 'required|boolean',
-            // nullable field to allow for optional input
-            'show_even_if_empty' => 'nullable|boolean',
-        ]);
+        $validated = $request->validated();
 
         $user = Auth::user();
-        $user->show_even_if_empty = $request->show_even_if_empty;
+        $user->show_even_if_empty = $validated['show_even_if_empty'] ?? null;
         $user->save();
         $categories = ApiUserCategory::all();
 
@@ -104,7 +99,7 @@ class ApiCategoryController extends Controller
         }
 
         // Loop in each category and update the settings
-        foreach ($request->categories as $categoryData) {
+        foreach ($validated['categories'] as $categoryData) {
             // Find category setting for the user and category
             $categorySetting = ApiUserCategorySetting::where('user_id', $user->id)->where('category_id', $categoryData['id'])->first();
 

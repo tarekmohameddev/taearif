@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\project;
 
+use App\Http\Requests\Api\Project\ToggleProjectFeaturedRequest;
 use App\Support\Audit;
 use App\Models\Membership;
 use Illuminate\Support\Str;
@@ -17,8 +18,8 @@ use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
-use App\Http\Requests\ProjectStoreRequest;
+use App\Http\Requests\Api\Project\StoreProjectRequest;
+use App\Http\Requests\Api\Project\UpdateProjectRequest;
 use App\Models\User\RealestateManagement\Amenity;
 use App\Models\User\RealestateManagement\Project;
 use App\Models\User\RealestateManagement\Property;
@@ -348,7 +349,7 @@ class ProjectController extends Controller
      * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
      */
 
-    public function store(Request $request)
+    public function store(StoreProjectRequest $request)
     {
         $user = auth()->user();
 
@@ -381,40 +382,6 @@ class ProjectController extends Controller
 
 
         $defaultLang = Language::where('user_id', $ownerId)->where('is_default', 1)->firstOrFail();
-
-        $rules = [
-            // 'title' => 'required|max:255',
-            'featured_image' => 'required|string',
-            'video_url' => 'nullable|string', // For direct URL or OSS URL
-
-            'address' => 'nullable',
-            'description' => 'nullable|min:15',
-            'complete_status' => 'nullable',
-            'units' => 'nullable|integer',
-            'completion_date' => 'nullable|date',
-            'developer' => 'nullable|max:255',
-            'gallery_images' => 'nullable|array',
-            'gallery_images.*' => 'nullable',
-            'floorplan_images' => 'nullable|array',
-            'floorplan_images.*' => 'nullable',
-            'min_price' => 'nullable|numeric',
-            'max_price' => 'nullable|numeric',
-            'featured' => 'nullable',
-            'status' => 'nullable',
-            'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
-            'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
-            'label' => 'nullable|array',
-            'value' => 'nullable|array',
-        ];
-
-        $validator = Validator::make($request->all(), $rules);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'fail',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
 
         $project = null;
 
@@ -486,6 +453,13 @@ class ProjectController extends Controller
             $this->ensureProjectsMenuExistsForUser($ownerId); // Add projects menu item if not exists for the user
 
         });
+
+        if (!$project) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Project creation failed',
+            ], 500);
+        }
 
         $responseProject = Project::with([
             'galleryImages',
@@ -647,7 +621,7 @@ class ProjectController extends Controller
      * Update an existing project.
      */
 
-    public function update(Request $request, $id)
+    public function update(UpdateProjectRequest $request, $id)
     {
         $user = auth()->user();
 
@@ -670,39 +644,6 @@ class ProjectController extends Controller
                 'status' => 'error',
                 'message' => 'Project not found for this tenant',
             ], 404);
-        }
-
-        $rules = [
-            // 'title' => 'required|max:255',
-            'featured_image' => 'required|string',
-            'video_url' => 'nullable|string', // For direct URL or OSS URL
-
-            'address' => 'nullable',
-            'description' => 'nullable|min:15',
-            'gallery_images' => 'sometimes|array',
-            'gallery_images.*' => 'string',
-            'floorplan_images' => 'sometimes|array',
-            'floorplan_images.*' => 'string',
-            'min_price' => 'nullable|numeric',
-            'max_price' => 'nullable|numeric',
-            'featured' => 'sometimes',
-            'status' => 'sometimes',
-            'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
-            'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
-            'label' => 'nullable|array',
-            'value' => 'nullable|array',
-            'complete_status' => 'nullable',
-            'units' => 'nullable|integer',
-
-        ];
-
-        $validator = Validator::make($request->all(), $rules);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'fail',
-                'errors' => $validator->errors(),
-            ], 422);
         }
 
         DB::transaction(function () use ($request, $ownerId, $defaultLang, &$project) {
@@ -889,7 +830,7 @@ class ProjectController extends Controller
     /**
      * Toggle project featured status.
      */
-    public function toggleFeatured($id): JsonResponse
+    public function toggleFeatured(ToggleProjectFeaturedRequest $request, $id): JsonResponse
     {
         $project = Project::find($id);
 

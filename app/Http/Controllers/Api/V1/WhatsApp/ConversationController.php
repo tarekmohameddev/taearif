@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1\WhatsApp;
 
 use App\Domain\Communication\WhatsApp\Services\WhatsAppConversationService;
 use App\Http\Controllers\Api\BaseApiController;
+use App\Http\Requests\Api\V1\WhatsApp\StoreConversationRequest;
+use App\Http\Requests\Api\V1\WhatsApp\UpdateConversationRequest;
 use App\Models\WaNumber;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -47,14 +49,10 @@ class ConversationController extends BaseApiController
         return $this->ok(['data' => $state]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreConversationRequest $request): JsonResponse
     {
         $userId = (int) auth()->user()->tenantOwnerId();
-        $validated = $request->validate([
-            'external_party_identifier' => 'required|string|max:191',
-            'wa_number_id' => 'nullable|integer',
-        ]);
-
+        $validated = $request->validated();
         $waNumberId = null;
         if (isset($validated['wa_number_id'])) {
             $waNumber = WaNumber::where('id', (int) $validated['wa_number_id'])->where('user_id', $userId)->first();
@@ -71,7 +69,7 @@ class ConversationController extends BaseApiController
         return $this->ok(['data' => $state ? $state->load('conversation', 'waNumber') : $conversation]);
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateConversationRequest $request, int $id): JsonResponse
     {
         $userId = (int) auth()->user()->tenantOwnerId();
         $state = $this->conversationService->findForUser($userId, $id);
@@ -80,10 +78,7 @@ class ConversationController extends BaseApiController
             return response()->json(['status' => 'error', 'code' => 'WA_CONVERSATION_NOT_FOUND', 'message' => 'Conversation not found.'], 404);
         }
 
-        $validated = $request->validate([
-            'status' => 'sometimes|string|in:active,pending,resolved',
-        ]);
-
+        $validated = $request->validated();
         if (isset($validated['status'])) {
             $this->conversationService->updateStatus($state, $validated['status']);
         }

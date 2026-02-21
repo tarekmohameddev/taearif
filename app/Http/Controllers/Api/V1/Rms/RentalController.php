@@ -13,6 +13,11 @@ use App\Http\Requests\Rms\Rental\UpdateRentalStatusRequest;
 use App\Http\Requests\Rms\Rental\EndContractRequest;
 use App\Http\Requests\Rms\Rental\RenewRentalRequest;
 use App\Http\Requests\Rms\Rental\UploadReceiptImageRequest;
+use App\Http\Requests\Api\V1\Rms\AllPaymentCollectionsRequest;
+use App\Http\Requests\Api\V1\Rms\PaymentReportRequest;
+use App\Http\Requests\Api\V1\Rms\DailyFollowUpRequest;
+use App\Http\Requests\Api\V1\Rms\AllContractsRequest;
+use App\Http\Requests\Api\V1\Rms\ListPaymentsRequest;
 use App\Http\Resources\Rms\RentalResource;
 use App\Http\Resources\Rms\PaymentResource;
 use Illuminate\Http\Request;
@@ -210,19 +215,10 @@ class RentalController extends BaseApiController
      * Get payment collection data for all rentals of the authenticated user
      * Returns summary and paginated list of rentals with payment collection data
      */
-    public function allPaymentCollections(Request $request)
+    public function allPaymentCollections(AllPaymentCollectionsRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'per_page' => 'nullable|integer|min:1|max:100',
-                'page' => 'nullable|integer|min:1',
-                'status' => 'nullable|string|in:active,ended,terminated,cancelled,draft',
-                'from_date' => 'nullable|date',
-                'to_date' => 'nullable|date|after_or_equal:from_date',
-                'property_id' => 'nullable|integer|exists:user_properties,id',
-                'project_id' => 'nullable|integer|exists:projects,id',
-            ]);
-
+            $validated = $request->validated();
             $result = $this->rentalService->getAllPaymentCollections(auth()->id(), $validated);
 
             return response()->json([
@@ -613,17 +609,10 @@ class RentalController extends BaseApiController
      * Get property payment report
      * Shows collected vs outstanding payments for all properties
      */
-    public function paymentReport(Request $request)
+    public function paymentReport(PaymentReportRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'from_date' => 'nullable|date',
-                'to_date' => 'nullable|date|after_or_equal:from_date',
-                'property_id' => 'nullable|integer|exists:user_properties,id',
-                'project_id' => 'nullable|integer|exists:projects,id',
-                'building_id' => 'nullable|integer|exists:buildings,id',
-            ]);
-
+            $validated = $request->validated();
             $report = $this->rentalService->getPropertyPaymentReport(auth()->id(), $validated);
 
             return response()->json([
@@ -657,17 +646,10 @@ class RentalController extends BaseApiController
      * Get daily follow-up for rentals with payments due
      * Shows payments due today by default, with optional filters
      */
-    public function dailyFollowUp(Request $request)
+    public function dailyFollowUp(DailyFollowUpRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'per_page' => 'nullable|integer|min:1|max:100',
-                'page' => 'nullable|integer|min:1',
-                'from_date' => 'nullable|date',
-                'to_date' => 'nullable|date|after_or_equal:from_date',
-                'building_id' => 'nullable|integer|exists:buildings,id',
-                'status' => 'nullable|string|in:overdue,due_today,upcoming',
-            ]);
+            $validated = $request->validated();
 
             $result = $this->rentalService->getDailyFollowUp($validated);
 
@@ -720,20 +702,10 @@ class RentalController extends BaseApiController
      * - contract_status: Filter by contract status (active, expired, pending, terminated)
      * - per_page: Number of results per page (default: 15, max: 100)
      */
-    public function allContracts(Request $request)
+    public function allContracts(AllContractsRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'per_page' => 'nullable|integer|min:1|max:100',
-                'page' => 'nullable|integer|min:1',
-                'building_id' => 'nullable|integer',
-                'payment_status' => 'nullable|in:paid,pending,overdue,not_due',
-                'rental_method' => 'nullable|in:monthly,quarterly,semi_annual,annual',
-                'from_date' => 'nullable|date',
-                'to_date' => 'nullable|date|after_or_equal:from_date',
-                'contract_status' => 'nullable|in:active,expired,pending,terminated',
-            ]);
-
+            $validated = $request->validated();
             $result = $this->rentalService->listAllContracts($request);
 
             return response()->json($result);
@@ -774,17 +746,10 @@ class RentalController extends BaseApiController
      * @param int $id Rental ID
      * @return \Illuminate\Http\JsonResponse
      */
-    public function listPayments(Request $request, $id)
+    public function listPayments(ListPaymentsRequest $request, $id)
     {
         return $this->executeWithExceptionHandling(function () use ($request, $id) {
-            $validated = $request->validate([
-                'per_page' => 'nullable|integer|min:1|max:100',
-                'payment_type' => 'nullable|string|in:rent,cost_item,platform_fee,water_fee,office_fee,deposit',
-                'from_date' => 'nullable|date',
-                'to_date' => 'nullable|date|after_or_equal:from_date',
-                'include_reversed' => 'nullable|boolean',
-            ]);
-
+            $validated = $request->validated();
             $filters = [
                 'per_page' => $validated['per_page'] ?? 15,
                 'payment_type' => $validated['payment_type'] ?? null,

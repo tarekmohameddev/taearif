@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Customer;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Customer\StoreCustomerReminderRequest;
 use App\Http\Requests\Customer\UpdateCustomerReminderRequest;
+use App\Http\Requests\Api\Customer\IndexUserApiCustomerReminderRequest;
 use Illuminate\Http\Request;
 use App\Models\ApiCustomer;
 use Illuminate\Validation\Rule;
@@ -52,7 +53,7 @@ class UserApiCustomerReminderController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(Request $request)
+    public function index(IndexUserApiCustomerReminderRequest $request)
     {
         $user = $request->user();
         $tenantId = $user->tenantOwnerId();
@@ -65,15 +66,7 @@ class UserApiCustomerReminderController extends Controller
             ], 403);
         }
 
-        // Validate filter and sort parameters
-        $validated = $request->validate([
-            'filter_id' => 'nullable|integer',
-            'filter_title' => 'nullable|string|max:255',
-            'filter_datetime_from' => 'nullable|date',
-            'filter_datetime_to' => 'nullable|date|after_or_equal:filter_datetime_from',
-            'sort_by' => 'nullable|string|in:id,title,datetime,priority,created_at',
-            'sort_dir' => 'nullable|string|in:asc,desc',
-        ]);
+        $validated = $request->validated();
 
         // Build base query with tenant filtering
         // Show both default reminders (user_id IS NULL) AND user's own reminders

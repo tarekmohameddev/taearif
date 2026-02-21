@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Api\apps\employee;
 
 use App\Http\Controllers\Concerns\ResolvesTenant;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Apps\Employee\EmployeeAddonPaymentCancelRequest;
+use App\Http\Requests\Api\Apps\Employee\EmployeeAddonPaymentSuccessRequest;
+use App\Http\Requests\Api\Apps\Employee\StoreEmployeeAddonPurchaseRequest;
 use App\Models\EmployeeAddon;
 use App\Models\EmployeeAddonPlan;
 use App\Models\Language;
@@ -88,14 +91,10 @@ class EmployeeAddonController extends Controller
     /**
      * Purchase employee addon - creates pending addon and initiates payment.
      */
-    public function store(Request $request)
+    public function store(StoreEmployeeAddonPurchaseRequest $request)
     {
         $tenantId = $this->tenantId();
-
-        $validated = $request->validate([
-            'qty' => ['required', 'integer', 'min:1'],
-            'plan_id' => ['required', 'exists:employee_addon_plans,id'],
-        ]);
+        $validated = $request->validated();
 
         $plan = EmployeeAddonPlan::findOrFail($validated['plan_id']);
         if (!$plan->is_active) {
@@ -116,7 +115,7 @@ class EmployeeAddonController extends Controller
 
         // Use test mode in local environment, otherwise use ARB
         $paymentGateway = config('app.env') === 'local' ? 'test' : 'arb';
-        $paymentResult = $this->initiatePayment($addon, $paymentGateway, $request->user());
+        $paymentResult = $this->initiatePayment($addon, $paymentGateway, auth()->user());
 
         if ($paymentResult['success']) {
             return response()->json([
@@ -204,9 +203,9 @@ class EmployeeAddonController extends Controller
 
             $paydata = $paymentMethod->convertAutoData();
 
-            \Config::set('myfatorah.token', $paydata['token']);
-            \Config::set('myfatorah.CallBackUrl', $successUrl);
-            \Config::set('myfatorah.ErrorUrl', $cancelUrl);
+            config(['myfatorah.token' => $paydata['token']]);
+            config(['myfatorah.CallBackUrl' => $successUrl]);
+            config(['myfatorah.ErrorUrl' => $cancelUrl]);
 
             $myfatoorah = \Basel\MyFatoorah\MyFatoorah::getInstance($paydata['sandbox_status'] == 1);
 
@@ -241,7 +240,7 @@ class EmployeeAddonController extends Controller
     /**
      * Payment success callback - auto-approve addon.
      */
-    public function paymentSuccess(Request $request, $addon_id, $gateway)
+    public function paymentSuccess(EmployeeAddonPaymentSuccessRequest $request, $addon_id, $gateway)
     {
         try {
             $addon = EmployeeAddon::findOrFail($addon_id);
@@ -257,13 +256,13 @@ class EmployeeAddonController extends Controller
                     $verified = true;
                 }
             } elseif ($gateway === 'myfatoorah') {
-                $paymentId = $request->paymentId;
+                $paymentId = request()->input('paymentId');
                 if ($paymentId) {
                     try {
                         $paymentMethod = \App\Models\PaymentGateway::where('keyword', 'myfatoorah')->first();
                         if ($paymentMethod) {
                             $paydata = $paymentMethod->convertAutoData();
-                            \Config::set('myfatorah.token', $paydata['token']);
+                            config(['myfatorah.token' => $paydata['token']]);
 
                             $myfatoorah = \Basel\MyFatoorah\MyFatoorah::getInstance($paydata['sandbox_status'] == 1);
                             $result = $myfatoorah->getPaymentStatus('paymentId', $paymentId);
@@ -281,15 +280,15 @@ class EmployeeAddonController extends Controller
                 // Log ARB callback for debugging
                 Log::info('ARB Employee Addon callback', [
                     'addon_id' => $addon_id,
-                    'query' => $request->query(),
-                    'all' => $request->all(),
+                    'query' => request()->query(),
+                    'all' => request()->all(),
                 ]);
 
                 $paymentMethod = \App\Models\PaymentGateway::where('keyword', 'arb')->first();
-                if ($request->has('trandata') && $paymentMethod) {
+                if (request()->has('trandata') && $paymentMethod) {
                     $paydata = $paymentMethod->convertAutoData();
                     $arb = app(ArbController::class);
-                    $decrypted = $arb->decryption($request->trandata, $paydata['resource_key']);
+                    $decrypted = $arb->decryption((string) request()->input('trandata'), $paydata['resource_key']);
 
                     if ($decrypted) {
                         $raw = urldecode($decrypted);
@@ -307,14 +306,14 @@ class EmployeeAddonController extends Controller
 
                 // Fallback: accept any PaymentID casing if trandata verification didn't work
                 if (!$verified) {
-                    $paymentId = $request->input('PaymentID')
-                        ?? $request->input('paymentId')
-                        ?? $request->input('paymentID')
-                        ?? $request->input('paymentid')
-                        ?? $request->query('PaymentID')
-                        ?? $request->query('paymentId')
-                        ?? $request->query('paymentID')
-                        ?? $request->query('paymentid');
+                    $paymentId = request()->input('PaymentID')
+                        ?? request()->input('paymentId')
+                        ?? request()->input('paymentID')
+                        ?? request()->input('paymentid')
+                        ?? request()->query('PaymentID')
+                        ?? request()->query('paymentId')
+                        ?? request()->query('paymentID')
+                        ?? request()->query('paymentid');
 
                     if ($paymentId) {
                         $verified = true;
@@ -357,7 +356,7 @@ class EmployeeAddonController extends Controller
     /**
      * Payment cancel callback.
      */
-    public function paymentCancel(Request $request, $addon_id, $gateway)
+    public function paymentCancel(EmployeeAddonPaymentCancelRequest $request, $addon_id, $gateway)
     {
         $addon = EmployeeAddon::find($addon_id);
         if ($addon && $addon->status === EmployeeAddon::STATUS_PENDING) {

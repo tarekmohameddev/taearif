@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1\WhatsApp;
 
 use App\Domain\Communication\WhatsApp\Services\WhatsAppAutomationRuleService;
 use App\Http\Controllers\Api\BaseApiController;
+use App\Http\Requests\Api\V1\WhatsApp\StoreAutomationRuleRequest;
+use App\Http\Requests\Api\V1\WhatsApp\UpdateAutomationRuleRequest;
 use App\Models\WaNumber;
 use App\Models\WaTemplate;
 use Illuminate\Http\JsonResponse;
@@ -45,20 +47,10 @@ class AutomationRuleController extends BaseApiController
         return $this->ok(['data' => $rule]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreAutomationRuleRequest $request): JsonResponse
     {
         $userId = (int) auth()->user()->tenantOwnerId();
-        $validated = $request->validate([
-            'wa_number_id' => 'nullable|integer',
-            'name' => 'required|string|max:100',
-            'description' => 'nullable|string',
-            'trigger' => 'required|string|in:new_inquiry,no_response_24h,no_response_48h,no_response_72h,follow_up,appointment_reminder,property_match,price_change',
-            'delay_minutes' => 'nullable|integer|min:0',
-            'template_id' => 'nullable|integer',
-            'is_active' => 'nullable|boolean',
-            'meta' => 'nullable|array',
-        ]);
-
+        $validated = $request->validated();
         if (isset($validated['wa_number_id']) && ! WaNumber::where('id', $validated['wa_number_id'])->where('user_id', $userId)->exists()) {
             return response()->json(['status' => 'error', 'code' => 'WA_NUMBER_NOT_FOUND', 'message' => 'WhatsApp number not found.'], 404);
         }
@@ -71,7 +63,7 @@ class AutomationRuleController extends BaseApiController
         return $this->created($rule);
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateAutomationRuleRequest $request, int $id): JsonResponse
     {
         $userId = (int) auth()->user()->tenantOwnerId();
         $rule = $this->ruleService->findForUser($userId, $id);
@@ -80,17 +72,7 @@ class AutomationRuleController extends BaseApiController
             return response()->json(['status' => 'error', 'code' => 'WA_RULE_NOT_FOUND', 'message' => 'Automation rule not found.'], 404);
         }
 
-        $validated = $request->validate([
-            'wa_number_id' => 'nullable|integer',
-            'name' => 'sometimes|string|max:100',
-            'description' => 'nullable|string',
-            'trigger' => 'sometimes|string|in:new_inquiry,no_response_24h,no_response_48h,no_response_72h,follow_up,appointment_reminder,property_match,price_change',
-            'delay_minutes' => 'nullable|integer|min:0',
-            'template_id' => 'nullable|integer',
-            'is_active' => 'nullable|boolean',
-            'meta' => 'nullable|array',
-        ]);
-
+        $validated = $request->validated();
         if (array_key_exists('wa_number_id', $validated) && $validated['wa_number_id'] !== null && ! WaNumber::where('id', $validated['wa_number_id'])->where('user_id', $userId)->exists()) {
             return response()->json(['status' => 'error', 'code' => 'WA_NUMBER_NOT_FOUND', 'message' => 'WhatsApp number not found.'], 404);
         }

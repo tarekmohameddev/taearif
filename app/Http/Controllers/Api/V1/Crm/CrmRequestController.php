@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Api\V1\Crm;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use App\Http\Controllers\Api\ApiController;
+use App\Http\Requests\Api\Crm\ChangeCrmRequestStageRequest;
+use App\Http\Requests\Api\Crm\ReorderCrmRequestsRequest;
+use App\Http\Requests\Api\Crm\StoreCrmRequest;
+use App\Http\Requests\Api\Crm\UpdateCrmRequestRequest;
+use App\Http\Requests\Api\Crm\IndexCrmRequestsRequest;
 use App\Models\Api\Crm\CrmRequest;
 use App\Models\Api\Crm\CrmCard;
 use App\Models\Api\UserApiCustomerStage;
@@ -24,7 +27,7 @@ class CrmRequestController extends ApiController
 	/**
 	 * GET /api/v1/crm/requests
 	 */
-	public function index(Request $request)
+	public function index(IndexCrmRequestsRequest $request)
 	{
 		$user = $request->user();
 		$userId = $request->user()->tenantOwnerId();
@@ -39,29 +42,6 @@ class CrmRequestController extends ApiController
 		};
 		$catIds  = $toIntArray($request->input('interested_category_ids'));
 		$propIds = $toIntArray($request->input('interested_property_ids'));
-
-		// Validate all filters
-		$request->validate([
-			'q' => 'nullable|string|max:255',
-			'customer_id' => 'nullable|integer',
-			'name' => 'nullable|string|max:255',
-			'email' => 'nullable|string|max:255',
-			'phone_number' => 'nullable|string|max:20',
-			'city_id' => 'nullable|integer',
-			'district_id' => 'nullable|integer',
-			'type_id' => 'nullable|integer',
-			'priority_id' => 'nullable|integer',
-			'procedure_id' => 'nullable|integer',
-			'stage_id' => 'nullable|integer',
-			'responsible_employee_id' => 'nullable|integer',
-			'employee_whatsapp_number' => 'nullable|string|max:20',
-			'interested_category_ids' => 'nullable',
-			'interested_property_ids' => 'nullable',
-			'has_property' => 'nullable|in:0,1',
-			'reminder_type_id' => 'nullable|integer',
-			'sort_by' => 'nullable|in:position,created_at,id',
-			'sort_dir' => 'nullable|in:asc,desc',
-		]);
 
 		// Statistics (4 cards) - calculate before filtering
 		$totalRequests     = CrmRequest::query()->forUser($userId)->count();
@@ -331,68 +311,10 @@ class CrmRequestController extends ApiController
 	/**
 	 * POST /api/v1/crm/requests
 	 */
-	public function store(Request $request)
+	public function store(StoreCrmRequest $request)
 	{
-		$user = $request->user();
-
-		$validator = Validator::make($request->all(), [
-			'customer_name'             => ['required', 'string', 'max:255'],
-			'customer_phone'            => ['required', 'string', 'max:32'],
-			'stage_id'                  => ['nullable', 'integer', 'exists:users_api_customers_stages,id'],
-			'property_id'               => ['nullable', 'integer', 'required_without:property_specifications'],
-			'property_specifications'   => ['nullable', 'array', 'required_without:property_id'],
-
-			// Nested validation (optional keys)
-			'property_specifications.basic_information' => ['nullable', 'array'],
-			'property_specifications.basic_information.address' => ['nullable', 'string'],
-			'property_specifications.basic_information.building' => ['nullable'],
-			'property_specifications.basic_information.price' => ['nullable', 'numeric'],
-			'property_specifications.basic_information.payment_method' => ['nullable'],
-			'property_specifications.basic_information.price_per_sqm' => ['nullable', 'numeric'],
-			'property_specifications.basic_information.listing_type' => ['nullable'],
-			'property_specifications.basic_information.property_category' => ['nullable'],
-			'property_specifications.basic_information.project' => ['nullable'],
-			'property_specifications.basic_information.city' => ['nullable'],
-			'property_specifications.basic_information.district' => ['nullable'],
-			'property_specifications.basic_information.area' => ['nullable'],
-			'property_specifications.basic_information.property_type' => ['nullable'],
-
-			'property_specifications.details' => ['nullable', 'array'],
-			'property_specifications.details.features' => ['nullable', 'array'],
-
-			'property_specifications.attributes' => ['nullable', 'array'],
-			'property_specifications.attributes.area_sqft' => ['nullable', 'numeric'],
-			'property_specifications.attributes.year_built' => ['nullable', 'integer'],
-
-			'property_specifications.facilities' => ['nullable', 'array'],
-			'property_specifications.facilities.bedrooms' => ['nullable', 'integer'],
-			'property_specifications.facilities.bathrooms' => ['nullable', 'integer'],
-			'property_specifications.facilities.rooms' => ['nullable', 'integer'],
-			'property_specifications.facilities.floors' => ['nullable', 'integer'],
-			'property_specifications.facilities.floor_number' => ['nullable', 'integer'],
-			'property_specifications.facilities.drivers_room' => ['nullable', 'boolean'],
-			'property_specifications.facilities.maids_room' => ['nullable', 'boolean'],
-			'property_specifications.facilities.dining_room' => ['nullable', 'boolean'],
-			'property_specifications.facilities.living_room' => ['nullable', 'boolean'],
-			'property_specifications.facilities.majlis' => ['nullable', 'boolean'],
-			'property_specifications.facilities.storage_room' => ['nullable', 'boolean'],
-			'property_specifications.facilities.basement' => ['nullable', 'boolean'],
-			'property_specifications.facilities.swimming_pool' => ['nullable', 'boolean'],
-			'property_specifications.facilities.kitchen' => ['nullable', 'boolean'],
-			'property_specifications.facilities.balcony' => ['nullable', 'boolean'],
-			'property_specifications.facilities.garden' => ['nullable', 'boolean'],
-			'property_specifications.facilities.annex' => ['nullable', 'boolean'],
-			'property_specifications.facilities.elevator' => ['nullable', 'boolean'],
-			'property_specifications.facilities.parking_space' => ['nullable', 'integer'],
-		]);
-
-		$validator->after(function ($v) use ($request) {
-			if ($request->filled('property_id') && $request->filled('property_specifications')) {
-				$v->errors()->add('property_specifications', 'property_id and property_specifications cannot be used together.');
-			}
-		});
-
-		$validated = $validator->validate();
+		$user = auth()->user();
+		$validated = $request->validated();
 
 		// Find or create customer for this tenant by phone
 		$customer = \App\Models\ApiCustomer::firstOrCreate(
@@ -590,153 +512,12 @@ class CrmRequestController extends ApiController
 	/**
 	 * PATCH /api/v1/crm/requests/{id}
 	 */
-	public function update(Request $request, int $id)
+	public function update(UpdateCrmRequestRequest $request, int $id)
 	{
-		$user = $request->user();
+		$user = auth()->user();
 		$userId = method_exists($user, 'tenantOwnerId') ? $user->tenantOwnerId() : $user->id;
 		$model = CrmRequest::forUser($userId)->findOrFail($id);
-
-		// Base request + property specification validation
-		$rules = [
-			'stage_id'                  => ['sometimes', 'nullable', 'integer', 'exists:users_api_customers_stages,id'],
-			'customer_name'             => ['sometimes', 'required', 'string', 'max:255'],
-			'customer_phone'            => ['sometimes', 'required', 'string', 'max:32'],
-			'property_id'               => ['nullable', 'integer'],
-			'property_specifications'   => ['nullable', 'array'],
-
-			// Nested validation (optional keys)
-			'property_specifications.basic_information' => ['nullable', 'array'],
-			'property_specifications.basic_information.address' => ['nullable', 'string'],
-			'property_specifications.basic_information.building' => ['nullable'],
-			'property_specifications.basic_information.price' => ['nullable', 'numeric'],
-			'property_specifications.basic_information.payment_method' => ['nullable'],
-			'property_specifications.basic_information.price_per_sqm' => ['nullable', 'numeric'],
-			'property_specifications.basic_information.listing_type' => ['nullable'],
-			'property_specifications.basic_information.property_category' => ['nullable'],
-			'property_specifications.basic_information.project' => ['nullable'],
-			'property_specifications.basic_information.city' => ['nullable'],
-			'property_specifications.basic_information.district' => ['nullable'],
-			'property_specifications.basic_information.area' => ['nullable'],
-			'property_specifications.basic_information.property_type' => ['nullable'],
-
-			'property_specifications.details' => ['nullable', 'array'],
-			'property_specifications.details.features' => ['nullable', 'array'],
-
-			'property_specifications.attributes' => ['nullable', 'array'],
-			'property_specifications.attributes.area_sqft' => ['nullable', 'numeric'],
-			'property_specifications.attributes.year_built' => ['nullable', 'integer'],
-
-			'property_specifications.facilities' => ['nullable', 'array'],
-			'property_specifications.facilities.bedrooms' => ['nullable', 'integer'],
-			'property_specifications.facilities.bathrooms' => ['nullable', 'integer'],
-			'property_specifications.facilities.rooms' => ['nullable', 'integer'],
-			'property_specifications.facilities.floors' => ['nullable', 'integer'],
-			'property_specifications.facilities.floor_number' => ['nullable', 'integer'],
-			'property_specifications.facilities.drivers_room' => ['nullable', 'boolean'],
-			'property_specifications.facilities.maids_room' => ['nullable', 'boolean'],
-			'property_specifications.facilities.dining_room' => ['nullable', 'boolean'],
-			'property_specifications.facilities.living_room' => ['nullable', 'boolean'],
-			'property_specifications.facilities.majlis' => ['nullable', 'boolean'],
-			'property_specifications.facilities.storage_room' => ['nullable', 'boolean'],
-			'property_specifications.facilities.basement' => ['nullable', 'boolean'],
-			'property_specifications.facilities.swimming_pool' => ['nullable', 'boolean'],
-			'property_specifications.facilities.kitchen' => ['nullable', 'boolean'],
-			'property_specifications.facilities.balcony' => ['nullable', 'boolean'],
-			'property_specifications.facilities.garden' => ['nullable', 'boolean'],
-			'property_specifications.facilities.annex' => ['nullable', 'boolean'],
-			'property_specifications.facilities.elevator' => ['nullable', 'boolean'],
-			'property_specifications.facilities.parking_space' => ['nullable', 'integer'],
-
-			'position'                  => ['nullable', 'integer', 'min:0'],
-		];
-
-		// If property data is present or request already has a property, allow updating property fields.
-		$propertyDataKeys = [
-			'payment_method', 'price', 'pricePerMeter', 'purpose', 'type', 'beds', 'bath', 'area', 'status',
-			'latitude', 'longitude', 'project_id', 'region_id', 'category_id', 'features', 'building_id',
-			'water_meter_number', 'electricity_meter_number', 'deed_number', 'video_url', 'virtual_tour', 'size',
-			'address', 'title', 'description', 'city_id', 'state_id',
-			'facade_id', 'length', 'width', 'street_width_north', 'street_width_south', 'street_width_east', 'street_width_west',
-			'building_age', 'rooms', 'bathrooms', 'floors', 'floor_number', 'driver_room', 'maid_room', 'dining_room',
-			'living_room', 'majlis', 'storage_room', 'basement', 'swimming_pool', 'kitchen', 'balcony', 'garden',
-			'annex', 'elevator', 'private_parking',
-		];
-
-		$propertyInputPresent = $request->filled('property_id') || $model->property_id || collect($propertyDataKeys)->some(function ($k) use ($request) {
-			return $request->has($k);
-		});
-
-		if ($propertyInputPresent) {
-			$rules = array_merge($rules, [
-				'payment_method' => ['nullable'],
-				'price' => ['nullable', 'numeric'],
-				'pricePerMeter' => ['nullable', 'numeric'],
-				'purpose' => ['nullable'],
-				'type' => ['nullable'],
-				'beds' => ['nullable', 'integer'],
-				'bath' => ['nullable', 'integer'],
-				'area' => ['nullable', 'numeric'],
-				'status' => ['nullable', 'integer'],
-				'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
-				'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
-				'project_id' => ['nullable', 'integer'],
-				'region_id' => ['nullable', 'integer'],
-				'category_id' => ['nullable', 'integer'],
-				'features' => ['nullable', 'array'],
-				'building_id' => ['nullable', 'integer', 'exists:buildings,id'],
-				'water_meter_number' => ['nullable', 'string'],
-				'electricity_meter_number' => ['nullable', 'string'],
-				'deed_number' => ['nullable', 'string'],
-				'video_url' => ['nullable', 'string'],
-				'virtual_tour' => ['nullable', 'string'],
-				'size' => ['nullable', 'numeric'],
-
-				// Property content fields
-				'address' => ['nullable', 'string'],
-				'title' => ['nullable', 'string', 'max:255'],
-				'description' => ['nullable', 'string'],
-				'city_id' => ['nullable', 'integer'],
-				'state_id' => ['nullable', 'integer'],
-
-				// Property characteristics
-				'facade_id' => ['nullable', 'numeric'],
-				'length' => ['nullable', 'numeric'],
-				'width' => ['nullable', 'numeric'],
-				'street_width_north' => ['nullable', 'numeric'],
-				'street_width_south' => ['nullable', 'numeric'],
-				'street_width_east' => ['nullable', 'numeric'],
-				'street_width_west' => ['nullable', 'numeric'],
-				'building_age' => ['nullable', 'integer'],
-				'rooms' => ['nullable', 'integer'],
-				'bathrooms' => ['nullable', 'integer'],
-				'floors' => ['nullable', 'integer'],
-				'floor_number' => ['nullable', 'integer'],
-				'driver_room' => ['nullable', 'integer'],
-				'maid_room' => ['nullable', 'integer'],
-				'dining_room' => ['nullable', 'integer'],
-				'living_room' => ['nullable', 'integer'],
-				'majlis' => ['nullable', 'integer'],
-				'storage_room' => ['nullable', 'integer'],
-				'basement' => ['nullable', 'integer'],
-				'swimming_pool' => ['nullable', 'integer'],
-				'kitchen' => ['nullable', 'integer'],
-				'balcony' => ['nullable', 'integer'],
-				'garden' => ['nullable', 'integer'],
-				'annex' => ['nullable', 'integer'],
-				'elevator' => ['nullable', 'integer'],
-				'private_parking' => ['nullable', 'integer'],
-			]);
-		}
-
-		$validator = Validator::make($request->all(), $rules);
-
-		$validator->after(function ($v) use ($request) {
-			if ($request->filled('property_id') && $request->filled('property_specifications')) {
-				$v->errors()->add('property_specifications', 'property_id and property_specifications cannot be used together.');
-			}
-		});
-
-		$validated = $validator->validate();
+		$validated = $request->validated();
 
 		// Handle mutual exclusivity: if one is present non-null, nullify the other
 		if (array_key_exists('property_id', $validated) && !is_null($validated['property_id'])) {
@@ -912,14 +693,11 @@ class CrmRequestController extends ApiController
 	/**
 	 * POST /api/v1/crm/requests/{id}/change-stage
 	 */
-	public function changeStage(Request $request, int $id)
+	public function changeStage(ChangeCrmRequestStageRequest $request, int $id)
 	{
-		$user = $request->user();
+		$user = auth()->user();
 		$model = CrmRequest::forUser($user->id)->findOrFail($id);
-
-		$validated = $request->validate([
-			'stage_id' => ['required', 'integer', 'exists:users_api_customers_stages,id'],
-		]);
+		$validated = $request->validated();
 
 		$newStageId = (int) $validated['stage_id'];
 
@@ -941,14 +719,10 @@ class CrmRequestController extends ApiController
 	 * POST /api/v1/crm/requests/reorder
 	 * Body: { stage_id: int, order: [requestId1, requestId2, ...] }
 	 */
-	public function reorder(Request $request)
+	public function reorder(ReorderCrmRequestsRequest $request)
 	{
-		$user = $request->user();
-		$validated = $request->validate([
-			'stage_id' => ['required', 'integer', 'exists:users_api_customers_stages,id'],
-			'order'    => ['required', 'array'],
-			'order.*'  => ['integer', 'distinct'],
-		]);
+		$user = auth()->user();
+		$validated = $request->validated();
 
 		$stageId = (int) $validated['stage_id'];
 		$order = $validated['order'];

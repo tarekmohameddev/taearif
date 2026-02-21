@@ -3,34 +3,22 @@
 namespace App\Http\Controllers\Api\isthara;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Isthara\StoreIstharaRequest;
 use Illuminate\Http\Request;
 use App\Models\Api\Isthara;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Validator;
 
 class IstharaController extends Controller
 {
     //
-    public function store(Request $request)
+    public function store(StoreIstharaRequest $request)
     {
-        // Validation Rules
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'phone' => 'required|regex:/^05[0-9]{8}$/',
-            'recaptcha_token' => 'required'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+        $validated = $request->validated();
 
         // Verify reCAPTCHA
         $recaptchaResponse = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
             'secret' => config('services.recaptcha.secret'),
-            'response' => $request->recaptcha_token
+            'response' => $validated['recaptcha_token']
         ]);
 
         if (!$recaptchaResponse->json('success')) {
@@ -42,11 +30,11 @@ class IstharaController extends Controller
 
         // Create Record
         $booking = Isthara::create([
-            'name' => $request->name,
-            'phone' => $request->phone
+            'name' => $validated['name'],
+            'phone' => $validated['phone']
         ]);
 
-            $phone = ltrim($request->phone, '0'); // remove leading 0 if present
+            $phone = ltrim($validated['phone'], '0'); // remove leading 0 if present
             $fullPhone = '966' . $phone;
         $message_txt = '';
         $result = $this->sendWhatsAppMessage($fullPhone,'شكراً على التسجيل في منصة تعاريف');

@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 
+use App\Http\Requests\Building\BuildingRequest;
+use App\Http\Requests\Api\Building\UploadBuildingImageRequest as ApiUploadBuildingImageRequest;
+use App\Http\Requests\Api\Building\UploadDeedImageRequest as ApiUploadDeedImageRequest;
+use App\Http\Requests\Api\Building\UpdateBuildingRequest;
+
 class BuildingController extends Controller
 {
     /**
@@ -95,45 +100,17 @@ class BuildingController extends Controller
     /**
      * Store a newly created building.
      */
-    public function store(Request $request): JsonResponse
+    public function store(BuildingRequest $request): JsonResponse
     {
-        // Check if request is JSON (raw) or form-data
-        $isJsonRequest = $request->isJson() || $request->header('Content-Type') === 'application/json';
-        
-        $meterRules = [
-            'water_meter_numbers' => 'nullable|array',
-            'water_meter_numbers.*' => 'string|max:255',
-            'electricity_meter_numbers' => 'nullable|array',
-            'electricity_meter_numbers.*' => 'string|max:255',
-        ];
-        if ($isJsonRequest) {
-            $validator = Validator::make($request->all(), array_merge([
-                'name' => 'required|string|max:255',
-                'image' => 'nullable|string|max:500',
-                'deed_number' => 'nullable|string|max:255',
-                'deed_image' => 'nullable|string|max:500',
-            ], $meterRules));
-        } else {
-            $validator = Validator::make($request->all(), array_merge([
-                'name' => 'required|string|max:255',
-                'image' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
-                'deed_number' => 'nullable|string|max:255',
-                'deed_image' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-            ], $meterRules));
-        }
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+        // Validation handled by FormRequest
 
         try {
             $user = Auth::user();
             $data = $request->only(['name', 'deed_number']);
             $data['user_id'] = $user->id;
+
+            // Check if request is JSON (raw) or form-data for image handling logic
+            $isJsonRequest = $request->isJson() || $request->header('Content-Type') === 'application/json';
 
             if ($isJsonRequest) {
                 if ($request->has('image') && $request->image) {
@@ -247,13 +224,10 @@ class BuildingController extends Controller
     /**
      * Update the specified building.
      */
-    public function update(Request $request, $id): JsonResponse
+    public function update(UpdateBuildingRequest $request, $id): JsonResponse
     {
         $user = Auth::user();
-        
-        $building = Building::where('id', $id)
-            ->where('user_id', $user->id)
-            ->first();
+        $building = Building::where('id', $id)->where('user_id', $user->id)->first();
 
         if (!$building) {
             return response()->json([
@@ -262,79 +236,9 @@ class BuildingController extends Controller
             ], 404);
         }
 
-        // Check if request is JSON (raw) or form-data
-        $isJsonRequest = $request->isJson() || $request->header('Content-Type') === 'application/json';
-        
-        $meterRules = [
-            'water_meter_numbers' => 'nullable|array',
-            'water_meter_numbers.*' => 'string|max:255',
-            'electricity_meter_numbers' => 'nullable|array',
-            'electricity_meter_numbers.*' => 'string|max:255',
-        ];
-        if ($isJsonRequest) {
-            $validator = Validator::make($request->all(), array_merge([
-                'name' => 'required|string|max:255',
-                'image' => 'nullable|string|max:500',
-                'deed_number' => 'nullable|string|max:255',
-                'deed_image' => 'nullable|string|max:500',
-            ], $meterRules));
-        } else {
-            $validator = Validator::make($request->all(), array_merge([
-                'name' => 'required|string|max:255',
-                'image' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
-                'deed_number' => 'nullable|string|max:255',
-                'deed_image' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-            ], $meterRules));
-        }
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
         try {
-            $data = $request->only(['name', 'deed_number']);
-
-            if ($isJsonRequest) {
-                // Handle JSON request - use provided file paths directly
-                if ($request->has('image') && $request->image) {
-                    // Delete old image if exists
-                    if ($building->image) {
-                        $this->deleteImage($building->image);
-                    }
-                    $data['image'] = $request->image;
-                }
-                if ($request->has('deed_image') && $request->deed_image) {
-                    // Delete old deed image if exists
-                    if ($building->deed_image) {
-                        $this->deleteImage($building->deed_image);
-                    }
-                    $data['deed_image'] = $request->deed_image;
-                }
-            } else {
-                // Handle building image upload
-                if ($request->hasFile('image')) {
-                    // Delete old image if exists
-                    if ($building->image) {
-                        $this->deleteImage($building->image);
-                    }
-                    $data['image'] = $this->uploadImageFile($request->file('image'), 'buildings');
-                }
-
-                // Handle deed image upload
-                if ($request->hasFile('deed_image')) {
-                    // Delete old deed image if exists
-                    if ($building->deed_image) {
-                        $this->deleteImage($building->deed_image);
-                    }
-                    $data['deed_image'] = $this->uploadImageFile($request->file('deed_image'), 'buildings/deeds');
-                }
-            }
-
-            $building->update($data);
+            $data = $request->only(['name', 'deed_number', 'image', 'deed_image']);
+            $building->fill($data)->save();
             $this->syncBuildingMeters($building, $request);
 
             return response()->json([
@@ -342,7 +246,6 @@ class BuildingController extends Controller
                 'message' => 'Building updated successfully',
                 'data' => $building->load(['user', 'meters'])
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -352,15 +255,36 @@ class BuildingController extends Controller
     }
 
     /**
+     * Upload building image (standalone endpoint).
+     */
+    public function uploadBuildingImage(ApiUploadBuildingImageRequest $request): JsonResponse
+    {
+        $path = $this->uploadImageFile($request->file('image'), 'buildings');
+        return response()->json([
+            'status' => 'success',
+            'data' => ['image' => $path]
+        ], 201);
+    }
+
+    /**
+     * Upload deed image (standalone endpoint).
+     */
+    public function uploadDeedImage(ApiUploadDeedImageRequest $request): JsonResponse
+    {
+        $path = $this->uploadImageFile($request->file('deed_image'), 'buildings/deeds');
+        return response()->json([
+            'status' => 'success',
+            'data' => ['deed_image' => $path]
+        ], 201);
+    }
+
+    /**
      * Remove the specified building.
      */
     public function destroy($id): JsonResponse
     {
         $user = Auth::user();
-        
-        $building = Building::where('id', $id)
-            ->where('user_id', $user->id)
-            ->first();
+        $building = Building::where('id', $id)->where('user_id', $user->id)->first();
 
         if (!$building) {
             return response()->json([
@@ -369,30 +293,18 @@ class BuildingController extends Controller
             ], 404);
         }
 
-        // Check if building has properties linked
-        if (!$building->canBeDeleted()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Cannot delete building. It has properties linked to it.'
-            ], 422);
-        }
-
         try {
-            // Delete images if they exist
             if ($building->image) {
                 $this->deleteImage($building->image);
             }
             if ($building->deed_image) {
                 $this->deleteImage($building->deed_image);
             }
-
             $building->delete();
-
             return response()->json([
                 'status' => 'success',
                 'message' => 'Building deleted successfully'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -402,129 +314,19 @@ class BuildingController extends Controller
     }
 
     /**
-     * Upload building image.
+     * Upload image file to public directory.
      */
-    public function uploadBuildingImage(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'image' => 'required|file|mimes:jpg,jpeg,png|max:5120',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            $file = $request->file('image');
-            $extension = $file->getClientOriginalExtension();
-            $fileName = 'building_' . time() . '_' . uniqid() . '.' . $extension;
-            
-            $directory = public_path('buildings');
-            
-            // Create directory if it doesn't exist
-            if (!is_dir($directory)) {
-                mkdir($directory, 0775, true);
-            }
-            
-            // Move file to directory
-            $file->move($directory, $fileName);
-            
-            // Return the relative path
-            $filePath = 'buildings/' . $fileName;
-            
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Image uploaded successfully',
-                'data' => [
-                    'path' => $filePath,
-                    'url' => asset($filePath),
-                    'filename' => $fileName
-                ]
-            ], 200);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to upload image: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Upload building deed image.
-     */
-    public function uploadDeedImage(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'deed_image' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            $file = $request->file('deed_image');
-            $extension = $file->getClientOriginalExtension();
-            $fileName = 'deed_' . time() . '_' . uniqid() . '.' . $extension;
-            
-            $directory = public_path('buildings/deeds');
-            
-            // Create directory if it doesn't exist
-            if (!is_dir($directory)) {
-                mkdir($directory, 0775, true);
-            }
-            
-            // Move file to directory
-            $file->move($directory, $fileName);
-            
-            // Return the relative path
-            $filePath = 'buildings/deeds/' . $fileName;
-            
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Deed image uploaded successfully',
-                'data' => [
-                    'path' => $filePath,
-                    'url' => asset($filePath),
-                    'filename' => $fileName
-                ]
-            ], 200);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to upload deed image: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Upload image helper method.
-     */
-    private function uploadImageFile($file, $directory): string
+    private function uploadImageFile($file, string $directory): string
     {
         $extension = $file->getClientOriginalExtension();
         $fileName = 'building_' . time() . '_' . uniqid() . '.' . $extension;
-        
         $fullDirectory = public_path($directory);
-        
-        // Create directory if it doesn't exist
+
         if (!is_dir($fullDirectory)) {
             mkdir($fullDirectory, 0775, true);
         }
-        
-        // Move file to directory
+
         $file->move($fullDirectory, $fileName);
-        
         return $directory . '/' . $fileName;
     }
 

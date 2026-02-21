@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\Api\Analytics\VisitorsAnalyticsRequest;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Http\Controllers\Controller;
@@ -170,7 +171,7 @@ class AnalyticsDashboardController extends Controller
         ]);
     }
 
-    public function visitors(Request $request, GoogleAnalyticsService $analytics)
+    public function visitors(VisitorsAnalyticsRequest $request, GoogleAnalyticsService $analytics)
     {
         $startTime = microtime(true);
         $cacheHit = false;
@@ -179,7 +180,8 @@ class AnalyticsDashboardController extends Controller
         $tenantId = $this->tenantId($request);
 
         // Retrieve and validate time range from the request (default to 30 days if not provided)
-        $timeRange = $this->validateTimeRange($request->input('time_range', 30), 30);
+        $validated = $request->validated();
+        $timeRange = $this->validateTimeRange($validated['time_range'] ?? 30, 30);
 
         // Normalize Carbon::now() to compute once per request
         $endDate = Carbon::now();

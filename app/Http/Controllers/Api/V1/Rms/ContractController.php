@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\BaseApiController;
 use App\Traits\HandlesApiExceptions;
 use App\Http\Requests\Rms\Contract\StoreContractRequest;
 use App\Http\Requests\Rms\Contract\UpdateContractRequest;
+use App\Http\Requests\Api\V1\Rms\TerminateContractRequest;
+use App\Http\Requests\Api\V1\Rms\ChangeContractStatusRequest;
 use App\Http\Resources\Rms\ContractResource;
 use App\Constants\RmsConstants;
 use Illuminate\Http\Request;
@@ -71,14 +73,10 @@ class ContractController extends BaseApiController
         }, 'update contract');
     }
 
-    public function terminate(Request $request, $id)
+    public function terminate(TerminateContractRequest $request, $id)
     {
         return $this->executeWithExceptionHandling(function () use ($request, $id) {
-            $validated = $request->validate([
-                'termination_reason' => 'required|string|max:255',
-                'terminate_on' => 'required|date'
-            ]);
-
+            $validated = $request->validated();
             $contract = $this->contractService->terminateContract($id, $validated, $this->getUserId());
 
             return $this->success(
@@ -88,15 +86,10 @@ class ContractController extends BaseApiController
         }, 'terminate contract');
     }
 
-    public function changeStatus(Request $request, $id)
+    public function changeStatus(ChangeContractStatusRequest $request, $id)
     {
         return $this->executeWithExceptionHandling(function () use ($request, $id) {
-            $validated = $request->validate([
-                'status' => ['required', RmsConstants::validationRule(RmsConstants::CONTRACT_STATUSES)],
-                'reason' => 'nullable|string|max:255',
-                'effective_date' => 'nullable|date'
-            ]);
-
+            $validated = $request->validated();
             $contract = $this->contractService->changeContractStatus($id, $validated, $this->getUserId());
 
             return $this->success(

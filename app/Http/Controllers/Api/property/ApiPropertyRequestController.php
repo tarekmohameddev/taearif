@@ -4,15 +4,19 @@ namespace App\Http\Controllers\Api\property;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 use App\Models\Api\UserPropertyRequest;
-use Illuminate\Validation\Rule;
 use App\Models\User\UserCity;
+use App\Http\Requests\Api\property\StorePropertyRequestRequest;
+use App\Http\Requests\Api\property\UpdatePropertyRequestRequest;
+use App\Http\Requests\Api\property\UpdateStatusPropertyRequestRequest;
+use App\Http\Requests\Api\property\UpdateEmployeePropertyRequestRequest;
+use App\Http\Requests\Api\property\AssignEmployeeToCustomerRequest;
+use App\Http\Requests\Api\property\IndexPropertyRequestsRequest;
 use App\Models\User\UserDistrict;
 use App\Models\User\RealestateManagement\ApiUserCategory;
 use App\Models\Api\UserApiCustomerStage;
@@ -31,37 +35,11 @@ class ApiPropertyRequestController extends Controller
     /**
      * Store a new property request.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StorePropertyRequestRequest $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            // Accept tenant username OR custom domain (e.g. macsaib.sa / www.macsaib.sa)
-            'tenant_username' => 'required|string|max:255',
-            'full_name' => 'required|string|max:255',
-            'phone' => 'required|string|max:20',
-            'property_type' => 'nullable',
-            'category' => 'nullable|string',
-            'region'          => ['required','integer', Rule::exists('user_cities','id')],
-            'districts_id'       => ['nullable','integer', Rule::exists('user_districts','id')],
-            'area_from' => 'nullable|integer|min:0',
-            'area_to' => 'nullable|integer|min:0',
-            'purchase_method' => 'nullable',
-            'budget_from' => 'nullable',
-            'budget_to' => 'nullable',
-            'seriousness' => 'nullable|in:مستعد فورًا,خلال شهر,خلال 3 أشهر,لاحقًا / استكشاف فقط',
-            'purchase_goal' => 'nullable|in:سكن خاص,استثمار وتأجير,بناء وبيع,مشروع تجاري',
-            'wants_similar_offers' => 'nullable|boolean',
-            'contact_on_whatsapp' => 'nullable|boolean',
-            'notes' => 'nullable|string|max:5000',
-            'status_id' => 'nullable|integer|exists:property_request_statuses,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
         // Resolve tenant (username OR custom domain)
         try {
-            $tenant = $this->resolveTenant($request, (string) $request->input('tenant_username'));
+            $tenant = $this->resolveTenant($request, (string) request()->input('tenant_username'));
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Tenant not found.',
@@ -69,33 +47,31 @@ class ApiPropertyRequestController extends Controller
             ], 404);
         }
 
-        $data = $validator->validated();
-        unset($data['tenant_username']); // Remove tenant_username from data
-        $data['user_id'] = $tenant->id; // Use tenant's ID
+        $data = $request->validated();
+        unset($data['tenant_username']);
+        $data['user_id'] = $tenant->id;
 
         // Map region (city_id) → set city_id and Arabic name into region
-        $regionId = (int) $request->input('region');
+        $regionId = (int) ($data['region'] ?? 0);
         $city = UserCity::find($regionId);
         $data['city_id'] = $regionId;
         $data['region'] = $city ? $city->name_ar : null;
 
-        // Map property/category fields
         // property_type from request should go into category_id
-        if (array_key_exists('property_type', $data) && !is_null($data['property_type']) && $data['property_type'] !== '') {
+        if (array_key_exists('property_type', $data) && $data['property_type'] !== null && $data['property_type'] !== '') {
             $data['category_id'] = $data['property_type'];
             unset($data['property_type']);
         }
 
         // category from request should go into property_type (Arabic → English)
-        if ($request->filled('category')) {
-            $categoryInput = $request->input('category');
+        if (isset($data['category']) && $data['category'] !== null && $data['category'] !== '') {
             $categoryMap = [
                 'تجاري' => 'Commercial',
                 'سكني' => 'Residential',
                 'صناعي' => 'Industrial',
                 'زراعي' => 'Agricultural',
             ];
-            $data['property_type'] = $categoryMap[$categoryInput] ?? $categoryInput;
+            $data['property_type'] = $categoryMap[$data['category']] ?? $data['category'];
             unset($data['category']);
         }
 
@@ -103,8 +79,8 @@ class ApiPropertyRequestController extends Controller
         $data['is_active'] = true;
         $data['source'] = 'website';
 
-        if ($request->filled('status_id')) {
-            $data['status_id'] = (int) $request->input('status_id');
+        if (isset($data['status_id'])) {
+            $data['status_id'] = (int) $data['status_id'];
         }
 
         $propertyRequest = UserPropertyRequest::create($data);
@@ -118,56 +94,11 @@ class ApiPropertyRequestController extends Controller
     /**
      * List all property requests for the authenticated user.
      */
-    public function index(Request $request): JsonResponse
+    public function index(IndexPropertyRequestsRequest $request): JsonResponse
     {
         $user = $request->user();
         $ownerId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
-
-        $validated = $request->validate([
-            'q' => 'nullable|string|max:255',
-
-            'property_type' => 'nullable|string|max:255',
-            'category_id'   => 'nullable',
-            // backward compatibility (old clients may send `category`)
-            'category'      => 'nullable',
-
-            'city_id'       => 'nullable|integer',
-            'districts_id'  => 'nullable|integer',
-            // alias
-            'district_id'   => 'nullable|integer',
-
-            // backward compatibility (old clients may send `region` string)
-            'region'        => 'nullable|string|max:255',
-
-            'budget_from'   => 'nullable|numeric|min:0',
-            'budget_to'     => 'nullable|numeric|min:0',
-            'area_from'     => 'nullable|integer|min:0',
-            'area_to'       => 'nullable|integer|min:0',
-
-            'purchase_method'      => 'nullable|string|max:50',
-            'seriousness'          => 'nullable|string|max:80',
-            'purchase_goal'        => 'nullable|string|max:80',
-            'wants_similar_offers' => 'nullable|boolean',
-            'contact_on_whatsapp'  => 'nullable|boolean',
-            'is_read'              => 'nullable|boolean',
-            'is_active'            => 'nullable|boolean',
-            'status_id'            => 'nullable|integer|exists:property_request_statuses,id',
-            'responsible_employee_id' => [
-                'nullable',
-                'integer',
-                Rule::exists('users', 'id')->where(function ($query) use ($ownerId) {
-                    $query->where('tenant_id', $ownerId)
-                        ->where('account_type', 'employee');
-                }),
-            ],
-
-            'created_from' => 'nullable|date',
-            'created_to'   => 'nullable|date',
-
-            'per_page'        => 'nullable|integer|min:1|max:100',
-            'with_statistics' => 'nullable|boolean',
-            'cursor'          => 'nullable|string', // when set, use cursor-based pagination (avoids COUNT and OFFSET)
-        ]);
+        $validated = $request->validated();
 
         $perPage = (int) ($validated['per_page'] ?? 10);
         $withStatistics = $request->boolean('with_statistics', false);
@@ -669,41 +600,23 @@ class ApiPropertyRequestController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdatePropertyRequestRequest $request, $id)
     {
         $user = Auth::user();
         $propertyRequest = UserPropertyRequest::where('id', $id)
             ->where('user_id', $user->id)
             ->firstOrFail();
 
-        $data = $request->all();
-        
-        if ($request->filled('status_id')) {
-            $statusRecord = PropertyRequestStatus::find($request->input('status_id'));
-            if (!$statusRecord) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Invalid property request status provided.',
-                    'errors' => [
-                        'status_id' => ['The selected property request status is invalid.'],
-                    ],
-                ], 422);
-            }
-            $data['status_id'] = $statusRecord->id;
-        }
-
+        $data = $request->validated();
         $propertyRequest->update($data);
         return response()->json(['message' => 'Property request updated successfully']);
     }
 
-    public function updateStatus(Request $request, $id): JsonResponse
+    public function updateStatus(UpdateStatusPropertyRequestRequest $request, $id): JsonResponse
     {
-        $validated = $request->validate([
-            'status_id' => 'required|integer|exists:property_request_statuses,id',
-        ]);
-
-        $user = $request->user();
-        $ownerId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+        $validated = $request->validated();
+        $user = auth()->user();
+        $ownerId = $user && method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
 
         $propertyRequest = UserPropertyRequest::where('id', $id)
             ->where('user_id', $ownerId)
@@ -722,23 +635,12 @@ class ApiPropertyRequestController extends Controller
         ]);
     }
 
-    public function updateEmployee(Request $request, $id): JsonResponse
+    public function updateEmployee(UpdateEmployeePropertyRequestRequest $request, $id): JsonResponse
     {
-        $user = $request->user();
-        $ownerId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+        $user = auth()->user();
+        $ownerId = $user && method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
 
-        $validated = $request->validate([
-            'responsible_employee_id' => [
-                'required',
-                'integer',
-                Rule::exists('users', 'id')->where(function ($query) use ($ownerId) {
-                    $query->where('tenant_id', $ownerId)
-                        ->where('account_type', 'employee')
-                        ->where('active', true);
-                }),
-            ],
-        ]);
-
+        $validated = $request->validated();
         $propertyRequest = UserPropertyRequest::where('id', $id)
             ->where('user_id', $ownerId)
             ->firstOrFail();
@@ -779,24 +681,13 @@ class ApiPropertyRequestController extends Controller
      * @param int $customerID
      * @return JsonResponse
      */
-    public function assignEmployeeToCustomer(Request $request, $customerID): JsonResponse
+    public function assignEmployeeToCustomer(AssignEmployeeToCustomerRequest $request, $customerID): JsonResponse
     {
-        $user = $request->user();
-        $ownerId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+        $user = auth()->user();
+        $ownerId = $user && method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
 
         try {
-            // Validate request body
-            $validated = $request->validate([
-                'responsible_employee_id' => [
-                    'nullable',
-                    'integer',
-                    Rule::exists('users', 'id')->where(function ($query) use ($ownerId) {
-                        $query->where('tenant_id', $ownerId)
-                            ->where('account_type', 'employee')
-                            ->where('active', true);
-                    }),
-                ],
-            ]);
+            $validated = $request->validated();
 
             // Find the customer
             $customer = ApiCustomer::where('id', $customerID)

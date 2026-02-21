@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\Api\Pixel\StorePixelRequest;
+use App\Http\Requests\Api\Pixel\TogglePixelStatusRequest;
+use App\Http\Requests\Api\Pixel\UpdatePixelRequest;
 use App\Models\Api\ApiPixel;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Validator;
 
 class PixelController extends Controller
 {
@@ -47,27 +49,15 @@ class PixelController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function store(Request $request): JsonResponse
+    public function store(StorePixelRequest $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'platform' => 'required|in:facebook,tiktok,snapchat,gtm',
-            'pixel_id' => 'required|string|max:255',
-            'is_active' => 'boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+        $validated = $request->validated();
 
         $user = $request->user();
 
         // Check if pixel already exists for this platform
         $existingPixel = ApiPixel::where('user_id', $user->id)
-            ->where('platform', $request->platform)
+            ->where('platform', $validated['platform'])
             ->first();
 
         if ($existingPixel) {
@@ -79,9 +69,9 @@ class PixelController extends Controller
 
         $pixel = ApiPixel::create([
             'user_id' => $user->id,
-            'platform' => $request->platform,
-            'pixel_id' => $request->pixel_id,
-            'is_active' => $request->get('is_active', true),
+            'platform' => $validated['platform'],
+            'pixel_id' => $validated['pixel_id'],
+            'is_active' => $validated['is_active'] ?? true,
         ]);
 
         return response()->json([
@@ -141,9 +131,10 @@ class PixelController extends Controller
      * @param int $id
      * @return JsonResponse
      */
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdatePixelRequest $request, int $id): JsonResponse
     {
         $user = $request->user();
+        $validated = $request->validated();
 
         $pixel = ApiPixel::where('user_id', $user->id)
             ->where('id', $id)
@@ -156,24 +147,10 @@ class PixelController extends Controller
             ], 404);
         }
 
-        $validator = Validator::make($request->all(), [
-            'platform' => 'sometimes|in:facebook,tiktok,snapchat,gtm',
-            'pixel_id' => 'sometimes|string|max:255',
-            'is_active' => 'sometimes|boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
         // Check if platform is being changed and if it conflicts with existing pixel
-        if ($request->has('platform') && $request->platform !== $pixel->platform) {
+        if (array_key_exists('platform', $validated) && $validated['platform'] !== $pixel->platform) {
             $existingPixel = ApiPixel::where('user_id', $user->id)
-                ->where('platform', $request->platform)
+                ->where('platform', $validated['platform'])
                 ->where('id', '!=', $id)
                 ->first();
 
@@ -185,7 +162,7 @@ class PixelController extends Controller
             }
         }
 
-        $pixel->update($request->only(['platform', 'pixel_id', 'is_active']));
+        $pixel->update($validated);
 
         return response()->json([
             'success' => true,
@@ -238,7 +215,7 @@ class PixelController extends Controller
      * @param int $id
      * @return JsonResponse
      */
-    public function toggleStatus(Request $request, int $id): JsonResponse
+    public function toggleStatus(TogglePixelStatusRequest $request, int $id): JsonResponse
     {
         $user = $request->user();
         

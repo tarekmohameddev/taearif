@@ -6,8 +6,8 @@ use App\Domain\Communication\Exceptions\IdempotencyConflictException;
 use App\Domain\Communication\Exceptions\InsufficientCreditsException;
 use App\Domain\Communication\Sms\Services\SmsSingleMessageService;
 use App\Http\Controllers\Api\BaseApiController;
+use App\Http\Requests\Api\V1\Sms\SendSmsMessageRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -15,22 +15,10 @@ class MessageController extends BaseApiController
 {
     public function __construct(private readonly SmsSingleMessageService $singleMessageService) {}
 
-    public function send(Request $request): JsonResponse
+    public function send(SendSmsMessageRequest $request): JsonResponse
     {
-        $key = trim((string) $request->header('Idempotency-Key', ''));
-        if ($key === '') {
-            return response()->json([
-                'status' => false,
-                'code' => 'VALIDATION_FAILED',
-                'message' => 'Idempotency-Key header is required.',
-            ], 422);
-        }
-
-        $validated = $request->validate([
-            'recipient_phone' => 'required|string',
-            'content' => 'required|string',
-        ]);
-
+        $key = trim((string) request()->header('Idempotency-Key', ''));
+        $validated = $request->validated();
         $userId = (int) auth()->user()->tenantOwnerId();
 
         try {

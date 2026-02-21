@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Rbac;
 use Illuminate\Http\Request;
 use App\Support\TenantActivity;
 use Illuminate\Validation\Rule;
+use App\Http\Requests\Api\Rbac\StoreRbacRoleRequest;
+use App\Http\Requests\Api\Rbac\UpdateRbacRoleRequest;
 use App\Services\ActivityLogger;
 use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
@@ -121,35 +123,12 @@ class RoleController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreRbacRoleRequest $request)
     {
         $tenantId = $this->tenantId($request);
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
 
-        $data = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:191',
-                Rule::unique('api_roles', 'name')->where(fn($q) => $q->where('team_id', $tenantId)),
-            ],
-            'permissions' => [
-                'sometimes',
-                'nullable',
-                function ($attribute, $value, $fail) {
-                    if (!is_string($value) && !is_array($value)) {
-                        $fail('The permissions field must be a string or an array.');
-                    }
-                    if (is_array($value) && !empty($value)) {
-                        foreach ($value as $perm) {
-                            if (!is_string($perm)) {
-                                $fail('All permissions must be strings.');
-                            }
-                        }
-                    }
-                },
-            ],
-        ]);
+        $data = $request->validated();
 
         // Ensure/create permissions for this tenant (or reuse global)
         $perms = $this->ensurePermissions($tenantId, 'sanctum', $data['permissions'] ?? []);
@@ -183,7 +162,7 @@ class RoleController extends Controller
         ], 201);
     }
 
-    public function update(Request $request, Role $role)
+    public function update(UpdateRbacRoleRequest $request, Role $role)
     {
         $tenantId = $this->tenantId($request);
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
@@ -192,30 +171,7 @@ class RoleController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Not found'], 404);
         }
 
-        $data = $request->validate([
-            'name' => [
-                'sometimes',
-                'string',
-                'max:191',
-                Rule::unique('api_roles', 'name')->where(fn($q) => $q->where('team_id', $tenantId))->ignore($role->id),
-            ],
-            'permissions' => [
-                'sometimes',
-                'nullable',
-                function ($attribute, $value, $fail) {
-                    if (!is_string($value) && !is_array($value)) {
-                        $fail('The permissions field must be a string or an array.');
-                    }
-                    if (is_array($value) && !empty($value)) {
-                        foreach ($value as $perm) {
-                            if (!is_string($perm)) {
-                                $fail('All permissions must be strings.');
-                            }
-                        }
-                    }
-                },
-            ],
-        ]);
+        $data = $request->validated();
 
         if (array_key_exists('name', $data) && $role->name === 'owner' && $data['name'] !== 'owner') {
             return response()->json(['status' => 'error', 'message' => 'Cannot rename protected role'], 422);

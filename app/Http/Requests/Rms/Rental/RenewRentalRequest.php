@@ -3,9 +3,9 @@
 namespace App\Http\Requests\Rms\Rental;
 
 use App\Constants\RmsConstants;
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\Api\BaseApiFormRequest;
 
-class RenewRentalRequest extends FormRequest
+class RenewRentalRequest extends BaseApiFormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

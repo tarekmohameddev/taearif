@@ -7,7 +7,8 @@ use App\Models\User\BasicSetting;
 use App\Models\Api\GeneralSetting;
 use App\Models\MaintenanceMode;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\Api\Content\ToggleGeneralShowPropertiesRequest;
+use App\Http\Requests\Api\Content\UpdateGeneralSettingsRequest;
 
 class GeneralSettingController extends Controller
 {
@@ -54,42 +55,18 @@ class GeneralSettingController extends Controller
         ]);
     }
 
-    public function update(Request $request)
+    public function update(UpdateGeneralSettingsRequest $request)
     {
-        $user = $request->user();
+        $user = auth()->user();
+        $validated = $request->validated();
 
         // Check if user is trying to disable maintenance mode and has permission
-        if ($request->input('maintenance_mode') == 0 && !$user->can('disable', MaintenanceMode::class)) {
+        if (($validated['maintenance_mode'] ?? null) == 0 && !$user->can('disable', MaintenanceMode::class)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Free package users cannot disable maintenance mode. Please upgrade your package to access this feature.',
                 'code' => 'MAINTENANCE_MODE_RESTRICTED'
             ], 403);
-        }
-
-        // Validate the input fields
-        $validator = Validator::make($request->all(), [
-            'site_name' => 'required|string|max:255',
-            'tagline' => 'nullable|string|max:255',
-            'description' => 'nullable|string|max:1000',
-            'logo' => 'nullable|string|max:255',
-            'favicon' => 'nullable|string|max:255',
-            'maintenance_mode' => 'nullable|boolean',
-            'show_breadcrumb' => 'nullable|boolean',
-            'show_properties' => 'nullable|boolean',
-            'additional_settings' => 'nullable|array',
-            'color' => 'nullable|string|max:50',
-            'primary_color' => 'nullable|string|max:50',
-            'secondary_color' => 'nullable|string|max:50',
-            'accent_color' => 'nullable|string|max:50',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
         }
 
         // Fetch GeneralSettings for the user
@@ -102,35 +79,35 @@ class GeneralSettingController extends Controller
         }
 
         // Update GeneralSettings fields
-        $settings->site_name = $request->input('site_name');
-        $settings->tagline = $request->input('tagline');
-        $settings->description = $request->input('description');
-        $settings->logo = $request->input('logo');
-        $settings->favicon = $request->input('favicon');
-        $settings->maintenance_mode = $request->input('maintenance_mode', false);
-        $settings->show_breadcrumb = $request->input('show_breadcrumb', true);
-        $settings->show_properties = $request->input('show_properties', false);
-        $settings->additional_settings = $request->input('additional_settings', []);
-        $settings->color = $request->input('color');
+        $settings->site_name = $validated['site_name'];
+        $settings->tagline = $validated['tagline'] ?? null;
+        $settings->description = $validated['description'] ?? null;
+        $settings->logo = $validated['logo'] ?? null;
+        $settings->favicon = $validated['favicon'] ?? null;
+        $settings->maintenance_mode = $validated['maintenance_mode'] ?? false;
+        $settings->show_breadcrumb = $validated['show_breadcrumb'] ?? true;
+        $settings->show_properties = $validated['show_properties'] ?? false;
+        $settings->additional_settings = $validated['additional_settings'] ?? [];
+        $settings->color = $validated['color'] ?? null;
 
         // Fetch BasicSettings for the user and update the colors AND logo/favicon
         $basicSetting = BasicSetting::where('user_id', $user->id)->first();
         if ($basicSetting) {
-            $basicSetting->base_color = $request->input('primary_color', $basicSetting->base_color);
-            $basicSetting->secondary_color = $request->input('secondary_color', $basicSetting->secondary_color);
-            $basicSetting->accent_color = $request->input('accent_color', $basicSetting->accent_color);
+            $basicSetting->base_color = $validated['primary_color'] ?? $basicSetting->base_color;
+            $basicSetting->secondary_color = $validated['secondary_color'] ?? $basicSetting->secondary_color;
+            $basicSetting->accent_color = $validated['accent_color'] ?? $basicSetting->accent_color;
 
             // Update logo and favicon in BasicSetting as well (for re-seeding)
-            if ($request->has('logo')) {
-                $basicSetting->logo = $request->input('logo');
+            if (array_key_exists('logo', $validated) && $validated['logo'] !== null) {
+                $basicSetting->logo = $validated['logo'];
             }
-            if ($request->has('favicon')) {
-                $basicSetting->favicon = $request->input('favicon');
+            if (array_key_exists('favicon', $validated) && $validated['favicon'] !== null) {
+                $basicSetting->favicon = $validated['favicon'];
             }
 
             // Update company name from site_name (for re-seeding)
-            if ($request->has('site_name')) {
-                $basicSetting->company_name = $request->input('site_name');
+            if (array_key_exists('site_name', $validated)) {
+                $basicSetting->company_name = $validated['site_name'];
             }
 
             // Save the BasicSetting after updating the colors, logo, favicon, and company name
@@ -141,13 +118,17 @@ class GeneralSettingController extends Controller
         $settings->save();
 
         // Re-seed tenant website pages if logo or company name changed
-        if ($request->has('logo') || $request->has('site_name')) {
+        if ((array_key_exists('logo', $validated) && $validated['logo'] !== null) || array_key_exists('site_name', $validated)) {
             try {
                 $seeder = app(\App\Services\TenantWebsiteSeeder::class);
                 $seeder->reseedWebsite($user);
+                $updatedFields = ['site_name'];
+                if (array_key_exists('logo', $validated) && $validated['logo'] !== null) {
+                    $updatedFields[] = 'logo';
+                }
                 \Log::info('Auto re-seeded website after settings update', [
                     'user_id' => $user->id,
-                    'updated_fields' => array_keys($request->only(['logo', 'site_name']))
+                    'updated_fields' => $updatedFields
                 ]);
             } catch (\Exception $e) {
                 \Log::error('Failed to auto re-seed website after settings update', [
@@ -180,19 +161,17 @@ class GeneralSettingController extends Controller
         ]);
     }
 
-    public function ShowProperties(Request $request)
+    public function ShowProperties(ToggleGeneralShowPropertiesRequest $request)
     {
-        $request->validate([
-            'enabled' => 'required|boolean',
-        ]);
-        $user = $request->user();
+        $validated = $request->validated();
+        $user = auth()->user();
         $settings = GeneralSetting::where('user_id', $user->id)->first();
 
         if (!$settings) {
             return response()->json(['message' => 'Settings not found.'], 404);
         }
 
-        $settings->show_properties = $request->boolean('enabled');
+        $settings->show_properties = (bool) $validated['enabled'];
         $settings->save();
 
         return response()->json([

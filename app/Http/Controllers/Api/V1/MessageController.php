@@ -10,6 +10,7 @@ use App\Domain\Communication\Exceptions\InsufficientCreditsException;
 use App\Domain\Communication\Exceptions\ProviderSendFailedException;
 use App\Domain\Communication\Exceptions\UnsupportedChannelException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\SendMessageRequest;
 use App\Models\Conversation;
 use App\Models\Message;
 use Illuminate\Http\JsonResponse;
@@ -70,9 +71,9 @@ class MessageController extends Controller
     /**
      * Send an outbound message (Phase 3). Requires Idempotency-Key header.
      */
-    public function send(Request $request): JsonResponse
+    public function send(SendMessageRequest $request): JsonResponse
     {
-        $idempotencyKey = $request->header('Idempotency-Key');
+        $idempotencyKey = request()->header('Idempotency-Key');
         if ($idempotencyKey === null || trim((string) $idempotencyKey) === '') {
             return response()->json([
                 'status' => 'error',
@@ -81,11 +82,7 @@ class MessageController extends Controller
             ], 422);
         }
 
-        $validated = $request->validate([
-            'conversation_id' => 'required|integer',
-            'content' => 'required|string',
-            'channel' => 'nullable|string|in:whatsapp',
-        ]);
+        $validated = $request->validated();
 
         $channel = $validated['channel'] ?? 'whatsapp';
         $tenantOwnerId = (int) auth()->user()->tenantOwnerId();

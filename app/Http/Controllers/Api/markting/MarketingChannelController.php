@@ -11,6 +11,14 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\Api\Marketing\StoreMarketingChannelRequest;
+use App\Http\Requests\Api\Marketing\UpdateMarketingChannelRequest;
+use App\Http\Requests\Api\Marketing\UpdateChannelStatusRequest;
+use App\Http\Requests\Api\Marketing\SendMessageRequest;
+use App\Http\Requests\Api\Marketing\SendWhatsAppToCustomerRequest;
+use App\Http\Requests\Api\Marketing\GetChannelStatsRequest;
+use App\Http\Requests\Api\Marketing\UpdateMarketingSettingsRequest;
+use App\Http\Requests\Api\Marketing\UpdateSystemIntegrationSettingsRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -42,38 +50,25 @@ class MarketingChannelController extends BaseApiController
     /**
      * Create a new marketing channel
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreMarketingChannelRequest $request): JsonResponse
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'name' => 'required|string|max:255',
-                'description' => 'nullable|string|max:500',
-                'type' => 'required|string|max:50|alpha_dash',
-                'number' => 'required|string|max:50',
-                'business_id' => 'nullable|string|max:100',
-                'phone_id' => 'nullable|string|max:100',
-                'access_token' => 'nullable|string|max:500',
-                'additional_settings' => 'nullable|array',
-            ]);
-
-            if ($validator->fails()) {
-                return $this->fail('Validation failed', 422, $validator->errors());
-            }
+            $validated = $request->validated();
 
             $channel = MarketingChannel::create([
                 'user_id' => Auth::id(),
-                'name' => $request->name,
-                'description' => $request->description,
-                'type' => $request->type,
-                'number' => $request->number,
-                'business_id' => $request->business_id,
-                'phone_id' => $request->phone_id,
-                'access_token' => $request->access_token,
+                'name' => $validated['name'],
+                'description' => $validated['description'] ?? null,
+                'type' => $validated['type'],
+                'number' => $validated['number'],
+                'business_id' => $validated['business_id'] ?? null,
+                'phone_id' => $validated['phone_id'] ?? null,
+                'access_token' => $validated['access_token'] ?? null,
                 'is_verified' => false,
                 'is_connected' => false,
                 'sent_messages_count' => 0,
                 'received_messages_count' => 0,
-                'additional_settings' => $request->additional_settings ?? [],
+                'additional_settings' => $validated['additional_settings'] ?? [],
             ]);
 
             return $this->ok($channel, 'Marketing channel created successfully', 201);
@@ -105,7 +100,7 @@ class MarketingChannelController extends BaseApiController
     /**
      * Update a marketing channel
      */
-    public function update(Request $request, $id): JsonResponse
+    public function update(UpdateMarketingChannelRequest $request, $id): JsonResponse
     {
         try {
             $channel = MarketingChannel::where('user_id', Auth::id())
@@ -116,25 +111,7 @@ class MarketingChannelController extends BaseApiController
                 return $this->fail('Marketing channel not found', 404);
             }
 
-            $validator = Validator::make($request->all(), [
-                'name' => 'sometimes|string|max:255',
-                'description' => 'nullable|string|max:500',
-                'type' => 'sometimes|string|max:50|alpha_dash',
-                'number' => 'sometimes|string|max:50',
-                'business_id' => 'nullable|string|max:100',
-                'phone_id' => 'nullable|string|max:100',
-                'access_token' => 'nullable|string|max:500',
-                'additional_settings' => 'nullable|array',
-            ]);
-
-            if ($validator->fails()) {
-                return $this->fail('Validation failed', 422, $validator->errors());
-            }
-
-            $channel->update($request->only([
-                'name', 'description', 'type', 'number',
-                'business_id', 'phone_id', 'access_token', 'additional_settings'
-            ]));
+            $channel->update($request->validated());
 
             return $this->ok($channel, 'Marketing channel updated successfully');
         } catch (\Exception $e) {
@@ -145,7 +122,7 @@ class MarketingChannelController extends BaseApiController
     /**
      * Update channel connection status
      */
-    public function updateStatus(Request $request, $id): JsonResponse
+    public function updateStatus(UpdateChannelStatusRequest $request, $id): JsonResponse
     {
         try {
             $channel = MarketingChannel::where('user_id', Auth::id())
@@ -156,18 +133,11 @@ class MarketingChannelController extends BaseApiController
                 return $this->fail('Marketing channel not found', 404);
             }
 
-            $validator = Validator::make($request->all(), [
-                'is_connected' => 'required|boolean',
-                'is_verified' => 'sometimes|boolean',
-            ]);
-
-            if ($validator->fails()) {
-                return $this->fail('Validation failed', 422, $validator->errors());
-            }
+            $validated = $request->validated();
 
             $channel->update([
-                'is_connected' => $request->is_connected,
-                'is_verified' => $request->is_verified ?? $channel->is_verified,
+                'is_connected' => $validated['is_connected'],
+                'is_verified' => $validated['is_verified'] ?? $channel->is_verified,
             ]);
 
             return $this->ok($channel, 'Channel status updated successfully');
@@ -230,7 +200,7 @@ class MarketingChannelController extends BaseApiController
     /**
      * Get channel statistics with date filters
      */
-    public function stats(Request $request, $id): JsonResponse
+    public function stats(GetChannelStatsRequest $request, $id): JsonResponse
     {
         try {
             $channel = MarketingChannel::where('user_id', Auth::id())
@@ -241,18 +211,9 @@ class MarketingChannelController extends BaseApiController
                 return $this->fail('Marketing channel not found', 404);
             }
 
-            // Validate date parameters
-            $validator = Validator::make($request->all(), [
-                'from' => 'nullable|date|date_format:Y-m-d',
-                'to' => 'nullable|date|date_format:Y-m-d|after_or_equal:from',
-            ]);
-
-            if ($validator->fails()) {
-                return $this->fail('Invalid date parameters', 422, $validator->errors());
-            }
-
-            $fromDate = $request->get('from');
-            $toDate = $request->get('to');
+            $validated = $request->validated();
+            $fromDate = $validated['from'] ?? null;
+            $toDate = $validated['to'] ?? null;
 
             // For now, we'll return the current message counts
             // In a real implementation, you would query message logs with date filters
@@ -385,19 +346,10 @@ class MarketingChannelController extends BaseApiController
     /**
      * Send message through marketing channel
      */
-    public function sendMessage(Request $request, $id): JsonResponse
+    public function sendMessage(SendMessageRequest $request, $id): JsonResponse
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'to' => 'required|string|max:50',
-                'message' => 'required|string|max:1000',
-                'message_type' => 'sometimes|string|in:text,media,template',
-                'media_url' => 'nullable|url',
-            ]);
-
-            if ($validator->fails()) {
-                return $this->fail('Validation failed', 422, $validator->errors());
-            }
+            $validated = $request->validated();
 
             $channel = MarketingChannel::where('user_id', Auth::id())
                 ->where('id', $id)
@@ -420,10 +372,10 @@ class MarketingChannelController extends BaseApiController
                 $creditsNeeded,
                 "Message sent via {$channel->name} ({$channel->type})",
                 [
-                    'channel_id' => $channel->id,
-                    'channel_type' => $channel->type,
-                    'recipient' => $request->to,
-                    'message_type' => $request->get('message_type', 'text'),
+                'channel_id' => $channel->id,
+                'channel_type' => $channel->type,
+                'recipient' => $validated['to'],
+                'message_type' => $validated['message_type'] ?? 'text',
                 ]
             );
 
@@ -909,7 +861,7 @@ class MarketingChannelController extends BaseApiController
     /**
      * Update marketing settings for a specific channel
      */
-    public function updateMarketingSettings(Request $request, $id): JsonResponse
+    public function updateMarketingSettings(UpdateMarketingSettingsRequest $request, $id): JsonResponse
     {
         try {
             $channel = MarketingChannel::where('user_id', Auth::id())
@@ -920,18 +872,7 @@ class MarketingChannelController extends BaseApiController
                 return $this->fail('Marketing channel not found', 404);
             }
 
-            $validator = Validator::make($request->all(), [
-                'crm_integration_enabled' => 'sometimes|boolean',
-                'appointment_system_integration_enabled' => 'sometimes|boolean',
-                'customers_page_integration_enabled' => 'sometimes|boolean',
-                'rental_page_integration_enabled' => 'sometimes|boolean',
-                'integration_settings' => 'nullable|array',
-                'marketing_settings' => 'nullable|array',
-            ]);
-
-            if ($validator->fails()) {
-                return $this->fail('Validation failed', 422, $validator->errors());
-            }
+            $validated = $request->validated();
 
             $updateData = [];
 
@@ -1018,7 +959,7 @@ class MarketingChannelController extends BaseApiController
     /**
      * Update system integration settings for a specific channel
      */
-    public function updateSystemIntegrationSettings(Request $request, $id): JsonResponse
+    public function updateSystemIntegrationSettings(UpdateSystemIntegrationSettingsRequest $request, $id): JsonResponse
     {
         try {
             $channel = MarketingChannel::where('user_id', Auth::id())
@@ -1029,17 +970,7 @@ class MarketingChannelController extends BaseApiController
                 return $this->fail('Marketing channel not found', 404);
             }
 
-            $validator = Validator::make($request->all(), [
-                'crm_integration_enabled' => 'required|boolean',
-                'appointment_system_integration_enabled' => 'required|boolean',
-                'customers_page_integration_enabled' => 'required|boolean',
-                'rental_page_integration_enabled' => 'required|boolean',
-                'integration_settings' => 'nullable|array',
-            ]);
-
-            if ($validator->fails()) {
-                return $this->fail('Validation failed', 422, $validator->errors());
-            }
+            $channel->updateSystemIntegrationSettings($request->validated());
 
             $settings = [
                 'crm_integration_enabled' => $request->crm_integration_enabled,
@@ -1097,21 +1028,13 @@ class MarketingChannelController extends BaseApiController
     /**
      * Send WhatsApp message to CRM customer
      */
-    public function sendWhatsAppToCustomer(Request $request): JsonResponse
+    public function sendWhatsAppToCustomer(SendWhatsAppToCustomerRequest $request): JsonResponse
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'customer_id' => 'required|integer|exists:api_customers,id',
-                'message' => 'required|string|max:1000',
-                'channel_id' => 'nullable|integer|exists:marketing_channels,id',
-            ]);
-
-            if ($validator->fails()) {
-                return $this->fail('Validation failed', 422, $validator->errors());
-            }
+            $validated = $request->validated();
 
             $userId = Auth::id();
-            $customerId = $request->customer_id;
+            $customerId = $validated['customer_id'];
 
             // Get customer and verify ownership
             $customer = \App\Models\ApiCustomer::where('user_id', $userId)

@@ -3,32 +3,32 @@
 namespace App\Http\Controllers\Api\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Customer\MoveCustomerProcedureRequest;
+use App\Http\Requests\Api\Customer\ReorderCustomerProceduresRequest;
+use App\Http\Requests\Api\Customer\StoreCustomerProcedureRequest;
+use App\Http\Requests\Api\Customer\UpdateCustomerProcedureRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use App\Models\Api\UserApiCustomerProcedure;
 
 class UserApiCustomerProcedureController extends Controller
 {
-    public function moveProcedure(Request $request, $id)
+    public function moveProcedure(MoveCustomerProcedureRequest $request, $id)
     {
-        $user = $request->user();
+        $validated = $request->validated();
+        $ownerId = auth()->user()->tenantOwnerId();
 
-        $validated = $request->validate([
-            'direction' => 'required|in:up,down',
-        ]);
-
-        $proc = UserApiCustomerProcedure::where('user_id', $request->user()->tenantOwnerId())->findOrFail($id);
+        $proc = UserApiCustomerProcedure::where('user_id', $ownerId)->findOrFail($id);
 
         $currentOrder = $proc->order;
 
         if ($validated['direction'] === 'up') {
-            $adjacent = UserApiCustomerProcedure::where('user_id', $request->user()->tenantOwnerId())
+            $adjacent = UserApiCustomerProcedure::where('user_id', $ownerId)
                 ->where('order', '<', $currentOrder)
                 ->orderBy('order', 'desc')
                 ->first();
         } else {
-            $adjacent = UserApiCustomerProcedure::where('user_id', $request->user()->tenantOwnerId())
+            $adjacent = UserApiCustomerProcedure::where('user_id', $ownerId)
                 ->where('order', '>', $currentOrder)
                 ->orderBy('order', 'asc')
                 ->first();
@@ -55,18 +55,14 @@ class UserApiCustomerProcedureController extends Controller
         ]);
     }
 
-    public function reorderProcedures(Request $request)
+    public function reorderProcedures(ReorderCustomerProceduresRequest $request)
     {
-        $user = $request->user();
+        $validated = $request->validated();
+        $ownerId = auth()->user()->tenantOwnerId();
 
-        $validated = $request->validate([
-            'order'   => 'required|array',
-            'order.*' => 'integer|exists:users_api_customers_procedures,id',
-        ]);
-
-        DB::transaction(function () use ($validated, $request) {
+        DB::transaction(function () use ($validated, $ownerId) {
             foreach ($validated['order'] as $index => $procId) {
-                UserApiCustomerProcedure::where('user_id', $request->user()->tenantOwnerId())
+                UserApiCustomerProcedure::where('user_id', $ownerId)
                     ->where('id', $procId)
                     ->update(['order' => $index + 1]);
             }
@@ -82,30 +78,18 @@ class UserApiCustomerProcedureController extends Controller
     {
         $user = $request->user();
 
-        $procs = UserApiCustomerProcedure::where('user_id', $request->user()->tenantOwnerId())
+        $procs = UserApiCustomerProcedure::where('user_id', $user->tenantOwnerId())
             ->orderBy('order')
             ->get();
 
         return response()->json(['status'=>'success','data'=>$procs]);
     }
 
-    public function store(Request $request)
+    public function store(StoreCustomerProcedureRequest $request)
     {
-        $user = $request->user();
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'procedure_name' => [
-                'required','string','max:255',
-                Rule::unique('users_api_customers_procedures','procedure_name')->where(fn($q)=>$q->where('user_id',$user->id))
-            ],
-            'color'       => 'nullable|string|max:50',
-            'icon'        => 'nullable|string|max:50',
-            'order'       => 'required|integer|min:1',
-            'description' => 'nullable|string',
-            'is_active'   => 'boolean',
-        ]);
-
-        $validated['user_id'] = $request->user()->tenantOwnerId();
+        $validated['user_id'] = auth()->user()->tenantOwnerId();
 
         $proc = UserApiCustomerProcedure::create($validated);
 
@@ -118,30 +102,16 @@ class UserApiCustomerProcedureController extends Controller
     {
         $user = $request->user();
 
-        $proc = UserApiCustomerProcedure::where('user_id',$request->user()->tenantOwnerId())->findOrFail($id);
+        $proc = UserApiCustomerProcedure::where('user_id', $user->tenantOwnerId())->findOrFail($id);
 
         return response()->json(['status'=>'success','data'=>$proc]);
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateCustomerProcedureRequest $request, $id)
     {
-        $user = $request->user();
-
-        $proc = UserApiCustomerProcedure::where('user_id',$request->user()->tenantOwnerId())->findOrFail($id);
-
-        $validated = $request->validate([
-            'procedure_name' => [
-                'sometimes','string','max:255',
-                Rule::unique('users_api_customers_procedures','procedure_name')
-                    ->where(fn($q)=>$q->where('user_id',$user->id))
-                    ->ignore($proc->id),
-            ],
-            'color'       => 'nullable|string|max:50',
-            'icon'        => 'nullable|string|max:50',
-            'order'       => 'sometimes|integer|min:1',
-            'description' => 'nullable|string',
-            'is_active'   => 'boolean',
-        ]);
+        $ownerId = auth()->user()->tenantOwnerId();
+        $proc = UserApiCustomerProcedure::where('user_id', $ownerId)->findOrFail($id);
+        $validated = $request->validated();
 
         $proc->update($validated);
 
@@ -152,7 +122,7 @@ class UserApiCustomerProcedureController extends Controller
     {
         $user = $request->user();
 
-        $proc = UserApiCustomerProcedure::where('user_id',$request->user()->tenantOwnerId())->findOrFail($id);
+        $proc = UserApiCustomerProcedure::where('user_id', $user->tenantOwnerId())->findOrFail($id);
         $proc->delete();
 
         return response()->json(['status'=>'success','message'=>'Procedure type deleted successfully']);

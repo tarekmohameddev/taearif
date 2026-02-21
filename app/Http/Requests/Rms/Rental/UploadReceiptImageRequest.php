@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests\Rms\Rental;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\Api\BaseApiFormRequest;
 
-class UploadReceiptImageRequest extends FormRequest
+class UploadReceiptImageRequest extends BaseApiFormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

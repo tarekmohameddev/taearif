@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Api\content;
 
 use App\Models\Api\CustomerDropdownSetting;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Content\ToggleCustomerDropdownVisibilityRequest;
+use App\Http\Requests\Api\Content\UpdateCustomerDropdownSettingsRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class CustomerDropdownSettingController extends Controller
 {
@@ -92,30 +93,10 @@ class CustomerDropdownSettingController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function update(Request $request)
+    public function update(UpdateCustomerDropdownSettingsRequest $request)
     {
         $user = $request->user();
-
-        // Validate the request
-        $validator = Validator::make($request->all(), [
-            'is_visible' => 'boolean',
-            'show_login' => 'boolean',
-            'show_register' => 'boolean',
-            'show_dashboard' => 'boolean',
-            'show_logout' => 'boolean',
-            'additional_settings' => 'nullable|array',
-            'additional_settings.button_text' => 'nullable|string|max:50',
-            'additional_settings.button_style' => 'nullable|string|in:primary,secondary,outline,link',
-            'additional_settings.dropdown_position' => 'nullable|string|in:left,right,center',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+        $validated = $request->validated();
 
         // Find or create settings
         $settings = CustomerDropdownSetting::where('user_id', $user->id)->first();
@@ -126,16 +107,26 @@ class CustomerDropdownSettingController extends Controller
         }
 
         // Update settings
-        $settings->is_visible = $request->input('is_visible', $settings->is_visible ?? true);
-        $settings->show_login = $request->input('show_login', $settings->show_login ?? true);
-        $settings->show_register = $request->input('show_register', $settings->show_register ?? true);
-        $settings->show_dashboard = $request->input('show_dashboard', $settings->show_dashboard ?? true);
-        $settings->show_logout = $request->input('show_logout', $settings->show_logout ?? true);
+        $settings->is_visible = array_key_exists('is_visible', $validated)
+            ? $validated['is_visible']
+            : ($settings->is_visible ?? true);
+        $settings->show_login = array_key_exists('show_login', $validated)
+            ? $validated['show_login']
+            : ($settings->show_login ?? true);
+        $settings->show_register = array_key_exists('show_register', $validated)
+            ? $validated['show_register']
+            : ($settings->show_register ?? true);
+        $settings->show_dashboard = array_key_exists('show_dashboard', $validated)
+            ? $validated['show_dashboard']
+            : ($settings->show_dashboard ?? true);
+        $settings->show_logout = array_key_exists('show_logout', $validated)
+            ? $validated['show_logout']
+            : ($settings->show_logout ?? true);
         
         // Update additional settings
-        if ($request->has('additional_settings')) {
+        if (array_key_exists('additional_settings', $validated)) {
             $currentAdditional = $settings->additional_settings ?? [];
-            $settings->additional_settings = array_merge($currentAdditional, $request->input('additional_settings', []));
+            $settings->additional_settings = array_merge($currentAdditional, $validated['additional_settings'] ?? []);
         }
 
         $settings->save();
@@ -155,20 +146,17 @@ class CustomerDropdownSettingController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function toggleVisibility(Request $request)
+    public function toggleVisibility(ToggleCustomerDropdownVisibilityRequest $request)
     {
-        $request->validate([
-            'enabled' => 'required|boolean',
-        ]);
-
         $user = $request->user();
+        $validated = $request->validated();
         $settings = CustomerDropdownSetting::where('user_id', $user->id)->first();
 
         if (!$settings) {
             return response()->json(['message' => 'Settings not found.'], 404);
         }
 
-        $settings->is_visible = $request->boolean('enabled');
+        $settings->is_visible = (bool) $validated['enabled'];
         $settings->save();
 
         return response()->json([

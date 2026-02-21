@@ -20,6 +20,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use App\Http\Requests\Api\App\InstallAppRequest;
+use App\Http\Requests\Api\App\InstallWhatsappRequest;
 
 class ApiInstallationController extends Controller
 {
@@ -224,20 +226,15 @@ class ApiInstallationController extends Controller
     /**
      * Install an app for the authenticated user.
      *
-     * @param Request $request
+     * @param InstallAppRequest $request
      * @param InstallationService $service
      * @return \Illuminate\Http\JsonResponse
      */
-    public function install(Request $request, InstallationService $service)
+    public function install(InstallAppRequest $request, InstallationService $service)
     {
         try {
             // Validate request
-            $validated = $request->validate([
-                'app_id' => 'required|exists:api_apps,id',
-                'settings' => 'nullable|array',
-                'settings.phone_number' => 'nullable|string|max:20',
-                'settings.token' => 'nullable|string|max:255',
-            ]);
+            $validated = $request->validated();
 
             $user = $request->user();
             $app = ApiApp::where('id', $validated['app_id'])
@@ -480,13 +477,14 @@ class ApiInstallationController extends Controller
     /**
      * Install WhatsApp app for the authenticated user.
      *
-     * @param Request $request
+     * @param InstallWhatsappRequest $request
      * @param InstallationService $service
      * @return \Illuminate\Http\JsonResponse
      */
-    public function installWhatsapp(Request $request, InstallationService $service)
+    public function installWhatsapp(InstallWhatsappRequest $request, InstallationService $service)
     {
         try {
+            $validated = $request->validated();
             $app = ApiApp::where('name', 'واتس اب')
                 ->where('is_enabled', true)
                 ->first();
@@ -496,7 +494,7 @@ class ApiInstallationController extends Controller
             }
 
             $user = $request->user();
-            $result = $service->install($user, $app, $request->input('settings', []));
+            $result = $service->install($user, $app, $validated['settings'] ?? []);
 
             // Handle app-specific installation
             $this->handleAppSpecificInstallation($user, $app, $result['installation']);

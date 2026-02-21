@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Api\V1\Sms;
 
 use App\Domain\Communication\Sms\Services\SmsTemplateService;
 use App\Http\Controllers\Api\BaseApiController;
+use App\Http\Requests\Api\V1\Sms\StoreTemplateRequest;
+use App\Http\Requests\Api\V1\Sms\UpdateTemplateRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class TemplateController extends BaseApiController
 {
@@ -37,28 +38,16 @@ class TemplateController extends BaseApiController
         return $this->ok($template);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreTemplateRequest $request): JsonResponse
     {
         $userId = (int) auth()->user()->tenantOwnerId();
-        $validated = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('sms_templates', 'name')->where(fn ($q) => $q->where('user_id', $userId)),
-            ],
-            'content' => 'required|string',
-            'category' => 'required|in:promotional,transactional,reminder,notification,follow_up',
-            'variables' => 'nullable|array',
-            'is_active' => 'nullable|boolean',
-        ]);
-
+        $validated = $request->validated();
         $template = $this->templateService->create($userId, $validated);
 
         return $this->created($template);
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateTemplateRequest $request, int $id): JsonResponse
     {
         $userId = (int) auth()->user()->tenantOwnerId();
         $template = $this->templateService->findForUser($userId, $id);
@@ -66,21 +55,7 @@ class TemplateController extends BaseApiController
             return response()->json(['status' => false, 'code' => 'TEMPLATE_NOT_FOUND', 'message' => 'Template not found.'], 404);
         }
 
-        $validated = $request->validate([
-            'name' => [
-                'sometimes',
-                'string',
-                'max:255',
-                Rule::unique('sms_templates', 'name')
-                    ->ignore($template->id)
-                    ->where(fn ($q) => $q->where('user_id', $userId)),
-            ],
-            'content' => 'sometimes|string',
-            'category' => 'sometimes|in:promotional,transactional,reminder,notification,follow_up',
-            'variables' => 'nullable|array',
-            'is_active' => 'sometimes|boolean',
-        ]);
-
+        $validated = $request->validated();
         $updated = $this->templateService->update($template, $validated);
 
         return $this->ok($updated);

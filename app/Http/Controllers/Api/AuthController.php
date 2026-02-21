@@ -11,6 +11,11 @@ use App\Models\Coupon;
 use App\Models\Package;
 use App\Models\Language;
 use App\Models\User\SEO;
+use App\Http\Requests\Api\Auth\LoginApiRequest;
+use App\Http\Requests\Api\Auth\LogoutApiRequest;
+use App\Http\Requests\Api\Auth\ReadMessageRequest;
+use App\Http\Requests\Api\Auth\RegisterApiRequest;
+use App\Http\Requests\Api\Auth\AuthVerifyResetCodeRequest;
 use App\Rules\Recaptcha;
 use App\Models\User\Blog;
 use App\Models\User\Menu;
@@ -76,16 +81,12 @@ class AuthController extends Controller
         return $user->isEmployee() && $user->tenant ? $user->tenant : $user;
     }
 
-    public function verifyResetCode(Request $request)
+    public function verifyResetCode(AuthVerifyResetCodeRequest $request)
     {
-        $request->validate([
-            'identifier' => 'required', // email or phone
-            'code' => 'required|digits:6',
-            'new_password' => 'required|min:8|confirmed'
-        ]);
+        $validated = $request->validated();
 
-        $user = User::where('email', $request->identifier)
-            ->orWhere('phone', $request->identifier)
+        $user = User::where('email', $validated['identifier'])
+            ->orWhere('phone', $validated['identifier'])
             ->first();
 
         if (!$user) {
@@ -93,7 +94,7 @@ class AuthController extends Controller
         }
 
         $log = PasswordResetLog::where('user_id', $user->id)
-            ->where('code', $request->code)
+            ->where('code', $validated['code'])
             ->where('used', false)
             ->where('expires_at', '>=', now())
             ->latest()
@@ -104,7 +105,7 @@ class AuthController extends Controller
         }
 
         // update password
-        $user->update(['password' => bcrypt($request->new_password)]);
+        $user->update(['password' => bcrypt($validated['new_password'])]);
 
         // mark code as used
         $log->update(['used' => true]);
@@ -282,25 +283,10 @@ class AuthController extends Controller
         return $username;
     }
 
-    public function register(Request $request)
+    public function register(RegisterApiRequest $request)
     {
         try {
-            // --- reCAPTCHA ---
-            // Bypass reCAPTCHA for testing
-            if ($request->recaptcha_token === 'TEST_BYPASS_TOKEN') {
-                // Skip reCAPTCHA validation for testing
-            } else {
-                $recaptchaValidator = Validator::make($request->only('recaptcha_token'), [
-                    'recaptcha_token' => ['required', new \App\Rules\Recaptcha],
-                ]);
-                if ($recaptchaValidator->fails()) {
-                    return response()->json([
-                        'status'  => 'error',
-                        'message' => 'reCAPTCHA failed',
-                        'errors'  => $recaptchaValidator->errors()
-                    ], 422);
-                }
-            }
+            $validated = $request->validated();
 
             /**
              * ============================================================
@@ -308,21 +294,7 @@ class AuthController extends Controller
              * Trigger when: account_type=employee AND user_id is provided
              * ============================================================
              */
-            if ($request->input('account_type') === 'employee' && $request->filled('user_id')) {
-                // Validate employee fields
-                $validated = $request->validate([
-                    'user_id'    => ['required', 'integer', 'exists:users,id'],
-                    'email'      => ['required','email','unique:users,email'],
-                    'username'   => ['required','string','unique:users,username'],
-                    'password'   => ['required','string','min:6'],
-                    'first_name' => ['nullable','string','max:191'],
-                    'last_name'  => ['nullable','string','max:191'],
-                    'phone'      => ['required','string','max:191','unique:users,phone'],
-                ], [
-                    'phone.required' => 'رقم الهاتف مطلوب.',
-                    'phone.unique'   => 'تم استخدام رقم الهاتف، اختر مختلفًا.',
-                ]);
-
+            if (request()->input('account_type') === 'employee' && request()->filled('user_id')) {
                 // Ensure the parent is a tenant (not another employee)
                 $tenant = User::findOrFail($validated['user_id']);
                 if (($tenant->account_type ?? 'tenant') !== 'tenant') {
@@ -342,8 +314,8 @@ class AuthController extends Controller
 
                 // Create the employee account (NO website materials, NO memberships)
                 $employee = User::create([
-                    'first_name'   => $request->input('first_name', 'employee'),
-                    'last_name'    => $request->input('last_name', 'employee'),
+                    'first_name'   => request()->input('first_name', 'employee'),
+                    'last_name'    => request()->input('last_name', 'employee'),
                     'company_name' => $tenant->company_name, // inherit if desired
                     'email'        => $validated['email'],
                     'username'     => $validated['username'],
@@ -357,12 +329,12 @@ class AuthController extends Controller
                 ]);
 
                 // Optional role/permission assignment (Spatie compatible)
-                if ($request->filled('roles') && is_array($request->roles) && method_exists($employee, 'syncRoles')) {
+                if (request()->filled('roles') && is_array(request()->input('roles')) && method_exists($employee, 'syncRoles')) {
                     app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
-                    $employee->syncRoles($request->roles);
+                    $employee->syncRoles(request()->input('roles'));
                 }
-                if ($request->filled('permissions') && is_array($request->permissions) && method_exists($employee, 'syncPermissions')) {
-                    $employee->syncPermissions($request->permissions);
+                if (request()->filled('permissions') && is_array(request()->input('permissions')) && method_exists($employee, 'syncPermissions')) {
+                    $employee->syncPermissions(request()->input('permissions'));
                 }
 
                 // Never auto-login employee here; the employee will log in via the same /login route.
@@ -378,7 +350,7 @@ class AuthController extends Controller
              * TENANT (USER) REGISTRATION (existing behavior preserved)
              * ============================================================
              */
-            $tempToken = $request->input('temp_token');
+            $tempToken = request()->input('temp_token');
 
             if ($tempToken) {
                 // Google OAuth temp_token registration
@@ -398,34 +370,23 @@ class AuthController extends Controller
                     ], 409);
                 }
 
-                $request['email']     = $tokenData['email'];
-                $request['google_id'] = $tokenData['google_id'];
-                $request['password']  = Str::random(32);
-            } else {
-                // Normal tenant registration validation
-                $request->validate([
-                    'email'    => 'required|email|unique:users,email',
-                    'username' => 'required|string|unique:users,username',
-                    'password' => 'required|string|min:6',
-                    'phone'    => 'required|string|max:191|unique:users,phone',
-                    // Optional company/industry fields
-                    'industry_type' => 'nullable|string|max:100',
-                    'company_size'  => 'nullable|string|max:50',
-                ], [
-                    'phone.required' => 'رقم الهاتف مطلوب.',
-                    'phone.unique'   => 'تم استخدام رقم الهاتف، اختر مختلفًا.',
+                request()->merge([
+                    'email' => $tokenData['email'],
+                    'google_id' => $tokenData['google_id'],
+                    'password' => Str::random(32),
                 ]);
+            } else {
             }
 
             // Map ?code query param to referral_code if provided
-            if (!$request->filled('referral_code') && $request->filled('code')) {
-                $request->merge(['referral_code' => $request->code]);
+            if (!request()->filled('referral_code') && request()->filled('code')) {
+                request()->merge(['referral_code' => request()->input('code')]);
             }
 
             // Referral code (optional)
             $referrer = null;
-            if ($request->filled('referral_code')) {
-                $referrer = \App\Models\User::where('referral_code', $request->referral_code)->first();
+            if (request()->filled('referral_code')) {
+                $referrer = \App\Models\User::where('referral_code', request()->input('referral_code'))->first();
                 if (!$referrer) {
                     return response()->json([
                         'status'  => 'error',
@@ -438,13 +399,13 @@ class AuthController extends Controller
             $package = Package::findOrFail(26);
 
             // Static trial registration values
-            $request->merge([
+            request()->merge([
                 'status'         => 1,
                 'mode'           => 'online',
                 'receipt_name'   => null,
                 'price'          => $package->price,
-                'first_name'     => $request->input('first_name', 'User'),
-                'last_name'      => $request->input('last_name', ''),
+                'first_name'     => request()->input('first_name', 'User'),
+                'last_name'      => request()->input('last_name', ''),
                 'company_name'   => 'N/A',
                 'country'        => 'N/A',
                 'is_receipt'     => 0,
@@ -481,7 +442,7 @@ class AuthController extends Controller
 
             // Membership + website creation (existing flow)
             $transaction_id      = \App\Http\Helpers\UserPermissionHelper::uniqidReal(8);
-            $transaction_details = $request->package_type === 'trial' ? 'Trial' : 'Free';
+            $transaction_details = request()->input('package_type') === 'trial' ? 'Trial' : 'Free';
             $price               = $package->price;
 
             // Define welcome message before create_website call
@@ -492,12 +453,12 @@ class AuthController extends Controller
             $welcome_message = 'شكراً على التسجيل في منصة تعاريف انت الآن على الباقة المميزة لمدة ' . $trialPeriod;
 
             $user = $this->create_website(
-                $request->all(),
+                request()->all(),
                 $transaction_id,
                 $transaction_details,
                 $price,
                 $be,
-                $request->password,
+                request()->input('password'),
                 $welcome_message
             );
 
@@ -602,27 +563,13 @@ class AuthController extends Controller
         }
     }
 
-    public function login(Request $request)
+    public function login(LoginApiRequest $request)
     {
-
-        $recaptchaValidator = Validator::make($request->only('recaptcha_token'), [
-            'recaptcha_token' => ['required', new Recaptcha],
-        ]);
-
-        if ($recaptchaValidator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'reCAPTCHA failed',
-                'errors' => $recaptchaValidator->errors()
-            ], 422);
-        }
-
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
-
-        $credentials = $request->only('email', 'password');
+        $validated = $request->validated();
+        $credentials = [
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+        ];
 
         if (!Auth::attempt($credentials)) {
             return response()->json(['message' => 'Invalid credentials'], 401);
@@ -658,9 +605,9 @@ class AuthController extends Controller
         ], 200);
     }
 
-    public function logout(Request $request)
+    public function logout(LogoutApiRequest $request)
     {
-        if (!$request->user()) {
+        if (!auth()->user()) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
@@ -975,7 +922,7 @@ class AuthController extends Controller
 
     // Mark message as read and update user profile
     // read_message
-    public function read_message(Request $request)
+    public function read_message(ReadMessageRequest $request)
     {
         $user = Auth::user();
 

@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api\V2\CustomersHub;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Api\ApiController;
+use App\Http\Requests\Api\V2\CustomersHub\StagesIndexRequest;
+use App\Http\Requests\Api\V2\CustomersHub\StoreStageRequest;
+use App\Http\Requests\Api\V2\CustomersHub\UpdateStageRequest;
 use App\Domain\CustomersHub\Services\CustomersHubStagesService;
 use App\Domain\CustomersHub\Exceptions\StageInUseException;
 use Illuminate\Validation\ValidationException;
@@ -30,13 +33,9 @@ class StagesController extends ApiController
     /**
      * GET /api/v2/customers-hub/stages
      */
-    public function index(Request $request): JsonResponse
+    public function index(StagesIndexRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'active_only' => 'nullable|in:true,false,1,0',
-            'order_by' => 'nullable|string|in:order,created_at',
-        ]);
-
+        $validated = $request->validated();
         $activeOnly = in_array(strtolower((string) ($validated['active_only'] ?? '')), ['true', '1'], true);
         $orderBy = $validated['order_by'] ?? 'order';
 
@@ -52,24 +51,9 @@ class StagesController extends ApiController
     /**
      * POST /api/v2/customers-hub/stages
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreStageRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'stage_id' => [
-                'required',
-                'string',
-                'max:50',
-                'regex:/^[a-zA-Z0-9_]+$/',
-                'unique:customers_hub_stages,stage_id',
-            ],
-            'stage_name_ar' => 'required|string|max:255',
-            'stage_name_en' => 'required|string|max:255',
-            'color' => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
-            'order' => 'required|integer|min:1',
-            'description' => 'nullable|string',
-            'is_active' => 'nullable|boolean',
-        ]);
-
+        $validated = $request->validated();
         $validated['is_active'] = $validated['is_active'] ?? true;
 
         try {
@@ -100,16 +84,9 @@ class StagesController extends ApiController
     /**
      * PUT /api/v2/customers-hub/stages/{stage_id}
      */
-    public function update(Request $request, string $stageId): JsonResponse
+    public function update(UpdateStageRequest $request, string $stageId): JsonResponse
     {
-        $validated = $request->validate([
-            'stage_name_ar' => 'nullable|string|max:255',
-            'stage_name_en' => 'nullable|string|max:255',
-            'color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
-            'order' => 'nullable|integer|min:1',
-            'description' => 'nullable|string',
-            'is_active' => 'nullable|boolean',
-        ]);
+        $validated = $request->validated();
 
         try {
             $stage = $this->stagesService->update($stageId, $validated);

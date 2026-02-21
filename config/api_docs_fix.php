@@ -65,8 +65,8 @@ return [
             'status' => ['type' => 'string', 'required' => false],
         ],
         'apps' => [
-            'app_id' => ['type' => 'string', 'required' => false],
-            'config' => ['type' => 'object', 'required' => false],
+            'app_id' => ['type' => 'integer', 'required' => true],
+            'settings' => ['type' => 'object', 'required' => false],
         ],
         'pixels' => [
             'name' => ['type' => 'string', 'required' => true],
@@ -90,6 +90,24 @@ return [
             'description' => ['type' => 'string', 'required' => false],
             'name_ar' => ['type' => 'string', 'required' => false],
             'name_en' => ['type' => 'string', 'required' => false],
+        ],
+        'marketing' => [
+            'name' => ['type' => 'string', 'required' => true],
+            'description' => ['type' => 'string', 'required' => false],
+            'type' => ['type' => 'string', 'required' => true],
+            'number' => ['type' => 'string', 'required' => true],
+            'business_id' => ['type' => 'string', 'required' => false],
+            'phone_id' => ['type' => 'string', 'required' => false],
+            'access_token' => ['type' => 'string', 'required' => false],
+            'additional_settings' => ['type' => 'object', 'required' => false],
+            'is_connected' => ['type' => 'boolean', 'required' => false],
+            'is_verified' => ['type' => 'boolean', 'required' => false],
+            'to' => ['type' => 'string', 'required' => false],
+            'message' => ['type' => 'string', 'required' => false],
+        ],
+        'credits' => [
+            'package_id' => ['type' => 'integer', 'required' => true],
+            'payment_method' => ['type' => 'string', 'required' => true],
         ],
     ],
 

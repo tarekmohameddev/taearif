@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\RentalContract\ChangeRentalContractStatusRequest;
+use App\Http\Requests\Api\RentalContract\StoreRentalContractRequest;
+use App\Http\Requests\Api\RentalContract\TerminateRentalContractRequest;
+use App\Http\Requests\Api\RentalContract\UpdateRentalContractRequest;
 use App\Models\Api\Rms\RmContract;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -98,21 +102,10 @@ class RentalContractController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreRentalContractRequest $request): JsonResponse
     {
         try {
-            $validated = $request->validate([
-                'rental_id' => 'required|exists:rm_rentals,id',
-                'start_date' => 'required|date',
-                'end_date' => 'required|date|after:start_date',
-                'status' => 'required|in:pending,active',
-                'file_path' => 'nullable|string|max:255',
-                'property_id' => 'nullable|integer|min:1',
-                'project_id' => 'nullable|integer|min:1',
-                'property_name' => 'nullable|string|max:150',
-                'project_name' => 'nullable|string|max:150',
-                'grace_period_months' => 'nullable|integer|min:0|max:2',
-            ]);
+            $validated = $request->validated();
 
             $contract = RmContract::create(array_merge($validated, [
                 'user_id' => Auth::id(),
@@ -140,22 +133,12 @@ class RentalContractController extends Controller
      * @param int $id
      * @return JsonResponse
      */
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateRentalContractRequest $request, int $id): JsonResponse
     {
         try {
             $contract = RmContract::where('user_id', Auth::id())->findOrFail($id);
 
-            $validated = $request->validate([
-                'start_date' => 'sometimes|date',
-                'end_date' => 'sometimes|date|after:start_date',
-                'status' => 'sometimes|in:pending,active,expired,terminated',
-                'file_path' => 'sometimes|string|max:255',
-                'property_id' => 'sometimes|nullable|integer|min:1',
-                'project_id' => 'sometimes|nullable|integer|min:1',
-                'property_name' => 'sometimes|nullable|string|max:150',
-                'project_name' => 'sometimes|nullable|string|max:150',
-                'grace_period_months' => 'sometimes|nullable|integer|min:0|max:2',
-            ]);
+            $validated = $request->validated();
 
             $contract->update(array_merge($validated, [
                 'updated_by' => Auth::id(),
@@ -266,15 +249,12 @@ class RentalContractController extends Controller
      * @param int $id
      * @return JsonResponse
      */
-    public function terminate(Request $request, int $id): JsonResponse
+    public function terminate(TerminateRentalContractRequest $request, int $id): JsonResponse
     {
         try {
             $contract = RmContract::where('user_id', Auth::id())->findOrFail($id);
 
-            $validated = $request->validate([
-                'termination_reason' => 'required|string|max:255',
-                'terminate_on' => 'required|date'
-            ]);
+            $validated = $request->validated();
 
             $contract->update([
                 'status' => 'terminated',
@@ -303,16 +283,12 @@ class RentalContractController extends Controller
      * @param int $id
      * @return JsonResponse
      */
-    public function changeStatus(Request $request, int $id): JsonResponse
+    public function changeStatus(ChangeRentalContractStatusRequest $request, int $id): JsonResponse
     {
         try {
             $contract = RmContract::where('user_id', Auth::id())->findOrFail($id);
 
-            $validated = $request->validate([
-                'status' => 'required|in:pending,active,expired,terminated',
-                'reason' => 'nullable|string|max:255',
-                'effective_date' => 'nullable|date'
-            ]);
+            $validated = $request->validated();
 
             $contract->update([
                 'status' => $validated['status'],
