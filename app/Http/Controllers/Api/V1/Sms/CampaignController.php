@@ -43,9 +43,11 @@ class CampaignController extends BaseApiController
 
     public function store(StoreCampaignRequest $request): JsonResponse
     {
-        $userId = (int) auth()->user()->tenantOwnerId();
+        $user = auth()->user();
+        $userId = (int) $user->tenantOwnerId();
+        $createdByUserId = (int) $user->getKey();
         $validated = $request->validated();
-        $campaign = $this->campaignService->create($userId, $validated);
+        $campaign = $this->campaignService->create($userId, $createdByUserId, $validated);
 
         return $this->created($campaign);
     }

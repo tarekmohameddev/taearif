@@ -51,7 +51,7 @@ class SmsCampaignApiTest extends TestCase
         ]);
 
         Sanctum::actingAs($tenantA);
-        $res = $this->getJson('/api/v1/sms/campaigns')->assertOk()->json('data');
+        $res = $this->getJson('/api/v1/sms/campaigns')->assertOk()->json('data.data');
         $this->assertCount(1, $res);
         $this->assertSame('Campaign A', $res[0]['name']);
     }

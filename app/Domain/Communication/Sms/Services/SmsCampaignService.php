@@ -31,7 +31,13 @@ class SmsCampaignService
     {
         $query = SmsCampaign::query()
             ->where('user_id', $userId)
-            ->with('template:id,name');
+            ->with([
+                'template:id,name',
+                'creator:id,first_name,last_name,account_type,tenant_id',
+                'creator.basic_setting:id,user_id,company_name',
+                'user:id',
+                'user.basic_setting:id,user_id,company_name',
+            ]);
 
         if (!empty($filters['status'])) {
             $query->where('status', (string) $filters['status']);
@@ -44,16 +50,32 @@ class SmsCampaignService
     {
         return SmsCampaign::query()
             ->where('user_id', $userId)
-            ->with('template:id,name')
+            ->with([
+                'template:id,name',
+                'creator:id,first_name,last_name,account_type,tenant_id',
+                'creator.basic_setting:id,user_id,company_name',
+                'user:id',
+                'user.basic_setting:id,user_id,company_name',
+            ])
             ->find($campaignId);
     }
 
-    public function create(int $userId, array $data): SmsCampaign
+    public function create(int $userId, int $createdByUserId, array $data): SmsCampaign
     {
         $data['user_id'] = $userId;
+        $data['created_by_user_id'] = $createdByUserId;
         $data['status'] = $data['status'] ?? 'draft';
 
-        return SmsCampaign::create($data);
+        $campaign = SmsCampaign::create($data);
+        $campaign->load([
+            'template:id,name',
+            'creator:id,first_name,last_name,account_type,tenant_id',
+            'creator.basic_setting:id,user_id,company_name',
+            'user:id',
+            'user.basic_setting:id,user_id,company_name',
+        ]);
+
+        return $campaign;
     }
 
     public function update(SmsCampaign $campaign, array $data): SmsCampaign
