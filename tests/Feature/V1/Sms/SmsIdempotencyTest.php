@@ -6,6 +6,7 @@ namespace Tests\Feature\V1\Sms;
 
 use App\Domain\Communication\Sms\Contracts\SmsGatewayClient;
 use App\Domain\Communication\Sms\DTOs\SmsGatewaySendResult;
+use App\Models\Api\markting\MarketingChannelPricing;
 use App\Models\Api\markting\UserCredit;
 use App\Models\SmsCampaign;
 use App\Models\User;
@@ -28,6 +29,24 @@ class SmsIdempotencyTest extends TestCase
         }
     }
 
+    private function requireSmsPricing(): void
+    {
+        if (!Schema::hasTable('marketing_channel_pricing')) {
+            $this->markTestSkipped('marketing_channel_pricing table required.');
+        }
+        MarketingChannelPricing::updateOrCreate(
+            ['channel_type' => 'sms'],
+            [
+                'credits_per_message' => 1,
+                'price_per_credit' => 0.05,
+                'effective_price_per_message' => 0.05,
+                'currency' => 'SAR',
+                'is_active' => true,
+                'description' => 'SMS (test)',
+            ]
+        );
+    }
+
     private function createTenant(): User
     {
         return User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
@@ -37,12 +56,14 @@ class SmsIdempotencyTest extends TestCase
     public function same_key_same_payload_returns_replay_without_double_charge(): void
     {
         $this->requireSmsTables();
+        $this->requireSmsPricing();
 
-        $this->mock(SmsGatewayClient::class, function (Mockery\MockInterface $mock): void {
+        $mock = $this->mock(SmsGatewayClient::class, function (Mockery\MockInterface $mock): void {
             $mock->shouldReceive('sendText')->andReturn(new SmsGatewaySendResult(true, 'gw-1', 'test'));
             $mock->shouldReceive('verifyWebhookSignature')->andReturnTrue();
             $mock->shouldReceive('parseDeliveryWebhook')->andReturn([]);
         });
+        $this->app->instance(SmsGatewayClient::class, $mock);
 
         $tenant = $this->createTenant();
         UserCredit::getOrCreateForUser($tenant->id)->update(['total_credits' => 10, 'used_credits' => 0]);
@@ -72,6 +93,7 @@ class SmsIdempotencyTest extends TestCase
     public function same_key_different_payload_returns_409_hash_mismatch(): void
     {
         $this->requireSmsTables();
+        $this->requireSmsPricing();
 
         $tenant = $this->createTenant();
         UserCredit::getOrCreateForUser($tenant->id)->update(['total_credits' => 10, 'used_credits' => 0]);
@@ -98,6 +120,7 @@ class SmsIdempotencyTest extends TestCase
     public function send_without_idempotency_key_returns_422_or_400(): void
     {
         $this->requireSmsTables();
+        $this->requireSmsPricing();
 
         $tenant = $this->createTenant();
         UserCredit::getOrCreateForUser($tenant->id)->update(['total_credits' => 10, 'used_credits' => 0]);
