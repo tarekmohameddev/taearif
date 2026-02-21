@@ -29,7 +29,8 @@ class GenerateSwaggerApiPathsCommand extends Command
 
     protected $signature = 'swagger:generate-api-paths
                             {--dry-run : Show what would be generated without writing}
-                            {--report : Write unresolved write ops to storage/app/swagger_unresolved_report.json}';
+                            {--report : Write unresolved write ops to storage/app/swagger_unresolved_report.json}
+                            {--path= : Only generate docs for a single API path (e.g. /apps/uninstall/{appId})}';
 
     protected $description = 'Generate OpenAPI PathItem annotations from routes/api.php for L5-Swagger (Main API only, excludes Admin API)';
 
@@ -44,6 +45,15 @@ class GenerateSwaggerApiPathsCommand extends Command
 
         $routes = $this->getMainApiRoutes();
         $grouped = $this->groupRoutesByPath($routes);
+        $pathFilter = $this->option('path');
+        if (is_string($pathFilter) && $pathFilter !== '') {
+            $pathFilter = '/' . ltrim($pathFilter, '/');
+            if (! isset($grouped[$pathFilter])) {
+                $this->error('Path not found in API routes: ' . $pathFilter);
+                return 1;
+            }
+            $grouped = [$pathFilter => $grouped[$pathFilter]];
+        }
 
         $php = $this->buildPhpDocFile($grouped);
 
@@ -171,8 +181,10 @@ class GenerateSwaggerApiPathsCommand extends Command
         $controllerFqcn = $op['controller_fqcn'] ?? null;
         $controllerMethod = $op['controller_method'] ?? null;
         if ($controllerFqcn === null || $controllerMethod === null) {
+            $this->warn("No controller for $path");
             return null;
         }
+
 
         $rules = $this->resolveRulesFromDocsMap($controllerFqcn, $controllerMethod);
         if ($rules !== null) {
@@ -183,12 +195,14 @@ class GenerateSwaggerApiPathsCommand extends Command
         $rules = $this->resolveRulesFromFormRequest($controllerFqcn, $controllerMethod);
         if ($rules !== null) {
             $this->formRequestCount++;
+            $this->info("Resolved FormRequest for $path");
             return ['rules' => $rules, 'source' => 'form_request'];
         }
 
         $rules = $this->resolveRulesFromInlineValidation($controllerFqcn, $controllerMethod);
         if ($rules !== null) {
             $this->inlineCount++;
+            $this->info("Resolved inline for $path");
             return ['rules' => $rules, 'source' => 'inline_extracted'];
         }
 
@@ -811,6 +825,20 @@ class GenerateSwaggerApiPathsCommand extends Command
         $contentType = 'application/json';
         $normalized = $this->normalizeRulesForSchema($rules);
 
+        $nestedByParent = [];
+        foreach ($normalized as $attribute => $ruleSet) {
+            if (strpos($attribute, '.') !== false && ! preg_match('/^(.+)\.\*$/', $attribute)) {
+                $parts = explode('.', $attribute, 2);
+                $parent = $parts[0];
+                $child = $parts[1];
+                if (! isset($nestedByParent[$parent])) {
+                    $nestedByParent[$parent] = [];
+                }
+                $nestedByParent[$parent][$child] = $this->ruleSetToProperty($ruleSet);
+                continue;
+            }
+        }
+
         foreach ($normalized as $attribute => $ruleSet) {
             if (strpos($attribute, '.') !== false) {
                 continue;
@@ -819,7 +847,11 @@ class GenerateSwaggerApiPathsCommand extends Command
             if ($isRequired) {
                 $required[] = $attribute;
             }
-            $prop = $this->ruleSetToProperty($ruleSet);
+            if (isset($nestedByParent[$attribute])) {
+                $prop = ['type' => 'object', 'properties' => $nestedByParent[$attribute]];
+            } else {
+                $prop = $this->ruleSetToProperty($ruleSet);
+            }
             if (isset($prop['format']) && $prop['format'] === 'binary') {
                 $contentType = 'multipart/form-data';
             }
@@ -905,7 +937,7 @@ class GenerateSwaggerApiPathsCommand extends Command
                 $minVal = $v;
             } elseif (str_starts_with($t, 'in:')) {
                 $enum = array_map('trim', explode(',', substr($t, 3)));
-            } elseif ($t === 'integer') {
+            } elseif ($t === 'integer' || str_starts_with($t, 'exists:')) {
                 $type = 'integer';
             } elseif ($t === 'numeric' || $t === 'number') {
                 $type = 'number';
@@ -948,6 +980,43 @@ class GenerateSwaggerApiPathsCommand extends Command
     }
 
     /**
+     * Build example object from schema for request body (required fields + type-based placeholders).
+     *
+     * @param array{required: array<int, string>, properties: array<string, array<string, mixed>>} $schema
+     * @return array<string, mixed>
+     */
+    private function schemaToExample(array $schema): array
+    {
+        $required = array_flip($schema['required']);
+        $properties = $schema['properties'];
+        $example = [];
+        foreach ($properties as $propName => $propSpec) {
+            if (strpos($propName, '.') !== false) {
+                continue;
+            }
+            $type = $propSpec['type'] ?? 'string';
+            $value = null;
+            if ($type === 'integer') {
+                $value = isset($propSpec['enum']) ? (int) $propSpec['enum'][0] : 1;
+            } elseif ($type === 'number') {
+                $value = 1.0;
+            } elseif ($type === 'boolean') {
+                $value = true;
+            } elseif ($type === 'array') {
+                $value = [];
+            } elseif (isset($propSpec['enum']) && is_array($propSpec['enum']) && $propSpec['enum'] !== []) {
+                $value = (string) $propSpec['enum'][0];
+            } elseif (($propSpec['format'] ?? '') === 'email') {
+                $value = 'user@example.com';
+            } else {
+                $value = ($propSpec['format'] ?? '') === 'binary' ? '' : 'string';
+            }
+            $example[$propName] = $value;
+        }
+        return $example;
+    }
+
+    /**
      * Emit docblock lines for @OA\RequestBody from schema (JSON or multipart).
      *
      * @param array{required: array<int, string>, properties: array<string, array<string, mixed>>, content_type: 'application/json'|'multipart/form-data'} $schema
@@ -955,8 +1024,11 @@ class GenerateSwaggerApiPathsCommand extends Command
      */
     private function emitRequestBodyAnnotations(array $schema): array
     {
-        $required = $schema['required'];
         $properties = $schema['properties'];
+        if (empty($properties)) {
+            return [];  // action-only endpoint, no body needed
+        }
+        $required = $schema['required'];
         $contentType = $schema['content_type'];
         $requiredStr = implode(',', array_map(function ($r) {
             return '"' . $this->escapeDocblockValue($r) . '"';
@@ -973,6 +1045,21 @@ class GenerateSwaggerApiPathsCommand extends Command
             $lines[] = ' *             ' . $this->propertyToOaLine($propName, $propSpec) . ',';
         }
         $lines[] = $contentType === 'multipart/form-data' ? " *         )))," : " *         )),";
+        return $lines;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function emitPathParameterAnnotations(string $path): array
+    {
+        preg_match_all('/\{(\w+)\}/', $path, $matches);
+        $lines = [];
+        foreach ($matches[1] as $param) {
+            $isInt = $param === 'id' || str_ends_with(strtolower($param), 'id');
+            $type = $isInt ? 'integer' : 'string';
+            $lines[] = " *         @OA\\Parameter(name=\"{$param}\", in=\"path\", required=true, @OA\\Schema(type=\"{$type}\")),";
+        }
         return $lines;
     }
 
@@ -1008,6 +1095,14 @@ class GenerateSwaggerApiPathsCommand extends Command
                 return '"' . $this->escapeDocblockValue((string) $v) . '"';
             }, $spec['enum']);
             $parts[] = 'enum={' . implode(',', $enumVals) . '}';
+        }
+        if ($type === 'object' && ! empty($spec['properties']) && is_array($spec['properties'])) {
+            $nested = [];
+            foreach ($spec['properties'] as $subName => $subSpec) {
+                $subSpec = is_array($subSpec) ? $subSpec : ['type' => 'string'];
+                $nested[] = $this->propertyToOaLine($subName, $subSpec);
+            }
+            $parts[] = 'properties={' . implode(',', $nested) . '}';
         }
         if ($type === 'array') {
             $itemType = 'string';
@@ -1048,6 +1143,9 @@ class GenerateSwaggerApiPathsCommand extends Command
                 $opsLines[] = " *         operationId=\"{$operationId}\",";
                 $opsLines[] = " *         tags={\"{$tagEsc}\"},";
                 $opsLines[] = " *         summary=\"{$summary}\"{$sec},";
+                foreach ($this->emitPathParameterAnnotations($path) as $paramLine) {
+                    $opsLines[] = $paramLine;
+                }
                 if (in_array($oaMethod, ['Post', 'Put', 'Patch'], true)) {
                     $resolved = $this->resolveValidationRulesForOperation($op, $path);
                     $requestBodyLines = null;
@@ -1059,16 +1157,18 @@ class GenerateSwaggerApiPathsCommand extends Command
                             $requestBodyLines = null;
                         }
                     }
-                    if ($requestBodyLines !== null) {
+                    if ($requestBodyLines !== null && !empty($requestBodyLines)) {
                         foreach ($requestBodyLines as $line) {
                             $opsLines[] = $line;
                         }
-                    } else {
+                    } elseif ($resolved === null) {
+                        // truly unresolved - show the fallback message
                         $this->fallbackCount++;
-                        $opsLines[] = " *         @OA\\RequestBody(required=true, @OA\\JsonContent(type=\"object\", description=\"Request body (JSON)\", example=\"{}\")),";
+                        $opsLines[] = " *         @OA\\RequestBody(required=true, @OA\\JsonContent(type=\"object\", description=\"Schema not resolved. Add FormRequest or swagger_request_map entry for this operation.\")),";
                     }
+                    // if resolved but empty properties: action-only, emit nothing
                 }
-                $opsLines[] = " *         @OA\\Response(response=200, description=\"OK\"),";
+                $opsLines[] = " *         @OA\\Response(response=200, description=\"OK\", @OA\\JsonContent(type=\"object\", @OA\\Property(property=\"status\", type=\"string\", example=\"success\"), @OA\\Property(property=\"data\", type=\"object\"), @OA\\Property(property=\"message\", type=\"string\", nullable=true))),";
                 $opsLines[] = " *         @OA\\Response(response=401, description=\"Unauthenticated\")";
                 $opsLines[] = $i < $last ? " *     )," : " *     )";
             }
@@ -1106,7 +1206,10 @@ PHP;
             $s = substr($s, strrpos($s, '@') + 1);
         }
         $s = preg_replace('/([A-Z])/', ' $1', $s);
-        $s = trim($s);
+        $s = trim(preg_replace('/\s+/', ' ', $s));
+        if ($s !== '') {
+            $s = ucwords(strtolower($s));
+        }
         if ($s === '') {
             $s = $method . ' ' . $path;
         }
