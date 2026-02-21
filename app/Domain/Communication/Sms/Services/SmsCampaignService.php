@@ -93,16 +93,33 @@ class SmsCampaignService
         $delayUntil = null;
         $responsePayload = [];
 
+        $payload = [
+            'campaign_id' => $campaignId,
+            'customer_ids' => array_values(array_map('intval', $customerIds)),
+            'manual_phones' => array_values(array_map('strval', $manualPhones)),
+        ];
+
         DB::transaction(function () use (
             $userId,
             $campaignId,
             $idempotencyKey,
+            $payload,
             $customerIds,
             $manualPhones,
             &$dispatchNow,
             &$delayUntil,
             &$responsePayload
         ): void {
+            $start = $this->idempotencyService->start($userId, $idempotencyKey, SmsEndpoints::SEND_CAMPAIGN, $payload);
+            if ($start->mode === IdempotencyStartResult::MODE_REPLAY && is_array($start->responsePayload)) {
+                $responsePayload = $start->responsePayload;
+                $dispatchNow = false;
+                return;
+            }
+            if ($start->mode === IdempotencyStartResult::MODE_CONFLICT && $start->reason !== null) {
+                throw new IdempotencyConflictException($start->reason);
+            }
+
             $campaign = SmsCampaign::query()
                 ->where('id', $campaignId)
                 ->where('user_id', $userId)
@@ -119,22 +136,6 @@ class SmsCampaignService
 
             if ($campaign->dispatch_reference !== null && !in_array($campaign->status, ['sent', 'failed', 'cancelled'], true)) {
                 throw new IdempotencyConflictException(IdempotencyStartResult::REASON_IN_PROGRESS);
-            }
-
-            $payload = [
-                'campaign_id' => $campaign->id,
-                'customer_ids' => array_values(array_map('intval', $customerIds)),
-                'manual_phones' => array_values(array_map('strval', $manualPhones)),
-            ];
-
-            $start = $this->idempotencyService->start($userId, $idempotencyKey, SmsEndpoints::SEND_CAMPAIGN, $payload);
-            if ($start->mode === IdempotencyStartResult::MODE_REPLAY && is_array($start->responsePayload)) {
-                $responsePayload = $start->responsePayload;
-                $dispatchNow = false;
-                return;
-            }
-            if ($start->mode === IdempotencyStartResult::MODE_CONFLICT && $start->reason !== null) {
-                throw new IdempotencyConflictException($start->reason);
             }
 
             $recipients = $this->recipientResolver->resolve($userId, $customerIds, $manualPhones);
