@@ -620,10 +620,10 @@ Route::post('/v1/property-requests/public', [ApiPropertyRequestController::class
 Route::prefix('v1/credits')->group(function () {
     Route::get('packages', [\App\Http\Controllers\Api\markting\CreditController::class, 'getPackages']);
 
-    // Payment callback routes (no auth required for webhooks)
-    Route::get('payment/success/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\markting\CreditController::class, 'paymentSuccess'])
+    // Payment callback routes (no auth required for webhooks). Accept GET and POST (e.g. ARB may POST).
+    Route::match(['get', 'post'], 'payment/success/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\markting\CreditController::class, 'paymentSuccess'])
         ->name('api.credits.payment.success');
-    Route::get('payment/cancel/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\markting\CreditController::class, 'paymentCancel'])
+    Route::match(['get', 'post'], 'payment/cancel/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\markting\CreditController::class, 'paymentCancel'])
         ->name('api.credits.payment.cancel');
 });
 
