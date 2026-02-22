@@ -544,11 +544,29 @@ class CreditController extends BaseApiController
     {
         try {
             $transaction = CreditTransaction::findOrFail($transactionId);
-            
+
             if ($transaction->status === 'completed') {
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Payment already processed',
+                    'transaction_id' => $transaction->reference_number,
+                ]);
+            }
+
+            // If gateway indicates failure/cancel (e.g. ARB sends user to same URL with result param), treat as cancel
+            if ($this->requestIndicatesPaymentFailedOrCancelled($request)) {
+                $transaction->update([
+                    'status' => 'failed',
+                    'metadata' => array_merge($transaction->metadata ?? [], [
+                        'payment_cancelled_at' => now()->toISOString(),
+                        'gateway' => $gateway,
+                        'cancellation_reason' => 'Gateway reported failure or user cancelled',
+                        'callback_data' => $request->all(),
+                    ]),
+                ]);
+                return response()->json([
+                    'status' => 'cancelled',
+                    'message' => 'Payment was cancelled',
                     'transaction_id' => $transaction->reference_number,
                 ]);
             }
@@ -586,6 +604,22 @@ class CreditController extends BaseApiController
                 'message' => 'Failed to process payment success: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Check if request contains gateway params indicating payment failed or was cancelled
+     */
+    private function requestIndicatesPaymentFailedOrCancelled(Request $request): bool
+    {
+        $result = strtoupper((string) ($request->input('result') ?? $request->input('payment_result') ?? $request->input('status') ?? ''));
+        $failedValues = ['NOT CAPTURED', 'NOT_CAPTURED', 'CANCELLED', 'CANCELED', 'FAILED', 'ERROR', 'DECLINED'];
+        if (in_array($result, $failedValues, true)) {
+            return true;
+        }
+        if ($request->has('error') || $request->has('payment_error')) {
+            return true;
+        }
+        return false;
     }
 
     /**

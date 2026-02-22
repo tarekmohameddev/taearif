@@ -95,7 +95,7 @@ class PaymentController extends Controller
             // Process payment with ARB or MyFatoorah
             if ($paymentMethod === 'arb') {
                 $arb = app(\App\Http\Controllers\Payment\ArbController::class);
-                $resp = $arb->paymentProcessForCredits($user, $amount, $credits, 'arb');
+                $resp = $arb->paymentProcessForCredits($user, $amount, $credits, 'arb', $transaction->id);
             } elseif ($paymentMethod === 'myfatoorah') {
                 $myfatoorah = app(\App\Http\Controllers\Payment\MyFatoorahController::class);
                 $resp = $myfatoorah->paymentProcessForCredits($user, $amount, $credits, 'myfatoorah');

@@ -111,7 +111,7 @@ class ArbController extends Controller
 
        // $data = $data + $this->generateUdfs($data);
         // log::info($data);
-        $data = $this->createRequestBody($this->wrapData($data));
+        $data = $this->createRequestBody($this->wrapData($data), $_success_url, $_cancel_url);
 
         // log::info($data);
 
@@ -166,7 +166,7 @@ class ArbController extends Controller
 
     }
 
-    public function paymentProcessForCredits(\App\Models\User $user, float $amount, int $credits, string $paymentMethod = 'arb'): array
+    public function paymentProcessForCredits(\App\Models\User $user, float $amount, int $credits, string $paymentMethod = 'arb', ?int $transactionId = null): array
     {
         $dummyReq = new \Illuminate\Http\Request([
             'first_name' => $user->name,
@@ -175,13 +175,14 @@ class ArbController extends Controller
             'package_id' => 0,
         ]);
 
-        // Generate success and cancel URLs for credit purchase
+        // Use actual transaction id so success/cancel callbacks update the correct record
+        $tid = $transactionId ?? ('TEMP_' . time());
         $successUrl = route('api.credits.payment.success', [
-            'transaction_id' => 'TEMP_' . time(), // Will be updated with actual transaction ID
+            'transaction_id' => $tid,
             'gateway' => $paymentMethod
         ]);
         $cancelUrl = route('api.credits.payment.cancel', [
-            'transaction_id' => 'TEMP_' . time(), // Will be updated with actual transaction ID
+            'transaction_id' => $tid,
             'gateway' => $paymentMethod
         ]);
 
@@ -663,7 +664,12 @@ class ArbController extends Controller
         return "[$data]";
     }
 
-    private function createRequestBody($encoded_data): string
+    /**
+     * @param string $encoded_data JSON-wrapped payload (from wrapData)
+     * @param string|null $responseURL When provided (e.g. credits/app flow), use this instead of membership success
+     * @param string|null $errorURL When provided, use this instead of membership cancel
+     */
+    private function createRequestBody($encoded_data, ?string $responseURL = null, ?string $errorURL = null): string
     {
         $paymentMethod = PaymentGateway::where('keyword', 'arb')->first();
         $paydata = $paymentMethod->convertAutoData();
@@ -671,8 +677,8 @@ class ArbController extends Controller
         $encryptedData = [
             'id' => $paydata['tranportal_id'],
             'trandata' => $this->encryption($encoded_data, $paydata['resource_key']),
-            'responseURL' => route('membership.arb.success'),
-            'errorURL' => route('membership.arb.cancel'),
+            'responseURL' => $responseURL ?? route('membership.arb.success'),
+            'errorURL' => $errorURL ?? route('membership.arb.cancel'),
         ];
 
         return $this->wrapData($encryptedData);
