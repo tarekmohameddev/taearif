@@ -162,7 +162,7 @@ class SmsCampaignService
 
             $recipients = $this->recipientResolver->resolve($userId, $customerIds, $manualPhones);
             if (count($recipients) === 0) {
-                throw new InvalidArgumentException('No valid recipients found.');
+                throw new InvalidArgumentException('No valid phone numbers from the given customer_ids or manual_phones. Ensure customer IDs exist and have a valid phone (8–16 digits), and that manual_phones are valid (8–16 digits).');
             }
 
             $creditsPerMessage = UserCredit::getCostForMessageType('sms');

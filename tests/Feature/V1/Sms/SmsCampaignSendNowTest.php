@@ -93,4 +93,54 @@ class SmsCampaignSendNowTest extends TestCase
         $credits = UserCredit::where('user_id', $tenant->id)->firstOrFail();
         $this->assertSame(0, (int) $credits->used_credits);
     }
+
+    /** @test */
+    public function send_without_recipients_returns_422(): void
+    {
+        $this->requireSmsTables();
+
+        $tenant = $this->createTenant();
+        UserCredit::getOrCreateForUser($tenant->id)->update(['total_credits' => 10, 'used_credits' => 0]);
+
+        $campaign = SmsCampaign::create([
+            'user_id' => $tenant->id,
+            'name' => 'No Recipients',
+            'message' => 'Hi',
+            'status' => 'draft',
+        ]);
+
+        Sanctum::actingAs($tenant);
+        $res = $this->postJson("/api/v1/sms/campaigns/{$campaign->id}/send", [], [
+            'Idempotency-Key' => 'no-recipients-' . uniqid(),
+        ]);
+
+        $res->assertStatus(422)
+            ->assertJsonPath('message', 'Validation failed')
+            ->assertJsonPath('errors.customer_ids.0', 'At least one of customer_ids or manual_phones must be provided with at least one value.');
+    }
+
+    /** @test */
+    public function send_with_invalid_recipients_returns_422(): void
+    {
+        $this->requireSmsTables();
+
+        $tenant = $this->createTenant();
+        UserCredit::getOrCreateForUser($tenant->id)->update(['total_credits' => 10, 'used_credits' => 0]);
+
+        $campaign = SmsCampaign::create([
+            'user_id' => $tenant->id,
+            'name' => 'Invalid Phones',
+            'message' => 'Hi',
+            'status' => 'draft',
+        ]);
+
+        Sanctum::actingAs($tenant);
+        $res = $this->postJson("/api/v1/sms/campaigns/{$campaign->id}/send", [
+            'manual_phones' => ['123', 'abc'],
+        ], ['Idempotency-Key' => 'invalid-recipients-' . uniqid()]);
+
+        $res->assertStatus(422)
+            ->assertJsonPath('code', 'VALIDATION_FAILED')
+            ->assertJsonPath('message', 'No valid phone numbers from the given customer_ids or manual_phones. Ensure customer IDs exist and have a valid phone (8–16 digits), and that manual_phones are valid (8–16 digits).');
+    }
 }
