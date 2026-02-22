@@ -539,50 +539,131 @@ class CreditController extends BaseApiController
 
     /**
      * Handle payment success callback
+     *
+     * ARB bank posts encrypted `trandata` to BOTH the responseURL (success) AND errorURL (cancel).
+     * We MUST decrypt trandata to know the real result before granting credits.
      */
     public function paymentSuccess(Request $request, $transactionId, $gateway)
     {
         try {
             $transaction = CreditTransaction::findOrFail($transactionId);
 
+            // --- Idempotency guard ---
             if ($transaction->status === 'completed') {
                 return response()->json([
-                    'status' => 'success',
-                    'message' => 'Payment already processed',
+                    'status'         => 'success',
+                    'message'        => 'Payment already processed',
                     'transaction_id' => $transaction->reference_number,
                 ]);
             }
 
-            // If gateway indicates failure/cancel (e.g. ARB sends user to same URL with result param), treat as cancel
-            if ($this->requestIndicatesPaymentFailedOrCancelled($request)) {
+            if ($transaction->status === 'failed') {
+                return response()->json([
+                    'status'         => 'cancelled',
+                    'message'        => 'Payment was cancelled or failed',
+                    'transaction_id' => $transaction->reference_number,
+                ]);
+            }
+
+            // --- For ARB: decrypt trandata to get the real payment result ---
+            $decryptedData = null;
+            if ($gateway === 'arb' && $request->has('trandata')) {
+                try {
+                    $arbController = new \App\Http\Controllers\Payment\ArbController();
+                    $paymentMethod  = \App\Models\PaymentGateway::where('keyword', 'arb')->first();
+                    $paydata        = $paymentMethod->convertAutoData();
+                    $raw            = $arbController->decryption($request->input('trandata'), $paydata['resource_key']);
+                    $decoded        = json_decode(urldecode($raw), true);
+                    // ARB wraps result in an array
+                    $decryptedData  = is_array($decoded) ? ($decoded[0] ?? $decoded) : null;
+                    \Illuminate\Support\Facades\Log::info('ARB credit payment trandata decrypted', [
+                        'transaction_id' => $transactionId,
+                        'result'         => $decryptedData['result'] ?? 'unknown',
+                    ]);
+                } catch (\Exception $decryptErr) {
+                    \Illuminate\Support\Facades\Log::error('ARB credit trandata decryption failed', [
+                        'transaction_id' => $transactionId,
+                        'error'          => $decryptErr->getMessage(),
+                    ]);
+                    // Cannot verify — treat as failed to be safe
+                    $transaction->update([
+                        'status'   => 'failed',
+                        'metadata' => array_merge($transaction->metadata ?? [], [
+                            'payment_failed_at'  => now()->toISOString(),
+                            'gateway'            => $gateway,
+                            'failure_reason'     => 'trandata decryption failed: ' . $decryptErr->getMessage(),
+                            'callback_data'      => $request->all(),
+                        ]),
+                    ]);
+                    return response()->json([
+                        'status'         => 'error',
+                        'message'        => 'Payment verification failed',
+                        'transaction_id' => $transaction->reference_number,
+                    ], 422);
+                }
+            }
+
+            // --- Determine if payment actually succeeded ---
+            $paymentSucceeded = false;
+            $gatewayTransactionId = $request->get('payment_id') ?? $request->get('transaction_id');
+
+            if ($gateway === 'arb') {
+                if ($decryptedData !== null) {
+                    // ARB: only CAPTURED = real success
+                    $paymentSucceeded     = isset($decryptedData['result']) && $decryptedData['result'] === 'CAPTURED';
+                    $gatewayTransactionId = $decryptedData['transId'] ?? $gatewayTransactionId;
+                } else {
+                    // ARB but missing/failed decryption of trandata -> FAIL
+                    // Do NOT fall back to checking query string params for ARB.
+                    $paymentSucceeded = false;
+                }
+            } else {
+                // Non-ARB gateways: check plain request params for failure signals
+                $paymentSucceeded = !$this->requestIndicatesPaymentFailedOrCancelled($request);
+            }
+
+            // --- Payment was cancelled / failed ---
+            if (!$paymentSucceeded) {
+                $cancellationReason = isset($decryptedData['result'])
+                    ? 'ARB result: ' . $decryptedData['result']
+                    : 'Gateway reported failure or user cancelled';
+
                 $transaction->update([
-                    'status' => 'failed',
+                    'status'   => 'failed',
                     'metadata' => array_merge($transaction->metadata ?? [], [
                         'payment_cancelled_at' => now()->toISOString(),
-                        'gateway' => $gateway,
-                        'cancellation_reason' => 'Gateway reported failure or user cancelled',
-                        'callback_data' => $request->all(),
+                        'gateway'              => $gateway,
+                        'cancellation_reason'  => $cancellationReason,
+                        'callback_data'        => $request->all(),
+                        'decrypted_data'       => $decryptedData,
                     ]),
                 ]);
+
+                \Illuminate\Support\Facades\Log::info('Credit payment cancelled/failed', [
+                    'transaction_id'     => $transactionId,
+                    'gateway'            => $gateway,
+                    'cancellation_reason'=> $cancellationReason,
+                ]);
+
                 return response()->json([
-                    'status' => 'cancelled',
-                    'message' => 'Payment was cancelled',
+                    'status'         => 'cancelled',
+                    'message'        => 'Payment was cancelled',
                     'transaction_id' => $transaction->reference_number,
                 ]);
             }
 
-            // Update transaction status to completed
+            // --- Payment truly succeeded: add credits ---
             $transaction->update([
-                'status' => 'completed',
-                'payment_transaction_id' => $request->get('payment_id') ?? $request->get('transaction_id'),
-                'metadata' => array_merge($transaction->metadata ?? [], [
+                'status'                 => 'completed',
+                'payment_transaction_id' => $gatewayTransactionId,
+                'metadata'               => array_merge($transaction->metadata ?? [], [
                     'payment_completed_at' => now()->toISOString(),
-                    'gateway' => $gateway,
-                    'callback_data' => $request->all(),
+                    'gateway'              => $gateway,
+                    'callback_data'        => $request->all(),
+                    'decrypted_data'       => $decryptedData,
                 ]),
             ]);
 
-            // Add credits to user
             $userCredit = UserCredit::getOrCreateForUser($transaction->user_id);
             $userCredit->addCredits(
                 $transaction->credits_amount,
@@ -590,17 +671,29 @@ class CreditController extends BaseApiController
                 "Credit purchase via {$gateway}"
             );
 
+            \Illuminate\Support\Facades\Log::info('Credit payment completed, credits added', [
+                'transaction_id'  => $transactionId,
+                'user_id'         => $transaction->user_id,
+                'credits_added'   => $transaction->credits_amount,
+                'gateway'         => $gateway,
+            ]);
+
             return response()->json([
-                'status' => 'success',
-                'message' => 'Payment successful and credits added',
+                'status'         => 'success',
+                'message'        => 'Payment successful and credits added',
                 'transaction_id' => $transaction->reference_number,
-                'credits_added' => $transaction->credits_amount,
-                'new_balance' => $userCredit->fresh()->total_credits,
+                'credits_added'  => $transaction->credits_amount,
+                'new_balance'    => $userCredit->fresh()->total_credits,
             ]);
 
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Credit paymentSuccess callback error', [
+                'transaction_id' => $transactionId ?? null,
+                'gateway'        => $gateway ?? null,
+                'error'          => $e->getMessage(),
+            ]);
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'Failed to process payment success: ' . $e->getMessage(),
             ], 500);
         }
