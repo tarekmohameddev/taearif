@@ -18,12 +18,13 @@ class RegisterApiRequest extends BaseApiFormRequest
         $isEmployeeRegistration = request()->input('account_type') === 'employee';
         $hasTempToken = !empty(request()->input('temp_token'));
         $requiresCoreCredentials = $isEmployeeRegistration || !$hasTempToken;
+        $apiRecaptchaEnabled = config('services.recaptcha.api_enabled', true);
 
         return [
             'recaptcha_token' => [
                 Rule::excludeIf(request()->input('recaptcha_token') === 'TEST_BYPASS_TOKEN'),
-                'required',
-                new Recaptcha(),
+                Rule::requiredIf($apiRecaptchaEnabled),
+                ...($apiRecaptchaEnabled ? [new Recaptcha()] : []),
             ],
             'account_type' => 'nullable|string|in:employee,tenant',
             'user_id' => [
