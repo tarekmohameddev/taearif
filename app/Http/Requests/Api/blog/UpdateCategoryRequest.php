@@ -19,12 +19,25 @@ class UpdateCategoryRequest extends FormRequest
         $slug = $this->route('slug');
         $category = \App\Models\Api\Category::where('slug', $slug)->first();
 
-        // If category doesn't exist, validation will fail in controller anyway
-        // But we need the ID for unique validation rule
-        $id = $category?->id;
-
         return [
-            'name' => 'required|string|max:255|unique:api_categories,name,' . ($id ?? ''),
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                function (string $attribute, mixed $value, \Closure $fail) use ($category): void {
+                    // Editing and keeping the same name (body name = current category name) → allow
+                    if ($category !== null && (string) $value === (string) $category->name) {
+                        return;
+                    }
+                    $query = \App\Models\Api\Category::where('name', $value);
+                    if ($category?->id !== null) {
+                        $query->where('id', '!=', $category->id);
+                    }
+                    if ($query->exists()) {
+                        $fail(__('validation.unique', ['attribute' => 'name']));
+                    }
+                },
+            ],
         ];
     }
 }
