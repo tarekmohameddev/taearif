@@ -88,3 +88,4 @@ tests/api-scripts/*
 
 /the_test_db
 ai/api-export/*
+run_db_checks.php
