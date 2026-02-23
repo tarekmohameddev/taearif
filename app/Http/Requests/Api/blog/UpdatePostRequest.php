@@ -36,15 +36,21 @@ class UpdatePostRequest extends FormRequest
                 'string',
                 'max:255',
                 function ($attribute, $value, $fail) use ($postId, $user) {
-                    if ($value && $user) {
-                        $exists = Post::where('slug', $value)
-                            ->where('user_id', $user->id)
-                            ->when($postId, fn($query) => $query->where('id', '!=', $postId))
-                            ->exists();
+                    if (!$value || !$user) {
+                        return;
+                    }
+                    $routeSlug = $this->route('slug');
+                    // Editing and keeping the same slug (body slug = URL slug) → allow
+                    if ($routeSlug !== null && (string) $value === (string) $routeSlug) {
+                        return;
+                    }
+                    $exists = Post::where('slug', $value)
+                        ->where('user_id', $user->id)
+                        ->when($postId, fn($query) => $query->where('id', '!=', $postId))
+                        ->exists();
 
-                        if ($exists) {
-                            $fail('The slug has already been taken.');
-                        }
+                    if ($exists) {
+                        $fail('The slug has already been taken.');
                     }
                 },
             ],
