@@ -9,4 +9,10 @@ interface CreditService
     public function deduct(int $userId, int $amount, string $referenceType, string $referenceId): void;
 
     public function refund(int $userId, int $amount, string $referenceType, string $referenceId): void;
+
+    public function reserve(int $userId, int $amount, string $referenceType, string $referenceId): void;
+
+    public function consumeReserved(int $userId, int $amount, string $referenceType, string $referenceId): void;
+
+    public function releaseReserved(int $userId, int $amount, string $referenceType, string $referenceId): void;
 }

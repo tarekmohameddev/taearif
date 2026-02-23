@@ -8,6 +8,7 @@ use App\Domain\Communication\Sms\Services\SmsCampaignService;
 use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\Api\V1\Sms\StoreCampaignRequest;
 use App\Http\Requests\Api\V1\Sms\UpdateCampaignRequest;
+use App\Http\Requests\Api\V1\Sms\ResumeCampaignRequest;
 use App\Http\Requests\Api\V1\Sms\SendCampaignRequest;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -98,6 +99,49 @@ class CampaignController extends BaseApiController
                 $userId,
                 $id,
                 $key,
+                $validated['customer_ids'] ?? [],
+                $validated['manual_phones'] ?? []
+            );
+        } catch (ModelNotFoundException) {
+            return response()->json(['status' => false, 'code' => 'CAMPAIGN_NOT_FOUND', 'message' => 'Campaign not found.'], 404);
+        } catch (IdempotencyConflictException $e) {
+            return response()->json(['status' => false, 'code' => strtoupper((string) $e->reason), 'message' => $e->getMessage()], 409);
+        } catch (InsufficientCreditsException $e) {
+            return response()->json(['status' => false, 'code' => 'INSUFFICIENT_CREDITS', 'message' => $e->getMessage()], 400);
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['status' => false, 'code' => 'VALIDATION_FAILED', 'message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['status' => true, 'data' => $data], 202);
+    }
+
+    public function pause(int $id): JsonResponse
+    {
+        $userId = (int) auth()->user()->tenantOwnerId();
+
+        try {
+            $data = $this->campaignService->pause($userId, $id);
+        } catch (ModelNotFoundException) {
+            return response()->json(['status' => false, 'code' => 'CAMPAIGN_NOT_FOUND', 'message' => 'Campaign not found.'], 404);
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['status' => false, 'code' => 'VALIDATION_FAILED', 'message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['status' => true, 'data' => $data], 200);
+    }
+
+    public function resume(ResumeCampaignRequest $request, int $id): JsonResponse
+    {
+        $key = trim((string) request()->header('Idempotency-Key', ''));
+        $validated = $request->validated();
+        $userId = (int) auth()->user()->tenantOwnerId();
+
+        try {
+            $data = $this->campaignService->resume(
+                $userId,
+                $id,
+                $key,
+                $validated['mode'],
                 $validated['customer_ids'] ?? [],
                 $validated['manual_phones'] ?? []
             );

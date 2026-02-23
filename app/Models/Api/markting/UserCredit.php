@@ -17,6 +17,7 @@ class UserCredit extends Model
         'user_id',
         'total_credits',
         'used_credits',
+        'reserved_credits',
         'monthly_limit',
         'average_cost_per_credit',
         'reset_date',
@@ -26,6 +27,7 @@ class UserCredit extends Model
     protected $casts = [
         'total_credits' => 'integer',
         'used_credits' => 'integer',
+        'reserved_credits' => 'integer',
         'monthly_limit' => 'integer',
         'average_cost_per_credit' => 'decimal:4',
         'reset_date' => 'date',
@@ -43,11 +45,13 @@ class UserCredit extends Model
     }
 
     /**
-     * Get available credits (total - used)
+     * Get available credits (total - used - reserved)
      */
     public function getAvailableCreditsAttribute()
     {
-        return $this->total_credits - $this->used_credits;
+        $reserved = (int) ($this->reserved_credits ?? 0);
+
+        return $this->total_credits - $this->used_credits - $reserved;
     }
 
     /**

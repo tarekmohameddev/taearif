@@ -66,7 +66,7 @@ class SmsIdempotencyTest extends TestCase
         $this->app->instance(SmsGatewayClient::class, $mock);
 
         $tenant = $this->createTenant();
-        UserCredit::getOrCreateForUser($tenant->id)->update(['total_credits' => 10, 'used_credits' => 0]);
+        UserCredit::getOrCreateForUser($tenant->id)->update(['total_credits' => 10, 'used_credits' => 0, 'reserved_credits' => 0]);
         $campaign = SmsCampaign::create([
             'user_id' => $tenant->id,
             'name' => 'Idem Campaign',
@@ -86,7 +86,7 @@ class SmsIdempotencyTest extends TestCase
         $this->assertSame($r1->json('data.dispatch_reference'), $r2->json('data.dispatch_reference'));
 
         $credits = UserCredit::where('user_id', $tenant->id)->firstOrFail();
-        $this->assertSame(1, (int) $credits->used_credits);
+        $this->assertSame(1, (int) ($credits->reserved_credits ?? 0), 'Replay must not double-reserve; only one reserve of 1.');
     }
 
     /** @test */
@@ -96,7 +96,7 @@ class SmsIdempotencyTest extends TestCase
         $this->requireSmsPricing();
 
         $tenant = $this->createTenant();
-        UserCredit::getOrCreateForUser($tenant->id)->update(['total_credits' => 10, 'used_credits' => 0]);
+        UserCredit::getOrCreateForUser($tenant->id)->update(['total_credits' => 10, 'used_credits' => 0, 'reserved_credits' => 0]);
         $campaign = SmsCampaign::create([
             'user_id' => $tenant->id,
             'name' => 'Hash Mismatch',

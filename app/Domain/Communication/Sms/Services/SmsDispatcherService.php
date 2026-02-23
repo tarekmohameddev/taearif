@@ -94,7 +94,9 @@ class SmsDispatcherService implements SmsDispatcher
                 ]);
 
             if ($affected === 1 && $log->campaign_id !== null) {
+                $this->creditService->consumeReserved((int) $log->user_id, 1, 'sms_message_log', (string) $log->id);
                 SmsCampaign::query()->where('id', $log->campaign_id)->increment('sent_count');
+                SmsCampaign::query()->where('id', $log->campaign_id)->decrement('reserved_credits');
             }
 
             if ($this->shouldRecordAttempts()) {
@@ -147,12 +149,12 @@ class SmsDispatcherService implements SmsDispatcher
             );
         }
 
-        $this->refundIfNeeded((int) $log->id);
-    }
-
-    private function shouldRecordAttempts(): bool
-    {
-        return config('communication.reliability.enabled', false) && $this->deliveryAttemptRecorder !== null;
+        if ($log->campaign_id !== null) {
+            $this->creditService->releaseReserved((int) $log->user_id, 1, 'sms_message_log_failed', (string) $log->id);
+            SmsCampaign::query()->where('id', $log->campaign_id)->decrement('reserved_credits');
+        } else {
+            $this->refundIfNeeded((int) $log->id);
+        }
     }
 
     private function refundIfNeeded(int $logId): void
@@ -173,6 +175,11 @@ class SmsDispatcherService implements SmsDispatcher
                 'refund_processed_at' => now(),
             ]);
         });
+    }
+
+    private function shouldRecordAttempts(): bool
+    {
+        return config('communication.reliability.enabled', false) && $this->deliveryAttemptRecorder !== null;
     }
 }
 

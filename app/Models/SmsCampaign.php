@@ -23,6 +23,7 @@ class SmsCampaign extends Model
         'sent_count',
         'delivered_count',
         'failed_count',
+        'reserved_credits',
         'meta',
     ];
 

@@ -1106,6 +1106,8 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::patch('campaigns/{id}', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'update']);
         Route::delete('campaigns/{id}', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'destroy']);
         Route::post('campaigns/{id}/send', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'send']);
+        Route::post('campaigns/{id}/pause', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'pause']);
+        Route::post('campaigns/{id}/resume', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'resume']);
 
         Route::get('templates', [\App\Http\Controllers\Api\V1\Sms\TemplateController::class, 'index']);
         Route::get('templates/{id}', [\App\Http\Controllers\Api\V1\Sms\TemplateController::class, 'show']);
