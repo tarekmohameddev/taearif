@@ -9,14 +9,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('user_credits', function (Blueprint $table) {
-            $table->unsignedInteger('reserved_credits')->default(0)->after('used_credits');
+            if (!Schema::hasColumn('user_credits', 'reserved_credits')) {
+                $table->unsignedInteger('reserved_credits')->default(0)->after('used_credits');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('user_credits', function (Blueprint $table) {
-            $table->dropColumn('reserved_credits');
+            if (Schema::hasColumn('user_credits', 'reserved_credits')) {
+                $table->dropColumn('reserved_credits');
+            }
         });
     }
 };

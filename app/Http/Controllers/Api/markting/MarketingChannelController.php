@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\markting;
 
 use App\Http\Controllers\Api\BaseApiController;
 use App\Models\Api\markting\MarketingChannel;
+use App\Models\Api\markting\MarketingChannelMessage;
 use App\Http\Controllers\Api\markting\CreditController;
 use App\Models\Api\markting\UserCredit;
 use App\Domain\Communication\Contracts\CommunicationService;
@@ -17,8 +18,10 @@ use App\Http\Requests\Api\Marketing\UpdateChannelStatusRequest;
 use App\Http\Requests\Api\Marketing\SendMessageRequest;
 use App\Http\Requests\Api\Marketing\SendWhatsAppToCustomerRequest;
 use App\Http\Requests\Api\Marketing\GetChannelStatsRequest;
+use App\Http\Requests\Api\Marketing\GetMessagesRequest;
 use App\Http\Requests\Api\Marketing\UpdateMarketingSettingsRequest;
 use App\Http\Requests\Api\Marketing\UpdateSystemIntegrationSettingsRequest;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -784,11 +787,39 @@ class MarketingChannelController extends BaseApiController
         foreach ($statuses as $status) {
             $messageId = $status['id'] ?? null;
             $deliveryStatus = $status['status'] ?? 'unknown';
+            $timestamp = $status['timestamp'] ?? null;
 
-            Log::info('Message delivery status', [
-                'message_id' => $messageId,
-                'status' => $deliveryStatus
-            ]);
+            if (!$messageId) {
+                continue;
+            }
+
+            $message = MarketingChannelMessage::where('provider_message_id', $messageId)->first();
+
+            if ($message) {
+                if ($deliveryStatus === 'delivered') {
+                    $message->update([
+                        'status' => 'delivered',
+                        'delivered_at' => $timestamp ? Carbon::createFromTimestamp($timestamp) : now(),
+                    ]);
+                } elseif ($deliveryStatus === 'failed') {
+                    $message->update([
+                        'status' => 'failed',
+                        'failed_at' => now(),
+                        'error_code' => $status['errors'][0]['code'] ?? null,
+                        'error_message' => $status['errors'][0]['title'] ?? 'Delivery failed',
+                    ]);
+                }
+
+                Log::info('Message delivery status updated', [
+                    'message_id' => $messageId,
+                    'status' => $deliveryStatus,
+                    'record_id' => $message->id,
+                ]);
+            } else {
+                Log::warning('Message not found for delivery update', [
+                    'message_id' => $messageId,
+                ]);
+            }
         }
     }
 
@@ -802,11 +833,25 @@ class MarketingChannelController extends BaseApiController
         foreach ($statuses as $status) {
             $messageId = $status['id'] ?? null;
             $readStatus = $status['status'] ?? 'unknown';
+            $timestamp = $status['timestamp'] ?? null;
 
-            Log::info('Message read status', [
-                'message_id' => $messageId,
-                'status' => $readStatus
-            ]);
+            if (!$messageId || $readStatus !== 'read') {
+                continue;
+            }
+
+            $message = MarketingChannelMessage::where('provider_message_id', $messageId)->first();
+
+            if ($message) {
+                $message->update([
+                    'status' => 'read',
+                    'read_at' => $timestamp ? Carbon::createFromTimestamp($timestamp) : now(),
+                ]);
+
+                Log::info('Message read status updated', [
+                    'message_id' => $messageId,
+                    'record_id' => $message->id,
+                ]);
+            }
         }
     }
 
@@ -855,6 +900,81 @@ class MarketingChannelController extends BaseApiController
             return $this->ok($settings, 'Marketing settings retrieved successfully');
         } catch (\Exception $e) {
             return $this->fail('Failed to retrieve marketing settings: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get message history for a channel or customer
+     */
+    public function getMessages(GetMessagesRequest $request): JsonResponse
+    {
+        try {
+            $userId = Auth::id();
+
+            $query = MarketingChannelMessage::where('user_id', $userId)
+                ->with(['channel:id,name,type', 'customer:id,name,phone_number']);
+
+            if ($request->filled('channel_id')) {
+                $query->where('channel_id', $request->channel_id);
+            }
+
+            if ($request->filled('customer_id')) {
+                $query->where('customer_id', $request->customer_id);
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->filled('from_date')) {
+                $query->where('created_at', '>=', $request->from_date);
+            }
+            if ($request->filled('to_date')) {
+                $query->where('created_at', '<=', $request->to_date);
+            }
+
+            $messages = $query->orderBy('created_at', 'desc')
+                ->paginate((int) ($request->per_page ?? 50));
+
+            return $this->ok($messages, 'Messages retrieved successfully');
+        } catch (\Exception $e) {
+            return $this->fail('Failed to retrieve messages: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get message statistics
+     */
+    public function getMessageStats(Request $request): JsonResponse
+    {
+        try {
+            $userId = Auth::id();
+
+            $query = MarketingChannelMessage::where('user_id', $userId);
+
+            if ($request->filled('channel_id')) {
+                $query->where('channel_id', $request->channel_id);
+            }
+
+            $baseQuery = clone $query;
+            $stats = [
+                'total' => $baseQuery->count(),
+                'sent' => (clone $query)->where('status', 'sent')->count(),
+                'delivered' => (clone $query)->where('status', 'delivered')->count(),
+                'read' => (clone $query)->where('status', 'read')->count(),
+                'failed' => (clone $query)->where('status', 'failed')->count(),
+                'delivery_rate' => 0,
+                'read_rate' => 0,
+            ];
+
+            if ($stats['total'] > 0) {
+                $stats['delivery_rate'] = round(($stats['delivered'] + $stats['read']) / $stats['total'] * 100, 2);
+                $stats['read_rate'] = round($stats['read'] / $stats['total'] * 100, 2);
+            }
+
+            return $this->ok($stats, 'Message statistics retrieved successfully');
+        } catch (\Exception $e) {
+            return $this->fail('Failed to retrieve statistics: ' . $e->getMessage());
         }
     }
 
@@ -1109,6 +1229,24 @@ class MarketingChannelController extends BaseApiController
             $messageResult = $this->sendWhatsAppViaMeta($channel, $formattedPhone, $request->message);
 
             if ($messageResult['success']) {
+                // Create message record for delivery/read tracking
+                $messageRecord = MarketingChannelMessage::create([
+                    'user_id' => $userId,
+                    'channel_id' => $channel->id,
+                    'customer_id' => $customer->id,
+                    'recipient_phone' => $formattedPhone,
+                    'recipient_name' => $customer->name,
+                    'message_content' => $request->message,
+                    'message_type' => 'text',
+                    'status' => 'sent',
+                    'provider_message_id' => $messageResult['message_id'],
+                    'sent_at' => now(),
+                    'credits_used' => $creditsNeeded,
+                    'meta' => [
+                        'meta_response' => $messageResult['meta_response'] ?? null,
+                    ],
+                ]);
+
                 // Update sent message count
                 $channel->increment('sent_messages_count');
 
@@ -1125,6 +1263,7 @@ class MarketingChannelController extends BaseApiController
 
                 return $this->ok([
                     'message_id' => $messageResult['message_id'],
+                    'record_id' => $messageRecord->id,
                     'customer' => [
                         'id' => $customer->id,
                         'name' => $customer->name,

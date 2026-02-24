@@ -872,6 +872,8 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('channels/{id}/sync-verified', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'syncVerified']);
         Route::post('channels/{id}/send-message', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'sendMessage']);
         Route::post('channels/send-whatsapp-to-customer', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'sendWhatsAppToCustomer']);
+        Route::get('channels/messages', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getMessages']);
+        Route::get('channels/messages/stats', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getMessageStats']);
         Route::delete('channels/{id}', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'destroy']);
 
         // Marketing Settings Routes
