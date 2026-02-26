@@ -158,15 +158,9 @@ public function handleEvolutionWebhook(Request $request)
             } catch (\Throwable $e) {
                 Log::warning('Evolution webhook: recordInboundMessage failed', ['message' => $e->getMessage()]);
             }
+
+            $this->runChatFromPayload($messageContent, (int) $tenantOwnerId, $senderNumber);
         }
-
-        $internalRequest = new Request([
-            'message' => $messageContent,
-            'user_id' => $tenantOwnerId ?? 922,
-            'whatsapp_number' => $senderNumber
-        ]);
-
-        $this->chat($internalRequest);
 
         return response()->json(['status' => 'received_and_processing']);
     } else {
@@ -399,10 +393,17 @@ public function handleWhatsappWebhook(Request $request)
     public function chat(ChatRequest $request)
     {
         $validated = $request->validated();
-        $userMessage = $validated['message'];
-        $userId = $validated['user_id']; // Or derive from recipientWhatsappNumber if this is from a webhook
-        $recipientWhatsappNumber = $validated['whatsapp_number']; // This needs to be provided
+        $reply = $this->runChatFromPayload(
+            $validated['message'],
+            (int) $validated['user_id'],
+            $validated['whatsapp_number']
+        );
+        return response()->json(['reply' => $reply ?? '']);
+    }
 
+    private function runChatFromPayload(string $message, int $userId, string $recipientWhatsappNumber): ?string
+    {
+        $userMessage = $message;
 
         // Load or init chat history
         $record = ChatHistory::firstOrCreate(
@@ -520,7 +521,7 @@ public function handleWhatsappWebhook(Request $request)
             $this->sendWhatsappMessage($recipientWhatsappNumber, $reply);
         }
 
-        return response()->json(['reply' => $reply]);
+        return $reply ?? '';
     }
 
     protected function handleSearchProperties(array $args): array

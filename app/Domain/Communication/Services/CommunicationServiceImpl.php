@@ -108,8 +108,9 @@ class CommunicationServiceImpl implements CommunicationService
 
                 $conversation->update(['last_message_at' => now()]);
 
+                // Always create/update WaConversationState for WhatsApp so the conversation appears in api/v1/whatsapp/conversations
                 $waNumberId = $meta['wa_number_id'] ?? null;
-                if ($channel === 'whatsapp' && $waNumberId !== null) {
+                if ($channel === 'whatsapp') {
                     $state = WaConversationState::firstOrCreate(
                         ['conversation_id' => $conversation->id],
                         [
