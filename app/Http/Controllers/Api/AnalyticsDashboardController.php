@@ -31,7 +31,9 @@ class AnalyticsDashboardController extends Controller
 
 		if ($tenant === null || $tenant === '') {
 			$user = $request->user();
-			$tenant = $user?->username;
+			// Use tenant owner's username when user is an employee (GA data is keyed by owner)
+			$owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+			$tenant = $owner?->username;
 		}
 
 		if (!is_string($tenant) || $tenant === '') {
