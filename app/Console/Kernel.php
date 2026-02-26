@@ -27,6 +27,8 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\BackfillInvoiceUuids::class,
         \App\Console\Commands\CleanupOldPageviewsCommand::class,
         \App\Console\Commands\ProcessScheduledSmsCampaigns::class,
+        \App\Console\Commands\ProcessScheduledEmailCampaigns::class,
+        \App\Console\Commands\BackfillRbacNewPermissions::class,
     ];
 
     /**
@@ -81,6 +83,11 @@ class Kernel extends ConsoleKernel
             ->runInBackground();
 
         $schedule->command('sms:process-scheduled-campaigns')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        $schedule->command('email:process-scheduled-campaigns')
             ->everyMinute()
             ->withoutOverlapping()
             ->onOneServer();
