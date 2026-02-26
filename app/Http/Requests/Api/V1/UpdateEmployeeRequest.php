@@ -14,7 +14,7 @@ class UpdateEmployeeRequest extends BaseApiFormRequest
 
     public function rules()
     {
-        $employeeId = request()->route('id');
+        $employeeId = request()->route('employee');
 
         return [
             'first_name' => ['nullable', 'string', 'max:120'],
