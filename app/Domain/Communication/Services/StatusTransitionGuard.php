@@ -20,6 +20,12 @@ class StatusTransitionGuard
             'delivered' => [],
             'failed' => ['sent'],
         ],
+        'email' => [
+            'pending' => ['sent', 'delivered', 'failed'],
+            'sent' => ['delivered', 'failed'],
+            'delivered' => [],
+            'failed' => ['sent'],
+        ],
     ];
 
     public function canTransition(string $currentStatus, string $proposedStatus, string $channel): bool

@@ -1131,6 +1131,13 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('campaigns/{id}/send', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'send']);
         Route::post('campaigns/{id}/pause', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'pause']);
         Route::post('campaigns/{id}/resume', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'resume']);
+
+        Route::get('templates', [\App\Http\Controllers\Api\V1\Email\TemplateController::class, 'index']);
+        Route::get('templates/{id}', [\App\Http\Controllers\Api\V1\Email\TemplateController::class, 'show']);
+        Route::post('templates', [\App\Http\Controllers\Api\V1\Email\TemplateController::class, 'store']);
+        Route::patch('templates/{id}', [\App\Http\Controllers\Api\V1\Email\TemplateController::class, 'update']);
+        Route::delete('templates/{id}', [\App\Http\Controllers\Api\V1\Email\TemplateController::class, 'destroy']);
+
         Route::get('stats', [\App\Http\Controllers\Api\V1\Email\StatsController::class, 'index']);
         Route::get('logs', [\App\Http\Controllers\Api\V1\Email\LogController::class, 'index']);
         Route::post('messages/send', [\App\Http\Controllers\Api\V1\Email\MessageController::class, 'send']);
@@ -1175,6 +1182,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 });
 
 Route::post('v1/sms/webhooks/delivery', [\App\Http\Controllers\Api\V1\Sms\WebhookController::class, 'delivery']);
+Route::post('v1/email/webhooks/delivery', [\App\Http\Controllers\Api\V1\Email\WebhookController::class, 'delivery']);
 
 Route::get('v1/whatsapp/webhook/verify', [WhatsAppWebhookController::class, 'verify']);
 Route::post('v1/whatsapp/webhook/incoming', [WhatsAppWebhookController::class, 'incoming']);
