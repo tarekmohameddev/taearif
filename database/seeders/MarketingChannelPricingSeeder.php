@@ -97,6 +97,22 @@ class MarketingChannelPricingSeeder extends Seeder
                     'delivery_reports' => true,
                     'max_message_length' => 160,
                 ]
+            ],
+            [
+                'channel_type' => 'email',
+                'credits_per_message' => 1,
+                'price_per_credit' => $defaultPricePerCredit,
+                'effective_price_per_message' => 1 * $defaultPricePerCredit,
+                'currency' => 'SAR',
+                'is_active' => true,
+                'description' => 'Email marketing with HTML templates and delivery tracking',
+                'description_ar' => 'التسويق عبر البريد الإلكتروني مع قوالب HTML وتتبع التسليم',
+                'channel_specific_settings' => [
+                    'html_support' => true,
+                    'attachments_support' => false,
+                    'delivery_reports' => true,
+                    'max_recipients_per_campaign' => 10000,
+                ]
             ]
         ];
 

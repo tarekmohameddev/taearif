@@ -11,6 +11,7 @@ use App\Http\Requests\Api\Rbac\SyncPermsRequest;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use App\Support\TenantActivity;
+use App\Support\CacheInvalidationHelper;
 
 class AssignmentController extends Controller
 {
@@ -80,6 +81,9 @@ class AssignmentController extends Controller
         // activity
         TenantActivity::emit($request,'employee.roles.synced','users',(int) $employee->id,['roles' => $oldRoles],['roles' => $newRoles]);
 
+        // Clear employee's side menu cache so updated permissions are visible on next load
+        CacheInvalidationHelper::clearSideMenusCache((int) $employee->id, $teamId);
+
         return response()->json(['status' => 'success']);
     }
 
@@ -135,6 +139,9 @@ class AssignmentController extends Controller
             ['perms' => $oldPerms],
             ['perms' => $newPerms]
         );
+
+        // Clear employee's side menu cache so updated permissions are visible on next load
+        CacheInvalidationHelper::clearSideMenusCache((int) $employee->id, $teamId);
 
         return response()->json(['status' => 'success']);
     }

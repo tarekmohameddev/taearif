@@ -23,6 +23,17 @@ return [
         'max_manual_recipients' => (int) env('COMMUNICATION_SMS_MAX_MANUAL_RECIPIENTS', 5000),
     ],
 
+    'email' => [
+        'enabled' => env('COMMUNICATION_EMAIL_ENABLED', false),
+        'provider' => env('COMMUNICATION_EMAIL_PROVIDER', null),
+        'queue' => env('COMMUNICATION_EMAIL_QUEUE', 'communication'),
+        'webhook_secret' => env('COMMUNICATION_EMAIL_WEBHOOK_SECRET', ''),
+        'batch_size' => (int) env('COMMUNICATION_EMAIL_BATCH_SIZE', 100),
+        'max_manual_recipients' => (int) env('COMMUNICATION_EMAIL_MAX_MANUAL_RECIPIENTS', 5000),
+        'default_from_email' => env('MAIL_FROM_ADDRESS'),
+        'default_from_name' => env('MAIL_FROM_NAME'),
+    ],
+
     'whatsapp' => [
         'enabled' => env('COMMUNICATION_WHATSAPP_ENABLED', false),
         'provider' => env('COMMUNICATION_WHATSAPP_PROVIDER', null),

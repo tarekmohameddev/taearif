@@ -51,6 +51,7 @@ class CommunicationDeliveryAttempt extends Model
 
     public const SUBJECT_TYPE_MESSAGE = 'message';
     public const SUBJECT_TYPE_SMS_MESSAGE_LOG = 'sms_message_log';
+    public const SUBJECT_TYPE_EMAIL_MESSAGE_LOG = 'email_message_log';
 
     public function user(): BelongsTo
     {
@@ -63,7 +64,7 @@ class CommunicationDeliveryAttempt extends Model
     }
 
     /**
-     * Resolve subject to Message or SmsMessageLog.
+     * Resolve subject to Message or SmsMessageLog or EmailMessageLog.
      */
     public function subject(): MorphTo
     {

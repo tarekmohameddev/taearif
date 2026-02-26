@@ -128,7 +128,7 @@ class EmailTemplate extends Model
     {
         $content = $this->content;
         $variables = self::getVariablesForType($this->type);
-        
+
         $sampleData = [
             '{name}' => 'أحمد محمد',
             '{email}' => 'ahmed@example.com',
@@ -153,7 +153,7 @@ class EmailTemplate extends Model
     {
         $errors = [];
         $variables = self::getVariablesForType($this->type);
-        
+
         foreach ($variables as $variable) {
             if (!str_contains($this->content, $variable)) {
                 $errors[] = "Variable {$variable} is missing from content";

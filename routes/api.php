@@ -1122,6 +1122,20 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('stats', [\App\Http\Controllers\Api\V1\Sms\StatsController::class, 'index']);
     });
 
+    Route::prefix('email')->group(function () {
+        Route::get('campaigns', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'index']);
+        Route::get('campaigns/{id}', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'show']);
+        Route::post('campaigns', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'store']);
+        Route::patch('campaigns/{id}', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'update']);
+        Route::delete('campaigns/{id}', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'destroy']);
+        Route::post('campaigns/{id}/send', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'send']);
+        Route::post('campaigns/{id}/pause', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'pause']);
+        Route::post('campaigns/{id}/resume', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'resume']);
+        Route::get('stats', [\App\Http\Controllers\Api\V1\Email\StatsController::class, 'index']);
+        Route::get('logs', [\App\Http\Controllers\Api\V1\Email\LogController::class, 'index']);
+        Route::post('messages/send', [\App\Http\Controllers\Api\V1\Email\MessageController::class, 'send']);
+    });
+
     Route::prefix('whatsapp')->group(function () {
         Route::get('numbers', [WhatsAppNumberController::class, 'index']);
         Route::get('numbers/{id}', [WhatsAppNumberController::class, 'show']);

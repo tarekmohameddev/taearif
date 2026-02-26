@@ -37,6 +37,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use App\Http\Helpers\UserPermissionHelper;
 use App\Models\Message;
+use App\Models\EmailMessageLog;
 use App\Models\SmsMessageLog;
 use App\Models\User\Language as UserLanguage;
 use App\Models\Api\ApiPixel;
@@ -81,6 +82,22 @@ class AppServiceProvider extends ServiceProvider
             \App\Domain\Communication\Sms\Contracts\SmsDispatcher::class,
             \App\Domain\Communication\Sms\Services\SmsDispatcherService::class
         );
+        $this->app->bind(
+            \App\Domain\Communication\Email\Contracts\EmailGatewayClient::class,
+            \App\Domain\Communication\Email\Services\Gateways\ConfiguredEmailGatewayClient::class
+        );
+        $this->app->bind(
+            \App\Domain\Communication\Email\Contracts\EmailDispatcher::class,
+            \App\Domain\Communication\Email\Services\EmailDispatcherService::class
+        );
+        $this->app->bind(
+            \App\Domain\Communication\Email\Contracts\EmailGatewayClient::class,
+            \App\Domain\Communication\Email\Services\Gateways\ConfiguredEmailGatewayClient::class
+        );
+        $this->app->bind(
+            \App\Domain\Communication\Email\Contracts\EmailDispatcher::class,
+            \App\Domain\Communication\Email\Services\EmailDispatcherService::class
+        );
 
         $this->app->singleton(\App\Domain\Communication\WhatsApp\Services\WhatsAppNumberService::class);
         $this->app->singleton(\App\Domain\Communication\WhatsApp\Services\WhatsAppConversationService::class);
@@ -110,6 +127,7 @@ class AppServiceProvider extends ServiceProvider
         Relation::enforceMorphMap([
             User::class => User::class,
             'message' => Message::class,
+            'email_message_log' => EmailMessageLog::class,
             'sms_message_log' => SmsMessageLog::class,
             UserPropertyRequest::class => UserPropertyRequest::class,
             ApiCustomerInquiry::class => ApiCustomerInquiry::class,
