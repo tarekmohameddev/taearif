@@ -383,13 +383,13 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     Route::get   ('/property-faqs',                      [PropertyController::class, 'faqs']);
 
     // Building management routes
-    Route::get   ('/buildings',                         [App\Http\Controllers\Api\BuildingController::class, 'index']);
-    Route::get   ('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'show']);
-    Route::post  ('/buildings',                         [App\Http\Controllers\Api\BuildingController::class, 'store']);
-    Route::post  ('/buildings/upload-image',            [App\Http\Controllers\Api\BuildingController::class, 'uploadBuildingImage']);
-    Route::post  ('/buildings/upload-deed-image',       [App\Http\Controllers\Api\BuildingController::class, 'uploadDeedImage']);
-    Route::put   ('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'update']);
-    Route::delete('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'destroy']);
+    Route::get   ('/buildings',                         [App\Http\Controllers\Api\BuildingController::class, 'index'])->middleware('can:buildings.view');
+    Route::get   ('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'show'])->middleware('can:buildings.view');
+    Route::post  ('/buildings',                         [App\Http\Controllers\Api\BuildingController::class, 'store'])->middleware('can:buildings.create');
+    Route::post  ('/buildings/upload-image',            [App\Http\Controllers\Api\BuildingController::class, 'uploadBuildingImage'])->middleware('can:buildings.create');
+    Route::post  ('/buildings/upload-deed-image',       [App\Http\Controllers\Api\BuildingController::class, 'uploadDeedImage'])->middleware('can:buildings.create');
+    Route::put   ('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'update'])->middleware('can:buildings.update');
+    Route::delete('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'destroy'])->middleware('can:buildings.delete');
 });
 
 // --- Content ---
@@ -672,7 +672,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\RequireActiveMembership:
 
 // --- V1: RMS / PMS / Property requests / Employee / CRM / Marketing / Credits ---
 Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
-    Route::prefix('rms')->group(function () {
+    Route::prefix('rms')->middleware(['can:rentals.view'])->group(function () {
         // Dashboard
         Route::get('dashboard', [RmsDashboardController::class, 'index']);
 
@@ -788,21 +788,21 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('/inquiry', [CustomerInquiryController::class, 'index']);
 
     // ApiPropertyRequestController
-    Route::middleware(['can:properties.view'])->group(function () {
-        Route::get('/property-requests/filters', [ApiPropertyRequestController::class, 'filterOptions']);
-        Route::get('/property-requests', [ApiPropertyRequestController::class, 'index']);
-        Route::get('/property-requests/{id}', [ApiPropertyRequestController::class, 'show']);
-        Route::post('/property-requests', [ApiPropertyRequestController::class, 'store']);
+    Route::middleware(['can:property_requests.view'])->group(function () {
+        Route::get('/property-requests/filters', [ApiPropertyRequestController::class, 'filterOptions'])->middleware('can:property_requests.view');
+        Route::get('/property-requests', [ApiPropertyRequestController::class, 'index'])->middleware('can:property_requests.view');
+        Route::get('/property-requests/{id}', [ApiPropertyRequestController::class, 'show'])->middleware('can:property_requests.view');
+        Route::post('/property-requests', [ApiPropertyRequestController::class, 'store'])->middleware('can:property_requests.create');
         // DELETE
-        Route::delete('/property-requests/{id}', [ApiPropertyRequestController::class, 'destroy']);
+        Route::delete('/property-requests/{id}', [ApiPropertyRequestController::class, 'destroy'])->middleware('can:property_requests.delete');
         // update
-        Route::put('/property-requests/{id}', [ApiPropertyRequestController::class, 'update']);
+        Route::put('/property-requests/{id}', [ApiPropertyRequestController::class, 'update'])->middleware('can:property_requests.update');
         // update status
-        Route::put('/property-requests/{id}/status', [ApiPropertyRequestController::class, 'updateStatus']);
+        Route::put('/property-requests/{id}/status', [ApiPropertyRequestController::class, 'updateStatus'])->middleware('can:property_requests.update');
         // assign employee to customer (must come before property request employee route to avoid route conflict)
-        Route::put('/property-requests/customer/{customerID}/employee', [ApiPropertyRequestController::class, 'assignEmployeeToCustomer']);
+        Route::put('/property-requests/customer/{customerID}/employee', [ApiPropertyRequestController::class, 'assignEmployeeToCustomer'])->middleware('can:property_requests.update');
         // update employee (property request)
-        Route::put('/property-requests/{id}/employee', [ApiPropertyRequestController::class, 'updateEmployee']);
+        Route::put('/property-requests/{id}/employee', [ApiPropertyRequestController::class, 'updateEmployee'])->middleware('can:property_requests.update');
     });
 
 
@@ -945,8 +945,8 @@ Route::prefix('v1')->group(function () {
 		});
 
 		Route::prefix('job-applications')->group(function () {
-			Route::get('/', [\App\Http\Controllers\Api\V1\JobApplicationController::class, 'index']);
-			Route::get('/{id}', [\App\Http\Controllers\Api\V1\JobApplicationController::class, 'show']);
+			Route::get('/', [\App\Http\Controllers\Api\V1\JobApplicationController::class, 'index'])->middleware('can:job_applications.view');
+			Route::get('/{id}', [\App\Http\Controllers\Api\V1\JobApplicationController::class, 'show'])->middleware('can:job_applications.view');
 		});
 
         Route::get('/customers/{id}/logs',  [CustomerLogController::class, 'index'])->middleware('can:projects.view');
