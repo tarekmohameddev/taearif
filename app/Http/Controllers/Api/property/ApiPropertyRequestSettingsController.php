@@ -9,9 +9,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Services\PropertyRequestFormSettings;
 use App\Models\Api\UserPropertyRequestFieldSetting;
-use App\Http\Requests\Api\property\BulkUpsertPropertyRequestSettingsRequest;
-use App\Http\Requests\Api\property\ResetPropertyRequestSettingsRequest;
-use App\Http\Requests\Api\property\UpdateOnePropertyRequestSettingsRequest;
+use App\Http\Requests\Api\Property\BulkUpsertPropertyRequestSettingsRequest;
+use App\Http\Requests\Api\Property\ResetPropertyRequestSettingsRequest;
+use App\Http\Requests\Api\Property\UpdateOnePropertyRequestSettingsRequest;
 
 class ApiPropertyRequestSettingsController extends Controller
 {

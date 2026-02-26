@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Api\property;
+namespace App\Http\Requests\Api\Property;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
 use App\Services\PropertyRequestFormSettings;
