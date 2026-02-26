@@ -315,7 +315,7 @@ class AnalyticsDashboardController extends Controller
         $cacheHit = false;
 
         $user = $request->user();
-        $tenantId = $user->username;
+        $tenantId = $this->tenantId($request);
 
         // Normalize Carbon::now() to compute once per request
         $endDate = Carbon::now();
