@@ -754,16 +754,21 @@ private function mapCategory(string $name): int
             ->map(fn($m) => ucfirst($m['role']) . ": " . $m['content'])
             ->join("\n");
 
-        $resp = $this->openai->chat()->create([
-            'model' => env('OPENAI_CHAT_MODEL','gpt-4.1-nano'),
-            'messages' => [
-                ['role' => 'system', 'content' => 'سّو ملخص بسيط للمحادثة بالتركيز على معايير المستخدم.'],
-                ['role' => 'user',   'content' => $text],
-            ],
-            'max_tokens' => 200,
-        ]);
+        try {
+            $resp = $this->openai->chat()->create([
+                'model' => env('OPENAI_CHAT_MODEL', 'gpt-4o-mini'),
+                'messages' => [
+                    ['role' => 'system', 'content' => 'سّو ملخص بسيط للمحادثة بالتركيز على معايير المستخدم.'],
+                    ['role' => 'user',   'content' => $text],
+                ],
+                'max_tokens' => 200,
+            ]);
 
-        return $resp['choices'][0]['message']['content'];
+            return $resp['choices'][0]['message']['content'];
+        } catch (\Throwable $e) {
+            Log::error('OpenAI summarize error', ['message' => $e->getMessage()]);
+            return 'ملخص المحادثة غير متاح حالياً.';
+        }
     }
 
 
