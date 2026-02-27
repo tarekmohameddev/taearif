@@ -67,6 +67,10 @@ class CommunicationServiceImpl implements CommunicationService
                     ->where('user_id', $userId)
                     ->first();
                 if ($existing) {
+                    Log::info('CommunicationService::recordInboundMessage skipped: duplicate provider_message_id', [
+                        'provider_message_id' => $providerMessageId,
+                        'user_id' => $userId,
+                    ]);
                     return $existing;
                 }
             }

@@ -146,13 +146,20 @@ public function handleEvolutionWebhook(Request $request)
         }
 
         if ($tenantOwnerId !== null) {
+            $providerMessageId = $data['key']['id'] ?? null;
+            Log::info('Evolution webhook: processing inbound message', [
+                'tenant_owner_id' => $tenantOwnerId,
+                'provider_message_id' => $providerMessageId,
+                'sender' => $senderNumber,
+                'content_length' => strlen($messageContent),
+            ]);
             try {
                 $this->communicationService->recordInboundMessage(
                     userId: (int) $tenantOwnerId,
                     externalPartyIdentifier: $senderNumber,
                     content: $messageContent,
                     channel: 'whatsapp',
-                    providerMessageId: $data['key']['id'] ?? null,
+                    providerMessageId: $providerMessageId,
                     meta: ['source' => 'evolution_webhook', 'context' => ['instance' => $this->evolutionApiInstance ?? '']]
                 );
             } catch (\Throwable $e) {
