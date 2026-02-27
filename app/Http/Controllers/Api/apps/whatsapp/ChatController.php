@@ -494,52 +494,43 @@ public function handleWhatsappWebhook(Request $request)
         try {
             $model = env('OPENAI_CHAT_MODEL', 'gpt-4o-mini');
             Log::info('OpenAI chat request', ['model' => $model, 'message_count' => count($messages)]);
-            
-            // Call API
-            $response = $this->openai->chat()->create([
+
+            $data = $this->callOpenAI([
                 'model' => $model,
                 'messages' => $messages,
                 'functions' => $functions,
                 'function_call' => 'auto',
             ]);
-            Log::info('OpenAI chat response', ['response' => $response]);
-            $choice = $response['choices'][0]['message'];
 
-            // Handle function call
+            $choice = $data['choices'][0]['message'];
+
             if (isset($choice['function_call'])) {
                 $funcName = $choice['function_call']['name'];
                 $args = json_decode($choice['function_call']['arguments'], true);
 
-                if ($funcName === 'search_properties') {
-                    $funcResponse = $this->handleSearchProperties($args);
-                } else {
-                    $funcResponse = $this->handleFaq($args);
-                }
+                $funcResponse = $funcName === 'search_properties'
+                    ? $this->handleSearchProperties($args)
+                    : $this->handleFaq($args);
 
-                // Inject function response
                 $messages[] = [
                     'role' => 'assistant',
                     'name' => $funcName,
                     'content' => json_encode($funcResponse),
                 ];
 
-            // Final LLM call to generate natural reply
-            $final = $this->openai->chat()->create([
-                'model' => $model,
-                'messages' => $messages,
-            ]);
+                $final = $this->callOpenAI([
+                    'model' => $model,
+                    'messages' => $messages,
+                ]);
 
                 $reply = $final['choices'][0]['message']['content'];
-                Log::info('OpenAI reply', ['reply' => $reply]);
                 $history[] = ['role' => 'assistant', 'name' => $funcName, 'content' => json_encode($funcResponse)];
             } else {
-                // Direct reply
                 $reply = $choice['content'] ?? '';
             }
         } catch (\Throwable $e) {
             Log::error('OpenAI chat error in runChatFromPayload', [
                 'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
             $reply = 'عذراً، حدث خطأ في الخدمة. يرجى المحاولة لاحقاً.';
         }
@@ -748,6 +739,31 @@ private function mapCategory(string $name): int
         return ['answer' => $answer];
     }
 
+    private function callOpenAI(array $payload): array
+    {
+        $apiKey = env('OPENAI_API_KEY');
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $apiKey,
+            'Content-Type'  => 'application/json',
+        ])->timeout(30)->post('https://api.openai.com/v1/chat/completions', $payload);
+
+        $body = $response->body();
+
+        if (!$response->successful()) {
+            Log::error('OpenAI HTTP error', ['status' => $response->status(), 'body' => $body]);
+            throw new \RuntimeException('OpenAI API error ' . $response->status() . ': ' . $body);
+        }
+
+        $data = $response->json();
+
+        if (!is_array($data) || !isset($data['choices'])) {
+            Log::error('OpenAI unexpected response', ['body' => $body]);
+            throw new \RuntimeException('OpenAI unexpected response: ' . $body);
+        }
+
+        return $data;
+    }
+
     private function summarizeHistory(array $history): string
     {
         $text = Collection::make($history)
@@ -755,7 +771,7 @@ private function mapCategory(string $name): int
             ->join("\n");
 
         try {
-            $resp = $this->openai->chat()->create([
+            $data = $this->callOpenAI([
                 'model' => env('OPENAI_CHAT_MODEL', 'gpt-4o-mini'),
                 'messages' => [
                     ['role' => 'system', 'content' => 'سّو ملخص بسيط للمحادثة بالتركيز على معايير المستخدم.'],
@@ -764,7 +780,7 @@ private function mapCategory(string $name): int
                 'max_tokens' => 200,
             ]);
 
-            return $resp['choices'][0]['message']['content'];
+            return $data['choices'][0]['message']['content'];
         } catch (\Throwable $e) {
             Log::error('OpenAI summarize error', ['message' => $e->getMessage()]);
             return 'ملخص المحادثة غير متاح حالياً.';
