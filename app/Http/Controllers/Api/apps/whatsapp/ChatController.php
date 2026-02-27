@@ -492,9 +492,12 @@ public function handleWhatsappWebhook(Request $request)
         $reply = '';
 
         try {
+            $model = env('OPENAI_CHAT_MODEL', 'gpt-4o-mini');
+            Log::info('OpenAI chat request', ['model' => $model, 'message_count' => count($messages)]);
+            
             // Call API
             $response = $this->openai->chat()->create([
-                'model' => env('OPENAI_CHAT_MODEL', 'gpt-4.1-nano'),
+                'model' => $model,
                 'messages' => $messages,
                 'functions' => $functions,
                 'function_call' => 'auto',
@@ -520,11 +523,11 @@ public function handleWhatsappWebhook(Request $request)
                     'content' => json_encode($funcResponse),
                 ];
 
-                // Final LLM call to generate natural reply
-                $final = $this->openai->chat()->create([
-                    'model' => env('OPENAI_CHAT_MODEL', 'gpt-4.1-nano'),
-                    'messages' => $messages,
-                ]);
+            // Final LLM call to generate natural reply
+            $final = $this->openai->chat()->create([
+                'model' => $model,
+                'messages' => $messages,
+            ]);
 
                 $reply = $final['choices'][0]['message']['content'];
                 Log::info('OpenAI reply', ['reply' => $reply]);
