@@ -96,10 +96,10 @@ class ChatController extends Controller
 // ... (inside ChatController class)
 
 public function handleEvolutionWebhook(Request $request)
-{
+    {
+        Log::info('Evolution webhook: handler hit', ['has_data' => $request->has('data')]);
 
     $payload = $request->all();
-
  //Log::info('Evolution API Webhook received: ' . json_encode($payload));
     // ---- VALIDATE THE WEBHOOK (IMPORTANT FOR SECURITY) ----
     // Evolution API might have a way to verify webhooks (e.g., a secret token in headers).
@@ -144,6 +144,13 @@ public function handleEvolutionWebhook(Request $request)
                 $tenantOwnerId = $owner && method_exists($owner, 'tenantOwnerId') ? $owner->tenantOwnerId() : null;
             }
         }
+
+        Log::info('Evolution webhook: received', [
+            'evolution_instance_number_config' => $evolutionNumber ?: '(empty)',
+            'tenant_owner_id' => $tenantOwnerId,
+            'provider_message_id' => $data['key']['id'] ?? null,
+            'sender' => $senderNumber,
+        ]);
 
         if ($tenantOwnerId !== null) {
             $providerMessageId = $data['key']['id'] ?? null;
