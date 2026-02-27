@@ -68,11 +68,17 @@ class ChatController extends Controller
         $endpoint = $this->evolutionApiUrl . '/message/sendText/' . $this->evolutionApiInstance;
 
         try {
-            $response = Http::withHeaders([
+            $http = Http::withHeaders([
                 'apikey' => $this->evolutionApiKey,
                 'Content-Type' => 'application/json',
-            ])->post($endpoint, [
-                'number' => $recipientNumber, // Ensure this is the full WhatsApp number (e.g., country code + number)
+            ]);
+
+            if (env('EVOLUTION_API_VERIFY_SSL', true) === false) {
+                $http = $http->withoutVerifying();
+            }
+
+            $response = $http->post($endpoint, [
+                'number' => $recipientNumber,
                 'options' => [
                     'delay' => 600,
                     'presence' => 'composing',
