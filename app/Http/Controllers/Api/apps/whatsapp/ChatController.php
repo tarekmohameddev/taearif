@@ -483,54 +483,63 @@ public function handleWhatsappWebhook(Request $request)
             ],
         ];
 
-        // Call API
-        $response = $this->openai->chat()->create([
-            'model' => env('OPENAI_CHAT_MODEL', 'gpt-4.1-nano'),
-            'messages' => $messages,
-            'functions' => $functions,
-            'function_call' => 'auto',
-        ]);
-        log::info(json_encode($response));
-        $choice = $response['choices'][0]['message'];
         $reply = '';
 
-        // Handle function call
-        if (isset($choice['function_call'])) {
-            $funcName = $choice['function_call']['name'];
-            $args = json_decode($choice['function_call']['arguments'], true);
-
-            if ($funcName === 'search_properties') {
-                $funcResponse = $this->handleSearchProperties($args);
-            } else {
-                $funcResponse = $this->handleFaq($args);
-            }
-
-            // Inject function response
-            $messages[] = [
-                'role' => 'assistant',
-                'name' => $funcName,
-                'content' => json_encode($funcResponse),
-            ];
-
-            // Final LLM call to generate natural reply
-            $final = $this->openai->chat()->create([
+        try {
+            // Call API
+            $response = $this->openai->chat()->create([
                 'model' => env('OPENAI_CHAT_MODEL', 'gpt-4.1-nano'),
                 'messages' => $messages,
+                'functions' => $functions,
+                'function_call' => 'auto',
             ]);
+            Log::info('OpenAI chat response', ['response' => $response]);
+            $choice = $response['choices'][0]['message'];
 
-            $reply = $final['choices'][0]['message']['content'];
-            log::info('reply'.$reply);
-            $history[] = ['role' => 'assistant', 'name' => $funcName, 'content' => json_encode($funcResponse)];
-        } else {
-            // Direct reply
-            $reply = $choice['content'] ?? '';
+            // Handle function call
+            if (isset($choice['function_call'])) {
+                $funcName = $choice['function_call']['name'];
+                $args = json_decode($choice['function_call']['arguments'], true);
+
+                if ($funcName === 'search_properties') {
+                    $funcResponse = $this->handleSearchProperties($args);
+                } else {
+                    $funcResponse = $this->handleFaq($args);
+                }
+
+                // Inject function response
+                $messages[] = [
+                    'role' => 'assistant',
+                    'name' => $funcName,
+                    'content' => json_encode($funcResponse),
+                ];
+
+                // Final LLM call to generate natural reply
+                $final = $this->openai->chat()->create([
+                    'model' => env('OPENAI_CHAT_MODEL', 'gpt-4.1-nano'),
+                    'messages' => $messages,
+                ]);
+
+                $reply = $final['choices'][0]['message']['content'];
+                Log::info('OpenAI reply', ['reply' => $reply]);
+                $history[] = ['role' => 'assistant', 'name' => $funcName, 'content' => json_encode($funcResponse)];
+            } else {
+                // Direct reply
+                $reply = $choice['content'] ?? '';
+            }
+        } catch (\Throwable $e) {
+            Log::error('OpenAI chat error in runChatFromPayload', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            $reply = 'عذراً، حدث خطأ في الخدمة. يرجى المحاولة لاحقاً.';
         }
 
         $history[] = ['role' => 'assistant', 'content' => $reply];
 
         // Summarize if needed
         if (count($history) > $this->maxTurns) {
-            log::info($history);
+            Log::info('Chat history before summarize', ['history' => $history]);
             $summary = $this->summarizeHistory($history);
             $history = [['role' => 'system_summary', 'content' => $summary]];
         }
