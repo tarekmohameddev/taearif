@@ -138,10 +138,15 @@ public function handleEvolutionWebhook(Request $request)
         $tenantOwnerId = null;
         $evolutionNumber = config('communication.evolution_instance_number');
         if ($evolutionNumber) {
-            $normalized = preg_replace('/\D/', '', $evolutionNumber);
-            $whatsappUser = $normalized !== ''
-                ? WhatsappUser::whereRaw("REPLACE(REPLACE(REPLACE(number, ' ', ''), '+', ''), '-', '') = ?", [$normalized])->first()
-                : null;
+            $whatsappUser = WhatsappUser::where('number', $evolutionNumber)->first();
+            if (! $whatsappUser) {
+                $normalizedConfig = preg_replace('/\D/', '', (string) $evolutionNumber);
+                if ($normalizedConfig !== '') {
+                    $whatsappUser = WhatsappUser::whereNotNull('number')->get()->first(function ($wu) use ($normalizedConfig) {
+                        return preg_replace('/\D/', '', (string) $wu->number) === $normalizedConfig;
+                    });
+                }
+            }
             if ($whatsappUser) {
                 $owner = User::find($whatsappUser->user_id);
                 $tenantOwnerId = $owner && method_exists($owner, 'tenantOwnerId') ? $owner->tenantOwnerId() : null;
