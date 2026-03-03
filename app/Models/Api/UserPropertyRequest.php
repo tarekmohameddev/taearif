@@ -44,6 +44,7 @@ class UserPropertyRequest extends Model
     protected $fillable = [
         'user_id',
         'source',
+        'referral_source',
         'region', // nullable
         'purpose',
         'property_type',

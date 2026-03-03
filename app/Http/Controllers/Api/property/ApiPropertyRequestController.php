@@ -78,6 +78,7 @@ class ApiPropertyRequestController extends Controller
         $data['is_read'] = false;
         $data['is_active'] = true;
         $data['source'] = 'website';
+        $data['referral_source'] = $data['referral_source'] ?? 'public_form';
 
         if (isset($data['status_id'])) {
             $data['status_id'] = (int) $data['status_id'];
@@ -88,6 +89,75 @@ class ApiPropertyRequestController extends Controller
         return response()->json([
             'message' => 'تم إرسال الطلب بنجاح.',
             'data' => $propertyRequest
+        ], 201);
+    }
+
+    /**
+     * Store property request from property interest button.
+     *
+     * POST /api/v1/property-requests/interest
+     */
+    public function storeFromInterest(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'tenant_username' => 'required|string|max:255',
+            'property_id' => 'required|integer|exists:user_properties,id',
+            'full_name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            $tenant = $this->resolveTenant($request, $validated['tenant_username']);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Tenant not found.',
+                'errors' => ['tenant_username' => ['The specified tenant username does not exist.']],
+            ], 404);
+        }
+
+        $property = \App\Models\User\RealestateManagement\Property::with('contents')
+            ->where('id', $validated['property_id'])
+            ->where('user_id', $tenant->id)
+            ->first();
+
+        if (!$property) {
+            return response()->json([
+                'message' => 'Property not found.',
+                'errors' => ['property_id' => ['Property does not exist or does not belong to this tenant.']],
+            ], 404);
+        }
+
+        $content = $property->contents->first();
+        $cityId = $content ? $content->city_id : null;
+        $city = $cityId ? UserCity::find($cityId) : null;
+
+        $data = [
+            'user_id' => $tenant->id,
+            'full_name' => $validated['full_name'],
+            'phone' => $validated['phone'],
+            'notes' => $validated['notes'] ?? null,
+            'property_type' => $property->type ?? null,
+            'category_id' => $property->category_id ?? null,
+            'city_id' => $cityId,
+            'region' => $city ? $city->name_ar : null,
+            'purpose' => $property->purpose ?? null,
+            'source' => 'website',
+            'referral_source' => 'property_interest',
+            'is_read' => false,
+            'is_active' => true,
+            'is_archived' => false,
+        ];
+
+        $propertyRequest = UserPropertyRequest::create($data);
+
+        return response()->json([
+            'message' => 'تم إرسال طلبك بنجاح. سيتم التواصل معك قريباً.',
+            'message_en' => 'Your interest has been submitted successfully. We will contact you soon.',
+            'data' => [
+                'request_id' => $propertyRequest->id,
+                'property_id' => $property->id,
+            ],
         ], 201);
     }
 

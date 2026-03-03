@@ -615,6 +615,8 @@ Route::post('/isthara', [IstharaController::class, 'store']);
 
 // Property requests (public)
 Route::post('/v1/property-requests/public', [ApiPropertyRequestController::class, 'store']);
+// Property interest (public - no authentication required)
+Route::post('/v1/property-requests/interest', [ApiPropertyRequestController::class, 'storeFromInterest']);
 
 // Credits: public packages & payment callbacks
 Route::prefix('v1/credits')->group(function () {

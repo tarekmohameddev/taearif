@@ -18,6 +18,13 @@ class StorePropertyRequestRequest extends BaseApiFormRequest
             'tenant_username' => 'required|string|max:255',
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
+            'referral_source' => ['nullable', 'string', Rule::in([
+                'property_interest',
+                'public_form',
+                'employee_dashboard',
+                'whatsapp_bot',
+                'import',
+            ])],
             'property_type' => 'nullable',
             'category' => 'nullable|string',
             'region' => ['required', 'integer', Rule::exists('user_cities', 'id')],
