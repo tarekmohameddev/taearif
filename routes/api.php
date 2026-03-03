@@ -1201,8 +1201,9 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
 
     // 1. REQUESTS/ACTIONS CENTER
     Route::prefix('requests')->group(function () {
-        // List with filtering (POST for complex filter payloads)
+        // List with filtering (POST for complex payloads, GET for compatibility)
         Route::post('/list', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'list']);
+        Route::get('/list', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'list']);
 
         // Filter options (cached)
         Route::get('/filter-options', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'filterOptions']);
