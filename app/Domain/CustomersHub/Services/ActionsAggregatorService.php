@@ -1221,21 +1221,26 @@ class ActionsAggregatorService
     private function getPropertyRequestsSubquery(int $userId): \Illuminate\Database\Query\Builder
     {
         return DB::table('users_property_requests as upr')
+            ->leftJoin('api_customer_property_request as acpr', 'acpr.property_request_id', '=', 'upr.id')
             ->leftJoin('api_customers as ac', function ($join) {
-                $join->on('upr.user_id', '=', 'ac.user_id')
-                    ->on('upr.phone', '=', 'ac.phone_number');
+                $join->on('ac.id', '=', 'acpr.customer_id')
+                    ->on('ac.user_id', '=', 'upr.user_id');
+            })
+            ->leftJoin('api_customers as ac_phone', function ($join) {
+                $join->on('ac_phone.user_id', '=', 'upr.user_id')
+                    ->on('ac_phone.phone_number', '=', 'upr.phone');
             })
             ->leftJoin('user_cities as uc', 'upr.city_id', '=', 'uc.id')
-            ->leftJoin('users as u2', 'ac.responsible_employee_id', '=', 'u2.id')
+            ->leftJoin('users as u2', DB::raw('u2.id'), '=', DB::raw('COALESCE(ac.responsible_employee_id, ac_phone.responsible_employee_id)'))
             ->where('upr.user_id', $userId)
             ->where('upr.is_active', 1)
             ->select([
                 DB::raw("CONCAT('property_request_', upr.id) as id"),
-                'ac.id as customerId',
-                DB::raw("COALESCE(ac.name, upr.full_name) as customerName"),
-                'upr.phone as customerPhone',
+                DB::raw('COALESCE(ac.id, ac_phone.id) as customerId'),
+                DB::raw("COALESCE(ac.name, ac_phone.name, upr.full_name) as customerName"),
+                DB::raw('COALESCE(ac.phone_number, ac_phone.phone_number, upr.phone) as customerPhone'),
                 DB::raw("'property_match' as type"),
-                DB::raw("CONCAT('عقار مطابق: ', COALESCE(ac.name, upr.full_name)) as title"),
+                DB::raw("CONCAT('عقار مطابق: ', COALESCE(ac.name, ac_phone.name, upr.full_name)) as title"),
                 'upr.notes as description',
                 DB::raw("CASE upr.seriousness
                     WHEN 'مستعد فورًا' THEN 'urgent'
@@ -1256,7 +1261,7 @@ class ActionsAggregatorService
                 'upr.created_at as createdAt',
                 DB::raw("NULL as completedAt"),
                 DB::raw("NULL as completedBy"),
-                'ac.responsible_employee_id as assignedTo',
+                DB::raw('COALESCE(ac.responsible_employee_id, ac_phone.responsible_employee_id) as assignedTo'),
                 DB::raw("CONCAT(COALESCE(u2.first_name, ''), ' ', COALESCE(u2.last_name, '')) as assignedToName"),
                 DB::raw("JSON_OBJECT(
                     'propertyRequestId', upr.id,
