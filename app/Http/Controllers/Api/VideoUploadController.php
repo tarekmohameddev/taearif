@@ -7,8 +7,14 @@ use App\Services\AlibabaOssService;
 use App\Models\Membership;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\Api\Video\UploadVideoRequest;
+use App\Http\Requests\Api\Video\InitiateChunkedUploadRequest;
+use App\Http\Requests\Api\Video\UploadChunkRequest;
+use App\Http\Requests\Api\Video\CompleteChunkedUploadRequest;
+use App\Http\Requests\Api\Video\AbortChunkedUploadRequest;
+use App\Http\Requests\Api\Video\GetSignedUploadUrlRequest;
+use App\Http\Requests\Api\Video\DeleteVideoRequest;
 
 class VideoUploadController extends Controller
 {
@@ -36,45 +42,16 @@ class VideoUploadController extends Controller
     /**
      * Upload video directly to OSS
      */
-    public function uploadVideo(Request $request): JsonResponse
+    public function uploadVideo(UploadVideoRequest $request): JsonResponse
     {
         $user = Auth::user();
-        
-        // Get user's package video size limit
-        $videoSizeLimit = $this->getUserVideoSizeLimit($user->id);
-        $maxVideoSizeKB = $videoSizeLimit ? ($videoSizeLimit * 1024) : null; // Convert MB to KB
-
-        $rules = [
-            'video' => $maxVideoSizeKB ? "required|file|max:{$maxVideoSizeKB}" : 'required|file',
-            'context' => 'nullable|string|in:property,project'
-        ];
-
-        $validator = Validator::make($request->all(), $rules);
-
-        // Add custom error messages for video file size limit
-        if ($videoSizeLimit) {
-            $validator->after(function ($validator) use ($request, $videoSizeLimit) {
-                if ($request->hasFile('video')) {
-                    $fileSizeMB = $request->file('video')->getSize() / (1024 * 1024);
-                    if ($fileSizeMB > $videoSizeLimit) {
-                        $validator->errors()->add('video', "The video file size ({$fileSizeMB}MB) exceeds your package limit of {$videoSizeLimit}MB.");
-                    }
-                }
-            });
-        }
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'fail',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+        $validated = $request->validated();
 
         try {
             $result = $this->ossService->uploadVideo(
                 $request->file('video'),
                 $user->id,
-                $request->input('context', 'property')
+                $validated['context'] ?? 'property'
             );
 
             return response()->json([
@@ -99,42 +76,16 @@ class VideoUploadController extends Controller
     /**
      * Initialize chunked upload
      */
-    public function initiateChunkedUpload(Request $request): JsonResponse
+    public function initiateChunkedUpload(InitiateChunkedUploadRequest $request): JsonResponse
     {
         $user = Auth::user();
-        
-        // Get user's package video size limit
-        $videoSizeLimit = $this->getUserVideoSizeLimit($user->id);
-
-        $validator = Validator::make($request->all(), [
-            'filename' => 'required|string',
-            'content_type' => 'nullable|string',
-            'total_size' => 'required|integer|min:1' // Total file size in bytes
-        ]);
-
-        // Add custom validation for video size limit
-        if ($videoSizeLimit) {
-            $validator->after(function ($validator) use ($request, $videoSizeLimit) {
-                $totalSizeMB = $request->input('total_size') / (1024 * 1024);
-                if ($totalSizeMB > $videoSizeLimit) {
-                    $validator->errors()->add('total_size', "The video file size ({$totalSizeMB}MB) exceeds your package limit of {$videoSizeLimit}MB.");
-                }
-            });
-        }
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'fail',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+        $validated = $request->validated();
 
         try {
-            $filename = 'videos/property/' . $user->id . '/' . $request->filename;
-            
+            $filename = 'videos/property/' . $user->id . '/' . $validated['filename'];
             $result = $this->videoService->initiateMultipartUpload(
                 $filename,
-                $request->input('content_type', 'video/mp4')
+                $validated['content_type'] ?? 'video/mp4'
             );
 
             return response()->json([
@@ -153,28 +104,16 @@ class VideoUploadController extends Controller
     /**
      * Upload chunk
      */
-    public function uploadChunk(Request $request): JsonResponse
+    public function uploadChunk(UploadChunkRequest $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'chunk_data' => 'required|string',
-            'upload_id' => 'required|string',
-            'part_number' => 'required|integer|min:1',
-            'filename' => 'required|string'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'fail',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+        $validated = $request->validated();
 
         try {
             $result = $this->videoService->uploadVideoChunk(
-                $request->chunk_data,
-                $request->upload_id,
-                $request->part_number,
-                $request->filename
+                $validated['chunk_data'],
+                $validated['upload_id'],
+                $validated['part_number'],
+                $validated['filename']
             );
 
             return response()->json([
@@ -193,28 +132,15 @@ class VideoUploadController extends Controller
     /**
      * Complete chunked upload
      */
-    public function completeChunkedUpload(Request $request): JsonResponse
+    public function completeChunkedUpload(CompleteChunkedUploadRequest $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'upload_id' => 'required|string',
-            'filename' => 'required|string',
-            'parts' => 'required|array',
-            'parts.*.etag' => 'required|string',
-            'parts.*.part_number' => 'required|integer'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'fail',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+        $validated = $request->validated();
 
         try {
             $result = $this->videoService->completeMultipartUpload(
-                $request->filename,
-                $request->upload_id,
-                $request->parts
+                $validated['filename'],
+                $validated['upload_id'],
+                $validated['parts']
             );
 
             return response()->json([
@@ -234,24 +160,14 @@ class VideoUploadController extends Controller
     /**
      * Abort chunked upload
      */
-    public function abortChunkedUpload(Request $request): JsonResponse
+    public function abortChunkedUpload(AbortChunkedUploadRequest $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'upload_id' => 'required|string',
-            'filename' => 'required|string'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'fail',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+        $validated = $request->validated();
 
         try {
             $success = $this->videoService->abortMultipartUpload(
-                $request->filename,
-                $request->upload_id
+                $validated['filename'],
+                $validated['upload_id']
             );
 
             return response()->json([
@@ -270,27 +186,16 @@ class VideoUploadController extends Controller
     /**
      * Get signed URL for direct upload
      */
-    public function getSignedUploadUrl(Request $request): JsonResponse
+    public function getSignedUploadUrl(GetSignedUploadUrlRequest $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'filename' => 'required|string',
-            'expires' => 'nullable|integer|min:300|max:3600'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'fail',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+        $validated = $request->validated();
 
         try {
             $user = Auth::user();
-            $filename = 'videos/property/' . $user->id . '/' . $request->filename;
-            
+            $filename = 'videos/property/' . $user->id . '/' . $validated['filename'];
             $result = $this->videoService->getSignedUploadUrl(
                 $filename,
-                $request->input('expires', 3600)
+                $validated['expires'] ?? 3600
             );
 
             return response()->json([
@@ -309,21 +214,12 @@ class VideoUploadController extends Controller
     /**
      * Delete video
      */
-    public function deleteVideo(Request $request): JsonResponse
+    public function deleteVideo(DeleteVideoRequest $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'path' => 'required|string'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'fail',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+        $validated = $request->validated();
 
         try {
-            $success = $this->videoService->deleteVideo($request->path);
+            $success = $this->videoService->deleteVideo($validated['path']);
 
             return response()->json([
                 'status' => $success ? 'success' : 'error',

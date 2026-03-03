@@ -3,27 +3,27 @@
 namespace App\Http\Controllers\Api\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Customer\MoveCustomerPriorityRequest;
+use App\Http\Requests\Api\Customer\ReorderCustomerPrioritiesRequest;
+use App\Http\Requests\Api\Customer\StoreCustomerPriorityRequest;
+use App\Http\Requests\Api\Customer\UpdateCustomerPriorityRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use App\Models\Api\UserApiCustomerPriority;
 
 class UserApiCustomerPriorityController extends Controller
 {
-    public function movePriority(Request $request, $id)
+    public function movePriority(MoveCustomerPriorityRequest $request, $id)
     {
-        $user = $request->user();
+        $validated = $request->validated();
+        $ownerId = auth()->user()->tenantOwnerId();
 
-        $validated = $request->validate([
-            'direction' => 'required|in:up,down',
-        ]);
-
-        $row = UserApiCustomerPriority::where('user_id',$request->user()->tenantOwnerId())->findOrFail($id);
+        $row = UserApiCustomerPriority::where('user_id', $ownerId)->findOrFail($id);
         $currentOrder = $row->order;
 
         $adjacent = $validated['direction']==='up'
-            ? UserApiCustomerPriority::where('user_id',$request->user()->tenantOwnerId())->where('order','<',$currentOrder)->orderBy('order','desc')->first()
-            : UserApiCustomerPriority::where('user_id',$request->user()->tenantOwnerId())->where('order','>',$currentOrder)->orderBy('order','asc')->first();
+            ? UserApiCustomerPriority::where('user_id', $ownerId)->where('order', '<', $currentOrder)->orderBy('order', 'desc')->first()
+            : UserApiCustomerPriority::where('user_id', $ownerId)->where('order', '>', $currentOrder)->orderBy('order', 'asc')->first();
 
         if (!$adjacent) {
             return response()->json(['status'=>'error','message'=>'Cannot move further '.$validated['direction']], 400);
@@ -40,18 +40,14 @@ class UserApiCustomerPriorityController extends Controller
         return response()->json(['status'=>'success','message'=>'Priority moved '.$validated['direction'].' successfully']);
     }
 
-    public function reorderPriorities(Request $request)
+    public function reorderPriorities(ReorderCustomerPrioritiesRequest $request)
     {
-        $user = $request->user();
+        $validated = $request->validated();
+        $ownerId = auth()->user()->tenantOwnerId();
 
-        $validated = $request->validate([
-            'order'   => 'required|array',
-            'order.*' => 'integer|exists:users_api_customers_priorities,id',
-        ]);
-
-        DB::transaction(function () use ($validated, $request) {
+        DB::transaction(function () use ($validated, $ownerId) {
             foreach ($validated['order'] as $idx => $id) {
-                UserApiCustomerPriority::where('user_id',$request->user()->tenantOwnerId())->where('id',$id)->update(['order'=>$idx+1]);
+                UserApiCustomerPriority::where('user_id', $ownerId)->where('id', $id)->update(['order' => $idx + 1]);
             }
         });
 
@@ -61,29 +57,17 @@ class UserApiCustomerPriorityController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-
-        $rows = UserApiCustomerPriority::where('user_id',$request->user()->tenantOwnerId())->orderBy('order')->get();
+        $rows = UserApiCustomerPriority::where('user_id', $user->tenantOwnerId())->orderBy('order')->get();
 
         return response()->json(['status'=>'success','data'=>$rows]);
     }
 
-    public function store(Request $request)
+    public function store(StoreCustomerPriorityRequest $request)
     {
-        $user = $request->user();
+        $user = auth()->user();
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'name'  => 'required|string|max:255',
-            'value' => [
-                'required','integer',
-                Rule::unique('users_api_customers_priorities','value')->where(fn($q)=>$q->where('user_id',$user->id))
-            ],
-            'color' => 'nullable|string|max:50',
-            'icon'  => 'nullable|string|max:50',
-            'order' => 'required|integer|min:1',
-            'is_active' => 'boolean',
-        ]);
-
-        $validated['user_id'] = $request->user()->tenantOwnerId();
+        $validated['user_id'] = $user->tenantOwnerId();
 
         $row = UserApiCustomerPriority::create($validated);
 
@@ -93,31 +77,16 @@ class UserApiCustomerPriorityController extends Controller
     public function show(Request $request, $id)
     {
         $user = $request->user();
-
-        $row = UserApiCustomerPriority::where('user_id',$request->user()->tenantOwnerId())->findOrFail($id);
+        $row = UserApiCustomerPriority::where('user_id', $user->tenantOwnerId())->findOrFail($id);
 
         return response()->json(['status'=>'success','data'=>$row]);
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateCustomerPriorityRequest $request, $id)
     {
-        $user = $request->user();
-
-        $row = UserApiCustomerPriority::where('user_id',$request->user()->tenantOwnerId())->findOrFail($id);
-
-        $validated = $request->validate([
-            'name'  => 'sometimes|string|max:255',
-            'value' => [
-                'sometimes','integer','in:1,2,3',
-                Rule::unique('users_api_customers_priorities','value')
-                    ->where(fn($q)=>$q->where('user_id',$user->id))
-                    ->ignore($row->id),
-            ],
-            'color' => 'nullable|string|max:50',
-            'icon'  => 'nullable|string|max:50',
-            'order' => 'sometimes|integer|min:1',
-            'is_active' => 'boolean',
-        ]);
+        $ownerId = auth()->user()->tenantOwnerId();
+        $row = UserApiCustomerPriority::where('user_id', $ownerId)->findOrFail($id);
+        $validated = $request->validated();
 
         $row->update($validated);
 
@@ -127,8 +96,7 @@ class UserApiCustomerPriorityController extends Controller
     public function destroy(Request $request, $id)
     {
         $user = $request->user();
-
-        $row = UserApiCustomerPriority::where('user_id',$request->user()->tenantOwnerId())->findOrFail($id);
+        $row = UserApiCustomerPriority::where('user_id', $user->tenantOwnerId())->findOrFail($id);
         $row->delete();
 
         return response()->json(['status'=>'success','message'=>'Priority deleted successfully']);

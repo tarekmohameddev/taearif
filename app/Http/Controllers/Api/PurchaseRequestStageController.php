@@ -8,6 +8,10 @@ use App\Models\PurchaseRequestStage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use App\Http\Requests\Pms\UpdateStageStatusRequest;
+use App\Http\Requests\Pms\UpdateStageNotesRequest;
+use App\Http\Requests\Pms\BulkUpdateStagesRequest;
+use App\Http\Requests\Pms\StageActionRequest;
 
 class PurchaseRequestStageController extends Controller
 {
@@ -33,12 +37,9 @@ class PurchaseRequestStageController extends Controller
     /**
      * Update a specific stage status
      */
-    public function updateStatus(Request $request, $purchaseRequestId, $stageId)
+    public function updateStatus(UpdateStageStatusRequest $request, $purchaseRequestId, $stageId)
     {
-        $validated = $request->validate([
-            'status' => ['required', Rule::in(['الانتظار', 'قيد التنفيذ', 'مكتمل'])],
-            'notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $purchaseRequest = PurchaseRequest::findOrFail($purchaseRequestId);
         $stage = $purchaseRequest->stages()->findOrFail($stageId);
@@ -74,11 +75,9 @@ class PurchaseRequestStageController extends Controller
     /**
      * Update stage notes
      */
-    public function updateNotes(Request $request, $purchaseRequestId, $stageId)
+    public function updateNotes(UpdateStageNotesRequest $request, $purchaseRequestId, $stageId)
     {
-        $validated = $request->validate([
-            'notes' => 'required|string',
-        ]);
+        $validated = $request->validated();
 
         $purchaseRequest = PurchaseRequest::findOrFail($purchaseRequestId);
         $stage = $purchaseRequest->stages()->findOrFail($stageId);
@@ -117,14 +116,9 @@ class PurchaseRequestStageController extends Controller
     /**
      * Bulk update multiple stages
      */
-    public function bulkUpdate(Request $request, $purchaseRequestId)
+    public function bulkUpdate(BulkUpdateStagesRequest $request, $purchaseRequestId)
     {
-        $validated = $request->validate([
-            'stages' => 'required|array',
-            'stages.*.stage_id' => 'required|exists:purchase_request_stages,id',
-            'stages.*.status' => ['required', Rule::in(['الانتظار', 'قيد التنفيذ', 'مكتمل'])],
-            'stages.*.notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $purchaseRequest = PurchaseRequest::findOrFail($purchaseRequestId);
         $updatedStages = [];
@@ -198,11 +192,9 @@ class PurchaseRequestStageController extends Controller
     /**
      * Mark stage as completed with method helper
      */
-    public function markCompleted(Request $request, $purchaseRequestId, $stageId)
+    public function markCompleted(StageActionRequest $request, $purchaseRequestId, $stageId)
     {
-        $validated = $request->validate([
-            'notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $purchaseRequest = PurchaseRequest::findOrFail($purchaseRequestId);
         $stage = $purchaseRequest->stages()->findOrFail($stageId);
@@ -219,11 +211,9 @@ class PurchaseRequestStageController extends Controller
     /**
      * Mark stage as in progress with method helper
      */
-    public function markInProgress(Request $request, $purchaseRequestId, $stageId)
+    public function markInProgress(StageActionRequest $request, $purchaseRequestId, $stageId)
     {
-        $validated = $request->validate([
-            'notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $purchaseRequest = PurchaseRequest::findOrFail($purchaseRequestId);
         $stage = $purchaseRequest->stages()->findOrFail($stageId);
@@ -240,11 +230,9 @@ class PurchaseRequestStageController extends Controller
     /**
      * Mark stage as pending with method helper
      */
-    public function markPending(Request $request, $purchaseRequestId, $stageId)
+    public function markPending(StageActionRequest $request, $purchaseRequestId, $stageId)
     {
-        $validated = $request->validate([
-            'notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $purchaseRequest = PurchaseRequest::findOrFail($purchaseRequestId);
         $stage = $purchaseRequest->stages()->findOrFail($stageId);

@@ -21,7 +21,8 @@ return [
     ],
 
     'recaptcha' => [
-    'secret' => env('RECAPTCHA_SECRET'),
+        'secret' => env('RECAPTCHA_SECRET'),
+        'api_enabled' => env('RECAPTCHA_API_ENABLED', true),
     ],
 
 

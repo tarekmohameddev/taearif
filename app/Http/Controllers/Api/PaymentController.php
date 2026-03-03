@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\Api\Payment\CheckoutAppRequest;
+use App\Http\Requests\Api\Payment\CheckoutMembershipRequest;
+use App\Http\Requests\Api\Payment\CheckoutCreditsRequest;
 use App\Models\User;
 use App\Models\Package;
 use App\Models\Membership;
@@ -15,11 +18,11 @@ use App\Http\Controllers\Payment\ArbController;
 class PaymentController extends Controller
 {
 
-    public function checkoutApp(Request $request)
+    public function checkoutApp(CheckoutAppRequest $request)
     {
-        $request->validate(['app_id' => 'required|exists:api_apps,id']);
-        $user = $request->user();
-        $app  = \App\Models\Api\ApiApp::findOrFail($request->app_id);
+        $validated = $request->validated();
+        $user = auth()->user();
+        $app  = \App\Models\Api\ApiApp::findOrFail($validated['app_id']);
 
         $arb  = app(\App\Http\Controllers\Payment\ArbController::class);
         $resp = $arb->paymentProcessForApp($user, $app);
@@ -35,18 +38,13 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function checkoutCredits(Request $request)
+    public function checkoutCredits(CheckoutCreditsRequest $request)
     {
-        $request->validate([
-            'amount' => 'required|numeric|min:0.01',
-            'credits' => 'required|integer|min:1',
-            'payment_method' => 'required|string|in:arb,myfatoorah,test'
-        ]);
-
-        $user = $request->user();
-        $amount = (float) $request->amount;
-        $credits = (int) $request->credits;
-        $paymentMethod = $request->payment_method;
+        $validated = $request->validated();
+        $user = auth()->user();
+        $amount = (float) $validated['amount'];
+        $credits = (int) $validated['credits'];
+        $paymentMethod = $validated['payment_method'];
 
         try {
             // Create a temporary transaction record for tracking
@@ -97,7 +95,7 @@ class PaymentController extends Controller
             // Process payment with ARB or MyFatoorah
             if ($paymentMethod === 'arb') {
                 $arb = app(\App\Http\Controllers\Payment\ArbController::class);
-                $resp = $arb->paymentProcessForCredits($user, $amount, $credits, 'arb');
+                $resp = $arb->paymentProcessForCredits($user, $amount, $credits, 'arb', $transaction->id);
             } elseif ($paymentMethod === 'myfatoorah') {
                 $myfatoorah = app(\App\Http\Controllers\Payment\MyFatoorahController::class);
                 $resp = $myfatoorah->paymentProcessForCredits($user, $amount, $credits, 'myfatoorah');
@@ -140,7 +138,7 @@ class PaymentController extends Controller
     }
 
 
-    public function checkout(Request $request)
+    public function checkout(CheckoutMembershipRequest $request)
     {
         try {
             // Get user from token instead of auth() helper
@@ -153,13 +151,9 @@ class PaymentController extends Controller
                 ], 401);
             }
 
-            // Validate required fields
-            $request->validate([
-                'package_id' => 'required|exists:packages,id',
-                'period' => 'nullable|integer|min:1'
-            ]);
+            $validated = $request->validated();
 
-            $package = Package::find($request->package_id);
+            $package = Package::find($validated['package_id']);
             
             if (!$package) {
                 return response()->json([
@@ -174,7 +168,7 @@ class PaymentController extends Controller
                 $period = 1; // For display purposes
             } else {
                 //  default to 1 if not provided period from request
-                $period = (int) ($request->period ?? 1);
+                $period = (int) ($validated['period'] ?? 1);
                 
                 if ($period < 1) {
                     return response()->json([
@@ -186,12 +180,6 @@ class PaymentController extends Controller
                 // Calculate total amount based on package term and period
                 $amount = $package->price * $period;
             }
-
-            $data = $request->all();
-            $data['status'] = "1";
-            $data['receipt_name'] = null;
-            $data['email'] = $user->email;
-            $data['period'] = $period; // Pass period information for membership creation
 
             $title = "You are extending your membership";
             $description = "Congratulation you are going to join our membership.Please make a payment for confirming your membership now!";

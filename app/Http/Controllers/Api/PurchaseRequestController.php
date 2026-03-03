@@ -7,6 +7,10 @@ use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestStage;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\Project;
+use App\Http\Requests\Pms\ListPurchaseRequestsRequest;
+use App\Http\Requests\Pms\StorePurchaseRequestRequest;
+use App\Http\Requests\Pms\UpdatePurchaseRequestRequest;
+use App\Http\Requests\Pms\TransitionStageRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +21,7 @@ class PurchaseRequestController extends Controller
     /**
      * Display a listing of purchase requests
      */
-    public function index(Request $request)
+    public function index(ListPurchaseRequestsRequest $request)
     {
         $query = PurchaseRequest::with(['property', 'project', 'assignedUser', 'stages']);
 
@@ -102,36 +106,12 @@ class PurchaseRequestController extends Controller
     /**
      * Store a newly created purchase request
      */
-    public function store(Request $request)
+    public function store(StorePurchaseRequestRequest $request)
     {
         $user = Auth::user();
         $tenantId = $user->isTenant() ? $user->id : $user->tenant_id;
         
-        $validated = $request->validate([
-            'client_name' => 'required|string|max:255',
-            'client_email' => 'required|email|max:255',
-            'client_phone' => 'required|string|max:20',
-            'client_national_id' => 'nullable|string|max:50',
-            'property_id' => [
-                'nullable',
-                Rule::exists('user_properties', 'id')->where('user_id', $tenantId)
-            ],
-            'project_id' => [
-                'nullable', 
-                Rule::exists('user_projects', 'id')->where('user_id', $tenantId)
-            ],
-            'priority' => ['required', Rule::in(['منخفضة', 'متوسطة', 'عالية', 'عاجل'])],
-            'budget_amount' => 'nullable|numeric|min:0',
-            'notes' => 'nullable|string',
-            'additional_notes' => 'nullable|string',
-            'assigned_to' => [
-                'nullable',
-                Rule::exists('users', 'id')->where(function($query) use ($tenantId) {
-                    $query->where('id', $tenantId)->orWhere('tenant_id', $tenantId);
-                })
-            ],
-            'expected_completion_date' => 'nullable|date',
-        ]);
+        $validated = $request->validated();
 
         $validated['request_date'] = now();
         // user_id will be auto-set by the model's boot method
@@ -268,38 +248,11 @@ class PurchaseRequestController extends Controller
     /**
      * Update the specified purchase request
      */
-    public function update(Request $request, $id)
+    public function update(UpdatePurchaseRequestRequest $request, $id)
     {
         $purchaseRequest = PurchaseRequest::findOrFail($id);
-        $user = Auth::user();
-        $tenantId = $user->isTenant() ? $user->id : $user->tenant_id;
-
-        $validated = $request->validate([
-            'client_name' => 'sometimes|required|string|max:255',
-            'client_email' => 'sometimes|required|email|max:255',
-            'client_phone' => 'sometimes|required|string|max:20',
-            'client_national_id' => 'nullable|string|max:50',
-            'property_id' => [
-                'nullable',
-                Rule::exists('user_properties', 'id')->where('user_id', $tenantId)
-            ],
-            'project_id' => [
-                'nullable',
-                Rule::exists('user_projects', 'id')->where('user_id', $tenantId)
-            ],
-            'priority' => ['sometimes', 'required', Rule::in(['منخفضة', 'متوسطة', 'عالية', 'عاجل'])],
-            'budget_amount' => 'nullable|numeric|min:0',
-            'notes' => 'nullable|string',
-            'additional_notes' => 'nullable|string',
-            'assigned_to' => [
-                'nullable',
-                Rule::exists('users', 'id')->where(function($query) use ($tenantId) {
-                    $query->where('id', $tenantId)->orWhere('tenant_id', $tenantId);
-                })
-            ],
-            'overall_status' => ['sometimes', Rule::in(['pending', 'in_progress', 'completed', 'cancelled'])],
-            'expected_completion_date' => 'nullable|date',
-        ]);
+        
+        $validated = $request->validated();
 
         $purchaseRequest->update($validated);
 
@@ -327,20 +280,12 @@ class PurchaseRequestController extends Controller
     /**
      * Transition to next stage
      */
-    public function transitionStage(Request $request, $id)
+    public function transitionStage(TransitionStageRequest $request, $id)
     {
         $purchaseRequest = PurchaseRequest::with('stages')->findOrFail($id);
         $user = Auth::user();
 
-        $validated = $request->validate([
-            'current_stage_name' => ['required', Rule::in(['الحجز', 'العقد', 'الإنجاز', 'الاستلام'])],
-            'requirements_met' => 'required|array',
-            'requirements_met.*' => 'required|boolean',
-            'inspection_date' => 'nullable|date',
-            'payment_amount' => 'nullable|numeric|min:0',
-            'expected_completion_date' => 'nullable|date',
-            'additional_notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         // Get current stage
         $currentStage = $purchaseRequest->stages()
@@ -489,20 +434,12 @@ class PurchaseRequestController extends Controller
     /**
      * Simple stage transition (alternative method without complex transactions)
      */
-    public function simpleTransitionStage(Request $request, $id)
+    public function simpleTransitionStage(TransitionStageRequest $request, $id)
     {
         $purchaseRequest = PurchaseRequest::with('stages')->findOrFail($id);
         $user = Auth::user();
 
-        $validated = $request->validate([
-            'current_stage_name' => ['required', Rule::in(['الحجز', 'العقد', 'الإنجاز', 'الاستلام'])],
-            'requirements_met' => 'required|array',
-            'requirements_met.*' => 'required|boolean',
-            'inspection_date' => 'nullable|date|after:today',
-            'payment_amount' => 'nullable|numeric|min:0',
-            'expected_completion_date' => 'nullable|date|after:today',
-            'additional_notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         // Validate that all requirements are met
         $allRequirementsMet = collect($validated['requirements_met'])->every(function($met) {

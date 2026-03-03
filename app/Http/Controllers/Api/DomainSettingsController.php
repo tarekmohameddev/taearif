@@ -5,6 +5,11 @@ namespace App\Http\Controllers\Api;
 use Log;
 use Mail;
 use App\Models\User;
+use App\Http\Requests\Api\Domain\RequestDomainSslRequest;
+use App\Http\Requests\Api\Domain\SetPrimaryDomainRequest;
+use App\Http\Requests\Api\Domain\StoreDomainSettingRequest;
+use App\Http\Requests\Api\Domain\UpdateDomainSslStatusRequest;
+use App\Http\Requests\Api\Domain\VerifyDomainRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use App\Support\TenantActivity;
@@ -63,12 +68,10 @@ class DomainSettingsController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StoreDomainSettingRequest $request)
     {
         $user = Auth::user();
-        $validated = $request->validate([
-            'custom_name' => 'required|string|max:255|regex:/^(?!:\/\/)(?=.{1,255}$)((.{1,63}\.){1,127}(?![0-9]*$)[a-z0-9-]+\.?)$/i',
-        ]);
+        $validated = $request->validated();
         $existingDomain = ApiDomainSetting::where('custom_name', $validated['custom_name'])->where('user_id', $user->id)->first();
         if ($existingDomain) {
             return response()->json([
@@ -179,13 +182,10 @@ class DomainSettingsController extends Controller
     }
 
     /* verify domain */
-    public function verify(Request $request)
+    public function verify(VerifyDomainRequest $request)
     {
         $user = Auth::user();
-
-        $validated = $request->validate([
-            'id' => 'required|integer|exists:api_domains_settings,id',
-        ]);
+        $validated = $request->validated();
 
         $domain = ApiDomainSetting::where('id', $validated['id'])
             ->where('user_id', $user->id)
@@ -215,14 +215,11 @@ class DomainSettingsController extends Controller
     }
 
     /* set primary domain */
-    public function setPrimary(Request $request)
+    public function setPrimary(SetPrimaryDomainRequest $request)
     {
 
         $user = Auth::user();
-
-        $validated = $request->validate([
-            'id' => 'required|integer|exists:api_domains_settings,id',
-        ]);
+        $validated = $request->validated();
 
         $domain = ApiDomainSetting::where('id', $validated['id'])->where('user_id', $user->id)->firstOrFail();
 
@@ -301,13 +298,10 @@ class DomainSettingsController extends Controller
 
     /* user request to enable the ssl */
 
-    public function requestSsl(Request $request)
+    public function requestSsl(RequestDomainSslRequest $request)
     {
         $user = Auth::user();
-
-        $validated = $request->validate([
-            'id' => 'required|integer|exists:api_domains_settings,id',
-        ]);
+        $validated = $request->validated();
 
         $domain = ApiDomainSetting::where('id', $validated['id'])
             ->where('user_id', $user->id)
@@ -337,15 +331,12 @@ class DomainSettingsController extends Controller
 
     /* admin update ssl status */
 
-    public function updateSslStatus(Request $request)
+    public function updateSslStatus(UpdateDomainSslStatusRequest $request)
     {
-        $request->validate([
-            'domain_id' => 'required|exists:api_domains_settings,id',
-            'ssl' => 'required|boolean',
-        ]);
+        $validated = $request->validated();
 
-        $domain = ApiDomainSetting::findOrFail($request->domain_id);
-        $domain->ssl = $request->ssl;
+        $domain = ApiDomainSetting::findOrFail($validated['domain_id']);
+        $domain->ssl = $validated['ssl'];
         $domain->save();
 
         return response()->json([

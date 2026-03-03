@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\User\RealestateManagement\City;
 use App\Models\User\RealestateManagement\State;
 use App\Models\User\RealestateManagement\Country;
+use App\Models\User\UserDistrict;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use App\Models\User\RealestateManagement\Property;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -109,6 +110,11 @@ class PropertyContent extends Model
     public function city()
     {
         return $this->belongsTo(City::class, 'city_id');
+    }
+
+    public function district()
+    {
+        return $this->belongsTo(UserDistrict::class, 'state_id', 'id');
     }
 
     public function propertySpacifications()

@@ -8,6 +8,10 @@ use Illuminate\Validation\Rule;
 use App\Services\ActivityLogger;
 use App\Http\Controllers\Concerns\ResolvesTenant;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\StorePermissionRequest;
+use App\Http\Requests\Api\V1\UpdatePermissionRequest;
+use App\Http\Requests\Api\V1\StoreRoleRequest;
+use App\Http\Requests\Api\V1\UpdateRoleRequest;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
@@ -74,24 +78,10 @@ class RoleController extends Controller
     }
 
     // POST /roles
-    public function store(Request $request)
+    public function store(StoreRoleRequest $request)
     {
         $tenantId = $this->tenantId();
-
-        $data = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('api_roles', 'name')->where(function ($query) use ($tenantId) {
-                    return $query->where('team_id', $tenantId);
-                })
-            ],
-            'name_ar' => ['nullable', 'string', 'max:255'],
-            'name_en' => ['nullable', 'string', 'max:255'],
-            'permissions' => ['array'],
-            'permissions.*' => ['string', 'exists:api_permissions,name']
-        ]);
+        $data = $request->validated();
 
         // Create the role
         $role = Role::create([
@@ -142,26 +132,11 @@ class RoleController extends Controller
     }
 
     // PUT /roles/{id}
-    public function update(Request $request, $id)
+    public function update(UpdateRoleRequest $request, $id)
     {
         $tenantId = $this->tenantId();
-
         $role = Role::where('team_id', $tenantId)->findOrFail($id);
-
-        $data = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('api_roles', 'name')->where(function ($query) use ($tenantId) {
-                    return $query->where('team_id', $tenantId);
-                })->ignore($role->id)
-            ],
-            'name_ar' => ['nullable', 'string', 'max:255'],
-            'name_en' => ['nullable', 'string', 'max:255'],
-            'permissions' => ['array'],
-            'permissions.*' => ['string', 'exists:api_permissions,name']
-        ]);
+        $data = $request->validated();
 
         $oldData = [
             'name' => $role->name,
@@ -296,22 +271,10 @@ class RoleController extends Controller
     }
 
     // POST /permissions
-    public function storePermission(Request $request)
+    public function storePermission(StorePermissionRequest $request)
     {
         $tenantId = $this->tenantId();
-
-        $data = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                'regex:/^[a-z]+\.[a-z_]+$/',
-                'unique:api_permissions,name'
-            ],
-            'description' => ['nullable', 'string', 'max:500'],
-            'name_ar' => ['nullable', 'string', 'max:255'],
-            'name_en' => ['nullable', 'string', 'max:255']
-        ]);
+        $data = $request->validated();
 
         // Validate against business-action pattern
         $validation = $this->validatePermissionName($data['name']);
@@ -355,16 +318,10 @@ class RoleController extends Controller
     }
 
     // PUT /permissions/{id}
-    public function updatePermission(Request $request, $id)
+    public function updatePermission(UpdatePermissionRequest $request, $id)
     {
         $permission = Permission::findOrFail($id);
-
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:api_permissions,name,' . $permission->id],
-            'description' => ['nullable', 'string', 'max:500'],
-            'name_ar' => ['nullable', 'string', 'max:255'],
-            'name_en' => ['nullable', 'string', 'max:255']
-        ]);
+        $data = $request->validated();
 
         $oldName = $permission->name;
         $permission->update([

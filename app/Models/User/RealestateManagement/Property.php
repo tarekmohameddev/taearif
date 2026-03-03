@@ -103,6 +103,18 @@ class Property extends Model
         return $this->belongsTo(ApiUserCategory::class, 'category_id', 'id');
     }
 
+    /**
+     * Customers this property is assigned to (pivot api_customer_assigned_property).
+     */
+    public function assignedCustomers()
+    {
+        return $this->belongsToMany(
+            \App\Models\ApiCustomer::class,
+            'api_customer_assigned_property',
+            'property_id',
+            'customer_id'
+        )->withTimestamps();
+    }
 
     public static function storeProperty($userId, $request, $featuredImgName, $floorPlanningImage, $videoImage, $featured, $createdBy = null)
     {

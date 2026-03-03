@@ -199,7 +199,7 @@ class AnalyticsService
             ->whereBetween('created_at', [$startDate, $endDate])
             ->count();
 
-        $appointments = DB::table('users_api_customers_appointments')
+        $appointments = DB::table('property_request_appointments')
             ->where('user_id', $userId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->count();
@@ -255,7 +255,7 @@ class AnalyticsService
                         break;
 
                     case 'appointments':
-                        $trendData['appointments'] = DB::table('users_api_customers_appointments')
+                        $trendData['appointments'] = DB::table('property_request_appointments')
                             ->where('user_id', $userId)
                             ->whereBetween('created_at', [$dayStart, $dayEnd])
                             ->count();

@@ -2,16 +2,23 @@
 
 namespace App\Domain\CustomersHub\Services;
 
-use Illuminate\Support\Facades\DB;
+use App\Models\CustomersHub\CustomersHubStage;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * CustomerDetailService
- * 
+ *
  * Handles customer detail operations (info, tasks, properties, preferences).
  */
 class CustomerDetailService
 {
+    public function __construct(
+        private ActionsAggregatorService $aggregator,
+        private PropertyRequestDetailBuilder $propertyRequestDetailBuilder
+    ) {
+    }
+
     /**
      * Get complete customer details.
      */
@@ -51,13 +58,16 @@ class CustomerDetailService
         // Get preferences/requests
         $preferences = $this->getCustomerPreferences($userId, $customerId);
 
+        // Get all property requests and inquiries (full payloads)
+        $propertyRequests = $this->getCustomerPropertyRequests($userId, $customerId, $customer->phone_number ?? '');
+
         // Count interactions and appointments
         $totalInteractions = DB::table('api_customer_inquiry')
             ->where('user_id', $userId)
             ->where('customer_id', $customerId)
             ->count();
 
-        $totalAppointments = DB::table('users_api_customers_appointments')
+        $totalAppointments = DB::table('property_request_appointments')
             ->where('user_id', $userId)
             ->where('customer_id', $customerId)
             ->count();
@@ -95,8 +105,69 @@ class CustomerDetailService
             ],
             'tasks' => $tasks,
             'properties' => $properties,
+            'propertyRequests' => $propertyRequests,
             'preferences' => $preferences,
         ];
+    }
+
+    /**
+     * Get all property requests and inquiries for a customer (full payloads, same shape as pipeline request detail).
+     */
+    public function getCustomerPropertyRequests(int $userId, int $customerId, string $customerPhone): array
+    {
+        $inquiryIds = DB::table('api_customer_inquiry')
+            ->where('user_id', $userId)
+            ->where('customer_id', $customerId)
+            ->orderBy('created_at', 'desc')
+            ->pluck('id')
+            ->all();
+
+        $propertyRequestIdsFromPivot = DB::table('api_customer_property_request')
+            ->where('customer_id', $customerId)
+            ->pluck('property_request_id')
+            ->all();
+
+        $propertyRequestIdsFromPhone = [];
+        if ($customerPhone !== '') {
+            $propertyRequestIdsFromPhone = DB::table('users_property_requests')
+                ->where('user_id', $userId)
+                ->where('is_active', 1)
+                ->where('phone', $customerPhone)
+                ->pluck('id')
+                ->all();
+        }
+
+        $propertyRequestIds = array_values(array_unique(array_merge($propertyRequestIdsFromPivot, $propertyRequestIdsFromPhone)));
+
+        $items = [];
+
+        foreach ($inquiryIds as $inquiryId) {
+            $action = $this->aggregator->getById($userId, 'inquiry_' . $inquiryId);
+            if ($action !== null) {
+                $full = $this->propertyRequestDetailBuilder->buildFullInquiryAction($userId, $action);
+                if ($full !== null) {
+                    $items[] = $full;
+                }
+            }
+        }
+
+        foreach ($propertyRequestIds as $propertyRequestId) {
+            $action = $this->aggregator->getById($userId, 'property_request_' . $propertyRequestId);
+            if ($action !== null) {
+                $full = $this->propertyRequestDetailBuilder->buildFullPropertyRequestAction($userId, $action);
+                if ($full !== null) {
+                    $items[] = $full;
+                }
+            }
+        }
+
+        usort($items, function (array $a, array $b): int {
+            $createdA = $a['createdAt'] ?? '';
+            $createdB = $b['createdAt'] ?? '';
+            return strcmp($createdB, $createdA);
+        });
+
+        return $items;
     }
 
     /**
@@ -285,6 +356,7 @@ class CustomerDetailService
         return DB::table('api_customer_inquiry')->insertGetId([
             'user_id' => $userId,
             'customer_id' => $customerId,
+            'stage_id' => CustomersHubStage::getDefaultStageId(),
             'property_type' => $data['propertyType'] ?? null,
             'budget' => $data['budget'] ?? null,
             'bedrooms' => $data['bedrooms'] ?? null,

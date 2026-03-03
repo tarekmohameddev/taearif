@@ -58,7 +58,19 @@ class ApiSideMenusController extends Controller
         });
 
         // Pre-compute all permission checks at once to avoid repeated lookups
-        $allPermissions = ['settings.view', 'customers.view', 'crm.view', 'projects.view', 'properties.view', 'affiliate.view', 'content.view'];
+        $allPermissions = [
+            'settings.view',
+            'customers.view',
+            'crm.view',
+            'projects.view',
+            'properties.view',
+            'affiliate.view',
+            'content.view',
+            'rentals.view',
+            'buildings.view',
+            'property_requests.view',
+            'job_applications.view',
+        ];
         $userPermissions = [];
         
         if ($isOwner) {

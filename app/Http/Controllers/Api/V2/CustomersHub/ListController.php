@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Api\ApiController;
 use App\Domain\CustomersHub\Services\CustomersListService;
+use App\Http\Requests\Api\V2\CustomersHub\ListRequest;
+use App\Http\Requests\Api\V2\CustomersHub\BulkListRequest;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -32,28 +34,9 @@ class ListController extends ApiController
      * 
      * Get customers list with optional stats.
      */
-    public function list(Request $request): JsonResponse
+    public function list(ListRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'action' => 'nullable|in:list,stats',
-            'includeStats' => 'nullable|boolean',
-            'filters' => 'nullable|array',
-            'filters.search' => 'nullable|string|max:255',
-            'filters.stage' => 'nullable|array',
-            'filters.priority' => 'nullable|array',
-            'filters.type' => 'nullable|array',
-            'filters.source' => 'nullable|array',
-            'filters.assignedEmployeeId' => 'nullable|integer',
-            'filters.city' => 'nullable|integer',
-            'filters.createdFrom' => 'nullable|date',
-            'filters.createdTo' => 'nullable|date',
-            'filters.sort_by' => 'nullable|in:created_at,updated_at,name',
-            'filters.sort_dir' => 'nullable|in:asc,desc',
-            'pagination' => 'nullable|array',
-            'pagination.page' => 'nullable|integer|min:1',
-            'pagination.limit' => 'nullable|integer|min:1|max:100',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
         $action = $validated['action'] ?? 'list';
         $filters = $validated['filters'] ?? [];
@@ -98,15 +81,9 @@ class ListController extends ApiController
      * 
      * Bulk operations on customers.
      */
-    public function bulk(Request $request): JsonResponse
+    public function bulk(BulkListRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'action' => 'required|in:update_stage,update_priority,update_type,assign_employee,archive,delete',
-            'customerIds' => 'required|array|min:1',
-            'customerIds.*' => 'integer',
-            'data' => 'nullable|array',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
         $action = $validated['action'];
         $customerIds = $validated['customerIds'];

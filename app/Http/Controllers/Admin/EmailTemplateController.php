@@ -52,18 +52,17 @@ class EmailTemplateController extends Controller
                 ->withInput();
         }
 
-        $template = EmailTemplate::create([
+        $template = new EmailTemplate([
             'name' => $request->name,
+            'description' => $request->description,
             'subject' => $request->subject,
             'content' => $request->content,
             'type' => $request->type,
             'language' => $request->language,
-            'description' => $request->description,
-            'status' => $request->has('status'),
-            'character_count' => strlen($request->content),
-            'created_at' => now(),
-            'updated_at' => now()
+            'status' => $request->boolean('status', true),
+            'character_count' => mb_strlen($request->content),
         ]);
+        $template->save();
 
         // Validate template content
         $errors = $template->validateContent();
@@ -122,14 +121,13 @@ class EmailTemplateController extends Controller
 
         $emailTemplate->update([
             'name' => $request->name,
+            'description' => $request->description,
             'subject' => $request->subject,
             'content' => $request->content,
             'type' => $request->type,
             'language' => $request->language,
-            'description' => $request->description,
-            'status' => $request->has('status'),
-            'character_count' => strlen($request->content),
-            'updated_at' => now()
+            'status' => $request->boolean('status', true),
+            'character_count' => mb_strlen($request->content),
         ]);
 
         // Validate template content
@@ -160,9 +158,9 @@ class EmailTemplateController extends Controller
     public function toggleStatus(EmailTemplate $emailTemplate)
     {
         $emailTemplate->update(['status' => !$emailTemplate->status]);
-        
-        $status = $emailTemplate->status ? 'activated' : 'deactivated';
-        Session::flash('success', "Email template {$status} successfully!");
+
+        $statusMessage = $emailTemplate->status ? 'activated' : 'deactivated';
+        Session::flash('success', "Email template {$statusMessage} successfully!");
         
         return redirect()->back();
     }

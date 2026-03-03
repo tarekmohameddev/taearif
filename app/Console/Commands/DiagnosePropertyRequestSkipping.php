@@ -40,7 +40,7 @@ class DiagnosePropertyRequestSkipping extends Command
 
         // Get property requests that don't have linked customers
         $query = UserPropertyRequest::whereNotNull('phone')
-            ->whereDoesntHave('customer');
+            ->whereDoesntHave('customers');
 
         if ($tenantId) {
             $query->where('user_id', $tenantId);
@@ -104,9 +104,10 @@ class DiagnosePropertyRequestSkipping extends Command
             ->first();
 
         if ($existingCustomer) {
-            if ($existingCustomer->property_request_id) {
+            $linkedRequestId = $existingCustomer->propertyRequests()->value('id');
+            if ($linkedRequestId) {
                 $result['reason'] = 'customer_exists_linked';
-                $result['details'] = "Customer #{$existingCustomer->id} already linked to property request #{$existingCustomer->property_request_id}";
+                $result['details'] = "Customer #{$existingCustomer->id} already linked to property request #{$linkedRequestId}";
             } else {
                 $result['reason'] = 'customer_exists_unlinked';
                 $result['details'] = "Customer #{$existingCustomer->id} exists but is not linked (should be linkable)";

@@ -13,13 +13,13 @@ use App\Models\TenantSetting;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User\BasicSetting;
 
+use App\Http\Requests\Api\V1\TenantWebsite\GetTenantRequest;
+
 class GetTenantController extends Controller
 {
-    public function store(Request $request)
+    public function store(GetTenantRequest $request)
     {
-        $data = $request->validate([
-            'websiteName' => 'required|string',
-        ]);
+        $data = $request->validated();
         $input = strtolower(trim($data['websiteName']));
 
         // Try resolving by username first

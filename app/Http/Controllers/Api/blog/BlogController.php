@@ -4,13 +4,15 @@ namespace App\Http\Controllers\Api\blog;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Http\Requests\Api\Blog\StoreBlogPostRequest;
+use App\Http\Requests\Api\Blog\UploadBlogImageRequest;
 
 class BlogController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function index(Request $request)
     {
@@ -81,7 +83,7 @@ class BlogController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreBlogPostRequest $request)
     {
         return response()->json([
             'status' => 'success',
@@ -92,7 +94,7 @@ class BlogController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(StoreBlogPostRequest $request, $id)
     {
         return response()->json([
             'status' => 'success',
@@ -124,7 +126,7 @@ class BlogController extends Controller
         ]);
     }
 
-    public function uploadImage(Request $request)
+    public function uploadImage(UploadBlogImageRequest $request)
     {
         return response()->json([
             'status' => 'success',

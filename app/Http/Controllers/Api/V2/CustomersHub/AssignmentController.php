@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Api\ApiController;
 use App\Domain\CustomersHub\Services\AssignmentService;
+use App\Http\Requests\Api\V2\CustomersHub\AutoAssignRequest;
+use App\Http\Requests\Api\V2\CustomersHub\AssignRequest;
+use App\Http\Requests\Api\V2\CustomersHub\SaveRulesRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -73,19 +76,9 @@ class AssignmentController extends ApiController
      * 
      * Auto-assign customers based on employee rules.
      */
-    public function autoAssign(Request $request): JsonResponse
+    public function autoAssign(AutoAssignRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'employeeRules' => 'required|array|min:1',
-            'employeeRules.*.employeeId' => 'required|string',
-            'employeeRules.*.isActive' => 'required|boolean',
-            'employeeRules.*.rules' => 'required|array',
-            'employeeRules.*.rules.*.id' => 'required|string',
-            'employeeRules.*.rules.*.field' => 'required|in:budgetMin,budgetMax,propertyType,city,source',
-            'employeeRules.*.rules.*.operator' => 'required|in:equals,greaterThan,lessThan,contains',
-            'employeeRules.*.rules.*.value' => 'required|string',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
 
         try {
@@ -109,30 +102,28 @@ class AssignmentController extends ApiController
 
     /**
      * POST /api/v2/customers-hub/assignment/assign
-     * 
-     * Manually assign customers to an employee.
+     *
+     * Manually assign property requests (leads) to an employee. Accepts requestIds or customerIds (backward compat).
      */
-    public function assign(Request $request): JsonResponse
+    public function assign(AssignRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'customerIds' => 'required|array|min:1',
-            'customerIds.*' => 'required|string',
-            'employeeId' => 'required|string|exists:users,id',
-        ]);
-
+        $validated = $request->validated();
+        $requestIds = !empty($validated['requestIds'])
+            ? $validated['requestIds']
+            : ($validated['customerIds'] ?? []);
         $userId = $this->getTenantUserId($request);
 
         try {
             $result = $this->assignmentService->manualAssign(
                 $userId,
-                $validated['customerIds'],
+                $requestIds,
                 $validated['employeeId']
             );
 
             // Invalidate caches
             Cache::forget("ch:assignment:employees:{$userId}");
 
-            return $this->successWithSpec($result, 'Customers assigned successfully');
+            return $this->successWithSpec($result, 'Requests assigned successfully');
         } catch (\InvalidArgumentException $e) {
             return $this->errorWithSpec($e->getMessage(), 404);
         } catch (\Exception $e) {
@@ -150,19 +141,9 @@ class AssignmentController extends ApiController
      * 
      * Save assignment rules for employees.
      */
-    public function saveRules(Request $request): JsonResponse
+    public function saveRules(SaveRulesRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'employeeRules' => 'required|array|min:1',
-            'employeeRules.*.employeeId' => 'required|string',
-            'employeeRules.*.isActive' => 'required|boolean',
-            'employeeRules.*.rules' => 'required|array',
-            'employeeRules.*.rules.*.id' => 'nullable|string',
-            'employeeRules.*.rules.*.field' => 'required|in:budgetMin,budgetMax,propertyType,city,source',
-            'employeeRules.*.rules.*.operator' => 'required|in:equals,greaterThan,lessThan,contains',
-            'employeeRules.*.rules.*.value' => 'required|string',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
 
         try {

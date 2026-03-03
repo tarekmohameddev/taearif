@@ -3,6 +3,12 @@
 namespace App\Http\Controllers\Api\Customer;
 
 use Throwable;
+use App\Http\Requests\Api\Customer\BulkImportCustomersRequest;
+use App\Http\Requests\Api\Customer\DownloadCustomersTemplateRequest;
+use App\Http\Requests\Api\Customer\IndexCustomersRequest;
+use App\Http\Requests\Api\Customer\StoreCustomerRequest;
+use App\Http\Requests\Api\Customer\UpdateCustomerRequest;
+use App\Http\Requests\Api\Customer\SearchCustomersRequest;
 use App\Models\ApiCustomer;
 use Illuminate\Support\Arr;
 use Illuminate\Http\Request;
@@ -155,46 +161,10 @@ class CustomerController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(Request $request)
+    public function index(IndexCustomersRequest $request)
     {
         $start = microtime(true);
         $user = $request->user();
-
-        $toIntArray = function ($v): array {
-            if (is_null($v) || $v === '') return [];
-            if (is_int($v) || (is_string($v) && is_numeric($v))) return [(int)$v];
-            if (is_string($v)) return array_values(array_filter(array_map('intval', explode(',', $v))));
-            if (is_array($v))  return array_values(array_filter(array_map('intval', $v)));
-            return [];
-        };
-        $request->merge([
-            'interested_category_ids' => $toIntArray($request->input('interested_category_ids')),
-            'interested_property_ids' => $toIntArray($request->input('interested_property_ids')),
-        ]);
-
-        $request->validate([
-            'per_page'      => 'nullable|integer|min:1|max:100',
-            'page'          => 'nullable|integer|min:1',
-            'q'             => 'nullable|string|max:255',
-            'city_id'       => 'nullable|integer',
-            'district_id'   => 'nullable|integer',
-            'type_id'       => 'nullable|integer',
-            'priority_id'   => 'nullable|integer',
-            'procedure_id'  => 'nullable|integer',
-            'stage_id'      => 'nullable|integer',
-            'phone_number'  => 'nullable|string|max:20',
-            'responsible_employee_id' => 'nullable|integer',
-            'employee_whatsapp_number' => 'nullable|string|max:20',
-            'created_from'  => 'nullable|date',
-            'created_to'    => 'nullable|date',
-            'sort_by'       => 'nullable|in:name,created_at,updated_at,priority_id',
-            'sort_dir'      => 'nullable|in:asc,desc',
-            'interested_category_ids'   => 'nullable|array',
-            'interested_category_ids.*' => 'integer',
-            'interested_property_ids'   => 'nullable|array',
-            'interested_property_ids.*' => 'integer',
-            'include_interested'        => 'nullable|boolean',
-        ]);
 
         $perPage = (int) ($request->input('per_page') ?: 10);
         $includeInterested = $request->boolean('include_interested', true);
@@ -495,54 +465,11 @@ class CustomerController extends Controller
      * @return \Illuminate\Http\Response
      */
 
-    public function store(Request $request)
+    public function store(StoreCustomerRequest $request)
     {
         return $this->guard(function () use ($request) {
             $user = $request->user();
-
-            $toIntArray = function ($v): array {
-                if (is_null($v) || $v === '') return [];
-                if (is_int($v) || (is_string($v) && is_numeric($v))) return [(int)$v];
-                if (is_string($v)) return array_values(array_filter(array_map('intval', explode(',', $v))));
-                if (is_array($v))  return array_values(array_filter(array_map('intval', $v)));
-                return [];
-            };
-            $request->merge([
-                'interested_category_ids' => $toIntArray($request->input('interested_category_ids')),
-                'interested_property_ids' => $toIntArray($request->input('interested_property_ids')),
-            ]);
-
-            // Remove priority_id from request to ignore it completely
             $request->request->remove('priority_id');
-
-            $request->validate([
-                'name'         => 'required|string|max:255',
-                'email'        => ['nullable','email',
-                    Rule::unique('api_customers','email')->where(fn($q)=>$q->where('user_id',$user->id)),
-                ],
-                'phone_number' => ['required','string','max:20',
-                    Rule::unique('api_customers','phone_number')->where(fn($q)=>$q->where('user_id',$user->id)),
-                ],
-                'city_id'      => 'nullable|exists:user_cities,id',
-                'district_id'  => 'nullable|exists:user_districts,id',
-                'note'         => 'nullable|string',
-                'type_id'      => ['required', Rule::exists('users_api_customers_types','id')->where(fn($q)=>$q->where('user_id',$user->id))],
-                'responsible_employee_id' => [
-                    'nullable',
-                    Rule::exists('users', 'id')->where(function ($query) use ($user) {
-                        $query->where('tenant_id', $user->tenantOwnerId())
-                              ->where('account_type', 'employee')
-                              ->where('active', true);
-                    }),
-                ],
-                'stage_id'     => ['nullable', Rule::exists('users_api_customers_stages','id')->where(fn($q)=>$q->where('user_id',$user->id))],
-                'procedure_id' => ['nullable', Rule::exists('users_api_customers_procedures','id')->where(fn($q)=>$q->where('user_id',$user->id))],
-                'password'     => 'nullable|string|min:6',
-                'interested_category_ids'   => 'nullable|array',
-                'interested_category_ids.*' => 'integer|exists:api_user_categories,id',
-                'interested_property_ids'   => 'nullable|array',
-                'interested_property_ids.*' => 'integer|exists:user_properties,id',
-            ]);
 
             $customer = null;
 
@@ -577,6 +504,10 @@ class CustomerController extends Controller
                     ]);
                 }
             });
+
+            if (!$customer) {
+                throw new \RuntimeException('Customer creation failed unexpectedly.');
+            }
 
             TenantActivity::emit($request, 'customer.created', 'api_customers', $customer->id, null, $customer->only(['name','email','phone_number']));
 
@@ -820,56 +751,11 @@ class CustomerController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id, \App\Services\CrmCustomerStageService $stageService)
+    public function update(UpdateCustomerRequest $request, $id, \App\Services\CrmCustomerStageService $stageService)
     {
         $user = $request->user();
         $customer = \App\Models\ApiCustomer::where('user_id',$user->id)->findOrFail($id);
-
-        $toIntArray = function ($v): array {
-            if (is_null($v) || $v === '') return [];
-            if (is_int($v) || (is_string($v) && is_numeric($v))) return [(int)$v];
-            if (is_string($v)) return array_values(array_filter(array_map('intval', explode(',', $v))));
-            if (is_array($v))  return array_values(array_filter(array_map('intval', $v)));
-            return [];
-        };
-        $request->merge([
-            'interested_category_ids' => $toIntArray($request->input('interested_category_ids')),
-            'interested_property_ids' => $toIntArray($request->input('interested_property_ids')),
-        ]);
-
-        // Remove priority_id from request to ignore it completely
         $request->request->remove('priority_id');
-
-        $request->validate([
-            'name'         => 'sometimes|string|max:255',
-            'email'        => ['sometimes','nullable','email',
-                Rule::unique('api_customers','email')->where(fn($q)=>$q->where('user_id',$user->id))->ignore($customer->id),
-            ],
-            'phone_number' => ['sometimes','string','max:20',
-                Rule::unique('api_customers','phone_number')->where(fn($q)=>$q->where('user_id',$user->id))->ignore($customer->id),
-            ],
-            'city_id'      => 'nullable|exists:user_cities,id',
-            'district_id'  => 'nullable|exists:user_districts,id',
-            'note'         => 'nullable|string',
-            'type_id'      => ['nullable', Rule::exists('users_api_customers_types','id')->where(fn($q)=>$q->where('user_id',$user->id))],
-            'stage_id'     => ['nullable', Rule::exists('users_api_customers_stages','id')->where(fn($q)=>$q->where('user_id',$user->id))],
-            'responsible_employee_id' => [
-                'nullable',
-                Rule::exists('users', 'id')->where(function ($query) use ($user) {
-                    $query->where('tenant_id', $user->tenantOwnerId())
-                          ->where('account_type', 'employee')
-                          ->where('active', true);
-                }),
-            ],
-            'procedure_id' => ['nullable', Rule::exists('users_api_customers_procedures','id')->where(fn($q)=>$q->where('user_id',$user->id))],
-
-            'password'     => 'nullable|string|min:6',
-
-            'interested_category_ids'   => 'nullable|array',
-            'interested_category_ids.*' => 'integer|exists:api_user_categories,id',
-            'interested_property_ids'   => 'nullable|array',
-            'interested_property_ids.*' => 'integer|exists:user_properties,id',
-        ]);
 
         $data = array_filter([
             'name'         => $request->input('name'),
@@ -1072,40 +958,9 @@ class CustomerController extends Controller
      * - sort_by: name|created_at|priority_id (default: created_at)
      * - sort_dir: asc|desc (default: desc)
     */
-    public function search(Request $request)
+    public function search(SearchCustomersRequest $request)
     {
         $user = $request->user();
-
-        $toIntArray = function ($v): array {
-            if (is_null($v) || $v === '') return [];
-            if (is_int($v) || (is_string($v) && is_numeric($v))) return [(int)$v];
-            if (is_string($v)) return array_values(array_filter(array_map('intval', explode(',', $v))));
-            if (is_array($v))  return array_values(array_filter(array_map('intval', $v)));
-            return [];
-        };
-        $request->merge([
-            'interested_category_ids' => $toIntArray($request->input('interested_category_ids')),
-            'interested_property_ids' => $toIntArray($request->input('interested_property_ids')),
-        ]);
-
-        $request->validate([
-            'q'             => 'nullable|string|max:255',
-            'city_id'       => 'nullable|integer',
-            'district_id'   => 'nullable|integer',
-            'type_id'       => 'nullable|integer',
-            'priority_id'   => 'nullable|integer',
-            'procedure_id'  => 'nullable|integer',
-            'stage_id'      => 'nullable|integer',
-            'phone_number'  => 'nullable|string|max:20',
-            'responsible_employee_id' => 'nullable|integer',
-            'employee_whatsapp_number' => 'nullable|string|max:20',
-            'created_from'  => 'nullable|date',
-            'created_to'    => 'nullable|date',
-            'page'          => 'nullable|integer|min:1',
-            'per_page'      => 'nullable|integer|min:1|max:100',
-            'sort_by'       => 'nullable|in:name,created_at,updated_at,priority_id',
-            'sort_dir'      => 'nullable|in:asc,desc',
-        ]);
 
         $perPage = (int) ($request->input('per_page') ?: 10);
         $query = $this->buildCustomerListQuery($request, $user, false);
@@ -1304,14 +1159,15 @@ class CustomerController extends Controller
      * @param Request $request
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
      */
-    public function downloadTemplate(Request $request)
+    public function downloadTemplate(DownloadCustomersTemplateRequest $request)
     {
+        $validated = $request->validated();
         $user = $request->user();
         $userId = $user?->id;
 
         // Resolve tenant context for unauthenticated access
         if (!$userId) {
-            $tenantId = $request->input('tenant_id');
+            $tenantId = $validated['tenant_id'] ?? null;
 
             if ($tenantId) {
                 $tenantUser = \App\Models\User::find($tenantId);
@@ -1344,12 +1200,8 @@ class CustomerController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function bulkImport(Request $request)
+    public function bulkImport(BulkImportCustomersRequest $request)
     {
-        $request->validate([
-            'file' => 'required|mimes:xlsx,csv',
-        ]);
-
         $user = $request->user();
 
         try {

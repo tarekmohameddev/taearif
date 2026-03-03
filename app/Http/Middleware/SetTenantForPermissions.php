@@ -8,7 +8,7 @@ use Spatie\Permission\PermissionRegistrar;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use App\Services\Rbac\BootstrapTenantRbac;
+use App\Services\TenantRbacBootstrapper;
 
 class SetTenantForPermissions
 {
@@ -77,7 +77,7 @@ class SetTenantForPermissions
     private function maybeBootstrapRbac(User $owner): void
     {
         $current  = (int) ($owner->rbac_version ?? 0);
-        $target   = (int) config('rbac.version', 1);
+        $target   = (int) config('rbac.rbac_version', 1);
         if ($current >= $target) return;
 
         $lockKey      = "rbac:seed:tenant:{$owner->id}";
@@ -88,7 +88,7 @@ class SetTenantForPermissions
             $fresh = $owner->fresh();
             if ((int) ($fresh->rbac_version ?? 0) >= $target) return;
 
-            app(BootstrapTenantRbac::class)->run($fresh);
+            app(TenantRbacBootstrapper::class)->run((int) $fresh->id);
 
             $fresh->forceFill([
                 'rbac_version'   => $target,

@@ -3,6 +3,8 @@
 namespace App\Models\Api;
 
 use App\Models\ApiCustomer;
+use App\Models\CustomersHub\CrmHubNote;
+use App\Models\CustomersHub\CustomersHubStage;
 use App\Models\User;
 use App\Support\PropertyRequestFilterOptionsCache;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +19,12 @@ class UserPropertyRequest extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (UserPropertyRequest $model): void {
+            if (!isset($model->customers_hub_stage_id) || $model->customers_hub_stage_id === null) {
+                $model->customers_hub_stage_id = CustomersHubStage::getDefaultStageId();
+            }
+        });
+
         $forgetStats = function (UserPropertyRequest $model): void {
             $ids = array_filter(
                 [$model->getOriginal('user_id'), $model->user_id],
@@ -36,6 +44,7 @@ class UserPropertyRequest extends Model
     protected $fillable = [
         'user_id',
         'source',
+        'referral_source',
         'region', // nullable
         'purpose',
         'property_type',
@@ -58,6 +67,7 @@ class UserPropertyRequest extends Model
         'is_archived',
         'is_active',
         'status_id',
+        'customers_hub_stage_id',
     ];
 
     protected $casts = [
@@ -90,9 +100,27 @@ class UserPropertyRequest extends Model
         return $this->belongsTo(\App\Models\PropertyRequestStatus::class, 'status_id');
     }
 
-    public function customer()
+    public function customers()
     {
-        return $this->hasOne(ApiCustomer::class, 'property_request_id');
+        return $this->belongsToMany(ApiCustomer::class, 'api_customer_property_request', 'property_request_id', 'customer_id')
+            ->withTimestamps();
+    }
+
+    public function hubNotes()
+    {
+        return $this->morphMany(CrmHubNote::class, 'noteable');
+    }
+
+    /**
+     * First linked customer (for backward compatibility). Eager load 'customers' then use $request->customer.
+     */
+    public function getCustomerAttribute(): ?ApiCustomer
+    {
+        $customers = $this->getRelationValue('customers');
+        if ($customers !== null) {
+            return $customers->first();
+        }
+        return $this->customers()->first();
     }
 
     public function district()

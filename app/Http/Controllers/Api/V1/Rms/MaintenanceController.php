@@ -6,7 +6,7 @@ use App\Http\Controllers\Api\BaseApiController;
 use App\Traits\HandlesApiExceptions;
 use App\Http\Requests\Rms\Maintenance\StoreMaintenanceRequest;
 use App\Http\Requests\Rms\Maintenance\UpdateMaintenanceRequest;
-use App\Constants\RmsConstants;
+use App\Http\Requests\Api\V1\Rms\UpdateMaintenanceStatusRequest;
 use Illuminate\Http\Request;
 use App\Services\Rms\MaintenanceService;
 
@@ -64,13 +64,10 @@ class MaintenanceController extends BaseApiController
         }, 'update maintenance ticket');
     }
 
-    public function updateStatus(Request $request, $id)
+    public function updateStatus(UpdateMaintenanceStatusRequest $request, $id)
     {
         return $this->executeWithExceptionHandling(function () use ($request, $id) {
-            $validated = $request->validate([
-                'status' => ['required', RmsConstants::validationRule(RmsConstants::MAINTENANCE_STATUSES)],
-            ]);
-
+            $validated = $request->validated();
             $ticket = $this->maintenanceService->changeStatus($id, $validated['status'], $this->getUserId());
 
             return $this->success($ticket, 'Maintenance ticket status updated successfully');

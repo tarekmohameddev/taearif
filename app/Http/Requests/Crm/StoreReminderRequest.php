@@ -2,11 +2,11 @@
 
 namespace App\Http\Requests\Crm;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\Api\BaseApiFormRequest;
 use Illuminate\Validation\Rule;
 use App\Services\Crm\DefaultReminderTypeService;
 
-class StoreReminderRequest extends FormRequest
+class StoreReminderRequest extends BaseApiFormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -25,7 +25,7 @@ class StoreReminderRequest extends FormRequest
      */
     public function rules(): array
     {
-        $userId = $this->user()->tenantOwnerId();
+        $userId = optional(auth()->user())->tenantOwnerId() ?? 0;
 
         return [
             'customer_id' => [

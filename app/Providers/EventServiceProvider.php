@@ -90,6 +90,18 @@ class EventServiceProvider extends ServiceProvider
         PermissionDetached::class => [
             ClearUserProfilePermissionCaches::class,
         ],
+
+        // Phase 4 Communication automation (commit-safe, queued)
+        \App\Domain\Communication\Events\MessageReceived::class => [
+            \App\Domain\Communication\Listeners\HandleMessageReceived::class,
+        ],
+        \App\Domain\Communication\Events\MessageSent::class => [
+            \App\Domain\Communication\Listeners\HandleMessageSent::class,
+            \App\Domain\Communication\Listeners\SyncWhatsAppConversationStateOnMessageSent::class,
+        ],
+        \App\Domain\Communication\Events\ConversationOpened::class => [
+            \App\Domain\Communication\Listeners\HandleConversationOpened::class,
+        ],
     ];
 
 

@@ -91,6 +91,9 @@ class ThemeController extends Controller
             $validated['price'] = null;
         }
 
+        // Ensure NOT NULL columns never receive null (empty form → null via ConvertEmptyStringsToNull)
+        $validated['description'] = $validated['description'] ?? '';
+
         ApiThemeSettings::create($validated);
 
         // Handle AJAX requests

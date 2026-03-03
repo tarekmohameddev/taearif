@@ -80,13 +80,23 @@
                             
                             <div class="col-lg-6">
                                 <div class="form-group">
-                                    <label for="status"><strong>الحالة</strong></label>
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input" id="status" name="status" 
-                                               value="1" {{ old('status', true) ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="status">
-                                            تفعيل القالب
-                                        </label>
+                                    <label for="status">
+                                        <strong>حالة القالب</strong>
+                                    </label>
+                                    <div class="toggle-switch-container">
+                                        <div class="toggle-switch">
+                                            <input type="hidden" name="status" value="0">
+                                            <input type="checkbox" id="status" name="status" 
+                                                   value="1" {{ old('status', true) ? 'checked' : '' }}>
+                                            <label for="status" class="toggle-label">
+                                                <span class="toggle-slider"></span>
+                                                <span class="toggle-text">
+                                                    <span class="toggle-on">ON</span>
+                                                    <span class="toggle-off">OFF</span>
+                                                </span>
+                                            </label>
+                                        </div>
+                                        <span class="toggle-description">تفعيل القالب</span>
                                     </div>
                                 </div>
                             </div>

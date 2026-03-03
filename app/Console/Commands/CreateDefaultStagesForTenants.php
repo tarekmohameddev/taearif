@@ -207,7 +207,7 @@ class CreateDefaultStagesForTenants extends Command
         if ($unlinkedOnly) {
             // Get tenants from unlinked property requests
             $tenantIds = UserPropertyRequest::whereNotNull('phone')
-                ->whereDoesntHave('customer')
+                ->whereDoesntHave('customers')
                 ->distinct()
                 ->pluck('user_id')
                 ->toArray();

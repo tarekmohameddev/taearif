@@ -8,12 +8,12 @@ use Carbon\Carbon;
 /**
  * PipelineService
  *
- * Handles pipeline/kanban board operations for property requests (users_property_requests)
- * organized by request lifecycle stages (property_request_statuses).
+ * Handles pipeline/kanban board operations for property requests and inquiries
+ * organized by customers_hub_stages (stage_id string).
  */
 class PipelineService
 {
-    /** Default stage colors by display_order index (Option A: no schema change). */
+    /** Default stage colors by order index. */
     private const STAGE_COLORS = [
         '#3b82f6', // blue
         '#8b5cf6', // violet
@@ -24,28 +24,50 @@ class PipelineService
     ];
 
     /**
-     * Get pipeline board data (stages with property requests).
-     * Uses property_request_statuses and users_property_requests.status_id.
+     * Resolve newStageId (string or integer) to stage_id string. Returns null if invalid.
+     */
+    public function resolveNewStageId(int|string $newStageId): ?string
+    {
+        if (is_int($newStageId) || (is_string($newStageId) && ctype_digit($newStageId))) {
+            $row = DB::table('customers_hub_stages')
+                ->where('id', (int) $newStageId)
+                ->where('is_active', true)
+                ->first(['stage_id']);
+
+            return $row ? $row->stage_id : null;
+        }
+
+        $exists = DB::table('customers_hub_stages')
+            ->where('stage_id', $newStageId)
+            ->where('is_active', true)
+            ->exists();
+
+        return $exists ? (string) $newStageId : null;
+    }
+
+    /**
+     * Get pipeline board data (stages from customers_hub_stages; requests + inquiries per stage).
      */
     public function getPipelineBoard(int $userId, array $filters = []): array
     {
-        $stages = DB::table('property_request_statuses')
+        $stages = DB::table('customers_hub_stages')
             ->where('is_active', true)
-            ->orderBy('display_order')
-            ->get(['id', 'name_ar', 'name_en', 'display_order', 'slug']);
+            ->orderBy('order')
+            ->get(['id', 'stage_id', 'stage_name_ar', 'stage_name_en', 'color', 'order']);
 
         $stagesData = [];
         $totalCount = 0;
 
         foreach ($stages as $index => $stage) {
             $requestsQuery = DB::table('users_property_requests as upr')
+                ->leftJoin('api_customer_property_request as acpr', 'acpr.property_request_id', '=', 'upr.id')
                 ->leftJoin('api_customers as ac', function ($join) use ($userId) {
-                    $join->on('ac.property_request_id', '=', 'upr.id')
+                    $join->on('ac.id', '=', 'acpr.customer_id')
                         ->on('ac.user_id', '=', DB::raw((int) $userId));
                 })
                 ->leftJoin('users as emp', 'ac.responsible_employee_id', '=', 'emp.id')
                 ->where('upr.user_id', $userId)
-                ->where('upr.status_id', $stage->id)
+                ->where('upr.customers_hub_stage_id', $stage->stage_id)
                 ->where('upr.is_active', 1)
                 ->where('upr.is_archived', 0);
 
@@ -68,20 +90,100 @@ class PipelineService
                 ->limit(100)
                 ->get();
 
-            $count = $requests->count();
+            $inquiriesQuery = DB::table('api_customer_inquiry as aci')
+                ->leftJoin('api_customers as ac', 'aci.customer_id', '=', 'ac.id')
+                ->leftJoin('users as emp', 'aci.responsible_employee_id', '=', 'emp.id')
+                ->where('aci.user_id', $userId)
+                ->where('aci.stage_id', $stage->stage_id)
+                ->where('aci.is_archived', 0);
+
+            $this->applyInquiryFilters($inquiriesQuery, $filters);
+
+            $inquiries = $inquiriesQuery
+                ->select([
+                    'aci.id',
+                    'aci.phone_number',
+                    'aci.message',
+                    'aci.property_type',
+                    'aci.budget',
+                    'aci.created_at',
+                    'aci.updated_at',
+                    'ac.name as customer_name',
+                    'aci.responsible_employee_id as assigned_employee_id',
+                    DB::raw("CONCAT(COALESCE(emp.first_name, ''), ' ', COALESCE(emp.last_name, '')) as assigned_employee_name"),
+                ])
+                ->limit(100)
+                ->get();
+
+            $requestCards = $requests->map(fn ($r) => $this->mapRequestToCard($r));
+            $inquiryCards = $inquiries->map(fn ($i) => $this->mapInquiryToCard($i));
+            $cards = $requestCards->concat($inquiryCards)->values()->all();
+            $count = count($cards);
             $totalCount += $count;
 
             $stagesData[] = [
                 'id' => (int) $stage->id,
-                'stage_id' => (int) $stage->id,
-                'name' => $stage->name_ar,
-                'nameEn' => $stage->name_en ?? $stage->name_ar,
-                'color' => self::STAGE_COLORS[$index % count(self::STAGE_COLORS)],
-                'order' => (int) $stage->display_order,
+                'stage_id' => $stage->stage_id,
+                'name' => $stage->stage_name_ar,
+                'nameEn' => $stage->stage_name_en ?? $stage->stage_name_ar,
+                'color' => $stage->color ?? self::STAGE_COLORS[$index % count(self::STAGE_COLORS)],
+                'order' => (int) $stage->order,
                 'count' => $count,
-                'customers' => $requests->map(fn ($r) => $this->mapRequestToCard($r)),
+                'customers' => $cards,
             ];
         }
+
+        // Unassigned column: requests and inquiries with null stage
+        $unassignedRequests = DB::table('users_property_requests as upr')
+            ->leftJoin('api_customer_property_request as acpr', 'acpr.property_request_id', '=', 'upr.id')
+            ->leftJoin('api_customers as ac', function ($join) use ($userId) {
+                $join->on('ac.id', '=', 'acpr.customer_id')->on('ac.user_id', '=', DB::raw((int) $userId));
+            })
+            ->leftJoin('users as emp', 'ac.responsible_employee_id', '=', 'emp.id')
+            ->where('upr.user_id', $userId)
+            ->whereNull('upr.customers_hub_stage_id')
+            ->where('upr.is_active', 1)
+            ->where('upr.is_archived', 0);
+
+        $this->applyFilters($unassignedRequests, $filters);
+
+        $unassignedInquiries = DB::table('api_customer_inquiry as aci')
+            ->leftJoin('api_customers as ac', 'aci.customer_id', '=', 'ac.id')
+            ->leftJoin('users as emp', 'aci.responsible_employee_id', '=', 'emp.id')
+            ->where('aci.user_id', $userId)
+            ->whereNull('aci.stage_id')
+            ->where('aci.is_archived', 0);
+
+        $this->applyInquiryFilters($unassignedInquiries, $filters);
+
+        $ur = $unassignedRequests->select([
+            'upr.id', 'upr.full_name', 'upr.phone', 'upr.property_type', 'upr.budget_from', 'upr.budget_to',
+            'upr.seriousness', 'upr.created_at', 'upr.updated_at',
+            'ac.responsible_employee_id as assigned_employee_id',
+            DB::raw("CONCAT(COALESCE(emp.first_name, ''), ' ', COALESCE(emp.last_name, '')) as assigned_employee_name"),
+        ])->limit(100)->get();
+
+        $ui = $unassignedInquiries->select([
+            'aci.id', 'aci.phone_number', 'aci.message', 'aci.property_type', 'aci.budget', 'aci.created_at', 'aci.updated_at',
+            'ac.name as customer_name',
+            'aci.responsible_employee_id as assigned_employee_id',
+            DB::raw("CONCAT(COALESCE(emp.first_name, ''), ' ', COALESCE(emp.last_name, '')) as assigned_employee_name"),
+        ])->limit(100)->get();
+
+        $unassignedCards = $ur->map(fn ($r) => $this->mapRequestToCard($r))->concat($ui->map(fn ($i) => $this->mapInquiryToCard($i)))->values()->all();
+        $unassignedCount = count($unassignedCards);
+        $totalCount += $unassignedCount;
+
+        $stagesData[] = [
+            'id' => null,
+            'stage_id' => null,
+            'name' => 'غير معين',
+            'nameEn' => 'Unassigned',
+            'color' => '#6b7280',
+            'order' => 999,
+            'count' => $unassignedCount,
+            'customers' => $unassignedCards,
+        ];
 
         return [
             'stages' => $stagesData,
@@ -90,7 +192,7 @@ class PipelineService
     }
 
     /**
-     * Map a request row to a card shape (same keys as customer cards for frontend).
+     * Map a request row to a card shape with source and ids for move.
      */
     private function mapRequestToCard(object $r): array
     {
@@ -99,6 +201,9 @@ class PipelineService
 
         return [
             'id' => $r->id,
+            'requestId' => $r->id,
+            'inquiryId' => null,
+            'source' => 'request',
             'name' => $name,
             'phone' => $r->phone ?? '',
             'avatar' => $this->initialsFromName($name),
@@ -111,6 +216,48 @@ class PipelineService
             'lastContactAt' => $r->updated_at ? Carbon::parse($r->updated_at)->toIso8601String() : null,
             'createdAt' => $r->created_at ? Carbon::parse($r->created_at)->toIso8601String() : null,
         ];
+    }
+
+    /**
+     * Map an inquiry row to a card shape with source and ids for move.
+     */
+    private function mapInquiryToCard(object $i): array
+    {
+        $name = $i->customer_name ?? $i->phone_number ?? 'استفسار';
+        $budget = isset($i->budget) && $i->budget !== null ? (float) $i->budget : 0;
+
+        return [
+            'id' => $i->id,
+            'requestId' => null,
+            'inquiryId' => $i->id,
+            'source' => 'inquiry',
+            'name' => $name,
+            'phone' => $i->phone_number ?? '',
+            'avatar' => $this->initialsFromName($name),
+            'totalDealValue' => $budget,
+            'propertyType' => $i->property_type ? (is_array($i->property_type) ? $i->property_type : [$i->property_type]) : [],
+            'priority' => ['id' => 'medium', 'name' => 'متوسط', 'color' => '#ffc107'],
+            'assignedEmployee' => ($i->assigned_employee_id && trim($i->assigned_employee_name ?? ''))
+                ? ['id' => $i->assigned_employee_id, 'name' => trim($i->assigned_employee_name)]
+                : null,
+            'lastContactAt' => $i->updated_at ? Carbon::parse($i->updated_at)->toIso8601String() : null,
+            'createdAt' => $i->created_at ? Carbon::parse($i->created_at)->toIso8601String() : null,
+        ];
+    }
+
+    private function applyInquiryFilters(\Illuminate\Database\Query\Builder $query, array $filters): void
+    {
+        if (!empty($filters['assignedEmployeeId'])) {
+            $query->where('aci.responsible_employee_id', (int) $filters['assignedEmployeeId']);
+        }
+        if (!empty($filters['search'])) {
+            $search = '%' . $filters['search'] . '%';
+            $query->where(function ($q) use ($search) {
+                $q->where('aci.message', 'like', $search)
+                    ->orWhere('aci.phone_number', 'like', $search)
+                    ->orWhere('ac.name', 'like', $search);
+            });
+        }
     }
 
     private function initialsFromName(string $name): string
@@ -139,14 +286,15 @@ class PipelineService
     }
 
     /**
-     * Get stage analytics (request-based).
+     * Get stage analytics (request-based, customers_hub_stage_id).
      */
     public function getStageAnalytics(int $userId, array $filters = []): array
     {
         $baseQuery = function () use ($userId, $filters) {
             $q = DB::table('users_property_requests as upr')
+                ->leftJoin('api_customer_property_request as acpr', 'acpr.property_request_id', '=', 'upr.id')
                 ->leftJoin('api_customers as ac', function ($join) use ($userId) {
-                    $join->on('ac.property_request_id', '=', 'upr.id')
+                    $join->on('ac.id', '=', 'acpr.customer_id')
                         ->on('ac.user_id', '=', DB::raw((int) $userId));
                 })
                 ->where('upr.user_id', $userId)
@@ -158,69 +306,48 @@ class PipelineService
 
         $totalRequests = (clone $baseQuery())->count();
 
-        $statuses = DB::table('property_request_statuses')
+        $stages = DB::table('customers_hub_stages')
             ->where('is_active', true)
-            ->orderBy('display_order')
-            ->get(['id', 'slug', 'name_ar', 'display_order']);
-        $numStages = $statuses->count();
+            ->orderBy('order')
+            ->get(['id', 'stage_id', 'stage_name_ar', 'color', 'order']);
+        $numStages = $stages->count();
         $avgPerStage = $numStages > 0 ? $totalRequests / $numStages : 0;
         $threshold = $avgPerStage * 1.5;
 
-        // Conversion: e.g. follow_up -> property_found/contract_signed
-        $qualifiedSlugs = ['follow_up', 'property_found'];
-        $closedSlugs = ['contract_signed', 'cancelled'];
-        $qualifiedIds = $statuses->whereIn('slug', $qualifiedSlugs)->pluck('id')->all();
-        $closedIds = $statuses->whereIn('slug', $closedSlugs)->pluck('id')->all();
-        $terminalIds = $statuses->whereIn('slug', ['cancelled', 'contract_signed'])->pluck('id')->all();
-
-        $qualified = !empty($qualifiedIds)
-            ? (clone $baseQuery())->whereIn('upr.status_id', $qualifiedIds)->count()
-            : 0;
-        $closed = !empty($closedIds)
-            ? (clone $baseQuery())->whereIn('upr.status_id', $closedIds)->count()
-            : 0;
-        $conversionRate = $qualified > 0 ? round(($closed / $qualified) * 100, 2) : 0;
-
-        $avgDays = null;
-        if (empty($terminalIds)) {
-            $avgDays = (clone $baseQuery())->selectRaw('AVG(DATEDIFF(NOW(), upr.created_at)) as avg_days')->value('avg_days');
-        } else {
-            $avgDays = (clone $baseQuery())->whereNotIn('upr.status_id', $terminalIds)
-                ->selectRaw('AVG(DATEDIFF(NOW(), upr.created_at)) as avg_days')
-                ->value('avg_days');
-        }
-
-        $countsByStatus = (clone $baseQuery())
-            ->select('upr.status_id', DB::raw('COUNT(*) as cnt'))
-            ->groupBy('upr.status_id')
+        $countsByStage = (clone $baseQuery())
+            ->whereNotNull('upr.customers_hub_stage_id')
+            ->select('upr.customers_hub_stage_id', DB::raw('COUNT(*) as cnt'))
+            ->groupBy('upr.customers_hub_stage_id')
             ->get()
-            ->keyBy('status_id');
+            ->keyBy('customers_hub_stage_id');
 
         $bottlenecks = [];
-        foreach ($statuses as $index => $status) {
-            $cnt = (int) ($countsByStatus->get($status->id)->cnt ?? 0);
+        foreach ($stages as $index => $stage) {
+            $cnt = (int) ($countsByStage->get($stage->stage_id)->cnt ?? 0);
             if ($cnt > $threshold) {
                 $bottlenecks[] = [
-                    'stageId' => $status->id,
-                    'stageName' => $status->name_ar,
-                    'color' => self::STAGE_COLORS[$index % count(self::STAGE_COLORS)],
+                    'stageId' => $stage->stage_id,
+                    'stageName' => $stage->stage_name_ar,
+                    'color' => $stage->color ?? self::STAGE_COLORS[$index % count(self::STAGE_COLORS)],
                     'count' => $cnt,
                     'avgCustomersPerStage' => (int) round($avgPerStage),
                 ];
             }
         }
 
+        $avgDays = (clone $baseQuery())->selectRaw('AVG(DATEDIFF(NOW(), upr.created_at)) as avg_days')->value('avg_days');
+
         return [
-            'conversionRate' => $conversionRate,
+            'conversionRate' => 0,
             'avgDaysInPipeline' => $avgDays !== null ? (int) round($avgDays) : 0,
             'bottlenecks' => $bottlenecks,
         ];
     }
 
     /**
-     * Move property request to a new stage (status_id).
+     * Move property request to a new stage (customers_hub_stage_id).
      */
-    public function moveRequestToStage(int $userId, int $requestId, int $newStatusId): bool
+    public function moveRequestToStage(int $userId, int $requestId, string $stageIdString): bool
     {
         return DB::table('users_property_requests')
             ->where('id', $requestId)
@@ -228,40 +355,102 @@ class PipelineService
             ->where('is_active', 1)
             ->where('is_archived', 0)
             ->update([
-                'status_id' => $newStatusId,
+                'customers_hub_stage_id' => $stageIdString,
                 'updated_at' => Carbon::now(),
             ]) > 0;
     }
 
     /**
-     * Get request's current status for move response (previous stage).
+     * Move inquiry to a new stage (api_customer_inquiry.stage_id).
+     */
+    public function moveInquiryToStage(int $userId, int $inquiryId, string $stageIdString): bool
+    {
+        return DB::table('api_customer_inquiry')
+            ->where('id', $inquiryId)
+            ->where('user_id', $userId)
+            ->update([
+                'stage_id' => $stageIdString,
+                'updated_at' => Carbon::now(),
+            ]) > 0;
+    }
+
+    /**
+     * Get request's current stage for move response (previous stage).
      */
     public function getRequestCurrentStatus(int $userId, int $requestId): ?object
     {
-        return DB::table('users_property_requests as upr')
-            ->join('property_request_statuses as prs', 'upr.status_id', '=', 'prs.id')
+        $row = DB::table('users_property_requests as upr')
+            ->leftJoin('customers_hub_stages as chs', 'upr.customers_hub_stage_id', '=', 'chs.stage_id')
             ->where('upr.id', $requestId)
             ->where('upr.user_id', $userId)
-            ->select('prs.id', 'prs.name_ar', 'prs.name_en')
+            ->select('chs.id', 'chs.stage_id', 'chs.stage_name_ar as name_ar', 'chs.stage_name_en as name_en')
             ->first();
+
+        if (!$row || $row->id === null) {
+            return null;
+        }
+
+        return (object) [
+            'id' => (int) $row->id,
+            'stage_id' => $row->stage_id,
+            'name_ar' => $row->name_ar,
+            'name_en' => $row->name_en ?? $row->name_ar,
+        ];
     }
 
     /**
-     * Get status by id for move response (new stage).
+     * Get inquiry's current stage for move response (previous stage).
      */
-    public function getStatusById(int $statusId): ?object
+    public function getInquiryCurrentStage(int $userId, int $inquiryId): ?object
     {
-        return DB::table('property_request_statuses')
-            ->where('id', $statusId)
-            ->where('is_active', true)
-            ->select('id', 'name_ar', 'name_en')
+        $row = DB::table('api_customer_inquiry as aci')
+            ->leftJoin('customers_hub_stages as chs', 'aci.stage_id', '=', 'chs.stage_id')
+            ->where('aci.id', $inquiryId)
+            ->where('aci.user_id', $userId)
+            ->select('chs.id', 'chs.stage_id', 'chs.stage_name_ar as name_ar', 'chs.stage_name_en as name_en')
             ->first();
+
+        if (!$row || $row->id === null) {
+            return null;
+        }
+
+        return (object) [
+            'id' => (int) $row->id,
+            'stage_id' => $row->stage_id,
+            'name_ar' => $row->name_ar,
+            'name_en' => $row->name_en ?? $row->name_ar,
+        ];
     }
 
     /**
-     * Bulk move property requests to a new stage.
+     * Get stage by stage_id (string) or id (integer) for move response (new stage).
      */
-    public function bulkMoveToStage(int $userId, array $requestIds, int $newStatusId): int
+    public function getStageByStageIdOrId(int|string $stageIdOrId): ?object
+    {
+        $query = DB::table('customers_hub_stages')->where('is_active', true);
+
+        if (is_int($stageIdOrId) || (is_string($stageIdOrId) && ctype_digit($stageIdOrId))) {
+            $row = (clone $query)->where('id', (int) $stageIdOrId)->first(['id', 'stage_id', 'stage_name_ar', 'stage_name_en']);
+        } else {
+            $row = (clone $query)->where('stage_id', (string) $stageIdOrId)->first(['id', 'stage_id', 'stage_name_ar', 'stage_name_en']);
+        }
+
+        if (!$row) {
+            return null;
+        }
+
+        return (object) [
+            'id' => (int) $row->id,
+            'stage_id' => $row->stage_id,
+            'name_ar' => $row->stage_name_ar,
+            'name_en' => $row->stage_name_en ?? $row->stage_name_ar,
+        ];
+    }
+
+    /**
+     * Bulk move property requests to a new stage (customers_hub_stage_id).
+     */
+    public function bulkMoveToStage(int $userId, array $requestIds, string $stageIdString): int
     {
         if (empty($requestIds)) {
             return 0;
@@ -272,7 +461,7 @@ class PipelineService
             ->where('is_active', 1)
             ->where('is_archived', 0)
             ->update([
-                'status_id' => $newStatusId,
+                'customers_hub_stage_id' => $stageIdString,
                 'updated_at' => Carbon::now(),
             ]);
     }
@@ -282,11 +471,12 @@ class PipelineService
      */
     private function applyFilters(\Illuminate\Database\Query\Builder $query, array $filters): void
     {
-        if (!empty($filters['status']) && is_array($filters['status'])) {
-            $query->whereIn('upr.status_id', array_map('intval', $filters['status']));
+        $stageIds = $this->resolveStageFilterToStageIds($filters['stage_id'] ?? $filters['status_id'] ?? null);
+        if (!empty($stageIds)) {
+            $query->whereIn('upr.customers_hub_stage_id', $stageIds);
         }
-        if (!empty($filters['status_id']) && is_array($filters['status_id'])) {
-            $query->whereIn('upr.status_id', array_map('intval', $filters['status_id']));
+        if (!empty($filters['status']) && is_array($filters['status'])) {
+            $query->whereIn('upr.customers_hub_stage_id', $this->resolveStageFilterToStageIds($filters['status']));
         }
         if (!empty($filters['property_type']) && is_array($filters['property_type'])) {
             $query->whereIn('upr.property_type', $filters['property_type']);
@@ -322,5 +512,31 @@ class PipelineService
                     ->orWhere('upr.phone', 'like', $search);
             });
         }
+    }
+
+    /**
+     * Resolve filter value (array of stage_id strings or numeric ids) to array of stage_id strings.
+     *
+     * @param  array|null  $values
+     * @return array<string>
+     */
+    private function resolveStageFilterToStageIds($values): array
+    {
+        if (!is_array($values) || empty($values)) {
+            return [];
+        }
+        $stageIds = [];
+        foreach ($values as $v) {
+            if (is_int($v) || (is_string($v) && ctype_digit($v))) {
+                $sid = DB::table('customers_hub_stages')->where('id', (int) $v)->where('is_active', true)->value('stage_id');
+                if ($sid !== null) {
+                    $stageIds[] = $sid;
+                }
+            } else {
+                $stageIds[] = (string) $v;
+            }
+        }
+
+        return array_values(array_unique($stageIds));
     }
 }

@@ -14,6 +14,8 @@ use App\Rules\Recaptcha;
 use App\Services\EmailService;
 use App\Services\WhatsAppService;
 
+use App\Http\Requests\Api\ForgotPasswordRequest;
+use App\Http\Requests\Api\VerifyResetCodeRequest;
 
 class ResetPasswordController extends Controller
 {
@@ -30,27 +32,9 @@ class ResetPasswordController extends Controller
      * Send reset code (email or phone)
      */
 
-    public function forgotPassword(Request $request)
+    public function forgotPassword(ForgotPasswordRequest $request)
     {
-        // Validate only reCAPTCHA first
-        $recaptchaValidator = Validator::make(
-            $request->only('recaptcha_token'),
-            ['recaptcha_token' => ['required', new \App\Rules\Recaptcha]]
-        );
-
-        if ($recaptchaValidator->fails()) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'reCAPTCHA failed',
-                'errors'  => $recaptchaValidator->errors()->toArray(),
-            ], 422);
-        }
-
-        $request->validate([
-            'identifier' => 'required',  // email or phone
-            'method' => 'required|in:email,phone',
-            'country_code' => 'nullable|string|max:10', // Country code like +966, +1, etc.
-        ]);
+        $validated = $request->validated();
 
         $user = null;
         
@@ -210,27 +194,9 @@ class ResetPasswordController extends Controller
     /**
      * Verify reset code & reset password
      */
-    public function verifyResetCode(Request $request)
+    public function verifyResetCode(VerifyResetCodeRequest $request)
     {
-
-        // Validate only reCAPTCHA first
-        $recaptchaValidator = Validator::make(
-            $request->only('recaptcha_token'),
-            ['recaptcha_token' => ['required', new \App\Rules\Recaptcha]]
-        );
-
-        if ($recaptchaValidator->fails()) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'reCAPTCHA failed',
-                'errors'  => $recaptchaValidator->errors()->toArray(),
-            ], 422);
-        }
-
-        $request->validate([
-            'code' => 'required|digits:6',
-            'new_password' => 'required|min:8|confirmed',
-        ]);
+        $validated = $request->validated();
 
         // Find the reset log by code to identify the user
         $log = PasswordResetLog::where('code', $request->code)

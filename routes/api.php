@@ -94,7 +94,18 @@ use App\Http\Controllers\Api\CRM\{
     ReminderController,
 };
 
+use App\Http\Controllers\Api\V1\WhatsApp\{
+    NumberController as WhatsAppNumberController,
+    ConversationController as WhatsAppConversationController,
+    MessageController as WhatsAppMessageController,
+    TemplateController as WhatsAppTemplateController,
+    AutomationRuleController as WhatsAppAutomationRuleController,
+    AiConfigController as WhatsAppAiConfigController,
+    WebhookController as WhatsAppWebhookController,
+};
 use App\Http\Controllers\Api\V1\{
+    ConversationController,
+    MessageController,
     Em\EmployeeAuthController,
     LogController,
     // RoleController,
@@ -372,13 +383,13 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     Route::get   ('/property-faqs',                      [PropertyController::class, 'faqs']);
 
     // Building management routes
-    Route::get   ('/buildings',                         [App\Http\Controllers\Api\BuildingController::class, 'index']);
-    Route::get   ('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'show']);
-    Route::post  ('/buildings',                         [App\Http\Controllers\Api\BuildingController::class, 'store']);
-    Route::post  ('/buildings/upload-image',            [App\Http\Controllers\Api\BuildingController::class, 'uploadBuildingImage']);
-    Route::post  ('/buildings/upload-deed-image',       [App\Http\Controllers\Api\BuildingController::class, 'uploadDeedImage']);
-    Route::put   ('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'update']);
-    Route::delete('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'destroy']);
+    Route::get   ('/buildings',                         [App\Http\Controllers\Api\BuildingController::class, 'index'])->middleware('can:buildings.view');
+    Route::get   ('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'show'])->middleware('can:buildings.view');
+    Route::post  ('/buildings',                         [App\Http\Controllers\Api\BuildingController::class, 'store'])->middleware('can:buildings.create');
+    Route::post  ('/buildings/upload-image',            [App\Http\Controllers\Api\BuildingController::class, 'uploadBuildingImage'])->middleware('can:buildings.create');
+    Route::post  ('/buildings/upload-deed-image',       [App\Http\Controllers\Api\BuildingController::class, 'uploadDeedImage'])->middleware('can:buildings.create');
+    Route::put   ('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'update'])->middleware('can:buildings.update');
+    Route::delete('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'destroy'])->middleware('can:buildings.delete');
 });
 
 // --- Content ---
@@ -604,15 +615,17 @@ Route::post('/isthara', [IstharaController::class, 'store']);
 
 // Property requests (public)
 Route::post('/v1/property-requests/public', [ApiPropertyRequestController::class, 'store']);
+// Property interest (public - no authentication required)
+Route::post('/v1/property-requests/interest', [ApiPropertyRequestController::class, 'storeFromInterest']);
 
 // Credits: public packages & payment callbacks
 Route::prefix('v1/credits')->group(function () {
     Route::get('packages', [\App\Http\Controllers\Api\markting\CreditController::class, 'getPackages']);
 
-    // Payment callback routes (no auth required for webhooks)
-    Route::get('payment/success/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\markting\CreditController::class, 'paymentSuccess'])
+    // Payment callback routes (no auth required for webhooks). Accept GET and POST (e.g. ARB may POST).
+    Route::match(['get', 'post'], 'payment/success/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\markting\CreditController::class, 'paymentSuccess'])
         ->name('api.credits.payment.success');
-    Route::get('payment/cancel/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\markting\CreditController::class, 'paymentCancel'])
+    Route::match(['get', 'post'], 'payment/cancel/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\markting\CreditController::class, 'paymentCancel'])
         ->name('api.credits.payment.cancel');
 });
 
@@ -661,7 +674,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\RequireActiveMembership:
 
 // --- V1: RMS / PMS / Property requests / Employee / CRM / Marketing / Credits ---
 Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
-    Route::prefix('rms')->group(function () {
+    Route::prefix('rms')->middleware(['can:rentals.view'])->group(function () {
         // Dashboard
         Route::get('dashboard', [RmsDashboardController::class, 'index']);
 
@@ -777,21 +790,21 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('/inquiry', [CustomerInquiryController::class, 'index']);
 
     // ApiPropertyRequestController
-    Route::middleware(['can:properties.view'])->group(function () {
-        Route::get('/property-requests/filters', [ApiPropertyRequestController::class, 'filterOptions']);
-        Route::get('/property-requests', [ApiPropertyRequestController::class, 'index']);
-        Route::get('/property-requests/{id}', [ApiPropertyRequestController::class, 'show']);
-        Route::post('/property-requests', [ApiPropertyRequestController::class, 'store']);
+    Route::middleware(['can:property_requests.view'])->group(function () {
+        Route::get('/property-requests/filters', [ApiPropertyRequestController::class, 'filterOptions'])->middleware('can:property_requests.view');
+        Route::get('/property-requests', [ApiPropertyRequestController::class, 'index'])->middleware('can:property_requests.view');
+        Route::get('/property-requests/{id}', [ApiPropertyRequestController::class, 'show'])->middleware('can:property_requests.view');
+        Route::post('/property-requests', [ApiPropertyRequestController::class, 'store'])->middleware('can:property_requests.create');
         // DELETE
-        Route::delete('/property-requests/{id}', [ApiPropertyRequestController::class, 'destroy']);
+        Route::delete('/property-requests/{id}', [ApiPropertyRequestController::class, 'destroy'])->middleware('can:property_requests.delete');
         // update
-        Route::put('/property-requests/{id}', [ApiPropertyRequestController::class, 'update']);
+        Route::put('/property-requests/{id}', [ApiPropertyRequestController::class, 'update'])->middleware('can:property_requests.update');
         // update status
-        Route::put('/property-requests/{id}/status', [ApiPropertyRequestController::class, 'updateStatus']);
+        Route::put('/property-requests/{id}/status', [ApiPropertyRequestController::class, 'updateStatus'])->middleware('can:property_requests.update');
         // assign employee to customer (must come before property request employee route to avoid route conflict)
-        Route::put('/property-requests/customer/{customerID}/employee', [ApiPropertyRequestController::class, 'assignEmployeeToCustomer']);
+        Route::put('/property-requests/customer/{customerID}/employee', [ApiPropertyRequestController::class, 'assignEmployeeToCustomer'])->middleware('can:property_requests.update');
         // update employee (property request)
-        Route::put('/property-requests/{id}/employee', [ApiPropertyRequestController::class, 'updateEmployee']);
+        Route::put('/property-requests/{id}/employee', [ApiPropertyRequestController::class, 'updateEmployee'])->middleware('can:property_requests.update');
     });
 
 
@@ -861,6 +874,8 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('channels/{id}/sync-verified', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'syncVerified']);
         Route::post('channels/{id}/send-message', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'sendMessage']);
         Route::post('channels/send-whatsapp-to-customer', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'sendWhatsAppToCustomer']);
+        Route::get('channels/messages', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getMessages']);
+        Route::get('channels/messages/stats', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getMessageStats']);
         Route::delete('channels/{id}', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'destroy']);
 
         // Marketing Settings Routes
@@ -932,8 +947,8 @@ Route::prefix('v1')->group(function () {
 		});
 
 		Route::prefix('job-applications')->group(function () {
-			Route::get('/', [\App\Http\Controllers\Api\V1\JobApplicationController::class, 'index']);
-			Route::get('/{id}', [\App\Http\Controllers\Api\V1\JobApplicationController::class, 'show']);
+			Route::get('/', [\App\Http\Controllers\Api\V1\JobApplicationController::class, 'index'])->middleware('can:job_applications.view');
+			Route::get('/{id}', [\App\Http\Controllers\Api\V1\JobApplicationController::class, 'show'])->middleware('can:job_applications.view');
 		});
 
         Route::get('/customers/{id}/logs',  [CustomerLogController::class, 'index'])->middleware('can:projects.view');
@@ -1073,6 +1088,109 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
     });
 });
 
+// Communication read path (Phase 2) + write path (Phase 3)
+Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
+    Route::get('conversations', [ConversationController::class, 'index']);
+    Route::get('conversations/{id}', [ConversationController::class, 'show']);
+    Route::get('conversations/{id}/messages', [MessageController::class, 'index']);
+    Route::post('messages/send', [MessageController::class, 'send']);
+
+    Route::prefix('communication/ops')->group(function () {
+        Route::get('health', [\App\Http\Controllers\Api\V1\Communication\Ops\HealthController::class, '__invoke']);
+        Route::get('reconciliation-summary', [\App\Http\Controllers\Api\V1\Communication\Ops\ReconciliationSummaryController::class, '__invoke']);
+        Route::get('delivery-attempts', [\App\Http\Controllers\Api\V1\Communication\Ops\DeliveryAttemptsController::class, '__invoke']);
+        Route::get('webhook-events', [\App\Http\Controllers\Api\V1\Communication\Ops\WebhookEventsController::class, '__invoke']);
+        Route::get('stuck-items', [\App\Http\Controllers\Api\V1\Communication\Ops\StuckItemsController::class, '__invoke']);
+    });
+
+    Route::prefix('sms')->group(function () {
+        Route::get('campaigns', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'index']);
+        Route::get('campaigns/{id}', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'show']);
+        Route::post('campaigns', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'store']);
+        Route::patch('campaigns/{id}', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'update']);
+        Route::delete('campaigns/{id}', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'destroy']);
+        Route::post('campaigns/{id}/send', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'send']);
+        Route::post('campaigns/{id}/pause', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'pause']);
+        Route::post('campaigns/{id}/resume', [\App\Http\Controllers\Api\V1\Sms\CampaignController::class, 'resume']);
+
+        Route::get('templates', [\App\Http\Controllers\Api\V1\Sms\TemplateController::class, 'index']);
+        Route::get('templates/{id}', [\App\Http\Controllers\Api\V1\Sms\TemplateController::class, 'show']);
+        Route::post('templates', [\App\Http\Controllers\Api\V1\Sms\TemplateController::class, 'store']);
+        Route::patch('templates/{id}', [\App\Http\Controllers\Api\V1\Sms\TemplateController::class, 'update']);
+        Route::delete('templates/{id}', [\App\Http\Controllers\Api\V1\Sms\TemplateController::class, 'destroy']);
+
+        Route::post('messages/send', [\App\Http\Controllers\Api\V1\Sms\MessageController::class, 'send']);
+        Route::get('logs', [\App\Http\Controllers\Api\V1\Sms\LogController::class, 'index']);
+        Route::get('stats', [\App\Http\Controllers\Api\V1\Sms\StatsController::class, 'index']);
+    });
+
+    Route::prefix('email')->group(function () {
+        Route::get('campaigns', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'index']);
+        Route::get('campaigns/{id}', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'show']);
+        Route::post('campaigns', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'store']);
+        Route::patch('campaigns/{id}', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'update']);
+        Route::delete('campaigns/{id}', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'destroy']);
+        Route::post('campaigns/{id}/send', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'send']);
+        Route::post('campaigns/{id}/pause', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'pause']);
+        Route::post('campaigns/{id}/resume', [\App\Http\Controllers\Api\V1\Email\CampaignController::class, 'resume']);
+
+        Route::get('templates', [\App\Http\Controllers\Api\V1\Email\TemplateController::class, 'index']);
+        Route::get('templates/{id}', [\App\Http\Controllers\Api\V1\Email\TemplateController::class, 'show']);
+        Route::post('templates', [\App\Http\Controllers\Api\V1\Email\TemplateController::class, 'store']);
+        Route::patch('templates/{id}', [\App\Http\Controllers\Api\V1\Email\TemplateController::class, 'update']);
+        Route::delete('templates/{id}', [\App\Http\Controllers\Api\V1\Email\TemplateController::class, 'destroy']);
+
+        Route::get('stats', [\App\Http\Controllers\Api\V1\Email\StatsController::class, 'index']);
+        Route::get('logs', [\App\Http\Controllers\Api\V1\Email\LogController::class, 'index']);
+        Route::post('messages/send', [\App\Http\Controllers\Api\V1\Email\MessageController::class, 'send']);
+    });
+
+    Route::prefix('whatsapp')->group(function () {
+        Route::get('numbers', [WhatsAppNumberController::class, 'index']);
+        Route::get('numbers/{id}', [WhatsAppNumberController::class, 'show']);
+        Route::post('numbers', [WhatsAppNumberController::class, 'store']);
+        Route::put('numbers/{id}', [WhatsAppNumberController::class, 'update']);
+
+        Route::get('conversations', [WhatsAppConversationController::class, 'index']);
+        Route::get('conversations/{id}', [WhatsAppConversationController::class, 'show']);
+        Route::post('conversations', [WhatsAppConversationController::class, 'store']);
+        Route::patch('conversations/{id}', [WhatsAppConversationController::class, 'update']);
+        Route::post('conversations/{id}/read', [WhatsAppConversationController::class, 'read']);
+        Route::post('conversations/{id}/star', [WhatsAppConversationController::class, 'star']);
+
+        Route::get('conversations/{id}/messages', [WhatsAppMessageController::class, 'index']);
+        Route::post('conversations/{id}/messages', [WhatsAppMessageController::class, 'send']);
+        Route::post('conversations/{id}/messages/template', [WhatsAppMessageController::class, 'sendTemplate']);
+
+        Route::get('templates', [WhatsAppTemplateController::class, 'index']);
+        Route::get('templates/{id}', [WhatsAppTemplateController::class, 'show']);
+        Route::post('templates', [WhatsAppTemplateController::class, 'store']);
+        Route::put('templates/{id}', [WhatsAppTemplateController::class, 'update']);
+        Route::delete('templates/{id}', [WhatsAppTemplateController::class, 'destroy']);
+
+        Route::get('automation/rules', [WhatsAppAutomationRuleController::class, 'index']);
+        Route::get('automation/rules/{id}', [WhatsAppAutomationRuleController::class, 'show']);
+        Route::post('automation/rules', [WhatsAppAutomationRuleController::class, 'store']);
+        Route::put('automation/rules/{id}', [WhatsAppAutomationRuleController::class, 'update']);
+        Route::patch('automation/rules/{id}/toggle', [WhatsAppAutomationRuleController::class, 'toggle']);
+        Route::delete('automation/rules/{id}', [WhatsAppAutomationRuleController::class, 'destroy']);
+        Route::get('automation/stats', [WhatsAppAutomationRuleController::class, 'stats']);
+
+        Route::get('ai/config/{numberId}', [WhatsAppAiConfigController::class, 'show']);
+        Route::put('ai/config/{numberId}', [WhatsAppAiConfigController::class, 'update']);
+        Route::patch('ai/config/{numberId}/toggle', [WhatsAppAiConfigController::class, 'toggle']);
+        Route::get('ai/stats', [WhatsAppAiConfigController::class, 'stats']);
+    });
+});
+
+Route::post('v1/sms/webhooks/delivery', [\App\Http\Controllers\Api\V1\Sms\WebhookController::class, 'delivery']);
+Route::post('v1/email/webhooks/delivery', [\App\Http\Controllers\Api\V1\Email\WebhookController::class, 'delivery']);
+
+Route::get('v1/whatsapp/webhook/verify', [WhatsAppWebhookController::class, 'verify']);
+Route::post('v1/whatsapp/webhook/incoming', [WhatsAppWebhookController::class, 'incoming']);
+Route::post('v1/whatsapp/webhook/status', [WhatsAppWebhookController::class, 'status']);
+Route::post('v1/whatsapp/webhook/verify', [WhatsAppWebhookController::class, 'verifyPost']);
+
 // Direct public route for property categories (bypassing tenant.resolve middleware)
 Route::get('v1/tenant-website/{tenantId}/properties/categories/direct', [PropertyController::class, 'properties_categories']);
 
@@ -1155,6 +1273,11 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
 
         // Preferences/Requirements
         Route::put('/{customerId}/preferences', [\App\Http\Controllers\Api\V2\CustomersHub\DetailController::class, 'updatePreferences']);
+
+        // Assigned properties (pivot api_customer_assigned_property)
+        Route::post('/{customerId}/properties', [\App\Http\Controllers\Api\V2\CustomersHub\CustomerPropertiesController::class, 'addProperty']);
+        Route::get('/{customerId}/properties', [\App\Http\Controllers\Api\V2\CustomersHub\CustomerPropertiesController::class, 'listProperties']);
+        Route::delete('/{customerId}/properties/{propertyId}', [\App\Http\Controllers\Api\V2\CustomersHub\CustomerPropertiesController::class, 'removeProperty']);
     });
 
     // 6. ASSIGNMENT
@@ -1239,4 +1362,3 @@ Route::prefix('v1/owner-rental')->group(function () {
         Route::get('/maintenance-requests', [\App\Http\Controllers\OwnerRental\DashboardController::class, 'maintenanceRequests']);
     });
 });
-

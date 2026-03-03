@@ -6,6 +6,10 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Api\ApiController;
 use App\Domain\CustomersHub\Services\AnalyticsService;
+use App\Http\Requests\Api\V2\CustomersHub\AnalyticsIndexRequest;
+use App\Http\Requests\Api\V2\CustomersHub\AnalyticsTrendsRequest;
+use App\Http\Requests\Api\V2\CustomersHub\AnalyticsSourcesRequest;
+use App\Http\Requests\Api\V2\CustomersHub\AnalyticsPerformanceRequest;
 
 /**
  * AnalyticsController
@@ -29,23 +33,9 @@ class AnalyticsController extends ApiController
      * 
      * Get analytics data with various metrics.
      */
-    public function index(Request $request): JsonResponse
+    public function index(AnalyticsIndexRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'action' => 'nullable|in:metrics,distributions,time_series,activity,pipeline_health',
-            'timeRange' => 'nullable|array',
-            'timeRange.timeRange' => 'nullable|in:today,yesterday,last7days,last30days,thisMonth,lastMonth,thisQuarter,lastQuarter,thisYear,lastYear,custom',
-            'timeRange.range' => 'nullable|in:today,yesterday,last7days,last30days,thisMonth,lastMonth,thisQuarter,lastQuarter,thisYear,lastYear,custom',
-            'timeRange.customStartDate' => 'nullable|date',
-            'timeRange.customEndDate' => 'nullable|date',
-            'interval' => 'nullable|in:day,week,month',
-            'filters' => 'nullable|array',
-            'filters.priority' => 'nullable|array',
-            'filters.priority.*' => 'integer',
-            'filters.source' => 'nullable|array',
-            'filters.source.*' => 'string|max:50',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
         $action = $validated['action'] ?? 'metrics';
         $timeRange = $validated['timeRange'] ?? ['timeRange' => 'last30days'];
@@ -100,16 +90,9 @@ class AnalyticsController extends ApiController
      * 
      * Get analytics trends data.
      */
-    public function trends(Request $request): JsonResponse
+    public function trends(AnalyticsTrendsRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'timeRange' => 'nullable|array',
-            'timeRange.timeRange' => 'nullable|in:today,yesterday,last7days,last30days,thisMonth,lastMonth,thisQuarter,lastQuarter,thisYear,lastYear,custom',
-            'timeRange.customStartDate' => 'nullable|date',
-            'timeRange.customEndDate' => 'nullable|date',
-            'metrics' => 'nullable|array',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
         $timeRange = $validated['timeRange'] ?? ['timeRange' => 'last30days'];
         $metrics = $validated['metrics'] ?? ['newCustomers', 'completedTasks', 'appointments'];
@@ -127,15 +110,9 @@ class AnalyticsController extends ApiController
      * 
      * Get analytics by sources.
      */
-    public function sources(Request $request): JsonResponse
+    public function sources(AnalyticsSourcesRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'timeRange' => 'nullable|array',
-            'timeRange.timeRange' => 'nullable|in:today,yesterday,last7days,last30days,thisMonth,lastMonth,thisQuarter,lastQuarter,thisYear,lastYear,custom',
-            'timeRange.customStartDate' => 'nullable|date',
-            'timeRange.customEndDate' => 'nullable|date',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
         $timeRange = $validated['timeRange'] ?? ['timeRange' => 'last30days'];
 
@@ -152,15 +129,9 @@ class AnalyticsController extends ApiController
      * 
      * Get performance analytics.
      */
-    public function performance(Request $request): JsonResponse
+    public function performance(AnalyticsPerformanceRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'timeRange' => 'nullable|array',
-            'timeRange.timeRange' => 'nullable|in:today,yesterday,last7days,last30days,thisMonth,lastMonth,thisQuarter,lastQuarter,thisYear,lastYear,custom',
-            'timeRange.customStartDate' => 'nullable|date',
-            'timeRange.customEndDate' => 'nullable|date',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
         $timeRange = $validated['timeRange'] ?? ['timeRange' => 'last30days'];
 

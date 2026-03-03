@@ -17,6 +17,7 @@ class UserCredit extends Model
         'user_id',
         'total_credits',
         'used_credits',
+        'reserved_credits',
         'monthly_limit',
         'average_cost_per_credit',
         'reset_date',
@@ -26,6 +27,7 @@ class UserCredit extends Model
     protected $casts = [
         'total_credits' => 'integer',
         'used_credits' => 'integer',
+        'reserved_credits' => 'integer',
         'monthly_limit' => 'integer',
         'average_cost_per_credit' => 'decimal:4',
         'reset_date' => 'date',
@@ -43,11 +45,13 @@ class UserCredit extends Model
     }
 
     /**
-     * Get available credits (total - used)
+     * Get available credits (total - used - reserved)
      */
     public function getAvailableCreditsAttribute()
     {
-        return $this->total_credits - $this->used_credits;
+        $reserved = (int) ($this->reserved_credits ?? 0);
+
+        return $this->total_credits - $this->used_credits - $reserved;
     }
 
     /**
@@ -186,6 +190,7 @@ class UserCredit extends Model
 
     /**
      * Get credit costs for different message types
+     * @deprecated Use getCostForMessageType() which reads from database
      */
     public static function getMessageTypeCosts()
     {
@@ -199,11 +204,23 @@ class UserCredit extends Model
     }
 
     /**
-     * Get cost for message type
+     * Get cost for message type from MarketingChannelPricing table
+     * Requires pricing to be configured - throws exception if not found
+     * 
+     * @param string $messageType The channel type (e.g., 'sms', 'whatsapp')
+     * @return int Credits required per message
+     * @throws \App\Domain\Communication\Exceptions\ChannelPricingNotConfiguredException If pricing is not configured for the channel type
      */
     public static function getCostForMessageType($messageType)
     {
-        $costs = self::getMessageTypeCosts();
-        return $costs[$messageType] ?? 1;
+        $pricing = MarketingChannelPricing::active()
+            ->forChannel($messageType)
+            ->first();
+        
+        if (!$pricing) {
+            throw new \App\Domain\Communication\Exceptions\ChannelPricingNotConfiguredException($messageType);
+        }
+        
+        return $pricing->credits_per_message;
     }
 }

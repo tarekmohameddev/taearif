@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
+use App\Models\User;
 
 class AiExportController extends Controller
 {

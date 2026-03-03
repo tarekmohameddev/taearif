@@ -9,6 +9,8 @@ use App\Models\WhatsappUser;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Http\Requests\Api\Apps\Whatsapp\WhatsappStoreRequest;
+use App\Http\Requests\Api\Apps\Whatsapp\WhatsappUpdateEmployeeRequest;
 
 class WhatsappController extends Controller
 {
@@ -21,31 +23,12 @@ class WhatsappController extends Controller
     const STATUS_NOT_LINKED = 'not_linked';
     const STATUS_LINKED = 'linked';
 
-    public function store(Request $request)
+    public function store(WhatsappStoreRequest $request)
     {
         $tenantId = $this->tenantId();
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'phoneNumber'      => ['required', 'regex:/^[0-9]{9,20}$/'], // Allowing more digits as per user SQL example
-            'linkingMethod'    => ['required', 'in:support,automatic'],
-            'apiMethod'        => ['required', 'in:official,unofficial'],
-            'customerName'     => ['nullable', 'string'],
-            'supportMessage'   => ['nullable', 'string'],
-            'notLinked'        => ['nullable', 'boolean'],
-            'employeeId'       => [
-                'nullable',
-                'integer',
-                Rule::exists('users', 'id')->where(function ($query) use ($tenantId) {
-                    $query->where('tenant_id', $tenantId)
-                          ->where('account_type', 'employee')
-                          ->where('active', true);
-                }),
-                // One-to-one: employee must not be linked to another WhatsApp number
-                Rule::unique('whatsapp_users', 'employee_id')->where(fn ($q) => $q->where('user_id', $tenantId)),
-            ],
-        ]);
-
-        $user = $request->user()->tenantOwner();
+        $user = auth()->user()->tenantOwner();
         $isNotLinked = $validated['notLinked'] ?? false;
 
         if (!$isNotLinked && $user->whatsapp_usage >= $user->whatsapp_quota) {
@@ -195,7 +178,7 @@ class WhatsappController extends Controller
         ]);
     }
 
-    public function updateEmployee(Request $request, $id)
+    public function updateEmployee(WhatsappUpdateEmployeeRequest $request, $id)
     {
         $tenantId = $this->tenantId();
 
@@ -203,22 +186,7 @@ class WhatsappController extends Controller
             ->where('user_id', $tenantId)
             ->firstOrFail();
 
-        $validated = $request->validate([
-            'employeeId' => [
-                'nullable',
-                'integer',
-                Rule::exists('users', 'id')->where(function ($query) use ($tenantId) {
-                    $query->where('tenant_id', $tenantId)
-                          ->where('account_type', 'employee')
-                          ->where('active', true);
-                }),
-                // One-to-one: employee must not be linked elsewhere (ignore current record)
-                Rule::unique('whatsapp_users', 'employee_id')
-                    ->where(fn ($q) => $q->where('user_id', $tenantId))
-                    ->ignore($whatsappUser->id),
-            ],
-        ]);
-
+        $validated = $request->validated();
         $whatsappUser->employee_id = $validated['employeeId'] ?? null;
         $whatsappUser->save();
 

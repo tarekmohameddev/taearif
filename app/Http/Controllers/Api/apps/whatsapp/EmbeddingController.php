@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\apps\whatsapp;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Apps\Whatsapp\StoreEmbeddingRequest;
 use Illuminate\Http\Request;
 use App\Models\Embedding;
 use OpenAI as OpenAIClient;
@@ -21,11 +22,9 @@ class EmbeddingController extends Controller
     /**
      * Store a new text embedding
      */
-    public function store(Request $request)
+    public function store(StoreEmbeddingRequest $request)
     {
-        $data = $request->validate([
-            'text' => 'required|string',
-        ]);
+        $data = $request->validated();
 
         // Generate embedding via OpenAI
         $resp = $this->openai->embeddings()->create([

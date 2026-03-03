@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api\apps\whatsapp;
 
 use App\Http\Controllers\Concerns\ResolvesTenant;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Apps\Whatsapp\WhatsappAddonPaymentSuccessRequest;
+use App\Http\Requests\Api\Apps\Whatsapp\WhatsappAddonPaymentCancelRequest;
+use App\Http\Requests\Api\Apps\Whatsapp\WhatsappAddonStoreRequest;
 use App\Models\WhatsappAddon;
 use App\Models\WhatsappUser;
 use App\Models\Language;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Payment\ArbController;
@@ -82,19 +84,10 @@ class WhatsappAddonController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(WhatsappAddonStoreRequest $request)
     {
         $tenantId = $this->tenantId();
-
-        $validated = $request->validate([
-            'whatsapp_number_id' => [
-                'required',
-                'integer',
-                Rule::exists('whatsapp_users', 'id')->where(fn ($q) => $q->where('user_id', $tenantId)),
-            ],
-            'qty' => ['required', 'integer', 'min:1'],
-            'plan_id' => ['required', 'exists:whatsapp_addon_plans,id'],
-        ]);
+        $validated = $request->validated();
 
         $whatsappUser = WhatsappUser::where('id', $validated['whatsapp_number_id'])
             ->where('user_id', $tenantId)
@@ -122,7 +115,7 @@ class WhatsappAddonController extends Controller
 
         // Use test mode in local environment, otherwise use ARB
         $paymentGateway = config('app.env') === 'local' ? 'test' : 'arb';
-        $paymentResult = $this->initiatePayment($addon, $paymentGateway, $request->user());
+        $paymentResult = $this->initiatePayment($addon, $paymentGateway, auth()->user());
 
         if ($paymentResult['success']) {
             return response()->json([
@@ -251,9 +244,9 @@ class WhatsappAddonController extends Controller
              
              $paydata = $paymentMethod->convertAutoData();
              
-             \Config::set('myfatorah.token', $paydata['token']);
-             \Config::set('myfatorah.CallBackUrl', $successUrl);
-             \Config::set('myfatorah.ErrorUrl', $cancelUrl);
+             config(['myfatorah.token' => $paydata['token']]);
+            config(['myfatorah.CallBackUrl' => $successUrl]);
+            config(['myfatorah.ErrorUrl' => $cancelUrl]);
              
              $myfatoorah = \Basel\MyFatoorah\MyFatoorah::getInstance($paydata['sandbox_status'] == 1);
              
@@ -285,7 +278,7 @@ class WhatsappAddonController extends Controller
          }
     }
 
-    public function paymentSuccess(Request $request, $addon_id, $gateway)
+    public function paymentSuccess(WhatsappAddonPaymentSuccessRequest $request, $addon_id, $gateway)
     {
         try {
             $addon = WhatsappAddon::with('plan', 'whatsappUser')->findOrFail($addon_id);
@@ -300,7 +293,7 @@ class WhatsappAddonController extends Controller
                     $verified = true;
                 }
             } elseif ($gateway === 'myfatoorah') {
-                 $paymentId = $request->paymentId;
+                 $paymentId = request()->input('paymentId');
                  if ($paymentId) {
                      // Verify with MyFatoorah API
                      try {
@@ -309,7 +302,7 @@ class WhatsappAddonController extends Controller
                          $paymentMethod = \App\Models\PaymentGateway::where('keyword', 'myfatoorah')->first();
                          if ($paymentMethod) {
                              $paydata = $paymentMethod->convertAutoData();
-                             \Config::set('myfatorah.token', $paydata['token']);
+                             config(['myfatorah.token' => $paydata['token']]);
                              // We don't need CallBackUrl for verification, just token.
                              
                              $myfatoorah = \Basel\MyFatoorah\MyFatoorah::getInstance($paydata['sandbox_status'] == 1);
@@ -332,15 +325,15 @@ class WhatsappAddonController extends Controller
                 // Log ARB callback for debugging
                 Log::info('ARB WhatsApp Addon callback', [
                     'addon_id' => $addon_id,
-                    'query' => $request->query(),
-                    'all' => $request->all(),
+                    'query' => request()->query(),
+                    'all' => request()->all(),
                 ]);
 
                 $paymentMethod = \App\Models\PaymentGateway::where('keyword', 'arb')->first();
-                if ($request->has('trandata') && $paymentMethod) {
+                if (request()->has('trandata') && $paymentMethod) {
                     $paydata = $paymentMethod->convertAutoData();
                     $arb = app(ArbController::class);
-                    $decrypted = $arb->decryption($request->trandata, $paydata['resource_key']);
+                    $decrypted = $arb->decryption(request()->input('trandata'), $paydata['resource_key']);
                     
                     if ($decrypted) {
                         $raw = urldecode($decrypted);
@@ -399,7 +392,7 @@ class WhatsappAddonController extends Controller
         }
     }
 
-    public function paymentCancel(Request $request, $addon_id, $gateway)
+    public function paymentCancel(WhatsappAddonPaymentCancelRequest $request, $addon_id, $gateway)
     {
          $addon = WhatsappAddon::find($addon_id);
          if ($addon && $addon->status === WhatsappAddon::STATUS_PENDING) {

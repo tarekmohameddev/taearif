@@ -2,10 +2,12 @@
 
 namespace App\Models\Api;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use App\Models\ApiCustomer;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\CustomersHub\CrmHubNote;
+use App\Models\CustomersHub\CustomersHubStage;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Class ApiCustomerInquiry
@@ -22,6 +24,9 @@ class ApiCustomerInquiry extends Model
     protected $fillable = [
         'user_id',
         'customer_id',
+        'status_id',
+        'stage_id',
+        'responsible_employee_id',
         'phone_number',
         'message',
         'inquiry_type',
@@ -56,6 +61,15 @@ class ApiCustomerInquiry extends Model
         'is_archived',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (ApiCustomerInquiry $model): void {
+            if (!isset($model->stage_id) || $model->stage_id === null) {
+                $model->stage_id = CustomersHubStage::getDefaultStageId();
+            }
+        });
+    }
+
     protected $casts = [
         'is_read' => 'boolean',
         'is_archived' => 'boolean',
@@ -69,5 +83,15 @@ class ApiCustomerInquiry extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function responsibleEmployee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'responsible_employee_id');
+    }
+
+    public function hubNotes()
+    {
+        return $this->morphMany(CrmHubNote::class, 'noteable');
     }
 }

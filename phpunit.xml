@@ -21,6 +21,7 @@
             <file>./tests/Feature/MembershipServiceTest.php</file>
             <file>./tests/Feature/MigrationTest.php</file>
             <file>./tests/Feature/PropertyVideoSizeLimitTest.php</file>
+            <file>./tests/Feature/Api/PropertyStoreApiTest.php</file>
             <file>./tests/Feature/RentalContractRelationshipTest.php</file>
             <file>./tests/Feature/RentalControllerTest.php</file>
             <file>./tests/Feature/RentalStoreIntegrationTest.php</file>

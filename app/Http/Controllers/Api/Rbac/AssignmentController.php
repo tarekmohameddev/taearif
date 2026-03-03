@@ -6,9 +6,12 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Rbac\SyncRolesRequest;
+use App\Http\Requests\Api\Rbac\SyncPermsRequest;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use App\Support\TenantActivity;
+use App\Support\CacheInvalidationHelper;
 
 class AssignmentController extends Controller
 {
@@ -49,18 +52,10 @@ class AssignmentController extends Controller
         ]);
     }
 
-    public function syncRoles(Request $request, User $employee)
+    public function syncRoles(SyncRolesRequest $request, User $employee)
     {
         $teamId = $this->teamFor($request, $employee);
         app(PermissionRegistrar::class)->setPermissionsTeamId($teamId);
-
-        $request->validate([
-            'roles'   => ['array'],
-            'roles.*' => [
-                'string',
-                Rule::exists('api_roles', 'name')->where(fn ($q) => $q->where('team_id', $teamId)),
-            ],
-        ]);
 
         $teamFk   = config('permission.column_names.team_foreign_key', 'team_id');
 
@@ -73,7 +68,7 @@ class AssignmentController extends Controller
             ->all();
 
         // sync by names; team context already set
-        $employee->syncRoles($request->input('roles', []));
+        $employee->syncRoles($request->validated()['roles'] ?? []);
 
         // capture new (team-scoped) roles
         $newRoles = $employee->roles()
@@ -86,22 +81,16 @@ class AssignmentController extends Controller
         // activity
         TenantActivity::emit($request,'employee.roles.synced','users',(int) $employee->id,['roles' => $oldRoles],['roles' => $newRoles]);
 
+        // Clear employee's side menu cache so updated permissions are visible on next load
+        CacheInvalidationHelper::clearSideMenusCache((int) $employee->id, $teamId);
+
         return response()->json(['status' => 'success']);
     }
 
-    public function syncPerms(Request $request, User $employee)
+    public function syncPerms(SyncPermsRequest $request, User $employee)
     {
         $teamId = $this->teamFor($request, $employee);
         app(PermissionRegistrar::class)->setPermissionsTeamId($teamId);
-
-        $request->validate([
-            'permissions'   => ['array'],
-            'permissions.*' => [
-                'string',
-                Rule::exists('api_permissions', 'name')
-                    ->where(fn ($q) => $q->whereNull('team_id')->orWhere('team_id', $teamId)),
-            ],
-        ]);
 
         $permTable  = config('permission.table_names.permissions');
         $teamFk     = config('permission.column_names.team_foreign_key', 'team_id');
@@ -120,7 +109,7 @@ class AssignmentController extends Controller
 
 
         $perms = Permission::query()
-            ->whereIn('name', $request->input('permissions', []))
+            ->whereIn('name', $request->validated()['permissions'] ?? [])
             ->where(function ($q) use ($permTable, $teamId) {
                 $q->whereNull("$permTable.team_id")
                 ->orWhere("$permTable.team_id", $teamId);
@@ -150,6 +139,9 @@ class AssignmentController extends Controller
             ['perms' => $oldPerms],
             ['perms' => $newPerms]
         );
+
+        // Clear employee's side menu cache so updated permissions are visible on next load
+        CacheInvalidationHelper::clearSideMenusCache((int) $employee->id, $teamId);
 
         return response()->json(['status' => 'success']);
     }

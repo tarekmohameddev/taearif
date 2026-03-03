@@ -2,7 +2,11 @@
 namespace App\Http\Controllers\Api\V1\Em;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Em\EmployeeLogoutRequest;
+use App\Http\Requests\Api\V1\Em\EmployeeRegisterRequest;
+use App\Http\Requests\Api\V1\Em\EmployeeLoginRequest;
 use App\Models\User;
+use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -15,7 +19,7 @@ class EmployeeAuthController extends Controller
      * - Requires a TENANT token (owner) to create an employee under their account.
      * - Creates a user row with account_type=employee and tenant_id = current tenant id.
      */
-    public function register(Request $request)
+    public function register(EmployeeRegisterRequest $request)
     {
         $tenant = $request->user();
 
@@ -26,23 +30,13 @@ class EmployeeAuthController extends Controller
             ], 403);
         }
 
-        $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:100'],
-            'last_name'  => ['nullable', 'string', 'max:100'],
-            'email'      => [
-                'required', 'email', 'max:255',
-                'unique:users,email',
-            ],
-            'password'   => ['required', 'string', 'min:6', 'confirmed'],
-            'phone'      => ['nullable', 'string', 'max:50'],
-            'active'     => ['nullable', 'boolean'],
-        ]);
+        $validated = $request->validated();
 
         $employee = new User();
         $employee->first_name   = $validated['first_name'];
         $employee->last_name    = $validated['last_name'] ?? null;
         $employee->email        = $validated['email'];
-        $employee->phone        = $request->input('phone');
+        $employee->phone        = $validated['phone'] ?? null;
         $employee->password     = Hash::make($validated['password']);
 
         // Multi-tenant flags
@@ -79,12 +73,9 @@ class EmployeeAuthController extends Controller
      * - Employee login (no auth required)
      * Body: { "email": "...", "password": "..." }
      */
-    public function login(Request $request)
+    public function login(EmployeeLoginRequest $request)
     {
-        $validated = $request->validate([
-            'email'    => ['required', 'email'],
-            'password' => ['required', 'string'],
-        ]);
+        $validated = $request->validated();
 
         $employee = User::where('email', $validated['email'])
             ->where('account_type', 'employee')
@@ -153,11 +144,14 @@ class EmployeeAuthController extends Controller
      * POST /api/v1/em/auth/logout
      * - Requires Sanctum token
      */
-    public function logout(Request $request)
+    public function logout(EmployeeLogoutRequest $request)
     {
-        $token = $request->user()->currentAccessToken();
-        if ($token) {
-            $token->delete();
+        $bearer = request()->bearerToken();
+        if ($bearer) {
+            $token = PersonalAccessToken::findToken($bearer);
+            if ($token) {
+                $token->delete();
+            }
         }
 
         return response()->json([

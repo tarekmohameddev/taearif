@@ -22,19 +22,64 @@ class PropertyRequestAppointmentsRemindersTest extends TestCase
         }
     }
 
-    private function createPropertyRequestForUser(int $userId): int
+    private function createPropertyRequestForUser(int $userId, array $overrides = []): int
     {
-        $id = DB::table('users_property_requests')->insertGetId([
+        $payload = array_merge([
             'full_name' => 'Test Requester',
-            'phone' => '+966501234567',
+            'phone' => '+9665' . (string) random_int(10000000, 99999999),
             'user_id' => $userId,
+            'source' => 'website',
             'region' => 'الرياض',
+            'purpose' => 'sale',
+            'property_type' => 'سكني',
+            'category_id' => null,
+            'city_id' => null,
+            'districts_id' => null,
+            'area_from' => null,
+            'area_to' => null,
+            'purchase_method' => null,
+            'budget_from' => 100000,
+            'budget_to' => 250000,
+            'seriousness' => 'خلال 3 أشهر',
+            'purchase_goal' => null,
+            'wants_similar_offers' => 0,
+            'contact_on_whatsapp' => 1,
+            'notes' => 'Initial note',
+            'status_id' => null,
             'is_active' => 1,
             'is_read' => 0,
+            'is_archived' => 0,
+            'neighborhoods' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ], $overrides);
+
+        $id = DB::table('users_property_requests')->insertGetId($payload);
+        return (int) $id;
+    }
+
+    private function getActivePropertyRequestStatusId(): ?int
+    {
+        if (!Schema::hasTable('property_request_statuses')) {
+            return null;
+        }
+
+        $statusId = DB::table('property_request_statuses')
+            ->where('is_active', true)
+            ->value('id');
+        if ($statusId !== null) {
+            return (int) $statusId;
+        }
+
+        return (int) DB::table('property_request_statuses')->insertGetId([
+            'name_ar' => 'مرحلة اختبار',
+            'name_en' => 'Test Stage',
+            'slug' => 'test-stage-' . uniqid(),
+            'display_order' => 9999,
+            'is_active' => true,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        return (int) $id;
     }
 
     /** @test */
@@ -174,11 +219,51 @@ class PropertyRequestAppointmentsRemindersTest extends TestCase
     {
         $this->requirePropertyRequestTables();
         $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
-        $prId = $this->createPropertyRequestForUser($tenant->id);
+
+        $statusId = $this->getActivePropertyRequestStatusId();
+        if ($statusId === null) {
+            $this->markTestSkipped('property_request_statuses table required.');
+        }
+
+        $city = Schema::hasTable('user_cities')
+            ? DB::table('user_cities')->select('id', 'name_ar')->first()
+            : null;
+        $category = Schema::hasTable('api_user_categories')
+            ? DB::table('api_user_categories')->select('id', 'name')->first()
+            : null;
+
+        $phone = '+9665' . (string) random_int(10000000, 99999999);
+        $prId = $this->createPropertyRequestForUser($tenant->id, [
+            'phone' => $phone,
+            'notes' => 'Full payload note',
+            'seriousness' => 'مستعد فورًا',
+            'is_read' => 1,
+            'is_archived' => 0,
+            'status_id' => $statusId,
+            'purpose' => 'sale',
+            'property_type' => 'سكني',
+            'budget_from' => 150000,
+            'budget_to' => 350000,
+            'city_id' => $city?->id,
+            'category_id' => $category?->id,
+            'source' => 'website',
+        ]);
         Sanctum::actingAs($tenant);
 
         $now = now();
         $future = $now->copy()->addDays(1);
+
+        $employee = User::factory()->create();
+        DB::table('api_customers')->insert([
+            'user_id' => $tenant->id,
+            'name' => 'Linked Customer',
+            'phone_number' => $phone,
+            'password' => bcrypt('secret123'),
+            'responsible_employee_id' => $employee->id,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
         DB::table('property_request_appointments')->insert([
             'user_id' => $tenant->id,
             'property_request_id' => $prId,
@@ -191,15 +276,138 @@ class PropertyRequestAppointmentsRemindersTest extends TestCase
             'created_at' => $now,
             'updated_at' => $now,
         ]);
+        DB::table('property_request_reminders')->insert([
+            'user_id' => $tenant->id,
+            'property_request_id' => $prId,
+            'title' => 'Show Reminder',
+            'description' => 'Follow up for full payload',
+            'datetime' => $future,
+            'priority' => 3,
+            'type' => 'follow_up',
+            'status' => 'pending',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
 
         $res = $this->getJson("/api/v2/customers-hub/requests/property_request_{$prId}");
 
         $res->assertOk()->assertJsonPath('status', 'success');
         $action = $res->json('data.action');
+
+        $this->assertSame("property_request_{$prId}", $action['id']);
+        $this->assertSame($prId, $action['sourceId']);
+
+        $this->assertArrayHasKey('area_from', $action);
+        $this->assertArrayHasKey('area_to', $action);
+        $this->assertArrayHasKey('budget_from', $action);
+        $this->assertArrayHasKey('budget_to', $action);
+        $this->assertArrayHasKey('category_id', $action);
+        $this->assertArrayHasKey('city_id', $action);
+        $this->assertArrayHasKey('contact_on_whatsapp', $action);
+        $this->assertArrayHasKey('created_at', $action);
+        $this->assertArrayHasKey('districts_id', $action);
+        $this->assertArrayHasKey('full_name', $action);
+        $this->assertArrayHasKey('is_active', $action);
+        $this->assertArrayHasKey('is_archived', $action);
+        $this->assertArrayHasKey('is_read', $action);
+        $this->assertArrayHasKey('neighborhoods', $action);
+        $this->assertArrayHasKey('notes', $action);
+        $this->assertArrayHasKey('phone', $action);
+        $this->assertArrayHasKey('property_type', $action);
+        $this->assertArrayHasKey('purchase_goal', $action);
+        $this->assertArrayHasKey('purchase_method', $action);
+        $this->assertArrayHasKey('purpose', $action);
+        $this->assertArrayHasKey('region', $action);
+        $this->assertArrayHasKey('seriousness', $action);
+        $this->assertArrayHasKey('source', $action);
+        $this->assertArrayHasKey('status_id', $action);
+        $this->assertArrayHasKey('updated_at', $action);
+        $this->assertArrayHasKey('user_id', $action);
+        $this->assertArrayHasKey('wants_similar_offers', $action);
+
+        $this->assertArrayHasKey('stage_id', $action);
+        $this->assertArrayHasKey('stage', $action);
+        $this->assertArrayHasKey('priority', $action);
+        $this->assertArrayHasKey('status', $action);
+        $this->assertArrayHasKey('propertyCategory', $action);
+        $this->assertArrayHasKey('propertyType', $action);
+        $this->assertArrayHasKey('city', $action);
+        $this->assertArrayHasKey('state', $action);
+        $this->assertArrayHasKey('budgetMin', $action);
+        $this->assertArrayHasKey('budgetMax', $action);
+        $this->assertArrayHasKey('assignedTo', $action);
+        $this->assertArrayHasKey('assignedToName', $action);
+        $this->assertArrayHasKey('completedAt', $action);
+        $this->assertArrayHasKey('completedBy', $action);
+        $this->assertArrayHasKey('snoozedUntil', $action);
+        $this->assertArrayHasKey('dueDate', $action);
+        $this->assertArrayHasKey('metadata', $action);
+
+        $this->assertSame($statusId, $action['stage_id']);
+        $this->assertIsArray($action['stage']);
+        $this->assertSame($statusId, $action['stage']['id']);
+        $this->assertSame('urgent', $action['priority']);
+        $this->assertSame('in_progress', $action['status']);
+        $this->assertSame('سكني', $action['propertyType']);
+        $this->assertSame('الرياض', $action['state']);
+        $this->assertEquals(150000.0, (float) $action['budgetMin']);
+        $this->assertEquals(350000.0, (float) $action['budgetMax']);
+        $this->assertSame($employee->id, $action['assignedTo']);
+        $this->assertNotSame('', $action['assignedToName']);
+        $this->assertNull($action['completedAt']);
+        $this->assertNull($action['completedBy']);
+        $this->assertNull($action['snoozedUntil']);
+        $this->assertNull($action['dueDate']);
+        if ($category !== null) {
+            $this->assertSame($category->name, $action['propertyCategory']);
+        } else {
+            $this->assertNull($action['propertyCategory']);
+        }
+        if ($city !== null) {
+            $this->assertSame($city->name_ar, $action['city']);
+        } else {
+            $this->assertNull($action['city']);
+        }
+        $this->assertSame($prId, $action['metadata']['propertyRequestId']);
+
         $this->assertArrayHasKey('appointments', $action);
         $this->assertArrayHasKey('reminders', $action);
         $this->assertCount(1, $action['appointments']);
+        $this->assertCount(1, $action['reminders']);
         $this->assertEquals('Show Apt', $action['appointments'][0]['title']);
+        $this->assertEquals('Show Reminder', $action['reminders'][0]['title']);
+        $this->assertIsArray($res->json('data.related'));
+    }
+
+    /** @test */
+    public function show_returns_404_for_cross_tenant_property_request(): void
+    {
+        $ownerA = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        $ownerB = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        $prId = $this->createPropertyRequestForUser($ownerA->id);
+
+        Sanctum::actingAs($ownerB);
+
+        $res = $this->getJson("/api/v2/customers-hub/requests/property_request_{$prId}");
+
+        $res->assertStatus(404)
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('message', 'Action not found');
+    }
+
+    /** @test */
+    public function show_returns_404_for_inactive_property_request(): void
+    {
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        $prId = $this->createPropertyRequestForUser($tenant->id, ['is_active' => 0]);
+
+        Sanctum::actingAs($tenant);
+
+        $res = $this->getJson("/api/v2/customers-hub/requests/property_request_{$prId}");
+
+        $res->assertStatus(404)
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('message', 'Action not found');
     }
 
     /** @test */
@@ -252,10 +460,117 @@ class PropertyRequestAppointmentsRemindersTest extends TestCase
         foreach ($actions as $a) {
             $this->assertArrayHasKey('appointments', $a);
             $this->assertArrayHasKey('reminders', $a);
-            if (($a['objectType'] ?? '') !== 'property_request') {
+            $objectType = $a['objectType'] ?? '';
+            // property_request and inquiry can have non-empty appointments/reminders; others are empty
+            if ($objectType !== 'property_request' && $objectType !== 'inquiry') {
                 $this->assertSame([], $a['appointments']);
                 $this->assertSame([], $a['reminders']);
             }
+        }
+    }
+
+    /** @test */
+    public function list_with_due_date_bucket_today_includes_requests_and_inquiries_with_appointment_today(): void
+    {
+        $this->requirePropertyRequestTables();
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        Sanctum::actingAs($tenant);
+
+        $now = now();
+        $todayAt10 = $now->copy()->startOfDay()->addHours(10);
+        $tomorrowAt10 = $now->copy()->addDay()->startOfDay()->addHours(10);
+
+        // Property request WITH appointment today — should appear when filtering by today
+        $prIdWithToday = $this->createPropertyRequestForUser($tenant->id);
+        DB::table('property_request_appointments')->insert([
+            'user_id' => $tenant->id,
+            'property_request_id' => $prIdWithToday,
+            'customer_id' => null,
+            'title' => 'Apt today',
+            'type' => 'site_visit',
+            'datetime' => $todayAt10,
+            'duration' => 30,
+            'status' => 'scheduled',
+            'priority' => 2,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        // Property request with appointment TOMORROW — should NOT appear when filtering by today
+        $prIdWithTomorrow = $this->createPropertyRequestForUser($tenant->id);
+        DB::table('property_request_appointments')->insert([
+            'user_id' => $tenant->id,
+            'property_request_id' => $prIdWithTomorrow,
+            'customer_id' => null,
+            'title' => 'Apt tomorrow',
+            'type' => 'site_visit',
+            'datetime' => $tomorrowAt10,
+            'duration' => 30,
+            'status' => 'scheduled',
+            'priority' => 2,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $res = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'due_date_bucket' => 'today',
+            'objectTypes' => ['inquiry', 'property_request'],
+            'limit' => 50,
+            'offset' => 0,
+        ]);
+
+        $res->assertOk()->assertJsonPath('status', 'success');
+        $actions = $res->json('data.actions');
+        $this->assertIsArray($actions);
+
+        $ids = array_column($actions, 'id');
+        $this->assertContains("property_request_{$prIdWithToday}", $ids, 'Property request with appointment today should be in list');
+        $this->assertNotContains("property_request_{$prIdWithTomorrow}", $ids, 'Property request with appointment tomorrow should not be in list');
+
+        // If inquiry_appointments and api_customer_inquiry exist, assert inquiry with appointment today is included
+        if (Schema::hasTable('inquiry_appointments') && Schema::hasTable('api_customer_inquiry')) {
+            $phone = '+9665' . (string) random_int(10000000, 99999999);
+            $customerId = DB::table('api_customers')->insertGetId([
+                'user_id' => $tenant->id,
+                'name' => 'Inquiry Customer',
+                'phone_number' => $phone,
+                'password' => bcrypt('secret'),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            $inquiryId = DB::table('api_customer_inquiry')->insertGetId([
+                'user_id' => $tenant->id,
+                'customer_id' => $customerId,
+                'message' => 'Test inquiry',
+                'inquiry_type' => 'general',
+                'is_read' => 0,
+                'is_archived' => 0,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            DB::table('inquiry_appointments')->insert([
+                'user_id' => $tenant->id,
+                'inquiry_id' => $inquiryId,
+                'customer_id' => $customerId,
+                'title' => 'Inquiry apt today',
+                'type' => 'office_meeting',
+                'datetime' => $todayAt10,
+                'duration' => 30,
+                'status' => 'scheduled',
+                'priority' => 2,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            $res2 = $this->postJson('/api/v2/customers-hub/requests/list', [
+                'due_date_bucket' => 'today',
+                'objectTypes' => ['inquiry', 'property_request'],
+                'limit' => 50,
+                'offset' => 0,
+            ]);
+            $res2->assertOk();
+            $ids2 = array_column($res2->json('data.actions'), 'id');
+            $this->assertContains('inquiry_' . $inquiryId, $ids2, 'Inquiry with appointment today should be in list');
         }
     }
 }

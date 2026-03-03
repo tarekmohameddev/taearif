@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Requests\Api\V1\StoreEmployeeRequest;
+use App\Http\Requests\Api\V1\UpdateEmployeeRequest;
+use App\Http\Requests\Api\V1\SyncEmployeeRolesRequest;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Concerns\ResolvesTenant;
@@ -79,22 +81,11 @@ class EmployeeController extends Controller
     }
 
     // POST /employees
-    public function store(Request $request)
+    public function store(StoreEmployeeRequest $request)
     {
         $tenantId = $this->tenantId();
 
-        $data = $request->validate([
-            'first_name' => ['nullable','string','max:120'],
-            'last_name'  => ['nullable','string','max:120'],
-            'email'      => ['required','email','max:255', Rule::unique('users','email')],
-            'phone'      => ['nullable','string','max:50'],
-            'password'   => ['required','string','min:6'],
-            'active'     => ['boolean'],
-            'role_ids'   => ['array'],
-            'role_ids.*' => ['integer','exists:api_roles,id'], // Use api_roles
-            'permissions' => ['array'],
-            'permissions.*' => ['string'],
-        ]);
+        $data = $request->validated();
 
         // Check employee quota before creating
         $tenant = User::findOrFail($tenantId);
@@ -209,7 +200,7 @@ class EmployeeController extends Controller
     }
 
     // PUT /employees/{id}
-    public function update(Request $request, $id)
+    public function update(UpdateEmployeeRequest $request, $id)
     {
         $tenantId = $this->tenantId();
 
@@ -218,18 +209,7 @@ class EmployeeController extends Controller
             ->where('account_type', 'employee')
             ->findOrFail($id);
 
-        $data = $request->validate([
-            'first_name' => ['nullable','string','max:120'],
-            'last_name'  => ['nullable','string','max:120'],
-            'email'      => ['nullable','email','max:255', Rule::unique('users','email')->ignore($employee->id)],
-            'phone'      => ['nullable','string','max:50'],
-            'password'   => ['nullable','string','min:6'],
-            'active'     => ['boolean'],
-            'role_ids'   => ['array'],
-            'role_ids.*' => ['integer','exists:api_roles,id'],
-            'permissions' => ['array'],
-            'permissions.*' => ['string'],
-        ]);
+        $data = $request->validated();
 
         $old = $employee->only(['first_name','last_name','email','phone','active']);
 
@@ -344,14 +324,10 @@ class EmployeeController extends Controller
     }
 
     // POST /employees/{id}/roles
-    public function syncRoles(Request $request, $id)
+    public function syncRoles(SyncEmployeeRolesRequest $request, $id)
     {
         $tenantId = $this->tenantId();
-
-        $request->validate([
-            'role_ids'   => ['required','array'],
-            'role_ids.*' => ['integer','exists:api_roles,id']
-        ]);
+        $validated = $request->validated();
 
         // Use User model for employee data
         $employee = User::where('tenant_id', $tenantId)
@@ -364,7 +340,7 @@ class EmployeeController extends Controller
         $oldRoles = $employee->roles->pluck('id')->toArray();
 
         // Ensure roles belong to same tenant
-        $availableRoles = Role::where('team_id', $tenantId)->whereIn('id', $request->role_ids)->get();
+        $availableRoles = Role::where('team_id', $tenantId)->whereIn('id', $validated['role_ids'])->get();
         $employee->syncRoles($availableRoles);
 
         ActivityLogger::log([

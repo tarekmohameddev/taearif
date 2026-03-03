@@ -5,11 +5,23 @@ namespace App\Http\Controllers\Api\V2\CustomersHub;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Api\ApiController;
+use App\Http\Requests\Api\V2\CustomersHub\RequestsListRequest;
+use App\Http\Requests\Api\V2\CustomersHub\RequestUpdateRequest;
+use App\Http\Requests\Api\V2\CustomersHub\AddNoteRequest;
+use App\Http\Requests\Api\V2\CustomersHub\CreateAppointmentRequest;
+use App\Http\Requests\Api\V2\CustomersHub\CreateReminderRequest;
+use App\Http\Requests\Api\V2\CustomersHub\BulkCompleteRequest;
+use App\Http\Requests\Api\V2\CustomersHub\BulkDismissRequest;
+use App\Http\Requests\Api\V2\CustomersHub\RequestsBulkRequest;
 use App\Domain\CustomersHub\Services\ActionsAggregatorService;
-use App\Models\Api\UserApiCustomerStage;
+use App\Domain\CustomersHub\Services\PropertyRequestDetailBuilder;
+use App\Models\Api\ApiCustomerInquiry;
 use App\Models\Api\UserApiCustomerType;
 use App\Models\Api\UserApiCustomerPriority;
+use App\Models\Api\UserPropertyRequest;
+use App\Models\CustomersHub\CustomersHubStage;
 use App\Models\User;
+use App\Models\User\BasicSetting;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -36,9 +48,12 @@ class RequestsController extends ApiController
 {
     private ActionsAggregatorService $aggregator;
 
-    public function __construct(ActionsAggregatorService $aggregator)
+    private PropertyRequestDetailBuilder $propertyRequestDetailBuilder;
+
+    public function __construct(ActionsAggregatorService $aggregator, PropertyRequestDetailBuilder $propertyRequestDetailBuilder)
     {
         $this->aggregator = $aggregator;
+        $this->propertyRequestDetailBuilder = $propertyRequestDetailBuilder;
     }
 
     /**
@@ -46,59 +61,9 @@ class RequestsController extends ApiController
      * 
      * Get paginated list of customer actions with filtering.
      */
-    public function list(Request $request): JsonResponse
+    public function list(RequestsListRequest $request): JsonResponse
     {
-        // Normalize frontend parameter names so both naming conventions work
-        $request->merge([
-            'tab' => $request->input('activeTab') ?? $request->input('tab'),
-            'types' => $request->input('selectedTypes') ?? $request->input('types'),
-            'sources' => $request->input('selectedSources') ?? $request->input('sources'),
-            'priorities' => $request->input('selectedPriorities') ?? $request->input('priorities'),
-            'assignees' => $request->input('selectedAssignees') ?? $request->input('assignees'),
-            'due_date_bucket' => $request->input('dueDateFilter') ?? $request->input('due_date_bucket'),
-            'property_categories' => $request->input('selectedPropertyTypes') ?? $request->input('property_categories'),
-            'cities' => $request->input('selectedCities') ?? $request->input('cities'),
-            'states' => $request->input('selectedStates') ?? $request->input('states'),
-            'budget_min' => $request->input('budgetMin') ?? $request->input('budget_min'),
-            'budget_max' => $request->input('budgetMax') ?? $request->input('budget_max'),
-            'objectTypes' => $request->input('selectedObjectTypes') ?? $request->input('objectTypes'),
-        ]);
-
-        $validated = $request->validate([
-            'tab' => 'nullable|in:inbox,followups,all,completed',
-            'types' => 'nullable|array',
-            'types.*' => 'string|in:new_inquiry,callback_request,whatsapp_incoming,property_match,follow_up,site_visit',
-            'statuses' => 'nullable|array',
-            'statuses.*' => 'string|in:pending,in_progress,completed,dismissed,snoozed',
-            'sources' => 'nullable|array',
-            'sources.*' => 'string|in:inquiry,manual,whatsapp,import,referral,property_request',
-            'priorities' => 'nullable|array',
-            'priorities.*' => 'string|in:low,medium,high,urgent',
-            'assignees' => 'nullable|array',
-            'assignees.*' => 'integer',
-            'customer_id' => 'nullable|integer',
-            'due_date_bucket' => 'nullable|in:overdue,today,week,no_date',
-            'property_categories' => 'nullable|array',
-            'property_categories.*' => 'string',
-            'property_types' => 'nullable|array',
-            'property_types.*' => 'string',
-            'cities' => 'nullable|array',
-            'cities.*' => 'string',
-            'states' => 'nullable|array',
-            'states.*' => 'string',
-            'budget_min' => 'nullable|numeric|min:0',
-            'budget_max' => 'nullable|numeric|min:0',
-            'date_from' => 'nullable|date',
-            'date_to' => 'nullable|date',
-            'search' => 'nullable|string|max:255',
-            'sort_by' => 'nullable|in:createdAt,dueDate,priority,customerName',
-            'sort_dir' => 'nullable|in:asc,desc',
-            'limit' => 'nullable|integer|min:1|max:100',
-            'offset' => 'nullable|integer|min:0',
-            'objectTypes' => 'nullable|array',
-            'objectTypes.*' => 'string|in:inquiry,property_request,reminder,appointment,customer_reminder',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
 
         $filters = $validated;
@@ -112,18 +77,23 @@ class RequestsController extends ApiController
         $propertyRequestSourceIds = $items->filter(function ($item) {
             return ($item->objectType ?? '') === 'property_request';
         })->pluck('sourceId')->filter()->unique()->values()->all();
+        $inquirySourceIds = $items->filter(function ($item) {
+            return ($item->objectType ?? '') === 'inquiry';
+        })->pluck('sourceId')->filter()->unique()->values()->all();
 
         $appointmentsByRequest = [];
         $remindersByRequest = [];
+        $appointmentsByInquiry = [];
+        $remindersByInquiry = [];
+        $now = Carbon::now();
         if (!empty($propertyRequestSourceIds)) {
             $appointmentRows = DB::table('property_request_appointments')
                 ->where('user_id', $userId)
                 ->whereIn('property_request_id', $propertyRequestSourceIds)
                 ->orderBy('datetime', 'asc')
                 ->get();
-            $now = Carbon::now();
             foreach ($appointmentRows as $row) {
-                $appointmentsByRequest[$row->property_request_id][] = $this->formatPropertyRequestAppointment($row);
+                $appointmentsByRequest[$row->property_request_id][] = $this->propertyRequestDetailBuilder->formatPropertyRequestAppointment($row);
             }
             $reminderRows = DB::table('property_request_reminders')
                 ->where('user_id', $userId)
@@ -131,14 +101,35 @@ class RequestsController extends ApiController
                 ->orderBy('datetime', 'asc')
                 ->get();
             foreach ($reminderRows as $row) {
-                $remindersByRequest[$row->property_request_id][] = $this->formatPropertyRequestReminder($row, $now);
+                $remindersByRequest[$row->property_request_id][] = $this->propertyRequestDetailBuilder->formatPropertyRequestReminder($row, $now);
+            }
+        }
+        if (!empty($inquirySourceIds)) {
+            $appointmentRows = DB::table('inquiry_appointments')
+                ->where('user_id', $userId)
+                ->whereIn('inquiry_id', $inquirySourceIds)
+                ->orderBy('datetime', 'asc')
+                ->get();
+            foreach ($appointmentRows as $row) {
+                $appointmentsByInquiry[$row->inquiry_id][] = $this->propertyRequestDetailBuilder->formatPropertyRequestAppointment($row);
+            }
+            $reminderRows = DB::table('inquiry_reminders')
+                ->where('user_id', $userId)
+                ->whereIn('inquiry_id', $inquirySourceIds)
+                ->orderBy('datetime', 'asc')
+                ->get();
+            foreach ($reminderRows as $row) {
+                $remindersByInquiry[$row->inquiry_id][] = $this->propertyRequestDetailBuilder->formatPropertyRequestReminder($row, $now);
             }
         }
 
-        $items->each(function ($item) use ($appointmentsByRequest, $remindersByRequest) {
+        $items->each(function ($item) use ($appointmentsByRequest, $remindersByRequest, $appointmentsByInquiry, $remindersByInquiry) {
             if (($item->objectType ?? '') === 'property_request' && isset($item->sourceId)) {
                 $item->appointments = $appointmentsByRequest[$item->sourceId] ?? [];
                 $item->reminders = $remindersByRequest[$item->sourceId] ?? [];
+            } elseif (($item->objectType ?? '') === 'inquiry' && isset($item->sourceId)) {
+                $item->appointments = $appointmentsByInquiry[$item->sourceId] ?? [];
+                $item->reminders = $remindersByInquiry[$item->sourceId] ?? [];
             } else {
                 $item->appointments = [];
                 $item->reminders = [];
@@ -229,15 +220,23 @@ class RequestsController extends ApiController
                 ['id' => 'inquiry', 'label' => 'استفسار', 'labelEn' => 'Inquiry'],
                 ['id' => 'property_request', 'label' => 'طلب عقار', 'labelEn' => 'Property Request'],
                 ['id' => 'reminder', 'label' => 'تذكير', 'labelEn' => 'Reminder'],
-                ['id' => 'appointment', 'label' => 'موعد', 'labelEn' => 'Appointment'],
-                ['id' => 'customer_reminder', 'label' => 'تذكير عميل', 'labelEn' => 'Customer Reminder'],
+                ['id' => 'request_appointment', 'label' => 'موعد طلب', 'labelEn' => 'Request Appointment'],
+                ['id' => 'request_reminder', 'label' => 'تذكير طلب', 'labelEn' => 'Request Reminder'],
             ];
 
-            // Customer stages (user-defined)
-            $stages = UserApiCustomerStage::where('user_id', $userId)
+            // Pipeline stages (customers_hub_stages) for request list filtering
+            $stages = DB::table('customers_hub_stages')
                 ->where('is_active', true)
                 ->orderBy('order')
-                ->get(['id', 'stage_name as label', 'color', 'icon']);
+                ->get(['id', 'stage_id', 'stage_name_ar', 'stage_name_en'])
+                ->map(fn ($s) => [
+                    'id' => (int) $s->id,
+                    'stage_id' => $s->stage_id,
+                    'label' => $s->stage_name_ar,
+                    'labelEn' => $s->stage_name_en ?? $s->stage_name_ar,
+                ])
+                ->values()
+                ->all();
 
             // Customer types (user-defined)
             $customerTypes = UserApiCustomerType::where('user_id', $userId)
@@ -292,20 +291,25 @@ class RequestsController extends ApiController
             return $this->error('Action not found', 404);
         }
 
-        if (($action->objectType ?? '') === 'property_request' && !empty($action->sourceId)) {
-            $now = Carbon::now();
-            $appointmentRows = DB::table('property_request_appointments')
-                ->where('user_id', $userId)
-                ->where('property_request_id', $action->sourceId)
-                ->orderBy('datetime', 'asc')
-                ->get();
-            $reminderRows = DB::table('property_request_reminders')
-                ->where('user_id', $userId)
-                ->where('property_request_id', $action->sourceId)
-                ->orderBy('datetime', 'asc')
-                ->get();
-            $action->appointments = $appointmentRows->map(fn ($row) => $this->formatPropertyRequestAppointment($row))->values()->all();
-            $action->reminders = $reminderRows->map(fn ($row) => $this->formatPropertyRequestReminder($row, $now))->values()->all();
+        $isPropertyRequestAction = (($action->objectType ?? '') === 'property_request')
+            && (($action->sourceTable ?? '') === 'users_property_requests')
+            && !empty($action->sourceId);
+        $isInquiryAction = (($action->objectType ?? '') === 'inquiry')
+            && (($action->sourceTable ?? '') === 'api_customer_inquiry')
+            && !empty($action->sourceId);
+
+        if ($isPropertyRequestAction) {
+            $fullAction = $this->propertyRequestDetailBuilder->buildFullPropertyRequestAction($userId, $action);
+            if ($fullAction === null) {
+                return $this->error('Action not found', 404);
+            }
+            $action = $fullAction;
+        } elseif ($isInquiryAction) {
+            $fullAction = $this->propertyRequestDetailBuilder->buildFullInquiryAction($userId, $action);
+            if ($fullAction === null) {
+                return $this->error('Action not found', 404);
+            }
+            $action = $fullAction;
         } else {
             $action->appointments = [];
             $action->reminders = [];
@@ -404,18 +408,9 @@ class RequestsController extends ApiController
      *
      * Update an action (partial update).
      */
-    public function update(Request $request, string $requestId): JsonResponse
+    public function update(RequestUpdateRequest $request, string $requestId): JsonResponse
     {
-        $validated = $request->validate([
-            'title' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'due_date' => 'nullable|date',
-            'priority' => 'nullable|in:low,medium,high',
-            'notes' => 'nullable|string',
-            'duration' => 'nullable|integer|min:0',
-            'stage_id' => ['nullable', 'string', 'max:50', \Illuminate\Validation\Rule::exists('customers_hub_stages', 'stage_id')->where('is_active', true)],
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
 
         $action = $this->aggregator->getById($userId, $requestId);
@@ -423,18 +418,29 @@ class RequestsController extends ApiController
             return $this->error('Action not found', 404);
         }
 
-        // Update customer's hub stage when stage_id is provided and action has a customer
-        if (array_key_exists('stage_id', $validated) && $validated['stage_id'] !== null && !empty($action->customerId)) {
-            \Illuminate\Support\Facades\DB::table('api_customers')
-                ->where('id', $action->customerId)
-                ->where('user_id', $userId)
-                ->update([
-                    'customers_hub_stage_id' => $validated['stage_id'],
-                    'customers_hub_stage_changed_at' => now(),
-                ]);
+        // Resolve pipeline stage: stage_id (string) or status_id (integer -> lookup customers_hub_stages.id)
+        $stageIdString = null;
+        if (array_key_exists('stage_id', $validated) && $validated['stage_id'] !== null && $validated['stage_id'] !== '') {
+            $stageIdString = DB::table('customers_hub_stages')->where('stage_id', $validated['stage_id'])->where('is_active', true)->value('stage_id');
+        } elseif (array_key_exists('status_id', $validated) && $validated['status_id'] !== null) {
+            $stageIdString = DB::table('customers_hub_stages')->where('id', (int) $validated['status_id'])->where('is_active', true)->value('stage_id');
         }
 
-        unset($validated['stage_id']);
+        if ($stageIdString !== null) {
+            if (($action->sourceTable ?? '') === 'users_property_requests' && !empty($action->sourceId)) {
+                DB::table('users_property_requests')
+                    ->where('id', $action->sourceId)
+                    ->where('user_id', $userId)
+                    ->update(['customers_hub_stage_id' => $stageIdString, 'updated_at' => now()]);
+            } elseif (($action->sourceTable ?? '') === 'api_customer_inquiry' && !empty($action->sourceId)) {
+                DB::table('api_customer_inquiry')
+                    ->where('id', $action->sourceId)
+                    ->where('user_id', $userId)
+                    ->update(['stage_id' => $stageIdString, 'updated_at' => now()]);
+            }
+        }
+
+        unset($validated['status_id'], $validated['stage_id']);
 
         $success = $this->aggregator->updateAction($userId, $requestId, $validated);
         if (!$success && !empty($validated)) {
@@ -455,29 +461,66 @@ class RequestsController extends ApiController
     /**
      * POST /api/v2/customers-hub/requests/{requestId}/notes
      *
-     * Append a note to an action.
+     * Append a note to an action. For property_request_{id} and inquiry_{id}, saves to crm_hub_notes.
+     * For other types (reminder, appointment, etc.) uses legacy note column where supported.
      */
-    public function addNote(Request $request, string $requestId): JsonResponse
+    public function addNote(AddNoteRequest $request, string $requestId): JsonResponse
     {
-        $validated = $request->validate([
-            'note' => 'required|string',
-            'addedBy' => 'nullable|string|max:255',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
+        $employeeId = auth()->user()->id;
+        $parsed = $this->aggregator->parseActionId($requestId);
 
+        // Request-level leads: save to crm_hub_notes (polymorphic)
+        if ($parsed !== null) {
+            if ($parsed['table'] === 'users_property_requests') {
+                $noteable = UserPropertyRequest::where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->first();
+                if (!$noteable) {
+                    return $this->error('Action not found', 404);
+                }
+                $note = $noteable->hubNotes()->create([
+                    'employee_id' => $employeeId,
+                    'note' => $validated['note'],
+                ]);
+                $note->load('employee.basic_setting');
+                return $this->success([
+                    'message' => 'Note added successfully',
+                    'actionId' => $requestId,
+                    'note' => $this->formatHubNote($note),
+                ]);
+            }
+            if ($parsed['table'] === 'api_customer_inquiry') {
+                $noteable = ApiCustomerInquiry::where('id', $parsed['sourceId'])
+                    ->where('user_id', $userId)
+                    ->first();
+                if (!$noteable) {
+                    return $this->error('Action not found', 404);
+                }
+                $note = $noteable->hubNotes()->create([
+                    'employee_id' => $employeeId,
+                    'note' => $validated['note'],
+                ]);
+                $note->load('employee.basic_setting');
+                return $this->success([
+                    'message' => 'Note added successfully',
+                    'actionId' => $requestId,
+                    'note' => $this->formatHubNote($note),
+                ]);
+            }
+        }
+
+        // Legacy: reminder, appointment, etc. (append to notes/note column where supported)
         $action = $this->aggregator->getById($userId, $requestId);
         if (!$action) {
             return $this->error('Action not found', 404);
         }
-
         $addedBy = $validated['addedBy'] ?? 'current_user';
         $success = $this->aggregator->addNoteToAction($userId, $requestId, $validated['note'], $addedBy);
-
         if (!$success) {
             return $this->error('Action not found or notes not supported for this request type', 422);
         }
-
         return $this->success([
             'message' => 'Note added successfully',
             'actionId' => $requestId,
@@ -489,38 +532,24 @@ class RequestsController extends ApiController
      *
      * Create an appointment linked to a property request.
      */
-    public function createAppointmentForPropertyRequest(Request $request, string $requestId): JsonResponse
+    public function createAppointmentForPropertyRequest(CreateAppointmentRequest $request, string $requestId): JsonResponse
     {
         $userId = $this->getTenantUserId($request);
-
-        $validated = $request->validate([
-            'type' => 'required|string|in:site_visit,office_meeting,phone_call,video_call,contract_signing,other',
-            'datetime' => 'required|date',
-            'duration' => 'nullable|integer|min:1',
-            'notes' => 'nullable|string',
-            'title' => 'nullable|string|max:255',
-            'priority' => 'nullable|string|in:low,medium,high,urgent',
-        ]);
-
-        if (Carbon::parse($validated['datetime'])->isPast()) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'INVALID_DATETIME',
-                    'message' => 'Datetime must be in the future',
-                    'message_ar' => 'التاريخ والوقت يجب أن يكون في المستقبل',
-                ],
-            ], 422);
-        }
+        $validated = $request->validated();
 
         $resolved = $this->resolvePropertyRequestAndCustomer($requestId, $userId);
+        $isInquiry = false;
+        if ($resolved === null) {
+            $resolved = $this->resolveInquiryAndCustomer($requestId, $userId);
+            $isInquiry = $resolved !== null;
+        }
         if ($resolved === null) {
             return response()->json([
                 'success' => false,
                 'error' => [
                     'code' => 'INVALID_REQUEST_ID',
-                    'message' => 'Property request not found',
-                    'message_ar' => 'طلب العقار غير موجود',
+                    'message' => 'Request not found',
+                    'message_ar' => 'الطلب غير موجود',
                 ],
             ], 404);
         }
@@ -530,38 +559,74 @@ class RequestsController extends ApiController
         );
         $duration = (int) ($validated['duration'] ?? 30);
         $priorityDb = $this->mapPriorityAppointmentToDb($validated['priority'] ?? 'medium');
+        $datetime = Carbon::parse($validated['datetime'])->toDateTimeString();
+        $now = now();
 
-        $id = DB::table('property_request_appointments')->insertGetId([
-            'user_id' => $userId,
-            'property_request_id' => $resolved['propertyRequestId'],
-            'customer_id' => $resolved['customerId'],
-            'title' => $title,
-            'type' => $validated['type'],
-            'datetime' => $validated['datetime'],
-            'duration' => $duration,
-            'status' => 'scheduled',
-            'priority' => $priorityDb,
-            'notes' => $validated['notes'] ?? null,
-            'created_at' => $now = now(),
-            'updated_at' => $now,
-        ]);
+        if ($isInquiry) {
+            $id = DB::table('inquiry_appointments')->insertGetId([
+                'user_id' => $userId,
+                'inquiry_id' => $resolved['inquiryId'],
+                'customer_id' => $resolved['customerId'],
+                'title' => $title,
+                'type' => $validated['type'],
+                'datetime' => $datetime,
+                'duration' => $duration,
+                'status' => 'scheduled',
+                'priority' => $priorityDb,
+                'notes' => $validated['notes'] ?? null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            $row = (object) [
+                'id' => $id,
+                'inquiry_id' => $resolved['inquiryId'],
+                'customer_id' => $resolved['customerId'],
+                'title' => $title,
+                'type' => $validated['type'],
+                'datetime' => $datetime,
+                'duration' => $duration,
+                'status' => 'scheduled',
+                'priority' => $priorityDb,
+                'notes' => $validated['notes'] ?? null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        } else {
+            $id = DB::table('property_request_appointments')->insertGetId([
+                'user_id' => $userId,
+                'property_request_id' => $resolved['propertyRequestId'],
+                'customer_id' => $resolved['customerId'],
+                'title' => $title,
+                'type' => $validated['type'],
+                'datetime' => $datetime,
+                'duration' => $duration,
+                'status' => 'scheduled',
+                'priority' => $priorityDb,
+                'notes' => $validated['notes'] ?? null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            $row = (object) [
+                'id' => $id,
+                'property_request_id' => $resolved['propertyRequestId'],
+                'customer_id' => $resolved['customerId'],
+                'title' => $title,
+                'type' => $validated['type'],
+                'datetime' => $datetime,
+                'duration' => $duration,
+                'status' => 'scheduled',
+                'priority' => $priorityDb,
+                'notes' => $validated['notes'] ?? null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
 
-        $row = (object) [
-            'id' => $id,
-            'property_request_id' => $resolved['propertyRequestId'],
-            'customer_id' => $resolved['customerId'],
-            'title' => $title,
-            'type' => $validated['type'],
-            'datetime' => $validated['datetime'],
-            'duration' => $duration,
-            'status' => 'scheduled',
-            'priority' => $priorityDb,
-            'notes' => $validated['notes'] ?? null,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ];
-
-        $appointment = $this->formatPropertyRequestAppointmentForResponse($row, $requestId);
+        $base = $this->propertyRequestDetailBuilder->formatPropertyRequestAppointment($row);
+        $base['requestId'] = $requestId;
+        $base['customerId'] = $row->customer_id !== null ? (int) $row->customer_id : null;
+        $base['updatedAt'] = Carbon::parse($row->updated_at)->toIso8601String();
+        $appointment = $base;
 
         return response()->json([
             'success' => true,
@@ -574,75 +639,98 @@ class RequestsController extends ApiController
      *
      * Create a reminder linked to a property request.
      */
-    public function createReminderForPropertyRequest(Request $request, string $requestId): JsonResponse
+    public function createReminderForPropertyRequest(CreateReminderRequest $request, string $requestId): JsonResponse
     {
         $userId = $this->getTenantUserId($request);
-
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'datetime' => 'required|date',
-            'priority' => 'required|string|in:low,medium,high,urgent',
-            'type' => 'required|string|in:follow_up,payment_due,document_required,other',
-            'notes' => 'nullable|string',
-        ]);
-
-        if (Carbon::parse($validated['datetime'])->isPast()) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'INVALID_DATETIME',
-                    'message' => 'Datetime must be in the future',
-                    'message_ar' => 'التاريخ والوقت يجب أن يكون في المستقبل',
-                ],
-            ], 422);
-        }
+        $validated = $request->validated();
 
         $resolved = $this->resolvePropertyRequestAndCustomer($requestId, $userId);
+        $isInquiry = false;
+        if ($resolved === null) {
+            $resolved = $this->resolveInquiryAndCustomer($requestId, $userId);
+            $isInquiry = $resolved !== null;
+        }
         if ($resolved === null) {
             return response()->json([
                 'success' => false,
                 'error' => [
                     'code' => 'INVALID_REQUEST_ID',
-                    'message' => 'Property request not found',
-                    'message_ar' => 'طلب العقار غير موجود',
+                    'message' => 'Request not found',
+                    'message_ar' => 'الطلب غير موجود',
                 ],
             ], 404);
         }
 
         $priorityDb = $this->mapPriorityReminderToDb($validated['priority']);
+        $datetime = Carbon::parse($validated['datetime'])->toDateTimeString();
+        $now = now();
 
-        $id = DB::table('property_request_reminders')->insertGetId([
-            'user_id' => $userId,
-            'property_request_id' => $resolved['propertyRequestId'],
-            'customer_id' => $resolved['customerId'],
-            'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
-            'datetime' => $validated['datetime'],
-            'priority' => $priorityDb,
-            'type' => $validated['type'],
-            'status' => 'pending',
-            'notes' => $validated['notes'] ?? null,
-            'created_at' => $now = now(),
-            'updated_at' => $now,
-        ]);
+        if ($isInquiry) {
+            $id = DB::table('inquiry_reminders')->insertGetId([
+                'user_id' => $userId,
+                'inquiry_id' => $resolved['inquiryId'],
+                'customer_id' => $resolved['customerId'],
+                'title' => $validated['title'],
+                'description' => $validated['description'] ?? null,
+                'datetime' => $datetime,
+                'priority' => $priorityDb,
+                'type' => $validated['type'],
+                'status' => 'pending',
+                'notes' => $validated['notes'] ?? null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            $row = (object) [
+                'id' => $id,
+                'inquiry_id' => $resolved['inquiryId'],
+                'customer_id' => $resolved['customerId'],
+                'title' => $validated['title'],
+                'description' => $validated['description'] ?? null,
+                'datetime' => $datetime,
+                'priority' => $priorityDb,
+                'type' => $validated['type'],
+                'status' => 'pending',
+                'notes' => $validated['notes'] ?? null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        } else {
+            $id = DB::table('property_request_reminders')->insertGetId([
+                'user_id' => $userId,
+                'property_request_id' => $resolved['propertyRequestId'],
+                'customer_id' => $resolved['customerId'],
+                'title' => $validated['title'],
+                'description' => $validated['description'] ?? null,
+                'datetime' => $datetime,
+                'priority' => $priorityDb,
+                'type' => $validated['type'],
+                'status' => 'pending',
+                'notes' => $validated['notes'] ?? null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            $row = (object) [
+                'id' => $id,
+                'property_request_id' => $resolved['propertyRequestId'],
+                'customer_id' => $resolved['customerId'],
+                'title' => $validated['title'],
+                'description' => $validated['description'] ?? null,
+                'datetime' => $datetime,
+                'priority' => $priorityDb,
+                'type' => $validated['type'],
+                'status' => 'pending',
+                'notes' => $validated['notes'] ?? null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
 
-        $row = (object) [
-            'id' => $id,
-            'property_request_id' => $resolved['propertyRequestId'],
-            'customer_id' => $resolved['customerId'],
-            'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
-            'datetime' => $validated['datetime'],
-            'priority' => $priorityDb,
-            'type' => $validated['type'],
-            'status' => 'pending',
-            'notes' => $validated['notes'] ?? null,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ];
-
-        $reminder = $this->formatPropertyRequestReminderForResponse($row, $requestId);
+        $now = Carbon::now();
+        $base = $this->propertyRequestDetailBuilder->formatPropertyRequestReminder($row, $now);
+        $base['requestId'] = $requestId;
+        $base['customerId'] = $row->customer_id !== null ? (int) $row->customer_id : null;
+        $base['updatedAt'] = Carbon::parse($row->updated_at)->toIso8601String();
+        $reminder = $base;
 
         return response()->json([
             'success' => true,
@@ -655,53 +743,12 @@ class RequestsController extends ApiController
      *
      * Unified bulk actions: complete, dismiss, snooze, assign, change_priority.
      */
-    public function bulk(Request $request): JsonResponse
+    public function bulk(RequestsBulkRequest $request): JsonResponse
     {
-        $baseRules = [
-            'action' => 'required|string|in:complete,dismiss,snooze,assign,change_priority',
-            'actionIds' => 'required|array|min:1|max:1000',
-            'actionIds.*' => 'string',
-            'data' => 'required|array',
-        ];
-        $validated = $request->validate($baseRules);
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
         $action = $validated['action'];
         $data = $validated['data'];
-
-        // Action-specific validation
-        $employeeIdRules = ['nullable', 'integer', function ($attr, $value, $fail) use ($userId) {
-            if ($value === null) return;
-            if (!$this->isValidTenantUserOrEmployee($userId, (int) $value)) {
-                $fail(__('validation.exists', ['attribute' => $attr]));
-            }
-        }];
-        $requiredEmployeeRule = ['required', 'integer', function ($attr, $value, $fail) use ($userId) {
-            if (!$this->isValidTenantUserOrEmployee($userId, (int) $value)) {
-                $fail(__('validation.exists', ['attribute' => $attr]));
-            }
-        }];
-
-        if ($action === 'complete') {
-            $request->validate(['data.completedBy' => $requiredEmployeeRule, 'data.notes' => 'nullable|string']);
-        } elseif ($action === 'dismiss') {
-            $request->validate(['data.dismissedBy' => $requiredEmployeeRule, 'data.reason' => 'nullable|string']);
-        } elseif ($action === 'snooze') {
-            $request->validate([
-                'data.snoozedUntil' => 'required|date|after:now',
-                'data.snoozedBy' => $requiredEmployeeRule,
-                'data.reason' => 'nullable|string',
-            ]);
-        } elseif ($action === 'assign') {
-            $request->validate([
-                'data.assignedTo' => $requiredEmployeeRule,
-                'data.assignedBy' => $requiredEmployeeRule,
-            ]);
-        } elseif ($action === 'change_priority') {
-            $request->validate([
-                'data.priority' => 'required|in:urgent,high,medium,low',
-                'data.changedBy' => $requiredEmployeeRule,
-            ]);
-        }
 
         $result = $this->aggregator->bulkAction($userId, $action, $validated['actionIds'], $data);
         $this->invalidateFilterOptionsCache($userId);
@@ -843,13 +890,9 @@ class RequestsController extends ApiController
      * 
      * Bulk complete multiple actions.
      */
-    public function bulkComplete(Request $request): JsonResponse
+    public function bulkComplete(BulkCompleteRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'actionIds' => 'required|array|min:1|max:100',
-            'actionIds.*' => 'string',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
 
         $results = $this->aggregator->bulkComplete($userId, $validated['actionIds']);
@@ -873,13 +916,9 @@ class RequestsController extends ApiController
      * 
      * Bulk dismiss multiple actions.
      */
-    public function bulkDismiss(Request $request): JsonResponse
+    public function bulkDismiss(BulkDismissRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'actionIds' => 'required|array|min:1|max:100',
-            'actionIds.*' => 'string',
-        ]);
-
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
 
         $results = $this->aggregator->bulkDismiss($userId, $validated['actionIds']);
@@ -957,6 +996,32 @@ class RequestsController extends ApiController
     }
 
     /**
+     * Resolve inquiry and customer from requestId.
+     * Returns ['inquiryId' => int, 'customerId' => int|null] or null if not found / not an inquiry.
+     */
+    private function resolveInquiryAndCustomer(string $requestId, int $userId): ?array
+    {
+        $parsed = $this->aggregator->parseActionId($requestId);
+        if ($parsed === null || ($parsed['table'] ?? '') !== 'api_customer_inquiry') {
+            return null;
+        }
+        $sourceId = (int) $parsed['sourceId'];
+
+        $row = DB::table('api_customer_inquiry')
+            ->where('user_id', $userId)
+            ->where('id', $sourceId)
+            ->first(['id', 'customer_id']);
+        if (!$row) {
+            return null;
+        }
+
+        return [
+            'inquiryId' => (int) $row->id,
+            'customerId' => $row->customer_id !== null ? (int) $row->customer_id : null,
+        ];
+    }
+
+    /**
      * Map API priority string to appointments table (1=low, 2=medium, 3=high, 4=urgent).
      */
     private function mapPriorityAppointmentToDb(?string $priority): int
@@ -982,100 +1047,5 @@ class RequestsController extends ApiController
             'low' => 0,
             default => 1,
         };
-    }
-
-    /**
-     * Map DB priority (appointments 1-4) to API string.
-     */
-    private function mapPriorityAppointmentToString(int $priority): string
-    {
-        return match ($priority) {
-            4 => 'urgent',
-            3 => 'high',
-            2 => 'medium',
-            1 => 'low',
-            default => 'medium',
-        };
-    }
-
-    /**
-     * Map DB priority (reminders 0-3) to API string.
-     */
-    private function mapPriorityReminderToString(int $priority): string
-    {
-        return match ($priority) {
-            3 => 'urgent',
-            2 => 'high',
-            1 => 'medium',
-            0 => 'low',
-            default => 'medium',
-        };
-    }
-
-    /**
-     * Format appointment row for list/single (no requestId/customerId).
-     */
-    private function formatPropertyRequestAppointment(object $row): array
-    {
-        return [
-            'id' => $row->id,
-            'title' => $row->title,
-            'type' => $row->type,
-            'datetime' => Carbon::parse($row->datetime)->toIso8601String(),
-            'duration' => (int) $row->duration,
-            'status' => $row->status ?? 'scheduled',
-            'priority' => $this->mapPriorityAppointmentToString((int) ($row->priority ?? 2)),
-            'notes' => $row->notes,
-            'createdAt' => Carbon::parse($row->created_at)->toIso8601String(),
-        ];
-    }
-
-    /**
-     * Format appointment for create response (with requestId, customerId).
-     */
-    private function formatPropertyRequestAppointmentForResponse(object $row, string $requestId): array
-    {
-        $base = $this->formatPropertyRequestAppointment($row);
-        $base['requestId'] = $requestId;
-        $base['customerId'] = $row->customer_id !== null ? (int) $row->customer_id : null;
-        $base['updatedAt'] = Carbon::parse($row->updated_at)->toIso8601String();
-        return $base;
-    }
-
-    /**
-     * Format reminder row for list/single (with isOverdue, daysUntilDue).
-     */
-    private function formatPropertyRequestReminder(object $row, Carbon $now): array
-    {
-        $dt = Carbon::parse($row->datetime);
-        $isOverdue = $dt->lt($now);
-        $daysUntilDue = $isOverdue ? 0 : (int) $now->diffInDays($dt, false);
-
-        return [
-            'id' => $row->id,
-            'title' => $row->title,
-            'description' => $row->description,
-            'datetime' => $dt->toIso8601String(),
-            'priority' => $this->mapPriorityReminderToString((int) ($row->priority ?? 1)),
-            'type' => $row->type ?? 'follow_up',
-            'status' => $row->status ?? 'pending',
-            'notes' => $row->notes,
-            'isOverdue' => $isOverdue,
-            'daysUntilDue' => $daysUntilDue,
-            'createdAt' => Carbon::parse($row->created_at)->toIso8601String(),
-        ];
-    }
-
-    /**
-     * Format reminder for create response (with requestId, customerId, updatedAt).
-     */
-    private function formatPropertyRequestReminderForResponse(object $row, string $requestId): array
-    {
-        $now = Carbon::now();
-        $base = $this->formatPropertyRequestReminder($row, $now);
-        $base['requestId'] = $requestId;
-        $base['customerId'] = $row->customer_id !== null ? (int) $row->customer_id : null;
-        $base['updatedAt'] = Carbon::parse($row->updated_at)->toIso8601String();
-        return $base;
     }
 }

@@ -19,11 +19,14 @@ use App\Models\User\RealestateManagement\ApiUserCategory;
 use App\Models\User\UserCity;
 use App\Models\ApiCustomer;
 use App\Models\Api\ApiCustomerInquiry;
+use App\Models\User;
 use App\Models\WhatsappUser;
+use App\Domain\Communication\Contracts\CommunicationService;
 use Illuminate\Support\Str;
 
 
 use OpenAI as OpenAIClient;
+use App\Http\Requests\Api\Apps\Whatsapp\ChatRequest;
 
 
 class ChatController extends Controller
@@ -35,8 +38,11 @@ class ChatController extends Controller
     protected string $evolutionApiKey;
     protected string $evolutionApiInstance;
 
-    public function __construct()
+    protected CommunicationService $communicationService;
+
+    public function __construct(CommunicationService $communicationService)
     {
+        $this->communicationService = $communicationService;
         $this->openai = OpenAIClient::client(env('OPENAI_API_KEY'));
         $this->systemInstructions = implode("\n", [
             'أنت موظف دعم عملاء في شركة إدارة عقارات في السعودية.',
@@ -62,11 +68,17 @@ class ChatController extends Controller
         $endpoint = $this->evolutionApiUrl . '/message/sendText/' . $this->evolutionApiInstance;
 
         try {
-            $response = Http::withHeaders([
+            $http = Http::withHeaders([
                 'apikey' => $this->evolutionApiKey,
                 'Content-Type' => 'application/json',
-            ])->post($endpoint, [
-                'number' => $recipientNumber, // Ensure this is the full WhatsApp number (e.g., country code + number)
+            ]);
+
+            if (env('EVOLUTION_API_VERIFY_SSL', true) === false) {
+                $http = $http->withoutVerifying();
+            }
+
+            $response = $http->post($endpoint, [
+                'number' => $recipientNumber,
                 'options' => [
                     'delay' => 600,
                     'presence' => 'composing',
@@ -90,10 +102,10 @@ class ChatController extends Controller
 // ... (inside ChatController class)
 
 public function handleEvolutionWebhook(Request $request)
-{
-    
+    {
+        Log::info('Evolution webhook: handler hit', ['has_data' => $request->has('data')]);
+
     $payload = $request->all();
-   
  //Log::info('Evolution API Webhook received: ' . json_encode($payload));
     // ---- VALIDATE THE WEBHOOK (IMPORTANT FOR SECURITY) ----
     // Evolution API might have a way to verify webhooks (e.g., a secret token in headers).
@@ -129,19 +141,54 @@ public function handleEvolutionWebhook(Request $request)
         // Clean sender number if it has @s.whatsapp.net
         $senderNumber = str_replace('@s.whatsapp.net', '', $senderNumber);
 
-        // You need to map the $senderNumber to a $userId in your system
-        // This is a placeholder; implement your own user lookup logic
-        // Prepare a request object or parameters to call your existing chat logic
-        $internalRequest = new Request([
-            'message' => $messageContent,
-            'user_id' => 922, // Pass the identified or created user ID
-            'whatsapp_number' => $senderNumber // Pass the sender's WhatsApp number for the reply
+        $tenantOwnerId = null;
+        $evolutionNumber = config('communication.evolution_instance_number');
+        if ($evolutionNumber) {
+            $whatsappUser = WhatsappUser::where('number', $evolutionNumber)->first();
+            if (! $whatsappUser) {
+                $normalizedConfig = preg_replace('/\D/', '', (string) $evolutionNumber);
+                if ($normalizedConfig !== '') {
+                    $whatsappUser = WhatsappUser::whereNotNull('number')->get()->first(function ($wu) use ($normalizedConfig) {
+                        return preg_replace('/\D/', '', (string) $wu->number) === $normalizedConfig;
+                    });
+                }
+            }
+            if ($whatsappUser) {
+                $owner = User::find($whatsappUser->user_id);
+                $tenantOwnerId = $owner && method_exists($owner, 'tenantOwnerId') ? $owner->tenantOwnerId() : null;
+            }
+        }
+
+        Log::info('Evolution webhook: received', [
+            'evolution_instance_number_config' => $evolutionNumber ?: '(empty)',
+            'tenant_owner_id' => $tenantOwnerId,
+            'provider_message_id' => $data['key']['id'] ?? null,
+            'sender' => $senderNumber,
         ]);
 
-        // Call your chat processing logic
-        // Make sure the 'chat' method can handle being called this way
-        // and that it knows to use $recipientWhatsappNumber for the reply
-        $this->chat($internalRequest);
+        if ($tenantOwnerId !== null) {
+            $providerMessageId = $data['key']['id'] ?? null;
+            Log::info('Evolution webhook: processing inbound message', [
+                'tenant_owner_id' => $tenantOwnerId,
+                'provider_message_id' => $providerMessageId,
+                'sender' => $senderNumber,
+                'content_length' => strlen($messageContent),
+            ]);
+            try {
+                $this->communicationService->recordInboundMessage(
+                    userId: (int) $tenantOwnerId,
+                    externalPartyIdentifier: $senderNumber,
+                    content: $messageContent,
+                    channel: 'whatsapp',
+                    providerMessageId: $providerMessageId,
+                    meta: ['source' => 'evolution_webhook', 'context' => ['instance' => $this->evolutionApiInstance ?? '']]
+                );
+            } catch (\Throwable $e) {
+                Log::warning('Evolution webhook: recordInboundMessage failed', ['message' => $e->getMessage()]);
+            }
+
+            $this->runChatFromPayload($messageContent, (int) $tenantOwnerId, $senderNumber);
+        }
 
         return response()->json(['status' => 'received_and_processing']);
     } else {
@@ -155,7 +202,7 @@ public function handleWhatsappWebhook(Request $request)
     try {
         $payload = $request->all();
 
-     
+
         if (isset($payload['whatsapp_number']) && isset($payload['message']) && isset($payload['inquiry_type'])) {
             // Normalize data
             $whatsappNumber = $payload['whatsapp_number'];
@@ -165,7 +212,7 @@ public function handleWhatsappWebhook(Request $request)
             $sourceChannel = $payload['source_channel'] ?? 'whatsapp';
             $extra = $payload['extra'] ?? null;
             $lang = $payload['lang'] ?? 'ar';
-            
+
             // Extract detected entities
             $detectedEntities = $payload['detected_entities'] ?? [];
             $budget = $detectedEntities['budget'] ?? null;
@@ -177,7 +224,7 @@ public function handleWhatsappWebhook(Request $request)
             $maxAreaSqm = $detectedEntities['max_area_sqm'] ?? null;
             $furnished = $detectedEntities['furnished'] ?? null;
             $urgency = $detectedEntities['urgency'] ?? null;
-            
+
             // Extract normalized location data
             $locationNormalized = $detectedEntities['location_normalized'] ?? [];
             $countryCode = $locationNormalized['country_code'] ?? null;
@@ -203,6 +250,23 @@ public function handleWhatsappWebhook(Request $request)
 			$customer = $this->findCustomerByPhoneVariants($phoneVariants, $ownerUserId);
 			$userId = $ownerUserId ?? ($customer ? $customer->user_id : null);
 
+			$ownerUser = $userId !== null ? User::find($userId) : null;
+			$tenantOwnerId = $ownerUser && method_exists($ownerUser, 'tenantOwnerId') ? $ownerUser->tenantOwnerId() : null;
+			if ($tenantOwnerId !== null) {
+				try {
+					$this->communicationService->recordInboundMessage(
+						userId: (int) $tenantOwnerId,
+						externalPartyIdentifier: $whatsappNumber,
+						content: $message,
+						channel: 'whatsapp',
+						providerMessageId: $payload['message_id'] ?? null,
+						meta: ['source' => 'whatsapp_webhook']
+					);
+				} catch (\Throwable $e) {
+					Log::warning('WhatsApp webhook: recordInboundMessage failed', ['message' => $e->getMessage()]);
+				}
+			}
+
             // Prepare data for saving
             $inquiryData = [
                 'user_id'        => $userId,
@@ -213,7 +277,7 @@ public function handleWhatsappWebhook(Request $request)
                 'property_type'  => $propertyType,
                 'budget'         => $budget,
                 'location'       => $location,
-                
+
                 // New monetary/preference fields
                 'currency'       => $currency,
                 'bedrooms'       => $bedrooms,
@@ -222,7 +286,7 @@ public function handleWhatsappWebhook(Request $request)
                 'max_area_sqm'   => $maxAreaSqm,
                 'furnished'      => $furnished,
                 'urgency'        => $urgency,
-                
+
                 // Normalized location fields
                 'country_code'   => $countryCode,
                 'region_code'    => $regionCode,
@@ -232,7 +296,7 @@ public function handleWhatsappWebhook(Request $request)
                 'latitude'       => $latitude,
                 'longitude'      => $longitude,
                 'location_confidence' => $locationConfidence,
-                
+
                 // Meta fields
                 'source_channel' => $sourceChannel,
                 'lang'           => $lang,
@@ -261,7 +325,7 @@ public function handleWhatsappWebhook(Request $request)
             ], 201);
         }
 
-    
+
         $entry = $payload['entry'][0]['changes'][0]['value'] ?? null;
         if (!$entry) {
             return response()->json(['status' => 'ignored', 'message' => 'Invalid payload structure'], 400);
@@ -285,6 +349,33 @@ public function handleWhatsappWebhook(Request $request)
         }
 
         $userId = $whatsappUser->user_id;
+
+        $metaMessage = $entry['messages'][0] ?? null;
+        $messageText = null;
+        $providerMessageId = null;
+        if ($metaMessage) {
+            $messageText = $metaMessage['text']['body'] ?? $metaMessage['text'] ?? null;
+            if (is_array($messageText)) {
+                $messageText = $metaMessage['text']['body'] ?? '';
+            }
+            $providerMessageId = $metaMessage['id'] ?? null;
+        }
+        $tenantOwner = User::find($userId);
+        $metaTenantOwnerId = $tenantOwner && method_exists($tenantOwner, 'tenantOwnerId') ? $tenantOwner->tenantOwnerId() : null;
+        if ($metaTenantOwnerId !== null && $messageText !== null && $messageText !== '') {
+            try {
+                $this->communicationService->recordInboundMessage(
+                    userId: (int) $metaTenantOwnerId,
+                    externalPartyIdentifier: $fromNumber,
+                    content: (string) $messageText,
+                    channel: 'whatsapp',
+                    providerMessageId: $providerMessageId,
+                    meta: ['source' => 'meta_webhook', 'display_phone' => $displayPhone]
+                );
+            } catch (\Throwable $e) {
+                Log::warning('WhatsApp webhook (Meta): recordInboundMessage failed', ['message' => $e->getMessage()]);
+            }
+        }
 
         // Check if customer already exists
         $existing = ApiCustomer::where('user_id', $userId)
@@ -327,12 +418,20 @@ public function handleWhatsappWebhook(Request $request)
 
 
 
-    public function chat(Request $request)
+    public function chat(ChatRequest $request)
     {
-        $userMessage = $request->input('message');
-        $userId = $request->input('user_id'); // Or derive from recipientWhatsappNumber if this is from a webhook
-        $recipientWhatsappNumber = $request->input('whatsapp_number'); // This needs to be provided
+        $validated = $request->validated();
+        $reply = $this->runChatFromPayload(
+            $validated['message'],
+            (int) $validated['user_id'],
+            $validated['whatsapp_number']
+        );
+        return response()->json(['reply' => $reply ?? '']);
+    }
 
+    private function runChatFromPayload(string $message, int $userId, string $recipientWhatsappNumber): ?string
+    {
+        $userMessage = $message;
 
         // Load or init chat history
         $record = ChatHistory::firstOrCreate(
@@ -372,7 +471,7 @@ public function handleWhatsappWebhook(Request $request)
                             'purpose' => ['type' => 'string'],
                             'page' => ['type' => 'integer'],
                             'per_page' => ['type' => 'integer'],
-                            
+
                         ],
                         'required' => ['location'],
                     ],
@@ -390,54 +489,57 @@ public function handleWhatsappWebhook(Request $request)
             ],
         ];
 
-        // Call API
-        $response = $this->openai->chat()->create([
-            'model' => env('OPENAI_CHAT_MODEL', 'gpt-4.1-nano'),
-            'messages' => $messages,
-            'functions' => $functions,
-            'function_call' => 'auto',
-        ]);
-        log::info(json_encode($response));
-        $choice = $response['choices'][0]['message'];
         $reply = '';
 
-        // Handle function call
-        if (isset($choice['function_call'])) {
-            $funcName = $choice['function_call']['name'];
-            $args = json_decode($choice['function_call']['arguments'], true);
+        try {
+            $model = env('OPENAI_CHAT_MODEL', 'gpt-4o-mini');
+            Log::info('OpenAI chat request', ['model' => $model, 'message_count' => count($messages)]);
 
-            if ($funcName === 'search_properties') {
-                $funcResponse = $this->handleSearchProperties($args);
-            } else {
-                $funcResponse = $this->handleFaq($args);
-            }
-
-            // Inject function response
-            $messages[] = [
-                'role' => 'assistant',
-                'name' => $funcName,
-                'content' => json_encode($funcResponse),
-            ];
-
-            // Final LLM call to generate natural reply
-            $final = $this->openai->chat()->create([
-                'model' => env('OPENAI_CHAT_MODEL', 'gpt-4.1-nano'),
+            $data = $this->callOpenAI([
+                'model' => $model,
                 'messages' => $messages,
+                'functions' => $functions,
+                'function_call' => 'auto',
             ]);
 
-            $reply = $final['choices'][0]['message']['content'];
-            log::info('reply'.$reply);
-            $history[] = ['role' => 'assistant', 'name' => $funcName, 'content' => json_encode($funcResponse)];
-        } else {
-            // Direct reply
-            $reply = $choice['content'] ?? '';
+            $choice = $data['choices'][0]['message'];
+
+            if (isset($choice['function_call'])) {
+                $funcName = $choice['function_call']['name'];
+                $args = json_decode($choice['function_call']['arguments'], true);
+
+                $funcResponse = $funcName === 'search_properties'
+                    ? $this->handleSearchProperties($args)
+                    : $this->handleFaq($args);
+
+                $messages[] = [
+                    'role' => 'assistant',
+                    'name' => $funcName,
+                    'content' => json_encode($funcResponse),
+                ];
+
+                $final = $this->callOpenAI([
+                    'model' => $model,
+                    'messages' => $messages,
+                ]);
+
+                $reply = $final['choices'][0]['message']['content'];
+                $history[] = ['role' => 'assistant', 'name' => $funcName, 'content' => json_encode($funcResponse)];
+            } else {
+                $reply = $choice['content'] ?? '';
+            }
+        } catch (\Throwable $e) {
+            Log::error('OpenAI chat error in runChatFromPayload', [
+                'message' => $e->getMessage(),
+            ]);
+            $reply = 'عذراً، حدث خطأ في الخدمة. يرجى المحاولة لاحقاً.';
         }
 
         $history[] = ['role' => 'assistant', 'content' => $reply];
 
         // Summarize if needed
         if (count($history) > $this->maxTurns) {
-            log::info($history);
+            Log::info('Chat history before summarize', ['history' => $history]);
             $summary = $this->summarizeHistory($history);
             $history = [['role' => 'system_summary', 'content' => $summary]];
         }
@@ -450,7 +552,7 @@ public function handleWhatsappWebhook(Request $request)
             $this->sendWhatsappMessage($recipientWhatsappNumber, $reply);
         }
 
-        return response()->json(['reply' => $reply]);
+        return $reply ?? '';
     }
 
     protected function handleSearchProperties(array $args): array
@@ -469,7 +571,7 @@ public function handleWhatsappWebhook(Request $request)
             if (!empty($args['location'])) {
                 $location = $this->normalizeArabic($args['location']);
                 $tokens = explode(' ', preg_replace('/\s+/', ' ', trim($location)));
-            
+
                 $query->whereHas('contents', function ($q) use ($location, $tokens) {
                     $q->where(function ($qq) use ($location, $tokens) {
                         $qq->where('city_id', $this->mapCity($location))
@@ -483,20 +585,20 @@ public function handleWhatsappWebhook(Request $request)
                     });
                 });
             }
-            
+
             if (!empty($args['min_bedrooms'])) {
                 $query->where('beds', '>=', $args['min_bedrooms']);
             }
-            
+
             if (!empty($args['max_price'])) {
                 $query->where('price', '<=', $args['max_price']);
             }
-            
-            
+
+
             if (!empty($args['purpose'])) {
                 $query->where('purpose', $args['purpose']);
             }
-            
+
                 if (!empty($args['type'])) {
                     log::info($args['type']);
                     log::info($this->mapCategory($args['type']));
@@ -504,13 +606,13 @@ public function handleWhatsappWebhook(Request $request)
                         $q->where('category_id', $this->mapCategory($args['type']));
                     });
                 }
-            
+
             // Pagination
             $perPage = $args['page_size'] ?? 10;
             $page = $args['page'] ?? 1;
-            
+
             $paginated = $query->paginate($perPage, ['*'], 'page', $page);
-            
+
             // Format results
             $formatted = $paginated->getCollection()->map(fn($p) => [
                 'id'               => $p->id,
@@ -637,22 +739,52 @@ private function mapCategory(string $name): int
         return ['answer' => $answer];
     }
 
+    private function callOpenAI(array $payload): array
+    {
+        $apiKey = env('OPENAI_API_KEY');
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $apiKey,
+            'Content-Type'  => 'application/json',
+        ])->timeout(30)->post('https://api.openai.com/v1/chat/completions', $payload);
+
+        $body = $response->body();
+
+        if (!$response->successful()) {
+            Log::error('OpenAI HTTP error', ['status' => $response->status(), 'body' => $body]);
+            throw new \RuntimeException('OpenAI API error ' . $response->status() . ': ' . $body);
+        }
+
+        $data = $response->json();
+
+        if (!is_array($data) || !isset($data['choices'])) {
+            Log::error('OpenAI unexpected response', ['body' => $body]);
+            throw new \RuntimeException('OpenAI unexpected response: ' . $body);
+        }
+
+        return $data;
+    }
+
     private function summarizeHistory(array $history): string
     {
         $text = Collection::make($history)
             ->map(fn($m) => ucfirst($m['role']) . ": " . $m['content'])
             ->join("\n");
 
-        $resp = $this->openai->chat()->create([
-            'model' => env('OPENAI_CHAT_MODEL','gpt-4.1-nano'),
-            'messages' => [
-                ['role' => 'system', 'content' => 'سّو ملخص بسيط للمحادثة بالتركيز على معايير المستخدم.'],
-                ['role' => 'user',   'content' => $text],
-            ],
-            'max_tokens' => 200,
-        ]);
+        try {
+            $data = $this->callOpenAI([
+                'model' => env('OPENAI_CHAT_MODEL', 'gpt-4o-mini'),
+                'messages' => [
+                    ['role' => 'system', 'content' => 'سّو ملخص بسيط للمحادثة بالتركيز على معايير المستخدم.'],
+                    ['role' => 'user',   'content' => $text],
+                ],
+                'max_tokens' => 200,
+            ]);
 
-        return $resp['choices'][0]['message']['content'];
+            return $data['choices'][0]['message']['content'];
+        } catch (\Throwable $e) {
+            Log::error('OpenAI summarize error', ['message' => $e->getMessage()]);
+            return 'ملخص المحادثة غير متاح حالياً.';
+        }
     }
 
 

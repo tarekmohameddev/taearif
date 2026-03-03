@@ -8,6 +8,8 @@ use App\Models\Api\Rms\RmContract;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\Api\StoreContractRequest;
+use App\Http\Requests\Api\UpdateContractRequest;
 
 class ApiContractController extends Controller
 {
@@ -131,42 +133,21 @@ class ApiContractController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreContractRequest $request): JsonResponse
     {
         try {
+            $validated = $request->validated();
             $type = $request->get('type', 'regular');
 
             if ($type === 'rms') {
-                $validated = $request->validate([
-                    'rental_id' => 'required|exists:rm_rentals,id',
-                    'start_date' => 'required|date',
-                    'end_date' => 'required|date|after:start_date',
-                    'status' => 'required|in:pending,active',
-                    'file_path' => 'nullable|string|max:255',
-                    'property_id' => 'nullable|integer|min:1',
-                    'project_id' => 'nullable|integer|min:1',
-                    'property_name' => 'nullable|string|max:150',
-                    'project_name' => 'nullable|string|max:150',
-                    'grace_period_months' => 'nullable|integer|min:0|max:2',
-                ]);
-
+                unset($validated['type']);
                 $contract = RmContract::create(array_merge($validated, [
                     'user_id' => Auth::id(),
                     'created_by' => Auth::id(),
                 ]));
 
             } else {
-                $validated = $request->validate([
-                    'customer_id' => 'required|exists:customers,id',
-                    'subject' => 'required|string|max:255',
-                    'contract_value' => 'required|numeric|min:0',
-                    'contract_type' => 'required|string|in:Standard,Contracts under Seal,Lease Agreement,Other',
-                    'start_date' => 'required|date',
-                    'end_date' => 'nullable|date|after_or_equal:start_date',
-                    'description' => 'nullable|string',
-                    'contract_status' => 'required|in:draft,signed,expired',
-                ]);
-
+                unset($validated['type']);
                 $contract = Contract::create($validated);
             }
 
@@ -191,44 +172,22 @@ class ApiContractController extends Controller
      * @param int $id
      * @return JsonResponse
      */
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateContractRequest $request, int $id): JsonResponse
     {
         try {
+            $validated = $request->validated();
             $type = $request->get('type', 'regular');
 
             if ($type === 'rms') {
                 $contract = RmContract::where('user_id', Auth::id())->findOrFail($id);
-
-                $validated = $request->validate([
-                    'start_date' => 'sometimes|date',
-                    'end_date' => 'sometimes|date|after:start_date',
-                    'status' => 'sometimes|in:pending,active,expired,terminated',
-                    'file_path' => 'sometimes|string|max:255',
-                    'property_id' => 'sometimes|nullable|integer|min:1',
-                    'project_id' => 'sometimes|nullable|integer|min:1',
-                    'property_name' => 'sometimes|nullable|string|max:150',
-                    'project_name' => 'sometimes|nullable|string|max:150',
-                    'grace_period_months' => 'sometimes|nullable|integer|min:0|max:2',
-                ]);
-
+                unset($validated['type']);
                 $contract->update(array_merge($validated, [
                     'updated_by' => Auth::id(),
                 ]));
 
             } else {
                 $contract = Contract::findOrFail($id);
-
-                $validated = $request->validate([
-                    'customer_id' => 'sometimes|exists:customers,id',
-                    'subject' => 'sometimes|string|max:255',
-                    'contract_value' => 'sometimes|numeric|min:0',
-                    'contract_type' => 'sometimes|string|in:Standard,Contracts under Seal,Lease Agreement,Other',
-                    'start_date' => 'sometimes|date',
-                    'end_date' => 'sometimes|date|after_or_equal:start_date',
-                    'description' => 'sometimes|string',
-                    'contract_status' => 'sometimes|in:draft,signed,expired',
-                ]);
-
+                unset($validated['type']);
                 $contract->update($validated);
             }
 

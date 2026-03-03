@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Affiliate;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Affiliate\AffiliateRegisterRequest;
 use Illuminate\Http\Request;
 use App\Models\Api\ApiAffiliateUser;
 use Illuminate\Support\Facades\Auth;
@@ -10,15 +11,9 @@ use Carbon\Carbon;
 
 class AffiliateController extends Controller
 {
-    public function register(Request $request)
+    public function register(AffiliateRegisterRequest $request)
     {
-        $request->validate([
-            'fullname'             => 'required|string|max:255',
-            'bank_name'            => 'required|string|max:255',
-            'bank_account_number'  => 'required|string|max:30',
-            'iban'                 => 'required|string|max:34',
-        ]);
-
+        $validated = $request->validated();
         $user = $request->user();
 
         if ($user->affiliateUser) {
@@ -33,10 +28,10 @@ class AffiliateController extends Controller
 
         $affiliate = ApiAffiliateUser::create([
             'user_id'           => $user->id,
-            'fullname'          => $request->fullname,
-            'bank_name'         => $request->bank_name,
-            'bank_account_number' => $request->bank_account_number,
-            'iban'              => $request->iban,
+            'fullname'          => $validated['fullname'],
+            'bank_name'         => $validated['bank_name'],
+            'bank_account_number' => $validated['bank_account_number'],
+            'iban'              => $validated['iban'],
             'start_date_value' => Carbon::now(),
             'to_date_value'    => Carbon::now()->addYear(),
             'request_status'    => 'pending',

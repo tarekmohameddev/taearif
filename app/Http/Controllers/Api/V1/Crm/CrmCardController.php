@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\Api\V1\Crm;
 
+use App\Http\Requests\Api\Crm\StoreCrmCardRequest;
+use App\Http\Requests\Api\Crm\UpdateCrmCardRequest;
 use App\Models\Api\Crm\CrmCard;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use App\Http\Controllers\Api\ApiController;
 
 class CrmCardController extends ApiController
@@ -37,22 +38,10 @@ class CrmCardController extends ApiController
     /**
      * POST /api/v1/crm/cards
      */
-    public function store(Request $request)
+    public function store(StoreCrmCardRequest $request)
     {
-        $user = $request->user();
-        $tenantId = $request->user()->tenantOwnerId();
-
-        $validated = $request->validate([
-            'card_request_id' => [
-                'required','integer',
-                Rule::exists('crm_requests', 'id')->where(fn($q) => $q->where('user_id', $tenantId)),
-            ],
-            'card_content'     => ['nullable','string'],
-            'card_procedure'   => ['required', Rule::in(['reminder','note','interaction','appointment'])],
-            'card_project'     => ['nullable','integer'],
-            'card_property'    => ['nullable','integer'],
-            'card_date'        => ['nullable','date'],
-        ]);
+        $tenantId = auth()->user()->tenantOwnerId();
+        $validated = $request->validated();
 
         $card = new CrmCard($validated);
         $card->user_id = $tenantId;
@@ -88,24 +77,12 @@ class CrmCardController extends ApiController
     /**
      * PUT/PATCH /api/v1/crm/cards/{id}
      */
-    public function update(Request $request, int $id)
+    public function update(UpdateCrmCardRequest $request, int $id)
     {
         try {
-            $user = $request->user();
-            $tenantId = $request->user()->tenantOwnerId();
+            $tenantId = auth()->user()->tenantOwnerId();
             $card = CrmCard::forUser($tenantId)->findOrFail($id);
-
-            $validated = $request->validate([
-                'card_request_id' => [
-                    'sometimes', 'required', 'integer',
-                    Rule::exists('crm_requests', 'id')->where(fn($q) => $q->where('user_id', $tenantId)),
-                ],
-                'card_content'      => ['nullable', 'string'],
-                'card_procedure'    => ['sometimes', 'required', Rule::in(['reminder','note','interaction','appointment'])],
-                'card_project'      => ['nullable', 'integer'],
-                'card_property'     => ['nullable', 'integer'],
-                'card_date'         => ['nullable', 'date'],
-            ]);
+            $validated = $request->validated();
 
             $card->fill($validated)->save();
 

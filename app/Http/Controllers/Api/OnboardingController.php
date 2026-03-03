@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Onboarding\StoreOnboardingRequest;
 use Illuminate\Http\Request;
 
 use App\Models\User;
@@ -17,7 +18,6 @@ use App\Models\User\HomeSection;
 use App\Models\User\BasicSetting;
 use App\Models\User\HomePageText;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
 use App\Models\User\RealestateManagement\Amenity;
 use App\Models\User\CounterInformation;
 use App\Models\Api\GeneralSetting;
@@ -44,31 +44,10 @@ class OnboardingController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StoreOnboardingRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
-            'category' => 'required|string',
-            'colors' => 'required|array',
-            'colors.primary' => 'required|string|max:7',
-            'colors.secondary' => 'required|string|max:7',
-            'colors.accent' => 'required|string|max:7',
-            'logo' => 'nullable|string',
-            'favicon' => 'nullable|string',
-            'valLicense' => 'nullable|string',
-            'workingHours' => 'nullable|string',
-            'allow_update' => 'nullable|boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
         try {
+            $validated = $request->validated();
             $user = $request->user();
             
             // Employees should not have onboarding
@@ -82,21 +61,21 @@ class OnboardingController extends Controller
             $lang = Language::where([['user_id', $user->id], ['is_default', 1]])->first();
             $wasCompleted = (bool) $user->onboarding_completed;
             // Optional flag (accepted for backward compatibility; not required)
-            $allowUpdate = $request->boolean('allow_update');
+            $allowUpdate = (bool) ($validated['allow_update'] ?? false);
 
             /** @var \App\Models\User\BasicSetting|null $bss */
             $bss = null;
 
-            DB::transaction(function () use ($request, $user, $lang, &$bss) {
+            DB::transaction(function () use ($validated, $request, $user, $lang, &$bss) {
                 $bss = BasicSetting::firstOrNew(['user_id' => $user->id]);
 
-                $bss->base_color = $request->colors['primary'];
-                $bss->secondary_color = $request->colors['secondary'];
-                $bss->accent_color = $request->colors['accent'];
-                $bss->logo = $request->logo;
-                $bss->favicon = $request->favicon;
-                $bss->company_name = $request->title;
-                $bss->industry_type = $request->category;
+                $bss->base_color = $validated['colors']['primary'];
+                $bss->secondary_color = $validated['colors']['secondary'];
+                $bss->accent_color = $validated['colors']['accent'];
+                $bss->logo = $validated['logo'] ?? null;
+                $bss->favicon = $validated['favicon'] ?? null;
+                $bss->company_name = $validated['title'];
+                $bss->industry_type = $validated['category'];
                 // $bss->valLicense = $request->valLicense;
                 // $bss->workingHours = $request->workingHours;
 
@@ -105,8 +84,8 @@ class OnboardingController extends Controller
                     'lawyer' => 'home_seven',
                     'personal' => 'home_two'
                 ];
-                if (array_key_exists($request->category, $templateMapping)) {
-                    $bss->theme = $templateMapping[$request->category];
+                if (array_key_exists($validated['category'], $templateMapping)) {
+                    $bss->theme = $templateMapping[$validated['category']];
                 }
 
                 $bss->save();
@@ -116,12 +95,12 @@ class OnboardingController extends Controller
                 ['user_id' => $user->id],
                 [
                     'general' => [
-                        'companyName' => $request->title,
-                        'address' => $request->address,
+                        'companyName' => $validated['title'],
+                        'address' => $validated['address'] ?? null,
                         'phone' => $user->phone,
                         'email' => $user->email,
-                        'workingHours' => $request->workingHours,
-                        'valLicense' => $request->valLicense,
+                        'workingHours' => $validated['workingHours'] ?? null,
+                        'valLicense' => $validated['valLicense'] ?? null,
                         'showContactInfo' => true,
                         'showWorkingHours' => true,
                         'copyrightText' => '© ' . date('Y') . ' جميع الحقوق محفوظة',
@@ -156,7 +135,7 @@ class OnboardingController extends Controller
                         'layout' => 'full-width',
                         'backgroundColor' => '#1f2937',
                         'textColor' => '#ffffff',
-                        'accentColor' => $request->colors['accent'],
+                        'accentColor' => $validated['colors']['accent'],
                         'columns' => 4,
                         'showSocialIcons' => true,
                         'socialIconsPosition' => 'top',
@@ -166,7 +145,7 @@ class OnboardingController extends Controller
             );
             //
 
-            if ($request->category == 'realestate') {
+            if (($validated['category'] ?? null) == 'realestate') {
                 $this->updateUserMenu($user->id, $lang->id);
                 // $this->updateUserBasicSettings($user->id, $user->username);
                 // $this->updateUserHomePageText($user->id, $lang->id);
@@ -179,13 +158,13 @@ class OnboardingController extends Controller
             GeneralSetting::updateOrCreate(
                 ['user_id' => $user->id],
                 [
-                    'site_name' => $request->title,
-                    'favicon'   => $request->favicon,
-                    'logo'      => $request->logo,
+                    'site_name' => $validated['title'],
+                    'favicon'   => $validated['favicon'] ?? null,
+                    'logo'      => $validated['logo'] ?? null,
                 ]
             );
 
-            $this->updateUserFooterText($user->id, $lang->id, basename($request->logo));
+            $this->updateUserFooterText($user->id, $lang->id, basename($validated['logo'] ?? ''));
 
             // Always mark onboarding as completed after successful submission
             $user->onboarding_completed = true;
@@ -211,8 +190,8 @@ class OnboardingController extends Controller
                 'data' => [
                     'user_id' => $user->id,
                     'theme' => $bss ? $bss->theme : null,
-                    'company_name' => $request->title,
-                    'category' => $request->category,
+                    'company_name' => $validated['title'],
+                    'category' => $validated['category'],
                     'onboarding_completed' => $user->onboarding_completed,
                     'was_completed' => $wasCompleted,
                     'allow_update' => $allowUpdate,

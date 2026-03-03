@@ -97,8 +97,14 @@ class BaseApiController extends Controller
     protected function errorResponse(
         string $message,
         int $statusCode = 400,
-        ?array $errors = null
+        $errors = null
     ) {
+        if ($errors instanceof \Illuminate\Support\Contracts\MessageProvider) {
+            $errors = $errors->getMessageBag()->toArray();
+        } elseif (is_object($errors) && method_exists($errors, 'toArray')) {
+            $errors = $errors->toArray();
+        }
+
         $response = ErrorResponse::make($message, $statusCode);
 
         if ($errors !== null) {
@@ -111,7 +117,7 @@ class BaseApiController extends Controller
     /**
      * Alias for errorResponse
      */
-    protected function error(string $message, int $statusCode = 400, ?array $errors = null)
+    protected function error(string $message, int $statusCode = 400, $errors = null)
     {
         return $this->errorResponse($message, $statusCode, $errors);
     }
@@ -157,7 +163,7 @@ class BaseApiController extends Controller
      * @param array|null $errors
      * @return \Illuminate\Http\JsonResponse
      */
-    protected function fail(string $message, int $statusCode = 400, ?array $errors = null)
+    protected function fail(string $message, int $statusCode = 400, $errors = null)
     {
         return $this->errorResponse($message, $statusCode, $errors);
     }
@@ -202,7 +208,7 @@ class BaseApiController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
     protected function validationErrorResponse(
-        array $errors,
+        $errors,
         ?string $message = null
     ) {
         return $this->errorResponse(
@@ -291,7 +297,7 @@ class BaseApiController extends Controller
     /**
      * Alias for validationErrorResponse
      */
-    protected function validationError(array $errors, ?string $message = null)
+    protected function validationError($errors, ?string $message = null)
     {
         return $this->validationErrorResponse($errors, $message);
     }

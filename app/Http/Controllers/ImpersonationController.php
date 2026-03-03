@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Api\Impersonation\StartImpersonationRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -21,9 +22,9 @@ class ImpersonationController extends Controller
      *     "token_type": "Bearer"
      * }
      */
-    public function start(Request $request, User $user)
+    public function start(StartImpersonationRequest $request, User $user)
     {
-        $admin = $request->user();
+        $admin = auth()->user();
 
         $plainTextToken = $user
             ->createToken('impersonated-by-'.$admin->id, ['*'])

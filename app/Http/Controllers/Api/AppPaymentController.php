@@ -12,7 +12,8 @@ use App\Enums\InstallStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\Api\VerifyPaymentRequest;
+use App\Http\Requests\Api\ArbCallbackRequest;
 
 class AppPaymentController extends Controller
 {
@@ -31,11 +32,11 @@ class AppPaymentController extends Controller
      * Handle payment callback from ARB gateway (API endpoint)
      * Returns JSON instead of redirects for API clients
      *
-     * @param Request $request
+     * @param ArbCallbackRequest $request
      * @param string $gateway
      * @return \Illuminate\Http\JsonResponse
      */
-    public function handleCallback(Request $request, string $gateway)
+    public function handleCallback(ArbCallbackRequest $request, string $gateway)
     {
         // Detect if this is an API request
         $isApiRequest = $this->isApiRequest($request);
@@ -390,26 +391,9 @@ class AppPaymentController extends Controller
         ], 200);
     }
 
-    /**
-     * Manually verify a payment
-     *
-     * @param Request $request
-     * @param int $appId
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function verifyPayment(Request $request, int $appId)
+    public function verifyPayment(VerifyPaymentRequest $request, int $appId)
     {
-        $validator = Validator::make($request->all(), [
-            'payment_transaction_id' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
+        $validated = $request->validated();
 
         $user = $request->user();
         $paymentId = $request->input('payment_transaction_id');

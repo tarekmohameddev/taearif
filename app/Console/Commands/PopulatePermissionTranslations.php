@@ -102,6 +102,18 @@ class PopulatePermissionTranslations extends Command
         'buildings.update' => ['ar' => 'تحديث المباني', 'en' => 'Update Buildings'],
         'buildings.delete' => ['ar' => 'حذف المباني', 'en' => 'Delete Buildings'],
 
+        // Property requests
+        'property_requests.view' => ['ar' => 'عرض طلبات العملاء', 'en' => 'View Property Requests'],
+        'property_requests.create' => ['ar' => 'إنشاء طلب عميل', 'en' => 'Create Property Request'],
+        'property_requests.update' => ['ar' => 'تحديث طلبات العملاء', 'en' => 'Update Property Requests'],
+        'property_requests.delete' => ['ar' => 'حذف طلبات العملاء', 'en' => 'Delete Property Requests'],
+
+        // Job applications
+        'job_applications.view' => ['ar' => 'عرض طلبات الوظائف', 'en' => 'View Job Applications'],
+        'job_applications.create' => ['ar' => 'إنشاء طلب وظيفة', 'en' => 'Create Job Application'],
+        'job_applications.update' => ['ar' => 'تحديث طلبات الوظائف', 'en' => 'Update Job Applications'],
+        'job_applications.delete' => ['ar' => 'حذف طلبات الوظائف', 'en' => 'Delete Job Applications'],
+
         // Reports
         'reports.view' => ['ar' => 'عرض التقارير', 'en' => 'View Reports'],
         'reports.create' => ['ar' => 'إنشاء تقرير', 'en' => 'Create Report'],

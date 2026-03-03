@@ -3,6 +3,11 @@
 namespace App\Http\Controllers\Api\V1\Matching;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Matching\ArchiveCustomerRequestRequest;
+use App\Http\Requests\Api\V1\Matching\MarkCustomerRequestAsReadRequest;
+use App\Http\Requests\Api\V1\Matching\MarkCustomerRequestAsUnreadRequest;
+use App\Http\Requests\Api\V1\Matching\UnarchiveCustomerRequestRequest;
+use App\Http\Requests\Api\V1\Matching\UpdateCustomerRequestEntryRequest;
 use App\Models\Api\ApiCustomerInquiry;
 use App\Models\Api\UserPropertyRequest;
 use App\Services\Matching\MatchingService;
@@ -262,9 +267,10 @@ class CustomerRequestController extends Controller
     /**
      * PUT /api/v1/matching/requests/{type}/{id}
      */
-    public function update(Request $request, string $type, int $id)
+    public function update(UpdateCustomerRequestEntryRequest $request, string $type, int $id)
     {
-        $userId = $request->user()->id;
+        $userId = auth()->user()->id;
+        $validated = $request->validated();
         $type = $this->normalizeType($type);
         if (!$type) {
             return response()->json(['success' => false, 'message' => 'Invalid type'], 422);
@@ -273,7 +279,7 @@ class CustomerRequestController extends Controller
         if ($type === 'web') {
             $row = UserPropertyRequest::query()->where('user_id', $userId)->findOrFail($id);
 
-            $payload = $request->only([
+            $payload = collect($validated)->only([
                 'purpose',
                 'category_id',
                 'property_type',
@@ -285,14 +291,14 @@ class CustomerRequestController extends Controller
                 'districts_id',
                 'region',
                 'notes',
-            ]);
+            ])->toArray();
 
             $row->fill($payload);
             $row->save();
         } else {
             $row = ApiCustomerInquiry::query()->where('user_id', $userId)->findOrFail($id);
 
-            $payload = $request->only([
+            $payload = collect($validated)->only([
                 'inquiry_type',
                 'property_type',
                 'budget',
@@ -312,11 +318,11 @@ class CustomerRequestController extends Controller
                 'longitude',
                 'message',
                 'lang',
-            ]);
+            ])->toArray();
 
             // Allow clients to send purpose instead of inquiry_type
-            if ($request->filled('purpose')) {
-                $payload['inquiry_type'] = $request->input('purpose');
+            if (array_key_exists('purpose', $validated) && !is_null($validated['purpose'])) {
+                $payload['inquiry_type'] = $validated['purpose'];
             }
 
             $row->fill($payload);
@@ -344,9 +350,9 @@ class CustomerRequestController extends Controller
     }
 
     // PATCH /api/v1/matching/requests/{type}/{id}/read
-    public function markAsRead(Request $request, string $type, int $id)
+    public function markAsRead(MarkCustomerRequestAsReadRequest $request, string $type, int $id)
     {
-        $userId = $request->user()->id;
+        $userId = auth()->user()->id;
         $type = $this->normalizeType($type);
         if (!$type) {
             return response()->json(['success' => false, 'message' => 'Invalid type'], 422);
@@ -365,9 +371,9 @@ class CustomerRequestController extends Controller
     }
 
     // PATCH /api/v1/matching/requests/{type}/{id}/unread
-    public function markAsUnread(Request $request, string $type, int $id)
+    public function markAsUnread(MarkCustomerRequestAsUnreadRequest $request, string $type, int $id)
     {
-        $userId = $request->user()->id;
+        $userId = auth()->user()->id;
         $type = $this->normalizeType($type);
         if (!$type) {
             return response()->json(['success' => false, 'message' => 'Invalid type'], 422);
@@ -386,9 +392,9 @@ class CustomerRequestController extends Controller
     }
 
     // PATCH /api/v1/matching/requests/{type}/{id}/archive
-    public function archive(Request $request, string $type, int $id)
+    public function archive(ArchiveCustomerRequestRequest $request, string $type, int $id)
     {
-        $userId = $request->user()->id;
+        $userId = auth()->user()->id;
         $type = $this->normalizeType($type);
         if (!$type) {
             return response()->json(['success' => false, 'message' => 'Invalid type'], 422);
@@ -407,9 +413,9 @@ class CustomerRequestController extends Controller
     }
 
     // PATCH /api/v1/matching/requests/{type}/{id}/unarchive
-    public function unarchive(Request $request, string $type, int $id)
+    public function unarchive(UnarchiveCustomerRequestRequest $request, string $type, int $id)
     {
-        $userId = $request->user()->id;
+        $userId = auth()->user()->id;
         $type = $this->normalizeType($type);
         if (!$type) {
             return response()->json(['success' => false, 'message' => 'Invalid type'], 422);

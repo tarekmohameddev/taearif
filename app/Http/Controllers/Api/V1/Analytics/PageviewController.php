@@ -3,13 +3,15 @@
 namespace App\Http\Controllers\Api\V1\Analytics;
 
 use App\Http\Controllers\Api\BaseApiController;
+use App\Http\Requests\Api\V1\Analytics\PageviewDashboardRequest;
+use App\Http\Requests\Api\V1\Analytics\PageviewSummaryRequest;
+use App\Http\Requests\Api\V1\Analytics\PageviewTopRequest;
 use App\Http\Requests\Api\V1\Analytics\TrackPageViewRequest;
 use App\Http\Resources\Api\V1\Analytics\DashboardResource;
 use App\Http\Resources\Api\V1\Analytics\PageviewResource;
 use App\Http\Resources\Api\V1\Analytics\TopPageResource;
 use App\Services\Analytics\PageviewService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class PageviewController extends BaseApiController
 {
@@ -51,18 +53,12 @@ class PageviewController extends BaseApiController
      * Get dashboard analytics summary
      * GET /api/v1/analytics/dashboard
      */
-    public function dashboard(Request $request)
+    public function dashboard(PageviewDashboardRequest $request)
     {
         try {
             $tenantId = $this->resolveTenantId($request);
-            $days = (int) $request->input('days', 30);
-
-            // Validate days parameter
-            if (!in_array($days, [7, 30, 90])) {
-                return $this->validationError([
-                    'days' => ['The days parameter must be 7, 30, or 90.'],
-                ]);
-            }
+            $validated = $request->validated();
+            $days = (int) ($validated['days'] ?? 30);
 
             $summary = $this->pageviewService->getDashboardSummary($tenantId, $days);
 
@@ -84,22 +80,13 @@ class PageviewController extends BaseApiController
      * Get top pages
      * GET /api/v1/analytics/top-pages
      */
-    public function topPages(Request $request)
+    public function topPages(PageviewTopRequest $request)
     {
         try {
             $tenantId = $this->resolveTenantId($request);
-            $days = (int) $request->input('days', 30);
-            $limit = (int) $request->input('limit', 10);
-
-            // Validate parameters
-            $validator = Validator::make($request->all(), [
-                'days' => 'nullable|integer|min:1|max:365',
-                'limit' => 'nullable|integer|min:1|max:100',
-            ]);
-
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors()->toArray());
-            }
+            $validated = $request->validated();
+            $days = (int) ($validated['days'] ?? 30);
+            $limit = (int) ($validated['limit'] ?? 10);
 
             $topPages = $this->pageviewService->getTopPages($tenantId, $days, $limit);
 
@@ -121,22 +108,13 @@ class PageviewController extends BaseApiController
      * Get top posts
      * GET /api/v1/analytics/top-posts
      */
-    public function topPosts(Request $request)
+    public function topPosts(PageviewTopRequest $request)
     {
         try {
             $tenantId = $this->resolveTenantId($request);
-            $days = (int) $request->input('days', 30);
-            $limit = (int) $request->input('limit', 10);
-
-            // Validate parameters
-            $validator = Validator::make($request->all(), [
-                'days' => 'nullable|integer|min:1|max:365',
-                'limit' => 'nullable|integer|min:1|max:100',
-            ]);
-
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors()->toArray());
-            }
+            $validated = $request->validated();
+            $days = (int) ($validated['days'] ?? 30);
+            $limit = (int) ($validated['limit'] ?? 10);
 
             $topPosts = $this->pageviewService->getTopPosts($tenantId, $days, $limit);
 
@@ -158,23 +136,13 @@ class PageviewController extends BaseApiController
      * Get views summary by date range
      * GET /api/v1/analytics/views-summary
      */
-    public function summary(Request $request)
+    public function summary(PageviewSummaryRequest $request)
     {
         try {
             $tenantId = $this->resolveTenantId($request);
-
-            // Validate date parameters
-            $validator = Validator::make($request->all(), [
-                'start_date' => 'required|date|date_format:Y-m-d',
-                'end_date' => 'required|date|date_format:Y-m-d|after_or_equal:start_date',
-            ]);
-
-            if ($validator->fails()) {
-                return $this->validationError($validator->errors()->toArray());
-            }
-
-            $startDate = $request->input('start_date');
-            $endDate = $request->input('end_date');
+            $validated = $request->validated();
+            $startDate = $validated['start_date'];
+            $endDate = $validated['end_date'];
 
             $summary = $this->pageviewService->getViewsSummary($tenantId, $startDate, $endDate);
 

@@ -626,6 +626,14 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::put('/employee-addon-plans/{id}', 'Admin\EmployeeAddonPlanController@update')->name('employee-addon-plans.update');
         Route::delete('/employee-addon-plans/{id}', 'Admin\EmployeeAddonPlanController@destroy')->name('employee-addon-plans.destroy');
         Route::post('/employee-addon-plans/{id}/toggle-status', 'Admin\EmployeeAddonPlanController@toggleStatus')->name('employee-addon-plans.toggle-status');
+
+        // Credit Communication Provider Settings
+        Route::prefix('credit-management/providers')->group(function () {
+            Route::get('/', 'Admin\CreditProviderController@index')->name('credit.providers.index');
+            Route::post('/{providerType}', 'Admin\CreditProviderController@update')->name('credit.providers.update');
+            Route::post('/{providerType}/test', 'Admin\CreditProviderController@test')->name('credit.providers.test');
+            Route::post('/{providerType}/toggle', 'Admin\CreditProviderController@toggle')->name('credit.providers.toggle');
+        });
     });
 
     //IstharaController

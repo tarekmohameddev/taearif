@@ -18,6 +18,7 @@
         "barryvdh/laravel-dompdf": "^2.0.0",
         "baselrabia/myfatoorah-with-laravel": "^1.0",
         "cartalyst/stripe-laravel": "14.0.0",
+        "darkaonline/l5-swagger": "^8.6",
         "doctrine/dbal": "^3.6",
         "fruitcake/laravel-cors": "^3.0",
         "google/analytics-data": "^0.21.0",

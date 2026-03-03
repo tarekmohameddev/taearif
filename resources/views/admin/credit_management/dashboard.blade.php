@@ -1,6 +1,6 @@
 @extends('admin.layout')
 
-@section('title', 'Credit Management Dashboard')
+@section('title', __('Credit Management Dashboard'))
 
 @section('content')
 <div class="container-fluid">
@@ -11,10 +11,10 @@
                 <div>
                     <h1 class="h3 mb-1 text-dark fw-bold">
                         <i class="fas fa-coins text-warning me-2"></i>
-                        Credit Management Dashboard
+                        {{ __('Credit Management Dashboard') }}
                     </h1>
                     <p class="text-muted mb-0">
-                        manage credit packages and channel pricing
+                        {{ __('manage credit packages and channel pricing') }}
                     </p>
                 </div>
                 <div>
@@ -27,60 +27,60 @@
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card border-0 h-100 stat-card" style="background: #3498db;">
-                <div class="card-body text-white p-4">
+            <div class="card border-0 h-100 stat-card" style="background: #3498db !important;">
+                <div class="card-body p-4" style="color: #ffffff !important;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px;">Total Packages</p>
-                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem;">{{ $totalPackages }}</h2>
+                            <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px; color: #ffffff !important;">{{ __('Total Packages') }}</p>
+                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem; color: #ffffff !important;">{{ $totalPackages }}</h2>
                         </div>
                         <div class="stat-icon">
-                            <i class="fas fa-box fa-3x" style="opacity: 0.3;"></i>
+                            <i class="fas fa-box fa-3x" style="opacity: 0.3; color: #ffffff !important;"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 h-100 stat-card" style="background: #2ecc71;">
-                <div class="card-body text-white p-4">
+            <div class="card border-0 h-100 stat-card" style="background: #2ecc71 !important;">
+                <div class="card-body p-4" style="color: #ffffff !important;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px;">Active Packages</p>
-                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem;">{{ $activePackagesCount }}</h2>
+                            <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px; color: #ffffff !important;">{{ __('Active Packages') }}</p>
+                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem; color: #ffffff !important;">{{ $activePackagesCount }}</h2>
                         </div>
                         <div class="stat-icon">
-                            <i class="fas fa-check-circle fa-3x" style="opacity: 0.3;"></i>
+                            <i class="fas fa-check-circle fa-3x" style="opacity: 0.3; color: #ffffff !important;"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 h-100 stat-card" style="background: #f39c12;">
-                <div class="card-body text-white p-4">
+            <div class="card border-0 h-100 stat-card" style="background: #f39c12 !important;">
+                <div class="card-body p-4" style="color: #ffffff !important;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px;">Channel Types</p>
-                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem;">{{ $totalChannels }}</h2>
+                            <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px; color: #ffffff !important;">{{ __('Channel Types') }}</p>
+                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem; color: #ffffff !important;">{{ $totalChannels }}</h2>
                         </div>
                         <div class="stat-icon">
-                            <i class="fas fa-broadcast-tower fa-3x" style="opacity: 0.3;"></i>
+                            <i class="fas fa-broadcast-tower fa-3x" style="opacity: 0.3; color: #ffffff !important;"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 h-100 stat-card" style="background: #e74c3c;">
-                <div class="card-body text-white p-4">
+            <div class="card border-0 h-100 stat-card" style="background: #e74c3c !important;">
+                <div class="card-body p-4" style="color: #ffffff !important;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px;">Active Channels</p>
-                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem;">{{ $activeChannelsCount }}</h2>
+                            <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px; color: #ffffff !important;">{{ __('Active Channels') }}</p>
+                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem; color: #ffffff !important;">{{ $activeChannelsCount }}</h2>
                         </div>
                         <div class="stat-icon">
-                            <i class="fas fa-signal fa-3x" style="opacity: 0.3;"></i>
+                            <i class="fas fa-signal fa-3x" style="opacity: 0.3; color: #ffffff !important;"></i>
                         </div>
                     </div>
                 </div>
@@ -96,10 +96,10 @@
                 <div class="card-header text-white border-0" style="background: #3498db;">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0 fw-bold">
-                            <i class="fas fa-box me-2"></i> Credit Packages
+                            <i class="fas fa-box me-2"></i> {{ __('Credit Packages') }}
                         </h5>
                         <button class="btn btn-light btn-sm" data-toggle="modal" data-target="#createPackageModal">
-                            <i class="fas fa-plus me-1"></i> Add Package
+                            <i class="fas fa-plus me-1"></i> {{ __('Add Package') }}
                         </button>
                     </div>
                 </div>
@@ -108,24 +108,24 @@
                     <div class="row mb-4">
                         <div class="col-md-3">
                             <select class="form-select form-select-sm border-0 bg-light" id="packageStatusFilter">
-                                <option value="" {{ request('package_status') == '' ? 'selected' : '' }}>All Status</option>
-                                <option value="active" {{ request('package_status') == 'active' ? 'selected' : '' }}>Active</option>
-                                <option value="inactive" {{ request('package_status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                                <option value="" {{ request('package_status') == '' ? 'selected' : '' }}>{{ __('All Status') }}</option>
+                                <option value="active" {{ request('package_status') == 'active' ? 'selected' : '' }}>{{ __('Active') }}</option>
+                                <option value="inactive" {{ request('package_status') == 'inactive' ? 'selected' : '' }}>{{ __('Inactive') }}</option>
                             </select>
                         </div>
                         <div class="col-md-3">
                             <select class="form-select form-select-sm border-0 bg-light" id="marketingSupportFilter">
-                                <option value="" {{ request('marketing_support') == '' ? 'selected' : '' }}>All Packages</option>
-                                <option value="yes" {{ request('marketing_support') == 'yes' ? 'selected' : '' }}>Marketing Support</option>
-                                <option value="no" {{ request('marketing_support') == 'no' ? 'selected' : '' }}>No Marketing</option>
+                                <option value="" {{ request('marketing_support') == '' ? 'selected' : '' }}>{{ __('All Packages') }}</option>
+                                <option value="yes" {{ request('marketing_support') == 'yes' ? 'selected' : '' }}>{{ __('Marketing Support') }}</option>
+                                <option value="no" {{ request('marketing_support') == 'no' ? 'selected' : '' }}>{{ __('No Marketing') }}</option>
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <input type="text" class="form-control form-control-sm border-0 bg-light" id="packageSearch" placeholder="🔍 Search packages..." value="{{ request('package_search') }}">
+                            <input type="text" class="form-control form-control-sm border-0 bg-light" id="packageSearch" placeholder="🔍 {{ __('Search packages...') }}" value="{{ request('package_search') }}">
                         </div>
                         <div class="col-md-2">
-                            <button class="btn btn-outline-secondary btn-sm w-100" id="resetPackageFilters" title="Reset all filters">
-                                <i class="fas fa-redo me-1"></i> Reset
+                            <button class="btn btn-outline-secondary btn-sm w-100" id="resetPackageFilters" title="{{ __('Reset all filters') }}">
+                                <i class="fas fa-redo me-1"></i> {{ __('Reset') }}
                             </button>
                         </div>
                     </div>
@@ -152,49 +152,49 @@
                                     <div class="text-white p-3 me-3" style="background: {{ $packageColor }}; min-width: 50px; text-align: center;">
                                         <i class="fas fa-box fa-lg"></i>
                                     </div>
-                                    <h6 class="mb-0 me-3 fw-bold text-dark px-2">{{ $package->name }}</h6>
+                                    <h6 class="mb-0 me-3 fw-bold text-dark px-2">{{ $package->getLocalizedName('ar') }}</h6>
                                 </div>
                                 <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-primary btn-sm btn-edit-package" data-package-id="{{ $package->id }}" title="Edit Package">
+                                    <button class="btn btn-outline-primary btn-sm btn-edit-package" data-package-id="{{ $package->id }}" title="{{ __('Edit Package') }}">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <button class="btn btn-outline-{{ $package->is_active ? 'warning' : 'success' }} btn-sm btn-toggle-package"
-                                            data-package-id="{{ $package->id }}" title="{{ $package->is_active ? 'Deactivate' : 'Activate' }}">
+                                            data-package-id="{{ $package->id }}" title="{{ $package->is_active ? __('Deactivate') : __('Activate') }}">
                                         <i class="fas fa-{{ $package->is_active ? 'pause' : 'play' }}"></i>
                                     </button>
-                                    <button class="btn btn-outline-danger btn-sm btn-delete-package" data-package-id="{{ $package->id }}" title="Delete Package">
+                                    <button class="btn btn-outline-danger btn-sm btn-delete-package" data-package-id="{{ $package->id }}" title="{{ __('Delete Package') }}">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 @if($package->is_active)
-                                    <span class="badge bg-success px-3 py-2">Active</span>
+                                    <span class="badge bg-success px-3 py-2">{{ __('Active') }}</span>
                                 @else
-                                    <span class="badge bg-secondary px-3 py-2">Inactive</span>
+                                    <span class="badge bg-secondary px-3 py-2">{{ __('Inactive') }}</span>
                                 @endif
                                 @if($package->supports_marketing_channels)
-                                    <span class="badge bg-info ms-2 px-3 py-2">Marketing</span>
+                                    <span class="badge bg-info ms-2 px-3 py-2">{{ __('Marketing') }}</span>
                                 @endif
                             </div>
                             <div>
                                     <div class="row g-3">
                                         <div class="col-6">
                                             <div class="bg-light p-2 border">
-                                                <small class="text-muted d-block">Credits</small>
+                                                <small class="text-muted d-block">{{ __('Credits') }}</small>
                                                 <strong class="text-primary">{{ number_format($package->credits) }}</strong>
                                             </div>
                                         </div>
                                         <div class="col-6">
                                             <div class="bg-light p-2 border">
-                                                <small class="text-muted d-block">Price</small>
+                                                <small class="text-muted d-block">{{ __('Price') }}</small>
                                                 <strong class="text-success">{{ $package->currency }} {{ number_format($package->price, 2) }}</strong>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="mt-3">
                                         <div class="bg-light p-2 border">
-                                            <small class="text-muted d-block">Price per credit</small>
+                                            <small class="text-muted d-block">{{ __('Price per credit') }}</small>
                                             <strong class="text-warning">{{ $package->currency }} {{ number_format($package->price_per_credit, 4) }}</strong>
                                         </div>
                                     </div>
@@ -204,7 +204,7 @@
                             @if($package->supports_marketing_channels && isset($packageEstimates[$package->id]) && count($packageEstimates[$package->id]) > 0)
                             <div class="mt-4 pt-3 border-top">
                                 <h6 class="text-muted mb-3">
-                                    <i class="fas fa-chart-bar me-2"></i>Estimated Messages per Channel
+                                    <i class="fas fa-chart-bar me-2"></i>{{ __('Estimated Messages per Channel') }}
                                 </h6>
                                 <div class="row g-2">
                                     @foreach($packageEstimates[$package->id] as $channelType => $estimate)
@@ -223,16 +223,16 @@
                         <!-- Empty State -->
                         <div class="empty-state text-center py-5">
                             <i class="fas fa-box fa-4x text-muted mb-3" style="opacity: 0.3;"></i>
-                            <h5 class="text-muted">No packages found</h5>
+                            <h5 class="text-muted">{{ __('No packages found') }}</h5>
                             @if(request()->hasAny(['package_status', 'marketing_support', 'package_search']))
-                                <p class="text-muted mb-3">Try adjusting your filters or search terms</p>
+                                <p class="text-muted mb-3">{{ __('Try adjusting your filters or search terms') }}</p>
                                 <button class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('resetPackageFilters').click()">
-                                    <i class="fas fa-redo me-1"></i> Clear Filters
+                                    <i class="fas fa-redo me-1"></i> {{ __('Clear Filters') }}
                                 </button>
                             @else
-                                <p class="text-muted mb-3">Create your first credit package to get started</p>
+                                <p class="text-muted mb-3">{{ __('Create your first credit package to get started') }}</p>
                                 <button class="btn btn-primary" data-toggle="modal" data-target="#createPackageModal">
-                                    <i class="fas fa-plus me-1"></i> Create Package
+                                    <i class="fas fa-plus me-1"></i> {{ __('Create Package') }}
                                 </button>
                             @endif
                         </div>
@@ -255,10 +255,10 @@
                 <div class="card-header text-white border-0" style="background: #f39c12;">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0 fw-bold">
-                            <i class="fas fa-broadcast-tower me-2"></i> Channel Pricing
+                            <i class="fas fa-broadcast-tower me-2"></i> {{ __('Channel Pricing') }}
                         </h5>
                         <button class="btn btn-light btn-sm" data-toggle="modal" data-target="#createPricingModal">
-                            <i class="fas fa-plus me-1"></i> Add Channel
+                            <i class="fas fa-plus me-1"></i> {{ __('Add Channel') }}
                         </button>
                     </div>
                 </div>
@@ -267,17 +267,17 @@
                     <div class="row mb-4">
                         <div class="col-md-4">
                             <select class="form-select form-select-sm border-0 bg-light" id="channelStatusFilter">
-                                <option value="" {{ request('channel_status') == '' ? 'selected' : '' }}>All Status</option>
-                                <option value="active" {{ request('channel_status') == 'active' ? 'selected' : '' }}>Active</option>
-                                <option value="inactive" {{ request('channel_status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                                <option value="" {{ request('channel_status') == '' ? 'selected' : '' }}>{{ __('All Status') }}</option>
+                                <option value="active" {{ request('channel_status') == 'active' ? 'selected' : '' }}>{{ __('Active') }}</option>
+                                <option value="inactive" {{ request('channel_status') == 'inactive' ? 'selected' : '' }}>{{ __('Inactive') }}</option>
                             </select>
                         </div>
                         <div class="col-md-5">
-                            <input type="text" class="form-control form-control-sm border-0 bg-light" id="channelSearch" placeholder="🔍 Search channels..." value="{{ request('channel_search') }}">
+                            <input type="text" class="form-control form-control-sm border-0 bg-light" id="channelSearch" placeholder="🔍 {{ __('Search channels...') }}" value="{{ request('channel_search') }}">
                         </div>
                         <div class="col-md-3">
-                            <button class="btn btn-outline-secondary btn-sm w-100" id="resetChannelFilters" title="Reset all filters">
-                                <i class="fas fa-redo me-1"></i> Reset
+                            <button class="btn btn-outline-secondary btn-sm w-100" id="resetChannelFilters" title="{{ __('Reset all filters') }}">
+                                <i class="fas fa-redo me-1"></i> {{ __('Reset') }}
                             </button>
                         </div>
                     </div>
@@ -306,43 +306,43 @@
                                     <h6 class="mb-0 me-3 fw-bold text-dark px-2">{{ ucfirst($pricing->channel_type) }}</h6>
                                 </div>
                                 <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-primary btn-sm btn-edit-pricing" data-pricing-id="{{ $pricing->id }}" title="Edit Pricing">
+                                    <button class="btn btn-outline-primary btn-sm btn-edit-pricing" data-pricing-id="{{ $pricing->id }}" title="{{ __('Edit Pricing') }}">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <button class="btn btn-outline-{{ $pricing->is_active ? 'warning' : 'success' }} btn-sm btn-toggle-pricing"
-                                            data-pricing-id="{{ $pricing->id }}" title="{{ $pricing->is_active ? 'Deactivate' : 'Activate' }}">
+                                            data-pricing-id="{{ $pricing->id }}" title="{{ $pricing->is_active ? __('Deactivate') : __('Activate') }}">
                                         <i class="fas fa-{{ $pricing->is_active ? 'pause' : 'play' }}"></i>
                                     </button>
-                                    <button class="btn btn-outline-danger btn-sm btn-delete-pricing" data-pricing-id="{{ $pricing->id }}" title="Delete Pricing">
+                                    <button class="btn btn-outline-danger btn-sm btn-delete-pricing" data-pricing-id="{{ $pricing->id }}" title="{{ __('Delete Pricing') }}">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
                             </div>
                             <div class="mb-3">
-                                @if($pricing->is_active)
-                                    <span class="badge bg-success px-3 py-2">Active</span>
+@if($pricing->is_active)
+                                <span class="badge bg-success px-3 py-2">{{ __('Active') }}</span>
                                 @else
-                                    <span class="badge bg-secondary px-3 py-2">Inactive</span>
+                                    <span class="badge bg-secondary px-3 py-2">{{ __('Inactive') }}</span>
                                 @endif
                             </div>
                             <div>
                                     <div class="row g-3">
                                         <div class="col-6">
                                             <div class="bg-light p-2 border">
-                                                <small class="text-muted d-block">Credits per message</small>
+                                                <small class="text-muted d-block">{{ __('Credits per message') }}</small>
                                                 <strong class="text-primary">{{ $pricing->credits_per_message }}</strong>
                                             </div>
                                         </div>
                                         <div class="col-6">
                                             <div class="bg-light p-2 border">
-                                                <small class="text-muted d-block">Price per credit</small>
+                                                <small class="text-muted d-block">{{ __('Price per credit') }}</small>
                                                 <strong class="text-warning">{{ $pricing->currency }} {{ number_format($pricing->price_per_credit, 4) }}</strong>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="mt-3">
                                         <div class="text-white p-2" style="background: #1abc9c;">
-                                            <small class="d-block">Effective price per message</small>
+                                            <small class="d-block">{{ __('Effective price per message') }}</small>
                                             <strong class="text-white">{{ $pricing->currency }} {{ number_format($pricing->effective_price_per_message, 4) }}</strong>
                                         </div>
                                     </div>
@@ -352,16 +352,16 @@
                         <!-- Empty State -->
                         <div class="empty-state text-center py-5">
                             <i class="fas fa-broadcast-tower fa-4x text-muted mb-3" style="opacity: 0.3;"></i>
-                            <h5 class="text-muted">No channel pricing found</h5>
+                            <h5 class="text-muted">{{ __('No channel pricing found') }}</h5>
                             @if(request()->hasAny(['channel_status', 'channel_search']))
-                                <p class="text-muted mb-3">Try adjusting your filters or search terms</p>
+                                <p class="text-muted mb-3">{{ __('Try adjusting your filters or search terms') }}</p>
                                 <button class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('resetChannelFilters').click()">
-                                    <i class="fas fa-redo me-1"></i> Clear Filters
+                                    <i class="fas fa-redo me-1"></i> {{ __('Clear Filters') }}
                                 </button>
                             @else
-                                <p class="text-muted mb-3">Create your first channel pricing to get started</p>
+                                <p class="text-muted mb-3">{{ __('Create your first channel pricing to get started') }}</p>
                                 <button class="btn btn-warning" data-toggle="modal" data-target="#createPricingModal">
-                                    <i class="fas fa-plus me-1"></i> Add Channel
+                                    <i class="fas fa-plus me-1"></i> {{ __('Add Channel') }}
                                 </button>
                             @endif
                         </div>
@@ -385,7 +385,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Create Credit Package</h5>
+                <h5 class="modal-title">{{ __('Create Credit Package') }}</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -393,37 +393,45 @@
             <form id="createPackageForm">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Package Name</label>
+                        <label class="form-label">{{ __('Package Name') }}</label>
                         <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Package Name (Arabic)') }}</label>
+                        <input type="text" class="form-control" name="name_ar">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Description (Arabic)') }}</label>
+                        <textarea class="form-control" name="description_ar" rows="3"></textarea>
                     </div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Credits</label>
+                                <label class="form-label">{{ __('Credits') }}</label>
                                 <input type="number" class="form-control" name="credits" min="1" required>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Price</label>
+                                <label class="form-label">{{ __('Price') }}</label>
                                 <input type="number" class="form-control" name="price" step="0.01" min="0" required>
                             </div>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Currency</label>
+                        <label class="form-label">{{ __('Currency') }}</label>
                         <select class="form-control" name="currency" required>
                             <option value="SAR" selected>SAR</option>
                         </select>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="supports_marketing_channels" value="1">
-                        <label class="form-check-label">Support Marketing Channels</label>
+                        <label class="form-check-label">{{ __('Support Marketing Channels') }}</label>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">Create Package</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Create Package') }}</button>
                 </div>
             </form>
         </div>
@@ -435,7 +443,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Create Channel Pricing</h5>
+                <h5 class="modal-title">{{ __('Create Channel Pricing') }}</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -443,41 +451,45 @@
             <form id="createPricingForm">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Channel Type</label>
-                        <input type="text" class="form-control" name="channel_type" id="channel_type_input" list="channelTypes" required placeholder="Enter or select channel type (e.g., whatsapp, twitter, email)">
+                        <label class="form-label">{{ __('Channel Type') }}</label>
+                        <input type="text" class="form-control" name="channel_type" id="channel_type_input" list="channelTypes" required placeholder="{{ __('Enter or select channel type (e.g., whatsapp, twitter, email)') }}">
                         <datalist id="channelTypes">
                             @foreach($channelTypes as $key => $name)
                                 <option value="{{ $key }}">{{ $name }}</option>
                             @endforeach
                         </datalist>
                         <small class="form-text text-muted">
-                            <i class="fas fa-info-circle"></i> You can select from existing types or enter a new custom channel type.
+                            <i class="fas fa-info-circle"></i> {{ __('You can select from existing types or enter a new custom channel type.') }}
                         </small>
                     </div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Credits per Message</label>
+                                <label class="form-label">{{ __('Credits per Message') }}</label>
                                 <input type="number" class="form-control" name="credits_per_message" min="1" required>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Price per Credit</label>
+                                <label class="form-label">{{ __('Price per Credit') }}</label>
                                 <input type="number" class="form-control" name="price_per_credit" step="0.0001" min="0" required>
                             </div>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Currency</label>
+                        <label class="form-label">{{ __('Currency') }}</label>
                         <select class="form-control" name="currency" required>
                             <option value="SAR" selected>SAR</option>
                         </select>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Description (Arabic)') }}</label>
+                        <textarea class="form-control" name="description_ar" rows="3"></textarea>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Cancel') }}</button>
-                    <button type="submit" class="btn btn-success">Create Pricing</button>
+                    <button type="submit" class="btn btn-success">{{ __('Create Pricing') }}</button>
                 </div>
             </form>
         </div>

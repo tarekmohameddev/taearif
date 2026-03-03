@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers\Api\V1\Em;
 
+use App\Http\Requests\Api\V1\Em\StoreCustomerRequest;
+use App\Http\Requests\Api\V1\Em\UpdateCustomerRequest;
 use App\Models\ApiCustomer;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Services\ActivityLogger;
 use App\Services\CrmCustomerStageService;
 use App\Http\Controllers\Concerns\ResolvesTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Api\UserApiCustomerStage;
-use Illuminate\Validation\Rule;
 
 class CustomerController extends Controller
 {
@@ -66,23 +66,12 @@ class CustomerController extends Controller
     }
 
     // POST /em/customers
-    public function store(Request $request, CrmCustomerStageService $stageService)
+    public function store(StoreCustomerRequest $request, CrmCustomerStageService $stageService)
     {
         $tenantId = $this->tenantId();
         $actor = $this->actor(); // employee
 
-        $data = $request->validate([
-            'name'         => ['required','string','max:255'],
-            'email'        => ['nullable','email','max:255'],
-            'phone_number' => ['nullable','string','max:50'],
-            'note'         => ['nullable','string','max:2000'],
-            'stage_id'     => ['nullable','integer', Rule::exists('users_api_customers_stages','id')->where(fn($q)=>$q->where('user_id',$tenantId))],
-            'procedure_id' => ['nullable','integer'],
-            'type_id'      => ['nullable','integer'],
-            'priority_id'  => ['nullable','integer'],
-            'city_id'      => ['nullable','integer'],
-            'district_id'  => ['nullable','integer'],
-        ]);
+        $data = $request->validated();
 
         $stageId = $data['stage_id'] ?? null;
 
@@ -143,25 +132,14 @@ class CustomerController extends Controller
     }
 
     // PUT /em/customers/{id}
-    public function update(Request $request, $id, CrmCustomerStageService $stageService)
+    public function update(UpdateCustomerRequest $request, $id, CrmCustomerStageService $stageService)
     {
         $tenantId = $this->tenantId();
         $actor = $this->actor();
 
         $c = ApiCustomer::where('user_id',$tenantId)->findOrFail($id);
 
-        $data = $request->validate([
-            'name'         => ['sometimes','string','max:255'],
-            'email'        => ['sometimes','nullable','email','max:255'],
-            'phone_number' => ['sometimes','nullable','string','max:50'],
-            'note'         => ['sometimes','nullable','string','max:2000'],
-            'stage_id'     => ['sometimes','nullable','integer', Rule::exists('users_api_customers_stages','id')->where(fn($q)=>$q->where('user_id',$tenantId))],
-            'procedure_id' => ['sometimes','nullable','integer'],
-            'type_id'      => ['sometimes','nullable','integer'],
-            'priority_id'  => ['sometimes','nullable','integer'],
-            'city_id'      => ['sometimes','nullable','integer'],
-            'district_id'  => ['sometimes','nullable','integer'],
-        ]);
+        $data = $request->validated();
 
         $stageId = array_key_exists('stage_id', $data) ? $data['stage_id'] : null;
         unset($data['stage_id']);

@@ -7,23 +7,15 @@ use Illuminate\Http\Request;
 use App\Services\TenantWebsite\PageService;
 use App\Models\User;
 
+use App\Http\Requests\Api\V1\TenantWebsite\SavePagesRequest;
+
 class SavePagesController extends Controller
 {
     public function __construct(private PageService $pages) {}
 
-    public function store(Request $request)
+    public function store(SavePagesRequest $request)
     {
-        $data = $request->validate([
-            'tenantId' => 'required|string',
-            'pages' => 'sometimes|array',
-            'componentSettings' => 'sometimes|array',
-            'globalComponentsData' => 'nullable|array',
-            'WebsiteLayout' => 'nullable|array',
-            'ThemesBackup' => 'nullable|array',
-            'StaticPages' => 'sometimes|array',
-            'branding' => 'sometimes|array',
-            'branding.websiteBranding' => 'nullable|array',
-        ]);
+        $data = $request->validated();
 
         $tenant = User::where('username', $data['tenantId'])->firstOrFail();
         if ($request->user()?->id !== $tenant->id) {

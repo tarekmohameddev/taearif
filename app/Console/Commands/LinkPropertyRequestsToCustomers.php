@@ -57,7 +57,7 @@ class LinkPropertyRequestsToCustomers extends Command
 
         // Get property requests that don't have linked customers
         $query = UserPropertyRequest::whereNotNull('phone')
-            ->whereDoesntHave('customer');
+            ->whereDoesntHave('customers');
 
         if ($tenantId) {
             $query->where('user_id', $tenantId);
@@ -98,7 +98,7 @@ class LinkPropertyRequestsToCustomers extends Command
                         // Only link mode: find existing customer
                         $customer = ApiCustomer::where('user_id', $propertyRequest->user_id)
                             ->where('phone_number', $normalizedPhone)
-                            ->whereNull('property_request_id')
+                            ->whereDoesntHave('propertyRequests')
                             ->first();
 
                         if ($customer) {
@@ -122,7 +122,7 @@ class LinkPropertyRequestsToCustomers extends Command
                             if ($customer) {
                                 // If customer existed before and was not linked, it was linked
                                 // If customer didn't exist, it was created
-                                if ($existingCustomer && $existingCustomer->property_request_id === null) {
+                                if ($existingCustomer && !$existingCustomer->propertyRequests()->exists()) {
                                     $linked++;
                                 } elseif (!$existingCustomer) {
                                     $created++;
@@ -136,7 +136,7 @@ class LinkPropertyRequestsToCustomers extends Command
                         } else {
                             // Dry run: just check what would happen
                             if ($existingCustomer) {
-                                if ($existingCustomer->property_request_id === null) {
+                                if (!$existingCustomer->propertyRequests()->exists()) {
                                     $linked++;
                                 } else {
                                     $skipped++;
