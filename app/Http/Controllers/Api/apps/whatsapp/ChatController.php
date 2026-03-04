@@ -19,6 +19,7 @@ use App\Models\User\RealestateManagement\ApiUserCategory;
 use App\Models\User\UserCity;
 use App\Models\ApiCustomer;
 use App\Models\Api\ApiCustomerInquiry;
+use App\Models\Api\UserPropertyRequest;
 use App\Models\User;
 use App\Models\WhatsappUser;
 use App\Domain\Communication\Contracts\CommunicationService;
@@ -308,6 +309,45 @@ public function handleWhatsappWebhook(Request $request)
 
             // Save to inquiry table with all new fields
             $inquiry = ApiCustomerInquiry::create($inquiryData);
+
+            // Also create users_property_requests (dual-insert)
+            $locationCombined = implode(', ', array_filter([
+                $district,
+                $city,
+            ]));
+
+            $propertyRequestData = [
+                'user_id' => $userId,
+                'customer_id' => $customer ? $customer->id : null,
+                'phone' => $whatsappNumber,
+                'full_name' => $customer ? $customer->name : 'WhatsApp Customer',
+                'notes' => $message,
+                'inquiry_type' => $inquiryType,
+                'property_type' => $propertyType,
+                'purpose' => $this->mapInquiryTypeToPurpose($inquiryType),
+                'budget_from' => null,
+                'budget_to' => $budget,
+                'currency' => $currency,
+                'bedrooms' => $bedrooms,
+                'bathrooms' => $bathrooms,
+                'furnished' => $furnished,
+                'seriousness' => $this->mapUrgencyToSeriousness($urgency),
+                'city' => $city,
+                'district' => $district,
+                'location' => $locationCombined ?: null,
+                'region' => $regionName ?? 'الرياض',
+                'source' => 'whatsapp',
+                'contact_on_whatsapp' => true,
+                'lang' => $lang,
+                'detected_entities_json' => json_encode($detectedEntities),
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'location_confidence' => $locationConfidence,
+                'country_code' => $countryCode,
+                'region_code' => $regionCode,
+            ];
+
+            UserPropertyRequest::create($propertyRequestData);
 
             // Debug what was actually saved
             \Log::info('Inquiry Saved Successfully', [
@@ -715,7 +755,24 @@ private function mapCategory(string $name): int
 		return $query->first();
 	}
 
+	private function mapUrgencyToSeriousness(?string $urgency): ?string
+	{
+		return match ($urgency) {
+			'urgent' => 'مستعد فورًا',
+			'soon' => 'خلال شهر',
+			'flexible' => 'لاحقًا / استكشاف فقط',
+			default => null,
+		};
+	}
 
+	private function mapInquiryTypeToPurpose(?string $inquiryType): ?string
+	{
+		return match ($inquiryType) {
+			'rent' => 'rent',
+			'buy', 'invest' => 'sale',
+			default => null,
+		};
+	}
 
     protected function handleFaq(array $args): array
     {
