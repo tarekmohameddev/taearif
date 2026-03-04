@@ -1233,6 +1233,7 @@ class ActionsAggregatorService
                     ->on('ac_phone.phone_number', '=', 'upr.phone');
             })
             ->leftJoin('user_cities as uc', 'upr.city_id', '=', 'uc.id')
+            ->leftJoin('property_request_statuses as prs', 'upr.status_id', '=', 'prs.id')
             ->leftJoin('users as u2', DB::raw('u2.id'), '=', DB::raw('COALESCE(ac.responsible_employee_id, ac_phone.responsible_employee_id)'))
             ->where('upr.user_id', $userId)
             ->where('upr.is_active', 1)
@@ -1252,6 +1253,10 @@ class ActionsAggregatorService
                     ELSE 'medium'
                 END as priority"),
                 DB::raw("CASE
+                    WHEN prs.slug = 'cancelled' THEN 'dismissed'
+                    WHEN prs.slug = 'contract_signed' THEN 'completed'
+                    WHEN prs.slug = 'new' THEN 'pending'
+                    WHEN prs.slug IN ('follow_up', 'property_found') THEN 'in_progress'
                     WHEN upr.is_archived = 1 THEN 'dismissed'
                     WHEN upr.is_read = 1 THEN 'in_progress'
                     ELSE 'pending'

@@ -133,10 +133,7 @@ class PropertyRequestDetailBuilder
         $fullAction['stage_id'] = $stageId;
         $fullAction['stage'] = $stage;
         $fullAction['priority'] = $this->mapPropertyRequestPriorityToString($propertyRequest->seriousness ?? null);
-        $fullAction['status'] = $this->mapPropertyRequestStatusToString(
-            (bool) ($propertyRequest->is_archived ?? false),
-            (bool) ($propertyRequest->is_read ?? false)
-        );
+        $fullAction['status'] = $this->resolvePropertyRequestStatus($propertyRequest);
         $fullAction['propertyCategory'] = $propertyCategory;
         $fullAction['propertyType'] = $propertyRequest->property_type;
         $fullAction['city'] = $city;
@@ -321,6 +318,34 @@ class PropertyRequestDetailBuilder
             'خلال 3 أشهر' => 'medium',
             'لاحقًا / استكشاف فقط' => 'low',
             default => 'medium',
+        };
+    }
+
+    private function resolvePropertyRequestStatus(object $propertyRequest): string
+    {
+        $statusId = $propertyRequest->status_id ?? null;
+        if ($statusId !== null && $statusId !== '') {
+            $slug = DB::table('property_request_statuses')
+                ->where('id', (int) $statusId)
+                ->value('slug');
+            if ($slug !== null && $slug !== '') {
+                return $this->mapStatusSlugToApiStatus($slug);
+            }
+        }
+        return $this->mapPropertyRequestStatusToString(
+            (bool) ($propertyRequest->is_archived ?? false),
+            (bool) ($propertyRequest->is_read ?? false)
+        );
+    }
+
+    private function mapStatusSlugToApiStatus(string $slug): string
+    {
+        return match ($slug) {
+            'cancelled' => 'dismissed',
+            'contract_signed' => 'completed',
+            'new' => 'pending',
+            'follow_up', 'property_found' => 'in_progress',
+            default => 'in_progress',
         };
     }
 
