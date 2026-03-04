@@ -70,6 +70,22 @@ class UserPropertyRequest extends Model
         'status_id',
         'customers_hub_stage_id',
         'property_ids',
+        'responsible_employee_id',
+        'inquiry_type',
+        'currency',
+        'bedrooms',
+        'bathrooms',
+        'furnished',
+        'location',
+        'country_code',
+        'region_code',
+        'city',
+        'district',
+        'latitude',
+        'longitude',
+        'location_confidence',
+        'lang',
+        'detected_entities_json',
     ];
 
     protected $casts = [
@@ -124,6 +140,21 @@ class UserPropertyRequest extends Model
     public function district()
     {
         return $this->belongsTo(\App\Models\User\UserDistrict::class, 'districts_id');
+    }
+
+    /**
+     * Ensure property_ids is always returned as an array (not a JSON string).
+     */
+    public function getPropertyIdsAttribute($value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+        return [];
     }
 
     public function toArray(): array
