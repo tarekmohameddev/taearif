@@ -78,8 +78,8 @@ class ApiPropertyRequestController extends Controller
 
         $data['is_read'] = false;
         $data['is_active'] = true;
-        $data['source'] = 'website';
-        $data['referral_source'] = $data['referral_source'] ?? 'source_not_specified';
+        $data['source'] = $data['source'] ?? 'public_form';
+        $data['referral_source'] = $data['referral_source'] ?? null;
 
         if (isset($data['status_id'])) {
             $data['status_id'] = (int) $data['status_id'];
@@ -143,8 +143,8 @@ class ApiPropertyRequestController extends Controller
             'city_id' => $cityId,
             'region' => $city ? $city->name_ar : null,
             'purpose' => $property->purpose ?? null,
-            'source' => 'website',
-            'referral_source' => 'property_interest',
+            'source' => 'property_interest',
+            'referral_source' => null,
             'is_read' => false,
             'is_active' => true,
             'is_archived' => false,

@@ -40,7 +40,7 @@ class RequestsListRequest extends BaseApiFormRequest
             'statuses' => 'nullable|array',
             'statuses.*' => 'string|in:pending,in_progress,completed,dismissed,snoozed',
             'sources' => 'nullable|array',
-            'sources.*' => 'string|in:inquiry,manual,whatsapp,import,referral,property_request',
+            'sources.*' => 'string|in:inquiry,manual,whatsapp,import,referral,property_request,website,property_interest,public_form,employee_dashboard,whatsapp_bot',
             'priorities' => 'nullable|array',
             'priorities.*' => 'string|in:low,medium,high,urgent',
             'assignees' => 'nullable|array',
