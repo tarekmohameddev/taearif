@@ -20,6 +20,7 @@ class StorePropertyRequestRequest extends BaseApiFormRequest
             'phone' => 'required|string|max:20',
             'referral_source' => ['nullable', 'string', Rule::in([
                 'property_interest',
+                'source_not_specified',
                 'public_form',
                 'employee_dashboard',
                 'whatsapp_bot',

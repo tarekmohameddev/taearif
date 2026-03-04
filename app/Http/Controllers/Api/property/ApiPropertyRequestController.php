@@ -78,7 +78,7 @@ class ApiPropertyRequestController extends Controller
         $data['is_read'] = false;
         $data['is_active'] = true;
         $data['source'] = 'website';
-        $data['referral_source'] = $data['referral_source'] ?? 'public_form';
+        $data['referral_source'] = $data['referral_source'] ?? 'source_not_specified';
 
         if (isset($data['status_id'])) {
             $data['status_id'] = (int) $data['status_id'];
@@ -647,7 +647,7 @@ class ApiPropertyRequestController extends Controller
 
         return response()->json($propertyRequest);
     }
-    
+
     public function destroy(Request $request, $id): JsonResponse
     {
         $user = $request->user();
@@ -710,10 +710,8 @@ class ApiPropertyRequestController extends Controller
             ->where('user_id', $ownerId)
             ->firstOrFail();
 
-        $customer = $propertyRequest->customer;
-        if ($customer && $customer->user_id !== $ownerId) {
-            $customer = null;
-        }
+        // Get or check for associated customer (first linked via pivot for this tenant)
+        $customer = $propertyRequest->customers()->where('api_customers.user_id', $ownerId)->first();
 
         if (!$customer) {
             return response()->json([
@@ -730,7 +728,7 @@ class ApiPropertyRequestController extends Controller
         ]);
 
         // Reload property request with customer and employee relationships
-        $propertyRequest->load(['customer.responsibleEmployee']);
+        $propertyRequest->load(['customers.responsibleEmployee']);
 
         return response()->json([
             'status' => 'success',
@@ -741,9 +739,9 @@ class ApiPropertyRequestController extends Controller
 
     /**
      * Assign employee to customer via property request (direct customer update).
-     * 
+     *
      * PUT api/v1/property-requests/{customerID}/employee
-     * 
+     *
      * @param Request $request
      * @param int $customerID
      * @return JsonResponse
