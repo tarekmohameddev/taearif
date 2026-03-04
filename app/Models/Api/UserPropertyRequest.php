@@ -43,6 +43,7 @@ class UserPropertyRequest extends Model
 // wants_similar_offers purchase_method region
     protected $fillable = [
         'user_id',
+        'customer_id',
         'source',
         'referral_source',
         'region', // nullable
@@ -100,10 +101,9 @@ class UserPropertyRequest extends Model
         return $this->belongsTo(\App\Models\PropertyRequestStatus::class, 'status_id');
     }
 
-    public function customers()
+    public function customer()
     {
-        return $this->belongsToMany(ApiCustomer::class, 'api_customer_property_request', 'property_request_id', 'customer_id')
-            ->withTimestamps();
+        return $this->belongsTo(ApiCustomer::class, 'customer_id');
     }
 
     public function hubNotes()
@@ -112,15 +112,11 @@ class UserPropertyRequest extends Model
     }
 
     /**
-     * First linked customer (for backward compatibility). Eager load 'customers' then use $request->customer.
+     * First linked customer. Eager load 'customer' then use $request->customer.
      */
     public function getCustomerAttribute(): ?ApiCustomer
     {
-        $customers = $this->getRelationValue('customers');
-        if ($customers !== null) {
-            return $customers->first();
-        }
-        return $this->customers()->first();
+        return $this->getRelationValue('customer') ?? $this->customer()->first();
     }
 
     public function district()
@@ -138,10 +134,8 @@ class UserPropertyRequest extends Model
         // Get property type Arabic translation
         $propertyTypeAr = $this->getPropertyTypeArabic();
         
-        // Get customer_id from the customer relationship
-        // This will use the eager loaded relationship if available, or lazy load it if not
-        $customer = $this->customer;
-        $customerId = $customer ? $customer->id : null;
+        // Get customer_id from the customer relationship or direct attribute
+        $customerId = $this->customer_id ?? ($this->customer ? $this->customer->id : null);
         
         // Insert districtName right after districts_id and customer_id after user_id
         $result = [];

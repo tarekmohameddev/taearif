@@ -1004,12 +1004,15 @@ class ActionsAggregatorService
                 }
             } elseif ($table === 'users_property_requests') {
                 $rows = DB::table('users_property_requests as upr')
-                    ->leftJoin('api_customers as ac', function ($j) {
-                        $j->on('upr.user_id', '=', 'ac.user_id')->on('upr.phone', '=', 'ac.phone_number');
+                    ->leftJoin('api_customers as ac', 'upr.customer_id', '=', 'ac.id')
+                    ->leftJoin('api_customers as ac_phone', function ($j) {
+                        $j->on('upr.user_id', '=', 'ac_phone.user_id')
+                            ->on('upr.phone', '=', 'ac_phone.phone_number');
                     })
                     ->where('upr.user_id', $userId)
                     ->whereIn('upr.id', $ids)
-                    ->get(['upr.id', 'ac.id as customer_id']);
+                    ->select(['upr.id', DB::raw('COALESCE(ac.id, ac_phone.id) as customer_id')])
+                    ->get();
                 foreach ($rows as $r) {
                     $actionId = $idMap[$r->id] ?? null;
                     if ($actionId !== null) {
@@ -1221,9 +1224,8 @@ class ActionsAggregatorService
     private function getPropertyRequestsSubquery(int $userId): \Illuminate\Database\Query\Builder
     {
         return DB::table('users_property_requests as upr')
-            ->leftJoin('api_customer_property_request as acpr', 'acpr.property_request_id', '=', 'upr.id')
             ->leftJoin('api_customers as ac', function ($join) {
-                $join->on('ac.id', '=', 'acpr.customer_id')
+                $join->on('ac.id', '=', 'upr.customer_id')
                     ->on('ac.user_id', '=', 'upr.user_id');
             })
             ->leftJoin('api_customers as ac_phone', function ($join) {

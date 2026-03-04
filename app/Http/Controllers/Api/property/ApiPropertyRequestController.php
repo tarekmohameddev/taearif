@@ -179,9 +179,9 @@ class ApiPropertyRequestController extends Controller
         $query = UserPropertyRequest::query()
             ->with([
                 'statusOption:id,name_ar,name_en',
-                'customers:id,user_id,responsible_employee_id',
-                'customers.responsibleEmployee:id,first_name,last_name,email',
-                'customers.responsibleEmployee.activeWhatsappUser:id,employee_id,number',
+                'customer:id,user_id,responsible_employee_id',
+                'customer.responsibleEmployee:id,first_name,last_name,email',
+                'customer.responsibleEmployee.activeWhatsappUser:id,employee_id,number',
                 'district:id,name_ar',
             ])
             ->where('user_id', $ownerId);
@@ -293,14 +293,9 @@ class ApiPropertyRequestController extends Controller
         if (!empty($validated['responsible_employee_id'])) {
             $employeeId = (int) $validated['responsible_employee_id'];
 
-            // Only property requests that already have associated customers can match this filter
-            $query->whereExists(function ($sub) use ($employeeId, $ownerId) {
-                $sub->select(DB::raw(1))
-                    ->from('api_customer_property_request')
-                    ->join('api_customers', 'api_customer_property_request.customer_id', '=', 'api_customers.id')
-                    ->whereColumn('api_customer_property_request.property_request_id', 'users_property_requests.id')
-                    ->where('api_customers.user_id', $ownerId)
-                    ->where('api_customers.responsible_employee_id', $employeeId);
+            $query->whereHas('customer', function ($sub) use ($employeeId, $ownerId) {
+                $sub->where('user_id', $ownerId)
+                    ->where('responsible_employee_id', $employeeId);
             });
         }
 
@@ -715,8 +710,10 @@ class ApiPropertyRequestController extends Controller
             ->where('user_id', $ownerId)
             ->firstOrFail();
 
-        // Get or check for associated customer (first linked via pivot for this tenant)
-        $customer = $propertyRequest->customers()->where('api_customers.user_id', $ownerId)->first();
+        $customer = $propertyRequest->customer;
+        if ($customer && $customer->user_id !== $ownerId) {
+            $customer = null;
+        }
 
         if (!$customer) {
             return response()->json([
@@ -733,7 +730,7 @@ class ApiPropertyRequestController extends Controller
         ]);
 
         // Reload property request with customer and employee relationships
-        $propertyRequest->load(['customers.responsibleEmployee']);
+        $propertyRequest->load(['customer.responsibleEmployee']);
 
         return response()->json([
             'status' => 'success',

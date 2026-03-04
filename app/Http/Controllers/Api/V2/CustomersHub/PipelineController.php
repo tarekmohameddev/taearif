@@ -133,10 +133,10 @@ class PipelineController extends ApiController
             return $this->error('Failed to move request', 422);
         }
 
-        $customerId = UserPropertyRequest::find($requestId)
-            ?->customers()
-            ->where('api_customers.user_id', $userId)
-            ->value('api_customers.id');
+        $request = UserPropertyRequest::find($requestId);
+        $customerId = ($request && $request->customer && $request->customer->user_id === $userId)
+            ? $request->customer->id
+            : null;
 
         return $this->success([
             'message' => 'Request moved successfully',

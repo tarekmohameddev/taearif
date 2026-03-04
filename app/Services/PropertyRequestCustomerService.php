@@ -58,7 +58,8 @@ class PropertyRequestCustomerService
                 ->where('phone_number', $normalizedPhone)
                 ->first();
             if ($existingCustomer) {
-                $existingCustomer->propertyRequests()->syncWithoutDetaching([$propertyRequest->id]);
+                $propertyRequest->customer_id = $existingCustomer->id;
+                $propertyRequest->save();
                 Log::info('Property request linked to existing customer', [
                     'property_request_id' => $propertyRequest->id,
                     'customer_id' => $existingCustomer->id,
@@ -204,7 +205,8 @@ class PropertyRequestCustomerService
                     'source_id' => $propertyRequest->id,
                 ]);
 
-                $customer->propertyRequests()->attach($propertyRequest->id);
+                $propertyRequest->customer_id = $customer->id;
+                $propertyRequest->save();
 
                 Log::info('Customer auto-created from property request', [
                     'property_request_id' => $propertyRequest->id,
@@ -314,7 +316,8 @@ class PropertyRequestCustomerService
     public function linkExistingCustomer(ApiCustomer $customer, UserPropertyRequest $propertyRequest): ApiCustomer
     {
         return DB::transaction(function () use ($customer, $propertyRequest) {
-            $customer->propertyRequests()->syncWithoutDetaching([$propertyRequest->id]);
+            $propertyRequest->customer_id = $customer->id;
+            $propertyRequest->save();
 
             // Update source only if not already set (preserve original source)
             if (!$customer->source || $customer->source === 'manual') {
