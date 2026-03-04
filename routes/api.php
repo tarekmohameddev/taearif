@@ -793,8 +793,11 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::middleware(['can:property_requests.view'])->group(function () {
         Route::get('/property-requests/filters', [ApiPropertyRequestController::class, 'filterOptions'])->middleware('can:property_requests.view');
         Route::get('/property-requests', [ApiPropertyRequestController::class, 'index'])->middleware('can:property_requests.view');
-        Route::get('/property-requests/{id}', [ApiPropertyRequestController::class, 'show'])->middleware('can:property_requests.view');
         Route::post('/property-requests', [ApiPropertyRequestController::class, 'store'])->middleware('can:property_requests.create');
+        // Property IDs on request (must be before {id} so that .../properties is matched)
+        Route::post('/property-requests/{id}/properties', [ApiPropertyRequestController::class, 'attachProperties'])->middleware('can:property_requests.update');
+        Route::delete('/property-requests/{id}/properties/{propertyId}', [ApiPropertyRequestController::class, 'detachProperty'])->middleware('can:property_requests.update');
+        Route::get('/property-requests/{id}', [ApiPropertyRequestController::class, 'show'])->middleware('can:property_requests.view');
         // DELETE
         Route::delete('/property-requests/{id}', [ApiPropertyRequestController::class, 'destroy'])->middleware('can:property_requests.delete');
         // update

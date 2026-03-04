@@ -69,6 +69,7 @@ class UserPropertyRequest extends Model
         'is_active',
         'status_id',
         'customers_hub_stage_id',
+        'property_ids',
     ];
 
     protected $casts = [
@@ -81,6 +82,7 @@ class UserPropertyRequest extends Model
         'is_read'              => 'boolean',
         'is_archived'          => 'boolean',
         'status_id'            => 'integer',
+        'property_ids'         => 'array',
     ];
 
     protected $hidden = [

@@ -16,6 +16,7 @@ use App\Http\Requests\Api\Property\UpdatePropertyRequestRequest;
 use App\Http\Requests\Api\Property\UpdateStatusPropertyRequestRequest;
 use App\Http\Requests\Api\Property\UpdateEmployeePropertyRequestRequest;
 use App\Http\Requests\Api\Property\AssignEmployeeToCustomerRequest;
+use App\Http\Requests\Api\Property\AttachPropertiesToPropertyRequestRequest;
 use App\Http\Requests\Api\Property\IndexPropertyRequestsRequest;
 use App\Models\User\UserDistrict;
 use App\Models\User\RealestateManagement\ApiUserCategory;
@@ -827,4 +828,61 @@ class ApiPropertyRequestController extends Controller
         }
     }
 
+    /**
+     * Attach property IDs to a property request (append to property_ids).
+     *
+     * POST api/v1/property-requests/{id}/properties
+     */
+    public function attachProperties(AttachPropertiesToPropertyRequestRequest $request, $id): JsonResponse
+    {
+        $user = $request->user();
+        $ownerId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+
+        $propertyRequest = UserPropertyRequest::where('id', $id)
+            ->where('user_id', $ownerId)
+            ->firstOrFail();
+
+        $newIds = array_map('intval', $request->validated('propertyIds'));
+        $existing = $propertyRequest->property_ids ?? [];
+        $merged = array_values(array_unique(array_merge($existing, $newIds)));
+        $propertyRequest->property_ids = $merged;
+        $propertyRequest->save();
+
+        $propertyRequest->load('customer');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Properties attached successfully.',
+            'data' => ['property_request' => $propertyRequest],
+        ]);
+    }
+
+    /**
+     * Detach one property ID from a property request.
+     *
+     * DELETE api/v1/property-requests/{id}/properties/{propertyId}
+     */
+    public function detachProperty(Request $request, $id, $propertyId): JsonResponse
+    {
+        $user = $request->user();
+        $ownerId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+
+        $propertyRequest = UserPropertyRequest::where('id', $id)
+            ->where('user_id', $ownerId)
+            ->firstOrFail();
+
+        $ids = $propertyRequest->property_ids ?? [];
+        $propertyIdInt = (int) $propertyId;
+        $ids = array_values(array_filter($ids, fn ($id) => (int) $id !== $propertyIdInt));
+        $propertyRequest->property_ids = $ids;
+        $propertyRequest->save();
+
+        $propertyRequest->load('customer');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Property detached successfully.',
+            'data' => ['property_request' => $propertyRequest],
+        ]);
+    }
 }
