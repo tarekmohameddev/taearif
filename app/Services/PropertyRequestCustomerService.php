@@ -53,13 +53,18 @@ class PropertyRequestCustomerService
                 return null;
             }
 
-            // Check for existing customer (with normalized phone)
-            if ($this->customerExists($propertyRequest->user_id, $normalizedPhone)) {
-                Log::info('Customer already exists with phone number', [
+            // If customer already exists with this phone, link this request to them so response has customer_id
+            $existingCustomer = ApiCustomer::where('user_id', $propertyRequest->user_id)
+                ->where('phone_number', $normalizedPhone)
+                ->first();
+            if ($existingCustomer) {
+                $existingCustomer->propertyRequests()->syncWithoutDetaching([$propertyRequest->id]);
+                Log::info('Property request linked to existing customer', [
                     'property_request_id' => $propertyRequest->id,
+                    'customer_id' => $existingCustomer->id,
                     'phone_number' => $normalizedPhone,
                 ]);
-                return null;
+                return $existingCustomer;
             }
 
             // Determine stage ID: use from settings if available, otherwise use default
