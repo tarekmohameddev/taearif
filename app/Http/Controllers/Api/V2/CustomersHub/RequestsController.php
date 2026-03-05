@@ -123,16 +123,46 @@ class RequestsController extends ApiController
             }
         }
 
-        $items->each(function ($item) use ($appointmentsByRequest, $remindersByRequest, $appointmentsByInquiry, $remindersByInquiry) {
+        // Load property_ids per property request and batch-load property summaries
+        $propertiesByRequestId = [];
+        if (!empty($propertyRequestSourceIds)) {
+            $requestRows = DB::table('users_property_requests')
+                ->where('user_id', $userId)
+                ->whereIn('id', $propertyRequestSourceIds)
+                ->get(['id', 'property_ids']);
+            foreach ($requestRows as $row) {
+                $ids = $row->property_ids;
+                if (is_string($ids)) {
+                    $decoded = json_decode($ids, true);
+                    $ids = is_array($decoded) ? $decoded : [];
+                }
+                $ids = is_array($ids) ? $ids : [];
+                $propertiesByRequestId[(int) $row->id] = array_values(array_filter(array_map(function ($id) {
+                    return is_numeric($id) ? (int) $id : null;
+                }, $ids)));
+            }
+            $allPropertyIds = array_values(array_unique(array_merge(...array_values($propertiesByRequestId))));
+            $summariesById = $this->propertyRequestDetailBuilder->getPropertySummariesForIds($userId, $allPropertyIds);
+            foreach ($propertiesByRequestId as $requestId => $ids) {
+                $propertiesByRequestId[$requestId] = array_values(array_filter(array_map(function ($id) use ($summariesById) {
+                    return $summariesById[$id] ?? null;
+                }, $ids)));
+            }
+        }
+
+        $items->each(function ($item) use ($appointmentsByRequest, $remindersByRequest, $appointmentsByInquiry, $remindersByInquiry, $propertiesByRequestId) {
             if (($item->objectType ?? '') === 'property_request' && isset($item->sourceId)) {
                 $item->appointments = $appointmentsByRequest[$item->sourceId] ?? [];
                 $item->reminders = $remindersByRequest[$item->sourceId] ?? [];
+                $item->properties = $propertiesByRequestId[$item->sourceId] ?? [];
             } elseif (($item->objectType ?? '') === 'inquiry' && isset($item->sourceId)) {
                 $item->appointments = $appointmentsByInquiry[$item->sourceId] ?? [];
                 $item->reminders = $remindersByInquiry[$item->sourceId] ?? [];
+                $item->properties = [];
             } else {
                 $item->appointments = [];
                 $item->reminders = [];
+                $item->properties = [];
             }
         });
 

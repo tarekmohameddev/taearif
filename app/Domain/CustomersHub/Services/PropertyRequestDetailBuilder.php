@@ -448,4 +448,65 @@ class PropertyRequestDetailBuilder
             'updatedAt' => Carbon::parse($note->updated_at)->toIso8601String(),
         ];
     }
+
+    /**
+     * Get property summaries for a list of property IDs (for requests list).
+     * Returns array of summary arrays: id, title, address, slug, price, featuredImage, district, city.
+     * Uses user_properties + user_property_contents (first per property) + user_districts.
+     *
+     * @param  array<int>  $propertyIds
+     * @return array<int, array{id: int, title: string|null, address: string|null, slug: string|null, price: float|null, featuredImage: string|null, district: string|null, city: string|null}>
+     */
+    public function getPropertySummariesForIds(int $userId, array $propertyIds): array
+    {
+        $propertyIds = array_values(array_unique(array_filter(array_map('intval', $propertyIds))));
+        if (empty($propertyIds)) {
+            return [];
+        }
+
+        $rows = DB::table('user_properties as p')
+            ->where('p.user_id', $userId)
+            ->whereIn('p.id', $propertyIds)
+            ->leftJoin(
+                DB::raw('(SELECT property_id, MIN(id) AS content_id FROM user_property_contents GROUP BY property_id) AS first_pc'),
+                'first_pc.property_id',
+                '=',
+                'p.id'
+            )
+            ->leftJoin('user_property_contents as pc', function ($join) {
+                $join->on('pc.property_id', '=', 'p.id')
+                    ->on('pc.id', '=', DB::raw('first_pc.content_id'));
+            })
+            ->leftJoin('user_districts as ud', 'pc.state_id', '=', 'ud.id')
+            ->select([
+                'p.id',
+                'p.price',
+                'p.featured_image',
+                'pc.title',
+                'pc.address',
+                'pc.slug',
+                'ud.name_ar as district',
+                'ud.city_name_ar as city',
+            ])
+            ->get();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $featuredImage = null;
+            if (!empty($row->featured_image)) {
+                $featuredImage = asset($row->featured_image);
+            }
+            $result[(int) $row->id] = [
+                'id' => (int) $row->id,
+                'title' => $row->title !== null ? (string) $row->title : null,
+                'address' => $row->address !== null ? (string) $row->address : null,
+                'slug' => $row->slug !== null ? (string) $row->slug : null,
+                'price' => isset($row->price) && $row->price !== null ? (float) $row->price : null,
+                'featuredImage' => $featuredImage,
+                'district' => $row->district !== null ? (string) $row->district : null,
+                'city' => $row->city !== null ? (string) $row->city : null,
+            ];
+        }
+        return $result;
+    }
 }
