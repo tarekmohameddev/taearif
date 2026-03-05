@@ -276,6 +276,10 @@ class CustomersListService
         if (!empty($filters['city'])) {
             $query->where('city_id', $filters['city']);
         }
+
+        if (!empty($filters['district'])) {
+            $query->where('district_id', $filters['district']);
+        }
         
         if (!empty($filters['createdFrom'])) {
             $query->where('created_at', '>=', $filters['createdFrom']);
@@ -343,6 +347,10 @@ class CustomersListService
 
         if (!empty($filters['city'])) {
             $query->where('api_customers.city_id', $filters['city']);
+        }
+
+        if (!empty($filters['district'])) {
+            $query->where('api_customers.district_id', $filters['district']);
         }
 
         if (!empty($filters['createdFrom'])) {
@@ -442,6 +450,26 @@ class CustomersListService
     }
 
     /**
+     * Map source value to Arabic label for list response.
+     */
+    private function sourceToArabic(?string $source): string
+    {
+        $map = [
+            'public_form' => 'نموذج عام',
+            'property_interest' => 'اهتمام بعقار',
+            'whatsapp' => 'واتساب',
+            'manual' => 'يدوي',
+            'employee_dashboard' => 'لوحة الموظف',
+            'whatsapp_bot' => 'واتساب بوت',
+            'import' => 'استيراد',
+            'referral' => 'إحالة',
+            'inquiry' => 'استفسار',
+        ];
+        $key = $source ?? '';
+        return $map[$key] ?? $key;
+    }
+
+    /**
      * Map purpose (sale/rent/for_sale/for_rent) to Arabic label للبيع / للإيجار.
      */
     private function purposeToListingLabel(?string $purpose): ?string
@@ -470,6 +498,7 @@ class CustomersListService
             'phone' => $customer->phone_number,
             'email' => $customer->email,
             'source' => $customer->source,
+            'sourceAr' => $this->sourceToArabic($customer->source ?? ''),
             'stage' => [
                 'id' => $customer->hub_stage_id ?? $customer->customers_hub_stage_id ?? null,
                 'name' => $customer->stage_name ?? null,
