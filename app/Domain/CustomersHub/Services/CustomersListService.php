@@ -27,9 +27,11 @@ class CustomersListService
         $offset = ($page - 1) * $limit;
         $items = $query->limit($limit)->offset($offset)->get();
 
+        $lastRequestByCustomerId = $this->getLastPropertyRequestPerCustomer($userId, $items);
+
         // Transform items
-        $items = $items->map(function ($item) {
-            return $this->transformCustomer($item);
+        $items = $items->map(function ($item) use ($lastRequestByCustomerId) {
+            return $this->transformCustomer($item, $lastRequestByCustomerId[$item->id] ?? null);
         });
 
         return [
@@ -360,9 +362,107 @@ class CustomersListService
     }
 
     /**
+     * Batch-load last property request per customer (by created_at) for the current page.
+     * Returns map customer_id => array{ district, city, propertyType, listingTypeLabel }.
+     */
+    private function getLastPropertyRequestPerCustomer(int $userId, $items): array
+    {
+        $customerIds = $items->pluck('id')->all();
+        $phones = $items->pluck('phone_number')->filter()->unique()->values()->all();
+
+        if (empty($customerIds)) {
+            return [];
+        }
+
+        $rows = DB::table('users_property_requests as upr')
+            ->leftJoin('api_customers as ac_phone', function ($join) {
+                $join->on('ac_phone.user_id', '=', 'upr.user_id')
+                    ->on('ac_phone.phone_number', '=', 'upr.phone');
+            })
+            ->where('upr.user_id', $userId)
+            ->where('upr.is_active', 1)
+            ->where(function ($q) use ($customerIds, $phones) {
+                $q->whereIn('upr.customer_id', $customerIds)
+                    ->orWhere(function ($q2) use ($customerIds, $phones) {
+                        $q2->whereNull('upr.customer_id')
+                            ->whereIn('upr.phone', $phones)
+                            ->whereIn('ac_phone.id', $customerIds);
+                    });
+            })
+            ->select([
+                'upr.id',
+                'upr.created_at',
+                DB::raw('COALESCE(upr.customer_id, ac_phone.id) as effective_customer_id'),
+            ])
+            ->orderBy('upr.created_at', 'desc')
+            ->get();
+
+        $customerToUprId = [];
+        foreach ($rows as $row) {
+            $cid = (int) $row->effective_customer_id;
+            if (!isset($customerToUprId[$cid])) {
+                $customerToUprId[$cid] = (int) $row->id;
+            }
+        }
+
+        $uprIds = array_values($customerToUprId);
+        if (empty($uprIds)) {
+            return [];
+        }
+
+        $enriched = DB::table('users_property_requests as upr')
+            ->leftJoin('user_cities as uc', 'upr.city_id', '=', 'uc.id')
+            ->leftJoin('user_districts as ud', 'upr.districts_id', '=', 'ud.id')
+            ->whereIn('upr.id', $uprIds)
+            ->select([
+                'upr.id',
+                'upr.property_type',
+                'upr.purpose',
+                'uc.name_ar as city',
+                'ud.name_ar as district',
+            ])
+            ->get()
+            ->keyBy('id');
+
+        $out = [];
+        foreach ($customerToUprId as $customerId => $uprId) {
+            $row = $enriched->get($uprId);
+            if (!$row) {
+                continue;
+            }
+            $out[$customerId] = [
+                'district' => $row->district !== null ? (string) $row->district : null,
+                'city' => $row->city !== null ? (string) $row->city : null,
+                'propertyType' => $row->property_type !== null ? (string) $row->property_type : null,
+                'listingTypeLabel' => $this->purposeToListingLabel($row->purpose),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Map purpose (sale/rent/for_sale/for_rent) to Arabic label للبيع / للإيجار.
+     */
+    private function purposeToListingLabel(?string $purpose): ?string
+    {
+        if ($purpose === null || $purpose === '') {
+            return null;
+        }
+        $p = strtolower(trim($purpose));
+        if (in_array($p, ['sale', 'for_sale'], true)) {
+            return 'للبيع';
+        }
+        if (in_array($p, ['rent', 'for_rent'], true)) {
+            return 'للإيجار';
+        }
+        return $purpose;
+    }
+
+    /**
      * Transform customer record.
      */
-    private function transformCustomer(object $customer): array
+    private function transformCustomer(object $customer, ?array $lastPropertyRequest = null): array
     {
         return [
             'id' => $customer->id,
@@ -391,6 +491,7 @@ class CustomersListService
             ],
             'createdAt' => $customer->created_at ? Carbon::parse($customer->created_at)->toIso8601String() : null,
             'updatedAt' => $customer->updated_at ? Carbon::parse($customer->updated_at)->toIso8601String() : null,
+            'lastPropertyRequest' => $lastPropertyRequest,
         ];
     }
 }
