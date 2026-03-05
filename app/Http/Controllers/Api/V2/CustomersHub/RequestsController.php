@@ -254,6 +254,16 @@ class RequestsController extends ApiController
                 ['id' => 'request_reminder', 'label' => 'تذكير طلب', 'labelEn' => 'Request Reminder'],
             ];
 
+            // Appointment types (for filtering property requests by appointment type)
+            $appointmentTypes = [
+                ['id' => 'site_visit', 'label' => 'معاينة', 'labelEn' => 'Site visit'],
+                ['id' => 'office_meeting', 'label' => 'اجتماع مكتب', 'labelEn' => 'Office meeting'],
+                ['id' => 'phone_call', 'label' => 'اتصال هاتفي', 'labelEn' => 'Phone call'],
+                ['id' => 'video_call', 'label' => 'مكالمة فيديو', 'labelEn' => 'Video call'],
+                ['id' => 'contract_signing', 'label' => 'توقيع عقد', 'labelEn' => 'Contract signing'],
+                ['id' => 'other', 'label' => 'أخرى', 'labelEn' => 'Other'],
+            ];
+
             // Pipeline stages (customers_hub_stages) for request list filtering
             $stages = DB::table('customers_hub_stages')
                 ->where('is_active', true)
@@ -295,6 +305,7 @@ class RequestsController extends ApiController
                 'priorities' => $priorities,
                 'sources' => $sources,
                 'objectTypes' => $objectTypes,
+                'appointmentTypes' => $appointmentTypes,
                 'dueDateBuckets' => $dueDateBuckets,
                 'stages' => $stages,
                 'customerTypes' => $customerTypes,

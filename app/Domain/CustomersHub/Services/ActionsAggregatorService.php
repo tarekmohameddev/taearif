@@ -170,7 +170,7 @@ class ActionsAggregatorService
             ->where('upr.user_id', $userId)
             ->where('upr.is_active', 1);
 
-        $this->applyPropertyRequestFilters($requestQuery, $filters);
+        $this->applyPropertyRequestFilters($requestQuery, $filters, $userId);
 
         $countsRequests = (clone $requestQuery)
             ->whereNotNull('upr.customers_hub_stage_id')
@@ -233,8 +233,10 @@ class ActionsAggregatorService
     /**
      * Apply list filters to a query on users_property_requests (upr).
      * Adds joins only when required by filters (cities -> user_cities; assignees/customer_id -> api_customers).
+     *
+     * @param  int|null  $userId  Required when appointment_types filter is used (for stage counts).
      */
-    private function applyPropertyRequestFilters(\Illuminate\Database\Query\Builder $query, array $filters): void
+    private function applyPropertyRequestFilters(\Illuminate\Database\Query\Builder $query, array $filters, ?int $userId = null): void
     {
         $hasCities = !empty($filters['cities']) && is_array($filters['cities']);
         $hasAssignees = !empty($filters['assignees']) && is_array($filters['assignees']);
@@ -391,6 +393,17 @@ class ActionsAggregatorService
                 $q->where('upr.full_name', 'like', $search)
                     ->orWhere('upr.notes', 'like', $search)
                     ->orWhere('upr.phone', 'like', $search);
+            });
+        }
+
+        // Appointment type filter: only requests that have at least one appointment of the given type(s)
+        if (!empty($filters['appointment_types']) && is_array($filters['appointment_types']) && $userId !== null) {
+            $query->whereExists(function ($sub) use ($userId, $filters) {
+                $sub->select(DB::raw(1))
+                    ->from('property_request_appointments as pra')
+                    ->whereColumn('pra.property_request_id', 'upr.id')
+                    ->where('pra.user_id', $userId)
+                    ->whereIn('pra.type', $filters['appointment_types']);
             });
         }
     }
@@ -1499,6 +1512,24 @@ class ActionsAggregatorService
         // Object types filter
         if (!empty($filters['objectTypes']) && is_array($filters['objectTypes'])) {
             $query->whereIn('objectType', $filters['objectTypes']);
+        }
+
+        // Appointment type filter: only property_request rows that have at least one appointment of the given type(s)
+        if (!empty($filters['appointment_types']) && is_array($filters['appointment_types'])) {
+            $query->where(function ($q) use ($userId, $filters) {
+                $q->where(function ($q2) {
+                    $q2->where('objectType', '!=', 'property_request')
+                        ->orWhere('sourceTable', '!=', 'users_property_requests');
+                })->orWhere(function ($q2) use ($userId, $filters) {
+                    $q2->where('sourceTable', 'users_property_requests')
+                        ->whereIn('sourceId', function ($sub) use ($userId, $filters) {
+                            $sub->select('property_request_id')
+                                ->from('property_request_appointments')
+                                ->where('user_id', $userId)
+                                ->whereIn('type', $filters['appointment_types']);
+                        });
+                });
+            });
         }
 
         // Priorities filter
