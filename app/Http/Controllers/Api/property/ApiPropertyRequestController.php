@@ -78,7 +78,7 @@ class ApiPropertyRequestController extends Controller
 
         $data['is_read'] = false;
         $data['is_active'] = true;
-        $data['source'] = $data['source'] ?? 'public_form';
+        $data['source'] = $request->user() ? 'employee_dashboard' : ($data['source'] ?? 'employee_dashboard');
         $data['referral_source'] = $data['referral_source'] ?? null;
 
         if (isset($data['status_id'])) {
