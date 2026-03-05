@@ -7,7 +7,7 @@ use Carbon\Carbon;
 
 /**
  * CustomersListService
- * 
+ *
  * Handles customer list operations with filtering, stats, and bulk operations.
  * Main table: api_customers
  */
@@ -55,7 +55,7 @@ class CustomersListService
     {
         // Build base filter query (minimal, no JOINs) for aggregate calculations
         $baseFilterQuery = $this->buildBaseFilterQuery($userId, $filters);
-        
+
         // Total count - use simple count without DISTINCT (no JOINs means no duplicates)
         $total = $baseFilterQuery->count();
 
@@ -191,17 +191,17 @@ class CustomersListService
                     'stage_name_en as labelEn',
                     'color',
                 ]),
-            
+
             'priorities' => DB::table('users_api_customers_priorities')
                 ->where('user_id', $userId)
                 ->orderBy('order')
                 ->get(['id', 'name as label', 'color', 'icon']),
-            
+
             'types' => DB::table('users_api_customers_types')
                 ->where('user_id', $userId)
                 ->orderBy('order')
                 ->get(['id', 'name as label', 'color', 'icon']),
-            
+
             'sources' => [
                 ['id' => 'inquiry', 'label' => 'استفسار', 'labelEn' => 'Inquiry'],
                 ['id' => 'manual', 'label' => 'يدوي', 'labelEn' => 'Manual'],
@@ -209,7 +209,7 @@ class CustomersListService
                 ['id' => 'import', 'label' => 'استيراد', 'labelEn' => 'Import'],
                 ['id' => 'referral', 'label' => 'إحالة', 'labelEn' => 'Referral'],
             ],
-            
+
             'employees' => DB::table('users')
                 ->where('tenant_id', $userId)
                 ->where('account_type', 'employee')
@@ -233,7 +233,7 @@ class CustomersListService
     /**
      * Build a minimal query with only WHERE filters (no JOINs, no SELECT).
      * Use for aggregate calculations to avoid mixing aggregates with non-aggregate columns.
-     * 
+     *
      * @param int $userId
      * @param array $filters
      * @return \Illuminate\Database\Query\Builder
@@ -242,7 +242,7 @@ class CustomersListService
     {
         $query = DB::table('api_customers')
             ->where('user_id', $userId);
-        
+
         // Apply only filters that work on api_customers table directly
         if (!empty($filters['search'])) {
             $search = '%' . $filters['search'] . '%';
@@ -252,27 +252,27 @@ class CustomersListService
                   ->orWhere('email', 'like', $search);
             });
         }
-        
+
         if (!empty($filters['stage']) && is_array($filters['stage'])) {
             $query->whereIn('customers_hub_stage_id', $filters['stage']);
         }
-        
+
         if (!empty($filters['priority']) && is_array($filters['priority'])) {
             $query->whereIn('priority_id', $filters['priority']);
         }
-        
+
         if (!empty($filters['type']) && is_array($filters['type'])) {
             $query->whereIn('type_id', $filters['type']);
         }
-        
+
         if (!empty($filters['source']) && is_array($filters['source'])) {
             $query->whereIn('source', $filters['source']);
         }
-        
+
         if (!empty($filters['assignedEmployeeId'])) {
             $query->where('responsible_employee_id', $filters['assignedEmployeeId']);
         }
-        
+
         if (!empty($filters['city'])) {
             $query->where('city_id', $filters['city']);
         }
@@ -280,15 +280,15 @@ class CustomersListService
         if (!empty($filters['district'])) {
             $query->where('district_id', $filters['district']);
         }
-        
+
         if (!empty($filters['createdFrom'])) {
             $query->where('created_at', '>=', $filters['createdFrom']);
         }
-        
+
         if (!empty($filters['createdTo'])) {
             $query->where('created_at', '<=', $filters['createdTo']);
         }
-        
+
         return $query;
     }
 
@@ -464,6 +464,7 @@ class CustomersListService
             'import' => 'استيراد',
             'referral' => 'إحالة',
             'inquiry' => 'استفسار',
+            'property_request' => 'طلب عقار',
         ];
         $key = $source ?? '';
         return $map[$key] ?? $key;
