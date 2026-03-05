@@ -451,11 +451,12 @@ class PropertyRequestDetailBuilder
 
     /**
      * Get property summaries for a list of property IDs (for requests list).
-     * Returns array of summary arrays: id, title, address, slug, price, featuredImage, district, city.
-     * Uses user_properties + user_property_contents (first per property) + user_districts.
+     * Returns array of summary arrays: id, title, address, slug, price, featuredImage, district, city,
+     * propertyType (شقة/فيلا), area, size, listingType, listingTypeLabel (للبيع/للإيجار).
+     * Uses user_properties + user_property_contents (first per property) + user_districts + api_user_categories.
      *
      * @param  array<int>  $propertyIds
-     * @return array<int, array{id: int, title: string|null, address: string|null, slug: string|null, price: float|null, featuredImage: string|null, district: string|null, city: string|null}>
+     * @return array<int, array{id: int, title: string|null, address: string|null, slug: string|null, price: float|null, featuredImage: string|null, district: string|null, city: string|null, propertyType: string|null, area: int|null, size: string|null, listingType: string|null, listingTypeLabel: string|null}>
      */
     public function getPropertySummariesForIds(int $userId, array $propertyIds): array
     {
@@ -478,15 +479,20 @@ class PropertyRequestDetailBuilder
                     ->on('pc.id', '=', DB::raw('first_pc.content_id'));
             })
             ->leftJoin('user_districts as ud', 'pc.state_id', '=', 'ud.id')
+            ->leftJoin('api_user_categories as cat', 'p.category_id', '=', 'cat.id')
             ->select([
                 'p.id',
                 'p.price',
                 'p.featured_image',
+                'p.purpose',
+                'p.area',
+                'p.size',
                 'pc.title',
                 'pc.address',
                 'pc.slug',
                 'ud.name_ar as district',
                 'ud.city_name_ar as city',
+                'cat.name as category_name',
             ])
             ->get();
 
@@ -496,6 +502,9 @@ class PropertyRequestDetailBuilder
             if (!empty($row->featured_image)) {
                 $featuredImage = asset($row->featured_image);
             }
+            $purpose = $row->purpose !== null ? trim((string) $row->purpose) : null;
+            $listingType = $purpose;
+            $listingTypeLabel = $this->purposeToListingLabel($purpose);
             $result[(int) $row->id] = [
                 'id' => (int) $row->id,
                 'title' => $row->title !== null ? (string) $row->title : null,
@@ -505,8 +514,31 @@ class PropertyRequestDetailBuilder
                 'featuredImage' => $featuredImage,
                 'district' => $row->district !== null ? (string) $row->district : null,
                 'city' => $row->city !== null ? (string) $row->city : null,
+                'propertyType' => $row->category_name !== null ? (string) $row->category_name : null,
+                'area' => isset($row->area) && $row->area !== null ? (int) $row->area : null,
+                'size' => $row->size !== null && $row->size !== '' ? (string) $row->size : null,
+                'listingType' => $listingType,
+                'listingTypeLabel' => $listingTypeLabel,
             ];
         }
         return $result;
+    }
+
+    /**
+     * Map purpose (sale/rent/for_sale/for_rent) to Arabic label للبيع / للإيجار.
+     */
+    private function purposeToListingLabel(?string $purpose): ?string
+    {
+        if ($purpose === null || $purpose === '') {
+            return null;
+        }
+        $p = strtolower(trim($purpose));
+        if (in_array($p, ['sale', 'for_sale'], true)) {
+            return 'للبيع';
+        }
+        if (in_array($p, ['rent', 'for_rent'], true)) {
+            return 'للإيجار';
+        }
+        return $purpose;
     }
 }
