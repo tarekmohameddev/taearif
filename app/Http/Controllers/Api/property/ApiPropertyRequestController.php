@@ -148,6 +148,7 @@ class ApiPropertyRequestController extends Controller
             'is_read' => false,
             'is_active' => true,
             'is_archived' => false,
+            'property_ids' => [$property->id],
         ];
 
         $propertyRequest = UserPropertyRequest::create($data);
