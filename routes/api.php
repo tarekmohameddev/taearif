@@ -1,7 +1,5 @@
 <?php
 
-use App\Http\Middleware\SetTenantForPermissions; // the middleware we added earlier
-
 use Illuminate\Http\Request;
 use App\Models\Api\ApiThemeSettings;
 use Illuminate\Support\Facades\Route;
@@ -938,7 +936,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 // --- V1: Reservations / Job applications / Logs ---
 Route::prefix('v1')->group(function () {
-    Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
+    Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
 		Route::prefix('reservations')->group(function () {
 			Route::get('/', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'index']);
 			Route::get('/stats', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'stats']);
