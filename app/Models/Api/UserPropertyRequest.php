@@ -161,8 +161,11 @@ class UserPropertyRequest extends Model
     {
         $array = parent::toArray();
         
-        // Get district name
-        $districtName = $this->district ? $this->district->name_ar : null;
+        // Get district name: use relation (UserDistrict) if loaded, not the string attribute 'district'
+        $districtRelation = $this->getRelationValue('district');
+        $districtName = ($districtRelation && is_object($districtRelation))
+            ? $districtRelation->name_ar
+            : $this->getAttribute('district');
         
         // Get property type Arabic translation
         $propertyTypeAr = $this->getPropertyTypeArabic();
