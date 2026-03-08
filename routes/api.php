@@ -802,6 +802,8 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::put('/property-requests/{id}', [ApiPropertyRequestController::class, 'update'])->middleware('can:property_requests.update');
         // update status
         Route::put('/property-requests/{id}/status', [ApiPropertyRequestController::class, 'updateStatus'])->middleware('can:property_requests.update');
+        // update priority
+        Route::put('/property-requests/{id}/priority', [ApiPropertyRequestController::class, 'updatePriority'])->middleware('can:property_requests.update');
         // assign employee to customer (must come before property request employee route to avoid route conflict)
         Route::put('/property-requests/customer/{customerID}/employee', [ApiPropertyRequestController::class, 'assignEmployeeToCustomer'])->middleware('can:property_requests.update');
         // update employee (property request)

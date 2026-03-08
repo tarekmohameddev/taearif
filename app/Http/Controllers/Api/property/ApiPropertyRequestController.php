@@ -18,6 +18,7 @@ use App\Http\Requests\Api\Property\UpdateEmployeePropertyRequestRequest;
 use App\Http\Requests\Api\Property\AssignEmployeeToCustomerRequest;
 use App\Http\Requests\Api\Property\AttachPropertiesToPropertyRequestRequest;
 use App\Http\Requests\Api\Property\IndexPropertyRequestsRequest;
+use App\Http\Requests\Api\Property\UpdatePriorityPropertyRequestRequest;
 use App\Models\User\UserDistrict;
 use App\Models\User\RealestateManagement\ApiUserCategory;
 use App\Models\Api\UserApiCustomerStage;
@@ -699,6 +700,37 @@ class ApiPropertyRequestController extends Controller
             'status' => 'success',
             'message' => 'تم تحديث حالة العميل بنجاح',
             'data' => $propertyRequest
+        ]);
+    }
+
+    public function updatePriority(UpdatePriorityPropertyRequestRequest $request, $id): JsonResponse
+    {
+        $validated = $request->validated();
+        $user = auth()->user();
+        $ownerId = $user && method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+
+        $propertyRequest = UserPropertyRequest::where('id', $id)
+            ->where('user_id', $ownerId)
+            ->firstOrFail();
+
+        $priorityToSeriousness = [
+            'urgent' => 'مستعد فورًا',
+            'high'   => 'خلال شهر',
+            'medium' => 'خلال 3 أشهر',
+            'low'    => 'لاحقًا / استكشاف فقط',
+        ];
+
+        $propertyRequest->update([
+            'seriousness' => $priorityToSeriousness[$validated['priority']],
+        ]);
+
+        return response()->json([
+            'status'   => 'success',
+            'message'  => 'تم تحديث أولوية طلب العميل بنجاح',
+            'data'     => [
+                'id'       => $propertyRequest->id,
+                'priority' => $validated['priority'],
+            ],
         ]);
     }
 
