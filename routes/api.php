@@ -93,6 +93,7 @@ use App\Http\Controllers\Api\CRM\{
 };
 
 use App\Http\Controllers\Api\V1\WhatsApp\{
+    CampaignController as WaCampaignController,
     NumberController as WhatsAppNumberController,
     ConversationController as WhatsAppConversationController,
     MessageController as WhatsAppMessageController,
@@ -1183,6 +1184,15 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::put('ai/config/{numberId}', [WhatsAppAiConfigController::class, 'update']);
         Route::patch('ai/config/{numberId}/toggle', [WhatsAppAiConfigController::class, 'toggle']);
         Route::get('ai/stats', [WhatsAppAiConfigController::class, 'stats']);
+
+        Route::get('campaigns', [WaCampaignController::class, 'index']);
+        Route::get('campaigns/{id}', [WaCampaignController::class, 'show']);
+        Route::post('campaigns', [WaCampaignController::class, 'store']);
+        Route::patch('campaigns/{id}', [WaCampaignController::class, 'update']);
+        Route::delete('campaigns/{id}', [WaCampaignController::class, 'destroy']);
+        Route::post('campaigns/{id}/send', [WaCampaignController::class, 'send']);
+        Route::post('campaigns/{id}/pause', [WaCampaignController::class, 'pause']);
+        Route::post('campaigns/{id}/resume', [WaCampaignController::class, 'resume']);
     });
 });
 

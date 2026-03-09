@@ -98,6 +98,10 @@ class AppServiceProvider extends ServiceProvider
             \App\Domain\Communication\Email\Contracts\EmailDispatcher::class,
             \App\Domain\Communication\Email\Services\EmailDispatcherService::class
         );
+        $this->app->bind(
+            \App\Domain\Communication\WhatsApp\Contracts\WaDispatcher::class,
+            \App\Domain\Communication\WhatsApp\Services\WaDispatcherService::class
+        );
 
         $this->app->singleton(\App\Domain\Communication\WhatsApp\Services\WhatsAppNumberService::class);
         $this->app->singleton(\App\Domain\Communication\WhatsApp\Services\WhatsAppConversationService::class);
