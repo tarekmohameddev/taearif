@@ -23,6 +23,7 @@ use App\Models\Api\UserPropertyRequest;
 use App\Models\User;
 use App\Models\WhatsappUser;
 use App\Domain\Communication\Contracts\CommunicationService;
+use App\Domain\Communication\WhatsApp\Services\WhatsAppWebhookService;
 use Illuminate\Support\Str;
 
 
@@ -40,10 +41,15 @@ class ChatController extends Controller
     protected string $evolutionApiInstance;
 
     protected CommunicationService $communicationService;
+    protected WhatsAppWebhookService $whatsAppWebhookService;
 
-    public function __construct(CommunicationService $communicationService)
+    public function __construct(
+        CommunicationService $communicationService,
+        WhatsAppWebhookService $whatsAppWebhookService
+    )
     {
         $this->communicationService = $communicationService;
+        $this->whatsAppWebhookService = $whatsAppWebhookService;
         $this->openai = OpenAIClient::client(env('OPENAI_API_KEY'));
         $this->systemInstructions = implode("\n", [
             'أنت موظف دعم عملاء في شركة إدارة عقارات في السعودية.',
@@ -142,9 +148,23 @@ public function handleEvolutionWebhook(Request $request)
         // Clean sender number if it has @s.whatsapp.net
         $senderNumber = str_replace('@s.whatsapp.net', '', $senderNumber);
 
+        $resolvedTenant = $this->whatsAppWebhookService->resolveTenantFromPayload([
+            'provider_account_id' => $payload['instance'] ?? null,
+            'instance' => $payload['instance'] ?? null,
+        ], 'evolution');
+
         $tenantOwnerId = null;
+        $resolvedWaNumberId = null;
+        if ($resolvedTenant !== null) {
+            $resolvedUser = User::find((int) $resolvedTenant['user_id']);
+            $tenantOwnerId = $resolvedUser && method_exists($resolvedUser, 'tenantOwnerId')
+                ? (int) $resolvedUser->tenantOwnerId()
+                : (int) $resolvedTenant['user_id'];
+            $resolvedWaNumberId = (int) $resolvedTenant['wa_number_id'];
+        }
+
         $evolutionNumber = config('communication.evolution_instance_number');
-        if ($evolutionNumber) {
+        if ($tenantOwnerId === null && $evolutionNumber) {
             $whatsappUser = WhatsappUser::where('number', $evolutionNumber)->first();
             if (! $whatsappUser) {
                 $normalizedConfig = preg_replace('/\D/', '', (string) $evolutionNumber);
@@ -163,6 +183,7 @@ public function handleEvolutionWebhook(Request $request)
         Log::info('Evolution webhook: received', [
             'evolution_instance_number_config' => $evolutionNumber ?: '(empty)',
             'tenant_owner_id' => $tenantOwnerId,
+            'wa_number_id' => $resolvedWaNumberId,
             'provider_message_id' => $data['key']['id'] ?? null,
             'sender' => $senderNumber,
         ]);
@@ -182,7 +203,11 @@ public function handleEvolutionWebhook(Request $request)
                     content: $messageContent,
                     channel: 'whatsapp',
                     providerMessageId: $providerMessageId,
-                    meta: ['source' => 'evolution_webhook', 'context' => ['instance' => $this->evolutionApiInstance ?? '']]
+                    meta: array_filter([
+                        'source' => 'evolution_webhook',
+                        'wa_number_id' => $resolvedWaNumberId,
+                        'context' => ['instance' => $this->evolutionApiInstance ?? ''],
+                    ], static fn ($value) => $value !== null)
                 );
             } catch (\Throwable $e) {
                 Log::warning('Evolution webhook: recordInboundMessage failed', ['message' => $e->getMessage()]);
@@ -246,7 +271,14 @@ public function handleWhatsappWebhook(Request $request)
                 'region_name' => $regionName,
             ]);
 
-			$ownerUserId = !empty($extra) ? $this->resolveUserIdFromWhatsappPhoneId($extra) : null;
+            $resolvedTenant = ! empty($extra)
+                ? $this->whatsAppWebhookService->resolveTenantFromPayload(['phone_number_id' => $extra], 'meta')
+                : null;
+
+			$ownerUserId = $resolvedTenant !== null
+                ? (int) $resolvedTenant['user_id']
+                : (!empty($extra) ? $this->resolveUserIdFromWhatsappPhoneId($extra) : null);
+            $resolvedWaNumberId = $resolvedTenant['wa_number_id'] ?? null;
 			$phoneVariants = $this->buildPhoneVariants($whatsappNumber);
 			$customer = $this->findCustomerByPhoneVariants($phoneVariants, $ownerUserId);
 			$userId = $ownerUserId ?? ($customer ? $customer->user_id : null);
@@ -261,7 +293,10 @@ public function handleWhatsappWebhook(Request $request)
 						content: $message,
 						channel: 'whatsapp',
 						providerMessageId: $payload['message_id'] ?? null,
-						meta: ['source' => 'whatsapp_webhook']
+						meta: array_filter([
+                            'source' => 'whatsapp_webhook',
+                            'wa_number_id' => $resolvedWaNumberId !== null ? (int) $resolvedWaNumberId : null,
+                        ], static fn ($value) => $value !== null)
 					);
 				} catch (\Throwable $e) {
 					Log::warning('WhatsApp webhook: recordInboundMessage failed', ['message' => $e->getMessage()]);
@@ -379,16 +414,23 @@ public function handleWhatsappWebhook(Request $request)
             return response()->json(['status' => 'ignored', 'message' => 'Missing required fields'], 422);
         }
 
+        $resolvedTenant = $this->whatsAppWebhookService->resolveTenantFromPayload([
+            'metadata' => $entry['metadata'] ?? [],
+            'phone_number_id' => $entry['metadata']['phone_number_id'] ?? null,
+            'display_phone_number' => $displayPhone,
+        ], 'meta');
+
         $whatsappUser = WhatsappUser::where('number', $displayPhone)->first();
 
-        if (!$whatsappUser) {
+        if (!$whatsappUser && $resolvedTenant === null) {
             return response()->json([
                 'status' => 'ignored',
                 'message' => 'Display phone number not found in whatsapp_users',
             ], 404);
         }
 
-        $userId = $whatsappUser->user_id;
+        $userId = $resolvedTenant !== null ? (int) $resolvedTenant['user_id'] : (int) $whatsappUser->user_id;
+        $resolvedWaNumberId = $resolvedTenant['wa_number_id'] ?? null;
 
         $metaMessage = $entry['messages'][0] ?? null;
         $messageText = null;
@@ -410,7 +452,11 @@ public function handleWhatsappWebhook(Request $request)
                     content: (string) $messageText,
                     channel: 'whatsapp',
                     providerMessageId: $providerMessageId,
-                    meta: ['source' => 'meta_webhook', 'display_phone' => $displayPhone]
+                    meta: array_filter([
+                        'source' => 'meta_webhook',
+                        'display_phone' => $displayPhone,
+                        'wa_number_id' => $resolvedWaNumberId !== null ? (int) $resolvedWaNumberId : null,
+                    ], static fn ($value) => $value !== null)
                 );
             } catch (\Throwable $e) {
                 Log::warning('WhatsApp webhook (Meta): recordInboundMessage failed', ['message' => $e->getMessage()]);
