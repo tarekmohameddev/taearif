@@ -20,6 +20,7 @@ use App\Models\Conversation;
 use App\Models\Message;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class MessageController extends BaseApiController
 {
@@ -76,7 +77,7 @@ class MessageController extends BaseApiController
 
     public function send(SendWhatsAppMessageRequest $request, int $id): JsonResponse
     {
-        $idempotencyKey = trim((string) request()->header('Idempotency-Key', ''));
+        $idempotencyKey = trim((string) request()->header('Idempotency-Key', '')) ?: Str::uuid()->toString();
         $validated = $request->validated();
         $tenantOwnerId = (int) auth()->user()->tenantOwnerId();
 
@@ -123,7 +124,7 @@ class MessageController extends BaseApiController
 
     public function sendTemplate(SendWhatsAppTemplateRequest $request, int $id): JsonResponse
     {
-        $idempotencyKey = trim((string) request()->header('Idempotency-Key', ''));
+        $idempotencyKey = trim((string) request()->header('Idempotency-Key', '')) ?: Str::uuid()->toString();
         $validated = $request->validated();
         $tenantOwnerId = (int) auth()->user()->tenantOwnerId();
         $template = $this->templateService->findForUser($tenantOwnerId, (int) $validated['template_id']);
