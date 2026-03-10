@@ -17,8 +17,7 @@ class AssignmentService
     public function getEmployees(int $userId): array
     {
         $requestCountSub = 'SELECT COUNT(DISTINCT upr.id) FROM users_property_requests upr ' .
-            'INNER JOIN api_customer_property_request acpr ON acpr.property_request_id = upr.id ' .
-            'INNER JOIN api_customers ac ON ac.id = acpr.customer_id AND ac.user_id = upr.user_id ' .
+            'INNER JOIN api_customers ac ON ac.id = upr.customer_id AND ac.user_id = upr.user_id ' .
             'WHERE ac.responsible_employee_id = u.id AND upr.user_id = ? AND upr.is_active = 1';
 
         $employees = DB::table('users as u')
@@ -66,9 +65,8 @@ class AssignmentService
     public function getUnassignedCount(int $userId): int
     {
         return (int) DB::table('users_property_requests as upr')
-            ->join('api_customer_property_request as acpr', 'acpr.property_request_id', '=', 'upr.id')
             ->join('api_customers as ac', function ($j) use ($userId) {
-                $j->on('ac.id', '=', 'acpr.customer_id')->where('ac.user_id', '=', $userId);
+                $j->on('ac.id', '=', 'upr.customer_id')->where('ac.user_id', '=', $userId);
             })
             ->where('upr.user_id', $userId)
             ->where('upr.is_active', 1)
@@ -243,12 +241,11 @@ class AssignmentService
      */
     private function resolveRequestToCustomerId(int $userId, int $requestOrCustomerId): ?int
     {
-        $customerId = DB::table('api_customer_property_request as acpr')
-            ->join('users_property_requests as upr', 'upr.id', '=', 'acpr.property_request_id')
+        $customerId = DB::table('users_property_requests as upr')
             ->where('upr.user_id', $userId)
             ->where('upr.is_active', 1)
-            ->where('acpr.property_request_id', $requestOrCustomerId)
-            ->value('acpr.customer_id');
+            ->where('upr.id', $requestOrCustomerId)
+            ->value('upr.customer_id');
         if ($customerId !== null) {
             return (int) $customerId;
         }
@@ -340,9 +337,8 @@ class AssignmentService
     private function getUnassignedPropertyRequests(int $userId)
     {
         $sub = DB::table('users_property_requests as upr')
-            ->join('api_customer_property_request as acpr', 'acpr.property_request_id', '=', 'upr.id')
             ->join('api_customers as c', function ($j) use ($userId) {
-                $j->on('c.id', '=', 'acpr.customer_id')->where('c.user_id', '=', $userId);
+                $j->on('c.id', '=', 'upr.customer_id')->where('c.user_id', '=', $userId);
             })
             ->leftJoin('user_cities as uc', 'upr.city_id', '=', 'uc.id')
             ->where('upr.user_id', $userId)
@@ -374,8 +370,7 @@ class AssignmentService
         $capacities = [];
         
         $requestCountSub = 'SELECT COUNT(DISTINCT upr.id) FROM users_property_requests upr ' .
-            'INNER JOIN api_customer_property_request acpr ON acpr.property_request_id = upr.id ' .
-            'INNER JOIN api_customers ac ON ac.id = acpr.customer_id AND ac.user_id = upr.user_id ' .
+            'INNER JOIN api_customers ac ON ac.id = upr.customer_id AND ac.user_id = upr.user_id ' .
             'WHERE ac.responsible_employee_id = u.id AND upr.user_id = ? AND upr.is_active = 1';
 
         $employees = DB::table('users as u')

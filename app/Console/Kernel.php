@@ -28,6 +28,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\CleanupOldPageviewsCommand::class,
         \App\Console\Commands\ProcessScheduledSmsCampaigns::class,
         \App\Console\Commands\ProcessScheduledEmailCampaigns::class,
+        \App\Console\Commands\ProcessScheduledWaCampaigns::class,
         \App\Console\Commands\BackfillRbacNewPermissions::class,
     ];
 
@@ -88,6 +89,11 @@ class Kernel extends ConsoleKernel
             ->onOneServer();
 
         $schedule->command('email:process-scheduled-campaigns')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        $schedule->command('wa:process-scheduled-campaigns')
             ->everyMinute()
             ->withoutOverlapping()
             ->onOneServer();

@@ -13,16 +13,17 @@ class WhatsAppWebhookService
      */
     public function resolveTenantFromPayload(array $payload, string $provider = 'meta'): ?array
     {
-        if ($provider === 'meta') {
-            $phoneNumberId = $payload['metadata']['phone_number_id'] ?? $payload['phone_number_id'] ?? null;
-            $displayPhone = $payload['metadata']['display_phone_number'] ?? $payload['display_phone_number'] ?? null;
+        $phoneNumberId = $payload['metadata']['phone_number_id'] ?? $payload['phone_number_id'] ?? null;
+        $displayPhone = $payload['metadata']['display_phone_number'] ?? $payload['display_phone_number'] ?? null;
 
+        if ($provider === 'meta') {
             if ($phoneNumberId !== null) {
                 $waNumber = WaNumber::query()
                     ->where('provider', 'meta')
                     ->where('phone_number_id', (string) $phoneNumberId)
                     ->first();
                 if ($waNumber) {
+                    $this->logResolved($provider, $waNumber, 'phone_number_id');
                     return ['user_id' => (int) $waNumber->user_id, 'wa_number_id' => (int) $waNumber->id];
                 }
             }
@@ -33,6 +34,7 @@ class WhatsAppWebhookService
                     ->where('phone_number', $normalized)
                     ->first();
                 if ($waNumber) {
+                    $this->logResolved($provider, $waNumber, 'display_phone_number');
                     return ['user_id' => (int) $waNumber->user_id, 'wa_number_id' => (int) $waNumber->id];
                 }
             }
@@ -46,14 +48,19 @@ class WhatsAppWebhookService
                     ->where('provider_account_id', (string) $accountId)
                     ->first();
                 if ($waNumber) {
+                    $this->logResolved($provider, $waNumber, 'provider_account_id');
                     return ['user_id' => (int) $waNumber->user_id, 'wa_number_id' => (int) $waNumber->id];
                 }
             }
         }
 
-        Log::warning('communication.whatsapp.webhook.tenant_unresolved', [
-            'reason' => 'tenant_unresolved',
+        Log::warning('communication.whatsapp.wa_number_mapping', [
+            'outcome' => 'unresolved',
             'provider' => $provider,
+            'phone_number_id' => $phoneNumberId !== null ? (string) $phoneNumberId : null,
+            'display_phone_number' => $displayPhone !== null ? (string) $displayPhone : null,
+            'provider_account_id' => isset($payload['provider_account_id']) ? (string) $payload['provider_account_id'] : null,
+            'instance' => isset($payload['instance']) ? (string) $payload['instance'] : null,
         ]);
 
         return null;
@@ -81,5 +88,16 @@ class WhatsAppWebhookService
         }
 
         return $value;
+    }
+
+    private function logResolved(string $provider, WaNumber $waNumber, string $matchedBy): void
+    {
+        Log::info('communication.whatsapp.wa_number_mapping', [
+            'outcome' => 'resolved',
+            'provider' => $provider,
+            'matched_by' => $matchedBy,
+            'user_id' => (int) $waNumber->user_id,
+            'wa_number_id' => (int) $waNumber->id,
+        ]);
     }
 }

@@ -28,6 +28,7 @@ class RequestsListRequest extends BaseApiFormRequest
             'budget_max' => $r->input('budgetMax') ?? $r->input('budget_max'),
             'objectTypes' => $r->input('selectedObjectTypes') ?? $r->input('objectTypes'),
             'stages' => $r->input('selectedStages') ?? $r->input('stages'),
+            'appointment_types' => $r->input('selectedAppointmentTypes') ?? $r->input('appointment_types'),
         ]);
     }
 
@@ -40,7 +41,7 @@ class RequestsListRequest extends BaseApiFormRequest
             'statuses' => 'nullable|array',
             'statuses.*' => 'string|in:pending,in_progress,completed,dismissed,snoozed',
             'sources' => 'nullable|array',
-            'sources.*' => 'string|in:inquiry,manual,whatsapp,import,referral,property_request',
+            'sources.*' => 'string|in:inquiry,manual,whatsapp,import,referral,property_request,website,property_interest,public_form,employee_dashboard,whatsapp_bot',
             'priorities' => 'nullable|array',
             'priorities.*' => 'string|in:low,medium,high,urgent',
             'assignees' => 'nullable|array',
@@ -68,6 +69,8 @@ class RequestsListRequest extends BaseApiFormRequest
             'objectTypes.*' => 'string|in:inquiry,property_request,reminder,request_appointment,request_reminder',
             'stages' => 'nullable|array',
             'stages.*' => 'integer',
+            'appointment_types' => 'nullable|array',
+            'appointment_types.*' => 'string|in:site_visit,office_meeting,phone_call,video_call,contract_signing,other',
         ];
     }
 }

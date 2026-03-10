@@ -122,9 +122,10 @@ class CustomerDetailService
             ->pluck('id')
             ->all();
 
-        $propertyRequestIdsFromPivot = DB::table('api_customer_property_request')
+        $propertyRequestIdsFromCustomerId = DB::table('users_property_requests')
             ->where('customer_id', $customerId)
-            ->pluck('property_request_id')
+            ->where('is_active', 1)
+            ->pluck('id')
             ->all();
 
         $propertyRequestIdsFromPhone = [];
@@ -137,7 +138,7 @@ class CustomerDetailService
                 ->all();
         }
 
-        $propertyRequestIds = array_values(array_unique(array_merge($propertyRequestIdsFromPivot, $propertyRequestIdsFromPhone)));
+        $propertyRequestIds = array_values(array_unique(array_merge($propertyRequestIdsFromCustomerId, $propertyRequestIdsFromPhone)));
 
         $items = [];
 

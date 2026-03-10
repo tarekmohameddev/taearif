@@ -411,6 +411,9 @@ class PropertyController extends Controller
 			}
 		}
 
+		// Remove characteristic's id to prevent overwriting property id
+		unset($characteristics['id']);
+
 		// Get project data if relationship is loaded
 		$projectData = null;
 		if ($property->relationLoaded('project') && $property->project) {

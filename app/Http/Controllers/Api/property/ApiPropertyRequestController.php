@@ -16,7 +16,9 @@ use App\Http\Requests\Api\Property\UpdatePropertyRequestRequest;
 use App\Http\Requests\Api\Property\UpdateStatusPropertyRequestRequest;
 use App\Http\Requests\Api\Property\UpdateEmployeePropertyRequestRequest;
 use App\Http\Requests\Api\Property\AssignEmployeeToCustomerRequest;
+use App\Http\Requests\Api\Property\AttachPropertiesToPropertyRequestRequest;
 use App\Http\Requests\Api\Property\IndexPropertyRequestsRequest;
+use App\Http\Requests\Api\Property\UpdatePriorityPropertyRequestRequest;
 use App\Models\User\UserDistrict;
 use App\Models\User\RealestateManagement\ApiUserCategory;
 use App\Models\Api\UserApiCustomerStage;
@@ -77,8 +79,8 @@ class ApiPropertyRequestController extends Controller
 
         $data['is_read'] = false;
         $data['is_active'] = true;
-        $data['source'] = 'website';
-        $data['referral_source'] = $data['referral_source'] ?? 'public_form';
+        $data['source'] = $request->user() ? 'employee_dashboard' : ($data['source'] ?? 'employee_dashboard');
+        $data['referral_source'] = $data['referral_source'] ?? null;
 
         if (isset($data['status_id'])) {
             $data['status_id'] = (int) $data['status_id'];
@@ -142,11 +144,12 @@ class ApiPropertyRequestController extends Controller
             'city_id' => $cityId,
             'region' => $city ? $city->name_ar : null,
             'purpose' => $property->purpose ?? null,
-            'source' => 'website',
-            'referral_source' => 'property_interest',
+            'source' => 'property_interest',
+            'referral_source' => null,
             'is_read' => false,
             'is_active' => true,
             'is_archived' => false,
+            'property_ids' => [$property->id],
         ];
 
         $propertyRequest = UserPropertyRequest::create($data);
@@ -179,9 +182,9 @@ class ApiPropertyRequestController extends Controller
         $query = UserPropertyRequest::query()
             ->with([
                 'statusOption:id,name_ar,name_en',
-                'customers:id,user_id,responsible_employee_id',
-                'customers.responsibleEmployee:id,first_name,last_name,email',
-                'customers.responsibleEmployee.activeWhatsappUser:id,employee_id,number',
+                'customer:id,user_id,responsible_employee_id',
+                'customer.responsibleEmployee:id,first_name,last_name,email',
+                'customer.responsibleEmployee.activeWhatsappUser:id,employee_id,number',
                 'district:id,name_ar',
             ])
             ->where('user_id', $ownerId);
@@ -293,14 +296,9 @@ class ApiPropertyRequestController extends Controller
         if (!empty($validated['responsible_employee_id'])) {
             $employeeId = (int) $validated['responsible_employee_id'];
 
-            // Only property requests that already have associated customers can match this filter
-            $query->whereExists(function ($sub) use ($employeeId, $ownerId) {
-                $sub->select(DB::raw(1))
-                    ->from('api_customer_property_request')
-                    ->join('api_customers', 'api_customer_property_request.customer_id', '=', 'api_customers.id')
-                    ->whereColumn('api_customer_property_request.property_request_id', 'users_property_requests.id')
-                    ->where('api_customers.user_id', $ownerId)
-                    ->where('api_customers.responsible_employee_id', $employeeId);
+            $query->whereHas('customer', function ($sub) use ($employeeId, $ownerId) {
+                $sub->where('user_id', $ownerId)
+                    ->where('responsible_employee_id', $employeeId);
             });
         }
 
@@ -652,7 +650,7 @@ class ApiPropertyRequestController extends Controller
 
         return response()->json($propertyRequest);
     }
-    
+
     public function destroy(Request $request, $id): JsonResponse
     {
         $user = $request->user();
@@ -705,6 +703,37 @@ class ApiPropertyRequestController extends Controller
         ]);
     }
 
+    public function updatePriority(UpdatePriorityPropertyRequestRequest $request, $id): JsonResponse
+    {
+        $validated = $request->validated();
+        $user = auth()->user();
+        $ownerId = $user && method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+
+        $propertyRequest = UserPropertyRequest::where('id', $id)
+            ->where('user_id', $ownerId)
+            ->firstOrFail();
+
+        $priorityToSeriousness = [
+            'urgent' => 'مستعد فورًا',
+            'high'   => 'خلال شهر',
+            'medium' => 'خلال 3 أشهر',
+            'low'    => 'لاحقًا / استكشاف فقط',
+        ];
+
+        $propertyRequest->update([
+            'seriousness' => $priorityToSeriousness[$validated['priority']],
+        ]);
+
+        return response()->json([
+            'status'   => 'success',
+            'message'  => 'تم تحديث أولوية طلب العميل بنجاح',
+            'data'     => [
+                'id'       => $propertyRequest->id,
+                'priority' => $validated['priority'],
+            ],
+        ]);
+    }
+
     public function updateEmployee(UpdateEmployeePropertyRequestRequest $request, $id): JsonResponse
     {
         $user = auth()->user();
@@ -744,9 +773,9 @@ class ApiPropertyRequestController extends Controller
 
     /**
      * Assign employee to customer via property request (direct customer update).
-     * 
+     *
      * PUT api/v1/property-requests/{customerID}/employee
-     * 
+     *
      * @param Request $request
      * @param int $customerID
      * @return JsonResponse
@@ -832,4 +861,61 @@ class ApiPropertyRequestController extends Controller
         }
     }
 
+    /**
+     * Attach property IDs to a property request (append to property_ids).
+     *
+     * POST api/v1/property-requests/{id}/properties
+     */
+    public function attachProperties(AttachPropertiesToPropertyRequestRequest $request, $id): JsonResponse
+    {
+        $user = $request->user();
+        $ownerId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+
+        $propertyRequest = UserPropertyRequest::where('id', $id)
+            ->where('user_id', $ownerId)
+            ->firstOrFail();
+
+        $newIds = array_map('intval', $request->validated('propertyIds'));
+        $existing = $propertyRequest->property_ids ?? [];
+        $merged = array_values(array_unique(array_merge($existing, $newIds)));
+        $propertyRequest->property_ids = $merged;
+        $propertyRequest->save();
+
+        $propertyRequest->load('customer');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Properties attached successfully.',
+            'data' => ['property_request' => $propertyRequest],
+        ]);
+    }
+
+    /**
+     * Detach one property ID from a property request.
+     *
+     * DELETE api/v1/property-requests/{id}/properties/{propertyId}
+     */
+    public function detachProperty(Request $request, $id, $propertyId): JsonResponse
+    {
+        $user = $request->user();
+        $ownerId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+
+        $propertyRequest = UserPropertyRequest::where('id', $id)
+            ->where('user_id', $ownerId)
+            ->firstOrFail();
+
+        $ids = $propertyRequest->property_ids ?? [];
+        $propertyIdInt = (int) $propertyId;
+        $ids = array_values(array_filter($ids, fn ($id) => (int) $id !== $propertyIdInt));
+        $propertyRequest->property_ids = $ids;
+        $propertyRequest->save();
+
+        $propertyRequest->load('customer');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Property detached successfully.',
+            'data' => ['property_request' => $propertyRequest],
+        ]);
+    }
 }

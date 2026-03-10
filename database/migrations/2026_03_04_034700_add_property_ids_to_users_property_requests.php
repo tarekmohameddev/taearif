@@ -1,0 +1,42 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class AddPropertyIdsToUsersPropertyRequests extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        if (!Schema::hasTable('users_property_requests')) {
+            return;
+        }
+
+        Schema::table('users_property_requests', function (Blueprint $table) {
+            if (!Schema::hasColumn('users_property_requests', 'property_ids')) {
+                $table->json('property_ids')->nullable()->after('property_type');
+            }
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        if (!Schema::hasTable('users_property_requests')) {
+            return;
+        }
+
+        Schema::table('users_property_requests', function (Blueprint $table) {
+            if (Schema::hasColumn('users_property_requests', 'property_ids')) {
+                $table->dropColumn('property_ids');
+            }
+        });
+    }
+}
+
+

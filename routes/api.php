@@ -1,7 +1,5 @@
 <?php
 
-use App\Http\Middleware\SetTenantForPermissions; // the middleware we added earlier
-
 use Illuminate\Http\Request;
 use App\Models\Api\ApiThemeSettings;
 use Illuminate\Support\Facades\Route;
@@ -95,6 +93,7 @@ use App\Http\Controllers\Api\CRM\{
 };
 
 use App\Http\Controllers\Api\V1\WhatsApp\{
+    CampaignController as WaCampaignController,
     NumberController as WhatsAppNumberController,
     ConversationController as WhatsAppConversationController,
     MessageController as WhatsAppMessageController,
@@ -793,14 +792,19 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::middleware(['can:property_requests.view'])->group(function () {
         Route::get('/property-requests/filters', [ApiPropertyRequestController::class, 'filterOptions'])->middleware('can:property_requests.view');
         Route::get('/property-requests', [ApiPropertyRequestController::class, 'index'])->middleware('can:property_requests.view');
-        Route::get('/property-requests/{id}', [ApiPropertyRequestController::class, 'show'])->middleware('can:property_requests.view');
         Route::post('/property-requests', [ApiPropertyRequestController::class, 'store'])->middleware('can:property_requests.create');
+        // Property IDs on request (must be before {id} so that .../properties is matched)
+        Route::post('/property-requests/{id}/properties', [ApiPropertyRequestController::class, 'attachProperties'])->middleware('can:property_requests.update');
+        Route::delete('/property-requests/{id}/properties/{propertyId}', [ApiPropertyRequestController::class, 'detachProperty'])->middleware('can:property_requests.update');
+        Route::get('/property-requests/{id}', [ApiPropertyRequestController::class, 'show'])->middleware('can:property_requests.view');
         // DELETE
         Route::delete('/property-requests/{id}', [ApiPropertyRequestController::class, 'destroy'])->middleware('can:property_requests.delete');
         // update
         Route::put('/property-requests/{id}', [ApiPropertyRequestController::class, 'update'])->middleware('can:property_requests.update');
         // update status
         Route::put('/property-requests/{id}/status', [ApiPropertyRequestController::class, 'updateStatus'])->middleware('can:property_requests.update');
+        // update priority
+        Route::put('/property-requests/{id}/priority', [ApiPropertyRequestController::class, 'updatePriority'])->middleware('can:property_requests.update');
         // assign employee to customer (must come before property request employee route to avoid route conflict)
         Route::put('/property-requests/customer/{customerID}/employee', [ApiPropertyRequestController::class, 'assignEmployeeToCustomer'])->middleware('can:property_requests.update');
         // update employee (property request)
@@ -935,7 +939,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 // --- V1: Reservations / Job applications / Logs ---
 Route::prefix('v1')->group(function () {
-    Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
+    Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
 		Route::prefix('reservations')->group(function () {
 			Route::get('/', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'index']);
 			Route::get('/stats', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'stats']);
@@ -1180,6 +1184,15 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::put('ai/config/{numberId}', [WhatsAppAiConfigController::class, 'update']);
         Route::patch('ai/config/{numberId}/toggle', [WhatsAppAiConfigController::class, 'toggle']);
         Route::get('ai/stats', [WhatsAppAiConfigController::class, 'stats']);
+
+        Route::get('campaigns', [WaCampaignController::class, 'index']);
+        Route::get('campaigns/{id}', [WaCampaignController::class, 'show']);
+        Route::post('campaigns', [WaCampaignController::class, 'store']);
+        Route::patch('campaigns/{id}', [WaCampaignController::class, 'update']);
+        Route::delete('campaigns/{id}', [WaCampaignController::class, 'destroy']);
+        Route::post('campaigns/{id}/send', [WaCampaignController::class, 'send']);
+        Route::post('campaigns/{id}/pause', [WaCampaignController::class, 'pause']);
+        Route::post('campaigns/{id}/resume', [WaCampaignController::class, 'resume']);
     });
 });
 
@@ -1201,8 +1214,9 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
 
     // 1. REQUESTS/ACTIONS CENTER
     Route::prefix('requests')->group(function () {
-        // List with filtering (POST for complex filter payloads)
+        // List with filtering (POST for complex payloads, GET for compatibility)
         Route::post('/list', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'list']);
+        Route::get('/list', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'list']);
 
         // Filter options (cached)
         Route::get('/filter-options', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'filterOptions']);

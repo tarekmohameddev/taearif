@@ -20,8 +20,11 @@ class WebhookController extends Controller
     public function handle(Request $request): JsonResponse
     {
         try {
-            // Log incoming webhook for debugging
-            Log::info('WhatsApp AI Webhook received', ['payload' => $request->all()]);
+            // Log incoming webhook for debugging (payload + raw body from Meta)
+            Log::info('WhatsApp AI Webhook received', [
+                'payload' => $request->all(),
+                'raw_body' => $request->getContent(),
+            ]);
 
             // Handle GET request for webhook verification
             if ($request->isMethod('get')) {
@@ -30,7 +33,7 @@ class WebhookController extends Controller
 
             // Extract Meta webhook data
             $entry = $request->input('entry.0.changes.0.value');
-            
+
             if (!$entry || empty($entry['messages'])) {
                 return response()->json(['status' => 'ok', 'message' => 'No messages in payload']);
             }
@@ -150,29 +153,29 @@ class WebhookController extends Controller
         switch ($type) {
             case 'text':
                 return $message['text']['body'] ?? null;
-            
+
             case 'image':
                 return $message['image']['caption'] ?? '[Image]';
-            
+
             case 'document':
                 return $message['document']['filename'] ?? '[Document]';
-            
+
             case 'audio':
                 return '[Audio message]';
-            
+
             case 'video':
                 return $message['video']['caption'] ?? '[Video]';
-            
+
             case 'location':
                 $lat = $message['location']['latitude'] ?? '';
                 $lng = $message['location']['longitude'] ?? '';
                 return "[Location: {$lat}, {$lng}]";
-            
+
             case 'reaction':
                 $emoji = $message['reaction']['emoji'] ?? '';
                 $messageId = $message['reaction']['message_id'] ?? '';
                 return $emoji ? "[Reaction: {$emoji}]" : '[Reaction]';
-            
+
             case 'edit':
                 // Edit messages contain a nested message structure
                 // Extract content from edit.message based on its type
@@ -182,7 +185,7 @@ class WebhookController extends Controller
                     return $this->extractMessageContent($nestedMessage, $nestedType);
                 }
                 return '[Edited message]';
-            
+
             default:
                 return "[Unsupported message type: {$type}]";
         }

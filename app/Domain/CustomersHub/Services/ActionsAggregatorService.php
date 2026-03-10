@@ -170,7 +170,7 @@ class ActionsAggregatorService
             ->where('upr.user_id', $userId)
             ->where('upr.is_active', 1);
 
-        $this->applyPropertyRequestFilters($requestQuery, $filters);
+        $this->applyPropertyRequestFilters($requestQuery, $filters, $userId);
 
         $countsRequests = (clone $requestQuery)
             ->whereNotNull('upr.customers_hub_stage_id')
@@ -233,8 +233,10 @@ class ActionsAggregatorService
     /**
      * Apply list filters to a query on users_property_requests (upr).
      * Adds joins only when required by filters (cities -> user_cities; assignees/customer_id -> api_customers).
+     *
+     * @param  int|null  $userId  Required when appointment_types filter is used (for stage counts).
      */
-    private function applyPropertyRequestFilters(\Illuminate\Database\Query\Builder $query, array $filters): void
+    private function applyPropertyRequestFilters(\Illuminate\Database\Query\Builder $query, array $filters, ?int $userId = null): void
     {
         $hasCities = !empty($filters['cities']) && is_array($filters['cities']);
         $hasAssignees = !empty($filters['assignees']) && is_array($filters['assignees']);
@@ -391,6 +393,17 @@ class ActionsAggregatorService
                 $q->where('upr.full_name', 'like', $search)
                     ->orWhere('upr.notes', 'like', $search)
                     ->orWhere('upr.phone', 'like', $search);
+            });
+        }
+
+        // Appointment type filter: only requests that have at least one appointment of the given type(s)
+        if (!empty($filters['appointment_types']) && is_array($filters['appointment_types']) && $userId !== null) {
+            $query->whereExists(function ($sub) use ($userId, $filters) {
+                $sub->select(DB::raw(1))
+                    ->from('property_request_appointments as pra')
+                    ->whereColumn('pra.property_request_id', 'upr.id')
+                    ->where('pra.user_id', $userId)
+                    ->whereIn('pra.type', $filters['appointment_types']);
             });
         }
     }
@@ -1004,12 +1017,15 @@ class ActionsAggregatorService
                 }
             } elseif ($table === 'users_property_requests') {
                 $rows = DB::table('users_property_requests as upr')
-                    ->leftJoin('api_customers as ac', function ($j) {
-                        $j->on('upr.user_id', '=', 'ac.user_id')->on('upr.phone', '=', 'ac.phone_number');
+                    ->leftJoin('api_customers as ac', 'upr.customer_id', '=', 'ac.id')
+                    ->leftJoin('api_customers as ac_phone', function ($j) {
+                        $j->on('upr.user_id', '=', 'ac_phone.user_id')
+                            ->on('upr.phone', '=', 'ac_phone.phone_number');
                     })
                     ->where('upr.user_id', $userId)
                     ->whereIn('upr.id', $ids)
-                    ->get(['upr.id', 'ac.id as customer_id']);
+                    ->select(['upr.id', DB::raw('COALESCE(ac.id, ac_phone.id) as customer_id')])
+                    ->get();
                 foreach ($rows as $r) {
                     $actionId = $idMap[$r->id] ?? null;
                     if ($actionId !== null) {
@@ -1222,20 +1238,25 @@ class ActionsAggregatorService
     {
         return DB::table('users_property_requests as upr')
             ->leftJoin('api_customers as ac', function ($join) {
-                $join->on('upr.user_id', '=', 'ac.user_id')
-                    ->on('upr.phone', '=', 'ac.phone_number');
+                $join->on('ac.id', '=', 'upr.customer_id')
+                    ->on('ac.user_id', '=', 'upr.user_id');
+            })
+            ->leftJoin('api_customers as ac_phone', function ($join) {
+                $join->on('ac_phone.user_id', '=', 'upr.user_id')
+                    ->on('ac_phone.phone_number', '=', 'upr.phone');
             })
             ->leftJoin('user_cities as uc', 'upr.city_id', '=', 'uc.id')
-            ->leftJoin('users as u2', 'ac.responsible_employee_id', '=', 'u2.id')
+            ->leftJoin('property_request_statuses as prs', 'upr.status_id', '=', 'prs.id')
+            ->leftJoin('users as u2', DB::raw('u2.id'), '=', DB::raw('COALESCE(ac.responsible_employee_id, ac_phone.responsible_employee_id)'))
             ->where('upr.user_id', $userId)
             ->where('upr.is_active', 1)
             ->select([
                 DB::raw("CONCAT('property_request_', upr.id) as id"),
-                'ac.id as customerId',
-                DB::raw("COALESCE(ac.name, upr.full_name) as customerName"),
-                'upr.phone as customerPhone',
+                DB::raw('COALESCE(ac.id, ac_phone.id) as customerId'),
+                DB::raw("COALESCE(ac.name, ac_phone.name, upr.full_name) as customerName"),
+                DB::raw('COALESCE(ac.phone_number, ac_phone.phone_number, upr.phone) as customerPhone'),
                 DB::raw("'property_match' as type"),
-                DB::raw("CONCAT('عقار مطابق: ', COALESCE(ac.name, upr.full_name)) as title"),
+                DB::raw("CONCAT('عقار مطابق: ', COALESCE(ac.name, ac_phone.name, upr.full_name)) as title"),
                 'upr.notes as description',
                 DB::raw("CASE upr.seriousness
                     WHEN 'مستعد فورًا' THEN 'urgent'
@@ -1245,6 +1266,10 @@ class ActionsAggregatorService
                     ELSE 'medium'
                 END as priority"),
                 DB::raw("CASE
+                    WHEN prs.slug = 'cancelled' THEN 'dismissed'
+                    WHEN prs.slug = 'contract_signed' THEN 'completed'
+                    WHEN prs.slug = 'new' THEN 'pending'
+                    WHEN prs.slug IN ('follow_up', 'property_found') THEN 'in_progress'
                     WHEN upr.is_archived = 1 THEN 'dismissed'
                     WHEN upr.is_read = 1 THEN 'in_progress'
                     ELSE 'pending'
@@ -1256,7 +1281,7 @@ class ActionsAggregatorService
                 'upr.created_at as createdAt',
                 DB::raw("NULL as completedAt"),
                 DB::raw("NULL as completedBy"),
-                'ac.responsible_employee_id as assignedTo',
+                DB::raw('COALESCE(ac.responsible_employee_id, ac_phone.responsible_employee_id) as assignedTo'),
                 DB::raw("CONCAT(COALESCE(u2.first_name, ''), ' ', COALESCE(u2.last_name, '')) as assignedToName"),
                 DB::raw("JSON_OBJECT(
                     'propertyRequestId', upr.id,
@@ -1487,6 +1512,24 @@ class ActionsAggregatorService
         // Object types filter
         if (!empty($filters['objectTypes']) && is_array($filters['objectTypes'])) {
             $query->whereIn('objectType', $filters['objectTypes']);
+        }
+
+        // Appointment type filter: only property_request rows that have at least one appointment of the given type(s)
+        if (!empty($filters['appointment_types']) && is_array($filters['appointment_types'])) {
+            $query->where(function ($q) use ($userId, $filters) {
+                $q->where(function ($q2) {
+                    $q2->where('objectType', '!=', 'property_request')
+                        ->orWhere('sourceTable', '!=', 'users_property_requests');
+                })->orWhere(function ($q2) use ($userId, $filters) {
+                    $q2->where('sourceTable', 'users_property_requests')
+                        ->whereIn('sourceId', function ($sub) use ($userId, $filters) {
+                            $sub->select('property_request_id')
+                                ->from('property_request_appointments')
+                                ->where('user_id', $userId)
+                                ->whereIn('type', $filters['appointment_types']);
+                        });
+                });
+            });
         }
 
         // Priorities filter

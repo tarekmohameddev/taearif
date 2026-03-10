@@ -113,7 +113,10 @@ class CommunicationServiceImpl implements CommunicationService
                 $conversation->update(['last_message_at' => now()]);
 
                 // Always create/update WaConversationState for WhatsApp so the conversation appears in api/v1/whatsapp/conversations
-                $waNumberId = $meta['wa_number_id'] ?? null;
+                $waNumberId = isset($meta['wa_number_id']) ? (int) $meta['wa_number_id'] : null;
+                if ($waNumberId !== null && $waNumberId <= 0) {
+                    $waNumberId = null;
+                }
                 if ($channel === 'whatsapp') {
                     $state = WaConversationState::firstOrCreate(
                         ['conversation_id' => $conversation->id],
@@ -125,6 +128,46 @@ class CommunicationServiceImpl implements CommunicationService
                             'unread_count' => 0,
                         ]
                     );
+
+                    $existingWaNumberId = $state->wa_number_id !== null ? (int) $state->wa_number_id : null;
+                    if ($waNumberId === null) {
+                        Log::info('communication.whatsapp.wa_number_mapping', [
+                            'outcome' => 'unresolved',
+                            'conversation_id' => (int) $conversation->id,
+                            'user_id' => (int) $userId,
+                            'existing_wa_number_id' => $existingWaNumberId,
+                            'source' => $meta['source'] ?? null,
+                        ]);
+                    } elseif ($existingWaNumberId === null) {
+                        if (! $state->wasRecentlyCreated) {
+                            $state->update(['wa_number_id' => $waNumberId]);
+                        }
+                        Log::info('communication.whatsapp.wa_number_mapping', [
+                            'outcome' => $state->wasRecentlyCreated ? 'resolved' : 'backfilled',
+                            'conversation_id' => (int) $conversation->id,
+                            'user_id' => (int) $userId,
+                            'wa_number_id' => $waNumberId,
+                            'source' => $meta['source'] ?? null,
+                        ]);
+                    } elseif ($existingWaNumberId !== $waNumberId) {
+                        Log::warning('communication.whatsapp.wa_number_mapping', [
+                            'outcome' => 'mismatch_kept_existing',
+                            'conversation_id' => (int) $conversation->id,
+                            'user_id' => (int) $userId,
+                            'existing_wa_number_id' => $existingWaNumberId,
+                            'incoming_wa_number_id' => $waNumberId,
+                            'source' => $meta['source'] ?? null,
+                        ]);
+                    } else {
+                        Log::info('communication.whatsapp.wa_number_mapping', [
+                            'outcome' => 'resolved',
+                            'conversation_id' => (int) $conversation->id,
+                            'user_id' => (int) $userId,
+                            'wa_number_id' => $waNumberId,
+                            'source' => $meta['source'] ?? null,
+                        ]);
+                    }
+
                     $preview = is_scalar($content) ? (string) $content : (string) json_encode($content ?? '');
                     $state->increment('unread_count');
                     $state->update([

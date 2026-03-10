@@ -133,10 +133,7 @@ class PropertyRequestDetailBuilder
         $fullAction['stage_id'] = $stageId;
         $fullAction['stage'] = $stage;
         $fullAction['priority'] = $this->mapPropertyRequestPriorityToString($propertyRequest->seriousness ?? null);
-        $fullAction['status'] = $this->mapPropertyRequestStatusToString(
-            (bool) ($propertyRequest->is_archived ?? false),
-            (bool) ($propertyRequest->is_read ?? false)
-        );
+        $fullAction['status'] = $this->resolvePropertyRequestStatus($propertyRequest);
         $fullAction['propertyCategory'] = $propertyCategory;
         $fullAction['propertyType'] = $propertyRequest->property_type;
         $fullAction['city'] = $city;
@@ -324,6 +321,34 @@ class PropertyRequestDetailBuilder
         };
     }
 
+    private function resolvePropertyRequestStatus(object $propertyRequest): string
+    {
+        $statusId = $propertyRequest->status_id ?? null;
+        if ($statusId !== null && $statusId !== '') {
+            $slug = DB::table('property_request_statuses')
+                ->where('id', (int) $statusId)
+                ->value('slug');
+            if ($slug !== null && $slug !== '') {
+                return $this->mapStatusSlugToApiStatus($slug);
+            }
+        }
+        return $this->mapPropertyRequestStatusToString(
+            (bool) ($propertyRequest->is_archived ?? false),
+            (bool) ($propertyRequest->is_read ?? false)
+        );
+    }
+
+    private function mapStatusSlugToApiStatus(string $slug): string
+    {
+        return match ($slug) {
+            'cancelled' => 'dismissed',
+            'contract_signed' => 'completed',
+            'new' => 'pending',
+            'follow_up', 'property_found' => 'in_progress',
+            default => 'in_progress',
+        };
+    }
+
     private function mapPropertyRequestStatusToString(bool $isArchived, bool $isRead): string
     {
         if ($isArchived) {
@@ -422,5 +447,98 @@ class PropertyRequestDetailBuilder
             'createdAt' => Carbon::parse($note->created_at)->toIso8601String(),
             'updatedAt' => Carbon::parse($note->updated_at)->toIso8601String(),
         ];
+    }
+
+    /**
+     * Get property summaries for a list of property IDs (for requests list).
+     * Returns array of summary arrays: id, title, address, slug, price, featuredImage, district, city,
+     * propertyType (شقة/فيلا), area, size, listingType, listingTypeLabel (للبيع/للإيجار).
+     * Uses user_properties + user_property_contents (first per property) + user_districts + api_user_categories.
+     *
+     * @param  array<int>  $propertyIds
+     * @return array<int, array{id: int, title: string|null, address: string|null, slug: string|null, price: float|null, featuredImage: string|null, district: string|null, city: string|null, propertyType: string|null, area: int|null, size: string|null, listingType: string|null, listingTypeLabel: string|null}>
+     */
+    public function getPropertySummariesForIds(int $userId, array $propertyIds): array
+    {
+        $propertyIds = array_values(array_unique(array_filter(array_map('intval', $propertyIds))));
+        if (empty($propertyIds)) {
+            return [];
+        }
+
+        $rows = DB::table('user_properties as p')
+            ->where('p.user_id', $userId)
+            ->whereIn('p.id', $propertyIds)
+            ->leftJoin(
+                DB::raw('(SELECT property_id, MIN(id) AS content_id FROM user_property_contents GROUP BY property_id) AS first_pc'),
+                'first_pc.property_id',
+                '=',
+                'p.id'
+            )
+            ->leftJoin('user_property_contents as pc', function ($join) {
+                $join->on('pc.property_id', '=', 'p.id')
+                    ->on('pc.id', '=', DB::raw('first_pc.content_id'));
+            })
+            ->leftJoin('user_districts as ud', 'pc.state_id', '=', 'ud.id')
+            ->leftJoin('api_user_categories as cat', 'p.category_id', '=', 'cat.id')
+            ->select([
+                'p.id',
+                'p.price',
+                'p.featured_image',
+                'p.purpose',
+                'p.area',
+                'p.size',
+                'pc.title',
+                'pc.address',
+                'pc.slug',
+                'ud.name_ar as district',
+                'ud.city_name_ar as city',
+                'cat.name as category_name',
+            ])
+            ->get();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $featuredImage = null;
+            if (!empty($row->featured_image)) {
+                $featuredImage = asset($row->featured_image);
+            }
+            $purpose = $row->purpose !== null ? trim((string) $row->purpose) : null;
+            $listingType = $purpose;
+            $listingTypeLabel = $this->purposeToListingLabel($purpose);
+            $result[(int) $row->id] = [
+                'id' => (int) $row->id,
+                'title' => $row->title !== null ? (string) $row->title : null,
+                'address' => $row->address !== null ? (string) $row->address : null,
+                'slug' => $row->slug !== null ? (string) $row->slug : null,
+                'price' => isset($row->price) && $row->price !== null ? (float) $row->price : null,
+                'featuredImage' => $featuredImage,
+                'district' => $row->district !== null ? (string) $row->district : null,
+                'city' => $row->city !== null ? (string) $row->city : null,
+                'propertyType' => $row->category_name !== null ? (string) $row->category_name : null,
+                'area' => isset($row->area) && $row->area !== null ? (int) $row->area : null,
+                'size' => $row->size !== null && $row->size !== '' ? (string) $row->size : null,
+                'listingType' => $listingType,
+                'listingTypeLabel' => $listingTypeLabel,
+            ];
+        }
+        return $result;
+    }
+
+    /**
+     * Map purpose (sale/rent/for_sale/for_rent) to Arabic label للبيع / للإيجار.
+     */
+    private function purposeToListingLabel(?string $purpose): ?string
+    {
+        if ($purpose === null || $purpose === '') {
+            return null;
+        }
+        $p = strtolower(trim($purpose));
+        if (in_array($p, ['sale', 'for_sale'], true)) {
+            return 'للبيع';
+        }
+        if (in_array($p, ['rent', 'for_rent'], true)) {
+            return 'للإيجار';
+        }
+        return $purpose;
     }
 }

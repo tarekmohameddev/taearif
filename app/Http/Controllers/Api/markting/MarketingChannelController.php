@@ -8,6 +8,7 @@ use App\Models\Api\markting\MarketingChannelMessage;
 use App\Http\Controllers\Api\markting\CreditController;
 use App\Models\Api\markting\UserCredit;
 use App\Domain\Communication\Contracts\CommunicationService;
+use App\Domain\Communication\WhatsApp\Services\WhatsAppWebhookService;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -28,10 +29,15 @@ use Illuminate\Support\Facades\Log;
 class MarketingChannelController extends BaseApiController
 {
     protected CommunicationService $communicationService;
+    protected WhatsAppWebhookService $whatsAppWebhookService;
 
-    public function __construct(CommunicationService $communicationService)
+    public function __construct(
+        CommunicationService $communicationService,
+        WhatsAppWebhookService $whatsAppWebhookService
+    )
     {
         $this->communicationService = $communicationService;
+        $this->whatsAppWebhookService = $whatsAppWebhookService;
     }
 
     /**
@@ -667,7 +673,7 @@ class MarketingChannelController extends BaseApiController
 
             switch ($messageType) {
                 case 'text':
-                    $this->processTextMessage($message, $channel);
+                    $this->processTextMessage($message, $channel, $context);
                     break;
                 case 'image':
                 case 'document':
@@ -705,12 +711,21 @@ class MarketingChannelController extends BaseApiController
     /**
      * Process text messages
      */
-    private function processTextMessage($message, $channel)
+    private function processTextMessage($message, $channel, array $context = [])
     {
         $text = $message['text']['body'] ?? '';
         $from = $message['from'] ?? '';
 
-        $owner = User::find($channel->user_id);
+        $resolvedTenant = $this->whatsAppWebhookService->resolveTenantFromPayload([
+            'metadata' => $context['metadata'] ?? [],
+            'phone_number_id' => $context['metadata']['phone_number_id'] ?? null,
+            'display_phone_number' => $context['metadata']['display_phone_number'] ?? null,
+        ], 'meta');
+
+        $resolvedUserId = $resolvedTenant['user_id'] ?? null;
+        $resolvedWaNumberId = $resolvedTenant['wa_number_id'] ?? null;
+
+        $owner = User::find($resolvedUserId !== null ? (int) $resolvedUserId : (int) $channel->user_id);
         $tenantOwnerId = $owner && method_exists($owner, 'tenantOwnerId') ? $owner->tenantOwnerId() : null;
         if ($tenantOwnerId !== null && $text !== '') {
             try {
@@ -720,7 +735,11 @@ class MarketingChannelController extends BaseApiController
                     content: $text,
                     channel: 'whatsapp',
                     providerMessageId: $message['id'] ?? null,
-                    meta: ['source' => 'marketing_webhook', 'channel_id' => $channel->id]
+                    meta: array_filter([
+                        'source' => 'marketing_webhook',
+                        'channel_id' => $channel->id,
+                        'wa_number_id' => $resolvedWaNumberId !== null ? (int) $resolvedWaNumberId : null,
+                    ], static fn ($value) => $value !== null)
                 );
             } catch (\Throwable $e) {
                 Log::warning('Marketing webhook: recordInboundMessage failed', ['message' => $e->getMessage()]);

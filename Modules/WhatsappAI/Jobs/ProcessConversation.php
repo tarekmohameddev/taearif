@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use OpenAI;
 use Modules\WhatsappAI\Entities\WhatsappConversation;
 use App\Models\Api\ApiCustomerInquiry;
+use App\Models\Api\UserPropertyRequest;
 use App\Models\ApiCustomer;
 
 class ProcessConversation implements ShouldQueue
@@ -323,16 +324,14 @@ PROMPT;
      */
     private function createInquiry(WhatsappConversation $conversation, array $extraction, string $transcript): ApiCustomerInquiry
     {
-        // Ensure customer exists
         $customer = $this->ensureCustomer($conversation);
 
-        // Prepare location string
         $location = implode(', ', array_filter([
             $extraction['district'] ?? null,
             $extraction['city'] ?? null,
         ]));
 
-        // Prepare inquiry data
+        // Create api_customer_inquiry
         $inquiryData = [
             'user_id' => $conversation->user_id,
             'customer_id' => $customer->id,
@@ -354,7 +353,38 @@ PROMPT;
             'detected_entities_json' => json_encode($extraction),
         ];
 
-        return ApiCustomerInquiry::create($inquiryData);
+        $inquiry = ApiCustomerInquiry::create($inquiryData);
+
+        // Create users_property_requests
+        $propertyRequestData = [
+            'user_id' => $conversation->user_id,
+            'customer_id' => $customer->id,
+            'phone' => $conversation->customer_phone,
+            'full_name' => $conversation->customer_name ?? 'WhatsApp Customer',
+            'notes' => $extraction['summary'] ?? $transcript,
+            'inquiry_type' => $extraction['inquiry_type'] ?? null,
+            'property_type' => $extraction['property_type'] ?? null,
+            'purpose' => $this->mapInquiryTypeToPurpose($extraction['inquiry_type'] ?? null),
+            'budget_from' => $extraction['budget_min'] ?? null,
+            'budget_to' => $extraction['budget_max'] ?? null,
+            'currency' => $extraction['currency'] ?? 'SAR',
+            'bedrooms' => $extraction['bedrooms'] ?? null,
+            'bathrooms' => $extraction['bathrooms'] ?? null,
+            'furnished' => $extraction['furnished'] ?? null,
+            'seriousness' => $this->mapUrgencyToSeriousness($extraction['urgency'] ?? null),
+            'city' => $extraction['city'] ?? null,
+            'district' => $extraction['district'] ?? null,
+            'location' => $location ?: null,
+            'region' => 'الرياض',
+            'source' => 'whatsapp',
+            'contact_on_whatsapp' => true,
+            'lang' => 'ar',
+            'detected_entities_json' => json_encode($extraction),
+        ];
+
+        UserPropertyRequest::create($propertyRequestData);
+
+        return $inquiry;
     }
 
     /**
@@ -392,6 +422,25 @@ PROMPT;
         $conversation->update(['customer_id' => $customer->id]);
 
         return $customer;
+    }
+
+    private function mapUrgencyToSeriousness(?string $urgency): ?string
+    {
+        return match ($urgency) {
+            'urgent' => 'مستعد فورًا',
+            'soon' => 'خلال شهر',
+            'flexible' => 'لاحقًا / استكشاف فقط',
+            default => null,
+        };
+    }
+
+    private function mapInquiryTypeToPurpose(?string $inquiryType): ?string
+    {
+        return match ($inquiryType) {
+            'rent' => 'rent',
+            'buy', 'invest' => 'sale',
+            default => null,
+        };
     }
 }
 

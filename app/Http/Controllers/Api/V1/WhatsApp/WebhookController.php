@@ -8,7 +8,10 @@ use App\Domain\Communication\Services\WebhookEventJournal;
 use App\Domain\Communication\WhatsApp\Services\WhatsAppWebhookService;
 use App\Http\Controllers\Controller;
 use App\Models\Message;
+use App\Models\WaCampaign;
+use App\Models\WaMessageLog;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -209,11 +212,95 @@ class WebhookController extends Controller
                             'status' => $internalStatus,
                         ]);
                     }
+
+                    $this->applyStatusToWaMessageLog($tenant['user_id'], $providerMsgId, $internalStatus, $st);
                 }
             }
         }
 
         return response()->json(['success' => true], 200);
+    }
+
+    /**
+     * DS-1 / Fix #3: Update wa_message_logs for campaign records atomically in one transaction.
+     * Match by user_id + gateway_message_id. Allowed transitions: pending -> sent,
+     * pending|sent -> delivered, pending|sent -> failed. Provider "read" maps to "delivered".
+     * Lock log and campaign in same transaction; increment only the target counter for the accepted edge.
+     */
+    private function applyStatusToWaMessageLog(int $userId, string $gatewayMessageId, string $internalStatus, array $rawStatus): void
+    {
+        if ($internalStatus === 'read') {
+            $internalStatus = 'delivered';
+        }
+        $allowedFrom = [
+            'sent' => ['pending'],
+            'delivered' => ['pending', 'sent'],
+            'failed' => ['pending', 'sent'],
+        ];
+        $targetStates = $allowedFrom[$internalStatus] ?? null;
+        if ($targetStates === null) {
+            return;
+        }
+
+        $didUpdate = false;
+        $campaignId = null;
+
+        DB::transaction(function () use ($userId, $gatewayMessageId, $internalStatus, $rawStatus, $targetStates, &$didUpdate, &$campaignId): void {
+            $log = WaMessageLog::query()
+                ->where('user_id', $userId)
+                ->where('gateway_message_id', $gatewayMessageId)
+                ->lockForUpdate()
+                ->first();
+            if (! $log) {
+                return;
+            }
+
+            $current = (string) $log->status;
+            if (! in_array($current, $targetStates, true)) {
+                return;
+            }
+
+            $meta = is_array($log->meta) ? $log->meta : [];
+            $meta['last_provider_status'] = $rawStatus;
+            $update = [
+                'status' => $internalStatus,
+                'meta' => $meta,
+            ];
+            if ($internalStatus === 'sent' && $log->sent_at === null) {
+                $update['sent_at'] = now();
+            }
+            if ($internalStatus === 'delivered' && $log->delivered_at === null) {
+                $update['delivered_at'] = now();
+            }
+
+            $log->update($update);
+            $didUpdate = true;
+            $campaignId = $log->campaign_id;
+
+            if ($campaignId !== null) {
+                $campaign = WaCampaign::query()->where('id', $campaignId)->lockForUpdate()->first();
+                if ($campaign) {
+                    if ($internalStatus === 'sent') {
+                        $campaign->increment('sent_count');
+                    }
+                    if ($internalStatus === 'delivered') {
+                        $campaign->increment('delivered_count');
+                    }
+                    if ($internalStatus === 'failed') {
+                        $campaign->increment('failed_count');
+                    }
+                }
+            }
+        });
+
+        if ($didUpdate) {
+            Log::info('communication.whatsapp.webhook.status.wa_message_log_updated', [
+                'gateway_message_id' => $gatewayMessageId,
+                'user_id' => $userId,
+                'campaign_id' => $campaignId,
+                'status' => $internalStatus,
+            ]);
+        }
     }
 
     /**

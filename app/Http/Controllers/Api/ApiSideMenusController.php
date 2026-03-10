@@ -79,9 +79,10 @@ class ApiSideMenusController extends Controller
                 $userPermissions[$perm] = true;
             }
         } else {
-            // Check permissions once for employees
+            // Single in-memory lookup via already-loaded roles.permissions (no extra DB queries)
+            $loadedPermNames = $user->getAllPermissions()->pluck('name')->flip()->all();
             foreach ($allPermissions as $perm) {
-                $userPermissions[$perm] = $user->can($perm);
+                $userPermissions[$perm] = isset($loadedPermNames[$perm]);
             }
         }
 

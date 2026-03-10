@@ -60,9 +60,8 @@ class PipelineService
 
         foreach ($stages as $index => $stage) {
             $requestsQuery = DB::table('users_property_requests as upr')
-                ->leftJoin('api_customer_property_request as acpr', 'acpr.property_request_id', '=', 'upr.id')
                 ->leftJoin('api_customers as ac', function ($join) use ($userId) {
-                    $join->on('ac.id', '=', 'acpr.customer_id')
+                    $join->on('ac.id', '=', 'upr.customer_id')
                         ->on('ac.user_id', '=', DB::raw((int) $userId));
                 })
                 ->leftJoin('users as emp', 'ac.responsible_employee_id', '=', 'emp.id')
@@ -135,9 +134,8 @@ class PipelineService
 
         // Unassigned column: requests and inquiries with null stage
         $unassignedRequests = DB::table('users_property_requests as upr')
-            ->leftJoin('api_customer_property_request as acpr', 'acpr.property_request_id', '=', 'upr.id')
             ->leftJoin('api_customers as ac', function ($join) use ($userId) {
-                $join->on('ac.id', '=', 'acpr.customer_id')->on('ac.user_id', '=', DB::raw((int) $userId));
+                $join->on('ac.id', '=', 'upr.customer_id')->on('ac.user_id', '=', DB::raw((int) $userId));
             })
             ->leftJoin('users as emp', 'ac.responsible_employee_id', '=', 'emp.id')
             ->where('upr.user_id', $userId)
@@ -292,9 +290,8 @@ class PipelineService
     {
         $baseQuery = function () use ($userId, $filters) {
             $q = DB::table('users_property_requests as upr')
-                ->leftJoin('api_customer_property_request as acpr', 'acpr.property_request_id', '=', 'upr.id')
                 ->leftJoin('api_customers as ac', function ($join) use ($userId) {
-                    $join->on('ac.id', '=', 'acpr.customer_id')
+                    $join->on('ac.id', '=', 'upr.customer_id')
                         ->on('ac.user_id', '=', DB::raw((int) $userId));
                 })
                 ->where('upr.user_id', $userId)

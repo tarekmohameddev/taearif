@@ -24,6 +24,7 @@ class ListRequest extends BaseApiFormRequest
             'filters.source' => 'nullable|array',
             'filters.assignedEmployeeId' => 'nullable|integer',
             'filters.city' => 'nullable|integer',
+            'filters.district' => 'nullable|integer',
             'filters.createdFrom' => 'nullable|date',
             'filters.createdTo' => 'nullable|date',
             'filters.sort_by' => 'nullable|in:created_at,updated_at,name',

@@ -123,16 +123,46 @@ class RequestsController extends ApiController
             }
         }
 
-        $items->each(function ($item) use ($appointmentsByRequest, $remindersByRequest, $appointmentsByInquiry, $remindersByInquiry) {
+        // Load property_ids per property request and batch-load property summaries
+        $propertiesByRequestId = [];
+        if (!empty($propertyRequestSourceIds)) {
+            $requestRows = DB::table('users_property_requests')
+                ->where('user_id', $userId)
+                ->whereIn('id', $propertyRequestSourceIds)
+                ->get(['id', 'property_ids']);
+            foreach ($requestRows as $row) {
+                $ids = $row->property_ids;
+                if (is_string($ids)) {
+                    $decoded = json_decode($ids, true);
+                    $ids = is_array($decoded) ? $decoded : [];
+                }
+                $ids = is_array($ids) ? $ids : [];
+                $propertiesByRequestId[(int) $row->id] = array_values(array_filter(array_map(function ($id) {
+                    return is_numeric($id) ? (int) $id : null;
+                }, $ids)));
+            }
+            $allPropertyIds = array_values(array_unique(array_merge(...array_values($propertiesByRequestId))));
+            $summariesById = $this->propertyRequestDetailBuilder->getPropertySummariesForIds($userId, $allPropertyIds);
+            foreach ($propertiesByRequestId as $requestId => $ids) {
+                $propertiesByRequestId[$requestId] = array_values(array_filter(array_map(function ($id) use ($summariesById) {
+                    return $summariesById[$id] ?? null;
+                }, $ids)));
+            }
+        }
+
+        $items->each(function ($item) use ($appointmentsByRequest, $remindersByRequest, $appointmentsByInquiry, $remindersByInquiry, $propertiesByRequestId) {
             if (($item->objectType ?? '') === 'property_request' && isset($item->sourceId)) {
                 $item->appointments = $appointmentsByRequest[$item->sourceId] ?? [];
                 $item->reminders = $remindersByRequest[$item->sourceId] ?? [];
+                $item->properties = $propertiesByRequestId[$item->sourceId] ?? [];
             } elseif (($item->objectType ?? '') === 'inquiry' && isset($item->sourceId)) {
                 $item->appointments = $appointmentsByInquiry[$item->sourceId] ?? [];
                 $item->reminders = $remindersByInquiry[$item->sourceId] ?? [];
+                $item->properties = [];
             } else {
                 $item->appointments = [];
                 $item->reminders = [];
+                $item->properties = [];
             }
         });
 
@@ -224,6 +254,16 @@ class RequestsController extends ApiController
                 ['id' => 'request_reminder', 'label' => 'تذكير طلب', 'labelEn' => 'Request Reminder'],
             ];
 
+            // Appointment types (for filtering property requests by appointment type)
+            $appointmentTypes = [
+                ['id' => 'site_visit', 'label' => 'معاينة', 'labelEn' => 'Site visit'],
+                ['id' => 'office_meeting', 'label' => 'اجتماع مكتب', 'labelEn' => 'Office meeting'],
+                ['id' => 'phone_call', 'label' => 'اتصال هاتفي', 'labelEn' => 'Phone call'],
+                ['id' => 'video_call', 'label' => 'مكالمة فيديو', 'labelEn' => 'Video call'],
+                ['id' => 'contract_signing', 'label' => 'توقيع عقد', 'labelEn' => 'Contract signing'],
+                ['id' => 'other', 'label' => 'أخرى', 'labelEn' => 'Other'],
+            ];
+
             // Pipeline stages (customers_hub_stages) for request list filtering
             $stages = DB::table('customers_hub_stages')
                 ->where('is_active', true)
@@ -265,6 +305,7 @@ class RequestsController extends ApiController
                 'priorities' => $priorities,
                 'sources' => $sources,
                 'objectTypes' => $objectTypes,
+                'appointmentTypes' => $appointmentTypes,
                 'dueDateBuckets' => $dueDateBuckets,
                 'stages' => $stages,
                 'customerTypes' => $customerTypes,

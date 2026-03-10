@@ -7,7 +7,7 @@ use Carbon\Carbon;
 
 /**
  * CustomersListService
- * 
+ *
  * Handles customer list operations with filtering, stats, and bulk operations.
  * Main table: api_customers
  */
@@ -27,9 +27,11 @@ class CustomersListService
         $offset = ($page - 1) * $limit;
         $items = $query->limit($limit)->offset($offset)->get();
 
+        $lastRequestByCustomerId = $this->getLastPropertyRequestPerCustomer($userId, $items);
+
         // Transform items
-        $items = $items->map(function ($item) {
-            return $this->transformCustomer($item);
+        $items = $items->map(function ($item) use ($lastRequestByCustomerId) {
+            return $this->transformCustomer($item, $lastRequestByCustomerId[$item->id] ?? null);
         });
 
         return [
@@ -53,7 +55,7 @@ class CustomersListService
     {
         // Build base filter query (minimal, no JOINs) for aggregate calculations
         $baseFilterQuery = $this->buildBaseFilterQuery($userId, $filters);
-        
+
         // Total count - use simple count without DISTINCT (no JOINs means no duplicates)
         $total = $baseFilterQuery->count();
 
@@ -189,17 +191,17 @@ class CustomersListService
                     'stage_name_en as labelEn',
                     'color',
                 ]),
-            
+
             'priorities' => DB::table('users_api_customers_priorities')
                 ->where('user_id', $userId)
                 ->orderBy('order')
                 ->get(['id', 'name as label', 'color', 'icon']),
-            
+
             'types' => DB::table('users_api_customers_types')
                 ->where('user_id', $userId)
                 ->orderBy('order')
                 ->get(['id', 'name as label', 'color', 'icon']),
-            
+
             'sources' => [
                 ['id' => 'inquiry', 'label' => 'استفسار', 'labelEn' => 'Inquiry'],
                 ['id' => 'manual', 'label' => 'يدوي', 'labelEn' => 'Manual'],
@@ -207,7 +209,7 @@ class CustomersListService
                 ['id' => 'import', 'label' => 'استيراد', 'labelEn' => 'Import'],
                 ['id' => 'referral', 'label' => 'إحالة', 'labelEn' => 'Referral'],
             ],
-            
+
             'employees' => DB::table('users')
                 ->where('tenant_id', $userId)
                 ->where('account_type', 'employee')
@@ -231,7 +233,7 @@ class CustomersListService
     /**
      * Build a minimal query with only WHERE filters (no JOINs, no SELECT).
      * Use for aggregate calculations to avoid mixing aggregates with non-aggregate columns.
-     * 
+     *
      * @param int $userId
      * @param array $filters
      * @return \Illuminate\Database\Query\Builder
@@ -240,7 +242,7 @@ class CustomersListService
     {
         $query = DB::table('api_customers')
             ->where('user_id', $userId);
-        
+
         // Apply only filters that work on api_customers table directly
         if (!empty($filters['search'])) {
             $search = '%' . $filters['search'] . '%';
@@ -250,39 +252,43 @@ class CustomersListService
                   ->orWhere('email', 'like', $search);
             });
         }
-        
+
         if (!empty($filters['stage']) && is_array($filters['stage'])) {
             $query->whereIn('customers_hub_stage_id', $filters['stage']);
         }
-        
+
         if (!empty($filters['priority']) && is_array($filters['priority'])) {
             $query->whereIn('priority_id', $filters['priority']);
         }
-        
+
         if (!empty($filters['type']) && is_array($filters['type'])) {
             $query->whereIn('type_id', $filters['type']);
         }
-        
+
         if (!empty($filters['source']) && is_array($filters['source'])) {
             $query->whereIn('source', $filters['source']);
         }
-        
+
         if (!empty($filters['assignedEmployeeId'])) {
             $query->where('responsible_employee_id', $filters['assignedEmployeeId']);
         }
-        
+
         if (!empty($filters['city'])) {
             $query->where('city_id', $filters['city']);
         }
-        
+
+        if (!empty($filters['district'])) {
+            $query->where('district_id', $filters['district']);
+        }
+
         if (!empty($filters['createdFrom'])) {
             $query->where('created_at', '>=', $filters['createdFrom']);
         }
-        
+
         if (!empty($filters['createdTo'])) {
             $query->where('created_at', '<=', $filters['createdTo']);
         }
-        
+
         return $query;
     }
 
@@ -343,6 +349,10 @@ class CustomersListService
             $query->where('api_customers.city_id', $filters['city']);
         }
 
+        if (!empty($filters['district'])) {
+            $query->where('api_customers.district_id', $filters['district']);
+        }
+
         if (!empty($filters['createdFrom'])) {
             $query->where('api_customers.created_at', '>=', $filters['createdFrom']);
         }
@@ -360,9 +370,128 @@ class CustomersListService
     }
 
     /**
+     * Batch-load last property request per customer (by created_at) for the current page.
+     * Returns map customer_id => array{ district, city, propertyType, listingTypeLabel }.
+     */
+    private function getLastPropertyRequestPerCustomer(int $userId, $items): array
+    {
+        $customerIds = $items->pluck('id')->all();
+        $phones = $items->pluck('phone_number')->filter()->unique()->values()->all();
+
+        if (empty($customerIds)) {
+            return [];
+        }
+
+        $rows = DB::table('users_property_requests as upr')
+            ->leftJoin('api_customers as ac_phone', function ($join) {
+                $join->on('ac_phone.user_id', '=', 'upr.user_id')
+                    ->on('ac_phone.phone_number', '=', 'upr.phone');
+            })
+            ->where('upr.user_id', $userId)
+            ->where('upr.is_active', 1)
+            ->where(function ($q) use ($customerIds, $phones) {
+                $q->whereIn('upr.customer_id', $customerIds)
+                    ->orWhere(function ($q2) use ($customerIds, $phones) {
+                        $q2->whereNull('upr.customer_id')
+                            ->whereIn('upr.phone', $phones)
+                            ->whereIn('ac_phone.id', $customerIds);
+                    });
+            })
+            ->select([
+                'upr.id',
+                'upr.created_at',
+                DB::raw('COALESCE(upr.customer_id, ac_phone.id) as effective_customer_id'),
+            ])
+            ->orderBy('upr.created_at', 'desc')
+            ->get();
+
+        $customerToUprId = [];
+        foreach ($rows as $row) {
+            $cid = (int) $row->effective_customer_id;
+            if (!isset($customerToUprId[$cid])) {
+                $customerToUprId[$cid] = (int) $row->id;
+            }
+        }
+
+        $uprIds = array_values($customerToUprId);
+        if (empty($uprIds)) {
+            return [];
+        }
+
+        $enriched = DB::table('users_property_requests as upr')
+            ->leftJoin('user_cities as uc', 'upr.city_id', '=', 'uc.id')
+            ->leftJoin('user_districts as ud', 'upr.districts_id', '=', 'ud.id')
+            ->whereIn('upr.id', $uprIds)
+            ->select([
+                'upr.id',
+                'upr.property_type',
+                'upr.purpose',
+                'uc.name_ar as city',
+                'ud.name_ar as district',
+            ])
+            ->get()
+            ->keyBy('id');
+
+        $out = [];
+        foreach ($customerToUprId as $customerId => $uprId) {
+            $row = $enriched->get($uprId);
+            if (!$row) {
+                continue;
+            }
+            $out[$customerId] = [
+                'district' => $row->district !== null ? (string) $row->district : null,
+                'city' => $row->city !== null ? (string) $row->city : null,
+                'propertyType' => $row->property_type !== null ? (string) $row->property_type : null,
+                'listingTypeLabel' => $this->purposeToListingLabel($row->purpose),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Map source value to Arabic label for list response.
+     */
+    private function sourceToArabic(?string $source): string
+    {
+        $map = [
+            'public_form' => 'نموذج عام',
+            'property_interest' => 'اهتمام بعقار',
+            'whatsapp' => 'واتساب',
+            'manual' => 'يدوي',
+            'employee_dashboard' => 'لوحة الموظف',
+            'whatsapp_bot' => 'واتساب بوت',
+            'import' => 'استيراد',
+            'referral' => 'إحالة',
+            'inquiry' => 'استفسار',
+            'property_request' => 'طلب عقار',
+        ];
+        $key = $source ?? '';
+        return $map[$key] ?? $key;
+    }
+
+    /**
+     * Map purpose (sale/rent/for_sale/for_rent) to Arabic label للبيع / للإيجار.
+     */
+    private function purposeToListingLabel(?string $purpose): ?string
+    {
+        if ($purpose === null || $purpose === '') {
+            return null;
+        }
+        $p = strtolower(trim($purpose));
+        if (in_array($p, ['sale', 'for_sale'], true)) {
+            return 'للبيع';
+        }
+        if (in_array($p, ['rent', 'for_rent'], true)) {
+            return 'للإيجار';
+        }
+        return $purpose;
+    }
+
+    /**
      * Transform customer record.
      */
-    private function transformCustomer(object $customer): array
+    private function transformCustomer(object $customer, ?array $lastPropertyRequest = null): array
     {
         return [
             'id' => $customer->id,
@@ -370,6 +499,7 @@ class CustomersListService
             'phone' => $customer->phone_number,
             'email' => $customer->email,
             'source' => $customer->source,
+            'sourceAr' => $this->sourceToArabic($customer->source ?? ''),
             'stage' => [
                 'id' => $customer->hub_stage_id ?? $customer->customers_hub_stage_id ?? null,
                 'name' => $customer->stage_name ?? null,
@@ -391,6 +521,7 @@ class CustomersListService
             ],
             'createdAt' => $customer->created_at ? Carbon::parse($customer->created_at)->toIso8601String() : null,
             'updatedAt' => $customer->updated_at ? Carbon::parse($customer->updated_at)->toIso8601String() : null,
+            'lastPropertyRequest' => $lastPropertyRequest,
         ];
     }
 }
