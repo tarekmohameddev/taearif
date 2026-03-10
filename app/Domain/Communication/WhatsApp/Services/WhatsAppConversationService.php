@@ -55,16 +55,20 @@ class WhatsAppConversationService
             ['last_message_at' => now()]
         );
 
-        WaConversationState::firstOrCreate(
-            ['conversation_id' => $conversation->id],
-            [
-                'user_id' => $userId,
-                'wa_number_id' => $waNumberId,
-                'status' => 'active',
-                'is_starred' => false,
-                'unread_count' => 0,
-            ]
-        );
+        $state = WaConversationState::firstOrNew(['conversation_id' => $conversation->id]);
+
+        if (! $state->exists) {
+            $state->user_id = $userId;
+            $state->status = 'active';
+            $state->is_starred = false;
+            $state->unread_count = 0;
+        }
+
+        if ($state->wa_number_id === null && $waNumberId !== null) {
+            $state->wa_number_id = $waNumberId;
+        }
+
+        $state->save();
 
         return $conversation;
     }
