@@ -266,23 +266,8 @@ Route::domain($domain)->group(function () {
         Route::get('/failed', 'Front\CheckoutController@onlinefailed')->name('failed.page');
     });
 
-    Route::group(['middleware' => ['web', 'guest', 'setlang']], function () {
-        Route::get('/registration/final-step', 'Front\FrontendController@step2')->name('front.registration.step2');
-        Route::post('/checkout', 'Front\FrontendController@checkout')->name('front.checkout.view');
-        Route::get('/login', 'User\Auth\LoginController@showLoginForm')->name('user.login');
-        Route::post('/login', 'User\Auth\LoginController@login')->name('user.login.submit');
-        Route::get('/register', 'User\Auth\RegisterController@registerPage')->name('user-register');
-        Route::post('/register/submit', 'User\Auth\RegisterController@register')->name('user-register-submit')->middleware('Demo');
-        Route::get('/register/mode/{mode}/verify/{token}', 'User\Auth\RegisterController@token')->name('user-register-token');
-
-        Route::post('/password/email', 'User\Auth\ForgotPasswordController@sendResetLinkEmail')->name('user.forgot.password.submit')->middleware('Demo');
-        Route::get('/password/reset', 'User\Auth\ForgotPasswordController@showLinkRequestForm')->name('user.forgot.password.form');
-        Route::post('/password/reset', 'User\Auth\ResetPasswordController@reset')->name('user.reset.password.submit')->middleware('Demo');
-        Route::get('/password/reset/{token}/email/{email}', 'User\Auth\ResetPasswordController@showResetForm')->name('user.reset.password.form');
-
-        Route::get('/forgot', 'User\ForgotController@showforgotform')->name('user-forgot');
-        Route::post('/forgot', 'User\ForgotController@forgot')->name('user-forgot-submit')->middleware('Demo');
-    });
+    // Legacy User (web) auth routes (login/register/forgot/reset) removed.
+    // Tenant users now authenticate via API using Sanctum.
 
     /*=======================================================
     ******************* User Routes *************************

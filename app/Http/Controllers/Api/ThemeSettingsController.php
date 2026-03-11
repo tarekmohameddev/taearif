@@ -530,22 +530,9 @@ class ThemeSettingsController extends Controller
      */
     private function finalizeRedirect($success, $message)
     {
-        // Get language and basic settings for the views
-        $currentLang = Language::where('is_default', 1)->first();
-        $bs = $currentLang ? $currentLang->basic_setting : \App\Models\BasicSetting::first();
-        
-        if (!$success) {
-            return view('front.failed', [
-                'bs' => $bs,
-                'rtl' => $bs->rtl ?? 0
-            ]);
-        }
-
-        // Return success page that notifies parent window (React/Next.js frontend)
-        // The view will send postMessage("payment_success") to notify the frontend
-        return view('front.success', [
-            'bs' => $bs,
-            'rtl' => $bs->rtl ?? 0
+        return response()->json([
+            'status'  => $success ? 'success' : 'failed',
+            'message' => $message,
         ]);
     }
 
