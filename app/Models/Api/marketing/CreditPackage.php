@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Api\markting;
+namespace App\Models\Api\marketing;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -118,7 +118,7 @@ class CreditPackage extends Model
      */
     public function getEstimatedMessagesPerChannel()
     {
-        $channelPricing = \App\Models\Api\markting\MarketingChannelPricing::active()->get();
+        $channelPricing = \App\Models\Api\marketing\MarketingChannelPricing::active()->get();
         $estimates = [];
 
         foreach ($channelPricing as $pricing) {

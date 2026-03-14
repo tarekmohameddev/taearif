@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\V1\Communication;
 
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\Conversation;
 use App\Models\User;
 use App\Services\WhatsAppService;

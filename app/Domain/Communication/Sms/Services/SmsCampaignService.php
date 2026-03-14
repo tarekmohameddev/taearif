@@ -9,7 +9,7 @@ use App\Domain\Communication\Exceptions\InsufficientCreditsException;
 use App\Domain\Communication\Sms\Support\SmsEndpoints;
 use App\Domain\Communication\Services\IdempotencyService;
 use App\Jobs\DispatchSmsCampaignJob;
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\SmsCampaign;
 use App\Models\SmsMessageLog;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;

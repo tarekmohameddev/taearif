@@ -8,7 +8,7 @@ use App\Domain\Communication\Contracts\CreditService;
 use App\Domain\Communication\Sms\Contracts\SmsGatewayClient;
 use App\Domain\Communication\Sms\DTOs\SmsGatewaySendResult;
 use App\Domain\Communication\Sms\Services\SmsDispatcherService;
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\SmsCampaign;
 use App\Models\SmsMessageLog;
 use App\Models\User;

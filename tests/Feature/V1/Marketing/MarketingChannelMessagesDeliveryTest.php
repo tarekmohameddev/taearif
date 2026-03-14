@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\V1\Marketing;
 
-use App\Models\Api\markting\MarketingChannel;
-use App\Models\Api\markting\MarketingChannelMessage;
+use App\Models\Api\marketing\MarketingChannel;
+use App\Models\Api\marketing\MarketingChannelMessage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

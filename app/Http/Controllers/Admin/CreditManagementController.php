@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Api\markting\CreditPackage;
-use App\Models\Api\markting\MarketingChannelPricing;
+use App\Models\Api\marketing\CreditPackage;
+use App\Models\Api\marketing\MarketingChannelPricing;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Session;

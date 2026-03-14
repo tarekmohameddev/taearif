@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Api\markting;
+namespace App\Models\Api\marketing;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -191,7 +191,7 @@ class MarketingChannelPricing extends Model
     public function updatePriceFromCreditPackages()
     {
         // Get the average price per credit from active credit packages
-        $avgPricePerCredit = \App\Models\Api\markting\CreditPackage::active()
+        $avgPricePerCredit = \App\Models\Api\marketing\CreditPackage::active()
             ->where('supports_marketing_channels', true)
             ->avg('price_per_credit');
 

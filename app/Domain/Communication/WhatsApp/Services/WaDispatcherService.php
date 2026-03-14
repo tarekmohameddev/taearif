@@ -6,6 +6,7 @@ use App\Domain\Communication\Contracts\CreditService;
 use App\Domain\Communication\Exceptions\ProviderSendFailedException;
 use App\Domain\Communication\WhatsApp\Contracts\WaDispatcher;
 use App\Jobs\DispatchWaCampaignJob;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\WaCampaign;
 use App\Models\WaMessageLog;
 use App\Models\WaNumber;
@@ -314,6 +315,7 @@ class WaDispatcherService implements WaDispatcher
         if (isset($meta['credits_per_message']) && is_numeric($meta['credits_per_message'])) {
             return max(1, (int) $meta['credits_per_message']);
         }
-        return 1;
+
+        return max(1, (int) UserCredit::getCostForMessageType('whatsapp'));
     }
 }

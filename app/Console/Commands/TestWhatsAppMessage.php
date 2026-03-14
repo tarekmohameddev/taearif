@@ -3,9 +3,9 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Models\Api\markting\MarketingChannel;
-use App\Models\Api\markting\UserCredit;
-use App\Http\Controllers\Api\markting\CreditController;
+use App\Models\Api\marketing\MarketingChannel;
+use App\Models\Api\marketing\UserCredit;
+use App\Http\Controllers\Api\marketing\CreditController;
 use App\Services\WhatsAppService;
 
 class TestWhatsAppMessage extends Command

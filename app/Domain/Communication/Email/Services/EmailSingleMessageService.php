@@ -9,7 +9,7 @@ use App\Domain\Communication\Exceptions\InsufficientCreditsException;
 use App\Domain\Communication\Email\Contracts\EmailDispatcher;
 use App\Domain\Communication\Email\Support\EmailEndpoints;
 use App\Domain\Communication\Services\IdempotencyService;
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\EmailMessageLog;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;

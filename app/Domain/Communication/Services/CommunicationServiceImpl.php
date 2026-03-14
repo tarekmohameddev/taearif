@@ -17,7 +17,7 @@ use App\Domain\Communication\Exceptions\UnsupportedChannelException;
 use App\Domain\Communication\Exceptions\WaNumberNotActiveException;
 use App\Domain\Communication\Exceptions\WaNumberNotFoundException;
 use App\Domain\Communication\Support\CommunicationEndpoints;
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;

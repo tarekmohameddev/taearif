@@ -6,8 +6,8 @@ namespace Tests\Feature\V1\Sms;
 
 use App\Domain\Communication\Sms\Contracts\SmsGatewayClient;
 use App\Domain\Communication\Sms\DTOs\SmsGatewaySendResult;
-use App\Models\Api\markting\MarketingChannelPricing;
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\MarketingChannelPricing;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\SmsCampaign;
 use App\Models\SmsMessageLog;
 use App\Models\User;

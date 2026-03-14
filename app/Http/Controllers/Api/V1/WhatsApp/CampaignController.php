@@ -51,8 +51,7 @@ class CampaignController extends BaseApiController
         try {
             $campaign = $this->campaignService->create($userId, $createdByUserId, $validated);
         } catch (InvalidArgumentException $e) {
-            $code = $e->getMessage();
-            $status = $code === 'WA_NUMBER_NOT_FOUND' ? 404 : 422;
+            ['code' => $code, 'status' => $status] = $this->errorCodeAndStatus($e);
             return response()->json(['status' => false, 'code' => $code, 'message' => $e->getMessage()], $status);
         }
 
@@ -71,8 +70,7 @@ class CampaignController extends BaseApiController
         try {
             $updated = $this->campaignService->update($campaign, $validated);
         } catch (InvalidArgumentException $e) {
-            $code = $e->getMessage();
-            $status = $code === 'WA_NUMBER_NOT_FOUND' ? 404 : 422;
+            ['code' => $code, 'status' => $status] = $this->errorCodeAndStatus($e);
             return response()->json(['status' => false, 'code' => $code, 'message' => $e->getMessage()], $status);
         }
 
@@ -90,7 +88,8 @@ class CampaignController extends BaseApiController
         try {
             $this->campaignService->delete($campaign);
         } catch (InvalidArgumentException $e) {
-            return response()->json(['status' => false, 'code' => 'VALIDATION_FAILED', 'message' => $e->getMessage()], 422);
+            ['code' => $code, 'status' => $status] = $this->errorCodeAndStatus($e);
+            return response()->json(['status' => false, 'code' => $code, 'message' => $e->getMessage()], $status);
         }
 
         return $this->ok(['deleted' => true]);
@@ -117,14 +116,17 @@ class CampaignController extends BaseApiController
         } catch (InsufficientCreditsException $e) {
             return response()->json(['status' => false, 'code' => 'INSUFFICIENT_CREDITS', 'message' => $e->getMessage()], 400);
         } catch (InvalidArgumentException $e) {
-            $code = $e->getMessage();
-            $status = $code === 'WA_NUMBER_NOT_FOUND' ? 404 : 422;
+            ['code' => $code, 'status' => $status] = $this->errorCodeAndStatus($e);
             return response()->json(['status' => false, 'code' => $code, 'message' => $e->getMessage()], $status);
         }
 
         return response()->json(['status' => true, 'data' => $data], 202);
     }
 
+    /**
+     * Pause an in-progress or scheduled campaign. Idempotent by design: calling pause again
+     * on an already paused campaign returns the same result (no Idempotency-Key required).
+     */
     public function pause(int $id): JsonResponse
     {
         $userId = (int) auth()->user()->tenantOwnerId();
@@ -134,7 +136,8 @@ class CampaignController extends BaseApiController
         } catch (ModelNotFoundException) {
             return response()->json(['status' => false, 'code' => 'CAMPAIGN_NOT_FOUND', 'message' => 'Campaign not found.'], 404);
         } catch (InvalidArgumentException $e) {
-            return response()->json(['status' => false, 'code' => 'VALIDATION_FAILED', 'message' => $e->getMessage()], 422);
+            ['code' => $code, 'status' => $status] = $this->errorCodeAndStatus($e);
+            return response()->json(['status' => false, 'code' => $code, 'message' => $e->getMessage()], $status);
         }
 
         return response()->json(['status' => true, 'data' => $data], 200);
@@ -162,11 +165,50 @@ class CampaignController extends BaseApiController
         } catch (InsufficientCreditsException $e) {
             return response()->json(['status' => false, 'code' => 'INSUFFICIENT_CREDITS', 'message' => $e->getMessage()], 400);
         } catch (InvalidArgumentException $e) {
-            $code = $e->getMessage();
-            $status = $code === 'WA_NUMBER_NOT_FOUND' ? 404 : 422;
+            ['code' => $code, 'status' => $status] = $this->errorCodeAndStatus($e);
             return response()->json(['status' => false, 'code' => $code, 'message' => $e->getMessage()], $status);
         }
 
         return response()->json(['status' => true, 'data' => $data], 202);
+    }
+
+    /**
+     * Map InvalidArgumentException from campaign service to stable API code and HTTP status.
+     *
+     * @return array{code: string, status: int}
+     */
+    private function errorCodeAndStatus(InvalidArgumentException $e): array
+    {
+        $msg = $e->getMessage();
+
+        $codeMap = [
+            'WA_NUMBER_NOT_FOUND' => ['code' => 'WA_NUMBER_NOT_FOUND', 'status' => 404],
+            'WA_NUMBER_NOT_ACTIVE' => ['code' => 'WA_NUMBER_NOT_ACTIVE', 'status' => 422],
+            'WA_CAMPAIGN_CONTENT_REQUIRED' => ['code' => 'WA_CAMPAIGN_CONTENT_REQUIRED', 'status' => 422],
+            'WA_CAMPAIGN_CONTENT_CONFLICT' => ['code' => 'WA_CAMPAIGN_CONTENT_CONFLICT', 'status' => 422],
+            'Only draft, scheduled or paused campaigns can be updated.' => ['code' => 'CAMPAIGN_NOT_UPDATEABLE', 'status' => 422],
+            'Only draft or scheduled campaigns can be deleted.' => ['code' => 'CAMPAIGN_NOT_DELETABLE', 'status' => 422],
+            'Campaign status is not sendable.' => ['code' => 'CAMPAIGN_NOT_SENDABLE', 'status' => 422],
+            'Only in-progress or scheduled campaigns can be paused.' => ['code' => 'CAMPAIGN_NOT_PAUSABLE', 'status' => 422],
+            'Only paused campaigns can be resumed.' => ['code' => 'CAMPAIGN_NOT_RESUMABLE', 'status' => 422],
+            'No paused recipients to continue.' => ['code' => 'NO_PAUSED_RECIPIENTS', 'status' => 422],
+            'Template not found for campaign.' => ['code' => 'TEMPLATE_NOT_FOUND', 'status' => 422],
+        ];
+
+        if (isset($codeMap[$msg])) {
+            return $codeMap[$msg];
+        }
+
+        if (str_contains($msg, 'No valid phone numbers')) {
+            return ['code' => 'NO_VALID_RECIPIENTS', 'status' => 422];
+        }
+        if (str_contains($msg, 'No recipients to restart')) {
+            return ['code' => 'NO_RECIPIENTS_TO_RESTART', 'status' => 422];
+        }
+        if (str_contains($msg, 'Too many manual')) {
+            return ['code' => 'TOO_MANY_MANUAL_RECIPIENTS', 'status' => 422];
+        }
+
+        return ['code' => 'VALIDATION_FAILED', 'status' => 422];
     }
 }

@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Controllers\Api\markting;
+namespace App\Http\Controllers\Api\marketing;
 
 use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\Api\Marketing\PurchaseCreditPackageRequest;
 use App\Http\Requests\Api\markting\GetTransactionsRequest;
-use App\Models\Api\markting\UserCredit;
-use App\Models\Api\markting\CreditPackage;
-use App\Models\Api\markting\CreditTransaction;
+use App\Models\Api\marketing\UserCredit;
+use App\Models\Api\marketing\CreditPackage;
+use App\Models\Api\marketing\CreditTransaction;
 use App\Models\PaymentGateway;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -792,12 +792,12 @@ class CreditController extends BaseApiController
     {
         try {
             // Get all marketing channels for the user
-            $channels = \App\Models\Api\markting\MarketingChannel::where('user_id', $userId)
+            $channels = \App\Models\Api\marketing\MarketingChannel::where('user_id', $userId)
                 ->where('is_connected', true)
                 ->get();
 
             // Get pricing information for each channel type
-            $pricing = \App\Models\Api\markting\MarketingChannelPricing::where('is_active', true)
+            $pricing = \App\Models\Api\marketing\MarketingChannelPricing::where('is_active', true)
                 ->get()
                 ->keyBy('channel_type');
 

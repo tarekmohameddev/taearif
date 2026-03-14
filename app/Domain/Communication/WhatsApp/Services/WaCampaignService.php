@@ -9,7 +9,7 @@ use App\Domain\Communication\Exceptions\InsufficientCreditsException;
 use App\Domain\Communication\WhatsApp\Support\WaEndpoints;
 use App\Domain\Communication\Services\IdempotencyService;
 use App\Jobs\DispatchWaCampaignJob;
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\WaCampaign;
 use App\Models\WaMessageLog;
 use App\Models\WaNumber;

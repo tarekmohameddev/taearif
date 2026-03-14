@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\V1\Communication;
 
-use App\Models\Api\markting\CreditTransaction;
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\CreditTransaction;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;

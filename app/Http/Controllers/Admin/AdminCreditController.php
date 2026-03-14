@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\Api\markting\CreditTransaction;
-use App\Models\Api\markting\UserCredit;
-use App\Models\Api\markting\CreditPackage;
+use App\Models\Api\marketing\CreditTransaction;
+use App\Models\Api\marketing\UserCredit;
+use App\Models\Api\marketing\CreditPackage;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 

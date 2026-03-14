@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Api\markting;
+namespace App\Models\Api\marketing;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;

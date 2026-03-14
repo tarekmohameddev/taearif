@@ -9,7 +9,7 @@ use App\Domain\Communication\Exceptions\InsufficientCreditsException;
 use App\Domain\Communication\Sms\Contracts\SmsDispatcher;
 use App\Domain\Communication\Sms\Support\SmsEndpoints;
 use App\Domain\Communication\Services\IdempotencyService;
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\SmsMessageLog;
 use InvalidArgumentException;
 use Illuminate\Support\Facades\DB;

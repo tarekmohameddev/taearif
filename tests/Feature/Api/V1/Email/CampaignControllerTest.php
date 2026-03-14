@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Email;
 
-use App\Models\Api\markting\MarketingChannelPricing;
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\MarketingChannelPricing;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\EmailCampaign;
 use App\Models\EmailMessageLog;
 use App\Models\User;

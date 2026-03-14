@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Api\markting\MarketingChannelMessage;
+use App\Models\Api\marketing\MarketingChannelMessage;
 use Illuminate\Console\Command;
 
 class TestMarketingWhatsAppWebhookCommand extends Command

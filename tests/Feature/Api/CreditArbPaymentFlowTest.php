@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
-use App\Models\Api\markting\CreditPackage;
-use App\Models\Api\markting\CreditTransaction;
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\CreditPackage;
+use App\Models\Api\marketing\CreditTransaction;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

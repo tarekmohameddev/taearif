@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Api\markting;
+namespace App\Http\Controllers\Api\marketing;
 
 use App\Http\Controllers\Api\BaseApiController;
-use App\Models\Api\markting\MarketingChannel;
-use App\Models\Api\markting\MarketingChannelMessage;
-use App\Http\Controllers\Api\markting\CreditController;
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\MarketingChannel;
+use App\Models\Api\marketing\MarketingChannelMessage;
+use App\Http\Controllers\Api\marketing\CreditController;
+use App\Models\Api\marketing\UserCredit;
 use App\Domain\Communication\Contracts\CommunicationService;
 use App\Domain\Communication\WhatsApp\Services\WhatsAppWebhookService;
 use App\Models\User;
@@ -526,12 +526,12 @@ class MarketingChannelController extends BaseApiController
             $userCredit->addCredits($credits, null, $description);
 
             // Create refund transaction
-            \App\Models\Api\markting\CreditTransaction::create([
+            \App\Models\Api\marketing\CreditTransaction::create([
                 'user_id' => $userId,
                 'transaction_type' => 'refund',
                 'credits_amount' => $credits,
                 'status' => 'completed',
-                'reference_number' => \App\Models\Api\markting\CreditTransaction::generateReferenceNumber(),
+                'reference_number' => \App\Models\Api\marketing\CreditTransaction::generateReferenceNumber(),
                 'description' => $description,
             ]);
         } catch (\Exception $e) {

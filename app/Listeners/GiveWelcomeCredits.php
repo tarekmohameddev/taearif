@@ -3,8 +3,8 @@
 namespace App\Listeners;
 
 use App\Models\User;
-use App\Models\Api\markting\UserCredit;
-use App\Models\Api\markting\CreditTransaction;
+use App\Models\Api\marketing\UserCredit;
+use App\Models\Api\marketing\CreditTransaction;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;

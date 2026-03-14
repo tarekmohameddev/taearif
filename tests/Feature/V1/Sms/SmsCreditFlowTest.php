@@ -6,8 +6,8 @@ namespace Tests\Feature\V1\Sms;
 
 use App\Domain\Communication\Sms\Contracts\SmsGatewayClient;
 use App\Domain\Communication\Sms\DTOs\SmsGatewaySendResult;
-use App\Models\Api\markting\MarketingChannelPricing;
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\MarketingChannelPricing;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\SmsMessageLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -99,7 +99,7 @@ class SmsCreditFlowTest extends TestCase
         $this->assertNotNull($log);
         $this->assertSame('failed', $log->status);
         $credits = UserCredit::where('user_id', $tenant->id)->firstOrFail();
-        $refunded = \App\Models\Api\markting\CreditTransaction::where('user_id', $tenant->id)
+        $refunded = \App\Models\Api\marketing\CreditTransaction::where('user_id', $tenant->id)
             ->where('transaction_type', 'refund')
             ->where('description', 'like', '%sms_message_log%')
             ->exists();
