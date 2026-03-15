@@ -39,15 +39,11 @@ class ApiPropertyRequestController extends Controller
      */
     public function store(StorePropertyRequestRequest $request): JsonResponse
     {
-        // Resolve tenant (username OR custom domain)
-        try {
-            $tenant = $this->resolveTenant($request, (string) request()->input('tenant_username'));
-        } catch (\Throwable $e) {
-            return response()->json([
-                'message' => 'Tenant not found.',
-                'errors' => ['tenant_username' => ['The specified tenant username does not exist.']]
-            ], 404);
+        $tenantResult = $this->resolveTenantForStore($request);
+        if ($tenantResult instanceof JsonResponse) {
+            return $tenantResult;
         }
+        $tenant = $tenantResult;
 
         $data = $request->validated();
         unset($data['tenant_username']);
@@ -92,6 +88,38 @@ class ApiPropertyRequestController extends Controller
             'message' => 'تم إرسال الطلب بنجاح.',
             'data' => $propertyRequest
         ], 201);
+    }
+
+    /**
+     * Resolve tenant for store: from request tenant_username or from authenticated user.
+     *
+     * @return User|JsonResponse
+     */
+    private function resolveTenantForStore(Request $request)
+    {
+        if ($request->filled('tenant_username')) {
+            try {
+                return $this->resolveTenant($request, (string) $request->input('tenant_username'));
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'message' => 'Tenant not found.',
+                    'errors' => ['tenant_username' => ['The specified tenant username does not exist.']],
+                ], 404);
+            }
+        }
+
+        $user = $request->user();
+        $ownerId = $user->tenantOwnerId();
+        $tenant = User::find($ownerId);
+
+        if (!$tenant) {
+            return response()->json([
+                'message' => 'Tenant could not be determined.',
+                'errors' => ['tenant_username' => ['Tenant could not be determined for the authenticated user.']],
+            ], 403);
+        }
+
+        return $tenant;
     }
 
     /**

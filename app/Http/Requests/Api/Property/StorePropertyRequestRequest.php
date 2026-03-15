@@ -15,7 +15,7 @@ class StorePropertyRequestRequest extends BaseApiFormRequest
     public function rules()
     {
         return [
-            'tenant_username' => 'required|string|max:255',
+            'tenant_username' => 'nullable|string|max:255',
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
             'source' => ['nullable', 'string', Rule::in([
