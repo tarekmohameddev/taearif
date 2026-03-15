@@ -30,7 +30,7 @@ class ProcessScheduledWaCampaigns extends Command
 
             if ($updated === 1) {
                 DispatchWaCampaignJob::dispatch((int) $campaignId)
-                    ->onQueue((string) config('communication.whatsapp.queue', 'communication'));
+                    ->onQueue((string) config('communication.whatsapp.queue'));
             }
         }
 

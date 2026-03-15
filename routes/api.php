@@ -100,6 +100,7 @@ use App\Http\Controllers\Api\V1\WhatsApp\{
     TemplateController as WhatsAppTemplateController,
     AutomationRuleController as WhatsAppAutomationRuleController,
     AiConfigController as WhatsAppAiConfigController,
+    StatsController as WhatsAppStatsController,
     WebhookController as WhatsAppWebhookController,
 };
 use App\Http\Controllers\Api\V1\{
@@ -1185,6 +1186,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::patch('ai/config/{numberId}/toggle', [WhatsAppAiConfigController::class, 'toggle']);
         Route::get('ai/stats', [WhatsAppAiConfigController::class, 'stats']);
 
+        Route::get('stats', [WhatsAppStatsController::class, 'index']);
         Route::get('campaigns', [WaCampaignController::class, 'index']);
         Route::get('campaigns/{id}', [WaCampaignController::class, 'show']);
         Route::post('campaigns', [WaCampaignController::class, 'store']);

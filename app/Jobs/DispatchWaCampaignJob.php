@@ -22,7 +22,7 @@ class DispatchWaCampaignJob implements ShouldQueue
 
     public function __construct(public readonly int $campaignId)
     {
-        $this->onQueue((string) config('communication.whatsapp.queue', 'communication'));
+        $this->onQueue((string) config('communication.whatsapp.queue'));
     }
 
     public function handle(WaDispatcher $dispatcher): void
