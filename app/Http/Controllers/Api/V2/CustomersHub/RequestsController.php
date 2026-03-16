@@ -650,7 +650,9 @@ class RequestsController extends ApiController
         );
         $duration = (int) ($validated['duration'] ?? 30);
         $priorityDb = $this->mapPriorityAppointmentToDb($validated['priority'] ?? 'medium');
-        $datetime = Carbon::parse($validated['datetime'])->toDateTimeString();
+        $datetime = !empty($validated['datetime'])
+            ? Carbon::parse($validated['datetime'])->toDateTimeString()
+            : now()->toDateTimeString();
         $now = now();
 
         if ($isInquiry) {
