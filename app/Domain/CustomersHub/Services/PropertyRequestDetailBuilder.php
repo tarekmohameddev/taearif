@@ -89,6 +89,13 @@ class PropertyRequestDetailBuilder
                 ->value('name_ar');
         }
 
+        $districtAR = null;
+        if (!empty($propertyRequest->districts_id)) {
+            $districtAR = DB::table('user_districts')
+                ->where('id', $propertyRequest->districts_id)
+                ->value('name_ar');
+        }
+
         $propertyCategory = null;
         if (!empty($propertyRequest->category_id)) {
             $propertyCategory = DB::table('api_user_categories')
@@ -137,6 +144,7 @@ class PropertyRequestDetailBuilder
         $fullAction['propertyCategory'] = $propertyCategory;
         $fullAction['propertyType'] = $propertyRequest->property_type;
         $fullAction['city'] = $city;
+        $fullAction['districtAR'] = $districtAR;
         $fullAction['state'] = $propertyRequest->region;
         $fullAction['budgetMin'] = $propertyRequest->budget_from !== null ? (float) $propertyRequest->budget_from : null;
         $fullAction['budgetMax'] = $propertyRequest->budget_to !== null ? (float) $propertyRequest->budget_to : null;
