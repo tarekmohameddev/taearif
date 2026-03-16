@@ -273,15 +273,18 @@ class RequestsController extends ApiController
                 ['id' => 'low', 'label' => 'منخفض', 'labelEn' => 'Low', 'color' => '#28a745'],
             ];
 
-            // Sources
-            $sources = [
-                ['id' => 'inquiry', 'label' => 'استفسار', 'labelEn' => 'Inquiry'],
-                ['id' => 'manual', 'label' => 'يدوي', 'labelEn' => 'Manual'],
-                ['id' => 'whatsapp', 'label' => 'واتساب', 'labelEn' => 'WhatsApp'],
-                ['id' => 'import', 'label' => 'استيراد', 'labelEn' => 'Import'],
-                ['id' => 'referral', 'label' => 'إحالة', 'labelEn' => 'Referral'],
-                ['id' => 'property_request', 'label' => 'طلب عقار', 'labelEn' => 'Property Request'],
-            ];
+            // Sources: distinct values from users_property_requests.source for this tenant
+            $sourceValues = DB::table('users_property_requests')
+                ->where('user_id', $userId)
+                ->whereNotNull('source')
+                ->distinct()
+                ->orderBy('source')
+                ->pluck('source');
+            $sources = $sourceValues->map(fn (string $value) => [
+                'id' => $value,
+                'label' => $this->sourceLabel($value, 'ar'),
+                'labelEn' => $this->sourceLabel($value, 'en'),
+            ])->values()->all();
 
             // Due date buckets
             $dueDateBuckets = [
@@ -1041,6 +1044,30 @@ class RequestsController extends ApiController
     {
         $user = $request->user();
         return method_exists($user, 'tenantOwnerId') ? $user->tenantOwnerId() : $user->id;
+    }
+
+    /**
+     * Known source value labels for filter-options. Unknown values use raw value or "Other".
+     */
+    private function sourceLabel(string $value, string $lang): string
+    {
+        $map = [
+            'inquiry' => ['ar' => 'استفسار', 'en' => 'Inquiry'],
+            'manual' => ['ar' => 'يدوي', 'en' => 'Manual'],
+            'whatsapp' => ['ar' => 'واتساب', 'en' => 'WhatsApp'],
+            'import' => ['ar' => 'استيراد', 'en' => 'Import'],
+            'referral' => ['ar' => 'إحالة', 'en' => 'Referral'],
+            'property_request' => ['ar' => 'طلب عقار', 'en' => 'Property Request'],
+            'website' => ['ar' => 'الموقع', 'en' => 'Website'],
+            'property_interest' => ['ar' => 'اهتمام بعقار', 'en' => 'Property Interest'],
+            'public_form' => ['ar' => 'نموذج عام', 'en' => 'Public Form'],
+            'employee_dashboard' => ['ar' => 'لوحة الموظف', 'en' => 'Employee Dashboard'],
+            'whatsapp_bot' => ['ar' => 'واتساب بوت', 'en' => 'WhatsApp Bot'],
+        ];
+        if (isset($map[$value][$lang])) {
+            return $map[$value][$lang];
+        }
+        return $value;
     }
 
     /**

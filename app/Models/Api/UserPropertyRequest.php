@@ -34,6 +34,7 @@ class UserPropertyRequest extends Model
                 Cache::forget('property_requests_statistics_' . $id);
                 PropertyRequestFilterOptionsCache::forgetFilterDataForOwner($id);
                 Cache::forget("property_request_filter_options_meta_{$id}");
+                Cache::forget("ch:reqs:filter-options:{$id}");
             }
         };
 
