@@ -184,6 +184,8 @@ class RequestsController extends ApiController
                 'limit' => $result['limit'],
                 'offset' => $result['offset'],
                 'hasMore' => $result['hasMore'],
+                'sortBy' => $result['sortBy'],
+                'sortDir' => $result['sortDir'],
             ],
         ]);
     }

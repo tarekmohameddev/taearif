@@ -61,7 +61,7 @@ class RequestsListRequest extends BaseApiFormRequest
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date',
             'search' => 'nullable|string|max:255',
-            'sort_by' => 'nullable|in:createdAt,dueDate,priority,customerName',
+            'sort_by' => 'nullable|in:updatedAt,createdAt,dueDate,priority,customerName',
             'sort_dir' => 'nullable|in:asc,desc',
             'limit' => 'nullable|integer|min:1|max:100',
             'offset' => 'nullable|integer|min:0',
