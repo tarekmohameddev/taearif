@@ -43,6 +43,7 @@ use Carbon\Carbon;
  * - POST /api/v2/customers-hub/requests/bulk
  * - POST /api/v2/customers-hub/requests/bulk-complete
  * - POST /api/v2/customers-hub/requests/bulk-dismiss
+ * - POST /api/v2/customers-hub/requests/mark-viewed
  */
 class RequestsController extends ApiController
 {
@@ -166,6 +167,25 @@ class RequestsController extends ApiController
             }
         });
 
+        // isUpdated flag: true only when request existed at last view and was modified since (per viewer)
+        $viewerId = $request->user()->id;
+        $viewedRow = DB::table('customers_hub_requests_list_viewed')
+            ->where('user_id', $viewerId)
+            ->first(['viewed_at']);
+        $viewedAt = $viewedRow?->viewed_at ? Carbon::parse($viewedRow->viewed_at) : null;
+        $items->each(function ($item) use ($viewedAt) {
+            if ($viewedAt === null) {
+                $item->isUpdated = false;
+                return;
+            }
+            $createdAt = $item->createdAt ? Carbon::parse($item->createdAt) : null;
+            $updatedAt = $item->updatedAt ? Carbon::parse($item->updatedAt) : null;
+            $item->isUpdated = $createdAt !== null
+                && $updatedAt !== null
+                && $createdAt->lte($viewedAt)
+                && $updatedAt->gt($viewedAt);
+        });
+
         // Get stats
         $stats = $this->aggregator->getStats($userId, $filters);
 
@@ -188,6 +208,29 @@ class RequestsController extends ApiController
                 'sortDir' => $result['sortDir'],
             ],
         ]);
+    }
+
+    /**
+     * POST /api/v2/customers-hub/requests/mark-viewed
+     *
+     * Mark the requests list as viewed by the current user (viewer). Used to compute isUpdated
+     * per action on the next list load. Always uses server now(); client-provided timestamp is ignored.
+     */
+    public function markListViewed(Request $request): JsonResponse
+    {
+        $viewerId = $request->user()->id;
+        $now = now();
+        DB::table('customers_hub_requests_list_viewed')->upsert(
+            [
+                [
+                    'user_id' => $viewerId,
+                    'viewed_at' => $now,
+                ],
+            ],
+            ['user_id'],
+            ['viewed_at']
+        );
+        return $this->success(['viewedAt' => $now->toIso8601String()]);
     }
 
     /**

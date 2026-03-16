@@ -1228,6 +1228,9 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
         Route::post('/bulk-complete', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'bulkComplete']);
         Route::post('/bulk-dismiss', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'bulkDismiss']);
 
+        // Mark requests list as viewed (per viewer) for isUpdated flags
+        Route::post('/mark-viewed', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'markListViewed']);
+
         // Property request appointments and reminders (must be before /{requestId})
         Route::post('/{requestId}/appointments', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'createAppointmentForPropertyRequest']);
         Route::post('/{requestId}/reminders', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'createReminderForPropertyRequest']);
