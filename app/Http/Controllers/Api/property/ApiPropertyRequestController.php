@@ -46,8 +46,45 @@ class ApiPropertyRequestController extends Controller
         $tenant = $tenantResult;
 
         $data = $request->validated();
+        $rawPropertyIds = $data['property_ids'] ?? [];
+        unset($data['property_ids']);
         unset($data['tenant_username']);
         $data['user_id'] = $tenant->id;
+
+        // Normalize property_ids into a clean integer array
+        $propertyIds = [];
+        if (is_array($rawPropertyIds)) {
+            $propertyIds = array_values(array_unique(
+                array_filter(
+                    array_map('intval', $rawPropertyIds),
+                    static fn (int $id): bool => $id > 0
+                )
+            ));
+        }
+
+        // Ensure provided property IDs belong to the resolved tenant
+        if ($propertyIds !== []) {
+            $validIds = \App\Models\User\RealestateManagement\Property::query()
+                ->where('user_id', $tenant->id)
+                ->whereIn('id', $propertyIds)
+                ->pluck('id')
+                ->all();
+
+            sort($validIds);
+            $sortedRequested = $propertyIds;
+            sort($sortedRequested);
+
+            if ($validIds !== $sortedRequested) {
+                return response()->json([
+                    'message' => 'One or more property IDs are invalid or do not belong to this tenant.',
+                    'errors' => [
+                        'property_ids' => ['The selected property IDs are invalid or unauthorized for this tenant.'],
+                    ],
+                ], 422);
+            }
+
+            $propertyIds = $validIds;
+        }
 
         // Map region (city_id) → set city_id and Arabic name into region
         $regionId = (int) ($data['region'] ?? 0);
@@ -81,6 +118,8 @@ class ApiPropertyRequestController extends Controller
         if (isset($data['status_id'])) {
             $data['status_id'] = (int) $data['status_id'];
         }
+
+        $data['property_ids'] = $propertyIds;
 
         $propertyRequest = UserPropertyRequest::create($data);
 
