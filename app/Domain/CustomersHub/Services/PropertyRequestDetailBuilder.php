@@ -380,10 +380,18 @@ class PropertyRequestDetailBuilder
             $metadata = is_array($decoded) ? $decoded : [];
         }
 
+        $propertyCategoryNameAr = null;
+        if (!empty($propertyRequest->category_id)) {
+            $propertyCategoryNameAr = DB::table('api_user_categories')
+                ->where('id', $propertyRequest->category_id)
+                ->value('name');
+        }
+
         $defaults = [
             'propertyRequestId' => (int) $propertyRequest->id,
             'propertyType' => $propertyRequest->property_type,
             'propertyCategory' => $propertyRequest->category_id,
+            'propertyCategoryNameAr' => $propertyCategoryNameAr,
             'budgetFrom' => $propertyRequest->budget_from !== null ? (float) $propertyRequest->budget_from : null,
             'budgetTo' => $propertyRequest->budget_to !== null ? (float) $propertyRequest->budget_to : null,
             'purpose' => $propertyRequest->purpose,
