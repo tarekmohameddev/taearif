@@ -13,6 +13,7 @@ use App\Http\Requests\Api\V2\CustomersHub\CreateReminderRequest;
 use App\Http\Requests\Api\V2\CustomersHub\BulkCompleteRequest;
 use App\Http\Requests\Api\V2\CustomersHub\BulkDismissRequest;
 use App\Http\Requests\Api\V2\CustomersHub\RequestsBulkRequest;
+use App\Http\Requests\Api\V2\CustomersHub\DismissRequest;
 use App\Domain\CustomersHub\Services\ActionsAggregatorService;
 use App\Domain\CustomersHub\Services\PropertyRequestDetailBuilder;
 use App\Models\Api\ApiCustomerInquiry;
@@ -470,9 +471,13 @@ class RequestsController extends ApiController
      * 
      * Dismiss an action.
      */
-    public function dismiss(Request $request, string $requestId): JsonResponse
+    public function dismiss(DismissRequest $request, string $requestId): JsonResponse
     {
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
+
+        // Save dismiss reason as a note on the action
+        $this->aggregator->addNoteToAction($userId, $requestId, $validated['reason'], 'current_user');
 
         $success = $this->aggregator->dismissAction($userId, $requestId);
 
@@ -1007,7 +1012,7 @@ class RequestsController extends ApiController
         $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
 
-        $results = $this->aggregator->bulkDismiss($userId, $validated['actionIds']);
+        $results = $this->aggregator->bulkDismiss($userId, $validated['actionIds'], $validated['reason']);
 
         // Invalidate filter options cache
         $this->invalidateFilterOptionsCache($userId);

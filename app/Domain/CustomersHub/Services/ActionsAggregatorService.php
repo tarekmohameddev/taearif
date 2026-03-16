@@ -1151,13 +1151,14 @@ class ActionsAggregatorService
     /**
      * Bulk dismiss actions.
      */
-    public function bulkDismiss(int $userId, array $actionIds): array
+    public function bulkDismiss(int $userId, array $actionIds, string $reason): array
     {
         $results = ['success' => [], 'failed' => []];
 
         foreach ($actionIds as $actionId) {
             if ($this->dismissAction($userId, $actionId)) {
                 $results['success'][] = $actionId;
+                $this->addNoteToAction($userId, $actionId, $reason, 'current_user');
             } else {
                 $results['failed'][] = $actionId;
             }

@@ -61,6 +61,12 @@ class RequestsBulkRequest extends BaseApiFormRequest
                 } elseif (!$validEmployee($by)) {
                     $validator->errors()->add('data.dismissedBy', __('validation.exists', ['attribute' => 'data.dismissedBy']));
                 }
+                $reason = $data['reason'] ?? null;
+                if ($reason === null || $reason === '') {
+                    $validator->errors()->add('data.reason', __('validation.required', ['attribute' => 'data.reason']));
+                } elseif (!is_string($reason)) {
+                    $validator->errors()->add('data.reason', __('validation.string', ['attribute' => 'data.reason']));
+                }
             } elseif ($action === 'snooze') {
                 $until = $data['snoozedUntil'] ?? null;
                 if (!$until) {
