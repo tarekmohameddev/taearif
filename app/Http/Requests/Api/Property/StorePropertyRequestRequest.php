@@ -28,7 +28,7 @@ class StorePropertyRequestRequest extends BaseApiFormRequest
             'referral_source' => ['nullable', 'string'],
             'property_type' => 'nullable',
             'category' => 'nullable|string',
-            'region' => ['required', 'integer', Rule::exists('user_cities', 'id')],
+            'region' => ['nullable', 'integer', Rule::exists('user_cities', 'id')],
             'districts_id' => ['nullable', 'integer', Rule::exists('user_districts', 'id')],
             'area_from' => 'nullable|integer|min:0',
             'area_to' => 'nullable|integer|min:0',
