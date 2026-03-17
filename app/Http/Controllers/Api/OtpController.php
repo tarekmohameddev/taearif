@@ -46,8 +46,17 @@ class OtpController extends Controller
             ], 200);
         }
 
-        $message = sprintf(self::OTP_MESSAGE_TEMPLATE, $result['otp']);
+        $plainOtp = $result['otp'];
+        $message = sprintf(self::OTP_MESSAGE_TEMPLATE, $plainOtp);
         app(WhatsAppService::class)->sendMessage($phone, $message);
+
+        if (app()->environment('local')) {
+            \Illuminate\Support\Facades\Log::channel('single')->info('OTP (local only)', [
+                'phone' => $phone,
+                'otp' => $plainOtp,
+                'expires_in_minutes' => 5,
+            ]);
+        }
 
         return response()->json([
             'success' => true,
