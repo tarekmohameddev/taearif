@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\{
     content\ApiContentSectionsController,
     ThemeSettingsController,
     AuthController,
+    OtpController,
     RegionController,
     DistrictController,
     CityController,
@@ -170,6 +171,9 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/auth/forgot-password', [ResetPasswordController::class, 'forgotPassword']); // Send reset link
 Route::post('/auth/verify-reset-code', [ResetPasswordController::class, 'verifyResetCode']); // Verify reset code
 
+// OTP (registration phone verification via WhatsApp)
+Route::post('/auth/send-otp', [OtpController::class, 'sendOtp'])->middleware('throttle:5,1');
+
 // OAuth (web middleware)
 Route::middleware('web')->group(function () {
     Route::get('/auth/google/redirect', [AuthController::class, 'redirect'])->name('redirect');
@@ -205,6 +209,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', [AuthController::class, 'getUserProfile']);
     Route::get('/user/getUserInfo', [AuthController::class, 'getUserProfile']); // Alias for frontend compatibility
     Route::post('/user-read-message', [AuthController::class, 'read_message']);
+    Route::post('/auth/verify-otp', [OtpController::class, 'verifyOtp']);
 });
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
