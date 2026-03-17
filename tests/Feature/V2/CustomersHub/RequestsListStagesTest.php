@@ -264,7 +264,7 @@ class RequestsListStagesTest extends TestCase
         $res->assertOk()->assertJsonPath('status', 'success');
         $stages = $res->json('data.stages');
         $this->assertIsArray($stages);
-        $expectedSlugs = ['new', 'follow_up', 'property_found', 'contract_signed', 'cancelled'];
+        $expectedSlugs = ['suspended', 'in_progress', 'waiting', 'completed', 'cancelled'];
         $actualSlugs = array_column($stages, 'stage_id');
         foreach ($expectedSlugs as $slug) {
             $this->assertContains($slug, $actualSlugs, "Stages should include property_request_status slug: {$slug}");

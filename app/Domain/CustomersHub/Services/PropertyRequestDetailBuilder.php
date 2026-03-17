@@ -350,9 +350,9 @@ class PropertyRequestDetailBuilder
     {
         return match ($slug) {
             'cancelled' => 'dismissed',
-            'contract_signed' => 'completed',
-            'new' => 'pending',
-            'follow_up', 'property_found' => 'in_progress',
+            'completed' => 'completed',
+            'suspended' => 'pending',
+            'in_progress', 'waiting' => 'in_progress',
             default => 'in_progress',
         };
     }
