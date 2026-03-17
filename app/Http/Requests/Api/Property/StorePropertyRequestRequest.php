@@ -18,7 +18,7 @@ class StorePropertyRequestRequest extends BaseApiFormRequest
             'tenant_username' => 'nullable|string|max:255',
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
-            'property_ids' => 'nullable|array|min:1',
+            'property_ids' => 'nullable|array',
             'property_ids.*' => 'integer|exists:user_properties,id',
             'source' => ['nullable', 'string', Rule::in([
                 'property_interest',
