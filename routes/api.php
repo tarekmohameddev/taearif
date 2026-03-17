@@ -1242,6 +1242,7 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
         // Action operations
         Route::post('/{requestId}/complete', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'complete']);
         Route::post('/{requestId}/dismiss', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'dismiss']);
+        Route::post('/{requestId}/snooze', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'snooze']);
         Route::patch('/{requestId}', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'update']);
         Route::post('/{requestId}/notes', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'addNote']);
     });

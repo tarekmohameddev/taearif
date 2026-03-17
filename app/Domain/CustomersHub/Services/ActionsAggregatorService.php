@@ -1082,7 +1082,7 @@ class ActionsAggregatorService
     /**
      * Snooze a single action (reminders, property_request_appointments, property_request_reminders only).
      */
-    private function snoozeAction(int $userId, string $actionId, string $snoozedUntil, int $snoozedBy): bool
+    public function snoozeAction(int $userId, string $actionId, string $snoozedUntil, int $snoozedBy): bool
     {
         $parsed = $this->parseActionId($actionId);
         if (!$parsed) {

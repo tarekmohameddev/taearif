@@ -14,6 +14,7 @@ use App\Http\Requests\Api\V2\CustomersHub\BulkCompleteRequest;
 use App\Http\Requests\Api\V2\CustomersHub\BulkDismissRequest;
 use App\Http\Requests\Api\V2\CustomersHub\RequestsBulkRequest;
 use App\Http\Requests\Api\V2\CustomersHub\DismissRequest;
+use App\Http\Requests\Api\V2\CustomersHub\SnoozeRequest;
 use App\Domain\CustomersHub\Services\ActionsAggregatorService;
 use App\Domain\CustomersHub\Services\PropertyRequestDetailBuilder;
 use App\Models\Api\ApiCustomerInquiry;
@@ -494,6 +495,37 @@ class RequestsController extends ApiController
         return $this->success([
             'message' => 'Action dismissed successfully',
             'actionId' => $requestId,
+        ]);
+    }
+
+    /**
+     * POST /api/v2/customers-hub/requests/{requestId}/snooze
+     *
+     * Snooze an action (where supported).
+     */
+    public function snooze(SnoozeRequest $request, string $requestId): JsonResponse
+    {
+        $validated = $request->validated();
+        $userId = $this->getTenantUserId($request);
+        $snoozedBy = $request->user()->id;
+
+        if (!empty($validated['reason'])) {
+            $this->aggregator->addNoteToAction($userId, $requestId, $validated['reason'], 'current_user');
+        }
+
+        $success = $this->aggregator->snoozeAction($userId, $requestId, $validated['snoozedUntil'], $snoozedBy);
+
+        if (!$success) {
+            return $this->error('Failed to snooze action or snooze is not supported for this request type', 422);
+        }
+
+        $this->invalidateFilterOptionsCache($userId);
+
+        return $this->success([
+            'message' => 'Action snoozed successfully',
+            'actionId' => $requestId,
+            'snoozedUntil' => $validated['snoozedUntil'],
+            'snoozedBy' => $snoozedBy,
         ]);
     }
 
