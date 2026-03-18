@@ -58,6 +58,7 @@ class RegisterApiRequest extends BaseApiFormRequest
                 'max:191',
                 'unique:users,phone',
             ],
+            'verified_token' => 'nullable|string|uuid',
             'first_name' => 'nullable|string|max:191',
             'last_name' => 'nullable|string|max:191',
             'industry_type' => 'nullable|string|max:100',
