@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Api\markting\MarketingChannel;
+use App\Models\Api\marketing\MarketingChannel;
 use App\Models\User;
 
 class MarketingChannelSeeder extends Seeder

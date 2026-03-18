@@ -264,10 +264,51 @@ class RequestsListStagesTest extends TestCase
         $res->assertOk()->assertJsonPath('status', 'success');
         $stages = $res->json('data.stages');
         $this->assertIsArray($stages);
-        $expectedSlugs = ['new', 'follow_up', 'property_found', 'contract_signed', 'cancelled'];
+        $expectedSlugs = ['suspended', 'in_progress', 'waiting', 'completed', 'cancelled'];
         $actualSlugs = array_column($stages, 'stage_id');
         foreach ($expectedSlugs as $slug) {
             $this->assertContains($slug, $actualSlugs, "Stages should include property_request_status slug: {$slug}");
         }
+    }
+
+    /** @test */
+    public function list_default_sort_is_updated_at_desc(): void
+    {
+        $this->requirePropertyRequestTables();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        Sanctum::actingAs($tenant);
+
+        // Create three property requests, then tweak updated_at to known values
+        $id1 = $this->createPropertyRequest($tenant->id);
+        $id2 = $this->createPropertyRequest($tenant->id);
+        $id3 = $this->createPropertyRequest($tenant->id);
+
+        $now = now();
+        DB::table('users_property_requests')->where('id', $id1)->update(['updated_at' => $now->copy()->subMinutes(10)]);
+        DB::table('users_property_requests')->where('id', $id2)->update(['updated_at' => $now->copy()->subMinutes(5)]);
+        DB::table('users_property_requests')->where('id', $id3)->update(['updated_at' => $now]);
+
+        $res = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'tab' => 'all',
+            'objectTypes' => ['property_request'],
+            'limit' => 10,
+            'offset' => 0,
+        ]);
+
+        $res->assertOk()->assertJsonPath('status', 'success');
+
+        $pagination = $res->json('data.pagination');
+        $this->assertSame('updatedAt', $pagination['sortBy'] ?? null);
+        $this->assertSame('desc', $pagination['sortDir'] ?? null);
+
+        $actions = $res->json('data.actions');
+        $this->assertIsArray($actions);
+        $this->assertNotEmpty($actions);
+
+        // The newest updated_at (id3) should come first, then id2, then id1
+        $firstThree = array_slice($actions, 0, 3);
+        $sourceIds = array_column($firstThree, 'sourceId');
+        $this->assertSame([$id3, $id2, $id1], $sourceIds, 'Default sort should be updatedAt desc for property_request actions');
     }
 }

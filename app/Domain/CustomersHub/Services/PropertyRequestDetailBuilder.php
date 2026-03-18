@@ -89,6 +89,13 @@ class PropertyRequestDetailBuilder
                 ->value('name_ar');
         }
 
+        $districtAR = null;
+        if (!empty($propertyRequest->districts_id)) {
+            $districtAR = DB::table('user_districts')
+                ->where('id', $propertyRequest->districts_id)
+                ->value('name_ar');
+        }
+
         $propertyCategory = null;
         if (!empty($propertyRequest->category_id)) {
             $propertyCategory = DB::table('api_user_categories')
@@ -137,6 +144,7 @@ class PropertyRequestDetailBuilder
         $fullAction['propertyCategory'] = $propertyCategory;
         $fullAction['propertyType'] = $propertyRequest->property_type;
         $fullAction['city'] = $city;
+        $fullAction['districtAR'] = $districtAR;
         $fullAction['state'] = $propertyRequest->region;
         $fullAction['budgetMin'] = $propertyRequest->budget_from !== null ? (float) $propertyRequest->budget_from : null;
         $fullAction['budgetMax'] = $propertyRequest->budget_to !== null ? (float) $propertyRequest->budget_to : null;
@@ -342,9 +350,9 @@ class PropertyRequestDetailBuilder
     {
         return match ($slug) {
             'cancelled' => 'dismissed',
-            'contract_signed' => 'completed',
-            'new' => 'pending',
-            'follow_up', 'property_found' => 'in_progress',
+            'completed' => 'completed',
+            'suspended' => 'pending',
+            'in_progress', 'waiting' => 'in_progress',
             default => 'in_progress',
         };
     }
@@ -372,10 +380,18 @@ class PropertyRequestDetailBuilder
             $metadata = is_array($decoded) ? $decoded : [];
         }
 
+        $propertyCategoryNameAr = null;
+        if (!empty($propertyRequest->category_id)) {
+            $propertyCategoryNameAr = DB::table('api_user_categories')
+                ->where('id', $propertyRequest->category_id)
+                ->value('name');
+        }
+
         $defaults = [
             'propertyRequestId' => (int) $propertyRequest->id,
             'propertyType' => $propertyRequest->property_type,
             'propertyCategory' => $propertyRequest->category_id,
+            'propertyCategoryNameAr' => $propertyCategoryNameAr,
             'budgetFrom' => $propertyRequest->budget_from !== null ? (float) $propertyRequest->budget_from : null,
             'budgetTo' => $propertyRequest->budget_to !== null ? (float) $propertyRequest->budget_to : null,
             'purpose' => $propertyRequest->purpose,

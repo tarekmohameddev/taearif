@@ -48,7 +48,7 @@ class PaymentController extends Controller
 
         try {
             // Create a temporary transaction record for tracking
-            $transaction = \App\Models\Api\markting\CreditTransaction::create([
+            $transaction = \App\Models\Api\marketing\CreditTransaction::create([
                 'user_id' => $user->id,
                 'credit_package_id' => null, // Direct amount purchase
                 'transaction_type' => 'purchase',
@@ -57,7 +57,7 @@ class PaymentController extends Controller
                 'currency' => 'SAR',
                 'payment_method' => $paymentMethod,
                 'status' => 'pending',
-                'reference_number' => \App\Models\Api\markting\CreditTransaction::generateReferenceNumber(),
+                'reference_number' => \App\Models\Api\marketing\CreditTransaction::generateReferenceNumber(),
                 'description' => "Direct credit purchase: {$credits} credits for {$amount} SAR",
                 'metadata' => [
                     'purchase_type' => 'direct_amount',
@@ -77,7 +77,7 @@ class PaymentController extends Controller
                 ]);
 
                 // Add credits to user
-                $userCredit = \App\Models\Api\markting\UserCredit::getOrCreateForUser($user->id);
+                $userCredit = \App\Models\Api\marketing\UserCredit::getOrCreateForUser($user->id);
                 $userCredit->addCredits($credits, null, "Test credit purchase: {$credits} credits");
 
                 return response()->json([

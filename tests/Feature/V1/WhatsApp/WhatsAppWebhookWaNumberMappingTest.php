@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\V1\WhatsApp;
 
-use App\Models\Api\markting\MarketingChannel;
+use App\Models\Api\marketing\MarketingChannel;
 use App\Models\Conversation;
 use App\Models\User;
 use App\Models\WaConversationState;

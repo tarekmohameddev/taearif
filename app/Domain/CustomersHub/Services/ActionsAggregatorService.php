@@ -95,7 +95,7 @@ class ActionsAggregatorService
         $total = $totalQuery->count();
 
         // Apply sorting
-        $sortBy = $filters['sort_by'] ?? 'createdAt';
+        $sortBy = $filters['sort_by'] ?? 'updatedAt';
         $sortDir = $filters['sort_dir'] ?? 'desc';
         $query->orderBy($sortBy, $sortDir);
 
@@ -116,6 +116,8 @@ class ActionsAggregatorService
             'limit' => $limit,
             'offset' => $offset,
             'hasMore' => ($offset + $limit) < $total,
+            'sortBy' => $sortBy,
+            'sortDir' => $sortDir,
         ];
     }
 
@@ -1080,7 +1082,7 @@ class ActionsAggregatorService
     /**
      * Snooze a single action (reminders, property_request_appointments, property_request_reminders only).
      */
-    private function snoozeAction(int $userId, string $actionId, string $snoozedUntil, int $snoozedBy): bool
+    public function snoozeAction(int $userId, string $actionId, string $snoozedUntil, int $snoozedBy): bool
     {
         $parsed = $this->parseActionId($actionId);
         if (!$parsed) {
@@ -1149,13 +1151,14 @@ class ActionsAggregatorService
     /**
      * Bulk dismiss actions.
      */
-    public function bulkDismiss(int $userId, array $actionIds): array
+    public function bulkDismiss(int $userId, array $actionIds, string $reason): array
     {
         $results = ['success' => [], 'failed' => []];
 
         foreach ($actionIds as $actionId) {
             if ($this->dismissAction($userId, $actionId)) {
                 $results['success'][] = $actionId;
+                $this->addNoteToAction($userId, $actionId, $reason, 'current_user');
             } else {
                 $results['failed'][] = $actionId;
             }
@@ -1205,6 +1208,7 @@ class ActionsAggregatorService
                 DB::raw("NULL as dueDate"),
                 DB::raw("NULL as snoozedUntil"),
                 'aci.created_at as createdAt',
+                'aci.updated_at as updatedAt',
                 DB::raw("NULL as completedAt"),
                 DB::raw("NULL as completedBy"),
                 'aci.responsible_employee_id as assignedTo',
@@ -1279,6 +1283,7 @@ class ActionsAggregatorService
                 DB::raw("NULL as dueDate"),
                 DB::raw("NULL as snoozedUntil"),
                 'upr.created_at as createdAt',
+                'upr.updated_at as updatedAt',
                 DB::raw("NULL as completedAt"),
                 DB::raw("NULL as completedBy"),
                 DB::raw('COALESCE(ac.responsible_employee_id, ac_phone.responsible_employee_id) as assignedTo'),
@@ -1337,6 +1342,7 @@ class ActionsAggregatorService
                 'r.datetime as dueDate',
                 'r.snoozed_until as snoozedUntil',
                 'r.created_at as createdAt',
+                'r.updated_at as updatedAt',
                 DB::raw("CASE WHEN r.status = 'completed' THEN r.updated_at ELSE NULL END as completedAt"),
                 DB::raw("NULL as completedBy"),
                 DB::raw("NULL as assignedTo"),
@@ -1392,6 +1398,7 @@ class ActionsAggregatorService
                 'a.datetime as dueDate',
                 'a.snoozed_until as snoozedUntil',
                 'a.created_at as createdAt',
+                'a.updated_at as updatedAt',
                 DB::raw("CASE WHEN a.status = 'completed' THEN a.updated_at ELSE NULL END as completedAt"),
                 DB::raw("NULL as completedBy"),
                 DB::raw("NULL as assignedTo"),
@@ -1448,6 +1455,7 @@ class ActionsAggregatorService
                 'r.datetime as dueDate',
                 'r.snoozed_until as snoozedUntil',
                 'r.created_at as createdAt',
+                'r.updated_at as updatedAt',
                 DB::raw("CASE WHEN r.status = 'completed' THEN r.updated_at ELSE NULL END as completedAt"),
                 DB::raw("NULL as completedBy"),
                 DB::raw("NULL as assignedTo"),
@@ -1804,6 +1812,7 @@ class ActionsAggregatorService
             'dueDate' => $item->dueDate ? Carbon::parse($item->dueDate)->toIso8601String() : null,
             'snoozedUntil' => $item->snoozedUntil ? Carbon::parse($item->snoozedUntil)->toIso8601String() : null,
             'createdAt' => $item->createdAt ? Carbon::parse($item->createdAt)->toIso8601String() : null,
+            'updatedAt' => $item->updatedAt ? Carbon::parse($item->updatedAt)->toIso8601String() : null,
             'completedAt' => $item->completedAt ? Carbon::parse($item->completedAt)->toIso8601String() : null,
             'completedBy' => $item->completedBy,
             'assignedTo' => $item->assignedTo,

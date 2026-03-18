@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Api\markting\MarketingChannelPricing;
+use App\Models\Api\marketing\MarketingChannelPricing;
 
 class MarketingChannelPricingSeeder extends Seeder
 {

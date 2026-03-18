@@ -12,8 +12,8 @@ return [
     'App\Http\Controllers\Api\App\ApiInstallationController@uninstallWhatsapp' => [],
 
     // Phase 5: V1 Marketing, RMS, SMS, Tenant, WhatsApp, V2 CustomersHub, WhatsApp app
-    'App\Http\Controllers\Api\markting\MarketingChannelController@syncVerified' => [],
-    'App\Http\Controllers\Api\markting\MarketingChannelController@whatsappWebhook' => [],
+    'App\Http\Controllers\Api\marketing\MarketingChannelController@syncVerified' => [],
+    'App\Http\Controllers\Api\marketing\MarketingChannelController@whatsappWebhook' => [],
     'App\Http\Controllers\Api\V1\Rms\ReminderController@dismiss' => [],
     'App\Http\Controllers\Api\V1\Rms\InstallmentController@regenerate' => [],
     'App\Http\Controllers\Api\V1\Rms\RentalController@reversePayment' => [],

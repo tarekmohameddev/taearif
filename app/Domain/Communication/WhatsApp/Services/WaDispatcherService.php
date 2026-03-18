@@ -6,6 +6,7 @@ use App\Domain\Communication\Contracts\CreditService;
 use App\Domain\Communication\Exceptions\ProviderSendFailedException;
 use App\Domain\Communication\WhatsApp\Contracts\WaDispatcher;
 use App\Jobs\DispatchWaCampaignJob;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\WaCampaign;
 use App\Models\WaMessageLog;
 use App\Models\WaNumber;
@@ -33,7 +34,7 @@ class WaDispatcherService implements WaDispatcher
             return;
         }
 
-        $requireActive = (bool) config('communication.whatsapp.campaign.require_active_wa_number', true);
+        $requireActive = (bool) config('communication.whatsapp.campaign.require_active_wa_number');
         if ($requireActive && ! in_array((string) $waNumber->status, ['active'], true)) {
             $this->failSafeCampaign($campaign, 'WA_NUMBER_NOT_ACTIVE', 'wa_number not active');
             return;
@@ -53,7 +54,7 @@ class WaDispatcherService implements WaDispatcher
             }
         }
 
-        $batchSize = max(1, (int) config('communication.whatsapp.batch_size', 100));
+        $batchSize = max(1, (int) config('communication.whatsapp.batch_size'));
         $logs = WaMessageLog::query()
             ->where('campaign_id', $campaignId)
             ->where('status', 'pending')
@@ -72,7 +73,7 @@ class WaDispatcherService implements WaDispatcher
 
         if ($remaining > 0) {
             DispatchWaCampaignJob::dispatch($campaignId)
-                ->onQueue((string) config('communication.whatsapp.queue', 'communication'));
+                ->onQueue((string) config('communication.whatsapp.queue'));
             return;
         }
 
@@ -111,7 +112,7 @@ class WaDispatcherService implements WaDispatcher
             return;
         }
 
-        $requireActive = (bool) config('communication.whatsapp.campaign.require_active_wa_number', true);
+        $requireActive = (bool) config('communication.whatsapp.campaign.require_active_wa_number');
         if ($requireActive && ! in_array((string) $waNumber->status, ['active'], true)) {
             $this->failSingleLogForPolicy($log, 'WA_NUMBER_NOT_ACTIVE', 'wa_number not active');
             return;
@@ -314,6 +315,7 @@ class WaDispatcherService implements WaDispatcher
         if (isset($meta['credits_per_message']) && is_numeric($meta['credits_per_message'])) {
             return max(1, (int) $meta['credits_per_message']);
         }
-        return 1;
+
+        return max(1, (int) UserCredit::getCostForMessageType('whatsapp'));
     }
 }

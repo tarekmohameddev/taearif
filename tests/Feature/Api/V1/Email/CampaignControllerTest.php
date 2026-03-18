@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Email;
 
-use App\Models\Api\markting\MarketingChannelPricing;
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\MarketingChannelPricing;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\EmailCampaign;
 use App\Models\EmailMessageLog;
 use App\Models\User;
@@ -13,10 +13,12 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Traits\MocksExternalServices;
 
 class CampaignControllerTest extends TestCase
 {
     use DatabaseTransactions;
+    use MocksExternalServices;
 
     private function requireEmailTables(): void
     {
@@ -263,6 +265,7 @@ class CampaignControllerTest extends TestCase
     {
         $this->requireEmailTables();
         $this->requireEmailPricing();
+        $this->mockEmailDispatcherForCampaignSend();
 
         $tenant = $this->createTenant();
         UserCredit::getOrCreateForUser($tenant->id)->update([
@@ -356,6 +359,7 @@ class CampaignControllerTest extends TestCase
     {
         $this->requireEmailTables();
         $this->requireEmailPricing();
+        $this->mockEmailDispatcherForCampaignSend();
 
         $tenant = $this->createTenant();
         UserCredit::getOrCreateForUser($tenant->id)->update([
@@ -393,6 +397,7 @@ class CampaignControllerTest extends TestCase
     {
         $this->requireEmailTables();
         $this->requireEmailPricing();
+        $this->mockEmailDispatcherForCampaignSend();
 
         $tenant = $this->createTenant();
         UserCredit::getOrCreateForUser($tenant->id)->update([
@@ -451,6 +456,7 @@ class CampaignControllerTest extends TestCase
     {
         $this->requireEmailTables();
         $this->requireEmailPricing();
+        $this->mockEmailDispatcherForCampaignSend();
 
         $tenant = $this->createTenant();
         UserCredit::getOrCreateForUser($tenant->id)->update([
@@ -491,6 +497,7 @@ class CampaignControllerTest extends TestCase
     {
         $this->requireEmailTables();
         $this->requireEmailPricing();
+        $this->mockEmailDispatcherForCampaignSend();
 
         $tenant = $this->createTenant();
         UserCredit::getOrCreateForUser($tenant->id)->update([

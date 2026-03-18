@@ -387,6 +387,7 @@
                         @elseif(request()->is('admin/communication/email')) active
                         @elseif(request()->is('admin/communication/*')) active
                         @elseif(request()->is('admin/communication/whatsapp-templates*')) active
+                        @elseif(request()->is('admin/communication/whatsapp-campaigns*')) active
                         @elseif(request()->is('admin/communication/email-templates*')) active @endif">
                         <a data-toggle="collapse" href="#communication">
                             <i data-lucide="message-square"></i>
@@ -398,6 +399,7 @@
                             @elseif(request()->is('admin/communication/email')) show
                             @elseif(request()->is('admin/communication/*')) show
                             @elseif(request()->is('admin/communication/whatsapp-templates*')) show
+                            @elseif(request()->is('admin/communication/whatsapp-campaigns*')) show
                             @elseif(request()->is('admin/communication/email-templates*')) show @endif"
                             id="communication">
                             <ul class="nav nav-collapse">
@@ -409,6 +411,11 @@
                                 <li class="@if (request()->is('admin/communication/whatsapp-templates*')) active @endif">
                                     <a href="{{ route('admin.whatsapp-templates.index') }}">
                                         <span class="sub-item">{{ __('WhatsApp Templates') }}</span>
+                                    </a>
+                                </li>
+                                <li class="@if (request()->is('admin/communication/whatsapp-campaigns*')) active @endif">
+                                    <a href="{{ route('admin.whatsapp-campaigns.index') }}">
+                                        <span class="sub-item">{{ __('WhatsApp Campaigns') }}</span>
                                     </a>
                                 </li>
 

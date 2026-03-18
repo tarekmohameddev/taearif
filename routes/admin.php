@@ -399,6 +399,9 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::get('/communication/whatsapp-templates/{whatsappTemplate}/duplicate', 'Admin\WhatsAppTemplateController@duplicate')->name('whatsapp-templates.duplicate');
         Route::get('/communication/whatsapp-templates/{whatsappTemplate}/preview', 'Admin\WhatsAppTemplateController@preview')->name('whatsapp-templates.preview');
 
+        Route::get('/communication/whatsapp-campaigns', 'Admin\WhatsAppCampaignController@index')->name('whatsapp-campaigns.index');
+        Route::get('/communication/whatsapp-campaigns/{id}', 'Admin\WhatsAppCampaignController@show')->name('whatsapp-campaigns.show');
+
         // Email Templates Routes
         Route::resource('/communication/email-templates', 'Admin\EmailTemplateController')->names('email-templates');
         Route::post('/communication/email-templates/{emailTemplate}/toggle-status', 'Admin\EmailTemplateController@toggleStatus')->name('email-templates.toggle-status');

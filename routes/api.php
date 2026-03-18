@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\{
     content\ApiContentSectionsController,
     ThemeSettingsController,
     AuthController,
+    OtpController,
     RegionController,
     DistrictController,
     CityController,
@@ -100,6 +101,7 @@ use App\Http\Controllers\Api\V1\WhatsApp\{
     TemplateController as WhatsAppTemplateController,
     AutomationRuleController as WhatsAppAutomationRuleController,
     AiConfigController as WhatsAppAiConfigController,
+    StatsController as WhatsAppStatsController,
     WebhookController as WhatsAppWebhookController,
 };
 use App\Http\Controllers\Api\V1\{
@@ -169,6 +171,9 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/auth/forgot-password', [ResetPasswordController::class, 'forgotPassword']); // Send reset link
 Route::post('/auth/verify-reset-code', [ResetPasswordController::class, 'verifyResetCode']); // Verify reset code
 
+// OTP (registration phone verification via WhatsApp)
+Route::post('/auth/send-otp', [OtpController::class, 'sendOtp'])->middleware('throttle:5,1');
+
 // OAuth (web middleware)
 Route::middleware('web')->group(function () {
     Route::get('/auth/google/redirect', [AuthController::class, 'redirect'])->name('redirect');
@@ -204,6 +209,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', [AuthController::class, 'getUserProfile']);
     Route::get('/user/getUserInfo', [AuthController::class, 'getUserProfile']); // Alias for frontend compatibility
     Route::post('/user-read-message', [AuthController::class, 'read_message']);
+    Route::post('/auth/verify-otp', [OtpController::class, 'verifyOtp']);
 });
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -619,12 +625,12 @@ Route::post('/v1/property-requests/interest', [ApiPropertyRequestController::cla
 
 // Credits: public packages & payment callbacks
 Route::prefix('v1/credits')->group(function () {
-    Route::get('packages', [\App\Http\Controllers\Api\markting\CreditController::class, 'getPackages']);
+    Route::get('packages', [\App\Http\Controllers\Api\marketing\CreditController::class, 'getPackages']);
 
     // Payment callback routes (no auth required for webhooks). Accept GET and POST (e.g. ARB may POST).
-    Route::match(['get', 'post'], 'payment/success/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\markting\CreditController::class, 'paymentSuccess'])
+    Route::match(['get', 'post'], 'payment/success/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\marketing\CreditController::class, 'paymentSuccess'])
         ->name('api.credits.payment.success');
-    Route::match(['get', 'post'], 'payment/cancel/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\markting\CreditController::class, 'paymentCancel'])
+    Route::match(['get', 'post'], 'payment/cancel/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\marketing\CreditController::class, 'paymentCancel'])
         ->name('api.credits.payment.cancel');
 });
 
@@ -865,42 +871,42 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 
     // Marketing Channels Routes
     Route::prefix('marketing')->group(function () {
-        Route::get('channels', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'index']);
-        Route::post('channels', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'store']);
-        Route::get('channels/types', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getChannelTypes']);
+        Route::get('channels', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'index']);
+        Route::post('channels', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'store']);
+        Route::get('channels/types', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'getChannelTypes']);
         // i want to return for each channel calc how much credits used and how much messages sent all channels return it as object
-        Route::get('channels/usage', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getUsage']);
-        Route::get('channels/{id}', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'show']);
-        Route::put('channels/{id}', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'update']);
-        Route::patch('channels/{id}/status', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'updateStatus']);
-        Route::get('channels/{id}/statistics', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'statistics']);
-        Route::get('channels/{id}/stats', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'stats']);
-        Route::post('channels/{id}/sync-verified', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'syncVerified']);
-        Route::post('channels/{id}/send-message', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'sendMessage']);
-        Route::post('channels/send-whatsapp-to-customer', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'sendWhatsAppToCustomer']);
-        Route::get('channels/messages', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getMessages']);
-        Route::get('channels/messages/stats', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getMessageStats']);
-        Route::delete('channels/{id}', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'destroy']);
+        Route::get('channels/usage', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'getUsage']);
+        Route::get('channels/{id}', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'show']);
+        Route::put('channels/{id}', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'update']);
+        Route::patch('channels/{id}/status', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'updateStatus']);
+        Route::get('channels/{id}/statistics', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'statistics']);
+        Route::get('channels/{id}/stats', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'stats']);
+        Route::post('channels/{id}/sync-verified', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'syncVerified']);
+        Route::post('channels/{id}/send-message', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'sendMessage']);
+        Route::post('channels/send-whatsapp-to-customer', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'sendWhatsAppToCustomer']);
+        Route::get('channels/messages', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'getMessages']);
+        Route::get('channels/messages/stats', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'getMessageStats']);
+        Route::delete('channels/{id}', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'destroy']);
 
         // Marketing Settings Routes
-        Route::get('settings', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getAllMarketingSettings']);
-        Route::get('channels/{id}/settings', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getMarketingSettings']);
-        Route::put('channels/{id}/settings', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'updateMarketingSettings']);
-        Route::patch('channels/{id}/system-integrations', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'updateSystemIntegrationSettings']);
+        Route::get('settings', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'getAllMarketingSettings']);
+        Route::get('channels/{id}/settings', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'getMarketingSettings']);
+        Route::put('channels/{id}/settings', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'updateMarketingSettings']);
+        Route::patch('channels/{id}/system-integrations', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'updateSystemIntegrationSettings']);
 
     });
 
     // Marketing Webhooks Routes (no auth required for webhooks)
     Route::prefix('marketing/webhooks')->group(function () {
-        Route::post('whatsapp', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'whatsappWebhook']);
+        Route::post('whatsapp', [\App\Http\Controllers\Api\marketing\MarketingChannelController::class, 'whatsappWebhook']);
     });
 
     // Authenticated Credit Management Routes
     Route::prefix('credits')->middleware(['auth:sanctum'])->group(function () {
-        Route::get('balance', [\App\Http\Controllers\Api\markting\CreditController::class, 'getBalance']);
-        Route::post('purchase', [\App\Http\Controllers\Api\markting\CreditController::class, 'purchasePackage']);
-        Route::get('transactions', [\App\Http\Controllers\Api\markting\CreditController::class, 'getTransactions']);
-        Route::get('analytics', [\App\Http\Controllers\Api\markting\CreditController::class, 'getAnalytics']);
+        Route::get('balance', [\App\Http\Controllers\Api\marketing\CreditController::class, 'getBalance']);
+        Route::post('purchase', [\App\Http\Controllers\Api\marketing\CreditController::class, 'purchasePackage']);
+        Route::get('transactions', [\App\Http\Controllers\Api\marketing\CreditController::class, 'getTransactions']);
+        Route::get('analytics', [\App\Http\Controllers\Api\marketing\CreditController::class, 'getAnalytics']);
     });
 
 
@@ -1185,6 +1191,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::patch('ai/config/{numberId}/toggle', [WhatsAppAiConfigController::class, 'toggle']);
         Route::get('ai/stats', [WhatsAppAiConfigController::class, 'stats']);
 
+        Route::get('stats', [WhatsAppStatsController::class, 'index']);
         Route::get('campaigns', [WaCampaignController::class, 'index']);
         Route::get('campaigns/{id}', [WaCampaignController::class, 'show']);
         Route::post('campaigns', [WaCampaignController::class, 'store']);
@@ -1226,6 +1233,9 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
         Route::post('/bulk-complete', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'bulkComplete']);
         Route::post('/bulk-dismiss', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'bulkDismiss']);
 
+        // Mark requests list as viewed (per viewer) for isUpdated flags
+        Route::post('/mark-viewed', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'markListViewed']);
+
         // Property request appointments and reminders (must be before /{requestId})
         Route::post('/{requestId}/appointments', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'createAppointmentForPropertyRequest']);
         Route::post('/{requestId}/reminders', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'createReminderForPropertyRequest']);
@@ -1237,6 +1247,7 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
         // Action operations
         Route::post('/{requestId}/complete', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'complete']);
         Route::post('/{requestId}/dismiss', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'dismiss']);
+        Route::post('/{requestId}/snooze', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'snooze']);
         Route::patch('/{requestId}', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'update']);
         Route::post('/{requestId}/notes', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'addNote']);
     });

@@ -39,6 +39,12 @@ return [
         'provider' => env('COMMUNICATION_WHATSAPP_PROVIDER', null),
         'webhook_verify_token' => env('COMMUNICATION_WHATSAPP_WEBHOOK_VERIFY_TOKEN', ''),
         'app_secret' => env('COMMUNICATION_WHATSAPP_APP_SECRET', ''),
+        'queue' => env('COMMUNICATION_WHATSAPP_QUEUE', 'communication'),
+        'batch_size' => (int) env('COMMUNICATION_WHATSAPP_BATCH_SIZE', 100),
+        'max_manual_recipients' => (int) env('COMMUNICATION_WHATSAPP_MAX_MANUAL_RECIPIENTS', 5000),
+        'campaign' => [
+            'require_active_wa_number' => filter_var(env('COMMUNICATION_WHATSAPP_CAMPAIGN_REQUIRE_ACTIVE_WA_NUMBER', true), FILTER_VALIDATE_BOOLEAN),
+        ],
         'evolution' => [
             'base_url' => env('COMMUNICATION_WHATSAPP_EVOLUTION_BASE_URL', null),
             'api_key' => env('COMMUNICATION_WHATSAPP_EVOLUTION_API_KEY', null),

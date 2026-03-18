@@ -16,6 +16,7 @@ class BulkDismissRequest extends BaseApiFormRequest
         return [
             'actionIds' => 'required|array|min:1|max:100',
             'actionIds.*' => 'string',
+            'reason' => 'required|string|min:3|max:500',
         ];
     }
 }

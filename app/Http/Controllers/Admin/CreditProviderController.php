@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Api\markting\CreditCommunicationProvider;
+use App\Models\Api\marketing\CreditCommunicationProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 

@@ -13,6 +13,8 @@ use App\Http\Requests\Api\V2\CustomersHub\CreateReminderRequest;
 use App\Http\Requests\Api\V2\CustomersHub\BulkCompleteRequest;
 use App\Http\Requests\Api\V2\CustomersHub\BulkDismissRequest;
 use App\Http\Requests\Api\V2\CustomersHub\RequestsBulkRequest;
+use App\Http\Requests\Api\V2\CustomersHub\DismissRequest;
+use App\Http\Requests\Api\V2\CustomersHub\SnoozeRequest;
 use App\Domain\CustomersHub\Services\ActionsAggregatorService;
 use App\Domain\CustomersHub\Services\PropertyRequestDetailBuilder;
 use App\Models\Api\ApiCustomerInquiry;
@@ -43,6 +45,7 @@ use Carbon\Carbon;
  * - POST /api/v2/customers-hub/requests/bulk
  * - POST /api/v2/customers-hub/requests/bulk-complete
  * - POST /api/v2/customers-hub/requests/bulk-dismiss
+ * - POST /api/v2/customers-hub/requests/mark-viewed
  */
 class RequestsController extends ApiController
 {
@@ -166,6 +169,25 @@ class RequestsController extends ApiController
             }
         });
 
+        // isUpdated flag: true only when request existed at last view and was modified since (per viewer)
+        $viewerId = $request->user()->id;
+        $viewedRow = DB::table('customers_hub_requests_list_viewed')
+            ->where('user_id', $viewerId)
+            ->first(['viewed_at']);
+        $viewedAt = $viewedRow?->viewed_at ? Carbon::parse($viewedRow->viewed_at) : null;
+        $items->each(function ($item) use ($viewedAt) {
+            if ($viewedAt === null) {
+                $item->isUpdated = false;
+                return;
+            }
+            $createdAt = $item->createdAt ? Carbon::parse($item->createdAt) : null;
+            $updatedAt = $item->updatedAt ? Carbon::parse($item->updatedAt) : null;
+            $item->isUpdated = $createdAt !== null
+                && $updatedAt !== null
+                && $createdAt->lte($viewedAt)
+                && $updatedAt->gt($viewedAt);
+        });
+
         // Get stats
         $stats = $this->aggregator->getStats($userId, $filters);
 
@@ -184,8 +206,33 @@ class RequestsController extends ApiController
                 'limit' => $result['limit'],
                 'offset' => $result['offset'],
                 'hasMore' => $result['hasMore'],
+                'sortBy' => $result['sortBy'],
+                'sortDir' => $result['sortDir'],
             ],
         ]);
+    }
+
+    /**
+     * POST /api/v2/customers-hub/requests/mark-viewed
+     *
+     * Mark the requests list as viewed by the current user (viewer). Used to compute isUpdated
+     * per action on the next list load. Always uses server now(); client-provided timestamp is ignored.
+     */
+    public function markListViewed(Request $request): JsonResponse
+    {
+        $viewerId = $request->user()->id;
+        $now = now();
+        DB::table('customers_hub_requests_list_viewed')->upsert(
+            [
+                [
+                    'user_id' => $viewerId,
+                    'viewed_at' => $now,
+                ],
+            ],
+            ['user_id'],
+            ['viewed_at']
+        );
+        return $this->success(['viewedAt' => $now->toIso8601String()]);
     }
 
     /**
@@ -227,15 +274,18 @@ class RequestsController extends ApiController
                 ['id' => 'low', 'label' => 'منخفض', 'labelEn' => 'Low', 'color' => '#28a745'],
             ];
 
-            // Sources
-            $sources = [
-                ['id' => 'inquiry', 'label' => 'استفسار', 'labelEn' => 'Inquiry'],
-                ['id' => 'manual', 'label' => 'يدوي', 'labelEn' => 'Manual'],
-                ['id' => 'whatsapp', 'label' => 'واتساب', 'labelEn' => 'WhatsApp'],
-                ['id' => 'import', 'label' => 'استيراد', 'labelEn' => 'Import'],
-                ['id' => 'referral', 'label' => 'إحالة', 'labelEn' => 'Referral'],
-                ['id' => 'property_request', 'label' => 'طلب عقار', 'labelEn' => 'Property Request'],
-            ];
+            // Sources: distinct values from users_property_requests.source for this tenant
+            $sourceValues = DB::table('users_property_requests')
+                ->where('user_id', $userId)
+                ->whereNotNull('source')
+                ->distinct()
+                ->orderBy('source')
+                ->pluck('source');
+            $sources = $sourceValues->map(fn (string $value) => [
+                'id' => $value,
+                'label' => $this->sourceLabel($value, 'ar'),
+                'labelEn' => $this->sourceLabel($value, 'en'),
+            ])->values()->all();
 
             // Due date buckets
             $dueDateBuckets = [
@@ -425,9 +475,13 @@ class RequestsController extends ApiController
      * 
      * Dismiss an action.
      */
-    public function dismiss(Request $request, string $requestId): JsonResponse
+    public function dismiss(DismissRequest $request, string $requestId): JsonResponse
     {
+        $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
+
+        // Save dismiss reason as a note on the action
+        $this->aggregator->addNoteToAction($userId, $requestId, $validated['reason'], 'current_user');
 
         $success = $this->aggregator->dismissAction($userId, $requestId);
 
@@ -441,6 +495,37 @@ class RequestsController extends ApiController
         return $this->success([
             'message' => 'Action dismissed successfully',
             'actionId' => $requestId,
+        ]);
+    }
+
+    /**
+     * POST /api/v2/customers-hub/requests/{requestId}/snooze
+     *
+     * Snooze an action (where supported).
+     */
+    public function snooze(SnoozeRequest $request, string $requestId): JsonResponse
+    {
+        $validated = $request->validated();
+        $userId = $this->getTenantUserId($request);
+        $snoozedBy = $request->user()->id;
+
+        if (!empty($validated['reason'])) {
+            $this->aggregator->addNoteToAction($userId, $requestId, $validated['reason'], 'current_user');
+        }
+
+        $success = $this->aggregator->snoozeAction($userId, $requestId, $validated['snoozedUntil'], $snoozedBy);
+
+        if (!$success) {
+            return $this->error('Failed to snooze action or snooze is not supported for this request type', 422);
+        }
+
+        $this->invalidateFilterOptionsCache($userId);
+
+        return $this->success([
+            'message' => 'Action snoozed successfully',
+            'actionId' => $requestId,
+            'snoozedUntil' => $validated['snoozedUntil'],
+            'snoozedBy' => $snoozedBy,
         ]);
     }
 
@@ -600,7 +685,9 @@ class RequestsController extends ApiController
         );
         $duration = (int) ($validated['duration'] ?? 30);
         $priorityDb = $this->mapPriorityAppointmentToDb($validated['priority'] ?? 'medium');
-        $datetime = Carbon::parse($validated['datetime'])->toDateTimeString();
+        $datetime = !empty($validated['datetime'])
+            ? Carbon::parse($validated['datetime'])->toDateTimeString()
+            : now()->toDateTimeString();
         $now = now();
 
         if ($isInquiry) {
@@ -962,7 +1049,7 @@ class RequestsController extends ApiController
         $validated = $request->validated();
         $userId = $this->getTenantUserId($request);
 
-        $results = $this->aggregator->bulkDismiss($userId, $validated['actionIds']);
+        $results = $this->aggregator->bulkDismiss($userId, $validated['actionIds'], $validated['reason']);
 
         // Invalidate filter options cache
         $this->invalidateFilterOptionsCache($userId);
@@ -989,6 +1076,30 @@ class RequestsController extends ApiController
     {
         $user = $request->user();
         return method_exists($user, 'tenantOwnerId') ? $user->tenantOwnerId() : $user->id;
+    }
+
+    /**
+     * Known source value labels for filter-options. Unknown values use raw value or "Other".
+     */
+    private function sourceLabel(string $value, string $lang): string
+    {
+        $map = [
+            'inquiry' => ['ar' => 'استفسار', 'en' => 'Inquiry'],
+            'manual' => ['ar' => 'يدوي', 'en' => 'Manual'],
+            'whatsapp' => ['ar' => 'واتساب', 'en' => 'WhatsApp'],
+            'import' => ['ar' => 'استيراد', 'en' => 'Import'],
+            'referral' => ['ar' => 'إحالة', 'en' => 'Referral'],
+            'property_request' => ['ar' => 'طلب عقار', 'en' => 'Property Request'],
+            'website' => ['ar' => 'الموقع', 'en' => 'Website'],
+            'property_interest' => ['ar' => 'اهتمام بعقار', 'en' => 'Property Interest'],
+            'public_form' => ['ar' => 'نموذج عام', 'en' => 'Public Form'],
+            'employee_dashboard' => ['ar' => 'لوحة الموظف', 'en' => 'Employee Dashboard'],
+            'whatsapp_bot' => ['ar' => 'واتساب بوت', 'en' => 'WhatsApp Bot'],
+        ];
+        if (isset($map[$value][$lang])) {
+            return $map[$value][$lang];
+        }
+        return $value;
     }
 
     /**

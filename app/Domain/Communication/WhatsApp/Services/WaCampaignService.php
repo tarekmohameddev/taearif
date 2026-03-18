@@ -9,7 +9,7 @@ use App\Domain\Communication\Exceptions\InsufficientCreditsException;
 use App\Domain\Communication\WhatsApp\Support\WaEndpoints;
 use App\Domain\Communication\Services\IdempotencyService;
 use App\Jobs\DispatchWaCampaignJob;
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\WaCampaign;
 use App\Models\WaMessageLog;
 use App\Models\WaNumber;
@@ -96,7 +96,7 @@ class WaCampaignService
             throw new InvalidArgumentException('WA_NUMBER_NOT_FOUND');
         }
 
-        $requireActive = (bool) config('communication.whatsapp.campaign.require_active_wa_number', true);
+        $requireActive = (bool) config('communication.whatsapp.campaign.require_active_wa_number');
         if ($forSend && $requireActive && ! in_array($waNumber->status, ['active'], true)) {
             throw new InvalidArgumentException('WA_NUMBER_NOT_ACTIVE');
         }
@@ -215,7 +215,7 @@ class WaCampaignService
         array $customerIds = [],
         array $manualPhones = []
     ): array {
-        $queue = (string) config('communication.whatsapp.queue', 'communication');
+        $queue = (string) config('communication.whatsapp.queue');
         $dispatchNow = true;
         $delayUntil = null;
         $responsePayload = [];
@@ -266,7 +266,7 @@ class WaCampaignService
             }
 
             $waNumber = $this->ensureWaNumberForCampaign($userId, (int) $campaign->wa_number_id, true);
-            $requireActive = (bool) config('communication.whatsapp.campaign.require_active_wa_number', true);
+            $requireActive = (bool) config('communication.whatsapp.campaign.require_active_wa_number');
             $meta = array_merge($campaign->meta ?? [], [
                 'sender_policy' => [
                     'require_active' => $requireActive,
@@ -462,7 +462,7 @@ class WaCampaignService
         array $customerIds = [],
         array $manualPhones = []
     ): array {
-        $queue = (string) config('communication.whatsapp.queue', 'communication');
+        $queue = (string) config('communication.whatsapp.queue');
         $responsePayload = [];
 
         $payload = [

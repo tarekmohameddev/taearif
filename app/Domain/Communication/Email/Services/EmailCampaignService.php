@@ -9,7 +9,7 @@ use App\Domain\Communication\Exceptions\InsufficientCreditsException;
 use App\Domain\Communication\Email\Support\EmailEndpoints;
 use App\Domain\Communication\Services\IdempotencyService;
 use App\Jobs\DispatchEmailCampaignJob;
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\EmailCampaign;
 use App\Models\EmailMessageLog;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;

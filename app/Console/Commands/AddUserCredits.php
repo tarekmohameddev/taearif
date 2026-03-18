@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\UserCredit;
 use App\Models\User;
 use Illuminate\Console\Command;
 

@@ -19,14 +19,4 @@ class SendWhatsAppTemplateRequest extends BaseApiFormRequest
             'variables' => 'nullable|array',
         ];
     }
-
-    public function withValidator($validator)
-    {
-        $validator->after(function ($validator) {
-            $key = request()->header('Idempotency-Key');
-            if ($key === null || trim((string) $key) === '') {
-                $validator->errors()->add('Idempotency-Key', 'Idempotency-Key header is required.');
-            }
-        });
-    }
 }

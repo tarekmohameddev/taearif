@@ -15,9 +15,11 @@ class StorePropertyRequestRequest extends BaseApiFormRequest
     public function rules()
     {
         return [
-            'tenant_username' => 'required|string|max:255',
+            'tenant_username' => 'nullable|string|max:255',
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
+            'property_ids' => 'nullable|array',
+            'property_ids.*' => 'integer|exists:user_properties,id',
             'source' => ['nullable', 'string', Rule::in([
                 'property_interest',
                 'public_form',
@@ -28,7 +30,7 @@ class StorePropertyRequestRequest extends BaseApiFormRequest
             'referral_source' => ['nullable', 'string'],
             'property_type' => 'nullable',
             'category' => 'nullable|string',
-            'region' => ['required', 'integer', Rule::exists('user_cities', 'id')],
+            'region' => ['nullable', 'integer', Rule::exists('user_cities', 'id')],
             'districts_id' => ['nullable', 'integer', Rule::exists('user_districts', 'id')],
             'area_from' => 'nullable|integer|min:0',
             'area_to' => 'nullable|integer|min:0',

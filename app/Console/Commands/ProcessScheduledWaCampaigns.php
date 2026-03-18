@@ -13,19 +13,26 @@ class ProcessScheduledWaCampaigns extends Command
 
     public function handle(): int
     {
-        WaCampaign::query()
+        $due = WaCampaign::query()
             ->where('status', 'scheduled')
             ->whereNotNull('dispatch_reference')
             ->whereNotNull('scheduled_at')
             ->where('scheduled_at', '<=', now())
             ->orderBy('id')
-            ->chunkById(100, function ($campaigns): void {
-                foreach ($campaigns as $campaign) {
-                    $campaign->update(['status' => 'in_progress']);
-                    DispatchWaCampaignJob::dispatch((int) $campaign->id)
-                        ->onQueue((string) config('communication.whatsapp.queue', 'communication'));
-                }
-            });
+            ->limit(100)
+            ->pluck('id');
+
+        foreach ($due as $campaignId) {
+            $updated = WaCampaign::query()
+                ->where('id', $campaignId)
+                ->where('status', 'scheduled')
+                ->update(['status' => 'in_progress']);
+
+            if ($updated === 1) {
+                DispatchWaCampaignJob::dispatch((int) $campaignId)
+                    ->onQueue((string) config('communication.whatsapp.queue'));
+            }
+        }
 
         return self::SUCCESS;
     }

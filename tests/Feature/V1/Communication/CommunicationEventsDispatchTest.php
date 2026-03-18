@@ -105,8 +105,8 @@ class CommunicationEventsDispatchTest extends TestCase
         Queue::fake();
 
         $user = $this->createTenantUser();
-        \App\Models\Api\markting\UserCredit::getOrCreateForUser($user->id);
-        $uc = \App\Models\Api\markting\UserCredit::where('user_id', $user->id)->first();
+        \App\Models\Api\marketing\UserCredit::getOrCreateForUser($user->id);
+        $uc = \App\Models\Api\marketing\UserCredit::where('user_id', $user->id)->first();
         $uc->update(['total_credits' => 100, 'used_credits' => 0]);
 
         $conversation = Conversation::create([
@@ -166,8 +166,8 @@ class CommunicationEventsDispatchTest extends TestCase
         Event::fake([MessageSent::class]);
 
         $user = $this->createTenantUser();
-        \App\Models\Api\markting\UserCredit::getOrCreateForUser($user->id);
-        $uc = \App\Models\Api\markting\UserCredit::where('user_id', $user->id)->first();
+        \App\Models\Api\marketing\UserCredit::getOrCreateForUser($user->id);
+        $uc = \App\Models\Api\marketing\UserCredit::where('user_id', $user->id)->first();
         $uc->update(['total_credits' => 100, 'used_credits' => 0]);
 
         $conversation = Conversation::create([

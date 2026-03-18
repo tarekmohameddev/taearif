@@ -107,6 +107,7 @@ class User extends Authenticatable
         'account_type',
         'active',
         'last_login_at',
+        'phone_verified_at',
     ];
 
     /**
@@ -125,6 +126,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'phone_verified_at' => 'datetime',
         'onboarding_completed' => 'boolean',
         'show_even_if_empty' => 'boolean',
         'subscribed' => 'boolean',
@@ -151,6 +153,11 @@ class User extends Authenticatable
      * - employees -> their tenant_id
      */
     public function tenantOwnerId(): int{return $this->isEmployee() ? (int) ($this->tenant_id ?? 0) : (int) $this->id;}
+
+    public function isPhoneVerified(): bool
+    {
+        return $this->phone_verified_at !== null;
+    }
 
 
     protected static function boot()

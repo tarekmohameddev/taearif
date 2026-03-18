@@ -4,8 +4,8 @@ namespace App\Domain\Communication\Services;
 
 use App\Domain\Communication\Contracts\CreditService;
 use App\Domain\Communication\Exceptions\InsufficientCreditsException;
-use App\Models\Api\markting\CreditTransaction;
-use App\Models\Api\markting\UserCredit;
+use App\Models\Api\marketing\CreditTransaction;
+use App\Models\Api\marketing\UserCredit;
 use Illuminate\Support\Facades\DB;
 
 class CreditServiceImpl implements CreditService

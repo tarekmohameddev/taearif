@@ -14,7 +14,7 @@ class WaRecipientResolverService
      */
     public function resolve(int $userId, array $customerIds = [], array $manualPhones = []): array
     {
-        $maxManual = (int) config('communication.whatsapp.max_manual_recipients', 5000);
+        $maxManual = (int) config('communication.whatsapp.max_manual_recipients');
         if (count($manualPhones) > $maxManual) {
             throw new InvalidArgumentException('Too many manual recipients.');
         }
