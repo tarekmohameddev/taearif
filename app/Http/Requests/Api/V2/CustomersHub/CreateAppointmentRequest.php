@@ -12,7 +12,8 @@ class CreateAppointmentRequest extends BaseApiFormRequest
     {
         return [
             'type' => 'required|string|in:site_visit,office_meeting,phone_call,video_call,contract_signing,other',
-            'datetime' => 'nullable|date|after:now',
+            // Allow past/current datetimes; controller will decide defaults/behavior.
+            'datetime' => 'nullable|date',
             'duration' => 'nullable|integer|min:1',
             'notes' => 'nullable|string',
             'title' => 'nullable|string|max:255',
