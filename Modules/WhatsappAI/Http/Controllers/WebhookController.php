@@ -21,10 +21,10 @@ class WebhookController extends Controller
     {
         try {
             // Log incoming webhook for debugging (payload + raw body from Meta)
-            Log::info('WhatsApp AI Webhook received', [
-                'payload' => $request->all(),
-                'raw_body' => $request->getContent(),
-            ]);
+            // Log::info('WhatsApp AI Webhook received', [
+            //     'payload' => $request->all(),
+            //     'raw_body' => $request->getContent(),
+            // ]);
 
             // Handle GET request for webhook verification
             if ($request->isMethod('get')) {
@@ -102,11 +102,11 @@ class WebhookController extends Controller
                 ->delay(now()->addMinutes($delayMinutes))
                 ->onQueue(config('whatsappai.queue', 'default'));
 
-            Log::info('Message stored and job scheduled', [
-                'conversation_id' => $conversation->id,
-                'message_count' => $conversation->message_count,
-                'delay_minutes' => $delayMinutes,
-            ]);
+            // Log::info('Message stored and job scheduled', [
+            //     'conversation_id' => $conversation->id,
+            //     'message_count' => $conversation->message_count,
+            //     'delay_minutes' => $delayMinutes,
+            // ]);
 
             return response()->json([
                 'status' => 'stored',

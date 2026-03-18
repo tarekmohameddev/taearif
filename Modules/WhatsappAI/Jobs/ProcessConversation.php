@@ -48,13 +48,13 @@ class ProcessConversation implements ShouldQueue
 
             // Skip if already processed
             if ($conversation->status === 'processed') {
-                Log::info('Conversation already processed', ['id' => $this->conversationId]);
+                // Log::info('Conversation already processed', ['id' => $this->conversationId]);
                 return;
             }
 
             // Check if still active (new messages came in)
             if ($conversation->isActive()) {
-                Log::info('Conversation still active, skipping', ['id' => $this->conversationId]);
+                // Log::info('Conversation still active, skipping', ['id' => $this->conversationId]);
                 return;
             }
 
@@ -66,16 +66,16 @@ class ProcessConversation implements ShouldQueue
                 ->implode("\n");
 
             if (empty($transcript)) {
-                Log::info('No text content in conversation', ['id' => $this->conversationId]);
+                // Log::info('No text content in conversation', ['id' => $this->conversationId]);
                 $conversation->update(['status' => 'archived']);
                 return;
             }
 
-            Log::info('Processing conversation with AI', [
-                'id' => $this->conversationId,
-                'message_count' => $conversation->message_count,
-                'transcript_length' => strlen($transcript),
-            ]);
+            // Log::info('Processing conversation with AI', [
+            //     'id' => $this->conversationId,
+            //     'message_count' => $conversation->message_count,
+            //     'transcript_length' => strlen($transcript),
+            // ]);
 
             // Call OpenAI for analysis
             $extraction = $this->analyzeWithAI($transcript);
@@ -105,13 +105,13 @@ class ProcessConversation implements ShouldQueue
                 $inquiry = $this->createInquiry($conversation, $extraction, $transcript);
                 $conversation->update(['inquiry_id' => $inquiry->id]);
                 
-                Log::info('Inquiry created from conversation', [
-                    'conversation_id' => $conversation->id,
-                    'inquiry_id' => $inquiry->id,
-                ]);
+                // Log::info('Inquiry created from conversation', [
+                //     'conversation_id' => $conversation->id,
+                //     'inquiry_id' => $inquiry->id,
+                // ]);
             }
 
-            Log::info('Conversation processed successfully', ['id' => $this->conversationId]);
+            // Log::info('Conversation processed successfully', ['id' => $this->conversationId]);
 
         } catch (\Throwable $e) {
             Log::error('ProcessConversation Job Error', [
@@ -151,11 +151,11 @@ class ProcessConversation implements ShouldQueue
         $model = config('whatsappai.model', 'gpt-4o-mini');
         $prompt = $this->buildPrompt($transcript);
 
-        Log::info('Calling OpenAI API', [
-            'conversation_id' => $this->conversationId,
-            'model' => $model,
-            'prompt_length' => strlen($prompt),
-        ]);
+        // Log::info('Calling OpenAI API', [
+        //     'conversation_id' => $this->conversationId,
+        //     'model' => $model,
+        //     'prompt_length' => strlen($prompt),
+        // ]);
 
         try {
             $client = OpenAI::client($apiKey);
