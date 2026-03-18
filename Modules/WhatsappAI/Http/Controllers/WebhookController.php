@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
+use Modules\WhatsappAI\Jobs\ForwardWebhook;
 use App\Models\WhatsappUser;
 use Modules\WhatsappAI\Entities\WhatsappConversation;
 use Modules\WhatsappAI\Entities\WhatsappMessage;
@@ -20,6 +21,8 @@ class WebhookController extends Controller
     public function handle(Request $request): JsonResponse
     {
         try {
+            $this->mirrorWebhookToForwardUrl($request);
+
             // Log incoming webhook for debugging (payload + raw body from Meta)
             // Log::info('WhatsApp AI Webhook received', [
             //     'payload' => $request->all(),
@@ -125,6 +128,42 @@ class WebhookController extends Controller
                 'message' => 'Internal server error',
             ], 500);
         }
+    }
+
+    private function mirrorWebhookToForwardUrl(Request $request): void
+    {
+        $forwardUrl = trim((string) config('whatsappai.webhook_forward_url', ''));
+        if ($forwardUrl === '') {
+            return;
+        }
+
+        // Loop prevention (in case the test env forwards back, or multiple hops exist)
+        if ($request->headers->has('X-Taearif-Forwarded')) {
+            return;
+        }
+
+        $headersToForward = [
+            'Content-Type',
+            'X-Hub-Signature',
+            'X-Hub-Signature-256',
+        ];
+
+        $headers = [];
+        foreach ($headersToForward as $h) {
+            $v = $request->headers->get($h);
+            if ($v !== null && $v !== '') {
+                $headers[$h] = $v;
+            }
+        }
+
+        ForwardWebhook::dispatch(
+            url: $forwardUrl,
+            method: $request->method(),
+            headers: $headers,
+            query: $request->query(),
+            body: $request->getContent(),
+            timeoutSeconds: (int) config('whatsappai.webhook_forward_timeout', 5),
+        )->onQueue(config('whatsappai.queue', 'default'));
     }
 
     /**
