@@ -102,7 +102,10 @@ class ResetPasswordController extends Controller
 
         // Otherwise this is a valid attempt (1st, 2nd or 3rd)
         $attemptNumber = $attemptsLast24h + 1;
-        $code = rand(100000, 999999);
+        $emailBypass = $request->method === 'email' && $this->allowsPasswordResetEmailTestBypass();
+        $code = $emailBypass
+            ? (string) config('api.password_reset.email_test_bypass_code', '12345')
+            : (string) rand(100000, 999999);
 
         PasswordResetLog::create([
             'user_id' => $user->id,
@@ -123,21 +126,28 @@ class ResetPasswordController extends Controller
 
         // Send code
         if ($request->method === 'email') {
-            $emailService = new EmailService();
-            $emailSent = $emailService->sendPasswordResetCode(
-                $user->email,
-                $user->name ?? $user->username ?? 'User',
-                $code,
-                $userLanguage,
-                null, // templateName - let service choose based on language
-                $resetUrl,
-                $user->id
-            );
-            
-            if (!$emailSent) {
-                return response()->json([
-                    'message' => 'Failed to send reset code. Please try again later.'
-                ], 500);
+            if ($emailBypass) {
+                Log::info('Password reset email skipped (test bypass)', [
+                    'user_id' => $user->id,
+                    'identifier' => $request->identifier,
+                ]);
+            } else {
+                $emailService = new EmailService();
+                $emailSent = $emailService->sendPasswordResetCode(
+                    $user->email,
+                    $user->name ?? $user->username ?? 'User',
+                    $code,
+                    $userLanguage,
+                    null, // templateName - let service choose based on language
+                    $resetUrl,
+                    $user->id
+                );
+
+                if (!$emailSent) {
+                    return response()->json([
+                        'message' => 'Failed to send reset code. Please try again later.'
+                    ], 500);
+                }
             }
         } else {
             // Send via WhatsApp
@@ -228,5 +238,18 @@ class ResetPasswordController extends Controller
         return response()->json([
             'message' => 'Password reset successful'
         ]);
+    }
+
+    private function allowsPasswordResetEmailTestBypass(): bool
+    {
+        if (app()->environment('production')) {
+            return false;
+        }
+
+        if (!(bool) config('api.password_reset.email_test_bypass_enabled', false)) {
+            return false;
+        }
+
+        return (string) config('api.password_reset.email_test_bypass_code', '') !== '';
     }
 }
