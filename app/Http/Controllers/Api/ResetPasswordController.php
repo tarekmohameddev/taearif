@@ -37,26 +37,26 @@ class ResetPasswordController extends Controller
         $validated = $request->validated();
 
         $user = null;
-        
+
         if ($request->method === 'phone') {
             // For phone method, we need to handle country code
             $countryCode = $request->country_code ?? '';
             $phoneNumber = $request->identifier;
             $fullPhoneNumber = $countryCode . $phoneNumber;
-            
+
             Log::info('Phone reset attempt', [
                 'phone_number' => $phoneNumber,
                 'country_code' => $countryCode,
                 'full_phone_number' => $fullPhoneNumber
             ]);
-            
+
             // Search user by multiple phone number formats
             $user = User::where('email', $request->identifier)
                 ->orWhere('phone', $phoneNumber)                    // Original number without country code
                 ->orWhere('phone', $fullPhoneNumber)               // Full number with country code
                 ->orWhere('phone', ltrim($fullPhoneNumber, '+'))   // Full number without + prefix
                 ->first();
-                
+
             // Store the full phone number for sending WhatsApp message
             $request->merge(['full_phone_number' => $fullPhoneNumber]);
         } else {
@@ -119,7 +119,7 @@ class ResetPasswordController extends Controller
 
         // Get user's preferred language
         $userLanguage = $this->getUserLanguage($user);
-        
+
         // Get frontend URL for reset link
         $frontendUrl = rtrim(env('FRONTEND_URL', url('/')), '/');
         $resetUrl = $frontendUrl . '/reset';
@@ -153,10 +153,10 @@ class ResetPasswordController extends Controller
             // Send via WhatsApp
             try {
                 $whatsappService = new WhatsAppService();
-                
+
                 // Use the full phone number (with country code) for sending WhatsApp message
                 $phoneForSending = $request->full_phone_number ?? $user->phone;
-                
+
                 $whatsappResult = $whatsappService->sendPasswordResetCode(
                     $phoneForSending,
                     $code,
@@ -166,7 +166,7 @@ class ResetPasswordController extends Controller
                     'password_reset', // templateName
                     $user->id
                 );
-                
+
                 // If WhatsApp service is not configured, it returns the default message string
                 // If it's configured, it returns true/false
                 if (is_string($whatsappResult)) {
