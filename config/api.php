@@ -5,6 +5,12 @@ return [
         'max' => 100,
     ],
 
+    'otp' => [
+        'registration' => [
+            'max_sends_per_hour' => (int) env('OTP_REGISTRATION_MAX_SENDS_PER_HOUR', 5),
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Require Phone Verification

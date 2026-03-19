@@ -12,7 +12,7 @@ class OtpVerification extends Model
 {
     public const CONTEXT_REGISTRATION = 'registration';
 
-    public const MAX_SENDS_PER_HOUR = 5;
+    public const DEFAULT_MAX_SENDS_PER_HOUR = 5;
 
     public const MAX_ATTEMPTS = 5;
 
@@ -56,7 +56,7 @@ class OtpVerification extends Model
             ->where('created_at', '>=', now()->subHour())
             ->count();
 
-        if ($rateLimit >= self::MAX_SENDS_PER_HOUR) {
+        if ($rateLimit >= self::maxSendsPerHour($context)) {
             Log::info('OTP rate limit exceeded', [
                 'user_id' => $user->id,
                 'phone_masked' => self::maskPhone($user->phone),
@@ -109,7 +109,7 @@ class OtpVerification extends Model
             ->where('created_at', '>=', now()->subHour())
             ->count();
 
-        if ($rateLimit >= self::MAX_SENDS_PER_HOUR) {
+        if ($rateLimit >= self::maxSendsPerHour($context)) {
             Log::info('OTP rate limit exceeded', [
                 'identifier' => self::maskPhone($phone),
                 'context' => $context,
@@ -225,5 +225,15 @@ class OtpVerification extends Model
         }
 
         return '****' . substr($phone, -4);
+    }
+
+    protected static function maxSendsPerHour(string $context): int
+    {
+        if ($context === self::CONTEXT_REGISTRATION) {
+            $value = (int) config('api.otp.registration.max_sends_per_hour', self::DEFAULT_MAX_SENDS_PER_HOUR);
+            return max(1, $value);
+        }
+
+        return self::DEFAULT_MAX_SENDS_PER_HOUR;
     }
 }
