@@ -32,7 +32,9 @@ class OnboardingWebsiteLayoutColorsTest extends TestCase
             ], 200),
         ]);
 
-        $user = User::factory()->tenant()->create();
+        $user = User::factory()->tenant()->create([
+            'email' => 'onboarding-layout-test-' . uniqid('', true) . '@example.com',
+        ]);
 
         Language::query()->create([
             'user_id' => $user->id,
@@ -65,6 +67,8 @@ class OnboardingWebsiteLayoutColorsTest extends TestCase
             'logo' => 'https://cdn.example.com/new-logo.png',
             'favicon' => 'https://cdn.example.com/favicon.png',
             'address' => 'Riyadh',
+            'email' => 'contact@acme-realty.test',
+            'phone' => '+966500000000',
             'workingHours' => '9-5',
             'valLicense' => 'ABC-123',
         ];
@@ -82,6 +86,9 @@ class OnboardingWebsiteLayoutColorsTest extends TestCase
         $this->assertSame('#333333', data_get($layout->data, 'branding.colors.accent'));
         $this->assertSame('Riyadh', data_get($layout->data, 'companyInfo.address'));
         $this->assertSame('9-5', data_get($layout->data, 'companyInfo.workingHours'));
+        $this->assertSame('contact@acme-realty.test', data_get($layout->data, 'companyInfo.email'));
+        $this->assertSame('+966500000000', data_get($layout->data, 'companyInfo.phone'));
+        $this->assertSame('ABC-123', data_get($layout->data, 'companyInfo.valLicense'));
     }
 }
 

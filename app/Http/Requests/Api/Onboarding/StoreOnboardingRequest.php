@@ -25,6 +25,8 @@ class StoreOnboardingRequest extends BaseApiFormRequest
             'valLicense' => 'nullable|string',
             'workingHours' => 'nullable|string',
             'address' => 'nullable|string',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:255',
             'allow_update' => 'nullable|boolean',
         ];
     }

@@ -390,9 +390,9 @@ class TenantWebsiteSeeder
     }
 
     /**
-     * Read address / working hours from api_footer_settings (same source as onboarding FooterSetting).
+     * Read company contact fields from api_footer_settings (same JSON as onboarding FooterSetting).
      *
-     * @return array{address: mixed, workingHours: mixed}|null
+     * @return array<string, mixed>|null
      */
     protected function extractCompanyInfoForWebsiteLayoutFromFooter(User $tenant): ?array
     {
@@ -404,16 +404,19 @@ class TenantWebsiteSeeder
         $general = $footer->general;
 
         return [
+            'email' => $general['email'] ?? null,
+            'phone' => $general['phone'] ?? null,
             'address' => $general['address'] ?? null,
+            'valLicense' => $general['valLicense'] ?? null,
             'workingHours' => $general['workingHours'] ?? null,
         ];
     }
 
     /**
-     * Merge WebsiteLayout.companyInfo from footer general (mirrors onboarding persistence).
+     * Merge WebsiteLayout.companyInfo from footer general (mirrors onboarding persistence; double-write target).
      *
      * @param  array<string, mixed>  $layout
-     * @param  array{address: mixed, workingHours: mixed}|null  $companyInfo
+     * @param  array<string, mixed>|null  $companyInfo
      * @return array<string, mixed>
      */
     protected function applyCompanyInfoToWebsiteLayout(array $layout, ?array $companyInfo): array
@@ -426,8 +429,11 @@ class TenantWebsiteSeeder
             $layout['companyInfo'] = [];
         }
 
-        $layout['companyInfo']['address'] = $companyInfo['address'];
-        $layout['companyInfo']['workingHours'] = $companyInfo['workingHours'];
+        foreach (['email', 'phone', 'address', 'valLicense', 'workingHours'] as $key) {
+            if (array_key_exists($key, $companyInfo)) {
+                $layout['companyInfo'][$key] = $companyInfo[$key];
+            }
+        }
 
         return $layout;
     }
@@ -436,7 +442,7 @@ class TenantWebsiteSeeder
      * Merge branding colors and footer company info into existing tenant layout when template has no WebsiteLayout.
      *
      * @param  array<string, string>  $brandingColors
-     * @param  array{address: mixed, workingHours: mixed}|null  $companyInfoFromFooter
+     * @param  array<string, mixed>|null  $companyInfoFromFooter
      */
     protected function mergeIntoExistingWebsiteLayout(User $tenant, array $brandingColors, ?array $companyInfoFromFooter): void
     {
