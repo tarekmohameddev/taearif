@@ -80,6 +80,8 @@ class OnboardingWebsiteLayoutColorsTest extends TestCase
         $this->assertSame('#111111', data_get($layout->data, 'branding.colors.primary'));
         $this->assertSame('#222222', data_get($layout->data, 'branding.colors.secondary'));
         $this->assertSame('#333333', data_get($layout->data, 'branding.colors.accent'));
+        $this->assertSame('Riyadh', data_get($layout->data, 'companyInfo.address'));
+        $this->assertSame('9-5', data_get($layout->data, 'companyInfo.workingHours'));
     }
 }
 

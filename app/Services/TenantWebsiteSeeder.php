@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Models\Api\FooterSetting;
 use App\Models\TenantPage;
 use App\Models\TenantStaticPage;
 use App\Models\TenantGlobalComponent;
@@ -290,6 +291,8 @@ class TenantWebsiteSeeder
                     $brandingColors = $this->extractBrandingColorsFromBasicSetting($basicSetting);
                 }
 
+                $companyInfoFromFooter = $this->extractCompanyInfoForWebsiteLayoutFromFooter($tenant);
+
                 // Update/recreate pages
                 $this->seedPages($tenant, $template['componentSettings']);
 
@@ -303,17 +306,21 @@ class TenantWebsiteSeeder
 
                 // Update/recreate website layout if provided
                 if (isset($template['WebsiteLayout']) && is_array($template['WebsiteLayout'])) {
+                    $websiteLayout = $template['WebsiteLayout'];
+
                     if (!empty($brandingColors)) {
-                        $template['WebsiteLayout'] = $this->applyBrandingColorsToWebsiteLayout(
-                            $template['WebsiteLayout'],
+                        $websiteLayout = $this->applyBrandingColorsToWebsiteLayout(
+                            $websiteLayout,
                             $brandingColors
                         );
                     }
 
-                    $this->seedWebsiteLayout($tenant, $template['WebsiteLayout']);
-                } elseif (!empty($brandingColors)) {
-                    // Keep existing layout data and only merge onboarding colors path.
-                    $this->updateExistingWebsiteLayoutBrandingColors($tenant, $brandingColors);
+                    $websiteLayout = $this->applyCompanyInfoToWebsiteLayout($websiteLayout, $companyInfoFromFooter);
+
+                    $this->seedWebsiteLayout($tenant, $websiteLayout);
+                } elseif (!empty($brandingColors) || $companyInfoFromFooter !== null) {
+                    // Keep existing layout data; merge onboarding colors and footer company info.
+                    $this->mergeIntoExistingWebsiteLayout($tenant, $brandingColors ?? [], $companyInfoFromFooter);
                 }
 
                 Log::info('Successfully re-seeded website for tenant', [
@@ -383,17 +390,66 @@ class TenantWebsiteSeeder
     }
 
     /**
-     * Merge branding colors into existing tenant layout when template has no WebsiteLayout.
+     * Read address / working hours from api_footer_settings (same source as onboarding FooterSetting).
      *
-     * @param User $tenant
-     * @param array<string, string> $brandingColors
-     * @return void
+     * @return array{address: mixed, workingHours: mixed}|null
      */
-    protected function updateExistingWebsiteLayoutBrandingColors(User $tenant, array $brandingColors): void
+    protected function extractCompanyInfoForWebsiteLayoutFromFooter(User $tenant): ?array
+    {
+        $footer = FooterSetting::where('user_id', $tenant->id)->first();
+        if (!$footer || !is_array($footer->general)) {
+            return null;
+        }
+
+        $general = $footer->general;
+
+        return [
+            'address' => $general['address'] ?? null,
+            'workingHours' => $general['workingHours'] ?? null,
+        ];
+    }
+
+    /**
+     * Merge WebsiteLayout.companyInfo from footer general (mirrors onboarding persistence).
+     *
+     * @param  array<string, mixed>  $layout
+     * @param  array{address: mixed, workingHours: mixed}|null  $companyInfo
+     * @return array<string, mixed>
+     */
+    protected function applyCompanyInfoToWebsiteLayout(array $layout, ?array $companyInfo): array
+    {
+        if ($companyInfo === null) {
+            return $layout;
+        }
+
+        if (!isset($layout['companyInfo']) || !is_array($layout['companyInfo'])) {
+            $layout['companyInfo'] = [];
+        }
+
+        $layout['companyInfo']['address'] = $companyInfo['address'];
+        $layout['companyInfo']['workingHours'] = $companyInfo['workingHours'];
+
+        return $layout;
+    }
+
+    /**
+     * Merge branding colors and footer company info into existing tenant layout when template has no WebsiteLayout.
+     *
+     * @param  array<string, string>  $brandingColors
+     * @param  array{address: mixed, workingHours: mixed}|null  $companyInfoFromFooter
+     */
+    protected function mergeIntoExistingWebsiteLayout(User $tenant, array $brandingColors, ?array $companyInfoFromFooter): void
     {
         $layout = TenantWebsiteLayout::firstOrNew(['user_id' => $tenant->id]);
         $existingData = is_array($layout->data) ? $layout->data : [];
-        $layout->data = $this->applyBrandingColorsToWebsiteLayout($existingData, $brandingColors);
+
+        if (!empty($brandingColors)) {
+            $existingData = $this->applyBrandingColorsToWebsiteLayout($existingData, $brandingColors);
+        }
+
+        $existingData = $this->applyCompanyInfoToWebsiteLayout($existingData, $companyInfoFromFooter);
+
+        $layout->data = $existingData;
         $layout->save();
     }
 
