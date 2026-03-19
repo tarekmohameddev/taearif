@@ -8,6 +8,8 @@ return [
     'otp' => [
         'registration' => [
             'max_sends_per_hour' => (int) env('OTP_REGISTRATION_MAX_SENDS_PER_HOUR', 5),
+            'test_bypass_enabled' => (bool) env('OTP_TEST_BYPASS_ENABLED', false),
+            'test_bypass_code' => (string) env('OTP_TEST_BYPASS_CODE', ''),
         ],
     ],
 
