@@ -282,10 +282,12 @@ class TenantWebsiteSeeder
 
                 // Get onboarding data from BasicSetting
                 $basicSetting = \App\Models\User\BasicSetting::where('user_id', $tenant->id)->first();
+                $brandingColors = null;
 
                 if ($basicSetting) {
                     // Inject onboarding data into template
                     $template = $this->injectOnboardingData($template, $basicSetting, $tenant);
+                    $brandingColors = $this->extractBrandingColorsFromBasicSetting($basicSetting);
                 }
 
                 // Update/recreate pages
@@ -301,7 +303,17 @@ class TenantWebsiteSeeder
 
                 // Update/recreate website layout if provided
                 if (isset($template['WebsiteLayout']) && is_array($template['WebsiteLayout'])) {
+                    if (!empty($brandingColors)) {
+                        $template['WebsiteLayout'] = $this->applyBrandingColorsToWebsiteLayout(
+                            $template['WebsiteLayout'],
+                            $brandingColors
+                        );
+                    }
+
                     $this->seedWebsiteLayout($tenant, $template['WebsiteLayout']);
+                } elseif (!empty($brandingColors)) {
+                    // Keep existing layout data and only merge onboarding colors path.
+                    $this->updateExistingWebsiteLayoutBrandingColors($tenant, $brandingColors);
                 }
 
                 Log::info('Successfully re-seeded website for tenant', [
@@ -321,6 +333,68 @@ class TenantWebsiteSeeder
 
             return false;
         }
+    }
+
+    /**
+     * Build branding colors from basic settings.
+     *
+     * @param \App\Models\User\BasicSetting $basicSetting
+     * @return array<string, string>
+     */
+    protected function extractBrandingColorsFromBasicSetting($basicSetting): array
+    {
+        $colors = [];
+
+        if (!empty($basicSetting->base_color)) {
+            $colors['primary'] = $basicSetting->base_color;
+        }
+
+        if (!empty($basicSetting->secondary_color)) {
+            $colors['secondary'] = $basicSetting->secondary_color;
+        }
+
+        if (!empty($basicSetting->accent_color)) {
+            $colors['accent'] = $basicSetting->accent_color;
+        }
+
+        return $colors;
+    }
+
+    /**
+     * Ensure WebsiteLayout contains branding colors.
+     *
+     * @param array $layout
+     * @param array<string, string> $brandingColors
+     * @return array
+     */
+    protected function applyBrandingColorsToWebsiteLayout(array $layout, array $brandingColors): array
+    {
+        if (!isset($layout['branding']) || !is_array($layout['branding'])) {
+            $layout['branding'] = [];
+        }
+
+        if (!isset($layout['branding']['colors']) || !is_array($layout['branding']['colors'])) {
+            $layout['branding']['colors'] = [];
+        }
+
+        $layout['branding']['colors'] = array_merge($layout['branding']['colors'], $brandingColors);
+
+        return $layout;
+    }
+
+    /**
+     * Merge branding colors into existing tenant layout when template has no WebsiteLayout.
+     *
+     * @param User $tenant
+     * @param array<string, string> $brandingColors
+     * @return void
+     */
+    protected function updateExistingWebsiteLayoutBrandingColors(User $tenant, array $brandingColors): void
+    {
+        $layout = TenantWebsiteLayout::firstOrNew(['user_id' => $tenant->id]);
+        $existingData = is_array($layout->data) ? $layout->data : [];
+        $layout->data = $this->applyBrandingColorsToWebsiteLayout($existingData, $brandingColors);
+        $layout->save();
     }
 
     /**
