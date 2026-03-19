@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 
 class OtpVerification extends Model
@@ -27,11 +28,14 @@ class OtpVerification extends Model
         'attempts',
         'verified_at',
         'context',
+        'verified_token',
+        'verified_token_expires_at',
     ];
 
     protected $casts = [
         'otp_expires_at' => 'datetime',
         'verified_at' => 'datetime',
+        'verified_token_expires_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -87,6 +91,97 @@ class OtpVerification extends Model
         ]);
 
         return ['success' => true, 'otp' => $plainOtp];
+    }
+
+    /**
+     * Create or refresh OTP for a phone (pre-registration flow).
+     *
+     * Stores OTP without requiring an existing user:
+     * - user_id = null
+     * - identifier = phone
+     */
+    public static function createOrRefreshForPhone(string $phone, string $context = self::CONTEXT_REGISTRATION): array
+    {
+        $rateLimit = self::query()
+            ->whereNull('user_id')
+            ->where('identifier', $phone)
+            ->where('context', $context)
+            ->where('created_at', '>=', now()->subHour())
+            ->count();
+
+        if ($rateLimit >= self::MAX_SENDS_PER_HOUR) {
+            Log::info('OTP rate limit exceeded', [
+                'identifier' => self::maskPhone($phone),
+                'context' => $context,
+            ]);
+
+            return ['success' => false, 'error' => 'rate_limit_exceeded'];
+        }
+
+        $plainOtp = (string) random_int(100000, 999999);
+        $hashedOtp = Hash::make($plainOtp);
+        $expiresAt = now()->addMinutes(self::OTP_EXPIRY_MINUTES);
+
+        self::query()->updateOrCreate(
+            [
+                'user_id' => null,
+                'identifier' => $phone,
+                'context' => $context,
+            ],
+            [
+                'otp' => $hashedOtp,
+                'otp_expires_at' => $expiresAt,
+                'attempts' => 0,
+                'verified_at' => null,
+                'verified_token' => null,
+                'verified_token_expires_at' => null,
+            ]
+        );
+
+        return ['success' => true, 'otp' => $plainOtp];
+    }
+
+    /**
+     * Verify OTP for a phone (pre-registration flow).
+     *
+     * On success, stores a short-lived verified_token to be consumed in `/api/register`.
+     */
+    public static function verifyForPhone(string $phone, string $plainOtp, string $context = self::CONTEXT_REGISTRATION): array
+    {
+        $record = self::query()
+            ->whereNull('user_id')
+            ->where('identifier', $phone)
+            ->where('context', $context)
+            ->whereNull('verified_at')
+            ->first();
+
+        if (!$record) {
+            return ['result' => 'otp_not_found'];
+        }
+
+        if ($record->otp_expires_at->isPast()) {
+            return ['result' => 'otp_expired'];
+        }
+
+        if ($record->attempts >= self::MAX_ATTEMPTS) {
+            return ['result' => 'too_many_attempts'];
+        }
+
+        if (!Hash::check($plainOtp, $record->otp)) {
+            $record->increment('attempts');
+            return ['result' => 'otp_invalid'];
+        }
+
+        $verifiedToken = (string) Str::uuid();
+        $verifiedTokenExpiresAt = now()->addMinutes(15);
+
+        $record->update([
+            'verified_at' => now(),
+            'verified_token' => $verifiedToken,
+            'verified_token_expires_at' => $verifiedTokenExpiresAt,
+        ]);
+
+        return ['result' => 'ok', 'verified_token' => $verifiedToken];
     }
 
     /**

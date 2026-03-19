@@ -23,6 +23,35 @@ class OtpController extends Controller
         $user = User::query()->where('phone', $phone)->first();
 
         if (!$user) {
+            $result = OtpVerification::createOrRefreshForPhone($phone);
+
+            if (!$result['success']) {
+                if (($result['error'] ?? '') === 'rate_limit_exceeded') {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'rate_limit_exceeded',
+                        'message' => __('Too many OTP requests. Try again later.'),
+                    ], 422);
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'OTP sent.',
+                ], 200);
+            }
+
+            $plainOtp = $result['otp'];
+            $message = sprintf(self::OTP_MESSAGE_TEMPLATE, $plainOtp);
+            app(WhatsAppService::class)->sendMessage($phone, $message);
+
+            if (app()->environment('local')) {
+                \Illuminate\Support\Facades\Log::channel('single')->info('OTP (local only)', [
+                    'phone' => $phone,
+                    'otp' => $plainOtp,
+                    'expires_in_minutes' => 5,
+                ]);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'OTP sent.',
@@ -69,12 +98,56 @@ class OtpController extends Controller
      */
     public function verifyOtp(VerifyOtpRequest $request): JsonResponse
     {
-        $user = $request->user();
         $code = $request->validated('otp');
 
-        $result = OtpVerification::verifyForUser($user, $code);
+        // When this endpoint is public, we may not have `auth:sanctum` middleware.
+        // Therefore we resolve the user via the guard directly.
+        $user = auth('sanctum')->user();
 
-        if ($result !== 'ok') {
+        if ($user) {
+            $result = OtpVerification::verifyForUser($user, $code);
+        } else {
+            $phone = $request->validated('phone');
+            if (empty($phone)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'phone is required when no auth token is provided.',
+                ], 422);
+            }
+
+            $result = OtpVerification::verifyForPhone($phone, $code);
+        }
+
+        if ($user) {
+            if ($result !== 'ok') {
+                $messages = [
+                    'otp_invalid' => __('Invalid OTP.'),
+                    'otp_expired' => __('OTP has expired.'),
+                    'too_many_attempts' => __('Too many attempts. Request a new OTP.'),
+                    'otp_not_found' => __('No OTP found. Request one first.'),
+                ];
+
+                return response()->json([
+                    'success' => false,
+                    'error' => $result,
+                    'message' => $messages[$result] ?? __('Verification failed.'),
+                ], 422);
+            }
+
+            $user->update(['phone_verified_at' => now()]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Phone verified.',
+                'data' => [
+                    'phone_verified_at' => $user->fresh()->phone_verified_at?->toIso8601String(),
+                ],
+            ], 200);
+        }
+
+        // pre-registration path (phone-based)
+        $resultCode = $result['result'] ?? '';
+        if ($resultCode !== 'ok') {
             $messages = [
                 'otp_invalid' => __('Invalid OTP.'),
                 'otp_expired' => __('OTP has expired.'),
@@ -84,19 +157,15 @@ class OtpController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error' => $result,
-                'message' => $messages[$result] ?? __('Verification failed.'),
+                'error' => $resultCode,
+                'message' => $messages[$resultCode] ?? __('Verification failed.'),
             ], 422);
         }
-
-        $user->update(['phone_verified_at' => now()]);
 
         return response()->json([
             'success' => true,
             'message' => 'Phone verified.',
-            'data' => [
-                'phone_verified_at' => $user->fresh()->phone_verified_at?->toIso8601String(),
-            ],
+            'verified_token' => $result['verified_token'],
         ], 200);
     }
 }

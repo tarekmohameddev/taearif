@@ -209,8 +209,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', [AuthController::class, 'getUserProfile']);
     Route::get('/user/getUserInfo', [AuthController::class, 'getUserProfile']); // Alias for frontend compatibility
     Route::post('/user-read-message', [AuthController::class, 'read_message']);
-    Route::post('/auth/verify-otp', [OtpController::class, 'verifyOtp']);
 });
+
+// Phone verification (pre-registration): public endpoint
+Route::post('/auth/verify-otp', [OtpController::class, 'verifyOtp']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 });

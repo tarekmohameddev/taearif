@@ -22,6 +22,7 @@ use App\Models\User\Menu;
 use App\Models\Membership;
 use App\Models\User\Member;
 use App\Models\User\Social;
+use App\Models\OtpVerification;
 
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -339,6 +340,32 @@ class AuthController extends Controller
                     $employee->syncPermissions(request()->input('permissions'));
                 }
 
+                // Consume pre-registration OTP verification proof (if provided)
+                $verifiedToken = request()->input('verified_token');
+                if (!empty($verifiedToken)) {
+                    $otpRecord = OtpVerification::query()
+                        ->where('verified_token', $verifiedToken)
+                        ->where('verified_token_expires_at', '>=', now())
+                        ->where('identifier', $validated['phone'] ?? null)
+                        ->whereNull('user_id')
+                        ->where('context', OtpVerification::CONTEXT_REGISTRATION)
+                        ->first();
+
+                    if (!$otpRecord) {
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'Invalid or expired verified_token',
+                        ], 422);
+                    }
+
+                    $employee->update(['phone_verified_at' => now()]);
+                    $otpRecord->update([
+                        'user_id' => $employee->id,
+                        'verified_token' => null,
+                        'verified_token_expires_at' => null,
+                    ]);
+                }
+
                 // Never auto-login employee here; the employee will log in via the same /login route.
                 return response()->json([
                     'status'   => 'success',
@@ -463,6 +490,32 @@ class AuthController extends Controller
                 request()->input('password'),
                 $welcome_message
             );
+
+            // Consume pre-registration OTP verification proof (if provided)
+            $verifiedToken = request()->input('verified_token');
+            if (!empty($verifiedToken)) {
+                $otpRecord = OtpVerification::query()
+                    ->where('verified_token', $verifiedToken)
+                    ->where('verified_token_expires_at', '>=', now())
+                    ->where('identifier', $validated['phone'] ?? null)
+                    ->whereNull('user_id')
+                    ->where('context', OtpVerification::CONTEXT_REGISTRATION)
+                    ->first();
+
+                if ($otpRecord) {
+                    $user->update(['phone_verified_at' => now()]);
+                    $otpRecord->update([
+                        'user_id' => $user->id,
+                        'verified_token' => null,
+                        'verified_token_expires_at' => null,
+                    ]);
+                } else {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Invalid or expired verified_token',
+                    ], 422);
+                }
+            }
 
             // Create default roles & permissions INSIDE this tenant
             DB::afterCommit(fn() => app(\App\Services\TenantRbacBootstrapper::class)->run($user->id));
