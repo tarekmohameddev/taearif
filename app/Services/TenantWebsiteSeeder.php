@@ -25,6 +25,16 @@ class TenantWebsiteSeeder
     protected const TIMEOUT = 10;
 
     /**
+     * Placeholder emails in default templates — replaced with tenant/footer email during reseed.
+     *
+     * @var list<string>
+     */
+    protected const EMAIL_PLACEHOLDERS = [
+        'info@example.com',
+        'example@gmail.com',
+    ];
+
+    /**
      * Fetch default data from external API with retry logic
      * Falls back to local config if API fails after retries
      *
@@ -127,12 +137,25 @@ class TenantWebsiteSeeder
                     $this->seedStaticPages($tenant, $template['StaticPages']);
                 }
 
-                // Seed global components
+                $tenant->refresh();
+
+                $companyInfoFromFooterForEmail = $this->extractCompanyInfoForWebsiteLayoutFromFooter($tenant);
+                $resolvedEmail = $this->resolveContactEmailFromFooterAndUser($companyInfoFromFooterForEmail, $tenant);
+
+                // Seed global components (merge resolved email into footer.contactInfo for builder)
+                $template['globalComponentsData'] = $this->applyResolvedEmailToGlobalComponentsData(
+                    $template['globalComponentsData'],
+                    $resolvedEmail
+                );
                 $this->seedGlobalComponents($tenant, $template['globalComponentsData']);
 
                 // Seed website layout if provided
                 if (isset($template['WebsiteLayout']) && is_array($template['WebsiteLayout'])) {
-                    $this->seedWebsiteLayout($tenant, $template['WebsiteLayout']);
+                    $websiteLayout = $this->applyResolvedEmailToWebsiteLayout(
+                        $template['WebsiteLayout'],
+                        $resolvedEmail
+                    );
+                    $this->seedWebsiteLayout($tenant, $websiteLayout);
                 }
 
                 Log::info('Successfully seeded default website for tenant', [
@@ -281,6 +304,8 @@ class TenantWebsiteSeeder
                     return false;
                 }
 
+                $tenant->refresh();
+
                 // Get onboarding data from BasicSetting
                 $basicSetting = \App\Models\User\BasicSetting::where('user_id', $tenant->id)->first();
                 $brandingColors = null;
@@ -292,6 +317,7 @@ class TenantWebsiteSeeder
                 }
 
                 $companyInfoFromFooter = $this->extractCompanyInfoForWebsiteLayoutFromFooter($tenant);
+                $resolvedEmail = $this->resolveContactEmailFromFooterAndUser($companyInfoFromFooter, $tenant);
 
                 // Update/recreate pages
                 $this->seedPages($tenant, $template['componentSettings']);
@@ -301,7 +327,11 @@ class TenantWebsiteSeeder
                     $this->seedStaticPages($tenant, $template['StaticPages']);
                 }
 
-                // Update/recreate global components
+                // Update/recreate global components (ensure footer.content.contactInfo.email)
+                $template['globalComponentsData'] = $this->applyResolvedEmailToGlobalComponentsData(
+                    $template['globalComponentsData'],
+                    $resolvedEmail
+                );
                 $this->seedGlobalComponents($tenant, $template['globalComponentsData']);
 
                 // Update/recreate website layout if provided
@@ -316,11 +346,21 @@ class TenantWebsiteSeeder
                     }
 
                     $websiteLayout = $this->applyCompanyInfoToWebsiteLayout($websiteLayout, $companyInfoFromFooter);
+                    $websiteLayout = $this->applyResolvedEmailToWebsiteLayout($websiteLayout, $resolvedEmail);
 
                     $this->seedWebsiteLayout($tenant, $websiteLayout);
-                } elseif (!empty($brandingColors) || $companyInfoFromFooter !== null) {
-                    // Keep existing layout data; merge onboarding colors and footer company info.
-                    $this->mergeIntoExistingWebsiteLayout($tenant, $brandingColors ?? [], $companyInfoFromFooter);
+                } elseif (
+                    !empty($brandingColors)
+                    || $companyInfoFromFooter !== null
+                    || ($resolvedEmail !== null && $resolvedEmail !== '')
+                ) {
+                    // Keep existing layout data; merge onboarding colors, footer company info, and resolved email.
+                    $this->mergeIntoExistingWebsiteLayout(
+                        $tenant,
+                        $brandingColors ?? [],
+                        $companyInfoFromFooter,
+                        $resolvedEmail
+                    );
                 }
 
                 Log::info('Successfully re-seeded website for tenant', [
@@ -444,8 +484,12 @@ class TenantWebsiteSeeder
      * @param  array<string, string>  $brandingColors
      * @param  array<string, mixed>|null  $companyInfoFromFooter
      */
-    protected function mergeIntoExistingWebsiteLayout(User $tenant, array $brandingColors, ?array $companyInfoFromFooter): void
-    {
+    protected function mergeIntoExistingWebsiteLayout(
+        User $tenant,
+        array $brandingColors,
+        ?array $companyInfoFromFooter,
+        ?string $resolvedEmail = null
+    ): void {
         $layout = TenantWebsiteLayout::firstOrNew(['user_id' => $tenant->id]);
         $existingData = is_array($layout->data) ? $layout->data : [];
 
@@ -454,9 +498,80 @@ class TenantWebsiteSeeder
         }
 
         $existingData = $this->applyCompanyInfoToWebsiteLayout($existingData, $companyInfoFromFooter);
+        $existingData = $this->applyResolvedEmailToWebsiteLayout($existingData, $resolvedEmail);
 
         $layout->data = $existingData;
         $layout->save();
+    }
+
+    /**
+     * Resolve contact email: footer general first, then tenant user record.
+     *
+     * @param  array<string, mixed>|null  $companyInfoFromFooter
+     */
+    protected function resolveContactEmailFromFooterAndUser(?array $companyInfoFromFooter, User $tenant): ?string
+    {
+        $fromFooter = $companyInfoFromFooter['email'] ?? null;
+        if (is_string($fromFooter) && trim($fromFooter) !== '') {
+            return trim($fromFooter);
+        }
+
+        $fromUser = $tenant->email;
+        if (is_string($fromUser) && trim($fromUser) !== '') {
+            return trim($fromUser);
+        }
+
+        return null;
+    }
+
+    /**
+     * When resolved email is non-empty, set WebsiteLayout.data.companyInfo.email (overrides placeholders / null from footer merge).
+     *
+     * @param  array<string, mixed>  $layout
+     * @return array<string, mixed>
+     */
+    protected function applyResolvedEmailToWebsiteLayout(array $layout, ?string $resolvedEmail): array
+    {
+        if ($resolvedEmail === null || $resolvedEmail === '') {
+            return $layout;
+        }
+
+        if (!isset($layout['companyInfo']) || !is_array($layout['companyInfo'])) {
+            $layout['companyInfo'] = [];
+        }
+
+        $layout['companyInfo']['email'] = $resolvedEmail;
+
+        return $layout;
+    }
+
+    /**
+     * When resolved email is non-empty, set globalComponentsData.footer.content.contactInfo.email (creates path if missing).
+     *
+     * @param  array<string, mixed>  $globalData
+     * @return array<string, mixed>
+     */
+    protected function applyResolvedEmailToGlobalComponentsData(array $globalData, ?string $resolvedEmail): array
+    {
+        if ($resolvedEmail === null || $resolvedEmail === '') {
+            return $globalData;
+        }
+
+        if (!isset($globalData['footer']) || !is_array($globalData['footer'])) {
+            $globalData['footer'] = [];
+        }
+
+        if (!isset($globalData['footer']['content']) || !is_array($globalData['footer']['content'])) {
+            $globalData['footer']['content'] = [];
+        }
+
+        if (!isset($globalData['footer']['content']['contactInfo']) || !is_array($globalData['footer']['content']['contactInfo'])) {
+            $globalData['footer']['content']['contactInfo'] = [];
+        }
+
+        $globalData['footer']['content']['contactInfo']['email'] = $resolvedEmail;
+
+        return $globalData;
     }
 
     /**
@@ -581,9 +696,9 @@ class TenantWebsiteSeeder
                 }
             }
 
-            // Replace email
+            // Replace email (template placeholders)
             if (isset($data['email']) && $replacementData['email']) {
-                if (in_array($data['email'], ['info@example.com'])) {
+                if (in_array($data['email'], self::EMAIL_PLACEHOLDERS, true)) {
                     $data['email'] = $replacementData['email'];
                 }
             }

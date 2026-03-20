@@ -187,6 +187,7 @@ class OnboardingController extends Controller
             Cache::forget($cacheKey);
 
                 DB::afterCommit(function () use ($user) {
+                    $user->refresh();
                     app(\App\Services\TenantWebsiteSeeder::class)->reseedWebsite($user);
                 });
             });

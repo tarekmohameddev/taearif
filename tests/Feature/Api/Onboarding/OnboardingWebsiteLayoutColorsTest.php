@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\Onboarding;
 
+use App\Models\TenantGlobalComponent;
 use App\Models\TenantWebsiteLayout;
 use App\Models\User;
 use App\Models\User\Language;
@@ -16,7 +17,8 @@ class OnboardingWebsiteLayoutColorsTest extends TestCase
     {
         if (!Schema::hasTable('users')
             || !Schema::hasTable('user_languages')
-            || !Schema::hasTable('tenant_website_layouts')) {
+            || !Schema::hasTable('tenant_website_layouts')
+            || !Schema::hasTable('tenant_global_components')) {
             $this->markTestSkipped('Required tables are missing for onboarding layout color test.');
         }
 
@@ -89,6 +91,13 @@ class OnboardingWebsiteLayoutColorsTest extends TestCase
         $this->assertSame('contact@acme-realty.test', data_get($layout->data, 'companyInfo.email'));
         $this->assertSame('+966500000000', data_get($layout->data, 'companyInfo.phone'));
         $this->assertSame('ABC-123', data_get($layout->data, 'companyInfo.valLicense'));
+
+        $globals = TenantGlobalComponent::query()->where('user_id', $user->id)->first();
+        $this->assertNotNull($globals);
+        $this->assertSame(
+            'contact@acme-realty.test',
+            data_get($globals->data, 'footer.content.contactInfo.email')
+        );
     }
 }
 
