@@ -15,17 +15,17 @@ class VerifyOtpRequest extends BaseApiFormRequest
     public function rules(): array
     {
         $hasBearer = !empty(request()->bearerToken());
-        $otpRules = ['required', 'string', 'digits:6'];
+        $otpRules = ['required', 'string', 'digits:5'];
 
         if ($this->allowsTestBypass()) {
             $bypassCode = (string) config('api.otp.registration.test_bypass_code', '');
             $bypassLength = strlen($bypassCode);
 
             if ($bypassLength > 0) {
-                if ($bypassLength === 6) {
-                    $otpRules = ['required', 'string', 'digits:6'];
+                if ($bypassLength === 5) {
+                    $otpRules = ['required', 'string', 'digits:5'];
                 } else {
-                    $otpRules = ['required', 'string', 'regex:/^(?:\d{6}|\d{' . $bypassLength . '})$/'];
+                    $otpRules = ['required', 'string', 'regex:/^(?:\d{5}|\d{' . $bypassLength . '})$/'];
                 }
             }
         }

@@ -66,7 +66,7 @@ class OtpVerification extends Model
             return ['success' => false, 'error' => 'rate_limit_exceeded'];
         }
 
-        $plainOtp = (string) random_int(100000, 999999);
+        $plainOtp = (string) random_int(10000, 99999);
         $hashedOtp = Hash::make($plainOtp);
         $expiresAt = now()->addMinutes(self::OTP_EXPIRY_MINUTES);
 
@@ -118,7 +118,7 @@ class OtpVerification extends Model
             return ['success' => false, 'error' => 'rate_limit_exceeded'];
         }
 
-        $plainOtp = (string) random_int(100000, 999999);
+        $plainOtp = (string) random_int(10000, 99999);
         $hashedOtp = Hash::make($plainOtp);
         $expiresAt = now()->addMinutes(self::OTP_EXPIRY_MINUTES);
 
