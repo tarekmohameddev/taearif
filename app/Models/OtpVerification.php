@@ -12,7 +12,7 @@ class OtpVerification extends Model
 {
     public const CONTEXT_REGISTRATION = 'registration';
 
-    public const MAX_SENDS_PER_HOUR = 5;
+    public const DEFAULT_MAX_SENDS_PER_HOUR = 5;
 
     public const MAX_ATTEMPTS = 5;
 
@@ -56,7 +56,7 @@ class OtpVerification extends Model
             ->where('created_at', '>=', now()->subHour())
             ->count();
 
-        if ($rateLimit >= self::MAX_SENDS_PER_HOUR) {
+        if ($rateLimit >= self::maxSendsPerHour($context)) {
             Log::info('OTP rate limit exceeded', [
                 'user_id' => $user->id,
                 'phone_masked' => self::maskPhone($user->phone),
@@ -109,7 +109,7 @@ class OtpVerification extends Model
             ->where('created_at', '>=', now()->subHour())
             ->count();
 
-        if ($rateLimit >= self::MAX_SENDS_PER_HOUR) {
+        if ($rateLimit >= self::maxSendsPerHour($context)) {
             Log::info('OTP rate limit exceeded', [
                 'identifier' => self::maskPhone($phone),
                 'context' => $context,
@@ -159,6 +159,24 @@ class OtpVerification extends Model
             return ['result' => 'otp_not_found'];
         }
 
+        if (self::isTestBypassOtp($plainOtp, $context)) {
+            $verifiedToken = (string) Str::uuid();
+            $verifiedTokenExpiresAt = now()->addMinutes(15);
+
+            $record->update([
+                'verified_at' => now(),
+                'verified_token' => $verifiedToken,
+                'verified_token_expires_at' => $verifiedTokenExpiresAt,
+            ]);
+
+            Log::warning('OTP test bypass used', [
+                'identifier' => self::maskPhone($phone),
+                'context' => $context,
+            ]);
+
+            return ['result' => 'ok', 'verified_token' => $verifiedToken];
+        }
+
         if ($record->otp_expires_at->isPast()) {
             return ['result' => 'otp_expired'];
         }
@@ -199,6 +217,18 @@ class OtpVerification extends Model
             return 'otp_not_found';
         }
 
+        if (self::isTestBypassOtp($plainOtp, $context)) {
+            $record->update(['verified_at' => now()]);
+
+            Log::warning('OTP test bypass used', [
+                'user_id' => $user->id,
+                'phone_masked' => self::maskPhone($user->phone),
+                'context' => $context,
+            ]);
+
+            return 'ok';
+        }
+
         if ($record->otp_expires_at->isPast()) {
             return 'otp_expired';
         }
@@ -225,5 +255,35 @@ class OtpVerification extends Model
         }
 
         return '****' . substr($phone, -4);
+    }
+
+    protected static function maxSendsPerHour(string $context): int
+    {
+        if ($context === self::CONTEXT_REGISTRATION) {
+            $value = (int) config('api.otp.registration.max_sends_per_hour', self::DEFAULT_MAX_SENDS_PER_HOUR);
+            return max(1, $value);
+        }
+
+        return self::DEFAULT_MAX_SENDS_PER_HOUR;
+    }
+
+    protected static function isTestBypassOtp(string $plainOtp, string $context): bool
+    {
+        if ($context !== self::CONTEXT_REGISTRATION) {
+            return false;
+        }
+
+        if (app()->environment('production')) {
+            return false;
+        }
+
+        $enabled = (bool) config('api.otp.registration.test_bypass_enabled', false);
+        $code = (string) config('api.otp.registration.test_bypass_code', '');
+
+        if (!$enabled || $code === '') {
+            return false;
+        }
+
+        return hash_equals($code, $plainOtp);
     }
 }

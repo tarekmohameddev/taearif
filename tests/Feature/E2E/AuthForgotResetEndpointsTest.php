@@ -52,6 +52,59 @@ class AuthForgotResetEndpointsTest extends ApiE2ETestCase
     }
 
     /** @test */
+    public function forgot_password_email_test_bypass_skips_smtp_and_allows_fixed_code_verify(): void
+    {
+        try {
+            Config::set('services.recaptcha.api_enabled', true);
+            $this->fakeRecaptcha();
+            Config::set('api.password_reset.email_test_bypass_enabled', true);
+            Config::set('api.password_reset.email_test_bypass_code', '12345');
+
+            $plainPassword = 'password123';
+            $email = 'reset-bypass-' . uniqid('', true) . '@example.com';
+            $user = User::factory()->create([
+                'email' => $email,
+                'username' => 'reset-bypass-' . uniqid('', true),
+                'phone' => '+9665' . random_int(100000000, 999999999),
+                'password' => Hash::make($plainPassword),
+                'account_type' => 'tenant',
+                'active' => true,
+                'status' => 1,
+            ]);
+
+            $forgot = $this->postJson('/api/auth/forgot-password', [
+                'method' => 'email',
+                'identifier' => $email,
+                'recaptcha_token' => 'TEST_BYPASS_TOKEN',
+            ]);
+
+            $forgot->assertOk()
+                ->assertJsonPath('via', 'email');
+
+            $log = PasswordResetLog::query()
+                ->where('user_id', $user->id)
+                ->latest()
+                ->first();
+            $this->assertNotNull($log);
+            $this->assertSame('12345', (string) $log->code);
+
+            $newPassword = 'NewPass123!';
+            $verify = $this->postJson('/api/auth/verify-reset-code', [
+                'code' => '12345',
+                'new_password' => $newPassword,
+                'new_password_confirmation' => $newPassword,
+                'recaptcha_token' => 'TEST_BYPASS_TOKEN',
+            ]);
+
+            $verify->assertOk()
+                ->assertJsonPath('message', 'Password reset successful');
+            $this->assertTrue(Hash::check($newPassword, $user->fresh()->password));
+        } catch (QueryException $e) {
+            $this->markTestSkipped('Schema/users missing: ' . $e->getMessage());
+        }
+    }
+
+    /** @test */
     public function forgot_password_phone_returns_404_when_user_not_found(): void
     {
         Config::set('services.recaptcha.api_enabled', true);

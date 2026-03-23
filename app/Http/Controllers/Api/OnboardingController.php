@@ -67,6 +67,16 @@ class OnboardingController extends Controller
             $bss = null;
 
             DB::transaction(function () use ($validated, $request, $user, $lang, &$bss) {
+                if ($request->filled('email')) {
+                    $user->email = $validated['email'];
+                }
+                if ($request->filled('phone')) {
+                    $user->phone = $validated['phone'];
+                }
+                if ($user->isDirty(['email', 'phone'])) {
+                    $user->save();
+                }
+
                 $bss = BasicSetting::firstOrNew(['user_id' => $user->id]);
 
                 $bss->base_color = $validated['colors']['primary'];
@@ -177,6 +187,7 @@ class OnboardingController extends Controller
             Cache::forget($cacheKey);
 
                 DB::afterCommit(function () use ($user) {
+                    $user->refresh();
                     app(\App\Services\TenantWebsiteSeeder::class)->reseedWebsite($user);
                 });
             });
