@@ -1242,6 +1242,14 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
         Route::post('/{requestId}/appointments', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'createAppointmentForPropertyRequest']);
         Route::post('/{requestId}/reminders', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'createReminderForPropertyRequest']);
 
+        // Matching V2 endpoints (must be before /{requestId})
+        Route::get('/{requestId}/matches', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'matches']);
+        Route::post('/{requestId}/complete-data', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'completeData']);
+        Route::patch('/{requestId}/read', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'markRead']);
+        Route::patch('/{requestId}/unread', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'markUnread']);
+        Route::patch('/{requestId}/ignore', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'ignore']);
+        Route::post('/{requestId}/rematch', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'rematch']);
+
         // Single action detail
         Route::get('/{requestId}', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'show']);
         Route::get('/{requestId}/stats', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'actionStats']);

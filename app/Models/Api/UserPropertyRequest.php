@@ -67,6 +67,7 @@ class UserPropertyRequest extends Model
         'notes',
         'is_read',
         'is_archived',
+        'is_ignored',
         'is_active',
         'status_id',
         'customers_hub_stage_id',
@@ -98,6 +99,7 @@ class UserPropertyRequest extends Model
         'area_to'              => 'integer',
         'is_read'              => 'boolean',
         'is_archived'          => 'boolean',
+        'is_ignored'           => 'boolean',
         'status_id'            => 'integer',
         'property_ids'         => 'array',
     ];

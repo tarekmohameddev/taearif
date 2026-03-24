@@ -20,6 +20,11 @@ class UsersPropertyRequestObserver
     {
         Log::info('UsersPropertyRequestObserver.created fired', ['id' => $model->id]);
 
+        if ($model->is_ignored) {
+            Log::info('UsersPropertyRequestObserver: skipping matching for ignored request', ['id' => $model->id]);
+            return;
+        }
+
         // Auto-create customer if setting is enabled
         $this->customerService->autoCreateFromRequest($model);
 
@@ -39,6 +44,11 @@ class UsersPropertyRequestObserver
     public function updated(UserPropertyRequest $model): void
     {
         Log::info('UsersPropertyRequestObserver.updated fired', ['id' => $model->id, 'changes' => $model->getChanges()]);
+
+        if ($model->is_ignored) {
+            Log::info('UsersPropertyRequestObserver: skipping matching for ignored request', ['id' => $model->id]);
+            return;
+        }
 
         $check = $this->completeness->validate('web', $model->id);
         Log::info('UsersPropertyRequestObserver: completeness check', [

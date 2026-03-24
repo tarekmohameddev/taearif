@@ -12,6 +12,56 @@ class RequestCompletenessService
     ) {}
 
     /**
+     * Check only city/location and property type (minimal bar for starting matching).
+     *
+     * @return string[] list of missing minimal field keys
+     */
+    public function getMinimalMissingFields(UnifiedRequest $request): array
+    {
+        $missing = [];
+        if (!$this->hasLocation($request)) {
+            $missing[] = 'location';
+        }
+        if (!$this->hasCategory($request)) {
+            $missing[] = 'category';
+        }
+        return $missing;
+    }
+
+    public function hasMinimalData(UnifiedRequest $request): bool
+    {
+        return count($this->getMinimalMissingFields($request)) === 0;
+    }
+
+    /**
+     * Convenience method for controllers: returns both minimal and full completeness info.
+     *
+     * @return array{unified:?UnifiedRequest,has_minimal_data:bool,minimal_missing_fields:string[],is_complete:bool,missing_fields:string[]}
+     */
+    public function validateMinimal(string $source, int $id): array
+    {
+        $unified = $this->requests->getUnified($source, $id);
+        if (!$unified) {
+            return [
+                'unified' => null,
+                'has_minimal_data' => false,
+                'minimal_missing_fields' => ['not_found'],
+                'is_complete' => false,
+                'missing_fields' => ['not_found'],
+            ];
+        }
+        $minimalMissing = $this->getMinimalMissingFields($unified);
+        $allMissing = $this->getMissingFields($unified);
+        return [
+            'unified' => $unified,
+            'has_minimal_data' => count($minimalMissing) === 0,
+            'minimal_missing_fields' => $minimalMissing,
+            'is_complete' => count($allMissing) === 0,
+            'missing_fields' => $allMissing,
+        ];
+    }
+
+    /**
      * Convenience method for controllers/observers.
      *
      * @return array{unified:?UnifiedRequest,is_complete:bool,missing_fields:string[]}
