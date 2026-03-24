@@ -482,6 +482,7 @@ class CommunicationController extends Controller
     {
         $rules = [
             'registration_otp_template' => 'nullable|string|max:100',
+            'otp_max_sends_per_hour' => 'nullable|integer|min:1|max:100',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -505,6 +506,7 @@ class CommunicationController extends Controller
         }
 
         $abs->registration_otp_template = $request->registration_otp_template;
+        $abs->otp_max_sends_per_hour = (int) ($request->otp_max_sends_per_hour ?? 5);
         $abs->save();
 
         Session::flash('success', 'Registration OTP template settings updated successfully!');

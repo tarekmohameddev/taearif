@@ -81,6 +81,7 @@ class BasicSetting extends Model
         'password_reset_template',
         'password_reset_api',
         'registration_otp_template',
+        'otp_max_sends_per_hour',
         'email_password_reset_template'
     ];
 
