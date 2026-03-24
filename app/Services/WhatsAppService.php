@@ -188,38 +188,22 @@ class WhatsAppService
                 $templateName = 'password_reset';
             }
 
-            // NEW: Try Meta Cloud template first, then database template fallback
+            // Template-first strict mode for Meta Cloud password reset
             if ($templateName && $useMetaTemplate) {
-                // Try Meta Cloud template first
                 if ($this->checkMetaTemplateExists($templateName)) {
                     $templateResult = $this->sendPasswordResetMetaTemplate($formattedPhone, $templateName, $code, $userName, $resetUrl, $userId);
-                    if ($templateResult) {
-                        return true;
-                    }
+                    return (bool) $templateResult;
                 }
 
-                // Fallback to database template
-                $dbTemplate = \App\Models\WhatsAppTemplate::where('name', $templateName)
-                    ->where('type', 'password_reset')
-                    ->where('status', true)
-                    ->first();
-
-                if ($dbTemplate) {
-                    Log::info('Using database template for password reset fallback', [
-                        'template_name' => $templateName,
-                        'template_content' => $dbTemplate->content
-                    ]);
-
-                    $templateMessage = $dbTemplate->content;
-                    $templateMessage = str_replace('{code}', $code, $templateMessage);
-                    $templateMessage = str_replace('{reset_url}', $resetUrl, $templateMessage);
-
-                    return $this->sendRegularMessage($formattedPhone, $templateMessage);
-                }
+                Log::warning('Configured Meta password reset template was not found/approved', [
+                    'template_name' => $templateName,
+                    'phone' => $formattedPhone,
+                ]);
+                return false;
             }
 
-            // If no template name is provided or custom message is provided, send as regular message
-            if (!$templateName || $message) {
+            // Regular text is allowed only when no template is configured.
+            if (!$templateName) {
                 $payload = [
                     "messaging_product" => "whatsapp",
                     "to" => $formattedPhone,
@@ -2247,13 +2231,14 @@ class WhatsAppService
                 
                 if ($result['success']) {
                     return true;
-                } else {
-                    Log::warning('Meta template failed, falling back to plain text', [
-                        'phone' => $phoneNumber,
-                        'template' => $templateName,
-                        'error' => $result['message'] ?? 'Unknown error'
-                    ]);
                 }
+
+                Log::warning('Meta template send failed for registration OTP (strict template mode)', [
+                    'phone' => $phoneNumber,
+                    'template' => $templateName,
+                    'error' => $result['message'] ?? 'Unknown error'
+                ]);
+                return false;
             }
 
             // Fallback to plain text message

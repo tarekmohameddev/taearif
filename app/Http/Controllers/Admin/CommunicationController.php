@@ -465,9 +465,12 @@ class CommunicationController extends Controller
             $testCode = rand(100000, 999999);
             $resetUrl = env('FRONTEND_URL', 'https://app.taearif.com') . '/reset';
 
-            $whatsappService->sendPasswordResetCode($request->test_phone, $testCode, 'مستخدم تجريبي', 'ar', $resetUrl, 'password_reset');
-
-            Session::flash('success', "Test password reset message sent successfully to {$request->test_phone}. Code: {$testCode}");
+            $sent = $whatsappService->sendPasswordResetCode($request->test_phone, $testCode, 'مستخدم تجريبي', 'ar', $resetUrl, 'password_reset');
+            if ($sent) {
+                Session::flash('success', "Test password reset message sent successfully to {$request->test_phone}. Code: {$testCode}");
+            } else {
+                Session::flash('error', 'Failed to send password reset message. If Meta template is configured, ensure it is approved and active.');
+            }
         } catch (\Exception $e) {
             Session::flash('error', 'Test failed: ' . $e->getMessage());
         }
@@ -527,9 +530,12 @@ class CommunicationController extends Controller
             $whatsappService = new WhatsAppService();
             $testCode = rand(100000, 999999);
 
-            $whatsappService->sendRegistrationOtp($request->test_phone, $testCode);
-
-            Session::flash('success', "Test registration OTP sent successfully to {$request->test_phone}. Code: {$testCode}");
+            $sent = $whatsappService->sendRegistrationOtp($request->test_phone, $testCode);
+            if ($sent) {
+                Session::flash('success', "Test registration OTP sent successfully to {$request->test_phone}. Code: {$testCode}");
+            } else {
+                Session::flash('error', 'Failed to send registration OTP. If Meta template is configured, ensure it is approved and active.');
+            }
         } catch (\Exception $e) {
             Session::flash('error', 'Test failed: ' . $e->getMessage());
         }
