@@ -411,22 +411,6 @@
                   </div>
 
                   <div class="row">
-                    <div class="col-lg-6">
-                      <div class="form-group">
-                        <label for="otp_max_sends_per_hour"><strong>الحد الأقصى لإرسال OTP (لكل ساعة)</strong></label>
-                        <input type="number" class="form-control" id="otp_max_sends_per_hour" name="otp_max_sends_per_hour"
-                               value="{{ $abs->otp_max_sends_per_hour ?? 5 }}" min="1" max="100">
-                        <p class="text-muted">مثال: 10 يعني يمكن إرسال OTP حتى 10 مرات خلال ساعة لكل رقم.</p>
-                        <small class="text-info d-block">
-                          <i class="fas fa-info-circle"></i>
-                          الحد الفعّال الحالي المطبق في الـ API:
-                          <strong>{{ (int) ($abs->otp_max_sends_per_hour ?? 5) }}</strong> / ساعة
-                        </small>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
                         <button type="submit" class="btn btn-primary">
@@ -844,6 +828,22 @@
                             </a>
                           </small>
                         </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-lg-6">
+                      <div class="form-group">
+                        <label for="otp_max_sends_per_hour"><strong>الحد الأقصى لإرسال OTP (لكل ساعة)</strong></label>
+                        <input type="number" class="form-control" id="otp_max_sends_per_hour" name="otp_max_sends_per_hour"
+                               value="{{ $abs->otp_max_sends_per_hour ?? 5 }}" min="1" max="100">
+                        <p class="text-muted">مثال: 10 يعني يمكن إرسال OTP حتى 10 مرات خلال ساعة لكل رقم.</p>
+                        <small class="text-info d-block">
+                          <i class="fas fa-info-circle"></i>
+                          الحد الفعّال الحالي المطبق في الـ API:
+                          <strong>{{ (int) ($abs->otp_max_sends_per_hour ?? 5) }}</strong> / ساعة
+                        </small>
+                      </div>
                     </div>
                   </div>
 
