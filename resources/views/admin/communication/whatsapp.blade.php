@@ -450,22 +450,6 @@
                   </div>
 
                   <div class="row">
-                    <div class="col-lg-6">
-                      <div class="form-group">
-                        <label for="password_reset_max_sends_per_hour"><strong>الحد الأقصى لإرسال reset password (لكل ساعة)</strong></label>
-                        <input type="number" class="form-control" id="password_reset_max_sends_per_hour" name="password_reset_max_sends_per_hour"
-                               value="{{ $abs->password_reset_max_sends_per_hour ?? 5 }}" min="1" max="100">
-                        <p class="text-muted">مثال: 5 يعني يمكن إرسال كود إعادة التعيين حتى 5 مرات خلال ساعة لكل مستخدم.</p>
-                        <small class="text-info d-block">
-                          <i class="fas fa-info-circle"></i>
-                          الحد الفعّال الحالي المطبق في الـ API:
-                          <strong>{{ (int) ($abs->password_reset_max_sends_per_hour ?? 5) }}</strong> / ساعة
-                        </small>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
                         <button type="submit" class="btn btn-primary">
@@ -824,6 +808,22 @@
                             </a>
                           </small>
                         </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-lg-6">
+                      <div class="form-group">
+                        <label for="password_reset_max_sends_per_hour"><strong>الحد الأقصى لإرسال reset password (لكل ساعة)</strong></label>
+                        <input type="number" class="form-control" id="password_reset_max_sends_per_hour" name="password_reset_max_sends_per_hour"
+                               value="{{ $abs->password_reset_max_sends_per_hour ?? 5 }}" min="1" max="100">
+                        <p class="text-muted">مثال: 5 يعني يمكن إرسال كود إعادة التعيين حتى 5 مرات خلال ساعة لكل مستخدم.</p>
+                        <small class="text-info d-block">
+                          <i class="fas fa-info-circle"></i>
+                          الحد الفعّال الحالي المطبق في الـ API:
+                          <strong>{{ (int) ($abs->password_reset_max_sends_per_hour ?? 5) }}</strong> / ساعة
+                        </small>
+                      </div>
                     </div>
                   </div>
 
