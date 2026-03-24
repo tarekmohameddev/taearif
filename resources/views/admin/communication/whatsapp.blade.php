@@ -1440,6 +1440,9 @@ function loadTemplatesBasedOnApi() {
     }
 
     togglePasswordResetFallbackUi();
+    toggleFallbackUiByTemplate('#welcome_message_text', '#welcome_message_template', '#welcome-message-form');
+    toggleFallbackUiByTemplate('#subscription_expiration_text', '#subscription_expiration_template', '#subscription-expiration-form');
+    toggleFallbackUiByTemplate('#subscription_expired_text', '#subscription_expired_template', '#subscription-expired-form');
 }
 
 function updateDefaultTexts() {
@@ -1679,6 +1682,15 @@ function populateTemplatesInSelect(select, templates, messageType) {
     if (messageType === 'password_reset') {
         togglePasswordResetFallbackUi();
     }
+    if (messageType === 'welcome') {
+        toggleFallbackUiByTemplate('#welcome_message_text', '#welcome_message_template', '#welcome-message-form');
+    }
+    if (messageType === 'subscription_expiration') {
+        toggleFallbackUiByTemplate('#subscription_expiration_text', '#subscription_expiration_template', '#subscription-expiration-form');
+    }
+    if (messageType === 'subscription_expired') {
+        toggleFallbackUiByTemplate('#subscription_expired_text', '#subscription_expired_template', '#subscription-expired-form');
+    }
 }
 
 function showNotification(message, type) {
@@ -1818,6 +1830,9 @@ function initializeTemplateSelection() {
     }
 
     togglePasswordResetFallbackUi();
+    toggleFallbackUiByTemplate('#welcome_message_text', '#welcome_message_template', '#welcome-message-form');
+    toggleFallbackUiByTemplate('#subscription_expiration_text', '#subscription_expiration_template', '#subscription-expiration-form');
+    toggleFallbackUiByTemplate('#subscription_expired_text', '#subscription_expired_template', '#subscription-expired-form');
 }
 </script>
 
