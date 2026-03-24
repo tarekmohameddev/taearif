@@ -346,10 +346,10 @@
                   <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
-                        <label for="welcome_message_text"><strong>نص رسالة الترحيب **</strong></label>
+                        <label for="welcome_message_text"><strong>نص احتياطي (Fallback) لرسالة الترحيب</strong></label>
                         <textarea class="form-control" id="welcome_message_text" name="welcome_message_text" rows="4"
                                   placeholder=" مرحباً بك  في منصة تعاريف ! شكراً لك على التسجيل...">{{$abs->welcome_message_text ?? ''}}</textarea>
-                        <p class="text-muted">يمكن استخدام المتغيرات: {name}, {email}</p>
+                        <p class="text-muted">هذا النص يُستخدم فقط كخطة بديلة عند عدم استخدام/فشل قالب Meta. عند اختيار قالب Meta مع خدمة Meta Cloud، محتوى الرسالة يأتي من القالب المعتمد في Meta.</p>
                         <button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="forceUpdateTextAreas()">
                           <i class="fas fa-sync"></i> تحديث النص حسب API المحدد
                         </button>
@@ -393,6 +393,9 @@
                             </optgroup>
                           </select>
                           <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
+                          <div class="alert alert-info mt-2 mb-0">
+                            عند اختيار قالب مع Meta Cloud، نص الرسالة يُدار من Meta (وليس من مربع النص).
+                          </div>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i>
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForWelcome(true)">
@@ -455,10 +458,10 @@
                   <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
-                        <label for="subscription_expiration_text"><strong>نص رسالة انتهاء الباقة **</strong></label>
+                        <label for="subscription_expiration_text"><strong>نص احتياطي (Fallback) لرسالة انتهاء الباقة</strong></label>
                         <textarea class="form-control" id="subscription_expiration_text" name="subscription_expiration_text" rows="4"
                                   placeholder="تنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً...">{{$abs->subscription_expiration_text ?? 'تنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً.'}}</textarea>
-                        <p class="text-muted">يمكن استخدام المتغيرات: {name}, {package_name}, {expiry_date}</p>
+                        <p class="text-muted">هذا النص يُستخدم فقط كخطة بديلة عند عدم استخدام/فشل قالب Meta. عند اختيار قالب Meta مع خدمة Meta Cloud، محتوى الرسالة يأتي من القالب المعتمد في Meta.</p>
                         <button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="forceUpdateTextAreas()">
                           <i class="fas fa-sync"></i> تحديث النص حسب API المحدد
                         </button>
@@ -502,6 +505,9 @@
                             </optgroup>
                           </select>
                           <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
+                          <div class="alert alert-info mt-2 mb-0">
+                            عند اختيار قالب مع Meta Cloud، نص الرسالة يُدار من Meta (وليس من مربع النص).
+                          </div>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i>
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForSubscription(true)">
@@ -575,13 +581,13 @@
                   <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
-                        <label for="subscription_expired_text"><strong>نص إشعار انتهاء الباقة **</strong></label>
+                        <label for="subscription_expired_text"><strong>نص احتياطي (Fallback) لإشعار انتهاء الباقة</strong></label>
                         <textarea class="form-control" id="subscription_expired_text" name="subscription_expired_text" rows="4" placeholder="مرحبا {name}
 انتهى اشتراكك وتم نقلك إلى الباقة المجانية.
 يمكنك الترقية في أي وقت.">{{trim($abs->subscription_expired_text ?? 'مرحبا {name}
 انتهى اشتراكك وتم نقلك إلى الباقة المجانية.
 يمكنك الترقية في أي وقت.')}}</textarea>
-                        <p class="text-muted">يمكن استخدام المتغيرات: {name}, {package_name}, {expiry_date}</p>
+                        <p class="text-muted">هذا النص يُستخدم فقط كخطة بديلة عند عدم استخدام/فشل قالب Meta. عند اختيار قالب Meta مع خدمة Meta Cloud، محتوى الرسالة يأتي من القالب المعتمد في Meta.</p>
                         <button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="forceUpdateTextAreas()">
                           <i class="fas fa-sync"></i> تحديث النص حسب API المحدد
                         </button>
@@ -625,6 +631,9 @@
                             </optgroup>
                           </select>
                           <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
+                          <div class="alert alert-info mt-2 mb-0">
+                            عند اختيار قالب مع Meta Cloud، نص الرسالة يُدار من Meta (وليس من مربع النص).
+                          </div>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i>
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForExpired(true)">
@@ -697,7 +706,7 @@
                   <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
-                        <label for="password_reset_text"><strong>نص رسالة إعادة تعيين كلمة المرور **</strong></label>
+                        <label for="password_reset_text"><strong>نص احتياطي (Fallback) لرسالة إعادة التعيين</strong></label>
                         <textarea class="form-control" id="password_reset_text" name="password_reset_text" rows="4"
                                   placeholder="رمز إعادة تعيين كلمة المرور: {code}
 
@@ -710,7 +719,7 @@
 
 أو يمكنك الضغط على الرابط التالي:
 {reset_url}?code={code}')}}</textarea>
-                        <p class="text-muted">يمكن استخدام المتغيرات: {code}, {reset_url}, {name}</p>
+                        <p class="text-muted">هذا النص يُستخدم فقط كخطة بديلة عند عدم استخدام/فشل قالب Meta. عند اختيار قالب Meta مع خدمة Meta Cloud، محتوى الرسالة يأتي من القالب المعتمد في Meta.</p>
                         <button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="forceUpdateTextAreas()">
                           <i class="fas fa-sync"></i> تحديث النص حسب API المحدد
                         </button>
@@ -746,6 +755,9 @@
                             </optgroup>
                           </select>
                           <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
+                          <div class="alert alert-info mt-2 mb-0">
+                            عند اختيار قالب مع Meta Cloud، نص الرسالة يُدار من Meta (وليس من مربع النص).
+                          </div>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i>
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForPasswordReset(true)">
@@ -913,6 +925,18 @@ $(document).ready(function() {
     $('#password-reset-form').submit(function() {
         $('#password_reset_selected_api').val(currentApi);
     });
+    $('#welcome_message_template').on('change', function() {
+        toggleFallbackUiByTemplate('#welcome_message_text', '#welcome_message_template', '#welcome-message-form');
+    });
+    $('#subscription_expiration_template').on('change', function() {
+        toggleFallbackUiByTemplate('#subscription_expiration_text', '#subscription_expiration_template', '#subscription-expiration-form');
+    });
+    $('#subscription_expired_template').on('change', function() {
+        toggleFallbackUiByTemplate('#subscription_expired_text', '#subscription_expired_template', '#subscription-expired-form');
+    });
+    $('#password_reset_template').on('change', function() {
+        togglePasswordResetFallbackUi();
+    });
 
     // Auto-load Meta templates when Meta Cloud form is shown
     if (activeTab === 'meta_evolution') {
@@ -1008,7 +1032,8 @@ function switchTab(tabName) {
         'welcome_message': 'إعدادات رسالة الترحيب',
         'subscription_expiration': 'إعدادات رسالة انتهاء الباقة',
         'subscription_expired': 'إعدادات إشعار انتهاء الباقة',
-        'password_reset': 'إعدادات رسالة إعادة تعيين كلمة المرور'
+        'password_reset': 'إعدادات رسالة إعادة تعيين كلمة المرور',
+        'registration_otp': 'إعدادات قالب رمز التسجيل'
     };
     $('#tab-title').text(titles[tabName]);
 }
@@ -1131,9 +1156,17 @@ function loadMetaTemplatesForRegistrationOtp(force = false) {
     var metaOptgroup = select.find('.meta-api-optgroup');
     var button = $('button[onclick="loadMetaTemplatesForRegistrationOtp(true)"]');
 
+    console.log('Loading Meta templates for registration OTP...', {
+        select: select.length,
+        metaOptgroup: metaOptgroup.length,
+        button: button.length
+    });
+
     // Show loading state
-    button.html('<i class="fas fa-spinner fa-spin"></i> جاري التحميل...');
-    button.prop('disabled', true);
+    if (button.length > 0) {
+        button.html('<i class="fas fa-spinner fa-spin"></i> جاري التحميل...');
+        button.prop('disabled', true);
+    }
 
     $.get('{{route("admin.communication.fetch-meta-templates")}}', function(response) {
         if (response.success) {
@@ -1170,8 +1203,10 @@ function loadMetaTemplatesForRegistrationOtp(force = false) {
         showNotification('خطأ في الاتصال بـ Meta API', 'error');
     }).always(function() {
         // Reset button state
-        button.html('<i class="fas fa-sync"></i> تحديث قوالب Meta API');
-        button.prop('disabled', false);
+        if (button.length > 0) {
+            button.html('<i class="fas fa-sync"></i> تحديث قوالب Meta API');
+            button.prop('disabled', false);
+        }
     });
 }
 
@@ -1371,6 +1406,23 @@ function updateApiIndicators() {
     });
 }
 
+function togglePasswordResetFallbackUi() {
+    var isMeta = currentApi === 'meta';
+    var hasTemplate = !!($('#password_reset_template').val() || '').trim();
+    var shouldDisableFallback = isMeta && hasTemplate;
+
+    $('#password_reset_text').prop('disabled', shouldDisableFallback);
+    $('#password-reset-form button[onclick="forceUpdateTextAreas()"]').toggle(!shouldDisableFallback || !isMeta);
+}
+
+function toggleFallbackUiByTemplate(textSelector, templateSelector, formSelector) {
+    var isMeta = currentApi === 'meta';
+    var hasTemplate = !!($(templateSelector).val() || '').trim();
+    var shouldDisableFallback = isMeta && hasTemplate;
+    $(textSelector).prop('disabled', shouldDisableFallback);
+    $(formSelector + ' button[onclick="forceUpdateTextAreas()"]').toggle(!shouldDisableFallback || !isMeta);
+}
+
 function loadTemplatesBasedOnApi() {
     if (currentApi === 'meta') {
         // For Meta API, load Meta API templates and hide local templates
@@ -1380,11 +1432,14 @@ function loadTemplatesBasedOnApi() {
         setTimeout(function() { loadMetaTemplatesForSubscription(); }, 1000);
         setTimeout(function() { loadMetaTemplatesForExpired(); }, 1500);
         setTimeout(function() { loadMetaTemplatesForPasswordReset(); }, 2000);
+        setTimeout(function() { loadMetaTemplatesForRegistrationOtp(); }, 2500);
     } else {
         // For Evolution API, only load local templates
         console.log('Evolution API selected - using local templates only');
         updateTemplateDropdownsForEvolution();
     }
+
+    togglePasswordResetFallbackUi();
 }
 
 function updateDefaultTexts() {
@@ -1607,6 +1662,8 @@ function populateTemplatesInSelect(select, templates, messageType) {
                 currentValue = '{{$abs->subscription_expired_template ?? ""}}';
             } else if (messageType === 'password_reset') {
                 currentValue = '{{$abs->password_reset_template ?? ""}}';
+            } else if (messageType === 'registration_otp') {
+                currentValue = '{{$abs->registration_otp_template ?? ""}}';
             }
 
             if (currentValue === template.name) {
@@ -1617,6 +1674,10 @@ function populateTemplatesInSelect(select, templates, messageType) {
         });
     } else {
         metaGroup.append('<option value="" disabled>لم يتم العثور على قوالب معتمدة في Meta API</option>');
+    }
+
+    if (messageType === 'password_reset') {
+        togglePasswordResetFallbackUi();
     }
 }
 
@@ -1755,6 +1816,8 @@ function initializeTemplateSelection() {
         $('#template-saved-icon').hide();
         $('#template-unsaved-icon').show();
     }
+
+    togglePasswordResetFallbackUi();
 }
 </script>
 

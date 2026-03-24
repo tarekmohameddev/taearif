@@ -483,6 +483,14 @@ class CommunicationController extends Controller
 
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+            
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput();
@@ -497,6 +505,14 @@ class CommunicationController extends Controller
         $abs->save();
 
         Session::flash('success', 'Registration OTP template settings updated successfully!');
+
+        // Handle AJAX requests
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Registration OTP template settings updated successfully!'
+            ]);
+        }
 
         return redirect()->back();
     }
