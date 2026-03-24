@@ -71,10 +71,14 @@ class ResetPasswordController extends Controller
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        // Load admin-configured max attempts/hour (fallback: 5)
+        // Load admin-configured max attempts/hour (fallback: 5).
+        // Prefer dedicated password-reset limit, fallback to OTP limit for backward compatibility.
         $maxAttemptsPerHour = 5;
         try {
-            $configuredLimit = (int) (BasicSetting::query()->value('otp_max_sends_per_hour') ?? 0);
+            $configuredLimit = (int) (BasicSetting::query()->value('password_reset_max_sends_per_hour') ?? 0);
+            if ($configuredLimit <= 0) {
+                $configuredLimit = (int) (BasicSetting::query()->value('otp_max_sends_per_hour') ?? 0);
+            }
             if ($configuredLimit > 0) {
                 $maxAttemptsPerHour = $configuredLimit;
             }
@@ -89,7 +93,7 @@ class ResetPasswordController extends Controller
 
         if ($attemptsLastHour >= $maxAttemptsPerHour) {
             return response()->json([
-                'message' => 'You have reached the maximum OTP attempts for this hour',
+                'message' => 'You have reached the maximum reset password attempts for this hour',
                 'attempts_used' => $attemptsLastHour,
                 'attempts_remaining' => 0,
                 'max_attempts_per_hour' => $maxAttemptsPerHour,

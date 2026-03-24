@@ -400,6 +400,7 @@ class CommunicationController extends Controller
             'password_reset_enabled' => 'nullable|boolean',
             'password_reset_text' => 'nullable|string|max:1000',
             'password_reset_template' => 'nullable|string|max:100',
+            'password_reset_max_sends_per_hour' => 'nullable|integer|min:1|max:100',
             'selected_api' => 'nullable|string|in:meta,evolution',
         ];
 
@@ -423,6 +424,7 @@ class CommunicationController extends Controller
 أو يمكنك الضغط على الرابط التالي:
 {reset_url}?code={code}';
         $abs->password_reset_template = $request->password_reset_template;
+        $abs->password_reset_max_sends_per_hour = (int) ($request->password_reset_max_sends_per_hour ?? 5);
 
         // Store the selected API for this message type
         if ($request->selected_api) {

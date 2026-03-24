@@ -65,48 +65,87 @@
     </div>
   </div>
 
-  <!-- Tab Navigation -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="tab-navigation">
+  <!-- Tab System (Vertical Layout for RTL) -->
+  <div class="row">
+    <!-- Tabs Navigation (Right column in RTL) -->
+    <div class="col-md-3 mb-4">
+      <div class="tab-navigation vertical">
         <div class="tab-bar">
           <button class="tab-button {{(request('tab') == 'meta_evolution' || !request('tab')) ? 'active' : ''}}"
                   data-tab="meta_evolution">
-            Meta & Evolution API
+            <div class="tab-icon-wrapper">
+              <i class="fas fa-layer-group"></i>
+            </div>
+            <span class="tab-label">Meta & Evolution API</span>
+            <div class="active-indicator"></div>
           </button>
+
           <button class="tab-button {{request('tab') == 'welcome_message' ? 'active' : ''}}"
                   data-tab="welcome_message">
-            رسالة الترحيب
-            <span class="tab-header-api"></span>
+            <div class="tab-icon-wrapper">
+              <i class="fas fa-hand-holding-heart"></i>
+            </div>
+            <div class="tab-text-content">
+                <span class="tab-label">رسالة الترحيب</span>
+                <span class="tab-header-api"></span>
+            </div>
+            <div class="active-indicator"></div>
           </button>
+
           <button class="tab-button {{request('tab') == 'subscription_expiration' ? 'active' : ''}}"
                   data-tab="subscription_expiration">
-            اشعار قبل انتهاء الباقة
-            <span class="tab-header-api"></span>
+            <div class="tab-icon-wrapper">
+              <i class="fas fa-hourglass-half"></i>
+            </div>
+            <div class="tab-text-content">
+                <span class="tab-label">اشعار قبل انتهاء الباقة</span>
+                <span class="tab-header-api"></span>
+            </div>
+            <div class="active-indicator"></div>
           </button>
+
           <button class="tab-button {{request('tab') == 'subscription_expired' ? 'active' : ''}}"
                   data-tab="subscription_expired">
-            إشعار انتهاء الباقة
-            <span class="tab-header-api"></span>
+            <div class="tab-icon-wrapper">
+              <i class="fas fa-calendar-times"></i>
+            </div>
+            <div class="tab-text-content">
+                <span class="tab-label">إشعار انتهاء الباقة</span>
+                <span class="tab-header-api"></span>
+            </div>
+            <div class="active-indicator"></div>
           </button>
+
           <button class="tab-button {{request('tab') == 'password_reset' ? 'active' : ''}}"
                   data-tab="password_reset">
-            إعادة تعيين كلمة المرور
-            <span class="tab-header-api"></span>
+            <div class="tab-icon-wrapper">
+              <i class="fas fa-key"></i>
+            </div>
+            <div class="tab-text-content">
+                <span class="tab-label">إعادة تعيين كلمة المرور</span>
+                <span class="tab-header-api"></span>
+            </div>
+            <div class="active-indicator"></div>
           </button>
+
           <button class="tab-button {{request('tab') == 'registration_otp' ? 'active' : ''}}"
                   data-tab="registration_otp">
-            رمز التسجيل
-            <span class="tab-header-api"></span>
+            <div class="tab-icon-wrapper">
+              <i class="fas fa-shield-alt"></i>
+            </div>
+            <div class="tab-text-content">
+                <span class="tab-label">رمز التسجيل</span>
+                <span class="tab-header-api"></span>
+            </div>
+            <div class="active-indicator"></div>
           </button>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Tab Content -->
-  <div class="row">
-    <div class="col-md-12">
+    <!-- Tab Content (Left column in RTL) -->
+    <div class="col-md-9">
+
       <div class="card">
         <div class="card-header">
           <div class="card-title" id="tab-title">إعدادات Meta & Evolution API</div>
@@ -407,6 +446,22 @@
                             </a>
                           </small>
                         </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-lg-6">
+                      <div class="form-group">
+                        <label for="password_reset_max_sends_per_hour"><strong>الحد الأقصى لإرسال reset password (لكل ساعة)</strong></label>
+                        <input type="number" class="form-control" id="password_reset_max_sends_per_hour" name="password_reset_max_sends_per_hour"
+                               value="{{ $abs->password_reset_max_sends_per_hour ?? 5 }}" min="1" max="100">
+                        <p class="text-muted">مثال: 5 يعني يمكن إرسال كود إعادة التعيين حتى 5 مرات خلال ساعة لكل مستخدم.</p>
+                        <small class="text-info d-block">
+                          <i class="fas fa-info-circle"></i>
+                          الحد الفعّال الحالي المطبق في الـ API:
+                          <strong>{{ (int) ($abs->password_reset_max_sends_per_hour ?? 5) }}</strong> / ساعة
+                        </small>
+                      </div>
                     </div>
                   </div>
 
@@ -1853,51 +1908,171 @@ function initializeTemplateSelection() {
 </script>
 
 <style>
-/* Tab Navigation Styles */
-.tab-navigation {
-    background: #51c3a3;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    overflow: hidden;
-}
-
-.tab-bar {
-    display: flex;
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.tab-button {
-    flex: 1;
-    padding: 12px 20px;
+/* PREMIUM Modern Tab Navigation - Vertical RTL */
+.tab-navigation.vertical {
     background: transparent;
     border: none;
-    border-bottom: 3px solid transparent;
-    color: #6c757d;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-align: center;
+    box-shadow: none;
+    overflow: visible;
 }
 
-.tab-button:hover {
-    background: #e9ecef;
+.tab-navigation.vertical .tab-bar {
+    display: flex;
+    flex-direction: column;
+    background: transparent;
+    border: none;
+    gap: 12px;
+}
+
+.tab-navigation.vertical .tab-button {
+    flex: none;
+    width: 100%;
+    padding: 12px 16px;
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 16px;
     color: #495057;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    display: flex;
+    align-items: center;
+    text-align: right;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
 }
 
-.tab-button.active {
+.tab-navigation.vertical .tab-button:hover {
     background: #fff;
+    transform: scale(1.02) translateX(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    border-color: rgba(81, 195, 163, 0.3);
     color: #3a8b6f;
-    border-bottom-color: #3a8b6f;
-    font-weight: 600;
 }
 
+.tab-navigation.vertical .tab-button.active {
+    background: #ffffff;
+    color: #3a8b6f;
+    border-color: rgba(81, 195, 163, 0.5);
+    box-shadow: 0 15px 30px rgba(81, 195, 163, 0.12);
+    transform: scale(1.03) translateX(-8px);
+    z-index: 2;
+}
+
+/* Icon Wrapper Styling */
+.tab-icon-wrapper {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 15px; /* RTL spacing */
+    transition: all 0.3s ease;
+    color: #6c757d;
+}
+
+.tab-button:hover .tab-icon-wrapper {
+    background: #eef9f5;
+    color: #3a8b6f;
+}
+
+.tab-button.active .tab-icon-wrapper {
+    background: linear-gradient(135deg, #51c3a3 0%, #3a8b6f 100%);
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(81, 195, 163, 0.3);
+}
+
+.tab-icon-wrapper i {
+    font-size: 18px;
+}
+
+/* Text Content Container */
+.tab-text-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex-grow: 1;
+}
+
+.tab-label {
+    font-size: 14.5px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.tab-button.active .tab-label {
+    font-weight: 700;
+}
+
+/* API Indicator inside Tab Content */
+.tab-header-api {
+    font-size: 10px;
+    font-weight: 400;
+    opacity: 0.6;
+    margin-top: 2px;
+}
+
+/* Active Indicator Line */
+.active-indicator {
+    position: absolute;
+    right: -2px;
+    top: 20%;
+    height: 60%;
+    width: 4px;
+    background: #3a8b6f;
+    border-radius: 4px;
+    opacity: 0;
+    transform: scaleY(0);
+    transition: all 0.3s ease;
+}
+
+.tab-button.active .active-indicator {
+    opacity: 1;
+    transform: scaleY(1);
+    right: 0;
+}
+
+/* Tab Content Animation */
 .tab-content {
     display: none;
+    animation: modernFadeIn 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes modernFadeIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(15px) scale(0.98); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0) scale(1); 
+    }
 }
 
 .tab-content.active {
     display: block;
+}
+
+/* Content Card Modernization */
+.card {
+    border-radius: 20px;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    overflow: hidden;
+}
+
+.card-header {
+    background: #fff;
+    border-bottom: 1px solid #f8f9fa;
+    padding: 20px 25px;
+}
+
+.card-title {
+    font-weight: 700;
+    color: #343a40;
+    font-size: 18px;
 }
 
 /* Service Card Styles */
