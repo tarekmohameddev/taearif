@@ -2206,4 +2206,74 @@ class WhatsAppService
             return false;
         }
     }
+
+    /**
+     * Send registration OTP message with template support
+     *
+     * @param string $phoneNumber The phone number to send to
+     * @param string $otpCode The OTP code
+     * @return bool True if sent successfully, false otherwise
+     */
+    public function sendRegistrationOtp($phoneNumber, $otpCode)
+    {
+        try {
+            // Check master toggle first
+            if (!$this->settings || !($this->settings->whatsapp_notifications_enabled ?? true)) {
+                Log::info('WhatsApp notifications are disabled by master toggle', [
+                    'phone' => $phoneNumber,
+                    'type' => 'registration_otp'
+                ]);
+                return false;
+            }
+
+            if (!$this->settings || !$this->settings->whatsapp_service) {
+                Log::warning('WhatsApp service not configured', [
+                    'phone' => $phoneNumber,
+                    'type' => 'registration_otp'
+                ]);
+                return false;
+            }
+
+            // Check if template is configured and service is meta_cloud
+            $templateName = $this->settings->registration_otp_template ?? null;
+            
+            if ($templateName && $this->settings->whatsapp_service === 'meta_cloud') {
+                Log::info('Using Meta template for registration OTP', [
+                    'phone' => $phoneNumber,
+                    'template' => $templateName
+                ]);
+                
+                $result = $this->sendTemplateToPhone($phoneNumber, $templateName, 'ar', [$otpCode]);
+                
+                if ($result['success']) {
+                    return true;
+                } else {
+                    Log::warning('Meta template failed, falling back to plain text', [
+                        'phone' => $phoneNumber,
+                        'template' => $templateName,
+                        'error' => $result['message'] ?? 'Unknown error'
+                    ]);
+                }
+            }
+
+            // Fallback to plain text message
+            $message = sprintf('رمز التحقق الخاص بك هو: %s. صالح لمدة 5 دقائق.', $otpCode);
+            
+            Log::info('Sending registration OTP as plain text', [
+                'phone' => $phoneNumber,
+                'template_configured' => $templateName ? 'yes' : 'no',
+                'service' => $this->settings->whatsapp_service
+            ]);
+            
+            return $this->sendMessage($phoneNumber, $message);
+
+        } catch (\Exception $e) {
+            Log::error('WhatsApp sendRegistrationOtp exception', [
+                'phone' => $phoneNumber,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
+    }
 }

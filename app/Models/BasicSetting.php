@@ -80,6 +80,7 @@ class BasicSetting extends Model
         'password_reset_text',
         'password_reset_template',
         'password_reset_api',
+        'registration_otp_template',
         'email_password_reset_template'
     ];
 

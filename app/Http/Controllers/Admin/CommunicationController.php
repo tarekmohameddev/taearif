@@ -475,6 +475,52 @@ class CommunicationController extends Controller
         return redirect()->back();
     }
 
+    public function updateRegistrationOtp(Request $request)
+    {
+        $rules = [
+            'registration_otp_template' => 'nullable|string|max:100',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $abs = BasicSetting::first();
+        if (!$abs) {
+            $abs = new BasicSetting();
+        }
+
+        $abs->registration_otp_template = $request->registration_otp_template;
+        $abs->save();
+
+        Session::flash('success', 'Registration OTP template settings updated successfully!');
+
+        return redirect()->back();
+    }
+
+    public function testRegistrationOtp(Request $request)
+    {
+        $request->validate([
+            'test_phone' => 'required|string|max:20',
+        ]);
+
+        try {
+            $whatsappService = new WhatsAppService();
+            $testCode = rand(100000, 999999);
+
+            $whatsappService->sendRegistrationOtp($request->test_phone, $testCode);
+
+            Session::flash('success', "Test registration OTP sent successfully to {$request->test_phone}. Code: {$testCode}");
+        } catch (\Exception $e) {
+            Session::flash('error', 'Test failed: ' . $e->getMessage());
+        }
+
+        return redirect()->back();
+    }
+
 
     /**
      * Fetch WhatsApp templates from Facebook Meta API

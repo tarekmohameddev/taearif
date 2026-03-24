@@ -94,6 +94,11 @@
             إعادة تعيين كلمة المرور
             <span class="tab-header-api"></span>
           </button>
+          <button class="tab-button {{request('tab') == 'registration_otp' ? 'active' : ''}}"
+                  data-tab="registration_otp">
+            رمز التسجيل
+            <span class="tab-header-api"></span>
+          </button>
         </div>
       </div>
     </div>
@@ -770,6 +775,65 @@
                 </form>
               </div>
 
+              <!-- Registration OTP Tab -->
+              <div id="registration_otp-tab" class="tab-content {{request('tab') == 'registration_otp' ? 'active' : ''}}">
+                <form action="{{route('admin.communication.registration-otp.update')}}" method="POST" id="registration-otp-form">
+                  @csrf
+
+                  <div class="row">
+                    <div class="col-lg-12">
+                        <div class="form-group">
+                          <label for="registration_otp_template"><strong>اسم قالب رمز التسجيل <span class="template-api-label">(Meta API)</span></strong></label>
+                          <select class="form-control" id="registration_otp_template" name="registration_otp_template">
+                            <option value="">اختر قالب أو اتركه فارغاً (نص عادي)</option>
+                            <optgroup label="Meta API Templates" class="meta-api-optgroup">
+                              <option value="" disabled>جاري تحميل القوالب من Facebook...</option>
+                            </optgroup>
+                            <optgroup label="Local Templates" class="local-templates-optgroup">
+                              @php
+                                  try {
+                                      $registrationOtpTemplates = \App\Models\WhatsAppTemplate::active()->ofType('registration_otp')->get();
+                                  } catch (Exception $e) {
+                                      $registrationOtpTemplates = collect();
+                                  }
+                              @endphp
+                              @foreach($registrationOtpTemplates as $template)
+                                <option value="{{$template->name}}" {{($abs->registration_otp_template ?? '') == $template->name ? 'selected' : ''}}>
+                                  {{$template->name}} ({{$template->language_label}}) - Local
+                                </option>
+                              @endforeach
+                            </optgroup>
+                          </select>
+                          <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً لرسائل رمز التسجيل</p>
+                          <small class="text-info">
+                            <i class="fas fa-info-circle"></i>
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForRegistrationOtp(true)">
+                              <i class="fas fa-sync"></i> تحديث قوالب Meta API
+                            </button>
+                            <small class="text-muted ml-2">(يتم التحميل تلقائياً ويتم حفظه لمدة 24 ساعة)</small>
+                            <a href="{{route('admin.whatsapp-templates.create')}}?type=registration_otp" target="_blank" class="btn btn-sm btn-outline-success ml-2 create-local-template-btn">
+                              <i class="fas fa-plus"></i> إنشاء قالب محلي
+                            </a>
+                          </small>
+                        </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-lg-12">
+                      <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                          <i class="fas fa-save"></i> حفظ إعدادات قالب رمز التسجيل
+                        </button>
+                        <button type="button" class="btn btn-warning ml-2" onclick="testRegistrationOtp()">
+                          <i class="fas fa-paper-plane"></i> اختبار الرسالة
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+
 
             </div>
           </div>
@@ -1046,6 +1110,69 @@ function testPasswordReset() {
             alert('حدث خطأ أثناء اختبار رسالة إعادة تعيين كلمة المرور');
         });
     }
+}
+
+function testRegistrationOtp() {
+    var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
+    if (phone) {
+        $.post('{{route("admin.communication.registration-otp.test")}}', {
+            _token: '{{csrf_token()}}',
+            test_phone: phone
+        }, function(response) {
+            location.reload();
+        }).fail(function() {
+            alert('حدث خطأ أثناء اختبار رسالة رمز التسجيل');
+        });
+    }
+}
+
+function loadMetaTemplatesForRegistrationOtp(force = false) {
+    var select = $('#registration_otp_template');
+    var metaOptgroup = select.find('.meta-api-optgroup');
+    var button = $('button[onclick="loadMetaTemplatesForRegistrationOtp(true)"]');
+
+    // Show loading state
+    button.html('<i class="fas fa-spinner fa-spin"></i> جاري التحميل...');
+    button.prop('disabled', true);
+
+    $.get('{{route("admin.communication.fetch-meta-templates")}}', function(response) {
+        if (response.success) {
+            // Clear existing Meta API options
+            metaOptgroup.empty();
+
+            // Add templates from Facebook
+            if (response.templates && response.templates.length > 0) {
+                response.templates.forEach(function(template) {
+                    var option = $('<option></option>')
+                        .attr('value', template.name)
+                        .text(template.name + ' (' + template.category + ' - ' + template.language + ') - Meta');
+
+                    // Check if this template is currently selected
+                    var currentTemplate = '{{$abs->registration_otp_template ?? ""}}';
+                    if (currentTemplate === template.name) {
+                        option.attr('selected', true);
+                    }
+
+                    metaOptgroup.append(option);
+                });
+
+                showNotification('تم تحميل ' + response.templates.length + ' قالب من Meta API بنجاح', 'success');
+            } else {
+                metaOptgroup.append('<option value="" disabled>لا توجد قوالب متاحة</option>');
+                showNotification('لا توجد قوالب متاحة في Meta API', 'warning');
+            }
+        } else {
+            metaOptgroup.append('<option value="" disabled>خطأ في التحميل</option>');
+            showNotification('خطأ في تحميل القوالب: ' + response.message, 'error');
+        }
+    }).fail(function() {
+        metaOptgroup.append('<option value="" disabled>خطأ في الاتصال</option>');
+        showNotification('خطأ في الاتصال بـ Meta API', 'error');
+    }).always(function() {
+        // Reset button state
+        button.html('<i class="fas fa-sync"></i> تحديث قوالب Meta API');
+        button.prop('disabled', false);
+    });
 }
 
 function loadMetaTemplates() {
