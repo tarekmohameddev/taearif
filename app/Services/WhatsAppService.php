@@ -2232,21 +2232,39 @@ class WhatsAppService
 
             // Check if template is configured and service is meta_cloud
             $templateName = $this->settings->registration_otp_template ?? null;
-            
+
             if ($templateName && $this->settings->whatsapp_service === 'meta_cloud') {
                 Log::info('Using Meta template for registration OTP', [
                     'phone' => $phoneNumber,
                     'template' => $templateName
                 ]);
-                
-                $result = $this->sendTemplateToPhone($phoneNumber, $templateName, 'ar', [$otpCode]);
-                
+
+                $formattedPhone = $this->formatPhoneNumber($phoneNumber);
+
+                // If admin chose the password_reset template for testing, route through
+                // its dedicated sender which supplies the correct body + button params.
+                if ($templateName === 'password_reset') {
+                    $sent = $this->sendPasswordResetMetaTemplate($formattedPhone, $templateName, $otpCode);
+                    if ($sent) {
+                        return true;
+                    }
+                    Log::warning('Meta template send failed for registration OTP (strict template mode)', [
+                        'phone' => $formattedPhone,
+                        'template' => $templateName,
+                        'error' => 'sendPasswordResetMetaTemplate returned false'
+                    ]);
+                    return false;
+                }
+
+                // Generic path: send OTP code as the single body parameter.
+                $result = $this->sendTemplateToPhone($formattedPhone, $templateName, $this->settings->meta_template_language ?? 'ar', [$otpCode]);
+
                 if ($result['success']) {
                     return true;
                 }
 
                 Log::warning('Meta template send failed for registration OTP (strict template mode)', [
-                    'phone' => $phoneNumber,
+                    'phone' => $formattedPhone,
                     'template' => $templateName,
                     'error' => $result['message'] ?? 'Unknown error'
                 ]);
