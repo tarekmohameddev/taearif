@@ -30,6 +30,18 @@ class WhatsAppService
     }
 
     /**
+     * Override a single settings key for this request only (used by admin test endpoints
+     * so the currently-selected-but-not-yet-saved template is tested instead of the saved one).
+     */
+    public function overrideSetting(string $key, mixed $value): static
+    {
+        if ($this->settings) {
+            $this->settings->$key = $value;
+        }
+        return $this;
+    }
+
+    /**
      * Send WhatsApp message for password reset
      */
     public function sendPasswordResetCode($phoneNumber, $code, $userName = null, $userLanguage = 'ar', $resetUrl = null, $templateName = null, $userId = null)

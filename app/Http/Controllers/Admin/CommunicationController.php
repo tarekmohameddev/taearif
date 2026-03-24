@@ -257,12 +257,17 @@ class CommunicationController extends Controller
     public function testWelcomeMessage(Request $request)
     {
         $request->validate([
-            'test_phone' => 'required|string|max:20',
+            'test_phone'    => 'required|string|max:20',
+            'template_name' => 'nullable|string|max:100',
         ]);
 
         try {
             $whatsappService = new WhatsAppService();
             $testMessage = " مرحباً بك  في منصة تعاريف ! هذا اختبار لرسالة الترحيب.";
+
+            if ($request->filled('template_name')) {
+                $whatsappService->overrideSetting('welcome_message_template', $request->template_name);
+            }
 
             $whatsappService->sendWelcomeMessage($request->test_phone, $testMessage, 'مستخدم تجريبي');
 
@@ -318,12 +323,17 @@ class CommunicationController extends Controller
     public function testSubscriptionExpiration(Request $request)
     {
         $request->validate([
-            'test_phone' => 'required|string|max:20',
+            'test_phone'    => 'required|string|max:20',
+            'template_name' => 'nullable|string|max:100',
         ]);
 
         try {
             $whatsappService = new WhatsAppService();
             $testMessage = "{name}، تنبيه: اشتراكك في {package_name} سينتهي في {expiry_date}. يرجى تجديد اشتراكك لتجنب انقطاع الخدمة.";
+
+            if ($request->filled('template_name')) {
+                $whatsappService->overrideSetting('subscription_expiration_template', $request->template_name);
+            }
 
             $whatsappService->sendSubscriptionExpirationMessage($request->test_phone, $testMessage, 'مستخدم تجريبي', 'الباقة الذهبية', '2024-12-31');
 
@@ -379,12 +389,18 @@ class CommunicationController extends Controller
     public function testSubscriptionExpired(Request $request)
     {
         $request->validate([
-            'test_phone' => 'required|string|max:20',
+            'test_phone'    => 'required|string|max:20',
+            'template_name' => 'nullable|string|max:100',
         ]);
 
         try {
             $whatsappService = new WhatsAppService();
             $testMessage = "{name}، انتهت صلاحية اشتراكك في {package_name} في {expiry_date}. يرجى تجديد اشتراكك لاستعادة الخدمة.";
+
+            if ($request->filled('template_name')) {
+                $whatsappService->overrideSetting('subscription_expired_template', $request->template_name);
+            }
+
             $whatsappService->sendSubscriptionExpiredMessage($request->test_phone, $testMessage, 'مستخدم تجريبي', 'الباقة الذهبية', '2024-12-31');
             Session::flash('success', "Test subscription expired message sent successfully to {$request->test_phone}");
         } catch (\Exception $e) {
@@ -459,13 +475,19 @@ class CommunicationController extends Controller
     public function testPasswordReset(Request $request)
     {
         $request->validate([
-            'test_phone' => 'required|string|max:20',
+            'test_phone'    => 'required|string|max:20',
+            'template_name' => 'nullable|string|max:100',
         ]);
 
         try {
             $whatsappService = new WhatsAppService();
             $testCode = rand(100000, 999999);
             $resetUrl = env('FRONTEND_URL', 'https://app.taearif.com') . '/reset';
+
+            // If the admin has a template selected in the UI (not yet saved), use it for the test.
+            if ($request->filled('template_name')) {
+                $whatsappService->overrideSetting('password_reset_template', $request->template_name);
+            }
 
             $sent = $whatsappService->sendPasswordResetCode($request->test_phone, $testCode, 'مستخدم تجريبي', 'ar', $resetUrl, 'password_reset');
             if ($sent) {
@@ -527,12 +549,18 @@ class CommunicationController extends Controller
     public function testRegistrationOtp(Request $request)
     {
         $request->validate([
-            'test_phone' => 'required|string|max:20',
+            'test_phone'    => 'required|string|max:20',
+            'template_name' => 'nullable|string|max:100',
         ]);
 
         try {
             $whatsappService = new WhatsAppService();
             $testCode = rand(100000, 999999);
+
+            // If the admin has a template selected in the UI (not yet saved), use it for the test.
+            if ($request->filled('template_name')) {
+                $whatsappService->overrideSetting('registration_otp_template', $request->template_name);
+            }
 
             $sent = $whatsappService->sendRegistrationOtp($request->test_phone, $testCode);
             if ($sent) {

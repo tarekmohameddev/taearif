@@ -1155,9 +1155,11 @@ function checkConfiguration() {
 function testWelcomeMessage() {
     var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
     if (phone) {
+        var selectedTemplate = $('#welcome_message_template').val();
         $.post('{{route("admin.communication.welcome-message.test")}}', {
             _token: '{{csrf_token()}}',
-            test_phone: phone
+            test_phone: phone,
+            template_name: selectedTemplate
         }, function(response) {
             location.reload();
         }).fail(function() {
@@ -1169,9 +1171,11 @@ function testWelcomeMessage() {
 function testSubscriptionExpiration() {
     var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
     if (phone) {
+        var selectedTemplate = $('#subscription_expiration_template').val();
         $.post('{{route("admin.communication.subscription-expiration.test")}}', {
             _token: '{{csrf_token()}}',
-            test_phone: phone
+            test_phone: phone,
+            template_name: selectedTemplate
         }, function(response) {
             location.reload();
         }).fail(function() {
@@ -1183,9 +1187,11 @@ function testSubscriptionExpiration() {
 function testSubscriptionExpired() {
     var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
     if (phone) {
+        var selectedTemplate = $('#subscription_expired_template').val();
         $.post('{{route("admin.communication.subscription-expired.test")}}', {
             _token: '{{csrf_token()}}',
-            test_phone: phone
+            test_phone: phone,
+            template_name: selectedTemplate
         }, function(response) {
             location.reload();
         }).fail(function() {
@@ -1197,9 +1203,11 @@ function testSubscriptionExpired() {
 function testPasswordReset() {
     var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
     if (phone) {
+        var selectedTemplate = $('#password_reset_template').val();
         $.post('{{route("admin.communication.password-reset.test")}}', {
             _token: '{{csrf_token()}}',
-            test_phone: phone
+            test_phone: phone,
+            template_name: selectedTemplate
         }, function(response) {
             location.reload();
         }).fail(function() {
@@ -1211,9 +1219,11 @@ function testPasswordReset() {
 function testRegistrationOtp() {
     var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
     if (phone) {
+        var selectedTemplate = $('#registration_otp_template').val();
         $.post('{{route("admin.communication.registration-otp.test")}}', {
             _token: '{{csrf_token()}}',
-            test_phone: phone
+            test_phone: phone,
+            template_name: selectedTemplate
         }, function(response) {
             location.reload();
         }).fail(function() {
