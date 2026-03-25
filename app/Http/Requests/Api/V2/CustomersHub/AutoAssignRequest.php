@@ -17,7 +17,7 @@ class AutoAssignRequest extends BaseApiFormRequest
             'employeeRules' => 'required|array|min:1',
             'employeeRules.*.employeeId' => 'required|string',
             'employeeRules.*.isActive' => 'required|boolean',
-            'employeeRules.*.rules' => 'required|array',
+            'employeeRules.*.rules' => 'present|array',
             'employeeRules.*.rules.*.id' => 'required|string',
             'employeeRules.*.rules.*.field' => 'required|in:budgetMin,budgetMax,propertyType,city,source',
             'employeeRules.*.rules.*.operator' => 'required|in:equals,greaterThan,lessThan,contains',
