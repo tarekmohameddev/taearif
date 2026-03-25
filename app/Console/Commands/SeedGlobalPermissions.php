@@ -24,6 +24,7 @@ class SeedGlobalPermissions extends Command
 			$existing = Permission::query()
 				->where('name', $name)
 				->where('guard_name', $guard)
+				->whereNull('team_id')
 				->first();
 			if ($existing) {
 				if (!is_null($existing->team_id)) {
