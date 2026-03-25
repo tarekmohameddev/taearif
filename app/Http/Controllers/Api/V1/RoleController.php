@@ -392,7 +392,7 @@ class RoleController extends Controller
         $suggestions = [];
 
         // Check format: resource.action
-        if (!preg_match('/^[a-z]+\.[a-z_]+$/', $permissionName)) {
+        if (!preg_match('/^[a-z][a-z_]*\.[a-z_]+$/', $permissionName)) {
             $errors[] = 'Permission must follow format: resource.action (e.g., properties.view)';
             $suggestions[] = 'Use lowercase letters and dots only';
         }
@@ -409,7 +409,10 @@ class RoleController extends Controller
         $validResources = [
             'properties', 'projects', 'customers', 'crm', 'content',
             'settings', 'reports', 'analytics', 'users', 'employees',
-            'bookings', 'sales', 'leads', 'deals', 'contracts', 'payments'
+            'bookings', 'sales', 'leads', 'deals', 'contracts', 'payments',
+            'customers_hub_analytics', 'customers_hub_requests',
+            'customers_hub_customers', 'customers_hub_pipeline',
+            'customers_hub_ai_matching',
         ];
 
         if (!in_array($resource, $validResources)) {
@@ -498,7 +501,37 @@ class RoleController extends Controller
                 'view' => 'View system settings',
                 'update' => 'Modify system settings',
                 'manage' => 'Full system management'
-            ]
+            ],
+            'customers_hub_analytics' => [
+                'view'   => 'View Customers Hub analytics pages',
+                'create' => 'Create analytics records in Customers Hub',
+                'update' => 'Update analytics records in Customers Hub',
+                'delete' => 'Delete analytics records in Customers Hub',
+            ],
+            'customers_hub_requests' => [
+                'view'   => 'View customer requests in Customers Hub',
+                'create' => 'Create customer requests in Customers Hub',
+                'update' => 'Update customer requests in Customers Hub',
+                'delete' => 'Delete customer requests in Customers Hub',
+            ],
+            'customers_hub_customers' => [
+                'view'   => 'View customers in Customers Hub',
+                'create' => 'Add customers in Customers Hub',
+                'update' => 'Edit customers in Customers Hub',
+                'delete' => 'Remove customers in Customers Hub',
+            ],
+            'customers_hub_pipeline' => [
+                'view'   => 'View pipeline in Customers Hub',
+                'create' => 'Create pipeline stages in Customers Hub',
+                'update' => 'Update pipeline stages in Customers Hub',
+                'delete' => 'Delete pipeline stages in Customers Hub',
+            ],
+            'customers_hub_ai_matching' => [
+                'view'   => 'View AI Matching pages in Customers Hub',
+                'create' => 'Create AI Matching records in Customers Hub',
+                'update' => 'Update AI Matching records in Customers Hub',
+                'delete' => 'Delete AI Matching records in Customers Hub',
+            ],
         ];
     }
 }
