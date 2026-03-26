@@ -13,6 +13,8 @@ use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Concerns\ResolvesTenant;
 use App\Http\Controllers\Controller;
+use App\Domain\CustomersHub\Services\AssignmentService;
+use Illuminate\Support\Facades\Log;
 
 
 class EmployeeController extends Controller
@@ -188,9 +190,45 @@ class EmployeeController extends Controller
             ]);
         }
 
+        $savedAssignmentRulesMeta = null;
+        if (!empty($data['employeeRules'])) {
+            try {
+                $savedAssignmentRulesMeta = $this->saveEmployeeAssignmentRules(
+                    $tenantId,
+                    (int) $employee->id,
+                    $data['employeeRules']
+                );
+
+                ActivityLogger::log([
+                    'user_id'     => $tenantId,
+                    'actor_type'  => 'user',
+                    'actor_id'    => auth()->id(),
+                    'action'      => 'customers_hub.assignment_rules.saved',
+                    'target_type' => 'users',
+                    'target_id'   => $employee->id,
+                    'new_values'  => ['employeeRules' => $savedAssignmentRulesMeta['rules'] ?? []],
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('Employee store: assignment rules save failed', [
+                    'tenant_id'   => $tenantId,
+                    'employee_id' => $employee->id,
+                    'error'       => $e->getMessage(),
+                ]);
+
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Employee created but assignment rules could not be saved.',
+                ], 500);
+            }
+        }
+
         // Add roles and permissions to response
         $employee->roles = $employee->roles->pluck('name', 'id');
         $employee->permissions = $employee->getPermissionNames();
+
+        if ($savedAssignmentRulesMeta !== null) {
+            $employee->assignment_rules = $savedAssignmentRulesMeta['rules'] ?? [];
+        }
 
         return response()->json([
             'status' => 'success',
@@ -267,6 +305,38 @@ class EmployeeController extends Controller
             ]);
         }
 
+        $savedAssignmentRulesMeta = null;
+        if (array_key_exists('employeeRules', $data) && !empty($data['employeeRules'])) {
+            try {
+                $savedAssignmentRulesMeta = $this->saveEmployeeAssignmentRules(
+                    $tenantId,
+                    (int) $employee->id,
+                    $data['employeeRules']
+                );
+
+                ActivityLogger::log([
+                    'user_id'     => $tenantId,
+                    'actor_type'  => 'user',
+                    'actor_id'    => auth()->id(),
+                    'action'      => 'customers_hub.assignment_rules.saved',
+                    'target_type' => 'users',
+                    'target_id'   => $employee->id,
+                    'new_values'  => ['employeeRules' => $savedAssignmentRulesMeta['rules'] ?? []],
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('Employee update: assignment rules save failed', [
+                    'tenant_id'   => $tenantId,
+                    'employee_id' => $employee->id,
+                    'error'       => $e->getMessage(),
+                ]);
+
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Employee updated but assignment rules could not be saved.',
+                ], 500);
+            }
+        }
+
         ActivityLogger::log([
             'user_id'     => $tenantId,
             'actor_type'  => 'user',
@@ -284,6 +354,10 @@ class EmployeeController extends Controller
         // Add roles and permissions to response
         $employee->roles = $employee->roles->pluck('name', 'id');
         $employee->permissions = $employee->getPermissionNames();
+
+        if ($savedAssignmentRulesMeta !== null) {
+            $employee->assignment_rules = $savedAssignmentRulesMeta['rules'] ?? [];
+        }
 
         return response()->json([
             'status' => 'success',
@@ -396,6 +470,27 @@ class EmployeeController extends Controller
             'status' => 'success',
             'data' => $permissions
         ]);
+    }
+
+    /**
+     * Persist Customers Hub auto-assignment rules for one employee (same storage as POST /v2/customers-hub/assignment/rules).
+     *
+     * @param  array<int, array{isActive: bool, rules: array, employeeId?: string}>  $blocks
+     * @return array{savedCount: int, rules: array<int, array{employeeId: string, isActive: bool, rules: array}>}
+     */
+    private function saveEmployeeAssignmentRules(int $tenantId, int $employeeId, array $blocks): array
+    {
+        $assignmentService = app(AssignmentService::class);
+        $payload = [];
+        foreach ($blocks as $block) {
+            $payload[] = [
+                'employeeId' => (string) $employeeId,
+                'isActive'   => $block['isActive'],
+                'rules'      => $block['rules'] ?? [],
+            ];
+        }
+
+        return $assignmentService->saveRules($tenantId, $payload);
     }
 
 }

@@ -41,8 +41,7 @@ class OtpController extends Controller
             }
 
             $plainOtp = $result['otp'];
-            $message = sprintf(self::OTP_MESSAGE_TEMPLATE, $plainOtp);
-            app(WhatsAppService::class)->sendMessage($phone, $message);
+            app(WhatsAppService::class)->sendRegistrationOtp($phone, $plainOtp);
 
             if (app()->environment('local')) {
                 \Illuminate\Support\Facades\Log::channel('single')->info('OTP (local only)', [
@@ -76,8 +75,7 @@ class OtpController extends Controller
         }
 
         $plainOtp = $result['otp'];
-        $message = sprintf(self::OTP_MESSAGE_TEMPLATE, $plainOtp);
-        app(WhatsAppService::class)->sendMessage($phone, $message);
+        app(WhatsAppService::class)->sendRegistrationOtp($phone, $plainOtp);
 
         if (app()->environment('local')) {
             \Illuminate\Support\Facades\Log::channel('single')->info('OTP (local only)', [
