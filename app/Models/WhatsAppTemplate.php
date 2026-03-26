@@ -35,6 +35,7 @@ class WhatsAppTemplate extends Model
     const TYPE_SUBSCRIPTION_EXPIRATION = 'subscription_expiration';
     const TYPE_SUBSCRIPTION_EXPIRED = 'subscription_expired';
     const TYPE_PASSWORD_RESET = 'password_reset';
+    const TYPE_REGISTRATION_OTP = 'registration_otp';
 
     // Languages
     const LANGUAGE_ARABIC = 'ar';
@@ -49,7 +50,8 @@ class WhatsAppTemplate extends Model
             self::TYPE_WELCOME => 'Welcome Message',
             self::TYPE_SUBSCRIPTION_EXPIRATION => 'Subscription Expiration',
             self::TYPE_SUBSCRIPTION_EXPIRED => 'Subscription Expired',
-            self::TYPE_PASSWORD_RESET => 'Password Reset'
+            self::TYPE_PASSWORD_RESET => 'Password Reset',
+            self::TYPE_REGISTRATION_OTP => 'Registration OTP'
         ];
     }
 
@@ -73,7 +75,8 @@ class WhatsAppTemplate extends Model
             self::TYPE_WELCOME => ['{name}', '{email}'],
             self::TYPE_SUBSCRIPTION_EXPIRATION => ['{name}', '{package_name}', '{expiry_date}'],
             self::TYPE_SUBSCRIPTION_EXPIRED => ['{name}', '{package_name}', '{expiry_date}'],
-            self::TYPE_PASSWORD_RESET => ['{name}', '{code}']
+            self::TYPE_PASSWORD_RESET => ['{name}', '{code}'],
+            self::TYPE_REGISTRATION_OTP => ['{code}']
         ];
 
         return $variables[$type] ?? [];

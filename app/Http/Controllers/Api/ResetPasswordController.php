@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\BasicSetting;
 use App\Models\User;
 use App\Models\PasswordResetLog;
 use Illuminate\Http\Request;
@@ -70,38 +71,37 @@ class ResetPasswordController extends Controller
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        // Check if already blocked blocked_until
-        $latestLog = PasswordResetLog::where('user_id', $user->id)->latest()->first();
-        if ($latestLog && $latestLog->blocked && now()->lt($latestLog->blocked_until)) {
-            return response()->json([
-                'message' => 'Too many attempts. Try again later',
-            ], 429);
+        // Load admin-configured max attempts/hour (fallback: 5).
+        // Prefer dedicated password-reset limit, fallback to OTP limit for backward compatibility.
+        $maxAttemptsPerHour = 5;
+        try {
+            $configuredLimit = (int) (BasicSetting::query()->value('password_reset_max_sends_per_hour') ?? 0);
+            if ($configuredLimit <= 0) {
+                $configuredLimit = (int) (BasicSetting::query()->value('otp_max_sends_per_hour') ?? 0);
+            }
+            if ($configuredLimit > 0) {
+                $maxAttemptsPerHour = $configuredLimit;
+            }
+        } catch (\Throwable $e) {
+            // Keep fallback when settings table is not ready/unavailable.
         }
 
-        // Count attempts in the last 24h
-        $attemptsLast24h = PasswordResetLog::where('user_id', $user->id)
-            ->where('created_at', '>=', now()->subDay())
+        // Count attempts in the last hour for this user
+        $attemptsLastHour = PasswordResetLog::where('user_id', $user->id)
+            ->where('created_at', '>=', now()->subHour())
             ->count();
 
-        // If already 3 attempts → block without adding a new row
-        if ($attemptsLast24h >= 3) {
-            // Block for 24 hours
-            $blockedUntil = $latestLog && $latestLog->blocked_until ? $latestLog->blocked_until : now()->addDay();
-
-            if ($latestLog && !$latestLog->blocked) {
-                $latestLog->update([
-                    'blocked' => true,
-                    'blocked_until' => $blockedUntil
-                ]);
-            }
-
+        if ($attemptsLastHour >= $maxAttemptsPerHour) {
             return response()->json([
-                'message' => 'You have reached the maximum 3 attempts'
+                'message' => 'You have reached the maximum reset password attempts for this hour',
+                'attempts_used' => $attemptsLastHour,
+                'attempts_remaining' => 0,
+                'max_attempts_per_hour' => $maxAttemptsPerHour,
             ], 429);
         }
 
-        // Otherwise this is a valid attempt (1st, 2nd or 3rd)
-        $attemptNumber = $attemptsLast24h + 1;
+        // Otherwise this is a valid attempt in this 1-hour window
+        $attemptNumber = $attemptsLastHour + 1;
         $emailBypass = $request->method === 'email' && $this->allowsPasswordResetEmailTestBypass();
         $code = $emailBypass
             ? (string) config('api.password_reset.email_test_bypass_code', '12345')
@@ -193,10 +193,11 @@ class ResetPasswordController extends Controller
             }
         }
         return response()->json([
-            'message' => "Reset code sent successfully (Attempt {$attemptNumber}/3)",
+            'message' => "Reset code sent successfully (Attempt {$attemptNumber}/{$maxAttemptsPerHour} this hour)",
             'via' => $request->method,
             'attempts_used' => $attemptNumber,
-            'attempts_remaining' => 3 - $attemptNumber,
+            'attempts_remaining' => max(0, $maxAttemptsPerHour - $attemptNumber),
+            'max_attempts_per_hour' => $maxAttemptsPerHour,
             // 'code_for_testing' => $code // For testing purposes, remove in production
         ], 200);
     }

@@ -18,7 +18,7 @@ class StorePermissionRequest extends BaseApiFormRequest
                 'required',
                 'string',
                 'max:255',
-                'regex:/^[a-z]+\.[a-z_]+$/',
+                'regex:/^[a-z][a-z_]*\.[a-z_]+$/',
                 'unique:api_permissions,name',
             ],
             'description' => ['nullable', 'string', 'max:500'],

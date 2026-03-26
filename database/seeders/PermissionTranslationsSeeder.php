@@ -160,6 +160,96 @@ class PermissionTranslationsSeeder extends Seeder
                 'name_ar' => 'حذف سجل إدارة العملاء',
             ],
 
+            // Customers Hub — Analytics
+            'customers_hub_analytics.view' => [
+                'name_en' => 'View Customers Hub Analytics',
+                'name_ar' => 'عرض تحليلات مركز العملاء',
+            ],
+            'customers_hub_analytics.create' => [
+                'name_en' => 'Create Customers Hub Analytics',
+                'name_ar' => 'إنشاء تحليلات مركز العملاء',
+            ],
+            'customers_hub_analytics.update' => [
+                'name_en' => 'Update Customers Hub Analytics',
+                'name_ar' => 'تحديث تحليلات مركز العملاء',
+            ],
+            'customers_hub_analytics.delete' => [
+                'name_en' => 'Delete Customers Hub Analytics',
+                'name_ar' => 'حذف تحليلات مركز العملاء',
+            ],
+
+            // Customers Hub — Requests
+            'customers_hub_requests.view' => [
+                'name_en' => 'View Customers Hub Requests',
+                'name_ar' => 'عرض طلبات مركز العملاء',
+            ],
+            'customers_hub_requests.create' => [
+                'name_en' => 'Create Customers Hub Requests',
+                'name_ar' => 'إنشاء طلبات مركز العملاء',
+            ],
+            'customers_hub_requests.update' => [
+                'name_en' => 'Update Customers Hub Requests',
+                'name_ar' => 'تحديث طلبات مركز العملاء',
+            ],
+            'customers_hub_requests.delete' => [
+                'name_en' => 'Delete Customers Hub Requests',
+                'name_ar' => 'حذف طلبات مركز العملاء',
+            ],
+
+            // Customers Hub — Customers
+            'customers_hub_customers.view' => [
+                'name_en' => 'View Customers Hub Customers',
+                'name_ar' => 'عرض عملاء مركز العملاء',
+            ],
+            'customers_hub_customers.create' => [
+                'name_en' => 'Create Customers Hub Customers',
+                'name_ar' => 'إنشاء عملاء مركز العملاء',
+            ],
+            'customers_hub_customers.update' => [
+                'name_en' => 'Update Customers Hub Customers',
+                'name_ar' => 'تحديث عملاء مركز العملاء',
+            ],
+            'customers_hub_customers.delete' => [
+                'name_en' => 'Delete Customers Hub Customers',
+                'name_ar' => 'حذف عملاء مركز العملاء',
+            ],
+
+            // Customers Hub — Pipeline
+            'customers_hub_pipeline.view' => [
+                'name_en' => 'View Customers Hub Pipeline',
+                'name_ar' => 'عرض مسار مركز العملاء',
+            ],
+            'customers_hub_pipeline.create' => [
+                'name_en' => 'Create Customers Hub Pipeline',
+                'name_ar' => 'إنشاء مسار مركز العملاء',
+            ],
+            'customers_hub_pipeline.update' => [
+                'name_en' => 'Update Customers Hub Pipeline',
+                'name_ar' => 'تحديث مسار مركز العملاء',
+            ],
+            'customers_hub_pipeline.delete' => [
+                'name_en' => 'Delete Customers Hub Pipeline',
+                'name_ar' => 'حذف مسار مركز العملاء',
+            ],
+
+            // Customers Hub — AI Matching
+            'customers_hub_ai_matching.view' => [
+                'name_en' => 'View Customers Hub AI Matching',
+                'name_ar' => 'عرض المطابقة الذكية في مركز العملاء',
+            ],
+            'customers_hub_ai_matching.create' => [
+                'name_en' => 'Create Customers Hub AI Matching',
+                'name_ar' => 'إنشاء المطابقة الذكية في مركز العملاء',
+            ],
+            'customers_hub_ai_matching.update' => [
+                'name_en' => 'Update Customers Hub AI Matching',
+                'name_ar' => 'تحديث المطابقة الذكية في مركز العملاء',
+            ],
+            'customers_hub_ai_matching.delete' => [
+                'name_en' => 'Delete Customers Hub AI Matching',
+                'name_ar' => 'حذف المطابقة الذكية في مركز العملاء',
+            ],
+
         ];
 
         // Update permissions with translations

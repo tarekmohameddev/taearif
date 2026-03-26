@@ -56,6 +56,31 @@ return [
         'job_applications.create',
         'job_applications.update',
         'job_applications.delete',
+
+		'customers_hub_analytics.view',
+		'customers_hub_analytics.create',
+		'customers_hub_analytics.update',
+		'customers_hub_analytics.delete',
+
+		'customers_hub_requests.view',
+		'customers_hub_requests.create',
+		'customers_hub_requests.update',
+		'customers_hub_requests.delete',
+
+		'customers_hub_customers.view',
+		'customers_hub_customers.create',
+		'customers_hub_customers.update',
+		'customers_hub_customers.delete',
+
+		'customers_hub_pipeline.view',
+		'customers_hub_pipeline.create',
+		'customers_hub_pipeline.update',
+		'customers_hub_pipeline.delete',
+
+		'customers_hub_ai_matching.view',
+		'customers_hub_ai_matching.create',
+		'customers_hub_ai_matching.update',
+		'customers_hub_ai_matching.delete',
 	],
 
 	'role_templates' => [

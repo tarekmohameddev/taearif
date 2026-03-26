@@ -172,7 +172,7 @@ Route::post('/auth/forgot-password', [ResetPasswordController::class, 'forgotPas
 Route::post('/auth/verify-reset-code', [ResetPasswordController::class, 'verifyResetCode']); // Verify reset code
 
 // OTP (registration phone verification via WhatsApp)
-Route::post('/auth/send-otp', [OtpController::class, 'sendOtp'])->middleware('throttle:5,1');
+Route::post('/auth/send-otp', [OtpController::class, 'sendOtp']);
 
 // OAuth (web middleware)
 Route::middleware('web')->group(function () {

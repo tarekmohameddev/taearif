@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class OtpVerification extends Model
 {
@@ -260,7 +261,18 @@ class OtpVerification extends Model
     protected static function maxSendsPerHour(string $context): int
     {
         if ($context === self::CONTEXT_REGISTRATION) {
-            $value = (int) config('api.otp.registration.max_sends_per_hour', self::DEFAULT_MAX_SENDS_PER_HOUR);
+            $value = null;
+            try {
+                if (Schema::hasTable('basic_settings')) {
+                    $value = (int) (BasicSetting::query()->value('otp_max_sends_per_hour') ?? 0);
+                }
+            } catch (\Throwable $e) {
+                // ignore DB/bootstrap issues and fallback to config default
+            }
+
+            if ($value <= 0) {
+                $value = (int) config('api.otp.registration.max_sends_per_hour', self::DEFAULT_MAX_SENDS_PER_HOUR);
+            }
             return max(1, $value);
         }
 

@@ -65,43 +65,87 @@
     </div>
   </div>
 
-  <!-- Tab Navigation -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="tab-navigation">
+  <!-- Tab System (Vertical Layout for RTL) -->
+  <div class="row">
+    <!-- Tabs Navigation (Right column in RTL) -->
+    <div class="col-md-3 mb-4">
+      <div class="tab-navigation vertical">
         <div class="tab-bar">
           <button class="tab-button {{(request('tab') == 'meta_evolution' || !request('tab')) ? 'active' : ''}}"
                   data-tab="meta_evolution">
-            Meta & Evolution API
+            <div class="tab-icon-wrapper">
+              <i class="fas fa-layer-group"></i>
+            </div>
+            <span class="tab-label">Meta & Evolution API</span>
+            <div class="active-indicator"></div>
           </button>
+
           <button class="tab-button {{request('tab') == 'welcome_message' ? 'active' : ''}}"
                   data-tab="welcome_message">
-            رسالة الترحيب
-            <span class="tab-header-api"></span>
+            <div class="tab-icon-wrapper">
+              <i class="fas fa-hand-holding-heart"></i>
+            </div>
+            <div class="tab-text-content">
+                <span class="tab-label">رسالة الترحيب</span>
+                <span class="tab-header-api"></span>
+            </div>
+            <div class="active-indicator"></div>
           </button>
+
           <button class="tab-button {{request('tab') == 'subscription_expiration' ? 'active' : ''}}"
                   data-tab="subscription_expiration">
-            اشعار قبل انتهاء الباقة
-            <span class="tab-header-api"></span>
+            <div class="tab-icon-wrapper">
+              <i class="fas fa-hourglass-half"></i>
+            </div>
+            <div class="tab-text-content">
+                <span class="tab-label">اشعار قبل انتهاء الباقة</span>
+                <span class="tab-header-api"></span>
+            </div>
+            <div class="active-indicator"></div>
           </button>
+
           <button class="tab-button {{request('tab') == 'subscription_expired' ? 'active' : ''}}"
                   data-tab="subscription_expired">
-            إشعار انتهاء الباقة
-            <span class="tab-header-api"></span>
+            <div class="tab-icon-wrapper">
+              <i class="fas fa-calendar-times"></i>
+            </div>
+            <div class="tab-text-content">
+                <span class="tab-label">إشعار انتهاء الباقة</span>
+                <span class="tab-header-api"></span>
+            </div>
+            <div class="active-indicator"></div>
           </button>
+
           <button class="tab-button {{request('tab') == 'password_reset' ? 'active' : ''}}"
                   data-tab="password_reset">
-            إعادة تعيين كلمة المرور
-            <span class="tab-header-api"></span>
+            <div class="tab-icon-wrapper">
+              <i class="fas fa-key"></i>
+            </div>
+            <div class="tab-text-content">
+                <span class="tab-label">إعادة تعيين كلمة المرور</span>
+                <span class="tab-header-api"></span>
+            </div>
+            <div class="active-indicator"></div>
+          </button>
+
+          <button class="tab-button {{request('tab') == 'registration_otp' ? 'active' : ''}}"
+                  data-tab="registration_otp">
+            <div class="tab-icon-wrapper">
+              <i class="fas fa-shield-alt"></i>
+            </div>
+            <div class="tab-text-content">
+                <span class="tab-label">رمز التسجيل</span>
+                <span class="tab-header-api"></span>
+            </div>
+            <div class="active-indicator"></div>
           </button>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Tab Content -->
-  <div class="row">
-    <div class="col-md-12">
+    <!-- Tab Content (Left column in RTL) -->
+    <div class="col-md-9">
+
       <div class="card">
         <div class="card-header">
           <div class="card-title" id="tab-title">إعدادات Meta & Evolution API</div>
@@ -341,10 +385,10 @@
                   <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
-                        <label for="welcome_message_text"><strong>نص رسالة الترحيب **</strong></label>
+                        <label for="welcome_message_text"><strong>نص احتياطي (Fallback) لرسالة الترحيب</strong></label>
                         <textarea class="form-control" id="welcome_message_text" name="welcome_message_text" rows="4"
                                   placeholder=" مرحباً بك  في منصة تعاريف ! شكراً لك على التسجيل...">{{$abs->welcome_message_text ?? ''}}</textarea>
-                        <p class="text-muted">يمكن استخدام المتغيرات: {name}, {email}</p>
+                        <p class="text-muted">هذا النص يُستخدم فقط كخطة بديلة عند عدم استخدام/فشل قالب Meta. عند اختيار قالب Meta مع خدمة Meta Cloud، محتوى الرسالة يأتي من القالب المعتمد في Meta.</p>
                         <button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="forceUpdateTextAreas()">
                           <i class="fas fa-sync"></i> تحديث النص حسب API المحدد
                         </button>
@@ -388,6 +432,9 @@
                             </optgroup>
                           </select>
                           <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
+                          <div class="alert alert-info mt-2 mb-0">
+                            عند اختيار قالب مع Meta Cloud، نص الرسالة يُدار من Meta (وليس من مربع النص).
+                          </div>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i>
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForWelcome(true)">
@@ -450,10 +497,10 @@
                   <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
-                        <label for="subscription_expiration_text"><strong>نص رسالة انتهاء الباقة **</strong></label>
+                        <label for="subscription_expiration_text"><strong>نص احتياطي (Fallback) لرسالة انتهاء الباقة</strong></label>
                         <textarea class="form-control" id="subscription_expiration_text" name="subscription_expiration_text" rows="4"
                                   placeholder="تنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً...">{{$abs->subscription_expiration_text ?? 'تنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً.'}}</textarea>
-                        <p class="text-muted">يمكن استخدام المتغيرات: {name}, {package_name}, {expiry_date}</p>
+                        <p class="text-muted">هذا النص يُستخدم فقط كخطة بديلة عند عدم استخدام/فشل قالب Meta. عند اختيار قالب Meta مع خدمة Meta Cloud، محتوى الرسالة يأتي من القالب المعتمد في Meta.</p>
                         <button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="forceUpdateTextAreas()">
                           <i class="fas fa-sync"></i> تحديث النص حسب API المحدد
                         </button>
@@ -497,6 +544,9 @@
                             </optgroup>
                           </select>
                           <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
+                          <div class="alert alert-info mt-2 mb-0">
+                            عند اختيار قالب مع Meta Cloud، نص الرسالة يُدار من Meta (وليس من مربع النص).
+                          </div>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i>
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForSubscription(true)">
@@ -570,13 +620,13 @@
                   <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
-                        <label for="subscription_expired_text"><strong>نص إشعار انتهاء الباقة **</strong></label>
+                        <label for="subscription_expired_text"><strong>نص احتياطي (Fallback) لإشعار انتهاء الباقة</strong></label>
                         <textarea class="form-control" id="subscription_expired_text" name="subscription_expired_text" rows="4" placeholder="مرحبا {name}
 انتهى اشتراكك وتم نقلك إلى الباقة المجانية.
 يمكنك الترقية في أي وقت.">{{trim($abs->subscription_expired_text ?? 'مرحبا {name}
 انتهى اشتراكك وتم نقلك إلى الباقة المجانية.
 يمكنك الترقية في أي وقت.')}}</textarea>
-                        <p class="text-muted">يمكن استخدام المتغيرات: {name}, {package_name}, {expiry_date}</p>
+                        <p class="text-muted">هذا النص يُستخدم فقط كخطة بديلة عند عدم استخدام/فشل قالب Meta. عند اختيار قالب Meta مع خدمة Meta Cloud، محتوى الرسالة يأتي من القالب المعتمد في Meta.</p>
                         <button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="forceUpdateTextAreas()">
                           <i class="fas fa-sync"></i> تحديث النص حسب API المحدد
                         </button>
@@ -620,6 +670,9 @@
                             </optgroup>
                           </select>
                           <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
+                          <div class="alert alert-info mt-2 mb-0">
+                            عند اختيار قالب مع Meta Cloud، نص الرسالة يُدار من Meta (وليس من مربع النص).
+                          </div>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i>
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForExpired(true)">
@@ -692,7 +745,7 @@
                   <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
-                        <label for="password_reset_text"><strong>نص رسالة إعادة تعيين كلمة المرور **</strong></label>
+                        <label for="password_reset_text"><strong>نص احتياطي (Fallback) لرسالة إعادة التعيين</strong></label>
                         <textarea class="form-control" id="password_reset_text" name="password_reset_text" rows="4"
                                   placeholder="رمز إعادة تعيين كلمة المرور: {code}
 
@@ -705,7 +758,7 @@
 
 أو يمكنك الضغط على الرابط التالي:
 {reset_url}?code={code}')}}</textarea>
-                        <p class="text-muted">يمكن استخدام المتغيرات: {code}, {reset_url}, {name}</p>
+                        <p class="text-muted">هذا النص يُستخدم فقط كخطة بديلة عند عدم استخدام/فشل قالب Meta. عند اختيار قالب Meta مع خدمة Meta Cloud، محتوى الرسالة يأتي من القالب المعتمد في Meta.</p>
                         <button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="forceUpdateTextAreas()">
                           <i class="fas fa-sync"></i> تحديث النص حسب API المحدد
                         </button>
@@ -741,6 +794,9 @@
                             </optgroup>
                           </select>
                           <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
+                          <div class="alert alert-info mt-2 mb-0">
+                            عند اختيار قالب مع Meta Cloud، نص الرسالة يُدار من Meta (وليس من مربع النص).
+                          </div>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i>
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForPasswordReset(true)">
@@ -756,12 +812,103 @@
                   </div>
 
                   <div class="row">
+                    <div class="col-lg-6">
+                      <div class="form-group">
+                        <label for="password_reset_max_sends_per_hour"><strong>الحد الأقصى لإرسال reset password (لكل ساعة)</strong></label>
+                        <input type="number" class="form-control" id="password_reset_max_sends_per_hour" name="password_reset_max_sends_per_hour"
+                               value="{{ $abs->password_reset_max_sends_per_hour ?? 5 }}" min="1" max="100">
+                        <p class="text-muted">مثال: 5 يعني يمكن إرسال كود إعادة التعيين حتى 5 مرات خلال ساعة لكل مستخدم.</p>
+                        <small class="text-info d-block">
+                          <i class="fas fa-info-circle"></i>
+                          الحد الفعّال الحالي المطبق في الـ API:
+                          <strong>{{ (int) ($abs->password_reset_max_sends_per_hour ?? 5) }}</strong> / ساعة
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
                         <button type="submit" class="btn btn-primary">
                           <i class="fas fa-save"></i> حفظ إعدادات رسالة إعادة تعيين كلمة المرور
                         </button>
                         <button type="button" class="btn btn-warning ml-2" onclick="testPasswordReset()">
+                          <i class="fas fa-paper-plane"></i> اختبار الرسالة
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Registration OTP Tab -->
+              <div id="registration_otp-tab" class="tab-content {{request('tab') == 'registration_otp' ? 'active' : ''}}">
+                <form action="{{route('admin.communication.registration-otp.update')}}" method="POST" id="registration-otp-form">
+                  @csrf
+
+                  <div class="row">
+                    <div class="col-lg-12">
+                        <div class="form-group">
+                          <label for="registration_otp_template"><strong>اسم قالب رمز التسجيل <span class="template-api-label">(Meta API)</span></strong></label>
+                          <select class="form-control" id="registration_otp_template" name="registration_otp_template">
+                            <option value="">اختر قالب أو اتركه فارغاً (نص عادي)</option>
+                            <optgroup label="Meta API Templates" class="meta-api-optgroup">
+                              <option value="" disabled>جاري تحميل القوالب من Facebook...</option>
+                            </optgroup>
+                            <optgroup label="Local Templates" class="local-templates-optgroup">
+                              @php
+                                  try {
+                                      $registrationOtpTemplates = \App\Models\WhatsAppTemplate::active()->ofType('registration_otp')->get();
+                                  } catch (Exception $e) {
+                                      $registrationOtpTemplates = collect();
+                                  }
+                              @endphp
+                              @foreach($registrationOtpTemplates as $template)
+                                <option value="{{$template->name}}" {{($abs->registration_otp_template ?? '') == $template->name ? 'selected' : ''}}>
+                                  {{$template->name}} ({{$template->language_label}}) - Local
+                                </option>
+                              @endforeach
+                            </optgroup>
+                          </select>
+                          <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً لرسائل رمز التسجيل</p>
+                          <small class="text-info">
+                            <i class="fas fa-info-circle"></i>
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForRegistrationOtp(true)">
+                              <i class="fas fa-sync"></i> تحديث قوالب Meta API
+                            </button>
+                            <small class="text-muted ml-2">(يتم التحميل تلقائياً ويتم حفظه لمدة 24 ساعة)</small>
+                            <a href="{{route('admin.whatsapp-templates.create')}}?type=registration_otp" target="_blank" class="btn btn-sm btn-outline-success ml-2 create-local-template-btn">
+                              <i class="fas fa-plus"></i> إنشاء قالب محلي
+                            </a>
+                          </small>
+                        </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-lg-6">
+                      <div class="form-group">
+                        <label for="otp_max_sends_per_hour"><strong>الحد الأقصى لإرسال OTP (لكل ساعة)</strong></label>
+                        <input type="number" class="form-control" id="otp_max_sends_per_hour" name="otp_max_sends_per_hour"
+                               value="{{ $abs->otp_max_sends_per_hour ?? 5 }}" min="1" max="100">
+                        <p class="text-muted">مثال: 10 يعني يمكن إرسال OTP حتى 10 مرات خلال ساعة لكل رقم.</p>
+                        <small class="text-info d-block">
+                          <i class="fas fa-info-circle"></i>
+                          الحد الفعّال الحالي المطبق في الـ API:
+                          <strong>{{ (int) ($abs->otp_max_sends_per_hour ?? 5) }}</strong> / ساعة
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-lg-12">
+                      <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                          <i class="fas fa-save"></i> حفظ إعدادات قالب رمز التسجيل
+                        </button>
+                        <button type="button" class="btn btn-warning ml-2" onclick="testRegistrationOtp()">
                           <i class="fas fa-paper-plane"></i> اختبار الرسالة
                         </button>
                       </div>
@@ -848,6 +995,18 @@ $(document).ready(function() {
 
     $('#password-reset-form').submit(function() {
         $('#password_reset_selected_api').val(currentApi);
+    });
+    $('#welcome_message_template').on('change', function() {
+        toggleFallbackUiByTemplate('#welcome_message_text', '#welcome_message_template', '#welcome-message-form');
+    });
+    $('#subscription_expiration_template').on('change', function() {
+        toggleFallbackUiByTemplate('#subscription_expiration_text', '#subscription_expiration_template', '#subscription-expiration-form');
+    });
+    $('#subscription_expired_template').on('change', function() {
+        toggleFallbackUiByTemplate('#subscription_expired_text', '#subscription_expired_template', '#subscription-expired-form');
+    });
+    $('#password_reset_template').on('change', function() {
+        togglePasswordResetFallbackUi();
     });
 
     // Auto-load Meta templates when Meta Cloud form is shown
@@ -944,7 +1103,8 @@ function switchTab(tabName) {
         'welcome_message': 'إعدادات رسالة الترحيب',
         'subscription_expiration': 'إعدادات رسالة انتهاء الباقة',
         'subscription_expired': 'إعدادات إشعار انتهاء الباقة',
-        'password_reset': 'إعدادات رسالة إعادة تعيين كلمة المرور'
+        'password_reset': 'إعدادات رسالة إعادة تعيين كلمة المرور',
+        'registration_otp': 'إعدادات قالب رمز التسجيل'
     };
     $('#tab-title').text(titles[tabName]);
 }
@@ -995,9 +1155,11 @@ function checkConfiguration() {
 function testWelcomeMessage() {
     var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
     if (phone) {
+        var selectedTemplate = $('#welcome_message_template').val();
         $.post('{{route("admin.communication.welcome-message.test")}}', {
             _token: '{{csrf_token()}}',
-            test_phone: phone
+            test_phone: phone,
+            template_name: selectedTemplate
         }, function(response) {
             location.reload();
         }).fail(function() {
@@ -1009,9 +1171,11 @@ function testWelcomeMessage() {
 function testSubscriptionExpiration() {
     var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
     if (phone) {
+        var selectedTemplate = $('#subscription_expiration_template').val();
         $.post('{{route("admin.communication.subscription-expiration.test")}}', {
             _token: '{{csrf_token()}}',
-            test_phone: phone
+            test_phone: phone,
+            template_name: selectedTemplate
         }, function(response) {
             location.reload();
         }).fail(function() {
@@ -1023,9 +1187,11 @@ function testSubscriptionExpiration() {
 function testSubscriptionExpired() {
     var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
     if (phone) {
+        var selectedTemplate = $('#subscription_expired_template').val();
         $.post('{{route("admin.communication.subscription-expired.test")}}', {
             _token: '{{csrf_token()}}',
-            test_phone: phone
+            test_phone: phone,
+            template_name: selectedTemplate
         }, function(response) {
             location.reload();
         }).fail(function() {
@@ -1037,15 +1203,92 @@ function testSubscriptionExpired() {
 function testPasswordReset() {
     var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
     if (phone) {
+        var selectedTemplate = $('#password_reset_template').val();
         $.post('{{route("admin.communication.password-reset.test")}}', {
             _token: '{{csrf_token()}}',
-            test_phone: phone
+            test_phone: phone,
+            template_name: selectedTemplate
         }, function(response) {
             location.reload();
         }).fail(function() {
             alert('حدث خطأ أثناء اختبار رسالة إعادة تعيين كلمة المرور');
         });
     }
+}
+
+function testRegistrationOtp() {
+    var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
+    if (phone) {
+        var selectedTemplate = $('#registration_otp_template').val();
+        $.post('{{route("admin.communication.registration-otp.test")}}', {
+            _token: '{{csrf_token()}}',
+            test_phone: phone,
+            template_name: selectedTemplate
+        }, function(response) {
+            location.reload();
+        }).fail(function() {
+            alert('حدث خطأ أثناء اختبار رسالة رمز التسجيل');
+        });
+    }
+}
+
+function loadMetaTemplatesForRegistrationOtp(force = false) {
+    var select = $('#registration_otp_template');
+    var metaOptgroup = select.find('.meta-api-optgroup');
+    var button = $('button[onclick="loadMetaTemplatesForRegistrationOtp(true)"]');
+
+    console.log('Loading Meta templates for registration OTP...', {
+        select: select.length,
+        metaOptgroup: metaOptgroup.length,
+        button: button.length
+    });
+
+    // Show loading state
+    if (button.length > 0) {
+        button.html('<i class="fas fa-spinner fa-spin"></i> جاري التحميل...');
+        button.prop('disabled', true);
+    }
+
+    $.get('{{route("admin.communication.fetch-meta-templates")}}', function(response) {
+        if (response.success) {
+            // Clear existing Meta API options
+            metaOptgroup.empty();
+
+            // Add templates from Facebook
+            if (response.templates && response.templates.length > 0) {
+                response.templates.forEach(function(template) {
+                    var option = $('<option></option>')
+                        .attr('value', template.name)
+                        .text(template.name + ' (' + template.category + ' - ' + template.language + ') - Meta');
+
+                    // Check if this template is currently selected
+                    var currentTemplate = '{{$abs->registration_otp_template ?? ""}}';
+                    if (currentTemplate === template.name) {
+                        option.attr('selected', true);
+                    }
+
+                    metaOptgroup.append(option);
+                });
+
+                showNotification('تم تحميل ' + response.templates.length + ' قالب من Meta API بنجاح', 'success');
+            } else {
+                metaOptgroup.append('<option value="" disabled>لا توجد قوالب متاحة</option>');
+                showNotification('لا توجد قوالب متاحة في Meta API', 'warning');
+            }
+        } else {
+            metaOptgroup.append('<option value="" disabled>خطأ في التحميل</option>');
+            showNotification('خطأ في تحميل القوالب: ' + response.message, 'error');
+        }
+    }).fail(function() {
+        metaOptgroup.append('<option value="" disabled>خطأ في الاتصال</option>');
+        showNotification('خطأ في الاتصال بـ Meta API', 'error');
+    }).always(function() {
+        // Reset button state
+        if (button.length > 0) {
+            button.html('<i class="fas fa-sync"></i> تحديث قوالب Meta API');
+            button.prop('disabled', false);
+        }
+    });
 }
 
 function loadMetaTemplates() {
@@ -1244,6 +1487,23 @@ function updateApiIndicators() {
     });
 }
 
+function togglePasswordResetFallbackUi() {
+    var isMeta = currentApi === 'meta';
+    var hasTemplate = !!($('#password_reset_template').val() || '').trim();
+    var shouldDisableFallback = isMeta && hasTemplate;
+
+    $('#password_reset_text').prop('disabled', shouldDisableFallback);
+    $('#password-reset-form button[onclick="forceUpdateTextAreas()"]').toggle(!shouldDisableFallback || !isMeta);
+}
+
+function toggleFallbackUiByTemplate(textSelector, templateSelector, formSelector) {
+    var isMeta = currentApi === 'meta';
+    var hasTemplate = !!($(templateSelector).val() || '').trim();
+    var shouldDisableFallback = isMeta && hasTemplate;
+    $(textSelector).prop('disabled', shouldDisableFallback);
+    $(formSelector + ' button[onclick="forceUpdateTextAreas()"]').toggle(!shouldDisableFallback || !isMeta);
+}
+
 function loadTemplatesBasedOnApi() {
     if (currentApi === 'meta') {
         // For Meta API, load Meta API templates and hide local templates
@@ -1253,11 +1513,17 @@ function loadTemplatesBasedOnApi() {
         setTimeout(function() { loadMetaTemplatesForSubscription(); }, 1000);
         setTimeout(function() { loadMetaTemplatesForExpired(); }, 1500);
         setTimeout(function() { loadMetaTemplatesForPasswordReset(); }, 2000);
+        setTimeout(function() { loadMetaTemplatesForRegistrationOtp(); }, 2500);
     } else {
         // For Evolution API, only load local templates
         console.log('Evolution API selected - using local templates only');
         updateTemplateDropdownsForEvolution();
     }
+
+    togglePasswordResetFallbackUi();
+    toggleFallbackUiByTemplate('#welcome_message_text', '#welcome_message_template', '#welcome-message-form');
+    toggleFallbackUiByTemplate('#subscription_expiration_text', '#subscription_expiration_template', '#subscription-expiration-form');
+    toggleFallbackUiByTemplate('#subscription_expired_text', '#subscription_expired_template', '#subscription-expired-form');
 }
 
 function updateDefaultTexts() {
@@ -1480,6 +1746,8 @@ function populateTemplatesInSelect(select, templates, messageType) {
                 currentValue = '{{$abs->subscription_expired_template ?? ""}}';
             } else if (messageType === 'password_reset') {
                 currentValue = '{{$abs->password_reset_template ?? ""}}';
+            } else if (messageType === 'registration_otp') {
+                currentValue = '{{$abs->registration_otp_template ?? ""}}';
             }
 
             if (currentValue === template.name) {
@@ -1490,6 +1758,19 @@ function populateTemplatesInSelect(select, templates, messageType) {
         });
     } else {
         metaGroup.append('<option value="" disabled>لم يتم العثور على قوالب معتمدة في Meta API</option>');
+    }
+
+    if (messageType === 'password_reset') {
+        togglePasswordResetFallbackUi();
+    }
+    if (messageType === 'welcome') {
+        toggleFallbackUiByTemplate('#welcome_message_text', '#welcome_message_template', '#welcome-message-form');
+    }
+    if (messageType === 'subscription_expiration') {
+        toggleFallbackUiByTemplate('#subscription_expiration_text', '#subscription_expiration_template', '#subscription-expiration-form');
+    }
+    if (messageType === 'subscription_expired') {
+        toggleFallbackUiByTemplate('#subscription_expired_text', '#subscription_expired_template', '#subscription-expired-form');
     }
 }
 
@@ -1628,55 +1909,180 @@ function initializeTemplateSelection() {
         $('#template-saved-icon').hide();
         $('#template-unsaved-icon').show();
     }
+
+    togglePasswordResetFallbackUi();
+    toggleFallbackUiByTemplate('#welcome_message_text', '#welcome_message_template', '#welcome-message-form');
+    toggleFallbackUiByTemplate('#subscription_expiration_text', '#subscription_expiration_template', '#subscription-expiration-form');
+    toggleFallbackUiByTemplate('#subscription_expired_text', '#subscription_expired_template', '#subscription-expired-form');
 }
 </script>
 
 <style>
-/* Tab Navigation Styles */
-.tab-navigation {
-    background: #51c3a3;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    overflow: hidden;
-}
-
-.tab-bar {
-    display: flex;
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.tab-button {
-    flex: 1;
-    padding: 12px 20px;
+/* PREMIUM Modern Tab Navigation - Vertical RTL */
+.tab-navigation.vertical {
     background: transparent;
     border: none;
-    border-bottom: 3px solid transparent;
-    color: #6c757d;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-align: center;
+    box-shadow: none;
+    overflow: visible;
 }
 
-.tab-button:hover {
-    background: #e9ecef;
+.tab-navigation.vertical .tab-bar {
+    display: flex;
+    flex-direction: column;
+    background: transparent;
+    border: none;
+    gap: 12px;
+}
+
+.tab-navigation.vertical .tab-button {
+    flex: none;
+    width: 100%;
+    padding: 12px 16px;
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 16px;
     color: #495057;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    display: flex;
+    align-items: center;
+    text-align: right;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
 }
 
-.tab-button.active {
+.tab-navigation.vertical .tab-button:hover {
     background: #fff;
+    transform: scale(1.02) translateX(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    border-color: rgba(81, 195, 163, 0.3);
     color: #3a8b6f;
-    border-bottom-color: #3a8b6f;
-    font-weight: 600;
 }
 
+.tab-navigation.vertical .tab-button.active {
+    background: #ffffff;
+    color: #3a8b6f;
+    border-color: rgba(81, 195, 163, 0.5);
+    box-shadow: 0 15px 30px rgba(81, 195, 163, 0.12);
+    transform: scale(1.03) translateX(-8px);
+    z-index: 2;
+}
+
+/* Icon Wrapper Styling */
+.tab-icon-wrapper {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 15px; /* RTL spacing */
+    transition: all 0.3s ease;
+    color: #6c757d;
+}
+
+.tab-button:hover .tab-icon-wrapper {
+    background: #eef9f5;
+    color: #3a8b6f;
+}
+
+.tab-button.active .tab-icon-wrapper {
+    background: linear-gradient(135deg, #51c3a3 0%, #3a8b6f 100%);
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(81, 195, 163, 0.3);
+}
+
+.tab-icon-wrapper i {
+    font-size: 18px;
+}
+
+/* Text Content Container */
+.tab-text-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex-grow: 1;
+}
+
+.tab-label {
+    font-size: 14.5px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.tab-button.active .tab-label {
+    font-weight: 700;
+}
+
+/* API Indicator inside Tab Content */
+.tab-header-api {
+    font-size: 10px;
+    font-weight: 400;
+    opacity: 0.6;
+    margin-top: 2px;
+}
+
+/* Active Indicator Line */
+.active-indicator {
+    position: absolute;
+    right: -2px;
+    top: 20%;
+    height: 60%;
+    width: 4px;
+    background: #3a8b6f;
+    border-radius: 4px;
+    opacity: 0;
+    transform: scaleY(0);
+    transition: all 0.3s ease;
+}
+
+.tab-button.active .active-indicator {
+    opacity: 1;
+    transform: scaleY(1);
+    right: 0;
+}
+
+/* Tab Content Animation */
 .tab-content {
     display: none;
+    animation: modernFadeIn 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes modernFadeIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(15px) scale(0.98); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0) scale(1); 
+    }
 }
 
 .tab-content.active {
     display: block;
+}
+
+/* Content Card Modernization */
+.card {
+    border-radius: 20px;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    overflow: hidden;
+}
+
+.card-header {
+    background: #fff;
+    border-bottom: 1px solid #f8f9fa;
+    padding: 20px 25px;
+}
+
+.card-title {
+    font-weight: 700;
+    color: #343a40;
+    font-size: 18px;
 }
 
 /* Service Card Styles */

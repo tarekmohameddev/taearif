@@ -30,6 +30,18 @@ class WhatsAppService
     }
 
     /**
+     * Override a single settings key for this request only (used by admin test endpoints
+     * so the currently-selected-but-not-yet-saved template is tested instead of the saved one).
+     */
+    public function overrideSetting(string $key, mixed $value): static
+    {
+        if ($this->settings) {
+            $this->settings->$key = $value;
+        }
+        return $this;
+    }
+
+    /**
      * Send WhatsApp message for password reset
      */
     public function sendPasswordResetCode($phoneNumber, $code, $userName = null, $userLanguage = 'ar', $resetUrl = null, $templateName = null, $userId = null)
@@ -188,38 +200,22 @@ class WhatsAppService
                 $templateName = 'password_reset';
             }
 
-            // NEW: Try Meta Cloud template first, then database template fallback
+            // Template-first strict mode for Meta Cloud password reset
             if ($templateName && $useMetaTemplate) {
-                // Try Meta Cloud template first
                 if ($this->checkMetaTemplateExists($templateName)) {
                     $templateResult = $this->sendPasswordResetMetaTemplate($formattedPhone, $templateName, $code, $userName, $resetUrl, $userId);
-                    if ($templateResult) {
-                        return true;
-                    }
+                    return (bool) $templateResult;
                 }
 
-                // Fallback to database template
-                $dbTemplate = \App\Models\WhatsAppTemplate::where('name', $templateName)
-                    ->where('type', 'password_reset')
-                    ->where('status', true)
-                    ->first();
-
-                if ($dbTemplate) {
-                    Log::info('Using database template for password reset fallback', [
-                        'template_name' => $templateName,
-                        'template_content' => $dbTemplate->content
-                    ]);
-
-                    $templateMessage = $dbTemplate->content;
-                    $templateMessage = str_replace('{code}', $code, $templateMessage);
-                    $templateMessage = str_replace('{reset_url}', $resetUrl, $templateMessage);
-
-                    return $this->sendRegularMessage($formattedPhone, $templateMessage);
-                }
+                Log::warning('Configured Meta password reset template was not found/approved', [
+                    'template_name' => $templateName,
+                    'phone' => $formattedPhone,
+                ]);
+                return false;
             }
 
-            // If no template name is provided or custom message is provided, send as regular message
-            if (!$templateName || $message) {
+            // Regular text is allowed only when no template is configured.
+            if (!$templateName) {
                 $payload = [
                     "messaging_product" => "whatsapp",
                     "to" => $formattedPhone,
@@ -2199,6 +2195,95 @@ class WhatsAppService
 
         } catch (\Exception $e) {
             Log::error('WhatsApp sendMessage exception', [
+                'phone' => $phoneNumber,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Send registration OTP message with template support
+     *
+     * @param string $phoneNumber The phone number to send to
+     * @param string $otpCode The OTP code
+     * @return bool True if sent successfully, false otherwise
+     */
+    public function sendRegistrationOtp($phoneNumber, $otpCode)
+    {
+        try {
+            // Check master toggle first
+            if (!$this->settings || !($this->settings->whatsapp_notifications_enabled ?? true)) {
+                Log::info('WhatsApp notifications are disabled by master toggle', [
+                    'phone' => $phoneNumber,
+                    'type' => 'registration_otp'
+                ]);
+                return false;
+            }
+
+            if (!$this->settings || !$this->settings->whatsapp_service) {
+                Log::warning('WhatsApp service not configured', [
+                    'phone' => $phoneNumber,
+                    'type' => 'registration_otp'
+                ]);
+                return false;
+            }
+
+            // Check if template is configured and service is meta_cloud
+            $templateName = $this->settings->registration_otp_template ?? null;
+
+            if ($templateName && $this->settings->whatsapp_service === 'meta_cloud') {
+                Log::info('Using Meta template for registration OTP', [
+                    'phone' => $phoneNumber,
+                    'template' => $templateName
+                ]);
+
+                $formattedPhone = $this->formatPhoneNumber($phoneNumber);
+
+                // If admin chose the password_reset template for testing, route through
+                // its dedicated sender which supplies the correct body + button params.
+                if ($templateName === 'password_reset') {
+                    $sent = $this->sendPasswordResetMetaTemplate($formattedPhone, $templateName, $otpCode);
+                    if ($sent) {
+                        return true;
+                    }
+                    Log::warning('Meta template send failed for registration OTP (strict template mode)', [
+                        'phone' => $formattedPhone,
+                        'template' => $templateName,
+                        'error' => 'sendPasswordResetMetaTemplate returned false'
+                    ]);
+                    return false;
+                }
+
+                // Generic path: send OTP code as the single body parameter.
+                $result = $this->sendTemplateToPhone($formattedPhone, $templateName, $this->settings->meta_template_language ?? 'ar', [$otpCode]);
+
+                if ($result['success']) {
+                    return true;
+                }
+
+                Log::warning('Meta template send failed for registration OTP (strict template mode)', [
+                    'phone' => $formattedPhone,
+                    'template' => $templateName,
+                    'error' => $result['message'] ?? 'Unknown error'
+                ]);
+                return false;
+            }
+
+            // Fallback to plain text message
+            $message = sprintf('رمز التحقق الخاص بك هو: %s. صالح لمدة 5 دقائق.', $otpCode);
+            
+            Log::info('Sending registration OTP as plain text', [
+                'phone' => $phoneNumber,
+                'template_configured' => $templateName ? 'yes' : 'no',
+                'service' => $this->settings->whatsapp_service
+            ]);
+            
+            return $this->sendMessage($phoneNumber, $message);
+
+        } catch (\Exception $e) {
+            Log::error('WhatsApp sendRegistrationOtp exception', [
                 'phone' => $phoneNumber,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()

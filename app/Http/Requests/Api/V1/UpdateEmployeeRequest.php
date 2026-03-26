@@ -3,10 +3,13 @@
 namespace App\Http\Requests\Api\V1;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
+use App\Http\Requests\Api\Concerns\EmployeeAssignmentRulesValidation;
 use Illuminate\Validation\Rule;
 
 class UpdateEmployeeRequest extends BaseApiFormRequest
 {
+    use EmployeeAssignmentRulesValidation;
+
     public function authorize()
     {
         return true;
@@ -14,9 +17,12 @@ class UpdateEmployeeRequest extends BaseApiFormRequest
 
     public function rules()
     {
-        $employeeId = request()->route('employee');
+        $routeEmployee = $this->route('employee');
+        $employeeId = $routeEmployee instanceof \Illuminate\Database\Eloquent\Model
+            ? $routeEmployee->getKey()
+            : $routeEmployee;
 
-        return [
+        return array_merge([
             'first_name' => ['nullable', 'string', 'max:120'],
             'last_name' => ['nullable', 'string', 'max:120'],
             'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($employeeId)],
@@ -27,6 +33,7 @@ class UpdateEmployeeRequest extends BaseApiFormRequest
             'role_ids.*' => ['integer', 'exists:api_roles,id'],
             'permissions' => ['array'],
             'permissions.*' => ['string'],
-        ];
+        ], $this->employeeAssignmentRulesValidationRules((string) $employeeId));
     }
 }
+

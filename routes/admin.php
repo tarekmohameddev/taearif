@@ -378,6 +378,10 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/communication/password-reset/update', 'Admin\CommunicationController@updatePasswordReset')->name('communication.password-reset.update');
         Route::post('/communication/password-reset/test', 'Admin\CommunicationController@testPasswordReset')->name('communication.password-reset.test');
 
+        // Registration OTP Routes
+        Route::post('/communication/registration-otp/update', 'Admin\CommunicationController@updateRegistrationOtp')->name('communication.registration-otp.update');
+        Route::post('/communication/registration-otp/test', 'Admin\CommunicationController@testRegistrationOtp')->name('communication.registration-otp.test');
+
         // Email Communication Routes
         Route::get('/communication/email', 'Admin\EmailCommunicationController@index')->name('communication.email');
         Route::post('/communication/email/smtp/update', 'Admin\EmailCommunicationController@updateSmtpSettings')->name('email-communication.smtp.update');
