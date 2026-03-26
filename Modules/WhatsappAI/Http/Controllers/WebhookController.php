@@ -73,20 +73,23 @@ class WebhookController extends Controller
             );
 
             // Extract message content based on type
-            $messageType = $message['type'] ?? 'text';
-            $content = $this->extractMessageContent($message, $messageType);
+            $incomingMessageType = $message['type'] ?? 'text';
+            $storedMessageType = $this->normalizeMessageTypeForStorage($incomingMessageType);
+            $content = $this->extractMessageContent($message, $incomingMessageType);
 
             // Extract media URL based on message type
             $mediaUrl = null;
-            if (in_array($messageType, ['image', 'document', 'audio', 'video']) && isset($message[$messageType]['url'])) {
-                $mediaUrl = $message[$messageType]['url'];
+            if (in_array($incomingMessageType, ['image', 'document', 'audio', 'video']) && isset($message[$incomingMessageType]['url'])) {
+                $mediaUrl = $message[$incomingMessageType]['url'];
             }
 
             // Store the message
             WhatsappMessage::create([
                 'conversation_id' => $conversation->id,
                 'whatsapp_message_id' => $message['id'] ?? null,
-                'message_type' => $messageType,
+                // Ensure we only store values supported by the DB enum.
+                // The original WhatsApp type is preserved in raw_payload (and in content for unsupported types).
+                'message_type' => $storedMessageType,
                 'content' => $content,
                 'media_url' => $mediaUrl,
                 'raw_payload' => $message,
@@ -228,6 +231,29 @@ class WebhookController extends Controller
             default:
                 return "[Unsupported message type: {$type}]";
         }
+    }
+
+    /**
+     * Normalize incoming WhatsApp types to a DB-safe message_type.
+     *
+     * whatsapp_messages.message_type is an ENUM (see module migrations), so storing
+     * unknown values like "sticker" or "revoke" would fail inserts.
+     */
+    private function normalizeMessageTypeForStorage(string $incomingType): string
+    {
+        $allowed = [
+            'text',
+            'image',
+            'document',
+            'audio',
+            'video',
+            'location',
+            'reaction',
+            'edit',
+            'contacts',
+        ];
+
+        return in_array($incomingType, $allowed, true) ? $incomingType : 'text';
     }
 }
 
