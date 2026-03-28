@@ -4638,7 +4638,17 @@ namespace App\Http\Controllers\Api;
  *         summary="Payment Cancel",
  *         @OA\Parameter(name="transaction_id", in="path", required=true, @OA\Schema(type="integer")),
  *         @OA\Parameter(name="gateway", in="path", required=true, @OA\Schema(type="string")),
- *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", description="Schema not resolved. Add FormRequest or swagger_request_map entry for this operation.")),
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="trandata", type="string"),
+ *             @OA\Property(property="payment_id", type="string", maxLength=255),
+ *             @OA\Property(property="transaction_id", type="string", maxLength=255),
+ *             @OA\Property(property="result", type="string", maxLength=255),
+ *             @OA\Property(property="payment_result", type="string", maxLength=255),
+ *             @OA\Property(property="status", type="string", maxLength=255),
+ *             @OA\Property(property="reason", type="string", maxLength=255),
+ *             @OA\Property(property="error", type="string", maxLength=1000),
+ *             @OA\Property(property="payment_error", type="string", maxLength=1000),
+ *         )),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -4664,7 +4674,16 @@ namespace App\Http\Controllers\Api;
  *         summary="Payment Success",
  *         @OA\Parameter(name="transaction_id", in="path", required=true, @OA\Schema(type="integer")),
  *         @OA\Parameter(name="gateway", in="path", required=true, @OA\Schema(type="string")),
- *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", description="Schema not resolved. Add FormRequest or swagger_request_map entry for this operation.")),
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="trandata", type="string"),
+ *             @OA\Property(property="payment_id", type="string", maxLength=255),
+ *             @OA\Property(property="transaction_id", type="string", maxLength=255),
+ *             @OA\Property(property="result", type="string", maxLength=255),
+ *             @OA\Property(property="payment_result", type="string", maxLength=255),
+ *             @OA\Property(property="status", type="string", maxLength=255),
+ *             @OA\Property(property="error", type="string", maxLength=1000),
+ *             @OA\Property(property="payment_error", type="string", maxLength=1000),
+ *         )),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5250,7 +5269,6 @@ namespace App\Http\Controllers\Api;
  *         tags={"Email"},
  *         summary="Pause", security={{"sanctum":{}}},
  *         @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
- *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", description="Schema not resolved. Add FormRequest or swagger_request_map entry for this operation.")),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -5420,7 +5438,15 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_email_webhooks_delivery_0",
  *         tags={"Email"},
  *         summary="Delivery",
- *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", description="Schema not resolved. Add FormRequest or swagger_request_map entry for this operation.")),
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="provider", type="string", maxLength=255),
+ *             @OA\Property(property="user_id", type="integer"),
+ *             @OA\Property(property="gateway_message_id", type="string", maxLength=255),
+ *             @OA\Property(property="status", type="string", enum={"delivered","failed","undelivered","rejected","bounced","spam","complained"}),
+ *             @OA\Property(property="error_message", type="string", maxLength=1000),
+ *             @OA\Property(property="delivered_at", type="string"),
+ *             @OA\Property(property="events", type="array", @OA\Items(type="string")),
+ *         )),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -6973,7 +6999,13 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_property_requests_interest_0",
  *         tags={"Property Requests"},
  *         summary="Store From Interest",
- *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", description="Schema not resolved. Add FormRequest or swagger_request_map entry for this operation.")),
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"tenant_username","property_id","full_name","phone"},
+ *             @OA\Property(property="tenant_username", type="string", maxLength=255),
+ *             @OA\Property(property="property_id", type="integer"),
+ *             @OA\Property(property="full_name", type="string", maxLength=255),
+ *             @OA\Property(property="phone", type="string", maxLength=20),
+ *             @OA\Property(property="notes", type="string", maxLength=1000),
+ *         )),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -8373,7 +8405,6 @@ namespace App\Http\Controllers\Api;
  *         tags={"Sms"},
  *         summary="Pause", security={{"sanctum":{}}},
  *         @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
- *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", description="Schema not resolved. Add FormRequest or swagger_request_map entry for this operation.")),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -9409,7 +9440,6 @@ namespace App\Http\Controllers\Api;
  *         tags={"Whatsapp"},
  *         summary="Pause", security={{"sanctum":{}}},
  *         @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
- *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", description="Schema not resolved. Add FormRequest or swagger_request_map entry for this operation.")),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
@@ -10339,7 +10369,6 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v2_customers_hub_requests_mark_viewed_0",
  *         tags={"Customers Hub"},
  *         summary="Mark List Viewed", security={{"sanctum":{}}},
- *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", description="Schema not resolved. Add FormRequest or swagger_request_map entry for this operation.")),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
