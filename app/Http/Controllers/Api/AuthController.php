@@ -634,17 +634,12 @@ class AuthController extends Controller
             }
         } else {
             $rawPhone = trim((string) $validated['phone']);
-            $normalizedPhone = PhoneNormalizer::normalize($rawPhone);
-
-            $userQuery = User::query()->where(function ($query) use ($rawPhone, $normalizedPhone) {
-                $query->where('phone', $rawPhone);
-                if ($normalizedPhone !== null && $normalizedPhone !== $rawPhone) {
-                    $query->orWhere('phone', $normalizedPhone);
-                }
-            });
+            $phoneCandidates = PhoneNormalizer::loginLookupValues($rawPhone);
 
             /** @var \App\Models\User|null $found */
-            $found = $userQuery->first();
+            $found = $phoneCandidates === []
+                ? null
+                : User::query()->whereIn('phone', $phoneCandidates)->first();
 
             if (!$found || !Hash::check($validated['password'], $found->password)) {
                 return response()->json(['message' => 'Invalid credentials'], 401);
