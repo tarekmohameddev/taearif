@@ -22,7 +22,8 @@ class LoginApiRequest extends BaseApiFormRequest
                 Rule::requiredIf($apiRecaptchaEnabled),
                 ...($apiRecaptchaEnabled ? [new Recaptcha] : []),
             ],
-            'email' => 'required|email',
+            'email' => 'required_without:phone|nullable|email',
+            'phone' => 'required_without:email|nullable|string',
             'password' => 'required',
         ];
     }
@@ -31,7 +32,9 @@ class LoginApiRequest extends BaseApiFormRequest
     {
         return [
             'recaptcha_token.required' => 'reCAPTCHA token is required',
-            'email.required' => 'Email is required',
+            'email.required_without' => 'Email or phone is required',
+            'email.email' => 'Email must be a valid email address',
+            'phone.required_without' => 'Email or phone is required',
             'password.required' => 'Password is required',
         ];
     }

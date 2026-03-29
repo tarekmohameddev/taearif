@@ -48,6 +48,8 @@ use App\Models\Api\ApiDomainSetting;
 use App\Models\User\UserShopSetting;
 use App\Models\User\UserTestimonial;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use App\Support\PhoneNormalizer;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Crypt;
 use App\Models\User\PortfolioCategory;
@@ -621,13 +623,34 @@ class AuthController extends Controller
     public function login(LoginApiRequest $request)
     {
         $validated = $request->validated();
-        $credentials = [
-            'email' => $validated['email'],
-            'password' => $validated['password'],
-        ];
 
-        if (!Auth::attempt($credentials)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+        if (!empty($validated['email'])) {
+            $credentials = [
+                'email' => $validated['email'],
+                'password' => $validated['password'],
+            ];
+            if (!Auth::attempt($credentials)) {
+                return response()->json(['message' => 'Invalid credentials'], 401);
+            }
+        } else {
+            $rawPhone = trim((string) $validated['phone']);
+            $normalizedPhone = PhoneNormalizer::normalize($rawPhone);
+
+            $userQuery = User::query()->where(function ($query) use ($rawPhone, $normalizedPhone) {
+                $query->where('phone', $rawPhone);
+                if ($normalizedPhone !== null && $normalizedPhone !== $rawPhone) {
+                    $query->orWhere('phone', $normalizedPhone);
+                }
+            });
+
+            /** @var \App\Models\User|null $found */
+            $found = $userQuery->first();
+
+            if (!$found || !Hash::check($validated['password'], $found->password)) {
+                return response()->json(['message' => 'Invalid credentials'], 401);
+            }
+
+            Auth::login($found);
         }
 
         // Get authenticated user
