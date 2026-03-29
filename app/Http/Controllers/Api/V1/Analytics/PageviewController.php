@@ -78,7 +78,7 @@ class PageviewController extends BaseApiController
 
     /**
      * Get top pages
-     * GET /api/v1/analytics/top-pages
+     * GET /api/v1/analytics/top-pages?days=30&limit=20&page_type=property
      */
     public function topPages(PageviewTopRequest $request)
     {
@@ -87,8 +87,9 @@ class PageviewController extends BaseApiController
             $validated = $request->validated();
             $days = (int) ($validated['days'] ?? 30);
             $limit = (int) ($validated['limit'] ?? 10);
+            $pageType = $validated['page_type'] ?? null;
 
-            $topPages = $this->pageviewService->getTopPages($tenantId, $days, $limit);
+            $topPages = $this->pageviewService->getTopPages($tenantId, $days, $limit, $pageType);
 
             return $this->success(
                 TopPageResource::collection($topPages),
