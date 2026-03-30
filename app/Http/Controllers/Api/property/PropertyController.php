@@ -2466,7 +2466,10 @@ class PropertyController extends Controller
                     if ($hasContentJoin && isset($p->content_slug)) {
                         return $p->content_slug;
                     }
-                    // Otherwise, use eager loaded relationship
+                    // Must match sort=most_viewed join (MIN(slug) per property), not contents->first() by id
+                    if ($p->relationLoaded('contents') && $p->contents->isNotEmpty()) {
+                        return $p->contents->min('slug');
+                    }
                     return optional($p->contents->first())->slug;
                 })
                 ->filter() // Remove null/empty values
@@ -2596,6 +2599,14 @@ class PropertyController extends Controller
                 $content = optional($property->contents->first());
             }
             $slug = $content->slug ?? null;
+            // Slug used in pageview_analytics / sort=most_viewed is MIN(slug) per property
+            if ($hasContentJoin && isset($property->content_slug)) {
+                $analyticsSlug = $property->content_slug;
+            } elseif ($property->relationLoaded('contents') && $property->contents->isNotEmpty()) {
+                $analyticsSlug = $property->contents->min('slug');
+            } else {
+                $analyticsSlug = $slug;
+            }
 
             // Get project data if relationship is loaded
             $projectData = null;
@@ -2610,7 +2621,7 @@ class PropertyController extends Controller
 
             $propertyData = [
                 'id'               => $property->id,
-                'visits'           => (int) ($viewsBySlug[$slug] ?? 0),
+                'visits'           => (int) ($viewsBySlug[$analyticsSlug] ?? 0),
                 'title'            => $content->title ?? 'No Title',
                 'address'          => $content->address ?? 'No Address',
                 'slug'             => $slug,
