@@ -17,6 +17,7 @@ use App\Models\Analytics\AnalyticsDailySummary;
 use App\Models\Api\EmployeeActivityLog;
 use App\Models\User;
 use App\Services\ActivityActionMapper;
+use App\Services\SiteSetupProgressService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 
@@ -1249,18 +1250,11 @@ class AnalyticsDashboardController extends Controller
 
 
 
-    public function setupProgress()
+    public function setupProgress(Request $request)
     {
-        return response()->json([
-            'progress_percentage' => 60,
-            'completed_steps' => [
-                ['id' => 1, 'name' => 'إنشاء الموقع', 'completed' => true],
-                ['id' => 2, 'name' => 'اختيار القالب', 'completed' => true],
-                ['id' => 3, 'name' => 'تخصيص الشعار', 'completed' => true],
-                ['id' => 4, 'name' => 'إضافة المحتوى', 'completed' => false],
-                ['id' => 5, 'name' => 'ربط المجال', 'completed' => false],
-            ]
-        ]);
+        $data = app(SiteSetupProgressService::class)->getProgress($request->user());
+
+        return response()->json($data);
     }
 
     public function getRecentActivity(Request $request)
