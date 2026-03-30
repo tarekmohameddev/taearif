@@ -177,8 +177,14 @@ class PageviewController extends BaseApiController
         // If not provided, try to get from authenticated user
         if (empty($tenantId)) {
             $user = $request->user();
-            if ($user && method_exists($user, 'username')) {
-                $tenantId = $user->username;
+            if ($user) {
+                // In Laravel models, `username` is typically an attribute, not a method.
+                $tenantId = $user->username ?? null;
+
+                // Fallback: if it's implemented as a method (rare), call it.
+                if (empty($tenantId) && method_exists($user, 'username')) {
+                    $tenantId = $user->username();
+                }
             }
         }
 
