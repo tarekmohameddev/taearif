@@ -6,10 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\UserDistrict;
-use App\Services\GoogleAnalyticsService;
 use App\Services\PropertyTranslationService;
 use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 class PropertyController extends Controller
@@ -27,7 +27,7 @@ class PropertyController extends Controller
 	{
 		$tenant = $this->resolveTenant($request, $tenantId);
 
-		$days = (int) $request->query('days', 30);
+		$days = min(365, max(1, (int) $request->query('days', 30)));
 		$limit = min(50, max(1, (int) $request->query('limit', 10)));
 
 		$startDate = Carbon::today()->subDays($days)->toDateString();
@@ -47,8 +47,55 @@ class PropertyController extends Controller
 			->limit($limit)
 			->get();
 
+		$slugs = $rows->pluck('slug')->filter()->unique()->values()->toArray();
+		if ($slugs === []) {
+			return response()->json([
+				'data' => [],
+				'meta' => [
+					'days' => $days,
+					'limit' => $limit,
+				],
+			]);
+		}
+
+		$contentRows = DB::table('user_property_contents')
+			->where('user_id', $tenant->id)
+			->whereIn('slug', $slugs)
+			->get(['property_id', 'slug']);
+
+		$slugToPropertyId = $contentRows->keyBy('slug')->map->property_id;
+
+		$propertyIds = $contentRows->pluck('property_id')->unique()->values();
+		$propertiesById = Property::query()
+			->with(['contents', 'galleryImages', 'project.contents'])
+			->where('user_id', $tenant->id)
+			->where('status', 1)
+			->whereIn('id', $propertyIds)
+			->get()
+			->keyBy('id');
+
+		$stateIds = $propertiesById->flatMap(fn ($p) => $p->contents->pluck('state_id'))->filter()->unique()->values();
+		$districtsMap = UserDistrict::with('city')
+			->whereIn('id', $stateIds)
+			->get()
+			->keyBy('id');
+
+		$viewsMap = $rows->pluck('views', 'slug')->toArray();
+
+		$items = $rows->map(function ($row) use ($slugToPropertyId, $propertiesById, $districtsMap, $viewsMap) {
+			$slug = $row->slug;
+			$propertyId = $slugToPropertyId[$slug] ?? null;
+			if (! $propertyId || ! isset($propertiesById[$propertyId])) {
+				return null;
+			}
+			$p = $propertiesById[$propertyId];
+			$views = (int) ($viewsMap[$slug] ?? 0);
+
+			return $this->mapPropertyToListItem($p, $views, $districtsMap);
+		})->filter()->values();
+
 		return response()->json([
-			'data' => $rows,
+			'data' => $items,
 			'meta' => [
 				'days' => $days,
 				'limit' => $limit,
@@ -56,7 +103,7 @@ class PropertyController extends Controller
 		]);
 	}
 
-    public function index(Request $request, string $tenantId, GoogleAnalyticsService $analytics)
+    public function index(Request $request, string $tenantId)
 	{
 		$tenant = $this->resolveTenant($request, $tenantId);
 
@@ -67,27 +114,9 @@ class PropertyController extends Controller
 
 		// Filters
 		if ($purpose = $request->query('purpose')) {
-			$purposeMap = [
-				'rent' => ['rent', 'rented'],
-				'sale' => ['sale', 'sold'],
-			];
-			if (isset($purposeMap[$purpose])) {
-				$query->whereIn('purpose', $purposeMap[$purpose]);
-			} else {
-				$query->where('purpose', $purpose);
-			}
-		}
-		// Handle transactionType_en filter (same as purpose but with different parameter name)
-		if ($transactionType = $request->query('transactionType_en')) {
-			$purposeMap = [
-				'rent' => ['rent', 'rented'],
-				'sale' => ['sale', 'sold'],
-			];
-			if (isset($purposeMap[$transactionType])) {
-				$query->whereIn('purpose', $purposeMap[$transactionType]);
-			} else {
-				$query->where('purpose', $transactionType);
-			}
+			$this->applyPurposeFilter($query, $purpose);
+		} elseif ($transactionType = $request->query('transactionType_en')) {
+			$this->applyPurposeFilter($query, $transactionType);
 		}
 		if ($q = $request->query('q')) {
 			$query->whereHas('contents', function ($qbuilder) use ($q) {
@@ -97,7 +126,6 @@ class PropertyController extends Controller
 		}
 		foreach (['type','beds','bath','city_id','state_id','category_id','project_id'] as $eq) {
 			if (!is_null($request->query($eq))) {
-				$field = in_array($eq, ['city_id','state_id','category_id']) ? $eq : $eq; // clarity
 				if (in_array($eq, ['city_id','state_id','category_id'])) {
 					$query->whereHas('contents', function ($qbuilder) use ($eq, $request) {
 						$qbuilder->where($eq, $request->query($eq));
@@ -123,27 +151,22 @@ class PropertyController extends Controller
 		// Sort
 		switch ($request->query('sort')) {
 			case 'most_viewed':
-				$days = (int) $request->query('days', 30);
+				$days = min(365, max(1, (int) $request->query('days', 30)));
 				$startDate = Carbon::today()->subDays($days)->toDateString();
 				$endDate = Carbon::today()->toDateString();
 
-				$slugSub = DB::table('user_property_contents')
-					->select('property_id', DB::raw('MIN(slug) as mv_slug'))
-					->groupBy('property_id');
-
-				$pvSub = DB::table('pageview_analytics')
-					->where('tenant_id', $tenant->username)
-					->where('page_type', 'property')
-					->whereBetween('date_bucket', [$startDate, $endDate])
-					->select('page_slug', DB::raw('SUM(views_count) as pv_total'))
-					->groupBy('page_slug');
+				$pvSub = DB::table('pageview_analytics as pa')
+					->join('user_property_contents as upc', 'upc.slug', '=', 'pa.page_slug')
+					->where('pa.tenant_id', $tenant->username)
+					->where('pa.page_type', 'property')
+					->whereBetween('pa.date_bucket', [$startDate, $endDate])
+					->where('upc.user_id', $tenant->id)
+					->select('upc.property_id', DB::raw('SUM(pa.views_count) as pv_total'))
+					->groupBy('upc.property_id');
 
 				$query
-					->leftJoinSub($slugSub, 'mv_content', function ($join) {
-						$join->on('mv_content.property_id', '=', 'user_properties.id');
-					})
 					->leftJoinSub($pvSub, 'mv_pv', function ($join) {
-						$join->on('mv_pv.page_slug', '=', 'mv_content.mv_slug');
+						$join->on('mv_pv.property_id', '=', 'user_properties.id');
 					})
 					->orderByDesc(DB::raw('COALESCE(mv_pv.pv_total, 0)'))
 					->orderBy('created_at', 'desc');
@@ -202,154 +225,36 @@ class PropertyController extends Controller
             ->get()
             ->keyBy('id');
 
-        // Analytics: views by slug (last N days)
-        $days = (int) $request->query('days', 30);
+        $days = min(365, max(1, (int) $request->query('days', 30)));
+        $startDate = Carbon::today()->subDays($days)->toDateString();
+        $endDate = Carbon::today()->toDateString();
 
-        // Build paths and slugs map in single pass
-        // Support both with and without language prefixes
-        $paths = [];
-        $slugToPathsMap = [];  // slug => array of paths
-        $supportedLanguages = ['ar', 'en'];  // Supported language prefixes
+        $slugs = $properties->getCollection()
+            ->map(fn ($p) => $p->contents->first()?->slug)
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
 
-        foreach ($properties->getCollection() as $p) {
-            $content = $p->contents->first();
-            if ($content && $content->slug) {
-                $slug = $content->slug;
-                $slugToPathsMap[$slug] = [];
-
-                // Add path without language prefix
-                $pathWithoutLang = "/property/{$slug}";
-                $paths[] = $pathWithoutLang;
-                $slugToPathsMap[$slug][] = $pathWithoutLang;
-
-                // Add paths with language prefixes
-                foreach ($supportedLanguages as $lang) {
-                    $pathWithLang = "/{$lang}/property/{$slug}";
-                    $paths[] = $pathWithLang;
-                    $slugToPathsMap[$slug][] = $pathWithLang;
-                }
-            }
-        }
-
-        // Get view counts from Google Analytics
-        // Use backend filtering to get ALL data (including historical), not just recent tenant-filtered data
-        $viewsByPath = [];
-        if (!empty($paths)) {
-            try {
-                // Use getAllAnalyticsWithFilters to query all data, then filter by paths
-                // This includes historical data with empty tenant_id that will be derived from slug
-                $allData = $analytics->getAllAnalyticsWithFilters(
-                    now()->subDays($days),
-                    now(),
-                    [
-                        'tenant_ids' => [$tenant->username],  // Filter by this tenant
-                        'exclude_empty_tenant' => false,      // Include old data (will be matched by slug)
-                        'limit' => count($paths) * 10,        // Get more to ensure we capture all variants
-                    ]
-                );
-
-                // Build a map of path => views from all returned data
-                foreach ($allData['data'] as $item) {
-                    $path = $item['path'];
-                    $views = (int) $item['views'];
-                    if (in_array($path, $paths)) {
-                        $viewsByPath[$path] = ($viewsByPath[$path] ?? 0) + $views;
-                    }
-                }
-
-                // Optional: Log for debugging (remove in production)
-                if ($request->boolean('debug_views')) {
-                    \Log::info('GA Views Debug', [
-                        'tenant' => $tenant->username,
-                        'paths_requested' => $paths,
-                        'views_received' => $viewsByPath,
-                        'days' => $days,
-                    ]);
-                }
-            } catch (\Exception $e) {
-                // Log error but continue without views
-                \Log::error('Google Analytics error in PropertyController', [
-                    'tenant' => $tenant->username,
-                    'error' => $e->getMessage(),
-                    'paths_count' => count($paths),
-                ]);
-            }
-        }
-
-        // Map views to slugs - Sum views from all language variations
         $viewsBySlug = [];
-        foreach ($slugToPathsMap as $slug => $pathVariations) {
-            $totalViews = 0;
-            foreach ($pathVariations as $path) {
-                $totalViews += (int) ($viewsByPath[$path] ?? 0);
-            }
-            $viewsBySlug[$slug] = $totalViews;
+        if ($slugs !== []) {
+            $viewsBySlug = DB::table('pageview_analytics')
+                ->where('tenant_id', $tenant->username)
+                ->where('page_type', 'property')
+                ->whereBetween('date_bucket', [$startDate, $endDate])
+                ->whereIn('page_slug', $slugs)
+                ->select('page_slug', DB::raw('SUM(views_count) as total'))
+                ->groupBy('page_slug')
+                ->pluck('total', 'page_slug')
+                ->toArray();
         }
 
 		$items = $properties->getCollection()->map(function ($p) use ($viewsBySlug, $districtsMap) {
             $content = optional($p->contents->first());
             $slug    = $content?->slug;
+            $views = (int) ($viewsBySlug[$slug] ?? 0);
 
-            // district/city derivation using pre-loaded data
-            $district = $content && $content->state_id && isset($districtsMap[$content->state_id])
-                ? $districtsMap[$content->state_id]
-                : null;
-            $city     = $district?->city;
-            $districtStr = trim(implode(' - ', array_filter([$district->name_ar ?? null, $city->name_ar ?? null])));
-
-            // images (full urls)
-            $featured = $p->featured_image ? asset($p->featured_image) : null;
-            $gallery  = $p->galleryImages->pluck('image')->map(fn($img) => asset($img))->toArray();
-            $images   = array_values(array_unique(array_filter(array_merge([$featured], $gallery))));
-
-
-			// Normalize purpose for public API and map availability
-			$normalizedPurpose = match ($p->purpose) {
-				'rented' => 'rent',
-				'sold' => 'sale',
-				default => $p->purpose,
-			};
-			$isUnavailable = in_array($p->purpose, ['rented', 'sold'], true);
-
-			// Get project data if relationship is loaded
-			$projectData = null;
-			if ($p->relationLoaded('project') && $p->project) {
-				$projectContent = $p->project->contents->first();
-				$projectData = [
-					'id' => $p->project->id,
-					'title' => optional($projectContent)->title ?? '',
-					'slug' => optional($projectContent)->slug ?? '',
-				];
-			}
-
-			return [
-                'id' => (string) $p->id,
-                'slug' => $slug,
-                'title' => $content?->title ?? '',
-                'district' => $districtStr,
-                'price' => isset($p->price) ? formatNumberWithoutTrailingZeros($p->price) : '0',
-                'views' => (int) ($viewsBySlug[$slug] ?? 0),
-                'bedrooms' => (int) ($p->beds ?? 0),
-                'bathrooms' => (int) ($p->bath ?? 0),
-                'area' => isset($p->area) ? formatNumberWithoutTrailingZeros($p->area) : '0',
-                'type' => $this->translator->translateType($p->type),
-				'type_en' => $p->type,
-				'transactionType' => $this->translator->translatePurpose($normalizedPurpose),
-				'transactionType_en' => $normalizedPurpose,
-                'image' => $featured,
-				'status' => $isUnavailable ? 'unavailable' : 'available',
-                'show_reservations' => (bool) $p->show_reservations,
-                'createdAt' => $p->created_at?->toISOString(),
-                'description' => $content?->description ?? '',
-                'features' => is_array($p->features) ? $p->features : [],
-                'location' => [
-                    'lat' => $p->latitude ? (float) $p->latitude : null,
-                    'lng' => $p->longitude ? (float) $p->longitude : null,
-                    'address' => $content?->address ? ($content->address . ($city?->name_ar ? '، ' . $city->name_ar : '')) : '',
-                ],
-                'images' => $images,
-                'project' => $projectData,
-            ];
+            return $this->mapPropertyToListItem($p, $views, $districtsMap);
         });
 
         return response()->json([
@@ -387,52 +292,43 @@ class PropertyController extends Controller
 			->firstOrFail();
 
         $content = $property->contents->first();
-        $district = $content && $content->state_id ? UserDistrict::find($content->state_id) : null;
+
+        $districtsMap = collect();
+        if ($content && $content->state_id) {
+            $districtsMap = UserDistrict::with('city')
+                ->whereIn('id', [$content->state_id])
+                ->get()
+                ->keyBy('id');
+        }
+        $district = $content && $content->state_id && isset($districtsMap[$content->state_id])
+            ? $districtsMap[$content->state_id]
+            : null;
         $city     = $district?->city;
-        $districtStr = trim(implode(' - ', array_filter([$district->name_ar ?? null, $city->name_ar ?? null])));
+        $districtStr = trim(implode(' - ', array_filter([$district?->name_ar ?? null, $city?->name_ar ?? null])));
 
         $featured = $property->featured_image ? asset($property->featured_image) : null;
         $gallery  = $property->galleryImages->pluck('image')->map(fn($img) => asset($img))->toArray();
         $images   = array_values(array_unique(array_filter(array_merge([$featured], $gallery))));
 
-        // Fetch views from Google Analytics
+        $days = min(365, max(1, (int) $request->query('days', 30)));
+        $startDate = Carbon::today()->subDays($days)->toDateString();
+        $endDate = Carbon::today()->toDateString();
         $views = 0;
-        if ($content && $content->slug) {
-            try {
-                $analytics = app(\App\Services\GoogleAnalyticsService::class);
-                $days = (int) $request->query('days', 30);
-
-                // Build paths for this property (with and without language prefixes)
-                $paths = [
-                    "/property/{$content->slug}",
-                    "/ar/property/{$content->slug}",
-                    "/en/property/{$content->slug}",
-                ];
-
-                $allData = $analytics->getAllAnalyticsWithFilters(
-                    now()->subDays($days),
-                    now(),
-                    [
-                        'tenant_ids' => [$tenant->username],
-                        'exclude_empty_tenant' => false,
-                        'limit' => count($paths) * 10,
-                    ]
-                );
-
-                // Sum views across all path variants
-                foreach ($allData['data'] as $item) {
-                    if (in_array($item['path'], $paths)) {
-                        $views += (int) $item['views'];
-                    }
-                }
-            } catch (\Exception $e) {
-                \Log::error('Google Analytics error in PropertyController show', [
-                    'tenant' => $tenant->username,
-                    'slug' => $slug,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+        if ($content?->slug) {
+            $views = (int) DB::table('pageview_analytics')
+                ->where('tenant_id', $tenant->username)
+                ->where('page_type', 'property')
+                ->where('page_slug', $content->slug)
+                ->whereBetween('date_bucket', [$startDate, $endDate])
+                ->sum('views_count');
         }
+
+        $normalizedPurpose = match ($property->purpose) {
+            'rented' => 'rent',
+            'sold' => 'sale',
+            default => $property->purpose,
+        };
+        $isUnavailable = in_array($property->purpose, ['rented', 'sold'], true);
 
 		$data = [
             'id' => (string) $property->id,
@@ -446,10 +342,10 @@ class PropertyController extends Controller
             'area' => isset($property->area) ? formatNumberWithoutTrailingZeros($property->area) : '0',
             'type' => $this->translator->translateType($property->type),
             'type_en' => $property->type ?? '',
-            'transactionType' => $this->translator->translatePurpose($property->purpose),
-            'transactionType_en' => $property->purpose,
+            'transactionType' => $this->translator->translatePurpose($normalizedPurpose),
+            'transactionType_en' => $normalizedPurpose,
             'image' => $featured,
-            'status' => $property->status ? 'available' : 'rented',
+            'status' => $isUnavailable ? 'unavailable' : 'available',
             'createdAt' => $property->created_at?->toISOString(),
             'description' => $content?->description ?? '',
             'features' => is_string($property->features) ? [$property->features] : (is_array($property->features) ? $property->features : []),
@@ -504,6 +400,87 @@ class PropertyController extends Controller
 
 		return response()->json(['property' => $data]);
 	}
+
+	/**
+	 * Apply purpose / transaction type filter (rent/rented, sale/sold).
+	 */
+	protected function applyPurposeFilter(Builder $query, string $purpose): void
+	{
+		$purposeMap = [
+			'rent' => ['rent', 'rented'],
+			'sale' => ['sale', 'sold'],
+		];
+		if (isset($purposeMap[$purpose])) {
+			$query->whereIn('purpose', $purposeMap[$purpose]);
+		} else {
+			$query->where('purpose', $purpose);
+		}
+	}
+
+	/**
+	 * Map a property to the public tenant website list item shape (index + mostViewed).
+	 *
+	 * @param  \Illuminate\Support\Collection<int, \App\Models\User\UserDistrict>  $districtsMap
+	 */
+	protected function mapPropertyToListItem(Property $p, int $views, $districtsMap): array
+	{
+		$content = optional($p->contents->first());
+		$slug = $content?->slug;
+
+		$district = $content && $content->state_id && isset($districtsMap[$content->state_id])
+			? $districtsMap[$content->state_id]
+			: null;
+		$city = $district?->city;
+		$districtStr = trim(implode(' - ', array_filter([$district?->name_ar ?? null, $city?->name_ar ?? null])));
+
+		$featured = $p->featured_image ? asset($p->featured_image) : null;
+		$gallery = $p->galleryImages->pluck('image')->map(fn ($img) => asset($img))->toArray();
+		$images = array_values(array_unique(array_filter(array_merge([$featured], $gallery))));
+
+		$normalizedPurpose = match ($p->purpose) {
+			'rented' => 'rent',
+			'sold' => 'sale',
+			default => $p->purpose,
+		};
+		$isUnavailable = in_array($p->purpose, ['rented', 'sold'], true);
+
+		$projectData = null;
+		if ($p->relationLoaded('project') && $p->project) {
+			$projectContent = $p->project->contents->first();
+			$projectData = [
+				'id' => $p->project->id,
+				'title' => optional($projectContent)->title ?? '',
+				'slug' => optional($projectContent)->slug ?? '',
+			];
+		}
+
+		return [
+			'id' => (string) $p->id,
+			'slug' => $slug,
+			'title' => $content?->title ?? '',
+			'district' => $districtStr,
+			'price' => isset($p->price) ? formatNumberWithoutTrailingZeros($p->price) : '0',
+			'views' => $views,
+			'bedrooms' => (int) ($p->beds ?? 0),
+			'bathrooms' => (int) ($p->bath ?? 0),
+			'area' => isset($p->area) ? formatNumberWithoutTrailingZeros($p->area) : '0',
+			'type' => $this->translator->translateType($p->type),
+			'type_en' => $p->type,
+			'transactionType' => $this->translator->translatePurpose($normalizedPurpose),
+			'transactionType_en' => $normalizedPurpose,
+			'image' => $featured,
+			'status' => $isUnavailable ? 'unavailable' : 'available',
+			'show_reservations' => (bool) $p->show_reservations,
+			'createdAt' => $p->created_at?->toISOString(),
+			'description' => $content?->description ?? '',
+			'features' => is_array($p->features) ? $p->features : [],
+			'location' => [
+				'lat' => $p->latitude ? (float) $p->latitude : null,
+				'lng' => $p->longitude ? (float) $p->longitude : null,
+				'address' => $content?->address ? ($content->address . ($city?->name_ar ? '، ' . $city->name_ar : '')) : '',
+			],
+			'images' => $images,
+			'project' => $projectData,
+		];
+	}
 }
-
-
