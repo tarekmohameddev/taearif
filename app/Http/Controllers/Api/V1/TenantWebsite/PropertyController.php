@@ -9,6 +9,8 @@ use App\Models\User\UserDistrict;
 use App\Services\GoogleAnalyticsService;
 use App\Services\PropertyTranslationService;
 use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class PropertyController extends Controller
 {
@@ -19,6 +21,39 @@ class PropertyController extends Controller
 	public function __construct(PropertyTranslationService $translator)
 	{
 		$this->translator = $translator;
+	}
+
+	public function mostViewed(Request $request, string $tenantId)
+	{
+		$tenant = $this->resolveTenant($request, $tenantId);
+
+		$days = (int) $request->query('days', 30);
+		$limit = min(50, max(1, (int) $request->query('limit', 10)));
+
+		$startDate = Carbon::today()->subDays($days)->toDateString();
+		$endDate = Carbon::today()->toDateString();
+
+		$rows = DB::table('pageview_analytics')
+			->where('tenant_id', $tenant->username)
+			->where('page_type', 'property')
+			->whereBetween('date_bucket', [$startDate, $endDate])
+			->select(
+				'page_slug as slug',
+				DB::raw('MIN(page_path) as path'),
+				DB::raw('SUM(views_count) as views')
+			)
+			->groupBy('page_slug')
+			->orderByDesc('views')
+			->limit($limit)
+			->get();
+
+		return response()->json([
+			'data' => $rows,
+			'meta' => [
+				'days' => $days,
+				'limit' => $limit,
+			],
+		]);
 	}
 
     public function index(Request $request, string $tenantId, GoogleAnalyticsService $analytics)
@@ -87,6 +122,32 @@ class PropertyController extends Controller
 
 		// Sort
 		switch ($request->query('sort')) {
+			case 'most_viewed':
+				$days = (int) $request->query('days', 30);
+				$startDate = Carbon::today()->subDays($days)->toDateString();
+				$endDate = Carbon::today()->toDateString();
+
+				$slugSub = DB::table('user_property_contents')
+					->select('property_id', DB::raw('MIN(slug) as mv_slug'))
+					->groupBy('property_id');
+
+				$pvSub = DB::table('pageview_analytics')
+					->where('tenant_id', $tenant->username)
+					->where('page_type', 'property')
+					->whereBetween('date_bucket', [$startDate, $endDate])
+					->select('page_slug', DB::raw('SUM(views_count) as pv_total'))
+					->groupBy('page_slug');
+
+				$query
+					->leftJoinSub($slugSub, 'mv_content', function ($join) {
+						$join->on('mv_content.property_id', '=', 'user_properties.id');
+					})
+					->leftJoinSub($pvSub, 'mv_pv', function ($join) {
+						$join->on('mv_pv.page_slug', '=', 'mv_content.mv_slug');
+					})
+					->orderByDesc(DB::raw('COALESCE(mv_pv.pv_total, 0)'))
+					->orderBy('created_at', 'desc');
+				break;
 			case 'price_asc':
 				$query->orderBy('price', 'asc');
 				break;

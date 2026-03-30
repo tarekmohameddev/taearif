@@ -2259,6 +2259,40 @@ class PropertyController extends Controller
         // Apply sorting
         $sortParam = $request->input('sort', 'default');
         switch ($sortParam) {
+            case 'most_viewed':
+                $days = (int) $request->input('days', 30);
+                $startDate = Carbon::today()->subDays($days)->toDateString();
+                $endDate = Carbon::today()->toDateString();
+
+                // Join a stable slug per property (MIN slug) to avoid row multiplication.
+                $slugSub = DB::table('user_property_contents')
+                    ->select('property_id', DB::raw('MIN(slug) as mv_slug'))
+                    ->groupBy('property_id');
+
+                $pvSub = DB::table('pageview_analytics')
+                    ->where('tenant_id', $owner->username)
+                    ->where('page_type', 'property')
+                    ->whereBetween('date_bucket', [$startDate, $endDate])
+                    ->select('page_slug', DB::raw('SUM(views_count) as pv_total'))
+                    ->groupBy('page_slug');
+
+                $propertiesQuery
+                    ->leftJoinSub($slugSub, 'mv_content', function ($join) {
+                        $join->on('mv_content.property_id', '=', 'user_properties.id');
+                    })
+                    ->leftJoinSub($pvSub, 'mv_pv', function ($join) {
+                        $join->on('mv_pv.page_slug', '=', 'mv_content.mv_slug');
+                    });
+
+                if ($hasContentJoin) {
+                    // Query is grouped; ensure strict SQL compatibility.
+                    $propertiesQuery
+                        ->addSelect(DB::raw('MAX(COALESCE(mv_pv.pv_total, 0)) as most_viewed_views'))
+                        ->orderByDesc('most_viewed_views');
+                } else {
+                    $propertiesQuery->orderByDesc(DB::raw('COALESCE(mv_pv.pv_total, 0)'));
+                }
+                break;
             case 'price_asc':
                 $propertiesQuery->orderBy('price', 'asc');
                 break;
