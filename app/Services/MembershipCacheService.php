@@ -32,6 +32,7 @@ class MembershipCacheService
         return Cache::remember($cacheKey, 300, function () use ($userId) {
             return Membership::where('user_id', $userId)
                 ->where('status', 1)
+                ->whereDate('expire_date', '>=', now())
                 ->orderBy('id', 'desc')
                 ->with('package')
                 ->first();
