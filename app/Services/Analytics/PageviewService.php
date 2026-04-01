@@ -194,16 +194,23 @@ class PageviewService
      * @param string $tenantId
      * @param int $days
      * @param int $limit
+     * @param string|null $pageType Optional filter: page, post, project, property (matches TrackPageViewRequest)
      * @return array
      */
-    public function getTopPages(string $tenantId, int $days = 30, int $limit = 10): array
+    public function getTopPages(string $tenantId, int $days = 30, int $limit = 10, ?string $pageType = null): array
     {
         $startDate = Carbon::today()->subDays($days)->toDateString();
         $endDate = Carbon::today()->toDateString();
 
-        return DB::table('pageview_analytics')
+        $query = DB::table('pageview_analytics')
             ->where('tenant_id', $tenantId)
-            ->whereBetween('date_bucket', [$startDate, $endDate])
+            ->whereBetween('date_bucket', [$startDate, $endDate]);
+
+        if ($pageType !== null && $pageType !== '') {
+            $query->where('page_type', $pageType);
+        }
+
+        return $query
             ->select(
                 'page_slug',
                 'dynamic_slug',

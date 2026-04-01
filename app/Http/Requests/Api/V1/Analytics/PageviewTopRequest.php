@@ -16,6 +16,7 @@ class PageviewTopRequest extends BaseApiFormRequest
         return [
             'days' => 'nullable|integer|min:1|max:365',
             'limit' => 'nullable|integer|min:1|max:100',
+            'page_type' => 'nullable|string|in:page,post,project,property',
         ];
     }
 }

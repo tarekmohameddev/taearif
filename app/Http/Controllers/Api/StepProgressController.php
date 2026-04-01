@@ -13,13 +13,29 @@ class StepProgressController extends Controller
      * Step map configuration - moved to class constant to avoid per-request allocation
      */
     private const STEP_MAP = [
+        'banner' => [
+            'path' => '/content/banner',
+            'text' => 'قم بتخصيص البانر الخاص بك',
+        ],
         'footer' => [
             'path' => '/content/footer',
-            'text' => "قم بتخصيص التذييل الخاص بك",
+            'text' => 'قم بتخصيص التذييل الخاص بك',
+        ],
+        'homepage_about_update' => [
+            'path' => '/content/about',
+            'text' => 'قم بتحديث قسم من نحن',
+        ],
+        'menu_builder' => [
+            'path' => '/content/menu',
+            'text' => 'قم بإعداد قائمة الموقع',
+        ],
+        'projects' => [
+            'path' => '/projects/add',
+            'text' => 'أضف أول مشروع',
         ],
         'properties' => [
             'path' => '/properties/add',
-            'text' => "اضف اول عقار الآن",
+            'text' => 'اضف اول عقار الآن',
         ],
     ];
 
@@ -81,27 +97,23 @@ class StepProgressController extends Controller
 
         $steps->{$validated['step']} = true;
         // Optional: check if all steps are completed now
-        $stepKeys = ['banner','footer','about','menu','projects','properties'];
-        $remaining = collect($steps->only($stepKeys))->filter(fn($v) => !$v);
+        $stepKeys = ['banner', 'footer', 'homepage_about_update', 'menu_builder', 'projects', 'properties'];
+        $remaining = collect($steps->only($stepKeys))->filter(fn ($v) => ! $v);
 
-        if ($remaining->isEmpty() && !$steps->completed_at) {
+        if ($remaining->isEmpty() && ! $steps->completed_at) {
             $steps->completed_at = now();
         }
 
         $steps->save();
 
         $data = $steps->only($stepKeys);
-        $progress = collect($data)->filter(fn($v) => $v)->count();
+        $progress = collect($data)->filter(fn ($v) => $v)->count();
         $percentage = intval(($progress / count($stepKeys)) * 100);
 
-        $continuePath = collect(array_combine($stepKeys, [
-            '/content/banner',
-            '/content/footer',
-            '/content/about',
-            '/content/menu',
-            '/projects/add',
-            '/properties/add',
-        ]))->filter(fn($_, $key) => empty($data[$key]))->first();
+        $continuePath = collect(self::STEP_MAP)
+            ->filter(fn ($_, $key) => empty($data[$key]))
+            ->pluck('path')
+            ->first();
 
         return response()->json([
             'message' => 'Step marked as completed.',
