@@ -12,6 +12,33 @@ class StorePropertyRequestRequest extends BaseApiFormRequest
         return true;
     }
 
+    /**
+     * Accept lowercase English (e.g. residential) and normalize to stored canonical English (Residential).
+     */
+    protected function prepareForValidation(): void
+    {
+        if (! $this->has('property_type')) {
+            return;
+        }
+
+        $value = $this->input('property_type');
+        if (! is_string($value) || $value === '') {
+            return;
+        }
+
+        $englishToCanonical = [
+            'residential' => 'Residential',
+            'commercial' => 'Commercial',
+            'agricultural' => 'Agricultural',
+            'industrial' => 'Industrial',
+        ];
+
+        $lower = strtolower($value);
+        if (isset($englishToCanonical[$lower])) {
+            $this->merge(['property_type' => $englishToCanonical[$lower]]);
+        }
+    }
+
     public function rules()
     {
         return [
