@@ -92,12 +92,6 @@ class ApiPropertyRequestController extends Controller
         $data['city_id'] = $regionId;
         $data['region'] = $city ? $city->name_ar : null;
 
-        // property_type from request should go into category_id
-        if (array_key_exists('property_type', $data) && $data['property_type'] !== null && $data['property_type'] !== '') {
-            $data['category_id'] = $data['property_type'];
-            unset($data['property_type']);
-        }
-
         // category from request should go into property_type (Arabic → English)
         if (isset($data['category']) && $data['category'] !== null && $data['category'] !== '') {
             $categoryMap = [
