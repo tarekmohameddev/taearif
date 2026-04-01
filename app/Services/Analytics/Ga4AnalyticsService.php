@@ -126,10 +126,16 @@ class Ga4AnalyticsService
                         continue;
                     }
 
+                    [$derivedType, $derivedSlug] = $this->deriveTypeAndSlugFromPath($pagePath);
+
                     $rowsToInsert[] = [
                         'tenant_id' => $rowTenantId,
                         'page_path' => $pagePath,
                         'page_title' => $pageTitle ?: null,
+                        // Backfill fields used by API filtering/widgets
+                        'page_type' => $derivedType,
+                        'page_slug' => $derivedSlug ?? '',
+                        'full_path' => $pagePath, // legacy alias used in v1 analytics/top-pages
                         'views_count' => $screenPageViews,
                         'sessions_count' => $sessions,
                         'users_count' => $users,
@@ -204,11 +210,14 @@ class Ga4AnalyticsService
             $bindings = [];
             
             foreach ($rows as $row) {
-                $values[] = "(?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+                $values[] = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
                 $bindings = array_merge($bindings, [
                     $row['tenant_id'],
                     $row['page_path'],
                     $row['page_title'],
+                    $row['page_type'],
+                    $row['page_slug'],
+                    $row['full_path'],
                     $row['views_count'],
                     $row['sessions_count'],
                     $row['users_count'],
@@ -218,10 +227,13 @@ class Ga4AnalyticsService
 
             $sql = "
                 INSERT INTO pageview_analytics 
-                (tenant_id, page_path, page_title, views_count, sessions_count, users_count, date_bucket, created_at, updated_at)
+                (tenant_id, page_path, page_title, page_type, page_slug, full_path, views_count, sessions_count, users_count, date_bucket, created_at, updated_at)
                 VALUES " . implode(', ', $values) . "
                 ON DUPLICATE KEY UPDATE
                     page_title = COALESCE(VALUES(page_title), page_title),
+                    page_type = COALESCE(VALUES(page_type), page_type),
+                    page_slug = COALESCE(NULLIF(VALUES(page_slug), ''), page_slug),
+                    full_path = COALESCE(VALUES(full_path), full_path),
                     views_count = views_count + VALUES(views_count),
                     sessions_count = sessions_count + VALUES(sessions_count),
                     users_count = users_count + VALUES(users_count),
@@ -230,6 +242,32 @@ class Ga4AnalyticsService
 
             DB::statement($sql, $bindings);
         });
+    }
+
+    /**
+     * Best-effort derive content type/slug from a GA4 pagePath.
+     * Examples:
+     * - /property/{slug}
+     * - /ar/property/{slug}
+     * - /en/project/{slug}
+     */
+    protected function deriveTypeAndSlugFromPath(string $path): array
+    {
+        $parts = array_values(array_filter(explode('/', trim($path, '/'))));
+
+        if (count($parts) < 2) {
+            return [null, null];
+        }
+
+        if (in_array($parts[0], ['property', 'project'], true)) {
+            return [$parts[0], $parts[1] ?? null];
+        }
+
+        if (count($parts) >= 3 && in_array($parts[1], ['property', 'project'], true)) {
+            return [$parts[1], $parts[2] ?? null];
+        }
+
+        return [null, null];
     }
 
     /**
