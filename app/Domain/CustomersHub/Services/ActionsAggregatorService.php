@@ -8,16 +8,17 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * ActionsAggregatorService
- * 
+ *
  * Aggregates customer actions from multiple legacy tables using UNION ALL.
  * This is a READ-ONLY layer that does NOT modify legacy tables.
- * 
- * Source tables:
- * - api_customer_inquiry (inquiries, callbacks, whatsapp)
+ *
+ * Source tables (UNION):
+ * - api_customer_inquiry (one row per customer: latest inquiry only; hidden if an active property request exists for same customer/phone)
  * - users_property_requests (property matches)
  * - reminders (follow-ups)
- * - property_request_appointments (request-level site visits)
- * - property_request_reminders (request-level reminders)
+ *
+ * Note: property_request_appointments and property_request_reminders are NOT unioned as separate
+ * actions — they are attached to property_request rows in RequestsController::list to avoid duplicate cards.
  */
 class ActionsAggregatorService
 {
@@ -64,15 +65,14 @@ class ActionsAggregatorService
         $inquiriesQuery = $this->getInquiriesSubquery($userId);
         $propertyRequestsQuery = $this->getPropertyRequestsSubquery($userId);
         $remindersQuery = $this->getRemindersSubquery($userId);
-        $requestAppointmentsQuery = $this->getRequestAppointmentsSubquery($userId);
-        $requestRemindersQuery = $this->getRequestRemindersSubquery($userId);
 
-        // Build UNION ALL
+        // Build UNION ALL.
+        // property_request_appointments and property_request_reminders are intentionally excluded here:
+        // they are already nested inside each property_request card by RequestsController::list,
+        // so including them in the UNION would show them twice (once nested, once as a top-level card).
         $unionQuery = $inquiriesQuery
             ->unionAll($propertyRequestsQuery)
-            ->unionAll($remindersQuery)
-            ->unionAll($requestAppointmentsQuery)
-            ->unionAll($requestRemindersQuery);
+            ->unionAll($remindersQuery);
 
         // Wrap in subquery for filtering and ordering
         $query = DB::query()->fromSub($unionQuery, 'actions');
@@ -1173,13 +1173,46 @@ class ActionsAggregatorService
 
     /**
      * Build inquiries subquery.
+     *
+     * Two deduplication rules applied here:
+     *  1. Only the LATEST inquiry per customer (MAX id grouped by customer_id) is returned,
+     *     so a customer who sent 10 inquiries shows as one card, not ten.
+     *  2. If an active property_request already exists for the same tenant and the same
+     *     customer (matched by customer_id OR by phone number), the inquiry is suppressed —
+     *     the property_request card already represents that customer.
      */
     private function getInquiriesSubquery(int $userId): \Illuminate\Database\Query\Builder
     {
+        // Subquery: MAX inquiry id per customer for this tenant
+        $latestIds = DB::table('api_customer_inquiry')
+            ->selectRaw('MAX(id) as id')
+            ->where('user_id', $userId)
+            ->groupBy('customer_id');
+
         return DB::table('api_customer_inquiry as aci')
+            ->joinSub($latestIds, 'li', 'aci.id', '=', 'li.id')
             ->join('api_customers as ac', 'aci.customer_id', '=', 'ac.id')
             ->leftJoin('users as u', 'aci.responsible_employee_id', '=', 'u.id')
             ->where('aci.user_id', $userId)
+            // Suppress inquiry when an active property_request already exists for this customer
+            ->whereNotExists(function ($q) use ($userId) {
+                $q->selectRaw('1')
+                    ->from('users_property_requests as upr')
+                    ->where('upr.user_id', $userId)
+                    ->where('upr.is_active', 1)
+                    ->where(function ($q2) {
+                        $q2->where(function ($q3) {
+                            // matched by customer_id
+                            $q3->whereNotNull('upr.customer_id')
+                                ->whereColumn('upr.customer_id', 'aci.customer_id');
+                        })->orWhere(function ($q3) {
+                            // matched by phone number
+                            $q3->whereNotNull('upr.phone')
+                                ->whereNotNull('ac.phone_number')
+                                ->whereColumn('upr.phone', 'ac.phone_number');
+                        });
+                    });
+            })
             ->select([
                 DB::raw("CONCAT('inquiry_', aci.id) as id"),
                 'aci.customer_id as customerId',
@@ -1490,8 +1523,32 @@ class ActionsAggregatorService
                         ->whereIn('status', ['pending', 'in_progress']);
                     break;
                 case 'followups':
-                    $query->whereIn('type', ['follow_up', 'site_visit'])
-                        ->whereIn('status', ['pending', 'in_progress']);
+                    // Standalone follow_up / site_visit rows (reminders table) stay as before.
+                    // Also include property_request rows that have at least one scheduled appointment
+                    // or pending reminder — those were previously surfaced as separate request_appointment /
+                    // request_reminder cards but are no longer in the UNION.
+                    $query->where(function ($q) use ($userId) {
+                        $q->where(function ($q2) {
+                            $q2->whereIn('type', ['follow_up', 'site_visit'])
+                                ->whereIn('status', ['pending', 'in_progress']);
+                        })->orWhere(function ($q2) use ($userId) {
+                            $q2->where('objectType', 'property_request')
+                                ->whereIn('status', ['pending', 'in_progress'])
+                                ->where(function ($q3) use ($userId) {
+                                    $q3->whereIn('sourceId', function ($sub) use ($userId) {
+                                        $sub->select('property_request_id')
+                                            ->from('property_request_appointments')
+                                            ->where('user_id', $userId)
+                                            ->where('status', 'scheduled');
+                                    })->orWhereIn('sourceId', function ($sub) use ($userId) {
+                                        $sub->select('property_request_id')
+                                            ->from('property_request_reminders')
+                                            ->where('user_id', $userId)
+                                            ->where('status', 'pending');
+                                    });
+                                });
+                        });
+                    });
                     break;
                 case 'all':
                     $query->whereIn('status', ['pending', 'in_progress']);
