@@ -186,7 +186,7 @@ Route::get('/referrals/{code}', [ReferralController::class, 'show']);  // /api/r
 
 // Analytics: public tracking endpoint
 Route::post('/v1/analytics/page-view', [PageviewController::class, 'track'])
-    ->middleware('throttle:100,1'); // 100 requests per minute for tracking
+    ->middleware('throttle:api_tracking'); // 100 requests per minute for tracking (production only)
 
 // Public admin articles (admin_articles + admin_articles_categories) — unique paths, no auth
 Route::get('/public/admin-article-categories', [PublicAdminArticlesController::class, 'categories']);
@@ -266,23 +266,23 @@ Route::middleware(['auth:sanctum', 'require.active.package'])->group(function ()
 // --- Analytics (v1 pageview & GA4) ---
 Route::prefix('v1/analytics')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/dashboard', [PageviewController::class, 'dashboard'])
-        ->middleware('throttle:60,1'); // 60 requests per minute
+        ->middleware('throttle:api_standard_60'); // 60 requests per minute (production only)
     Route::get('/top-pages', [PageviewController::class, 'topPages'])
-        ->middleware('throttle:60,1');
+        ->middleware('throttle:api_standard_60');
     Route::get('/top-posts', [PageviewController::class, 'topPosts'])
-        ->middleware('throttle:60,1');
+        ->middleware('throttle:api_standard_60');
     Route::get('/views-summary', [PageviewController::class, 'summary'])
-        ->middleware('throttle:60,1');
+        ->middleware('throttle:api_standard_60');
 });
 
 // GA4 Analytics Routes (v1) - Read from database (no live GA calls)
 Route::prefix('v1/analytics/ga4')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/dashboard', [Ga4AnalyticsController::class, 'dashboard'])
-        ->middleware('throttle:60,1'); // 60 requests per minute
+        ->middleware('throttle:api_standard_60'); // 60 requests per minute (production only)
     Route::get('/top-pages', [Ga4AnalyticsController::class, 'topPages'])
-        ->middleware('throttle:60,1');
+        ->middleware('throttle:api_standard_60');
     Route::get('/properties-visits', [Ga4AnalyticsController::class, 'propertiesVisits'])
-        ->middleware('throttle:60,1');
+        ->middleware('throttle:api_standard_60');
 });
 
 // --- Blog (legacy) ---
@@ -1036,7 +1036,7 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
     Route::post('save-pages', [SavePagesController::class, 'store'])->middleware('auth:sanctum');
 
     // Tenant Website Pixels (public)
-    Route::get('{tenantId}/pixels', [TenantWebsitePixelController::class, 'index'])->middleware('throttle:60,1');
+    Route::get('{tenantId}/pixels', [TenantWebsitePixelController::class, 'index'])->middleware('throttle:api_standard_60');
 
     // Unified search endpoint (public) - must be before more specific routes
     Route::get('{tenantId}', [\App\Http\Controllers\Api\V1\TenantWebsite\SearchController::class, 'index']);
@@ -1056,9 +1056,9 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
     Route::post('{tenantId}/forms/contact', [FormController::class, 'store']);
 
 	// Tenant Website Reservations (public - rate limited)
-	Route::post('{tenantId}/reservations', [\App\Http\Controllers\Api\V1\TenantWebsite\ReservationController::class, 'store'])->middleware('throttle:5,1');
+	Route::post('{tenantId}/reservations', [\App\Http\Controllers\Api\V1\TenantWebsite\ReservationController::class, 'store'])->middleware('throttle:api_tenant_reservations');
 
-	Route::post('{tenantId}/job-applications', [\App\Http\Controllers\Api\V1\TenantWebsite\JobApplicationController::class, 'store'])->middleware('throttle:10,1');
+	Route::post('{tenantId}/job-applications', [\App\Http\Controllers\Api\V1\TenantWebsite\JobApplicationController::class, 'store'])->middleware('throttle:api_tenant_job_applications');
 
     // Tenant Website Properties (public)
     Route::get('{tenantId}/properties', [\App\Http\Controllers\Api\V1\TenantWebsite\PropertyController::class, 'index']);

@@ -42,7 +42,7 @@ class Kernel extends HttpKernel
         'api' => [
             \App\Http\Middleware\SanctumTokenOnlyForApi::class, // API: Bearer-only; no web guard / TransientToken
             // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-            'throttle:60,1',
+            'throttle:api',
             'bindings',
             \App\Http\Middleware\SetTenantSessionDomain::class,
             \App\Http\Middleware\SetTenantForPermissions::class,
@@ -50,7 +50,7 @@ class Kernel extends HttpKernel
         ],
 
         'admin-api' => [
-            'throttle:120,1',
+            'throttle:admin_api_general',
             'bindings',
         ],
         // 'api' => [
