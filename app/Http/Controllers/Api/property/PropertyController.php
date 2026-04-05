@@ -2357,10 +2357,6 @@ class PropertyController extends Controller
         // Cache for 5 minutes (shorter TTL for first page, can be adjusted)
         $cacheTTL = $request->input('page', 1) == 1 ? 300 : 600; // 5 min for page 1, 10 min for others
 
-        // OPTIMIZED: Cache pagination COUNT separately to avoid executing on every request
-        $totalCountCacheKey = $cacheKey . '_total';
-        $totalCount = null;
-
         // OPTIMIZED: Add cache stampede protection using locks
         // Prevents multiple requests from regenerating cache simultaneously when cache expires
         $lockKey = 'lock_' . $cacheKey;
@@ -2436,14 +2432,11 @@ class PropertyController extends Controller
                 return $propertiesQuery->simplePaginate($perPage);
             });
         } else {
-            // Full pagination with COUNT query
+            // Full pagination: total/last_page come from LengthAwarePaginator (correct after cache hit too).
+            // Do not run a separate count() on the builder after paginate() — it can return 0 with JOIN/GROUP BY
+            // and was cached per-page, breaking pagination metadata on page 2+.
             $properties = $getOrSetCache($cacheKey, $cacheTTL, function () use ($propertiesQuery, $perPage) {
                 return $propertiesQuery->paginate($perPage);
-            });
-
-            // Cache the total count separately to avoid re-executing COUNT on cached results
-            $totalCount = $getOrSetCache($totalCountCacheKey, $cacheTTL, function () use ($propertiesQuery) {
-                return $propertiesQuery->count();
             });
         }
 
@@ -2689,9 +2682,9 @@ class PropertyController extends Controller
                 $paginationData['next_page_url'] = $properties->nextPageUrl();
             }
         } else {
-            // Full pagination: include total count and last page
-            $paginationData['total'] = $totalCount ?? $properties->total();
-            $paginationData['last_page'] = (int) ceil(($totalCount ?? $properties->total()) / $properties->perPage());
+            // Full pagination: include total count and last page (single source of truth from paginator)
+            $paginationData['total'] = $properties->total();
+            $paginationData['last_page'] = $properties->lastPage();
         }
 
         // Build response data
