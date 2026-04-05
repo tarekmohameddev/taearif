@@ -50,7 +50,7 @@ class Kernel extends HttpKernel
         ],
 
         'admin-api' => [
-            'throttle:120,1',
+            'throttle:admin_api_general',
             'bindings',
         ],
         // 'api' => [

@@ -52,15 +52,15 @@ Route::prefix(config('admin-api.prefix'))
          */
         Route::post('login', [AuthController::class, 'login'])
             ->name('login')
-            ->middleware('throttle:' . config('admin-api.rate_limits.login'));
+            ->middleware('throttle:admin_api_login');
 
         Route::post('forgot-password', [AuthController::class, 'forgotPassword'])
             ->name('forgot-password')
-            ->middleware('throttle:' . config('admin-api.rate_limits.forgot_password'));
+            ->middleware('throttle:admin_api_forgot');
 
         Route::post('reset-password', [AuthController::class, 'resetPassword'])
             ->name('reset-password')
-            ->middleware('throttle:' . config('admin-api.rate_limits.forgot_password'));
+            ->middleware('throttle:admin_api_forgot');
     });
 
 // =============================================================================

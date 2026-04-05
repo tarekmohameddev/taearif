@@ -12,6 +12,33 @@ class StorePropertyRequestRequest extends BaseApiFormRequest
         return true;
     }
 
+    /**
+     * Accept lowercase English (e.g. residential) and normalize to stored canonical English (Residential).
+     */
+    protected function prepareForValidation(): void
+    {
+        if (! $this->has('property_type')) {
+            return;
+        }
+
+        $value = $this->input('property_type');
+        if (! is_string($value) || $value === '') {
+            return;
+        }
+
+        $englishToCanonical = [
+            'residential' => 'Residential',
+            'commercial' => 'Commercial',
+            'agricultural' => 'Agricultural',
+            'industrial' => 'Industrial',
+        ];
+
+        $lower = strtolower($value);
+        if (isset($englishToCanonical[$lower])) {
+            $this->merge(['property_type' => $englishToCanonical[$lower]]);
+        }
+    }
+
     public function rules()
     {
         return [
@@ -28,13 +55,23 @@ class StorePropertyRequestRequest extends BaseApiFormRequest
                 'import',
             ])],
             'referral_source' => ['nullable', 'string'],
-            'property_type' => 'nullable',
+            'property_type' => ['nullable', 'string', Rule::in([
+                'Residential',
+                'Commercial',
+                'Agricultural',
+                'Industrial',
+                'سكني',
+                'تجاري',
+                'صناعي',
+                'زراعي',
+            ])],
+            'category_id' => ['nullable', 'integer', Rule::exists('api_user_categories', 'id')],
             'category' => 'nullable|string',
             'region' => ['nullable', 'integer', Rule::exists('user_cities', 'id')],
             'districts_id' => ['nullable', 'integer', Rule::exists('user_districts', 'id')],
             'area_from' => 'nullable|integer|min:0',
             'area_to' => 'nullable|integer|min:0',
-            'purchase_method' => 'nullable',
+            'purchase_method' => ['nullable', Rule::in(['كاش', 'تمويل بنكي'])],
             'budget_from' => 'nullable',
             'budget_to' => 'nullable',
             'seriousness' => ['nullable', 'string', Rule::in(['مستعد فورًا', 'خلال شهر', 'خلال 3 أشهر', 'لاحقًا / استكشاف فقط'])],

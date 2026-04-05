@@ -30,10 +30,10 @@ use Carbon\Carbon;
 
 /**
  * RequestsController
- * 
+ *
  * API endpoints for Customers Hub Requests Center.
  * Implements read-only aggregation from legacy tables.
- * 
+ *
  * Routes:
  * - POST /api/v2/customers-hub/requests/list
  * - GET  /api/v2/customers-hub/requests/filter-options
@@ -61,7 +61,7 @@ class RequestsController extends ApiController
 
     /**
      * POST /api/v2/customers-hub/requests/list
-     * 
+     *
      * Get paginated list of customer actions with filtering.
      */
     public function list(RequestsListRequest $request): JsonResponse
@@ -237,7 +237,7 @@ class RequestsController extends ApiController
 
     /**
      * GET /api/v2/customers-hub/requests/filter-options
-     * 
+     *
      * Get available filter options for the requests center.
      * Cached for 30 minutes per user.
      */
@@ -296,12 +296,11 @@ class RequestsController extends ApiController
             ];
 
             // Object types (for filtering by kind of record)
+            // request_appointment / request_reminder are nested on property_request rows, not separate list actions
             $objectTypes = [
                 ['id' => 'inquiry', 'label' => 'استفسار', 'labelEn' => 'Inquiry'],
                 ['id' => 'property_request', 'label' => 'طلب عقار', 'labelEn' => 'Property Request'],
                 ['id' => 'reminder', 'label' => 'تذكير', 'labelEn' => 'Reminder'],
-                ['id' => 'request_appointment', 'label' => 'موعد طلب', 'labelEn' => 'Request Appointment'],
-                ['id' => 'request_reminder', 'label' => 'تذكير طلب', 'labelEn' => 'Request Reminder'],
             ];
 
             // Appointment types (for filtering property requests by appointment type)
@@ -369,7 +368,7 @@ class RequestsController extends ApiController
 
     /**
      * GET /api/v2/customers-hub/requests/{requestId}
-     * 
+     *
      * Get single action detail with related actions.
      */
     public function show(Request $request, string $requestId): JsonResponse
@@ -417,7 +416,7 @@ class RequestsController extends ApiController
 
     /**
      * GET /api/v2/customers-hub/requests/{requestId}/stats
-     * 
+     *
      * Get stats for a specific action's customer.
      */
     public function actionStats(Request $request, string $requestId): JsonResponse
@@ -448,7 +447,7 @@ class RequestsController extends ApiController
 
     /**
      * POST /api/v2/customers-hub/requests/{requestId}/complete
-     * 
+     *
      * Mark an action as completed.
      */
     public function complete(Request $request, string $requestId): JsonResponse
@@ -472,7 +471,7 @@ class RequestsController extends ApiController
 
     /**
      * POST /api/v2/customers-hub/requests/{requestId}/dismiss
-     * 
+     *
      * Dismiss an action.
      */
     public function dismiss(DismissRequest $request, string $requestId): JsonResponse
@@ -1015,7 +1014,7 @@ class RequestsController extends ApiController
 
     /**
      * POST /api/v2/customers-hub/requests/bulk-complete
-     * 
+     *
      * Bulk complete multiple actions.
      */
     public function bulkComplete(BulkCompleteRequest $request): JsonResponse
@@ -1041,7 +1040,7 @@ class RequestsController extends ApiController
 
     /**
      * POST /api/v2/customers-hub/requests/bulk-dismiss
-     * 
+     *
      * Bulk dismiss multiple actions.
      */
     public function bulkDismiss(BulkDismissRequest $request): JsonResponse

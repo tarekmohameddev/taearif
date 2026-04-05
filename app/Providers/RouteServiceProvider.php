@@ -36,10 +36,7 @@ class RouteServiceProvider extends ServiceProvider
         // Pattern for domain route parameter
         Route::pattern('domain', '[a-z0-9.\-]+');
 
-        // Define a custom global API rate limiter
-        RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(100)->by(optional($request->user())->id ?: $request->ip());
-        });
+        $this->registerProductionAwareRateLimiters();
 
         // Admin routes are loaded in mapAdminRoutes() method
         // But we need to ensure they're loaded here too for proper registration
@@ -119,5 +116,60 @@ class RouteServiceProvider extends ServiceProvider
             ->middleware('api')
             ->namespace($this->namespace)
             ->group(base_path('routes/admin-api.php'));
+    }
+
+    /**
+     * Named rate limiters; outside production all return Limit::none().
+     */
+    protected function registerProductionAwareRateLimiters(): void
+    {
+        $only = function (callable $limit) {
+            return function (Request $request) use ($limit) {
+                if (! app()->environment('production')) {
+                    return Limit::none();
+                }
+
+                return $limit($request);
+            };
+        };
+
+        RateLimiter::for('api', $only(function (Request $request) {
+            return Limit::perMinute(60)->by(optional($request->user())->id ?: $request->ip());
+        }));
+
+        RateLimiter::for('api_tracking', $only(function (Request $request) {
+            return Limit::perMinute(100)->by(optional($request->user())->id ?: $request->ip());
+        }));
+
+        RateLimiter::for('api_standard_60', $only(function (Request $request) {
+            return Limit::perMinute(60)->by(optional($request->user())->id ?: $request->ip());
+        }));
+
+        RateLimiter::for('api_tenant_reservations', $only(function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        }));
+
+        RateLimiter::for('api_tenant_job_applications', $only(function (Request $request) {
+            return Limit::perMinute(10)->by($request->ip());
+        }));
+
+        RateLimiter::for('admin_api_login', $only(function (Request $request) {
+            [$max] = array_map('intval', explode(',', config('admin-api.rate_limits.login'), 2));
+
+            return Limit::perMinute($max)->by($request->ip());
+        }));
+
+        RateLimiter::for('admin_api_forgot', $only(function (Request $request) {
+            [$max] = array_map('intval', explode(',', config('admin-api.rate_limits.forgot_password'), 2));
+
+            return Limit::perMinute($max)->by($request->ip());
+        }));
+
+        RateLimiter::for('admin_api_general', $only(function (Request $request) {
+            [$max] = array_map('intval', explode(',', config('admin-api.rate_limits.general'), 2));
+            $user = $request->user(config('admin-api.guard'));
+
+            return Limit::perMinute($max)->by(optional($user)->id ?: $request->ip());
+        }));
     }
 }
