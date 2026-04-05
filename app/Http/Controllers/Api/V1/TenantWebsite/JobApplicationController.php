@@ -34,7 +34,10 @@ class JobApplicationController extends Controller
         } catch (\Exception $e) {
             Log::warning('Job application PDF upload failed', [
                 'tenant_id' => $tenant->id,
+                'tenant_slug' => $tenantId,
+                'exception' => get_class($e),
                 'error' => $e->getMessage(),
+                'ip' => $request->ip(),
             ]);
             $payload = [
                 'success' => false,
@@ -53,6 +56,13 @@ class JobApplicationController extends Controller
             'email' => $validated['email'],
             'description' => $validated['description'] ?? null,
             'pdf_path' => $pdfPath,
+        ]);
+
+        Log::info('Job application submitted', [
+            'tenant_id' => $tenant->id,
+            'tenant_slug' => $tenantId,
+            'job_application_id' => $app->id,
+            'ip' => $request->ip(),
         ]);
 
         return response()->json([

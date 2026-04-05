@@ -18,6 +18,7 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use App\Exceptions\Api\ApiException;
 use App\Http\Responses\ApiResponse;
 
@@ -146,6 +147,7 @@ class Handler extends ExceptionHandler
                     'bindings' => $exception->getBindings() ?? [],
                     'url' => $request->fullUrl(),
                     'user_id' => auth()->id(),
+                    'tenant_id' => $request->route('tenantId'),
                 ]);
 
                 return response()->json([
@@ -158,6 +160,29 @@ class Handler extends ExceptionHandler
                 ], 500);
             }
 
+            // Rate limiting (throttle middleware) — expected, not an application bug
+            if ($exception instanceof ThrottleRequestsException) {
+                \Log::warning('Rate limit exceeded', [
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'tenant_id' => $request->route('tenantId'),
+                    'user_id' => auth()->id(),
+                    'ip' => $request->ip(),
+                ]);
+
+                $payload = [
+                    'status' => 'error',
+                    'code' => 'RATE_LIMITED',
+                    'message' => 'Too many requests. Please wait a moment and try again.',
+                    'timestamp' => now()->toIso8601String(),
+                ];
+                if ($request->route('tenantId')) {
+                    $payload['tenant_id'] = $request->route('tenantId');
+                }
+
+                return response()->json($payload, 429, $exception->getHeaders());
+            }
+
             // Fallback - Log the error for debugging
             \Log::error('Unhandled API exception', [
                 'exception_class' => get_class($exception),
@@ -167,6 +192,7 @@ class Handler extends ExceptionHandler
                 'url' => $request->fullUrl(),
                 'method' => $request->method(),
                 'user_id' => auth()->id(),
+                'tenant_id' => $request->route('tenantId'),
                 'ip' => $request->ip(),
             ]);
 
