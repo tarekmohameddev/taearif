@@ -1065,6 +1065,226 @@ class RequestsController extends ApiController
     }
 
     // =========================================================================
+    // MATCHING APIs (V2)
+    // =========================================================================
+
+    /**
+     * GET /api/v2/customers-hub/requests/{requestId}/matches
+     *
+     * Returns matched properties for a property request along with completeness status.
+     * Only works for property_request_* composite IDs.
+     */
+    public function matches(Request $request, string $requestId): JsonResponse
+    {
+        $userId = $this->getTenantUserId($request);
+        $propertyRequest = $this->resolvePropertyRequestForMatching($requestId, $userId);
+
+        if ($propertyRequest === null) {
+            return $this->error('Request not found or not matchable', 404);
+        }
+
+        $completeness = app(\App\Services\Matching\RequestCompletenessService::class)
+            ->validateMinimal('web', $propertyRequest->id);
+
+        $matches = DB::table('property_matches as pm')
+            ->where('pm.user_id', $userId)
+            ->where('pm.request_type', 'web')
+            ->where('pm.request_id', $propertyRequest->id)
+            ->orderByDesc('pm.match_score')
+            ->get(['pm.id', 'pm.property_id', 'pm.match_score', 'pm.database_score', 'pm.ai_score',
+                   'pm.match_explanation', 'pm.matched_criteria', 'pm.is_reviewed']);
+
+        $matchItems = $matches->map(function ($m) {
+            $prop = \App\Models\User\RealestateManagement\Property::find($m->property_id);
+            return [
+                'match_id'        => $m->id,
+                'property_id'     => $m->property_id,
+                'match_score'     => (int) $m->match_score,
+                'database_score'  => (int) $m->database_score,
+                'ai_score'        => (int) $m->ai_score,
+                'match_explanation' => $m->match_explanation,
+                'matched_criteria'  => is_string($m->matched_criteria)
+                    ? json_decode($m->matched_criteria, true)
+                    : $m->matched_criteria,
+                'is_reviewed'     => (bool) $m->is_reviewed,
+                'property'        => $prop ? [
+                    'id'             => $prop->id,
+                    'title'          => optional($prop->first_content)->title ?? null,
+                    'featured_image' => $prop->featured_image_url ?? null,
+                    'address'        => optional($prop->first_content)->address ?? $prop->address ?? null,
+                    'price'          => $prop->price ?? null,
+                    'purpose'        => $prop->purpose ?? null,
+                    'type'           => $prop->type ?? null,
+                    'beds'           => $prop->beds ?? null,
+                    'baths'          => $prop->bath ?? null,
+                    'area'           => $prop->area ?? null,
+                ] : null,
+            ];
+        })->values()->all();
+
+        return $this->success([
+            'request_id'             => $requestId,
+            'source'                 => $propertyRequest->source ?? 'website',
+            'has_minimal_data'       => $completeness['has_minimal_data'],
+            'minimal_missing_fields' => $completeness['minimal_missing_fields'],
+            'is_complete'            => $completeness['is_complete'],
+            'missing_fields'         => $completeness['missing_fields'],
+            'is_ignored'             => (bool) ($propertyRequest->is_ignored ?? false),
+            'matches'                => $matchItems,
+            'total_matches'          => count($matchItems),
+        ]);
+    }
+
+    /**
+     * POST /api/v2/customers-hub/requests/{requestId}/complete-data
+     *
+     * Fill in missing fields on a property request to enable matching.
+     * The observer auto-triggers matching after the update.
+     */
+    public function completeData(\App\Http\Requests\Api\V2\CustomersHub\CompleteDataRequest $request, string $requestId): JsonResponse
+    {
+        $userId = $this->getTenantUserId($request);
+        $propertyRequest = $this->resolvePropertyRequestForMatching($requestId, $userId);
+
+        if ($propertyRequest === null) {
+            return $this->error('Request not found or not matchable', 404);
+        }
+
+        $fields = $request->onlyProvided();
+
+        if (empty($fields)) {
+            return $this->error('No fields provided to update', 422);
+        }
+
+        // Map purpose aliases to canonical values for users_property_requests
+        if (isset($fields['purpose'])) {
+            $purposeMap = ['buy' => 'sale', 'invest' => 'sale'];
+            $fields['purpose'] = $purposeMap[$fields['purpose']] ?? $fields['purpose'];
+        }
+
+        $propertyRequest->fill($fields);
+        $propertyRequest->save();
+
+        $completeness = app(\App\Services\Matching\RequestCompletenessService::class)
+            ->validateMinimal('web', $propertyRequest->id);
+
+        return $this->success([
+            'request_id'             => $requestId,
+            'has_minimal_data'       => $completeness['has_minimal_data'],
+            'minimal_missing_fields' => $completeness['minimal_missing_fields'],
+            'is_complete'            => $completeness['is_complete'],
+            'missing_fields'         => $completeness['missing_fields'],
+            'message'                => 'Request updated. Matching will run automatically.',
+        ]);
+    }
+
+    /**
+     * PATCH /api/v2/customers-hub/requests/{requestId}/read
+     *
+     * Mark a property request as read.
+     */
+    public function markRead(Request $request, string $requestId): JsonResponse
+    {
+        $userId = $this->getTenantUserId($request);
+        $propertyRequest = $this->resolvePropertyRequestForMatching($requestId, $userId);
+
+        if ($propertyRequest === null) {
+            return $this->error('Request not found', 404);
+        }
+
+        $propertyRequest->update(['is_read' => true]);
+
+        return $this->success(['message' => 'Request marked as read']);
+    }
+
+    /**
+     * PATCH /api/v2/customers-hub/requests/{requestId}/unread
+     *
+     * Mark a property request as unread.
+     */
+    public function markUnread(Request $request, string $requestId): JsonResponse
+    {
+        $userId = $this->getTenantUserId($request);
+        $propertyRequest = $this->resolvePropertyRequestForMatching($requestId, $userId);
+
+        if ($propertyRequest === null) {
+            return $this->error('Request not found', 404);
+        }
+
+        $propertyRequest->update(['is_read' => false]);
+
+        return $this->success(['message' => 'Request marked as unread']);
+    }
+
+    /**
+     * PATCH /api/v2/customers-hub/requests/{requestId}/ignore
+     *
+     * Toggle the ignored flag for matching.
+     * Body: { "is_ignored": true|false }  (defaults to true when not provided)
+     */
+    public function ignore(Request $request, string $requestId): JsonResponse
+    {
+        $userId = $this->getTenantUserId($request);
+        $propertyRequest = $this->resolvePropertyRequestForMatching($requestId, $userId);
+
+        if ($propertyRequest === null) {
+            return $this->error('Request not found', 404);
+        }
+
+        $isIgnored = $request->boolean('is_ignored', true);
+        $propertyRequest->update(['is_ignored' => $isIgnored]);
+
+        $msg = $isIgnored
+            ? 'Request ignored. Matching will be skipped.'
+            : 'Request un-ignored. Matching will resume on next update.';
+
+        return $this->success(['is_ignored' => $isIgnored, 'message' => $msg]);
+    }
+
+    /**
+     * POST /api/v2/customers-hub/requests/{requestId}/rematch
+     *
+     * Manually trigger property matching for a request.
+     */
+    public function rematch(Request $request, string $requestId): JsonResponse
+    {
+        $userId = $this->getTenantUserId($request);
+        $propertyRequest = $this->resolvePropertyRequestForMatching($requestId, $userId);
+
+        if ($propertyRequest === null) {
+            return $this->error('Request not found', 404);
+        }
+
+        if ($propertyRequest->is_ignored) {
+            return $this->error('Cannot rematch an ignored request. Un-ignore it first.', 422);
+        }
+
+        $completeness = app(\App\Services\Matching\RequestCompletenessService::class)
+            ->validateMinimal('web', $propertyRequest->id);
+
+        if (!$completeness['has_minimal_data']) {
+            return $this->error('Request has insufficient data for matching.', 422, [
+                'minimal_missing_fields' => $completeness['minimal_missing_fields'],
+            ]);
+        }
+
+        $forceAi = $completeness['is_complete'];
+        $limit = $forceAi ? 25 : 10;
+
+        $results = app(\App\Services\Matching\MatchingService::class)
+            ->generateMatchesForRequest('web', $propertyRequest->id, $limit, $forceAi, $userId);
+
+        return $this->success([
+            'request_id'    => $requestId,
+            'matched_count' => count($results),
+            'is_complete'   => $completeness['is_complete'],
+            'message'       => count($results) > 0
+                ? 'Matching completed successfully.'
+                : 'No matching properties found.',
+        ]);
+    }
+
+    // =========================================================================
     // PRIVATE HELPERS
     // =========================================================================
 
@@ -1198,5 +1418,22 @@ class RequestsController extends ApiController
             'low' => 0,
             default => 1,
         };
+    }
+
+    /**
+     * Resolve a composite requestId to a UserPropertyRequest model for matching endpoints.
+     * Returns null if not found, not owned by $userId, or not a property_request_ composite ID.
+     */
+    private function resolvePropertyRequestForMatching(string $requestId, int $userId): ?UserPropertyRequest
+    {
+        $parsed = $this->aggregator->parseActionId($requestId);
+        if ($parsed === null || ($parsed['table'] ?? '') !== 'users_property_requests') {
+            return null;
+        }
+        $sourceId = (int) $parsed['sourceId'];
+
+        return UserPropertyRequest::where('id', $sourceId)
+            ->where('user_id', $userId)
+            ->first();
     }
 }

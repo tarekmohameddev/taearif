@@ -19,7 +19,7 @@ class RequestRepository
             $u->customerName = $row->full_name ?? null;
             $u->propertyType = $row->property_type;
             $u->categoryId = $row->category_id;
-            $u->purpose = $row->purpose ?? null;
+            $u->purpose = $row->purpose ?? $row->inquiry_type ?? null;
             $u->region = $row->region;
             $u->cityId = $row->city_id;
             $u->districtId = $row->districts_id;
@@ -30,6 +30,18 @@ class RequestRepository
             $u->areaTo = $row->area_to;
             $u->seriousness = $row->seriousness;
             $u->notes = $row->notes;
+            // WhatsApp-origin fields (added via March 2026 migration for unified storage)
+            $u->bedrooms = $row->bedrooms ?? null;
+            $u->bathrooms = $row->bathrooms ?? null;
+            $u->furnished = isset($row->furnished) ? (bool) $row->furnished : null;
+            $u->currency = $row->currency ?? null;
+            $u->cityName = $row->city ?? null;
+            $u->districtName = $row->district ?? null;
+            $u->latitude = $row->latitude ?? null;
+            $u->longitude = $row->longitude ?? null;
+            $u->urgency = $row->urgency ?? null;
+            $u->lang = $row->lang ?? null;
+            $u->message = $row->notes ?? null;
             return $u;
         }
 

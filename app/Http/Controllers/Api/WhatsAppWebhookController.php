@@ -83,7 +83,7 @@ class WhatsAppWebhookController extends Controller
      */
     private function sendDashboardLink($phoneNumber)
     {
-        $dashboardUrl = env('FRONTEND_URL', 'https://app.taearif.com');
+        $dashboardUrl = config('app.frontend_url');
         
         $message = "📊 رابط لوحة التحكم:\n{$dashboardUrl}";
         

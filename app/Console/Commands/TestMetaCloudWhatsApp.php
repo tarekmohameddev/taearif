@@ -90,7 +90,7 @@ class TestMetaCloudWhatsApp extends Command
             $this->info("\n4️⃣ Testing Password Reset...");
             try {
                 $testCode = rand(100000, 999999);
-                $resetUrl = env('FRONTEND_URL', 'https://app.taearif.com') . '/reset';
+                $resetUrl = config('app.frontend_url') . '/reset';
                 $result = $whatsappService->sendPasswordResetCode($phone, $testCode, 'مستخدم تجريبي', 'ar', $resetUrl, 'password_reset');
                 $testResults['password'] = $result;
                 $this->info($result ? "✅ Password reset sent successfully (Code: {$testCode})" : "❌ Password reset failed");

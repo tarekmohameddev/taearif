@@ -522,7 +522,7 @@ class AiExportController extends Controller
 
     private function tenantFrontendBase(string $tenantId): ?string
     {
-        $base = (string) env('FRONTEND_URL', '');
+        $base = config('app.frontend_url', '');
         if ($base === '') return null;
         $base = rtrim($base, '/');
 

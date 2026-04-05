@@ -337,7 +337,7 @@ class WhatsAppService
 
             // Add clickable links from .env
             $appUrl = env('APP_URL', 'https://taearifdev.com');
-            $frontendUrl = env('FRONTEND_URL', 'https://app.taearif.com');
+            $frontendUrl = config('app.frontend_url');
 
             $fullMessage = "*{$title}*\n\n{$processedMessage}\n\n🔗 روابط مفيدة:\n🌐 موقعك: {$appUrl}\n📊 لوحة التحكم: {$frontendUrl}";
 
@@ -953,7 +953,7 @@ class WhatsAppService
 
             // Add links from .env
             $appUrl = env('APP_URL', 'https://taearifdev.com');
-            $frontendUrl = env('FRONTEND_URL', 'https://app.taearif.com');
+            $frontendUrl = config('app.frontend_url');
 
             $fullMessage = "*{$title}*\n\n{$processedMessage}\n\n🔗 روابط مفيدة:\n🌐 موقعك: {$appUrl}\n📊 لوحة التحكم: {$frontendUrl}";
 
@@ -1036,7 +1036,7 @@ class WhatsAppService
 
             // Add links from .env
             $appUrl = env('APP_URL', 'https://taearifdev.com');
-            $frontendUrl = env('FRONTEND_URL', 'https://app.taearif.com');
+            $frontendUrl = config('app.frontend_url');
 
             $fullMessage = "*{$title}*\n\n{$processedMessage}\n\n🔗 روابط مفيدة:\n🌐 موقعك: {$appUrl}\n📊 لوحة التحكم: {$frontendUrl}";
 
@@ -1181,7 +1181,7 @@ class WhatsAppService
                         'reason' => 'template_delivery_issues'
                     ]);
 
-                    $customMessage = "إشعار بانتهاء الاشتراك\n\n" . $message . "\n\nمنصة تعاريف لبناء المواقع العقارية\n\nللدخول: " . env('FRONTEND_URL', 'https://app.taearif.com') . "/login";
+                    $customMessage = "إشعار بانتهاء الاشتراك\n\n" . $message . "\n\nمنصة تعاريف لبناء المواقع العقارية\n\nللدخول: " . config('app.frontend_url') . "/login";
                     return $this->sendRegularMessage($formattedPhone, $customMessage);
                 default:
                     // For other message types, check if Meta Cloud template exists
@@ -1335,7 +1335,7 @@ class WhatsAppService
                             'parameters' => [
                                 [
                                     'type' => 'text',
-                                    'text' => env('FRONTEND_URL', 'https://app.taearif.com')
+                                    'text' => config('app.frontend_url')
                                 ]
                             ]
                         ]

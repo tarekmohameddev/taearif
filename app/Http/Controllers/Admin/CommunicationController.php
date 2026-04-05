@@ -482,7 +482,7 @@ class CommunicationController extends Controller
         try {
             $whatsappService = new WhatsAppService();
             $testCode = rand(100000, 999999);
-            $resetUrl = env('FRONTEND_URL', 'https://app.taearif.com') . '/reset';
+            $resetUrl = config('app.frontend_url') . '/reset';
 
             // If the admin has a template selected in the UI (not yet saved), use it for the test.
             if ($request->filled('template_name')) {

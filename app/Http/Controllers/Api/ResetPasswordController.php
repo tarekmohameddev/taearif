@@ -121,7 +121,7 @@ class ResetPasswordController extends Controller
         $userLanguage = $this->getUserLanguage($user);
 
         // Get frontend URL for reset link
-        $frontendUrl = rtrim(env('FRONTEND_URL', url('/')), '/');
+        $frontendUrl = config('app.frontend_url');
         $resetUrl = $frontendUrl . '/reset';
 
         // Send code

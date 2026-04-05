@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
+use Modules\WhatsappAI\Jobs\ForwardWebhook;
 use App\Models\WhatsappUser;
 use Modules\WhatsappAI\Entities\WhatsappConversation;
 use Modules\WhatsappAI\Entities\WhatsappMessage;
@@ -20,11 +21,13 @@ class WebhookController extends Controller
     public function handle(Request $request): JsonResponse
     {
         try {
+            $this->mirrorWebhookToForwardUrl($request);
+
             // Log incoming webhook for debugging (payload + raw body from Meta)
-            Log::info('WhatsApp AI Webhook received', [
-                'payload' => $request->all(),
-                'raw_body' => $request->getContent(),
-            ]);
+            // Log::info('WhatsApp AI Webhook received', [
+            //     'payload' => $request->all(),
+            //     'raw_body' => $request->getContent(),
+            // ]);
 
             // Handle GET request for webhook verification
             if ($request->isMethod('get')) {
@@ -70,20 +73,23 @@ class WebhookController extends Controller
             );
 
             // Extract message content based on type
-            $messageType = $message['type'] ?? 'text';
-            $content = $this->extractMessageContent($message, $messageType);
+            $incomingMessageType = $message['type'] ?? 'text';
+            $storedMessageType = $this->normalizeMessageTypeForStorage($incomingMessageType);
+            $content = $this->extractMessageContent($message, $incomingMessageType);
 
             // Extract media URL based on message type
             $mediaUrl = null;
-            if (in_array($messageType, ['image', 'document', 'audio', 'video']) && isset($message[$messageType]['url'])) {
-                $mediaUrl = $message[$messageType]['url'];
+            if (in_array($incomingMessageType, ['image', 'document', 'audio', 'video']) && isset($message[$incomingMessageType]['url'])) {
+                $mediaUrl = $message[$incomingMessageType]['url'];
             }
 
             // Store the message
             WhatsappMessage::create([
                 'conversation_id' => $conversation->id,
                 'whatsapp_message_id' => $message['id'] ?? null,
-                'message_type' => $messageType,
+                // Ensure we only store values supported by the DB enum.
+                // The original WhatsApp type is preserved in raw_payload (and in content for unsupported types).
+                'message_type' => $storedMessageType,
                 'content' => $content,
                 'media_url' => $mediaUrl,
                 'raw_payload' => $message,
@@ -102,11 +108,11 @@ class WebhookController extends Controller
                 ->delay(now()->addMinutes($delayMinutes))
                 ->onQueue(config('whatsappai.queue', 'default'));
 
-            Log::info('Message stored and job scheduled', [
-                'conversation_id' => $conversation->id,
-                'message_count' => $conversation->message_count,
-                'delay_minutes' => $delayMinutes,
-            ]);
+            // Log::info('Message stored and job scheduled', [
+            //     'conversation_id' => $conversation->id,
+            //     'message_count' => $conversation->message_count,
+            //     'delay_minutes' => $delayMinutes,
+            // ]);
 
             return response()->json([
                 'status' => 'stored',
@@ -125,6 +131,42 @@ class WebhookController extends Controller
                 'message' => 'Internal server error',
             ], 500);
         }
+    }
+
+    private function mirrorWebhookToForwardUrl(Request $request): void
+    {
+        $forwardUrl = trim((string) config('whatsappai.webhook_forward_url', ''));
+        if ($forwardUrl === '') {
+            return;
+        }
+
+        // Loop prevention (in case the test env forwards back, or multiple hops exist)
+        if ($request->headers->has('X-Taearif-Forwarded')) {
+            return;
+        }
+
+        $headersToForward = [
+            'Content-Type',
+            'X-Hub-Signature',
+            'X-Hub-Signature-256',
+        ];
+
+        $headers = [];
+        foreach ($headersToForward as $h) {
+            $v = $request->headers->get($h);
+            if ($v !== null && $v !== '') {
+                $headers[$h] = $v;
+            }
+        }
+
+        ForwardWebhook::dispatch(
+            url: $forwardUrl,
+            method: $request->method(),
+            headers: $headers,
+            query: $request->query(),
+            body: $request->getContent(),
+            timeoutSeconds: (int) config('whatsappai.webhook_forward_timeout', 5),
+        )->onQueue(config('whatsappai.queue', 'default'));
     }
 
     /**
@@ -189,6 +231,29 @@ class WebhookController extends Controller
             default:
                 return "[Unsupported message type: {$type}]";
         }
+    }
+
+    /**
+     * Normalize incoming WhatsApp types to a DB-safe message_type.
+     *
+     * whatsapp_messages.message_type is an ENUM (see module migrations), so storing
+     * unknown values like "sticker" or "revoke" would fail inserts.
+     */
+    private function normalizeMessageTypeForStorage(string $incomingType): string
+    {
+        $allowed = [
+            'text',
+            'image',
+            'document',
+            'audio',
+            'video',
+            'location',
+            'reaction',
+            'edit',
+            'contacts',
+        ];
+
+        return in_array($incomingType, $allowed, true) ? $incomingType : 'text';
     }
 }
 

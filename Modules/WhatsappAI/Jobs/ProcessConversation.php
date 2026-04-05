@@ -48,34 +48,34 @@ class ProcessConversation implements ShouldQueue
 
             // Skip if already processed
             if ($conversation->status === 'processed') {
-                Log::info('Conversation already processed', ['id' => $this->conversationId]);
+                // Log::info('Conversation already processed', ['id' => $this->conversationId]);
                 return;
             }
 
             // Check if still active (new messages came in)
             if ($conversation->isActive()) {
-                Log::info('Conversation still active, skipping', ['id' => $this->conversationId]);
+                // Log::info('Conversation still active, skipping', ['id' => $this->conversationId]);
                 return;
             }
 
-            // Build transcript
+            // Build transcript from text + captions + location messages for richer AI context
             $transcript = $conversation->messages()
-                ->where('message_type', 'text')
+                ->whereIn('message_type', ['text', 'image', 'video', 'document', 'location'])
                 ->pluck('content')
                 ->filter()
                 ->implode("\n");
 
             if (empty($transcript)) {
-                Log::info('No text content in conversation', ['id' => $this->conversationId]);
+                // Log::info('No text content in conversation', ['id' => $this->conversationId]);
                 $conversation->update(['status' => 'archived']);
                 return;
             }
 
-            Log::info('Processing conversation with AI', [
-                'id' => $this->conversationId,
-                'message_count' => $conversation->message_count,
-                'transcript_length' => strlen($transcript),
-            ]);
+            // Log::info('Processing conversation with AI', [
+            //     'id' => $this->conversationId,
+            //     'message_count' => $conversation->message_count,
+            //     'transcript_length' => strlen($transcript),
+            // ]);
 
             // Call OpenAI for analysis
             $extraction = $this->analyzeWithAI($transcript);
@@ -105,13 +105,13 @@ class ProcessConversation implements ShouldQueue
                 $inquiry = $this->createInquiry($conversation, $extraction, $transcript);
                 $conversation->update(['inquiry_id' => $inquiry->id]);
                 
-                Log::info('Inquiry created from conversation', [
-                    'conversation_id' => $conversation->id,
-                    'inquiry_id' => $inquiry->id,
-                ]);
+                // Log::info('Inquiry created from conversation', [
+                //     'conversation_id' => $conversation->id,
+                //     'inquiry_id' => $inquiry->id,
+                // ]);
             }
 
-            Log::info('Conversation processed successfully', ['id' => $this->conversationId]);
+            // Log::info('Conversation processed successfully', ['id' => $this->conversationId]);
 
         } catch (\Throwable $e) {
             Log::error('ProcessConversation Job Error', [
@@ -125,9 +125,10 @@ class ProcessConversation implements ShouldQueue
     }
 
     /**
-     * Analyze conversation with OpenAI
+     * Analyze conversation with OpenAI.
+     * Protected so tests can override via anonymous subclass.
      */
-    private function analyzeWithAI(string $transcript): array
+    protected function analyzeWithAI(string $transcript): array
     {
         $apiKey = config('openai.api_key');
         
@@ -151,11 +152,11 @@ class ProcessConversation implements ShouldQueue
         $model = config('whatsappai.model', 'gpt-4o-mini');
         $prompt = $this->buildPrompt($transcript);
 
-        Log::info('Calling OpenAI API', [
-            'conversation_id' => $this->conversationId,
-            'model' => $model,
-            'prompt_length' => strlen($prompt),
-        ]);
+        // Log::info('Calling OpenAI API', [
+        //     'conversation_id' => $this->conversationId,
+        //     'model' => $model,
+        //     'prompt_length' => strlen($prompt),
+        // ]);
 
         try {
             $client = OpenAI::client($apiKey);
@@ -299,8 +300,12 @@ class ProcessConversation implements ShouldQueue
   "currency": "SAR|USD|AED|null",
   "bedrooms": number|null,
   "bathrooms": number|null,
+  "area_min": number|null,
+  "area_max": number|null,
   "city": "string|null",
   "district": "string|null",
+  "latitude": number|null,
+  "longitude": number|null,
   "urgency": "urgent|soon|flexible|null",
   "furnished": bool|null,
   "summary": "ملخص قصير للمحادثة بالعربية (2-3 جمل)"
@@ -311,9 +316,14 @@ class ProcessConversation implements ShouldQueue
 - استخرج فقط المعلومات الواضحة، لا تفترض شيء غير موجود
 - budget_min و budget_max بالأرقام فقط (بدون فواصل)
 - إذا ذكر العميل ميزانية واحدة، ضعها في budget_max
+- area_min و area_max بالمتر المربع كأرقام فقط (مثال: "200 متر" → area_max: 200)
+- إذا ذكر العميل مساحة واحدة، ضعها في area_max
 - city و district بالعربية كما وردت في المحادثة
+- إذا وجدت رسالة موقع بالشكل [Location: lat, lng]، استخرج latitude و longitude منها
 - urgency: "urgent" إذا كان يريد بسرعة، "soon" خلال شهر، "flexible" ليس مستعجل
 - furnished: true إذا طلب مفروش، false إذا طلب غير مفروش، null إذا لم يذكر
+- inquiry_type: "buy" للشراء، "rent" للإيجار، "invest" للاستثمار
+- اختر نوع العقار الرئيسي إذا ذُكر أكثر من نوع
 
 أجب فقط بصيغة JSON بدون أي نص إضافي.
 PROMPT;
@@ -344,6 +354,8 @@ PROMPT;
             'currency' => $extraction['currency'] ?? 'SAR',
             'bedrooms' => $extraction['bedrooms'] ?? null,
             'bathrooms' => $extraction['bathrooms'] ?? null,
+            'min_area_sqm' => $extraction['area_min'] ?? null,
+            'max_area_sqm' => $extraction['area_max'] ?? null,
             'furnished' => $extraction['furnished'] ?? null,
             'urgency' => $extraction['urgency'] ?? null,
             'city' => $extraction['city'] ?? null,
@@ -354,6 +366,19 @@ PROMPT;
         ];
 
         $inquiry = ApiCustomerInquiry::create($inquiryData);
+
+        // Resolve lat/lng: from AI extraction (location message) or extraction data
+        $latitude = $extraction['latitude'] ?? null;
+        $longitude = $extraction['longitude'] ?? null;
+        if ($latitude === null) {
+            $latitude = $this->extractLatLngFromMessages($conversation, 'latitude');
+        }
+        if ($longitude === null) {
+            $longitude = $this->extractLatLngFromMessages($conversation, 'longitude');
+        }
+
+        // Resolve region dynamically from city name
+        $regionName = $this->resolveRegionFromCity($conversation->user_id, $extraction['city'] ?? null);
 
         // Create users_property_requests
         $propertyRequestData = [
@@ -371,11 +396,15 @@ PROMPT;
             'bedrooms' => $extraction['bedrooms'] ?? null,
             'bathrooms' => $extraction['bathrooms'] ?? null,
             'furnished' => $extraction['furnished'] ?? null,
+            'area_from' => $extraction['area_min'] ?? null,
+            'area_to' => $extraction['area_max'] ?? null,
             'seriousness' => $this->mapUrgencyToSeriousness($extraction['urgency'] ?? null),
             'city' => $extraction['city'] ?? null,
             'district' => $extraction['district'] ?? null,
             'location' => $location ?: null,
-            'region' => 'الرياض',
+            'region' => $regionName,
+            'latitude' => $latitude,
+            'longitude' => $longitude,
             'source' => 'whatsapp',
             'contact_on_whatsapp' => true,
             'lang' => 'ar',
@@ -441,6 +470,60 @@ PROMPT;
             'buy', 'invest' => 'sale',
             default => null,
         };
+    }
+
+    /**
+     * Parse lat/lng from location messages stored as "[Location: lat, lng]".
+     */
+    private function extractLatLngFromMessages(WhatsappConversation $conversation, string $field): ?float
+    {
+        $locationMessage = $conversation->messages()
+            ->where('message_type', 'location')
+            ->first(['content']);
+
+        if (!$locationMessage || !$locationMessage->content) {
+            return null;
+        }
+
+        // Content format: "[Location: 24.7136, 46.6753]"
+        if (preg_match('/\[Location:\s*([-\d.]+),\s*([-\d.]+)\]/', $locationMessage->content, $matches)) {
+            return $field === 'latitude' ? (float) $matches[1] : (float) $matches[2];
+        }
+
+        return null;
+    }
+
+    /**
+     * Try to find the region name for a given city in user_cities table.
+     * Falls back to null when the city cannot be resolved.
+     */
+    private function resolveRegionFromCity(?int $userId, ?string $cityName): ?string
+    {
+        if (!$cityName) {
+            return null;
+        }
+
+        try {
+            $row = \Illuminate\Support\Facades\DB::table('user_cities')
+                ->where('user_id', $userId)
+                ->where(function ($q) use ($cityName) {
+                    $q->where('name_ar', $cityName)
+                      ->orWhere('name_en', $cityName);
+                })
+                ->first(['region_name_ar', 'region_name']);
+
+            if ($row) {
+                return $row->region_name_ar ?? $row->region_name ?? null;
+            }
+        } catch (\Throwable $e) {
+            // Non-critical: log and continue without region
+            \Illuminate\Support\Facades\Log::warning('ProcessConversation: could not resolve region from city', [
+                'city' => $cityName,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return null;
     }
 }
 

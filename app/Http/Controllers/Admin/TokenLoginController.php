@@ -33,7 +33,7 @@ class TokenLoginController extends Controller
         $request->session()->regenerate();
 
 
-        $frontendUrl = env('FRONTEND_URL', 'https://app.taearif.com');
+        $frontendUrl = config('app.frontend_url');
         $login = 'https://app.taearif.com/login?token=' . $token;
         return redirect()->to($login);
     }

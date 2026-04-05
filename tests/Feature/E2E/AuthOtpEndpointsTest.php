@@ -110,7 +110,7 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
                 DB::table('otp_verifications')->insert([
                     'user_id' => $user->id,
                     'identifier' => $phone,
-                    'otp' => Hash::make('123456'),
+                    'otp' => Hash::make('12345'),
                     'otp_expires_at' => now()->addMinutes(5),
                     'attempts' => 0,
                     'verified_at' => null,
@@ -144,7 +144,7 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
             $user = $this->createActiveTenantWithKnownPassword($email, $phone, $plainPassword);
             $token = $this->loginAndGetToken($email, $plainPassword);
 
-            $otpPlain = '123456';
+            $otpPlain = '12345';
             OtpVerification::query()->create([
                 'user_id' => $user->id,
                 'identifier' => $phone,
@@ -184,10 +184,10 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
 
             $cases = [
                 // error => [setup, sendOtp, expectedOtpAttemptsAfterOrNull]
-                'otp_not_found' => ['none', '123456', null],
+                'otp_not_found' => ['none', '12345', null],
                 'otp_invalid' => ['invalid', '000000', 1],
-                'otp_expired' => ['expired', '123456', null],
-                'too_many_attempts' => ['too_many_attempts', '123456', 5],
+                'otp_expired' => ['expired', '12345', null],
+                'too_many_attempts' => ['too_many_attempts', '12345', 5],
             ];
 
             foreach ($cases as $expectedError => [$setup, $sendOtp, $expectedAttemptsAfter]) {
@@ -197,7 +197,7 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
                     OtpVerification::query()->create([
                         'user_id' => $user->id,
                         'identifier' => $phone,
-                        'otp' => Hash::make('123456'),
+                        'otp' => Hash::make('12345'),
                         'otp_expires_at' => now()->addMinutes(5),
                         'attempts' => 0,
                         'verified_at' => null,
@@ -207,7 +207,7 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
                     OtpVerification::query()->create([
                         'user_id' => $user->id,
                         'identifier' => $phone,
-                        'otp' => Hash::make('123456'),
+                        'otp' => Hash::make('12345'),
                         'otp_expires_at' => now()->subMinutes(1),
                         'attempts' => 0,
                         'verified_at' => null,
@@ -217,7 +217,7 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
                     OtpVerification::query()->create([
                         'user_id' => $user->id,
                         'identifier' => $phone,
-                        'otp' => Hash::make('123456'),
+                        'otp' => Hash::make('12345'),
                         'otp_expires_at' => now()->addMinutes(5),
                         'attempts' => OtpVerification::MAX_ATTEMPTS,
                         'verified_at' => null,
