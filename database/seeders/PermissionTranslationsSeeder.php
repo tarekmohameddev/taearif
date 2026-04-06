@@ -250,6 +250,124 @@ class PermissionTranslationsSeeder extends Seeder
                 'name_ar' => 'حذف المطابقة الذكية في مركز العملاء',
             ],
 
+            // Pixels
+            'pixels.view' => [
+                'name_en' => 'View Pixels',
+                'name_ar' => 'عرض البكسلات',
+            ],
+            'pixels.create' => [
+                'name_en' => 'Create Pixel',
+                'name_ar' => 'إنشاء بكسل',
+            ],
+            'pixels.update' => [
+                'name_en' => 'Update Pixel',
+                'name_ar' => 'تحديث بكسل',
+            ],
+            'pixels.delete' => [
+                'name_en' => 'Delete Pixel',
+                'name_ar' => 'حذف بكسل',
+            ],
+
+            // WhatsApp Center — Numbers
+            'whatsapp_center_numbers.view' => [
+                'name_en' => 'View WhatsApp Numbers',
+                'name_ar' => 'عرض أرقام واتساب',
+            ],
+            'whatsapp_center_numbers.create' => [
+                'name_en' => 'Create WhatsApp Number',
+                'name_ar' => 'إنشاء رقم واتساب',
+            ],
+            'whatsapp_center_numbers.update' => [
+                'name_en' => 'Update WhatsApp Number',
+                'name_ar' => 'تحديث رقم واتساب',
+            ],
+            'whatsapp_center_numbers.delete' => [
+                'name_en' => 'Delete WhatsApp Number',
+                'name_ar' => 'حذف رقم واتساب',
+            ],
+
+            // WhatsApp Center — Campaigns
+            'whatsapp_center_campaigns.view' => [
+                'name_en' => 'View WhatsApp Campaigns',
+                'name_ar' => 'عرض حملات واتساب',
+            ],
+            'whatsapp_center_campaigns.create' => [
+                'name_en' => 'Create WhatsApp Campaign',
+                'name_ar' => 'إنشاء حملة واتساب',
+            ],
+            'whatsapp_center_campaigns.update' => [
+                'name_en' => 'Update WhatsApp Campaign',
+                'name_ar' => 'تحديث حملة واتساب',
+            ],
+            'whatsapp_center_campaigns.delete' => [
+                'name_en' => 'Delete WhatsApp Campaign',
+                'name_ar' => 'حذف حملة واتساب',
+            ],
+
+            // WhatsApp Center — Templates
+            'whatsapp_center_templates.view' => [
+                'name_en' => 'View WhatsApp Templates',
+                'name_ar' => 'عرض قوالب واتساب',
+            ],
+            'whatsapp_center_templates.create' => [
+                'name_en' => 'Create WhatsApp Template',
+                'name_ar' => 'إنشاء قالب واتساب',
+            ],
+            'whatsapp_center_templates.update' => [
+                'name_en' => 'Update WhatsApp Template',
+                'name_ar' => 'تحديث قالب واتساب',
+            ],
+            'whatsapp_center_templates.delete' => [
+                'name_en' => 'Delete WhatsApp Template',
+                'name_ar' => 'حذف قالب واتساب',
+            ],
+
+            // WhatsApp Chat
+            'whatsapp_chat.view' => [
+                'name_en' => 'View WhatsApp Chat',
+                'name_ar' => 'عرض محادثات واتساب',
+            ],
+            'whatsapp_chat.create' => [
+                'name_en' => 'Send WhatsApp Messages',
+                'name_ar' => 'إرسال رسائل واتساب',
+            ],
+
+            // SMS Campaigns
+            'sms_campaigns.view' => [
+                'name_en' => 'View SMS Campaigns',
+                'name_ar' => 'عرض حملات الرسائل النصية',
+            ],
+            'sms_campaigns.create' => [
+                'name_en' => 'Create SMS Campaign',
+                'name_ar' => 'إنشاء حملة رسائل نصية',
+            ],
+            'sms_campaigns.update' => [
+                'name_en' => 'Update SMS Campaign',
+                'name_ar' => 'تحديث حملة رسائل نصية',
+            ],
+            'sms_campaigns.delete' => [
+                'name_en' => 'Delete SMS Campaign',
+                'name_ar' => 'حذف حملة رسائل نصية',
+            ],
+
+            // Email Campaigns
+            'email_campaigns.view' => [
+                'name_en' => 'View Email Campaigns',
+                'name_ar' => 'عرض حملات البريد الإلكتروني',
+            ],
+            'email_campaigns.create' => [
+                'name_en' => 'Create Email Campaign',
+                'name_ar' => 'إنشاء حملة بريد إلكتروني',
+            ],
+            'email_campaigns.update' => [
+                'name_en' => 'Update Email Campaign',
+                'name_ar' => 'تحديث حملة بريد إلكتروني',
+            ],
+            'email_campaigns.delete' => [
+                'name_en' => 'Delete Email Campaign',
+                'name_ar' => 'حذف حملة بريد إلكتروني',
+            ],
+
         ];
 
         // Update permissions with translations

@@ -81,6 +81,46 @@ return [
 		'customers_hub_ai_matching.create',
 		'customers_hub_ai_matching.update',
 		'customers_hub_ai_matching.delete',
+
+		// Pixels
+		'pixels.view',
+		'pixels.create',
+		'pixels.update',
+		'pixels.delete',
+
+		// WhatsApp Center — Numbers
+		'whatsapp_center_numbers.view',
+		'whatsapp_center_numbers.create',
+		'whatsapp_center_numbers.update',
+		'whatsapp_center_numbers.delete',
+
+		// WhatsApp Center — Campaigns
+		'whatsapp_center_campaigns.view',
+		'whatsapp_center_campaigns.create',
+		'whatsapp_center_campaigns.update',
+		'whatsapp_center_campaigns.delete',
+
+		// WhatsApp Center — Templates
+		'whatsapp_center_templates.view',
+		'whatsapp_center_templates.create',
+		'whatsapp_center_templates.update',
+		'whatsapp_center_templates.delete',
+
+		// WhatsApp Chat
+		'whatsapp_chat.view',
+		'whatsapp_chat.create',
+
+		// SMS Campaigns
+		'sms_campaigns.view',
+		'sms_campaigns.create',
+		'sms_campaigns.update',
+		'sms_campaigns.delete',
+
+		// Email Campaigns
+		'email_campaigns.view',
+		'email_campaigns.create',
+		'email_campaigns.update',
+		'email_campaigns.delete',
 	],
 
 	'role_templates' => [
