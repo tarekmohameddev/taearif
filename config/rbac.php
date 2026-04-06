@@ -121,6 +121,18 @@ return [
 		'email_campaigns.create',
 		'email_campaigns.update',
 		'email_campaigns.delete',
+
+		// Blogs
+		'blogs.view',
+		'blogs.create',
+		'blogs.update',
+		'blogs.delete',
+
+		// Employees
+		'employees.view',
+		'employees.create',
+		'employees.update',
+		'employees.delete',
 	],
 
 	'role_templates' => [

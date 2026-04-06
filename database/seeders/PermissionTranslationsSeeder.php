@@ -440,6 +440,42 @@ class PermissionTranslationsSeeder extends Seeder
                 'name_ar' => 'حذف حملة بريد إلكتروني',
             ],
 
+            // Blogs
+            'blogs.view' => [
+                'name_en' => 'View Blogs',
+                'name_ar' => 'عرض المدونات',
+            ],
+            'blogs.create' => [
+                'name_en' => 'Create Blog',
+                'name_ar' => 'إنشاء تدوينة',
+            ],
+            'blogs.update' => [
+                'name_en' => 'Update Blog',
+                'name_ar' => 'تحديث تدوينة',
+            ],
+            'blogs.delete' => [
+                'name_en' => 'Delete Blog',
+                'name_ar' => 'حذف تدوينة',
+            ],
+
+            // Employees
+            'employees.view' => [
+                'name_en' => 'View Employees',
+                'name_ar' => 'عرض الموظفين',
+            ],
+            'employees.create' => [
+                'name_en' => 'Create Employee',
+                'name_ar' => 'إنشاء موظف',
+            ],
+            'employees.update' => [
+                'name_en' => 'Update Employee',
+                'name_ar' => 'تحديث موظف',
+            ],
+            'employees.delete' => [
+                'name_en' => 'Delete Employee',
+                'name_ar' => 'حذف موظف',
+            ],
+
         ];
 
         // Update permissions with translations
