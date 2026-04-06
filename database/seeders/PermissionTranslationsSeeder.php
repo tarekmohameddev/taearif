@@ -160,6 +160,78 @@ class PermissionTranslationsSeeder extends Seeder
                 'name_ar' => 'حذف سجل إدارة العملاء',
             ],
 
+            // Rentals
+            'rentals.view' => [
+                'name_en' => 'Rentals - View',
+                'name_ar' => 'الإيجارات - عرض',
+            ],
+            'rentals.create' => [
+                'name_en' => 'Rentals - Create',
+                'name_ar' => 'الإيجارات - إنشاء',
+            ],
+            'rentals.update' => [
+                'name_en' => 'Rentals - Update',
+                'name_ar' => 'الإيجارات - تحديث',
+            ],
+            'rentals.delete' => [
+                'name_en' => 'Rentals - Delete',
+                'name_ar' => 'الإيجارات - حذف',
+            ],
+
+            // Buildings
+            'buildings.view' => [
+                'name_en' => 'View Buildings',
+                'name_ar' => 'عرض المباني',
+            ],
+            'buildings.create' => [
+                'name_en' => 'Create Building',
+                'name_ar' => 'إنشاء مبنى',
+            ],
+            'buildings.update' => [
+                'name_en' => 'Update Building',
+                'name_ar' => 'تحديث مبنى',
+            ],
+            'buildings.delete' => [
+                'name_en' => 'Delete Building',
+                'name_ar' => 'حذف مبنى',
+            ],
+
+            // Property requests
+            'property_requests.view' => [
+                'name_en' => 'View Property Requests',
+                'name_ar' => 'عرض طلبات العقار',
+            ],
+            'property_requests.create' => [
+                'name_en' => 'Create Property Request',
+                'name_ar' => 'إنشاء طلب عقار',
+            ],
+            'property_requests.update' => [
+                'name_en' => 'Update Property Request',
+                'name_ar' => 'تحديث طلب عقار',
+            ],
+            'property_requests.delete' => [
+                'name_en' => 'Delete Property Request',
+                'name_ar' => 'حذف طلب عقار',
+            ],
+
+            // Job applications
+            'job_applications.view' => [
+                'name_en' => 'View Job Applications',
+                'name_ar' => 'عرض طلبات التوظيف',
+            ],
+            'job_applications.create' => [
+                'name_en' => 'Create Job Application',
+                'name_ar' => 'إنشاء طلب توظيف',
+            ],
+            'job_applications.update' => [
+                'name_en' => 'Update Job Application',
+                'name_ar' => 'تحديث طلب توظيف',
+            ],
+            'job_applications.delete' => [
+                'name_en' => 'Delete Job Application',
+                'name_ar' => 'حذف طلب توظيف',
+            ],
+
             // Customers Hub — Analytics
             'customers_hub_analytics.view' => [
                 'name_en' => 'View Customers Hub Analytics',
