@@ -21,7 +21,7 @@ class CheckUserPropertiesCompletion extends Command
 
     protected $description = 'Verify complete properties for a user have no missing required fields (user_properties + user_property_contents)';
 
-    protected array $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'type', 'area'];
+    protected array $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'property_type', 'area'];
 
     public function handle(): int
     {
@@ -29,7 +29,7 @@ class CheckUserPropertiesCompletion extends Command
 
         $query = Property::where('user_id', $userId)
             ->where('completion_status', 'complete')
-            ->select(['id', 'user_id', 'price', 'purpose', 'type', 'area', 'completion_status']);
+            ->select(['id', 'user_id', 'price', 'purpose', 'property_type', 'area', 'completion_status']);
 
         $properties = $query->get();
 
@@ -66,7 +66,7 @@ class CheckUserPropertiesCompletion extends Command
         }
         $this->table(['Property ID', 'Missing fields'], $rows);
         $this->newLine();
-        $this->info('Required: title, price, address, description, purpose, type, area.');
+        $this->info('Required: title, price, address, description, purpose, property_type, area.');
         $this->info('Content fields come from user_property_contents for the owner default language.');
 
         return self::FAILURE;

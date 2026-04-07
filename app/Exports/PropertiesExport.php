@@ -75,7 +75,7 @@ class PropertiesExport implements FromQuery, WithHeadings, WithMapping, WithTitl
 
         // Apply type filter
         if (!empty($this->filters['type'])) {
-            $query->where('type', $this->filters['type']);
+            $query->where('property_type', $this->filters['type']);
         }
 
         // Apply price filters

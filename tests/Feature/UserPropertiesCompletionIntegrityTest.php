@@ -12,8 +12,8 @@ use Tests\TestCase;
  * Verifies that for user_id = 1037, all properties with completion_status = 'complete'
  * have no missing required fields in user_properties and user_property_contents.
  *
- * Required fields: title, price, address, description, purpose, type, area
- * - From user_properties: price, purpose, type, area
+ * Required fields: title, price, address, description, purpose, property_type, area
+ * - From user_properties: price, purpose, property_type, area
  * - From user_property_contents (default language): title, address, description
  *
  * Skips when user_properties does not exist (e.g. empty taearif_testing). To check
@@ -22,7 +22,7 @@ use Tests\TestCase;
  */
 class UserPropertiesCompletionIntegrityTest extends TestCase
 {
-    protected array $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'type', 'area'];
+    protected array $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'property_type', 'area'];
 
     /**
      * For user_id 1037, complete properties must not have missing required fields.
@@ -39,7 +39,7 @@ class UserPropertiesCompletionIntegrityTest extends TestCase
 
         $properties = Property::where('user_id', $userId)
             ->where('completion_status', 'complete')
-            ->select(['id', 'user_id', 'price', 'purpose', 'type', 'area', 'completion_status'])
+            ->select(['id', 'user_id', 'price', 'purpose', 'property_type', 'area', 'completion_status'])
             ->get();
 
         if ($properties->isEmpty()) {
@@ -91,7 +91,7 @@ class UserPropertiesCompletionIntegrityTest extends TestCase
             'address' => $content?->address,
             'description' => $content?->description,
             'purpose' => $property->purpose,
-            'type' => $property->type,
+            'property_type' => $property->property_type,
             'area' => $property->area,
         ];
 

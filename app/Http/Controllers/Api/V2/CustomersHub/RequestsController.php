@@ -1114,7 +1114,7 @@ class RequestsController extends ApiController
                     'address'        => optional($prop->first_content)->address ?? $prop->address ?? null,
                     'price'          => $prop->price ?? null,
                     'purpose'        => $prop->purpose ?? null,
-                    'type'           => $prop->type ?? null,
+                    'property_type'  => $prop->property_type ?? null,
                     'beds'           => $prop->beds ?? null,
                     'baths'          => $prop->bath ?? null,
                     'area'           => $prop->area ?? null,

@@ -189,7 +189,7 @@ class MatchingService
         if ($u->budgetTo && $p->price <= $u->budgetTo) $score += 5;
         if ($u->budget && abs($p->price - $u->budget) <= ($u->budget * 0.1)) $score += 5;
         // Type/purpose
-        if ($u->propertyType && $p->type === $u->propertyType) $score += 5;
+        if ($u->propertyType && $p->property_type === $u->propertyType) $score += 5;
         if ($u->purpose && $p->purpose === $u->purpose) $score += 5;
 
         return min(50, $score);

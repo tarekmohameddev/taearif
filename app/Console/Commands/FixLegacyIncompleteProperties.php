@@ -202,7 +202,7 @@ class FixLegacyIncompleteProperties extends Command
         // Process in chunks to avoid memory issues
         // Select only fields we need to avoid loading large JSON features that might trigger features_text virtual column issues
         $query = $baseQuery()
-            ->select(['id', 'user_id', 'price', 'purpose', 'type', 'area', 'completion_status']);
+            ->select(['id', 'user_id', 'price', 'purpose', 'property_type', 'area', 'completion_status']);
 
         $totalToProcess = $query->count();
         $this->output->progressStart($totalToProcess);

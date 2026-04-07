@@ -49,7 +49,7 @@ class PropertyTranslationService
     public function translateAll(array $data): array
     {
         return [
-            'type_ar' => $this->translateType($data['type'] ?? null),
+            'type_ar' => $this->translateType($data['property_type'] ?? ($data['type'] ?? null)),
             'purpose_ar' => $this->translatePurpose($data['purpose'] ?? null),
             'payment_method_ar' => $this->translatePaymentMethod($data['payment_method'] ?? null),
         ];

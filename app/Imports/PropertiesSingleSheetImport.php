@@ -351,7 +351,7 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                 if (isset($row['price'])) $propertyData['price'] = $row['price'];
                 if (isset($row['price_per_meter'])) $propertyData['pricePerMeter'] = $row['price_per_meter'];
                 if (isset($row['purpose'])) $propertyData['purpose'] = $row['purpose'];
-                if (isset($row['type'])) $propertyData['type'] = $row['type'];
+                if (isset($row['type'])) $propertyData['property_type'] = $row['type'];
                 if (isset($row['beds'])) $propertyData['beds'] = $row['beds'];
                 if (isset($row['bath'])) $propertyData['bath'] = $row['bath'];
                 if (isset($row['area'])) $propertyData['area'] = $row['area'];
@@ -451,7 +451,7 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                         'price'           => $row['price'] ?? null,
                         'pricePerMeter'   => $row['price_per_meter'] ?? null,
                         'purpose'         => $row['purpose'] ?? null,
-                        'type'            => $row['type'] ?? null,
+                        'property_type'   => $row['type'] ?? null,
                         'beds'            => $row['beds'] ?? null,
                         'bath'            => $row['bath'] ?? null,
                         'area'            => $row['area'] ?? null,
