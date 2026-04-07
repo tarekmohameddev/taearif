@@ -2,10 +2,9 @@
 
 namespace App\Rules;
 
-use Closure;
-use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Contracts\Validation\Rule;
 
-class PropertyTypeRule implements ValidationRule
+class PropertyTypeRule implements Rule
 {
     /**
      * ============================================================
@@ -122,25 +121,37 @@ class PropertyTypeRule implements ValidationRule
         return strtolower($value);
     }
 
-    public function validate(string $attribute, mixed $value, Closure $fail): void
+    /**
+     * Laravel 9 validation rule contract.
+     *
+     * @param  string  $attribute
+     * @param  mixed   $value
+     */
+    public function passes($attribute, $value)
     {
         if ($value === null) {
-            return;
+            return true;
         }
 
         if (!is_string($value)) {
-            $fail("The {$attribute} must be a string.");
-            return;
+            return false;
         }
 
         $normalized = self::normalize($value);
         if ($normalized === null) {
-            return;
+            return true;
         }
 
         if (!in_array($normalized, self::allowed(), true)) {
-            $fail("The {$attribute} must be one of: " . implode(', ', self::allowed()) . '.');
+            return false;
         }
+
+        return true;
+    }
+
+    public function message()
+    {
+        return 'The :attribute must be one of: ' . implode(', ', self::allowed()) . '.';
     }
 }
 
