@@ -315,7 +315,7 @@ class MatchingService
             ];
             if ($u->regionId) $diag['region_id'] = (clone $base)->where('region_id', $u->regionId)->count();
             if ($u->categoryId) $diag['category_id'] = (clone $base)->where('category_id', $u->categoryId)->count();
-            if ($u->propertyType) $diag['type'] = (clone $base)->where('type', $u->propertyType)->count();
+            if ($u->propertyType) $diag['property_type'] = (clone $base)->where('property_type', $u->propertyType)->count();
             if ($u->purpose) $diag['purpose'] = (clone $base)->where('purpose', $u->purpose)->count();
             if ($u->bedrooms) $diag['beds>='] = (clone $base)->where('beds', '>=', $u->bedrooms)->count();
             if ($u->bathrooms) $diag['bath>='] = (clone $base)->where('bath', '>=', $u->bathrooms)->count();
@@ -335,7 +335,7 @@ class MatchingService
                     'id' => $u->id,
                     'region_id' => $u->regionId,
                     'category_id' => $u->categoryId,
-                    'type' => $u->propertyType,
+                    'property_type' => $u->propertyType,
                     'purpose' => $u->purpose,
                     'beds' => $u->bedrooms,
                     'bath' => $u->bathrooms,

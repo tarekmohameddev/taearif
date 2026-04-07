@@ -40,7 +40,7 @@ class PropertySearchService
             $q->where('category_id', $request->categoryId);
         }
         if ($request->propertyType) {
-            $q->where('type', $request->propertyType);
+            $q->where('property_type', $request->propertyType);
         }
         if ($request->purpose) {
             $q->where('purpose', $request->purpose);
