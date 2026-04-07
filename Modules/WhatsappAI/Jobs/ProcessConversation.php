@@ -13,6 +13,7 @@ use Modules\WhatsappAI\Entities\WhatsappConversation;
 use App\Models\Api\ApiCustomerInquiry;
 use App\Models\Api\UserPropertyRequest;
 use App\Models\ApiCustomer;
+use App\Domain\CustomersHub\Services\IgnoredCustomersService;
 
 class ProcessConversation implements ShouldQueue
 {
@@ -102,6 +103,23 @@ class ProcessConversation implements ShouldQueue
 
             // Create inquiry if it's a real estate inquiry
             if ($extraction['is_real_estate_inquiry'] ?? false) {
+                // Check ignore list before creating any records for this customer
+                $ignoredService = app(IgnoredCustomersService::class);
+                if ($ignoredService->isIgnored(
+                    $conversation->user_id,
+                    $conversation->customer_phone,
+                    $conversation->customer_id ?: null
+                )) {
+                    Log::info('ProcessConversation: phone/customer is on ignore list — skipping inquiry and property request creation', [
+                        'conversation_id' => $this->conversationId,
+                        'phone'           => $conversation->customer_phone,
+                        'customer_id'     => $conversation->customer_id,
+                        'tenant_user_id'  => $conversation->user_id,
+                    ]);
+                    $conversation->update(['status' => 'archived']);
+                    return;
+                }
+
                 $inquiry = $this->createInquiry($conversation, $extraction, $transcript);
                 $conversation->update(['inquiry_id' => $inquiry->id]);
                 
