@@ -441,7 +441,7 @@ class CrmRequestController extends ApiController
 					'price' => $prop->price ?? '0.00',
 					'pricePerMeter' => $prop->pricePerMeter,
 					'purpose' => $prop->purpose,
-						'property_type' => $prop->property_type ?? '',
+					'property_type' => $prop->property_type ?? '',
 					'beds' => $prop->beds,
 					'bath' => $prop->bath,
 					'area' => $prop->area,
