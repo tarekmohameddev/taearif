@@ -468,11 +468,12 @@ class PropertyRequestDetailBuilder
     /**
      * Get property summaries for a list of property IDs (for requests list).
      * Returns array of summary arrays: id, title, address, slug, price, featuredImage, district, city,
-     * propertyType (شقة/فيلا), area, size, listingType, listingTypeLabel (للبيع/للإيجار).
+     * propertyType (residential/commercial/agricultural/industrial), category (شقة/فيلا), area, size,
+     * listingType, listingTypeLabel (للبيع/للإيجار).
      * Uses user_properties + user_property_contents (first per property) + user_districts + api_user_categories.
      *
      * @param  array<int>  $propertyIds
-     * @return array<int, array{id: int, title: string|null, address: string|null, slug: string|null, price: float|null, featuredImage: string|null, district: string|null, city: string|null, propertyType: string|null, area: int|null, size: string|null, listingType: string|null, listingTypeLabel: string|null}>
+     * @return array<int, array{id: int, title: string|null, address: string|null, slug: string|null, price: float|null, featuredImage: string|null, district: string|null, city: string|null, propertyType: string|null, category: string|null, area: int|null, size: string|null, listingType: string|null, listingTypeLabel: string|null}>
      */
     public function getPropertySummariesForIds(int $userId, array $propertyIds): array
     {
@@ -501,6 +502,7 @@ class PropertyRequestDetailBuilder
                 'p.price',
                 'p.featured_image',
                 'p.purpose',
+                'p.property_type',
                 'p.area',
                 'p.size',
                 'pc.title',
@@ -530,7 +532,8 @@ class PropertyRequestDetailBuilder
                 'featuredImage' => $featuredImage,
                 'district' => $row->district !== null ? (string) $row->district : null,
                 'city' => $row->city !== null ? (string) $row->city : null,
-                'propertyType' => $row->category_name !== null ? (string) $row->category_name : null,
+                'propertyType' => $row->property_type !== null ? (string) $row->property_type : null,
+                'category' => $row->category_name !== null ? (string) $row->category_name : null,
                 'area' => isset($row->area) && $row->area !== null ? (int) $row->area : null,
                 'size' => $row->size !== null && $row->size !== '' ? (string) $row->size : null,
                 'listingType' => $listingType,

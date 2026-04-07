@@ -510,20 +510,16 @@ class AssignmentService
     }
 
     /**
-     * Get property type - checks both category_id and property_type.
+     * Get canonical property type for rule evaluation.
      *
      * @param object $customer Customer data
      * @return string
      */
     private function getPropertyType(object $customer): string
     {
-        // Check category_id first (villa, apartment, etc.)
-        if (!empty($customer->category_id)) {
-            return $customer->category_id;
-        }
-        
-        // Fall back to property_type (residential, commercial, etc.)
-        return $customer->property_type ?? '';
+        // Important: category_id is a different concept (property sub-category).
+        // For rule evaluation, propertyType must be the canonical enum-like field.
+        return (string) ($customer->property_type ?? '');
     }
 
     /**
