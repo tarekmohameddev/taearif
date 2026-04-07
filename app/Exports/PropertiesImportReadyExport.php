@@ -284,7 +284,7 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
             $content?->address ?? '',
             $content?->description ?? '',
             PropertyExcelMapping::purposeToExcel($property->purpose ?? null),
-            PropertyExcelMapping::typeToExcel($property->type ?? null),
+            PropertyExcelMapping::typeToExcel($property->property_type ?? null),
             $property->area ?? '',
             $property->beds ?? '',
             $property->bath ?? '',

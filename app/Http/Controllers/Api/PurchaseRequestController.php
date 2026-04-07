@@ -674,7 +674,7 @@ class PurchaseRequestController extends Controller
             return [
                 'id' => $property->id,
                 'price' => $property->price,
-                'type' => $property->type,
+                'property_type' => $property->property_type,
                 'area' => $property->area,
                 'beds' => $property->beds,
                 'bath' => $property->bath,

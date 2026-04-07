@@ -46,7 +46,7 @@ class PublicUserController extends Controller
                 'price' => isset($property->price) ? formatNumberWithoutTrailingZeros($property->price) : '0',
                 'pricePerMeter' => isset($property->pricePerMeter) ? formatNumberWithoutTrailingZeros($property->pricePerMeter) : null,
                 'purpose' => $property->purpose,
-                'type' => $property->type ?? '',
+                'property_type' => $property->property_type ?? '',
                 'beds' => $property->beds,
                 'bath' => $property->bath,
                 'area' => isset($property->area) ? formatNumberWithoutTrailingZeros($property->area) : null,

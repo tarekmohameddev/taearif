@@ -59,7 +59,7 @@ use App\Imports\PropertiesImport;
 class PropertyController extends Controller
 {
     private static $missingFieldsArMap = [
-        'type' => 'نوع الوحدة',
+        'property_type' => 'نوع الوحدة',
         'area' => 'المساحة',
         'size' => 'المساحة',
         'purpose' => 'نوع المعاملة',
@@ -189,7 +189,7 @@ class PropertyController extends Controller
                 $firstSheet = $collection->first();
 
                 // Required fields for a complete property
-                $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'type', 'area'];
+                $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'property_type', 'area'];
 
                 // Count rows that will be complete (have all required fields)
                 // Only complete properties count toward the limit
@@ -235,8 +235,8 @@ class PropertyController extends Controller
                     if (isset($rowArray['purpose']) && !in_array($rowArray['purpose'], ['sale', 'rent'])) {
                         return false; // Invalid purpose - will fail validation
                     }
-                    if (isset($rowArray['type']) && !in_array($rowArray['type'], ['residential', 'commercial'])) {
-                        return false; // Invalid type - will fail validation
+                    if (isset($rowArray['property_type']) && !in_array(strtolower((string) $rowArray['property_type']), ['residential', 'commercial', 'agricultural', 'industrial'], true)) {
+                        return false; // Invalid property_type - will fail validation
                     }
 
                     // All required fields present and valid - will be complete
@@ -531,7 +531,7 @@ class PropertyController extends Controller
             'address' => 'Non-empty text string',
             'description' => 'Non-empty text string',
             'purpose' => 'Either "sale" or "rent"',
-            'type' => 'Either "residential" or "commercial"',
+            'property_type' => 'One of: "residential", "commercial", "agricultural", "industrial"',
             'area' => 'Positive numeric value (e.g., 150)',
             'beds' => 'Positive integer (e.g., 3)',
             'bath' => 'Positive integer (e.g., 2)',
@@ -559,7 +559,7 @@ class PropertyController extends Controller
             'address' => 'Please provide a valid address for the property.',
             'description' => 'Please provide a description for the property.',
             'purpose' => 'Please specify either "sale" or "rent" as the purpose.',
-            'type' => 'Please specify either "residential" or "commercial" as the type.',
+            'property_type' => 'Please specify one of: "residential", "commercial", "agricultural", "industrial".',
             'area' => 'Please provide a valid positive number for the area (e.g., 150).',
             'category_name' => 'Please check that the category name exists in your categories list, or create it first.',
             'city_name' => 'Please check that the city name exists in your cities list, or create it first.',
@@ -714,7 +714,7 @@ class PropertyController extends Controller
                 'price' => $validated['price'] ?? $originalProperty->price,
                 'pricePerMeter' => $validated['pricePerMeter'] ?? $originalProperty->pricePerMeter,
                 'purpose' => $originalProperty->purpose,
-                'type' => $originalProperty->type,
+                'property_type' => $originalProperty->property_type,
                 'beds' => $originalProperty->beds,
                 'bath' => $originalProperty->bath,
                 'area' => $originalProperty->area,
@@ -846,7 +846,7 @@ class PropertyController extends Controller
             'price' => $responseProperty->price,
             'pricePerMeter' => $responseProperty->pricePerMeter,
             'purpose' => $responseProperty->purpose,
-            'type' => $responseProperty->type,
+            'property_type' => $responseProperty->property_type,
             'beds' => $responseProperty->beds,
             'bath' => $responseProperty->bath,
             'area' => $responseProperty->area,
@@ -1196,7 +1196,7 @@ class PropertyController extends Controller
                 'price',
                 'pricePerMeter',
                 'purpose',
-                'type',
+                'property_type',
                 'beds',
                 'bath',
                 'area',
@@ -1390,7 +1390,7 @@ class PropertyController extends Controller
             'price' => $responseProperty->price,
             'pricePerMeter' => $responseProperty->pricePerMeter,
             'purpose' => $responseProperty->purpose,
-            'type' => $responseProperty->type,
+            'property_type' => $responseProperty->property_type,
             'beds' => $responseProperty->beds,
             'bath' => $responseProperty->bath,
             'area' => $responseProperty->area,
@@ -1541,7 +1541,7 @@ class PropertyController extends Controller
                 'region_id',
                 'price',
                 'purpose',
-                'type',
+                'property_type',
                 'beds',
                 'bath',
                 'area',
@@ -1649,7 +1649,7 @@ class PropertyController extends Controller
             'pricePerMeter' => isset($responseProperty->pricePerMeter) ? formatNumberWithoutTrailingZeros($responseProperty->pricePerMeter) : null,
             'purpose' => $responseProperty->purpose,
             'project_id' => $responseProperty->project_id ?? '',
-            'type' => $responseProperty->type ?? '',
+            'property_type' => $responseProperty->property_type ?? '',
             'beds' => $responseProperty->beds,
             'bath' => $responseProperty->bath,
             'area' => isset($responseProperty->area) ? formatNumberWithoutTrailingZeros($responseProperty->area) : null,
@@ -2184,8 +2184,8 @@ class PropertyController extends Controller
             $propertiesQuery->where('area', '>=', $request->area_from);
         }
         // Note: purpose filter is already handled above (lines 2099-2110), removed duplicate check
-        if ($request->has('type') && !empty($request->type)) {
-            $propertiesQuery->where('type', $request->type);
+        if ($request->has('property_type') && !empty($request->property_type)) {
+            $propertiesQuery->where('property_type', $request->property_type);
         }
         if ($request->has('beds') && !empty($request->beds)) {
             $propertiesQuery->where('beds', $request->beds);
@@ -2543,7 +2543,7 @@ class PropertyController extends Controller
             'price_range' => $priceRange,
             'area_range' => $areaRange,
             'purpose' => $availablePurposes,
-            'type' => $availableTypes,
+            'property_type' => $availableTypes,
             'beds' => $availableBeds,
             'bath' => $availableBath,
             'features' => array_values($availableFeatures),
@@ -2559,7 +2559,7 @@ class PropertyController extends Controller
         // Example: ?fields=id,title,price,area
         $requestedFields = $request->input('fields');
         $allowedFields = [
-            'id', 'visits', 'title', 'address', 'slug', 'price', 'type', 'beds', 'bath',
+            'id', 'visits', 'title', 'address', 'slug', 'price', 'property_type', 'beds', 'bath',
             'area', 'transaction_type', 'features', 'status', 'featured_image', 'featured',
             'show_reservations', 'created_at', 'updated_at', 'payment_method', 'creator',
             'latitude', 'longitude'
@@ -2619,7 +2619,7 @@ class PropertyController extends Controller
                 'address'          => $content->address ?? 'No Address',
                 'slug'             => $slug,
                 'price'            => $property->price,
-                'type'             => $property->type,
+                'property_type'    => $property->property_type,
                 'beds'             => $property->beds,
                 'bath'             => $property->bath,
                 'area'             => isset($property->area) ? formatNumberWithoutTrailingZeros($property->area) : null,
@@ -2790,9 +2790,9 @@ class PropertyController extends Controller
                 ->union(
                     DB::table('user_properties')
                         ->whereIn('user_id', $allowedUserIds)
-                        ->selectRaw("'type' as filter_type, type as value")
-                        ->whereNotNull('type')
-                        ->where('type', '!=', '')
+                        ->selectRaw("'property_type' as filter_type, property_type as value")
+                        ->whereNotNull('property_type')
+                        ->where('property_type', '!=', '')
                         ->distinct()
                 )
                 ->union(
@@ -2813,7 +2813,7 @@ class PropertyController extends Controller
                 ->groupBy('filter_type');
 
             $availablePurposes = $filterValues->get('purpose', collect())->pluck('value')->unique()->values()->toArray();
-            $availableTypes = $filterValues->get('type', collect())->pluck('value')->unique()->values()->toArray();
+            $availableTypes = $filterValues->get('property_type', collect())->pluck('value')->unique()->values()->toArray();
             $availableBeds = $filterValues->get('beds', collect())->pluck('value')->map(fn($v) => (int)$v)->unique()->sort()->values()->toArray();
             $availableBath = $filterValues->get('bath', collect())->pluck('value')->map(fn($v) => (int)$v)->unique()->sort()->values()->toArray();
 
@@ -3273,7 +3273,7 @@ class PropertyController extends Controller
                 'date_to',
                 'purpose',
                 'purposes_filter',
-                'type',
+                'property_type',
                 'price_from',
                 'price_to',
                 'area_from',
@@ -3302,7 +3302,7 @@ class PropertyController extends Controller
                     'details' => [
                         'user_id' => $ownerId,
                         'filters_applied' => $filters,
-                        'suggestion' => 'Try adjusting your filters (date range, purpose, type, etc.) or check if you have any available properties.',
+                        'suggestion' => 'Try adjusting your filters (date range, purpose, property_type, etc.) or check if you have any available properties.',
                     ],
                     'timestamp' => now()->toIso8601String(),
                 ], 404);
@@ -3473,7 +3473,7 @@ class PropertyController extends Controller
                 'date_to',
                 'purpose',
                 'purposes_filter',
-                'type',
+                'property_type',
                 'price_from',
                 'price_to',
                 'area_from',
@@ -3600,7 +3600,7 @@ class PropertyController extends Controller
      * - Optionally: without active rentals (if rentals relationship exists)
      * - Respects all the same filters as the export query
      *
-     * @param array $filters Optional filters (date_from, date_to, purpose, type, status, etc.)
+     * @param array $filters Optional filters (date_from, date_to, purpose, property_type, status, etc.)
      * @param int|null $ownerId Optional owner ID (defaults to authenticated user's tenant owner)
      * @param array|null $allowedUserIds Optional array of allowed user IDs (defaults to owner + employees)
      * @return array Array of property IDs
@@ -3661,9 +3661,9 @@ class PropertyController extends Controller
             $query->where('purpose', $filters['purpose']);
         }
 
-        // Apply type filter
-        if (!empty($filters['type'])) {
-            $query->where('type', $filters['type']);
+        // Apply property_type filter
+        if (!empty($filters['property_type'])) {
+            $query->where('property_type', $filters['property_type']);
         }
 
         // Apply price filters
@@ -3905,7 +3905,7 @@ class PropertyController extends Controller
             DB::transaction(function () use ($property, $owner, $defaultLanguage, $validated) {
                 // Update property fields
                 $propertyData = [];
-                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'type', 'beds', 'bath', 'area',
+                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'property_type', 'beds', 'bath', 'area',
                     'size', 'video_url', 'virtual_tour', 'features', 'payment_method',
                     'water_meter_number', 'electricity_meter_number', 'deed_number',
                     'advertising_license', 'latitude', 'longitude', 'category_id', 'project_id', 'building_id'];
@@ -3950,7 +3950,7 @@ class PropertyController extends Controller
                 }
 
                 // Recalculate missing fields
-                $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'type', 'area'];
+                $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'property_type', 'area'];
                 $missing = [];
 
                 // Get current property data
@@ -3960,7 +3960,7 @@ class PropertyController extends Controller
                     'address' => $property->contents()->where('language_id', $defaultLanguage->id)->value('address'),
                     'description' => $property->contents()->where('language_id', $defaultLanguage->id)->value('description'),
                     'purpose' => $property->purpose,
-                    'type' => $property->type,
+                    'property_type' => $property->property_type,
                     'area' => $property->area,
                 ];
 
@@ -4052,7 +4052,7 @@ class PropertyController extends Controller
                 'address' => $validated['address'] ?? $propertyContent?->address,
                 'description' => $validated['description'] ?? $propertyContent?->description,
                 'purpose' => $validated['purpose'] ?? $property->purpose,
-                'type' => $validated['type'] ?? $property->type,
+                'property_type' => $validated['property_type'] ?? $property->property_type,
                 'area' => $validated['area'] ?? $property->area,
             ];
 
@@ -4074,7 +4074,7 @@ class PropertyController extends Controller
             DB::transaction(function () use ($property, $owner, $defaultLanguage, $completeData, $validated) {
                 // Update property with all data
                 $propertyData = [];
-                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'type', 'beds', 'bath', 'area',
+                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'property_type', 'beds', 'bath', 'area',
                     'size', 'video_url', 'virtual_tour', 'features', 'payment_method',
                     'water_meter_number', 'electricity_meter_number', 'deed_number',
                     'advertising_license', 'latitude', 'longitude', 'category_id', 'project_id', 'building_id'];
@@ -4088,7 +4088,7 @@ class PropertyController extends Controller
                 // Ensure required fields are set
                 if (isset($completeData['price'])) $propertyData['price'] = $completeData['price'];
                 if (isset($completeData['purpose'])) $propertyData['purpose'] = $completeData['purpose'];
-                if (isset($completeData['type'])) $propertyData['type'] = $completeData['type'];
+                if (isset($completeData['property_type'])) $propertyData['property_type'] = $completeData['property_type'];
                 if (isset($completeData['area'])) $propertyData['area'] = $completeData['area'];
 
                 $propertyData['status'] = 1; // Active
@@ -4235,7 +4235,7 @@ class PropertyController extends Controller
                         'address' => $propertyContent?->address,
                         'description' => $propertyContent?->description,
                         'purpose' => $property->purpose,
-                        'type' => $property->type,
+                        'property_type' => $property->property_type,
                         'area' => $property->area,
                     ];
 

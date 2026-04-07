@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\User\BasicSetting;
 use App\Models\User\Language;
+use App\Rules\PropertyTypeRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 
@@ -42,6 +43,7 @@ class PropertyStoreRequest extends FormRequest
             'beds' => 'nullable',
             'bath' => 'nullable',
             'purpose' => 'nullable',
+            'property_type' => PropertyTypeRule::requiredRule(),
             'area' => 'nullable',
             'status' => 'nullable',
             'latitude' => ['required', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],

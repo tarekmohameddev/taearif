@@ -200,7 +200,7 @@ class ApiPropertyRequestController extends Controller
             'full_name' => $validated['full_name'],
             'phone' => $validated['phone'],
             'notes' => $validated['notes'] ?? null,
-            'property_type' => $property->type ?? null,
+            'property_type' => \App\Rules\PropertyTypeRule::normalize($property->property_type ?? null),
             'category_id' => $property->category_id ?? null,
             'city_id' => $cityId,
             'region' => $city ? $city->name_ar : null,

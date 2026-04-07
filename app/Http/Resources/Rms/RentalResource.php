@@ -105,7 +105,7 @@ class RentalResource extends JsonResource
                 return [
                     'id' => $this->property->id,
                     'property_name' => $propertyName,
-                    'property_type' => $this->property->type ?? null,
+                    'property_type' => $this->property->property_type ?? null,
                     'bedrooms' => $this->property->beds ?? null,
                     'bathrooms' => $this->property->bath ?? null,
                     'rooms' => optional($this->property->UserPropertyCharacteristics)->rooms ?? null,

@@ -3,12 +3,23 @@
 namespace App\Http\Requests\Api\Property;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
+use App\Rules\PropertyTypeRule;
 
 class UpdatePropertyRequest extends BaseApiFormRequest
 {
     public function authorize()
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('property_type')) {
+            $normalized = PropertyTypeRule::normalize(is_string($this->input('property_type')) ? $this->input('property_type') : null);
+            if ($normalized !== null) {
+                $this->merge(['property_type' => $normalized]);
+            }
+        }
     }
 
     public function rules()
@@ -64,7 +75,7 @@ class UpdatePropertyRequest extends BaseApiFormRequest
             'elevator' => 'nullable|integer',
             'private_parking' => 'nullable|integer',
             'size' => 'nullable|numeric',
-            'type' => 'nullable',
+            'property_type' => PropertyTypeRule::requiredRule(),
             'faqs' => 'nullable|array',
             'building_id' => 'nullable|integer|exists:buildings,id',
             'water_meter_number' => 'nullable|string',

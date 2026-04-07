@@ -92,7 +92,7 @@ class CheckUserPropertiesCompletion extends Command
             'address' => $content?->address,
             'description' => $content?->description,
             'purpose' => $property->purpose,
-            'type' => $property->type,
+            'property_type' => $property->property_type,
             'area' => $property->area,
         ];
 

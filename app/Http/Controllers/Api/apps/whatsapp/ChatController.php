@@ -235,6 +235,7 @@ public function handleWhatsappWebhook(Request $request)
             $message = $payload['message'];
             $inquiryType = $payload['inquiry_type'];
             $propertyType = $payload['property_type'] ?? null;
+            $propertyType = \App\Rules\PropertyTypeRule::normalize(is_string($propertyType) ? $propertyType : null);
             $sourceChannel = $payload['source_channel'] ?? 'whatsapp';
             $extra = $payload['extra'] ?? null;
             $lang = $payload['lang'] ?? 'ar';

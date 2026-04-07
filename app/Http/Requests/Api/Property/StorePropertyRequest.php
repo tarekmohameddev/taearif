@@ -3,12 +3,23 @@
 namespace App\Http\Requests\Api\Property;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
+use App\Rules\PropertyTypeRule;
 
 class StorePropertyRequest extends BaseApiFormRequest
 {
     public function authorize()
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('property_type')) {
+            $normalized = PropertyTypeRule::normalize(is_string($this->input('property_type')) ? $this->input('property_type') : null);
+            if ($normalized !== null) {
+                $this->merge(['property_type' => $normalized]);
+            }
+        }
     }
 
     public function rules()
@@ -39,7 +50,7 @@ class StorePropertyRequest extends BaseApiFormRequest
             'state_id' => 'nullable',
             'featured' => 'nullable|boolean',
             'amenities' => 'nullable|array',
-            'type' => 'nullable',
+            'property_type' => PropertyTypeRule::requiredRule(),
             'faqs' => 'nullable|array',
             'category_id' => 'nullable|integer',
             'facade_id' => 'nullable|numeric',

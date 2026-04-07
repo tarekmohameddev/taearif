@@ -105,7 +105,7 @@ class FixLegacyIncompleteProperties extends Command
                 'address' => $propertyContent?->address,
                 'description' => $propertyContent?->description,
                 'purpose' => $property->purpose,
-                'type' => $property->type,
+                'property_type' => $property->property_type,
                 'area' => $property->area,
             ];
 
@@ -125,7 +125,7 @@ class FixLegacyIncompleteProperties extends Command
                     'User ID' => $property->user_id,
                     'Title' => $propertyContent?->title ?? 'NULL',
                     'Address' => $propertyContent?->address ?? 'NULL',
-                    'Type' => $property->type ?? 'NULL',
+                    'Type' => $property->property_type ?? 'NULL',
                     'Area' => $property->area ?? 'NULL',
                     'Missing Fields' => implode(', ', $missingFields),
                 ];
@@ -381,7 +381,7 @@ class FixLegacyIncompleteProperties extends Command
             'address' => $propertyContent?->address,
             'description' => $propertyContent?->description,
             'purpose' => $property->purpose,
-            'type' => $property->type,
+            'property_type' => $property->property_type,
             'area' => $property->area,
         ];
 

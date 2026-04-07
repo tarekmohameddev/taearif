@@ -66,7 +66,7 @@ class RequestCompleteDataTest extends TestCase
 
         $res = $this->postJson("/api/v2/customers-hub/requests/property_request_{$requestId}/complete-data", [
             'city'          => 'جدة',
-            'property_type' => 'villa',
+            'property_type' => 'residential',
         ]);
 
         $res->assertOk()
@@ -79,7 +79,7 @@ class RequestCompleteDataTest extends TestCase
 
         $row = DB::table('users_property_requests')->where('id', $requestId)->first();
         $this->assertEquals('جدة', $row->city);
-        $this->assertEquals('villa', $row->property_type);
+        $this->assertEquals('residential', $row->property_type);
     }
 
     /** @test */
@@ -180,7 +180,7 @@ class RequestCompleteDataTest extends TestCase
 
         $requestId = $this->createPropertyRequest($tenant->id, [
             'city'          => 'الرياض',
-            'property_type' => 'apartment',
+            'property_type' => 'residential',
         ]);
 
         // Only send district, city should not be overwritten
