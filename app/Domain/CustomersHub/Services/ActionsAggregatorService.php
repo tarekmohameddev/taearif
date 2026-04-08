@@ -2,6 +2,8 @@
 
 namespace App\Domain\CustomersHub\Services;
 
+use App\Models\ApiCustomer;
+use App\Support\PhoneNormalizer;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -953,12 +955,39 @@ class ActionsAggregatorService
                         }
                         continue;
                     }
+
                     $customerId = $customerMap[$actionId] ?? null;
+
+                    // Property requests: always keep both users_property_requests and api_customers in sync.
+                    if ($parsed && $parsed['table'] === 'users_property_requests') {
+                        if ($customerId !== null) {
+                            $ok = $this->syncAssignWithCustomer($userId, (int) $parsed['sourceId'], (int) $customerId, $assignedTo, $now);
+                            if ($ok) {
+                                $result['success'][] = $actionId;
+                            } else {
+                                $result['failed'][] = $actionId;
+                                $result['failures'][] = ['actionId' => $actionId, 'reason' => 'UPDATE_FAILED'];
+                            }
+                            continue;
+                        }
+
+                        $outcome = $this->resolveOrCreateCustomerForPropertyRequest($userId, (int) $parsed['sourceId'], $assignedTo, $now);
+                        if ($outcome['success']) {
+                            $result['success'][] = $actionId;
+                        } else {
+                            $result['failed'][] = $actionId;
+                            $result['failures'][] = ['actionId' => $actionId, 'reason' => $outcome['reason']];
+                        }
+                        continue;
+                    }
+
+                    // Other action types: keep existing behavior.
                     if ($customerId === null) {
                         $result['failed'][] = $actionId;
                         $result['failures'][] = ['actionId' => $actionId, 'reason' => 'NO_CUSTOMER'];
                         continue;
                     }
+
                     $updated = DB::table('api_customers')
                         ->where('id', $customerId)
                         ->where('user_id', $userId)
@@ -1883,6 +1912,154 @@ class ActionsAggregatorService
             'metadata' => $metadata,
             'sourceTable' => $item->sourceTable,
             'sourceId' => $item->sourceId,
+        ];
+    }
+
+    private function syncAssignWithCustomer(int $userId, int $uprId, int $customerId, int $assignedTo, Carbon $now): bool
+    {
+        try {
+            return (bool) DB::transaction(function () use ($userId, $uprId, $customerId, $assignedTo, $now) {
+                $customerQuery = DB::table('api_customers')
+                    ->where('id', $customerId)
+                    ->where('user_id', $userId);
+
+                $uprQuery = DB::table('users_property_requests')
+                    ->where('id', $uprId)
+                    ->where('user_id', $userId);
+
+                $customerUpdated = (int) $customerQuery->update(['responsible_employee_id' => $assignedTo, 'updated_at' => $now]);
+                $uprUpdated = (int) $uprQuery->update(['responsible_employee_id' => $assignedTo, 'updated_at' => $now]);
+
+                // MySQL returns 0 if the row exists but values are unchanged, so treat as success if row exists.
+                $customerOk = $customerUpdated > 0 || $customerQuery->exists();
+                $uprOk = $uprUpdated > 0 || $uprQuery->exists();
+
+                return $customerOk && $uprOk;
+            });
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Resolve (or create) a customer for a property request, then assign and sync both tables.
+     *
+     * @return array{success: bool, reason?: string}
+     */
+    private function resolveOrCreateCustomerForPropertyRequest(int $userId, int $sourceId, int $assignedTo, Carbon $now): array
+    {
+        $upr = DB::table('users_property_requests')
+            ->where('id', $sourceId)
+            ->where('user_id', $userId)
+            ->first(['id', 'full_name', 'phone', 'city_id', 'districts_id', 'customers_hub_stage_id']);
+
+        if (!$upr) {
+            return ['success' => false, 'reason' => 'NOT_FOUND'];
+        }
+
+        $normalizedPhone = PhoneNormalizer::normalize($upr->phone ?? null);
+        if (!$normalizedPhone) {
+            return ['success' => false, 'reason' => 'NO_PHONE'];
+        }
+
+        try {
+            return DB::transaction(function () use ($userId, $upr, $normalizedPhone, $assignedTo, $now) {
+                $existing = DB::table('api_customers')
+                    ->where('user_id', $userId)
+                    ->where('phone_number', $normalizedPhone)
+                    ->whereNull('deleted_at')
+                    ->first(['id']);
+
+                if ($existing) {
+                    DB::table('users_property_requests')
+                        ->where('id', $upr->id)
+                        ->where('user_id', $userId)
+                        ->update(['customer_id' => $existing->id, 'updated_at' => $now]);
+
+                    $ok = $this->syncAssignWithCustomer($userId, (int) $upr->id, (int) $existing->id, $assignedTo, $now);
+                    return $ok ? ['success' => true] : ['success' => false, 'reason' => 'UPDATE_FAILED'];
+                }
+
+                $defaults = $this->getDefaultCustomerDefaults($userId);
+                $customersHubStageId = $upr->customers_hub_stage_id ?? $defaults['customers_hub_stage_id'];
+
+                $customer = ApiCustomer::create([
+                    'user_id' => $userId,
+                    'name' => $upr->full_name,
+                    'phone_number' => $normalizedPhone,
+                    'email' => null,
+                    'note' => null,
+                    'password' => bcrypt('12345678'),
+
+                    // Legacy pipeline fields
+                    'stage_id' => $defaults['stage_id'],
+                    'type_id' => $defaults['type_id'],
+                    'priority_id' => $defaults['priority_id'],
+                    'procedure_id' => $defaults['procedure_id'],
+
+                    // CustomersHub pipeline fields
+                    'customers_hub_stage_id' => $customersHubStageId,
+                    'customers_hub_stage_changed_at' => $now,
+
+                    'responsible_employee_id' => $assignedTo,
+                    'city_id' => $upr->city_id,
+                    'district_id' => $upr->districts_id,
+                    'created_by_type' => 'system',
+                    'created_by_id' => null,
+                    'source' => 'property_request',
+                    'source_id' => $upr->id,
+                ]);
+
+                DB::table('users_property_requests')
+                    ->where('id', $upr->id)
+                    ->where('user_id', $userId)
+                    ->update([
+                        'customer_id' => $customer->id,
+                        'responsible_employee_id' => $assignedTo,
+                        'updated_at' => $now,
+                    ]);
+
+                return ['success' => true];
+            });
+        } catch (\Throwable $e) {
+            return ['success' => false, 'reason' => 'CREATE_CUSTOMER_FAILED'];
+        }
+    }
+
+    /**
+     * Load default customer attributes (first active record per tenant).
+     *
+     * @return array{type_id: int|null, priority_id: int|null, procedure_id: int|null, stage_id: int|null, customers_hub_stage_id: string|null}
+     */
+    private function getDefaultCustomerDefaults(int $userId): array
+    {
+        $customersHubStageId = DB::table('customers_hub_stages')
+            ->where('is_active', true)
+            ->orderBy('id', 'asc')
+            ->value('stage_id');
+
+        return [
+            'type_id' => DB::table('users_api_customers_types')
+                ->where('user_id', $userId)
+                ->where('is_active', true)
+                ->orderBy('order')
+                ->value('id'),
+            'priority_id' => DB::table('users_api_customers_priorities')
+                ->where('user_id', $userId)
+                ->where('is_active', true)
+                ->orderBy('order')
+                ->value('id'),
+            'procedure_id' => DB::table('users_api_customers_procedures')
+                ->where('user_id', $userId)
+                ->where('is_active', true)
+                ->orderBy('order')
+                ->value('id'),
+            'stage_id' => DB::table('users_api_customers_stages')
+                ->where('user_id', $userId)
+                ->where('is_active', true)
+                ->orderBy('order')
+                ->value('id'),
+            'customers_hub_stage_id' => $customersHubStageId,
         ];
     }
 
