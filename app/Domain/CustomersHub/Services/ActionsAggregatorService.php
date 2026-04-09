@@ -133,9 +133,9 @@ class ActionsAggregatorService
         $stats = $query->selectRaw("
             SUM(CASE WHEN type IN ('new_inquiry', 'callback_request', 'whatsapp_incoming') AND status IN ('pending', 'in_progress') THEN 1 ELSE 0 END) as inbox,
             SUM(CASE WHEN type IN ('follow_up', 'site_visit') AND status IN ('pending', 'in_progress') THEN 1 ELSE 0 END) as followups,
-            SUM(CASE WHEN status IN ('pending', 'in_progress') THEN 1 ELSE 0 END) as pending,
-            SUM(CASE WHEN dueDate < NOW() AND status IN ('pending', 'in_progress') THEN 1 ELSE 0 END) as overdue,
-            SUM(CASE WHEN DATE(dueDate) = CURRENT_DATE AND status IN ('pending', 'in_progress') THEN 1 ELSE 0 END) as today,
+            SUM(CASE WHEN status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as pending,
+            SUM(CASE WHEN dueDate < NOW() AND status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as overdue,
+            SUM(CASE WHEN DATE(dueDate) = CURRENT_DATE AND status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as today,
             SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
         ")->first();
 
@@ -1298,6 +1298,10 @@ class ActionsAggregatorService
                 'aci.region_name as state',
                 'aci.budget as budgetMin',
                 'aci.budget as budgetMax',
+                DB::raw("NULL as propertyRequestStatusId"),
+                DB::raw("NULL as propertyRequestStatusSlug"),
+                DB::raw("NULL as propertyRequestStatusNameAr"),
+                DB::raw("NULL as propertyRequestStatusNameEn"),
             ]);
     }
 
@@ -1371,6 +1375,10 @@ class ActionsAggregatorService
                 'upr.region as state',
                 'upr.budget_from as budgetMin',
                 'upr.budget_to as budgetMax',
+                'upr.status_id as propertyRequestStatusId',
+                'prs.slug as propertyRequestStatusSlug',
+                'prs.name_ar as propertyRequestStatusNameAr',
+                'prs.name_en as propertyRequestStatusNameEn',
             ]);
     }
 
@@ -1426,6 +1434,10 @@ class ActionsAggregatorService
                 DB::raw("NULL as state"),
                 DB::raw("NULL as budgetMin"),
                 DB::raw("NULL as budgetMax"),
+                DB::raw("NULL as propertyRequestStatusId"),
+                DB::raw("NULL as propertyRequestStatusSlug"),
+                DB::raw("NULL as propertyRequestStatusNameAr"),
+                DB::raw("NULL as propertyRequestStatusNameEn"),
             ]);
     }
 
@@ -1887,6 +1899,9 @@ class ActionsAggregatorService
         }
 
         return (object) [
+            // Alias to make it explicit what to pass to:
+            // GET /api/v2/customers-hub/requests/{requestId}
+            'requestId' => $item->id,
             'id' => $item->id,
             'customerId' => $item->customerId,
             'customerName' => $item->customerName,
@@ -1912,6 +1927,19 @@ class ActionsAggregatorService
             'state' => $item->state ?? null,
             'budgetMin' => isset($item->budgetMin) && $item->budgetMin !== null ? (float) $item->budgetMin : null,
             'budgetMax' => isset($item->budgetMax) && $item->budgetMax !== null ? (float) $item->budgetMax : null,
+            // For property_request objectType only (users_property_requests.status_id).
+            // Null for inquiry/reminder/appointments.
+            'propertyRequestStatusId' => isset($item->propertyRequestStatusId) && $item->propertyRequestStatusId !== null
+                ? (int) $item->propertyRequestStatusId
+                : null,
+            'propertyRequestStatus' => isset($item->propertyRequestStatusId) && $item->propertyRequestStatusId !== null
+                ? [
+                    'id' => (int) $item->propertyRequestStatusId,
+                    'slug' => $item->propertyRequestStatusSlug ?? null,
+                    'name_ar' => $item->propertyRequestStatusNameAr ?? null,
+                    'name_en' => $item->propertyRequestStatusNameEn ?? null,
+                ]
+                : null,
             'metadata' => $metadata,
             'sourceTable' => $item->sourceTable,
             'sourceId' => $item->sourceId,
