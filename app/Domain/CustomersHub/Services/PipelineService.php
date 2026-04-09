@@ -64,7 +64,7 @@ class PipelineService
                     $join->on('ac.id', '=', 'upr.customer_id')
                         ->on('ac.user_id', '=', DB::raw((int) $userId));
                 })
-                ->leftJoin('users as emp', 'ac.responsible_employee_id', '=', 'emp.id')
+                ->leftJoin('users as emp', DB::raw('emp.id'), '=', DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id)'))
                 ->where('upr.user_id', $userId)
                 ->where('upr.customers_hub_stage_id', $stage->stage_id)
                 ->where('upr.is_active', 1)
@@ -83,7 +83,7 @@ class PipelineService
                     'upr.seriousness',
                     'upr.created_at',
                     'upr.updated_at',
-                    'ac.responsible_employee_id as assigned_employee_id',
+                    DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id) as assigned_employee_id'),
                     DB::raw("CONCAT(COALESCE(emp.first_name, ''), ' ', COALESCE(emp.last_name, '')) as assigned_employee_name"),
                 ])
                 ->limit(100)
@@ -137,7 +137,7 @@ class PipelineService
             ->leftJoin('api_customers as ac', function ($join) use ($userId) {
                 $join->on('ac.id', '=', 'upr.customer_id')->on('ac.user_id', '=', DB::raw((int) $userId));
             })
-            ->leftJoin('users as emp', 'ac.responsible_employee_id', '=', 'emp.id')
+            ->leftJoin('users as emp', DB::raw('emp.id'), '=', DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id)'))
             ->where('upr.user_id', $userId)
             ->whereNull('upr.customers_hub_stage_id')
             ->where('upr.is_active', 1)
@@ -157,7 +157,7 @@ class PipelineService
         $ur = $unassignedRequests->select([
             'upr.id', 'upr.full_name', 'upr.phone', 'upr.property_type', 'upr.budget_from', 'upr.budget_to',
             'upr.seriousness', 'upr.created_at', 'upr.updated_at',
-            'ac.responsible_employee_id as assigned_employee_id',
+            DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id) as assigned_employee_id'),
             DB::raw("CONCAT(COALESCE(emp.first_name, ''), ' ', COALESCE(emp.last_name, '')) as assigned_employee_name"),
         ])->limit(100)->get();
 
@@ -500,7 +500,10 @@ class PipelineService
             });
         }
         if (!empty($filters['assignedEmployeeId'])) {
-            $query->where('ac.responsible_employee_id', (int) $filters['assignedEmployeeId']);
+            $query->where(function ($q) use ($filters) {
+                $q->where('upr.responsible_employee_id', (int) $filters['assignedEmployeeId'])
+                    ->orWhere('ac.responsible_employee_id', (int) $filters['assignedEmployeeId']);
+            });
         }
         if (!empty($filters['search'])) {
             $search = '%' . $filters['search'] . '%';

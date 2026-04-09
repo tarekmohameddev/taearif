@@ -333,7 +333,11 @@ class ActionsAggregatorService
 
         // Assignees (requires ac join)
         if ($hasAssignees) {
-            $query->whereIn('ac.responsible_employee_id', $filters['assignees']);
+            $query->where(function ($q) use ($filters) {
+                $q->whereIn('upr.responsible_employee_id', $filters['assignees'])
+                    ->orWhereIn('ac.responsible_employee_id', $filters['assignees'])
+                    ->orWhereIn('ac_phone.responsible_employee_id', $filters['assignees']);
+            });
         }
 
         // Customer ID (requires ac join)
@@ -1313,7 +1317,7 @@ class ActionsAggregatorService
             })
             ->leftJoin('user_cities as uc', 'upr.city_id', '=', 'uc.id')
             ->leftJoin('property_request_statuses as prs', 'upr.status_id', '=', 'prs.id')
-            ->leftJoin('users as u2', DB::raw('u2.id'), '=', DB::raw('COALESCE(ac.responsible_employee_id, ac_phone.responsible_employee_id)'))
+            ->leftJoin('users as u2', DB::raw('u2.id'), '=', DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id, ac_phone.responsible_employee_id)'))
             ->where('upr.user_id', $userId)
             ->where('upr.is_active', 1)
             ->select([
@@ -1348,7 +1352,7 @@ class ActionsAggregatorService
                 'upr.updated_at as updatedAt',
                 DB::raw("NULL as completedAt"),
                 DB::raw("NULL as completedBy"),
-                DB::raw('COALESCE(ac.responsible_employee_id, ac_phone.responsible_employee_id) as assignedTo'),
+                DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id, ac_phone.responsible_employee_id) as assignedTo'),
                 DB::raw("CONCAT(COALESCE(u2.first_name, ''), ' ', COALESCE(u2.last_name, '')) as assignedToName"),
                 DB::raw("JSON_OBJECT(
                     'propertyRequestId', upr.id,

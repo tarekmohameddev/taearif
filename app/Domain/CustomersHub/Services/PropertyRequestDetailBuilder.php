@@ -109,6 +109,27 @@ class PropertyRequestDetailBuilder
         $assignedToName = trim((string) ($action->assignedToName ?? ''));
 
         if ($assignedTo === null || $assignedToName === '') {
+            // Primary: request-level assignment (source of truth)
+            $uprAssignee = DB::table('users_property_requests as upr')
+                ->leftJoin('users as u', 'upr.responsible_employee_id', '=', 'u.id')
+                ->where('upr.user_id', $userId)
+                ->where('upr.id', $propertyRequestId)
+                ->select([
+                    'upr.responsible_employee_id',
+                    DB::raw("CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as assigned_to_name"),
+                ])
+                ->first();
+
+            if ($assignedTo === null && $uprAssignee && $uprAssignee->responsible_employee_id !== null) {
+                $assignedTo = (int) $uprAssignee->responsible_employee_id;
+            }
+            if ($assignedToName === '' && $uprAssignee) {
+                $assignedToName = trim((string) ($uprAssignee->assigned_to_name ?? ''));
+            }
+        }
+
+        // Fallback: customer-level assignment (when request has no explicit assignment)
+        if ($assignedTo === null || $assignedToName === '') {
             $assignee = DB::table('api_customers as ac')
                 ->leftJoin('users as u', 'ac.responsible_employee_id', '=', 'u.id')
                 ->where('ac.user_id', $userId)

@@ -357,9 +357,12 @@ class ApiPropertyRequestController extends Controller
         if (!empty($validated['responsible_employee_id'])) {
             $employeeId = (int) $validated['responsible_employee_id'];
 
-            $query->whereHas('customer', function ($sub) use ($employeeId, $ownerId) {
-                $sub->where('user_id', $ownerId)
-                    ->where('responsible_employee_id', $employeeId);
+            $query->where(function ($q) use ($employeeId, $ownerId) {
+                $q->where('users_property_requests.responsible_employee_id', $employeeId)
+                    ->orWhereHas('customer', function ($sub) use ($employeeId, $ownerId) {
+                        $sub->where('user_id', $ownerId)
+                            ->where('responsible_employee_id', $employeeId);
+                    });
             });
         }
 
