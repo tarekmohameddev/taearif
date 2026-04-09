@@ -1898,6 +1898,18 @@ class ActionsAggregatorService
             $metadata = json_decode($metadata, true) ?? [];
         }
 
+        // Stable numeric ids for Customers Hub status values (v2).
+        // This is intentionally separate from users_property_requests.status_id.
+        $hubStatusIdMap = [
+            'pending' => 1,
+            'in_progress' => 2,
+            'in_waiting' => 3,
+            'completed' => 4,
+            'dismissed' => 5,
+            'snoozed' => 6,
+        ];
+        $hubStatusId = $hubStatusIdMap[$item->status] ?? null;
+
         return (object) [
             // Alias to make it explicit what to pass to:
             // GET /api/v2/customers-hub/requests/{requestId}
@@ -1911,6 +1923,7 @@ class ActionsAggregatorService
             'description' => $item->description,
             'priority' => $item->priority,
             'status' => $item->status,
+            'Status_hub_Id' => $hubStatusId,
             'source' => $item->source ?? '',
             'objectType' => $item->objectType ?? '',
             'dueDate' => $item->dueDate ? Carbon::parse($item->dueDate)->toIso8601String() : null,
