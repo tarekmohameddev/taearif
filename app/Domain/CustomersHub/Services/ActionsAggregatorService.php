@@ -1317,6 +1317,7 @@ class ActionsAggregatorService
             })
             ->leftJoin('user_cities as uc', 'upr.city_id', '=', 'uc.id')
             ->leftJoin('property_request_statuses as prs', 'upr.status_id', '=', 'prs.id')
+            ->leftJoin('customers_hub_status_mapping as chsm', 'prs.slug', '=', 'chsm.property_request_status_slug')
             ->leftJoin('users as u2', DB::raw('u2.id'), '=', DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id, ac_phone.responsible_employee_id)'))
             ->where('upr.user_id', $userId)
             ->where('upr.is_active', 1)
@@ -1335,15 +1336,13 @@ class ActionsAggregatorService
                     WHEN 'لاحقًا / استكشاف فقط' THEN 'low'
                     ELSE 'medium'
                 END as priority"),
-                DB::raw("CASE
-                    WHEN prs.slug = 'cancelled' THEN 'dismissed'
-                    WHEN prs.slug = 'contract_signed' THEN 'completed'
-                    WHEN prs.slug = 'new' THEN 'pending'
-                    WHEN prs.slug IN ('follow_up', 'property_found') THEN 'in_progress'
-                    WHEN upr.is_archived = 1 THEN 'dismissed'
-                    WHEN upr.is_read = 1 THEN 'in_progress'
-                    ELSE 'pending'
-                END as status"),
+                DB::raw("COALESCE(chsm.customers_hub_status,
+                    CASE
+                        WHEN upr.is_archived = 1 THEN 'dismissed'
+                        WHEN upr.is_read = 1 THEN 'in_progress'
+                        ELSE 'pending'
+                    END
+                ) as status"),
                 DB::raw("COALESCE(upr.source, 'website') as source"),
                 DB::raw("'property_request' as objectType"),
                 DB::raw("NULL as dueDate"),
