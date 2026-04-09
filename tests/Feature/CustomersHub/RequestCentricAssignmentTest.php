@@ -196,8 +196,18 @@ class RequestCentricAssignmentTest extends TestCase
             Schema::create('property_request_statuses', function (Blueprint $table) {
                 $table->id();
                 $table->string('slug')->nullable();
+                $table->string('name_ar')->nullable();
+                $table->string('name_en')->nullable();
             });
         }
+        Schema::table('property_request_statuses', function (Blueprint $table) {
+            if (!Schema::hasColumn('property_request_statuses', 'name_ar')) {
+                $table->string('name_ar')->nullable()->after('slug');
+            }
+            if (!Schema::hasColumn('property_request_statuses', 'name_en')) {
+                $table->string('name_en')->nullable()->after('name_ar');
+            }
+        });
 
         if (!Schema::hasTable('customers_hub_stages')) {
             Schema::create('customers_hub_stages', function (Blueprint $table) {
