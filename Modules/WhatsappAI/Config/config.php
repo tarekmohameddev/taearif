@@ -62,4 +62,16 @@ return [
     */
     'webhook_forward_url' => env('WHATSAPPAI_WEBHOOK_FORWARD_URL'),
     'webhook_forward_timeout' => (int) env('WHATSAPPAI_WEBHOOK_FORWARD_TIMEOUT', 5),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Audio Transcription (Whisper)
+    |--------------------------------------------------------------------------
+    |
+    | whisper_model       — OpenAI Whisper model used for audio transcription.
+    | graph_api_version   — Meta Graph API version used to resolve media URLs.
+    |
+    */
+    'whisper_model'      => env('WHATSAPPAI_WHISPER_MODEL', 'whisper-1'),
+    'graph_api_version'  => env('WHATSAPPAI_GRAPH_API_VERSION', 'v18.0'),
 ];

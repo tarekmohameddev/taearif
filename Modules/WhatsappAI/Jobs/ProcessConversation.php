@@ -64,7 +64,7 @@ class ProcessConversation implements ShouldQueue
             // On subsequent runs only messages after the cursor are included so we
             // analyse new content only and avoid creating duplicate records.
             $messageQuery = $conversation->messages()
-                ->whereIn('message_type', ['text', 'image', 'video', 'document', 'location']);
+                ->whereIn('message_type', ['text', 'image', 'video', 'document', 'location', 'audio']);
 
             if ($conversation->last_processed_message_id) {
                 $messageQuery->where('id', '>', $conversation->last_processed_message_id);
