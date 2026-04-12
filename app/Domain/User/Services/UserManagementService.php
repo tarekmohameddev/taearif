@@ -6,6 +6,7 @@ use App\Domain\User\Models\User;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\Domain\User\Models\UserActivityLog;
 use App\Models\Api\GeneralSetting;
+use App\Models\PropertyRequestStatus;
 use App\Models\PasswordResetLog;
 use App\Services\WhatsAppService;
 use App\Services\EmailService;
@@ -158,6 +159,8 @@ class UserManagementService extends BaseService
                     'favicon' => 'favicon.png',
                 ]
             );
+
+            PropertyRequestStatus::ensureWorkflowStatusesForTenant((int) $user->id);
 
             return $user->fresh(['referrer', 'activeMembership.package']);
         });

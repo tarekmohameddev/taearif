@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Models\PropertyRequestStatus;
 use App\Models\User;
 use App\Support\CacheInvalidationHelper;
 use Illuminate\Support\Facades\Cache;
@@ -65,6 +66,10 @@ class UserObserver
         // Clear tenant employees cache if employee is created
         if ($user->tenant_id) {
             Cache::forget("tenant_employees_{$user->tenant_id}");
+        }
+
+        if (($user->account_type ?? null) === 'tenant') {
+            PropertyRequestStatus::ensureWorkflowStatusesForTenant((int) $user->id);
         }
     }
 
