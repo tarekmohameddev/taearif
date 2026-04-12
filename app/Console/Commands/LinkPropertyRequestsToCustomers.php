@@ -57,7 +57,7 @@ class LinkPropertyRequestsToCustomers extends Command
 
         // Get property requests that don't have linked customers
         $query = UserPropertyRequest::whereNotNull('phone')
-            ->whereDoesntHave('customers');
+            ->whereNull('customer_id');
 
         if ($tenantId) {
             $query->where('user_id', $tenantId);
@@ -95,7 +95,7 @@ class LinkPropertyRequestsToCustomers extends Command
                     }
 
                     if ($linkOnly) {
-                        // Only link mode: find existing customer
+                        // Only link mode: find existing customer without any property requests
                         $customer = ApiCustomer::where('user_id', $propertyRequest->user_id)
                             ->where('phone_number', $normalizedPhone)
                             ->whereDoesntHave('propertyRequests')
@@ -122,7 +122,8 @@ class LinkPropertyRequestsToCustomers extends Command
                             if ($customer) {
                                 // If customer existed before and was not linked, it was linked
                                 // If customer didn't exist, it was created
-                                if ($existingCustomer && !$existingCustomer->propertyRequests()->exists()) {
+                                $hadNoRequests = $existingCustomer ? $existingCustomer->propertyRequests()->where('id', '!=', $propertyRequest->id)->doesntExist() : false;
+                                if ($existingCustomer && $hadNoRequests) {
                                     $linked++;
                                 } elseif (!$existingCustomer) {
                                     $created++;
@@ -136,7 +137,7 @@ class LinkPropertyRequestsToCustomers extends Command
                         } else {
                             // Dry run: just check what would happen
                             if ($existingCustomer) {
-                                if (!$existingCustomer->propertyRequests()->exists()) {
+                                if ($existingCustomer->propertyRequests()->doesntExist()) {
                                     $linked++;
                                 } else {
                                     $skipped++;
