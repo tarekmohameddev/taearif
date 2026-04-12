@@ -1630,7 +1630,6 @@ class ActionsAggregatorService
                     });
                     break;
                 case 'all':
-                    $query->whereIn('status', ['pending', 'in_progress']);
                     break;
                 case 'completed':
                     $query->where('status', 'completed');
@@ -1641,11 +1640,6 @@ class ActionsAggregatorService
         // Types filter
         if (!empty($filters['types']) && is_array($filters['types'])) {
             $query->whereIn('type', $filters['types']);
-        }
-
-        // Status filter
-        if (!empty($filters['statuses']) && is_array($filters['statuses'])) {
-            $query->whereIn('status', $filters['statuses']);
         }
 
         // Sources filter
