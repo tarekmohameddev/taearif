@@ -21,6 +21,7 @@ class StoreStageRequest extends BaseApiFormRequest
             'order' => 'required|integer|min:1',
             'description' => 'nullable|string',
             'is_active' => 'nullable|boolean',
+            'is_global' => 'nullable|boolean',
         ];
     }
 }

@@ -39,7 +39,7 @@ class StagesController extends ApiController
         $activeOnly = in_array(strtolower((string) ($validated['active_only'] ?? '')), ['true', '1'], true);
         $orderBy = $validated['order_by'] ?? 'order';
 
-        $result = $this->stagesService->getAll($activeOnly, $orderBy);
+        $result = $this->stagesService->getAll($activeOnly, $orderBy, auth()->id());
 
         return $this->successWithSpec(
             $result,
@@ -55,6 +55,7 @@ class StagesController extends ApiController
     {
         $validated = $request->validated();
         $validated['is_active'] = $validated['is_active'] ?? true;
+        $validated['is_global'] = $validated['is_global'] ?? true;
 
         try {
             $stage = $this->stagesService->create($validated);
@@ -74,6 +75,7 @@ class StagesController extends ApiController
             'order' => $stage->order,
             'description' => $stage->description,
             'is_active' => $stage->is_active,
+            'is_global' => (bool) ($stage->is_global ?? true),
             'created_at' => $stage->created_at?->toIso8601String(),
             'updated_at' => $stage->updated_at?->toIso8601String(),
         ];
@@ -103,6 +105,7 @@ class StagesController extends ApiController
             'order' => $stage->order,
             'description' => $stage->description,
             'is_active' => $stage->is_active,
+            'is_global' => (bool) ($stage->is_global ?? true),
             'created_at' => $stage->created_at?->toIso8601String(),
             'updated_at' => $stage->updated_at?->toIso8601String(),
         ];
