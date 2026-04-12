@@ -63,6 +63,11 @@ class RequestsController extends ApiController
      * POST /api/v2/customers-hub/requests/list
      *
      * Get paginated list of customer actions with filtering.
+     *
+     * Status filtering: sending `tab` (e.g. `all`, `completed`) applies status rules in ActionsAggregatorService::applyFilters.
+     * To include every Customers Hub status (pending through completed/dismissed, etc.), omit both `tab` and `statuses`.
+     * To limit to property requests only while keeping all statuses, omit `tab` and `statuses` and pass `objectTypes: ["property_request"]`
+     * (and/or `types: ["property_match"]` per your UI).
      */
     public function list(RequestsListRequest $request): JsonResponse
     {
