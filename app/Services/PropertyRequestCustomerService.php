@@ -297,7 +297,8 @@ class PropertyRequestCustomerService
             // Get settings and stage ID (always attempt creation for command usage)
             $settings = $this->getSettings($propertyRequest->user_id);
             $defaultStageId = $this->getDefaultStageId($propertyRequest->user_id);
-            $stageId = $settings ? $settings->default_stage_id : $defaultStageId;
+            // If a settings row exists but default_stage_id is null, fall back to first active stage
+            $stageId = $settings?->default_stage_id ?? $defaultStageId;
 
             // If no stage ID available, skip creation
             if (!$stageId) {

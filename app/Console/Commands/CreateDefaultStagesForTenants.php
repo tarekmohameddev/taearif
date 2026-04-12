@@ -83,7 +83,43 @@ class CreateDefaultStagesForTenants extends Command
                 ->count();
 
             if ($existingStages > 0) {
-                $this->line("⏭️  Tenant {$tenantName} (ID: {$tenantId}) already has {$existingStages} active stage(s) - skipping");
+                $this->line("⏭️  Tenant {$tenantName} (ID: {$tenantId}) already has {$existingStages} active stage(s) - skipping stage creation");
+
+                // --auto-settings only ran when new stages were created; tenants that already had
+                // stages never got property_request_auto_customer_settings. Fix that here.
+                if ($autoSettings) {
+                    $firstStage = UserApiCustomerStage::where('user_id', $tenantId)
+                        ->where('is_active', true)
+                        ->orderBy('order')
+                        ->first();
+
+                    if ($firstStage) {
+                        if (!$dryRun) {
+                            PropertyRequestAutoCustomerSetting::updateOrCreate(
+                                ['user_id' => $tenantId],
+                                [
+                                    'auto_create_customer' => true,
+                                    'default_stage_id' => $firstStage->id,
+                                ]
+                            );
+                            PropertyRequestCustomerService::clearSettingsCache($tenantId);
+                            $settingsUpdated++;
+                        } else {
+                            $settingsUpdated++;
+                        }
+                        $this->line("   ✅ property_request_auto_customer_settings set with default_stage_id: {$firstStage->id}");
+                        $results[] = [
+                            'tenant_id' => $tenantId,
+                            'tenant_name' => $tenantName,
+                            'stages_created' => 0,
+                            'first_stage_id' => $firstStage->id,
+                            'settings_created' => 'Yes',
+                        ];
+                    } else {
+                        $this->warn('   ⚠️  No active stage row found (unexpected).');
+                    }
+                }
+
                 $skipped++;
                 continue;
             }
