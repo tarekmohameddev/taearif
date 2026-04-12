@@ -190,6 +190,8 @@ class RequestsController extends ApiController
 
         // Get stats
         $stats = $this->aggregator->getStats($userId, $filters);
+        $comparison = $this->aggregator->getComparisonStats($userId, $filters);
+        $stats = array_merge($stats, $comparison);
 
         try {
             $stages = $this->aggregator->getStageStats($userId, $filters);

@@ -150,6 +150,41 @@ class ActionsAggregatorService
     }
 
     /**
+     * Raw counts for the previous calendar month vs reference month labels (Customers Hub list stats).
+     */
+    public function getComparisonStats(int $userId, array $filters = []): array
+    {
+        $now = Carbon::now();
+
+        if (!empty($filters['date_from'])) {
+            $refDate = Carbon::parse($filters['date_from'])->startOfMonth();
+        } else {
+            $refDate = $now->copy()->subMonthNoOverflow()->startOfMonth();
+        }
+
+        $currentStart = $refDate->copy()->startOfMonth();
+
+        $compareStart = $refDate->copy()->subMonthNoOverflow()->startOfMonth();
+        $compareEnd = $compareStart->copy()->endOfMonth();
+
+        $compareFilters = $filters;
+        $compareFilters['date_from'] = $compareStart->toDateString();
+        $compareFilters['date_to'] = $compareEnd->toDateString();
+
+        $compareStats = $this->getStats($userId, $compareFilters);
+
+        return [
+            'inboxComparing' => $compareStats['inbox'],
+            'followupsComparing' => $compareStats['followups'],
+            'pendingComparing' => $compareStats['pending'],
+            'overdueComparing' => $compareStats['overdue'],
+            'completedComparing' => $compareStats['completed'],
+            'month starts comparing' => $currentStart->format('F Y'),
+            'month ends comparing' => $compareStart->format('F Y'),
+        ];
+    }
+
+    /**
      * Get stage statistics for the filtered actions (pipeline: customers_hub_stages).
      * Returns request count and percentage per pipeline stage (requests + inquiries).
      */
