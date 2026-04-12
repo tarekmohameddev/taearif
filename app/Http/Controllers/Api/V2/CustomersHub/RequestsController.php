@@ -355,6 +355,36 @@ class RequestsController extends ApiController
                     'email' => $e->email,
                 ]);
 
+            // Cities: distinct cities via districts_id → user_districts
+            $cities = DB::table('users_property_requests as upr')
+                ->join('user_districts as d', 'upr.districts_id', '=', 'd.id')
+                ->where('upr.user_id', $userId)
+                ->whereNotNull('d.city_id')
+                ->distinct()
+                ->orderBy('d.city_name_ar')
+                ->get(['d.city_id as value', 'd.city_name_ar as label', 'd.city_name_en as labelEn'])
+                ->map(fn ($city) => [
+                    'value' => (int) $city->value,
+                    'label' => $city->label ?? '',
+                    'labelEn' => $city->labelEn ?? $city->label ?? '',
+                ])
+                ->values()
+                ->all();
+
+            // Districts: distinct string values from users_property_requests.district
+            $districtValues = DB::table('users_property_requests')
+                ->where('user_id', $userId)
+                ->whereNotNull('district')
+                ->where('district', '!=', '')
+                ->distinct()
+                ->orderBy('district')
+                ->pluck('district');
+
+            $districts = $districtValues->map(fn (string $value) => [
+                'value' => $value,
+                'label' => $value,
+            ])->values()->all();
+
             return [
                 'types' => $types,
                 'statuses' => $statuses,
@@ -367,6 +397,8 @@ class RequestsController extends ApiController
                 'customerTypes' => $customerTypes,
                 'customerPriorities' => $customerPriorities,
                 'employees' => $employees,
+                'cities' => $cities,
+                'districts' => $districts,
             ];
         });
 
