@@ -72,8 +72,8 @@ class PropertyRequestDetailBuilder
                     $join->on('o.stage_id', '=', 'customers_hub_stages.stage_id')
                         ->where('o.user_id', '=', DB::raw((int) $userId));
                 })
-                ->where('stage_id', $propertyRequest->customers_hub_stage_id)
-                ->where('is_active', true)
+                ->where('customers_hub_stages.stage_id', $propertyRequest->customers_hub_stage_id)
+                ->where('customers_hub_stages.is_active', true)
                 ->first([
                     'customers_hub_stages.id as id',
                     'customers_hub_stages.stage_id as stage_id',
@@ -245,8 +245,8 @@ class PropertyRequestDetailBuilder
                     $join->on('o.stage_id', '=', 'customers_hub_stages.stage_id')
                         ->where('o.user_id', '=', DB::raw((int) $userId));
                 })
-                ->where('stage_id', $inquiry->stage_id)
-                ->where('is_active', true)
+                ->where('customers_hub_stages.stage_id', $inquiry->stage_id)
+                ->where('customers_hub_stages.is_active', true)
                 ->first([
                     'customers_hub_stages.id as id',
                     'customers_hub_stages.stage_id as stage_id',
