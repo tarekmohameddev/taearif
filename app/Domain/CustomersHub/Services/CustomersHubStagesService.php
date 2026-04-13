@@ -5,6 +5,7 @@ namespace App\Domain\CustomersHub\Services;
 use App\Models\CustomersHub\CustomersHubStage;
 use App\Models\CustomersHub\CustomersHubStageOverride;
 use App\Domain\CustomersHub\Exceptions\StageInUseException;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -222,8 +223,26 @@ class CustomersHubStagesService
             'is_global' => (bool) ($s->is_global ?? true),
             'is_system' => (bool) ($s->is_system ?? false),
             'user_id' => $s->user_id ?? null,
-            'created_at' => $s->created_at?->toIso8601String(),
-            'updated_at' => $s->updated_at?->toIso8601String(),
+            'created_at' => $this->timestampToIso($s->created_at ?? null),
+            'updated_at' => $this->timestampToIso($s->updated_at ?? null),
         ];
+    }
+
+    private function timestampToIso(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if ($value instanceof Carbon) {
+            return $value->toIso8601String();
+        }
+        if (is_string($value)) {
+            return Carbon::parse($value)->toIso8601String();
+        }
+        if (is_object($value) && method_exists($value, 'toIso8601String')) {
+            /** @phpstan-ignore-next-line */
+            return $value->toIso8601String();
+        }
+        return null;
     }
 }
