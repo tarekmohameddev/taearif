@@ -28,6 +28,10 @@ class CustomerDetailService
             ->where('api_customers.id', $customerId)
             ->where('api_customers.user_id', $userId)
             ->leftJoin('customers_hub_stages as stage', 'api_customers.customers_hub_stage_id', '=', 'stage.stage_id')
+            ->leftJoin('customers_hub_stage_overrides as stage_o', function ($join) use ($userId) {
+                $join->on('stage_o.stage_id', '=', 'stage.stage_id')
+                    ->where('stage_o.user_id', '=', DB::raw((int) $userId));
+            })
             ->leftJoin('users_api_customers_priorities as priority', 'api_customers.priority_id', '=', 'priority.id')
             ->leftJoin('users_api_customers_types as type', 'api_customers.type_id', '=', 'type.id')
             ->leftJoin('user_cities as city', 'api_customers.city_id', '=', 'city.id')
@@ -35,9 +39,9 @@ class CustomerDetailService
             ->select([
                 'api_customers.*',
                 'stage.stage_id as hub_stage_id',
-                'stage.stage_name_ar as stage_name',
-                'stage.stage_name_en as stage_name_en',
-                'stage.color as stage_color',
+                DB::raw('COALESCE(stage_o.stage_name_ar, stage.stage_name_ar) as stage_name'),
+                DB::raw('COALESCE(stage_o.stage_name_en, stage.stage_name_en) as stage_name_en'),
+                DB::raw('COALESCE(stage_o.color, stage.color) as stage_color'),
                 'priority.name as priority_name',
                 'type.name as type_name',
                 'city.name_ar as city_name',

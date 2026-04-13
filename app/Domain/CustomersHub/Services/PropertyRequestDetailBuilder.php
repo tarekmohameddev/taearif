@@ -68,9 +68,18 @@ class PropertyRequestDetailBuilder
         $stage = null;
         if (!empty($propertyRequest->customers_hub_stage_id)) {
             $stageRow = DB::table('customers_hub_stages')
+                ->leftJoin('customers_hub_stage_overrides as o', function ($join) use ($userId) {
+                    $join->on('o.stage_id', '=', 'customers_hub_stages.stage_id')
+                        ->where('o.user_id', '=', DB::raw((int) $userId));
+                })
                 ->where('stage_id', $propertyRequest->customers_hub_stage_id)
                 ->where('is_active', true)
-                ->first(['id', 'stage_id', 'stage_name_ar', 'stage_name_en']);
+                ->first([
+                    'customers_hub_stages.id as id',
+                    'customers_hub_stages.stage_id as stage_id',
+                    DB::raw('COALESCE(o.stage_name_ar, customers_hub_stages.stage_name_ar) as stage_name_ar'),
+                    DB::raw('COALESCE(o.stage_name_en, customers_hub_stages.stage_name_en) as stage_name_en'),
+                ]);
             if ($stageRow) {
                 $stageId = $stageRow->stage_id;
                 $stage = [
@@ -232,9 +241,18 @@ class PropertyRequestDetailBuilder
         $stage = null;
         if (!empty($inquiry->stage_id)) {
             $stageRow = DB::table('customers_hub_stages')
+                ->leftJoin('customers_hub_stage_overrides as o', function ($join) use ($userId) {
+                    $join->on('o.stage_id', '=', 'customers_hub_stages.stage_id')
+                        ->where('o.user_id', '=', DB::raw((int) $userId));
+                })
                 ->where('stage_id', $inquiry->stage_id)
                 ->where('is_active', true)
-                ->first(['id', 'stage_id', 'stage_name_ar', 'stage_name_en']);
+                ->first([
+                    'customers_hub_stages.id as id',
+                    'customers_hub_stages.stage_id as stage_id',
+                    DB::raw('COALESCE(o.stage_name_ar, customers_hub_stages.stage_name_ar) as stage_name_ar'),
+                    DB::raw('COALESCE(o.stage_name_en, customers_hub_stages.stage_name_en) as stage_name_en'),
+                ]);
             if ($stageRow) {
                 $stageId = $stageRow->stage_id;
                 $stage = [

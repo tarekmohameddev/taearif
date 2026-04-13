@@ -55,6 +55,9 @@ class BulkListRequest extends BaseApiFormRequest
                 } elseif (!DB::table('customers_hub_stages')
                     ->where('stage_id', $stageId)
                     ->where('is_active', true)
+                    ->where(function ($w) use ($userId) {
+                        $w->where('is_system', true)->orWhere('user_id', $userId);
+                    })
                     ->exists()) {
                     $validator->errors()->add('data.stageId', __('validation.exists', ['attribute' => 'data.stageId']));
                 }

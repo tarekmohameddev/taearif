@@ -431,10 +431,15 @@ class AnalyticsService
     {
         [$startDate, $endDate] = $this->parseTimeRange($timeRange);
 
-        $stages = DB::table('customers_hub_stages')
-            ->where('is_active', true)
-            ->orderBy('order')
-            ->get(['stage_id', 'stage_name_ar', 'stage_name_en', 'color', 'order']);
+        $presenter = app(\App\Domain\CustomersHub\Services\CustomersHubStagesPresenter::class);
+        $stages = $presenter->listStages($userId, true)
+            ->map(fn ($s) => (object) [
+                'stage_id' => $s->stage_id,
+                'stage_name_ar' => $s->stage_name_ar,
+                'stage_name_en' => $s->stage_name_en,
+                'color' => $s->color,
+                'order' => (int) $s->order,
+            ]);
 
         $stageCounts = [];
         $stageValues = [];

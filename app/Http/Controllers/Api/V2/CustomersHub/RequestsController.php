@@ -321,10 +321,8 @@ class RequestsController extends ApiController
             ];
 
             // Pipeline stages (customers_hub_stages) for request list filtering
-            $stages = DB::table('customers_hub_stages')
-                ->where('is_active', true)
-                ->orderBy('order')
-                ->get(['id', 'stage_id', 'stage_name_ar', 'stage_name_en'])
+            $presenter = app(\App\Domain\CustomersHub\Services\CustomersHubStagesPresenter::class);
+            $stages = $presenter->listStages($userId, true)
                 ->map(fn ($s) => [
                     'id' => (int) $s->id,
                     'stage_id' => $s->stage_id,
@@ -585,9 +583,21 @@ class RequestsController extends ApiController
         // Resolve pipeline stage: stage_id (string) or status_id (integer -> lookup customers_hub_stages.id)
         $stageIdString = null;
         if (array_key_exists('stage_id', $validated) && $validated['stage_id'] !== null && $validated['stage_id'] !== '') {
-            $stageIdString = DB::table('customers_hub_stages')->where('stage_id', $validated['stage_id'])->where('is_active', true)->value('stage_id');
+            $stageIdString = DB::table('customers_hub_stages')
+                ->where('stage_id', $validated['stage_id'])
+                ->where('is_active', true)
+                ->where(function ($w) use ($userId) {
+                    $w->where('is_system', true)->orWhere('user_id', $userId);
+                })
+                ->value('stage_id');
         } elseif (array_key_exists('status_id', $validated) && $validated['status_id'] !== null) {
-            $stageIdString = DB::table('customers_hub_stages')->where('id', (int) $validated['status_id'])->where('is_active', true)->value('stage_id');
+            $stageIdString = DB::table('customers_hub_stages')
+                ->where('id', (int) $validated['status_id'])
+                ->where('is_active', true)
+                ->where(function ($w) use ($userId) {
+                    $w->where('is_system', true)->orWhere('user_id', $userId);
+                })
+                ->value('stage_id');
         }
 
         if ($stageIdString !== null) {

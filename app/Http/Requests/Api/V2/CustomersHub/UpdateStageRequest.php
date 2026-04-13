@@ -20,7 +20,6 @@ class UpdateStageRequest extends BaseApiFormRequest
             'order' => 'nullable|integer|min:1',
             'description' => 'nullable|string',
             'is_active' => 'nullable|boolean',
-            'is_global' => 'nullable|boolean',
         ];
     }
 }

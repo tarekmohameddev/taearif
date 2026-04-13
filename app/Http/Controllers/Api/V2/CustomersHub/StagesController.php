@@ -39,7 +39,11 @@ class StagesController extends ApiController
         $activeOnly = in_array(strtolower((string) ($validated['active_only'] ?? '')), ['true', '1'], true);
         $orderBy = $validated['order_by'] ?? 'order';
 
-        $result = $this->stagesService->getAll($activeOnly, $orderBy, auth()->id());
+        $tenantUserId = method_exists($request->user(), 'tenantOwnerId')
+            ? (int) $request->user()->tenantOwnerId()
+            : (int) $request->user()->id;
+
+        $result = $this->stagesService->getAll($activeOnly, $orderBy, $tenantUserId);
 
         return $this->successWithSpec(
             $result,
@@ -55,13 +59,15 @@ class StagesController extends ApiController
     {
         $validated = $request->validated();
         $validated['is_active'] = $validated['is_active'] ?? true;
-        $validated['is_global'] = $validated['is_global'] ?? true;
+        $validated['tenant_user_id'] = method_exists($request->user(), 'tenantOwnerId')
+            ? (int) $request->user()->tenantOwnerId()
+            : (int) $request->user()->id;
 
         try {
             $stage = $this->stagesService->create($validated);
         } catch (ValidationException $e) {
             return $this->errorWithSpec(
-                'Stage ID already exists',
+                'Stage create failed',
                 409
             );
         }
@@ -89,11 +95,16 @@ class StagesController extends ApiController
     public function update(UpdateStageRequest $request, string $stageId): JsonResponse
     {
         $validated = $request->validated();
+        $validated['tenant_user_id'] = method_exists($request->user(), 'tenantOwnerId')
+            ? (int) $request->user()->tenantOwnerId()
+            : (int) $request->user()->id;
 
         try {
             $stage = $this->stagesService->update($stageId, $validated);
         } catch (ModelNotFoundException $e) {
             return $this->errorWithSpec("Stage not found: '{$stageId}'", 404);
+        } catch (ValidationException $e) {
+            return $this->errorWithSpec($e->getMessage(), 422);
         }
 
         $data = [
@@ -118,8 +129,12 @@ class StagesController extends ApiController
      */
     public function destroy(string $stageId): JsonResponse
     {
+        $tenantUserId = method_exists(auth()->user(), 'tenantOwnerId')
+            ? (int) auth()->user()->tenantOwnerId()
+            : (int) auth()->id();
+
         try {
-            $this->stagesService->delete($stageId);
+            $this->stagesService->delete($stageId, $tenantUserId);
         } catch (ModelNotFoundException $e) {
             return $this->errorWithSpec("Stage not found: '{$stageId}'", 404);
         } catch (StageInUseException $e) {
@@ -128,6 +143,8 @@ class StagesController extends ApiController
                 409,
                 ['requests_count' => $e->requestsCount]
             );
+        } catch (\RuntimeException $e) {
+            return $this->errorWithSpec($e->getMessage(), 403);
         }
 
         return $this->successWithSpec(null, 'Stage deleted successfully', 200);
