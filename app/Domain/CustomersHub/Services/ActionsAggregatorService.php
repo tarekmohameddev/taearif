@@ -1337,6 +1337,8 @@ class ActionsAggregatorService
                 DB::raw("NULL as propertyRequestStatusSlug"),
                 DB::raw("NULL as propertyRequestStatusNameAr"),
                 DB::raw("NULL as propertyRequestStatusNameEn"),
+                DB::raw("NULL as districts_id"),
+                DB::raw("NULL as districtAR"),
             ]);
     }
 
@@ -1355,6 +1357,7 @@ class ActionsAggregatorService
                     ->on('ac_phone.phone_number', '=', 'upr.phone');
             })
             ->leftJoin('user_cities as uc', 'upr.city_id', '=', 'uc.id')
+            ->leftJoin('user_districts as ud_req', 'upr.districts_id', '=', 'ud_req.id')
             ->leftJoin('property_request_statuses as prs', 'upr.status_id', '=', 'prs.id')
             ->leftJoin('customers_hub_status_mapping as chsm', 'prs.slug', '=', 'chsm.property_request_status_slug')
             ->leftJoin('users as u2', DB::raw('u2.id'), '=', DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id, ac_phone.responsible_employee_id)'))
@@ -1414,6 +1417,8 @@ class ActionsAggregatorService
                 'prs.slug as propertyRequestStatusSlug',
                 'prs.name_ar as propertyRequestStatusNameAr',
                 'prs.name_en as propertyRequestStatusNameEn',
+                'upr.districts_id as districts_id',
+                'ud_req.name_ar as districtAR',
             ]);
     }
 
@@ -1473,6 +1478,8 @@ class ActionsAggregatorService
                 DB::raw("NULL as propertyRequestStatusSlug"),
                 DB::raw("NULL as propertyRequestStatusNameAr"),
                 DB::raw("NULL as propertyRequestStatusNameEn"),
+                DB::raw("NULL as districts_id"),
+                DB::raw("NULL as districtAR"),
             ]);
     }
 
@@ -1967,6 +1974,8 @@ class ActionsAggregatorService
             'propertyType' => $item->propertyType ?? null,
             'city' => $item->city ?? null,
             'state' => $item->state ?? null,
+            'districts_id' => isset($item->districts_id) && $item->districts_id !== null ? (int) $item->districts_id : null,
+            'districtAR' => $item->districtAR ?? null,
             'budgetMin' => isset($item->budgetMin) && $item->budgetMin !== null ? (float) $item->budgetMin : null,
             'budgetMax' => isset($item->budgetMax) && $item->budgetMax !== null ? (float) $item->budgetMax : null,
             // For property_request objectType only (users_property_requests.status_id).
