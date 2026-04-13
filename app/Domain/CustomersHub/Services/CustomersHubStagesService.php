@@ -211,6 +211,12 @@ class CustomersHubStagesService
 
     private function stageToArray($s): array
     {
+        $baseNameAr = $s->base_stage_name_ar ?? $s->stage_name_ar;
+        $baseNameEn = $s->base_stage_name_en ?? $s->stage_name_en;
+        $baseColor = $s->base_color ?? $s->color;
+        $baseOrder = $s->base_order ?? $s->order;
+        $isOverridden = ($s->override_id ?? null) !== null;
+
         return [
             'id' => $s->id,
             'stage_id' => $s->stage_id,
@@ -218,6 +224,11 @@ class CustomersHubStagesService
             'stage_name_en' => $s->stage_name_en,
             'color' => $s->color,
             'order' => $s->order,
+            'base_stage_name_ar' => $baseNameAr,
+            'base_stage_name_en' => $baseNameEn,
+            'base_color' => $baseColor,
+            'base_order' => $baseOrder,
+            'is_overridden' => $isOverridden,
             'description' => $s->description,
             'is_active' => $s->is_active,
             'is_global' => (bool) ($s->is_global ?? true),
