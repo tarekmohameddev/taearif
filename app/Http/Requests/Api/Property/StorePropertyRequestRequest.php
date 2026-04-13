@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\Property;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
+use App\Rules\PropertyTypeRule;
 use Illuminate\Validation\Rule;
 
 class StorePropertyRequestRequest extends BaseApiFormRequest
@@ -12,30 +13,13 @@ class StorePropertyRequestRequest extends BaseApiFormRequest
         return true;
     }
 
-    /**
-     * Accept lowercase English (e.g. residential) and normalize to stored canonical English (Residential).
-     */
     protected function prepareForValidation(): void
     {
-        if (! $this->has('property_type')) {
-            return;
-        }
-
-        $value = $this->input('property_type');
-        if (! is_string($value) || $value === '') {
-            return;
-        }
-
-        $englishToCanonical = [
-            'residential' => 'Residential',
-            'commercial' => 'Commercial',
-            'agricultural' => 'Agricultural',
-            'industrial' => 'Industrial',
-        ];
-
-        $lower = strtolower($value);
-        if (isset($englishToCanonical[$lower])) {
-            $this->merge(['property_type' => $englishToCanonical[$lower]]);
+        if ($this->has('property_type')) {
+            $normalized = PropertyTypeRule::normalize(is_string($this->input('property_type')) ? $this->input('property_type') : null);
+            if ($normalized !== null) {
+                $this->merge(['property_type' => $normalized]);
+            }
         }
     }
 
@@ -55,16 +39,7 @@ class StorePropertyRequestRequest extends BaseApiFormRequest
                 'import',
             ])],
             'referral_source' => ['nullable', 'string'],
-            'property_type' => ['nullable', 'string', Rule::in([
-                'Residential',
-                'Commercial',
-                'Agricultural',
-                'Industrial',
-                'سكني',
-                'تجاري',
-                'صناعي',
-                'زراعي',
-            ])],
+            'property_type' => PropertyTypeRule::nullableRule(),
             'category_id' => ['nullable', 'integer', Rule::exists('api_user_categories', 'id')],
             'category' => 'nullable|string',
             'region' => ['nullable', 'integer', Rule::exists('user_cities', 'id')],

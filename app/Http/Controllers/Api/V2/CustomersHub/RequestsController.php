@@ -63,6 +63,11 @@ class RequestsController extends ApiController
      * POST /api/v2/customers-hub/requests/list
      *
      * Get paginated list of customer actions with filtering.
+     *
+     * Status filtering: sending `tab` (e.g. `all`, `completed`) applies status rules in ActionsAggregatorService::applyFilters.
+     * To include every Customers Hub status (pending through completed/dismissed, etc.), omit both `tab` and `statuses`.
+     * To limit to property requests only while keeping all statuses, omit `tab` and `statuses` and pass `objectTypes: ["property_request"]`
+     * (and/or `types: ["property_match"]` per your UI).
      */
     public function list(RequestsListRequest $request): JsonResponse
     {
@@ -190,6 +195,8 @@ class RequestsController extends ApiController
 
         // Get stats
         $stats = $this->aggregator->getStats($userId, $filters);
+        $comparison = $this->aggregator->getComparisonStats($userId, $filters);
+        $stats = array_merge($stats, $comparison);
 
         try {
             $stages = $this->aggregator->getStageStats($userId, $filters);
@@ -348,6 +355,36 @@ class RequestsController extends ApiController
                     'email' => $e->email,
                 ]);
 
+            // Cities: distinct cities via districts_id → user_districts
+            $cities = DB::table('users_property_requests as upr')
+                ->join('user_districts as d', 'upr.districts_id', '=', 'd.id')
+                ->where('upr.user_id', $userId)
+                ->whereNotNull('d.city_id')
+                ->distinct()
+                ->orderBy('d.city_name_ar')
+                ->get(['d.city_id as value', 'd.city_name_ar as label', 'd.city_name_en as labelEn'])
+                ->map(fn ($city) => [
+                    'value' => (int) $city->value,
+                    'label' => $city->label ?? '',
+                    'labelEn' => $city->labelEn ?? $city->label ?? '',
+                ])
+                ->values()
+                ->all();
+
+            // Districts: distinct string values from users_property_requests.district
+            $districtValues = DB::table('users_property_requests')
+                ->where('user_id', $userId)
+                ->whereNotNull('district')
+                ->where('district', '!=', '')
+                ->distinct()
+                ->orderBy('district')
+                ->pluck('district');
+
+            $districts = $districtValues->map(fn (string $value) => [
+                'value' => $value,
+                'label' => $value,
+            ])->values()->all();
+
             return [
                 'types' => $types,
                 'statuses' => $statuses,
@@ -360,6 +397,8 @@ class RequestsController extends ApiController
                 'customerTypes' => $customerTypes,
                 'customerPriorities' => $customerPriorities,
                 'employees' => $employees,
+                'cities' => $cities,
+                'districts' => $districts,
             ];
         });
 
@@ -1114,7 +1153,7 @@ class RequestsController extends ApiController
                     'address'        => optional($prop->first_content)->address ?? $prop->address ?? null,
                     'price'          => $prop->price ?? null,
                     'purpose'        => $prop->purpose ?? null,
-                    'type'           => $prop->type ?? null,
+                    'property_type'  => $prop->property_type ?? null,
                     'beds'           => $prop->beds ?? null,
                     'baths'          => $prop->bath ?? null,
                     'area'           => $prop->area ?? null,

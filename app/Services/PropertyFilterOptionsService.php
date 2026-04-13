@@ -48,7 +48,7 @@ class PropertyFilterOptionsService
             ->whereIn('user_id', $allowedUserIds)
             ->selectRaw('
                 GROUP_CONCAT(DISTINCT CASE WHEN purpose IS NOT NULL AND purpose != "" THEN purpose END) as purposes,
-                GROUP_CONCAT(DISTINCT CASE WHEN type IS NOT NULL AND type != "" THEN type END) as types,
+                GROUP_CONCAT(DISTINCT CASE WHEN property_type IS NOT NULL AND property_type != "" THEN property_type END) as property_types,
                 GROUP_CONCAT(DISTINCT CASE WHEN beds IS NOT NULL THEN CAST(beds AS CHAR) END) as beds_list,
                 GROUP_CONCAT(DISTINCT CASE WHEN bath IS NOT NULL THEN CAST(bath AS CHAR) END) as bath_list
             ')
@@ -59,8 +59,8 @@ class PropertyFilterOptionsService
             ? array_values(array_unique(explode(',', $basicFilters->purposes)))
             : [];
 
-        $availableTypes = $basicFilters && $basicFilters->types
-            ? array_values(array_unique(explode(',', $basicFilters->types)))
+        $availablePropertyTypes = $basicFilters && $basicFilters->property_types
+            ? array_values(array_unique(explode(',', $basicFilters->property_types)))
             : [];
 
         $availableBeds = $basicFilters && $basicFilters->beds_list
@@ -245,7 +245,10 @@ class PropertyFilterOptionsService
             'purposes' => $availablePurposes,
             'price_range' => $priceRange,
             'area_range' => $areaRange,
-            'types' => $availableTypes,
+            // Canonical key (matches DB + API naming)
+            'property_types' => $availablePropertyTypes,
+            // Backward compatibility for older consumers expecting "types"
+            'types' => $availablePropertyTypes,
             'beds' => $availableBeds,
             'bath' => $availableBath,
             'features' => $availableFeatures,

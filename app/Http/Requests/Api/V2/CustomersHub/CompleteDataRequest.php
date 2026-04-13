@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V2\CustomersHub;
 
+use App\Rules\PropertyTypeRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CompleteDataRequest extends FormRequest
@@ -11,10 +12,20 @@ class CompleteDataRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('property_type')) {
+            $normalized = \App\Rules\PropertyTypeRule::normalize(is_string($this->input('property_type')) ? $this->input('property_type') : null);
+            if ($normalized !== null) {
+                $this->merge(['property_type' => $normalized]);
+            }
+        }
+    }
+
     public function rules(): array
     {
         return [
-            'property_type'  => ['sometimes', 'nullable', 'string', 'max:100'],
+            'property_type'  => ['sometimes', ...PropertyTypeRule::nullableRule()],
             'purpose'        => ['sometimes', 'nullable', 'string', 'in:rent,sale,buy,invest'],
             'city'           => ['sometimes', 'nullable', 'string', 'max:255'],
             'district'       => ['sometimes', 'nullable', 'string', 'max:255'],

@@ -47,7 +47,7 @@ class PropertyResource extends JsonResource
             'views' => $views,
             'pricePerMeter' => isset($property->pricePerMeter) ? formatNumberWithoutTrailingZeros($property->pricePerMeter) : null,
             'purpose' => $property->purpose,
-            'type' => $property->type ?? '',
+            'property_type' => $property->property_type ?? '',
             'beds' => $property->beds,
             'bath' => $property->bath,
             'area' => isset($property->area) ? formatNumberWithoutTrailingZeros($property->area) : null,

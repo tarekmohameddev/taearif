@@ -28,6 +28,7 @@
             <file>./tests/Feature/RentalStoreManualTest.php</file>
             <file>./tests/Feature/TenantWebsiteApiTest.php</file>
             <file>./tests/Feature/TenantWebsiteReservationTest.php</file>
+            <file>./tests/Feature/TenantWebsiteJobApplicationTest.php</file>
             <file>./tests/Feature/UserPropertiesCompletionIntegrityTest.php</file>
             <file>./tests/Feature/WhatsappAddonsFlowTest.php</file>
             <file>./tests/Feature/WhatsappAddonsTest.php</file>

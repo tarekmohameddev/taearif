@@ -10,8 +10,10 @@ class CustomersHubStagesService
 {
     /**
      * Get all stages, optionally filtered by active and ordered.
+     * Non-global stages are only included when $userId is set and that user has at least one
+     * property request with customers_hub_stage_id matching that stage.
      */
-    public function getAll(bool $activeOnly = false, string $orderBy = 'order'): array
+    public function getAll(bool $activeOnly = false, string $orderBy = 'order', ?int $userId = null): array
     {
         $query = CustomersHubStage::query();
 
@@ -24,9 +26,31 @@ class CustomersHubStagesService
 
         $stages = $query->get();
 
+        $userStageIds = collect();
+        if ($userId !== null) {
+            $nonGlobalIds = $stages
+                ->filter(fn (CustomersHubStage $s) => ($s->is_global ?? true) === false)
+                ->pluck('stage_id');
+            if ($nonGlobalIds->isNotEmpty()) {
+                $userStageIds = DB::table('users_property_requests')
+                    ->where('user_id', $userId)
+                    ->whereIn('customers_hub_stage_id', $nonGlobalIds)
+                    ->distinct()
+                    ->pluck('customers_hub_stage_id');
+            }
+        }
+
+        $filtered = $stages->filter(function (CustomersHubStage $s) use ($userId, $userStageIds) {
+            if ($s->is_global ?? true) {
+                return true;
+            }
+
+            return $userId !== null && $userStageIds->contains($s->stage_id);
+        });
+
         return [
-            'stages' => $stages->map(fn (CustomersHubStage $s) => $this->stageToArray($s))->values()->all(),
-            'total' => $stages->count(),
+            'stages' => $filtered->map(fn (CustomersHubStage $s) => $this->stageToArray($s))->values()->all(),
+            'total' => $filtered->count(),
         ];
     }
 
@@ -51,6 +75,7 @@ class CustomersHubStagesService
             'order' => (int) $data['order'],
             'description' => $data['description'] ?? null,
             'is_active' => $data['is_active'] ?? true,
+            'is_global' => $data['is_global'] ?? true,
         ]);
     }
 
@@ -63,13 +88,13 @@ class CustomersHubStagesService
     {
         $stage = CustomersHubStage::where('stage_id', $stageId)->firstOrFail();
 
-        $allowed = ['stage_name_ar', 'stage_name_en', 'color', 'order', 'description', 'is_active'];
+        $allowed = ['stage_name_ar', 'stage_name_en', 'color', 'order', 'description', 'is_active', 'is_global'];
         foreach ($allowed as $key) {
             if (array_key_exists($key, $data)) {
                 if ($key === 'order') {
                     $stage->order = (int) $data[$key];
-                } elseif ($key === 'is_active') {
-                    $stage->is_active = (bool) $data[$key];
+                } elseif ($key === 'is_active' || $key === 'is_global') {
+                    $stage->$key = (bool) $data[$key];
                 } else {
                     $stage->$key = $data[$key];
                 }
@@ -130,6 +155,7 @@ class CustomersHubStagesService
             'order' => $s->order,
             'description' => $s->description,
             'is_active' => $s->is_active,
+            'is_global' => (bool) ($s->is_global ?? true),
             'created_at' => $s->created_at?->toIso8601String(),
             'updated_at' => $s->updated_at?->toIso8601String(),
         ];

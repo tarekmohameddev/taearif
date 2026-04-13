@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\Inquiry;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Rules\PropertyTypeRule;
 
 /**
  * Update Inquiry Request
@@ -37,7 +38,7 @@ class UpdateInquiryRequest extends FormRequest
             
             // Inquiry details
             'inquiry_type' => ['sometimes', 'string', 'max:100'],
-            'property_type' => ['sometimes', 'string', 'max:100'],
+            'property_type' => PropertyTypeRule::sometimesUnrestrictedRule(100),
             'urgency' => ['sometimes', 'string', 'in:low,medium,high,urgent'],
             
             // Budget & Property specs

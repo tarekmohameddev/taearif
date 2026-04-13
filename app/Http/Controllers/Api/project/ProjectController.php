@@ -590,7 +590,7 @@ class ProjectController extends Controller
             'price' => $property->price,
             'pricePerMeter' => $property->pricePerMeter,
             'purpose' => $property->purpose,
-            'type' => $property->type,
+            'property_type' => $property->property_type,
             'beds' => $property->beds,
             'bath' => $property->bath,
             'area' => $property->area,

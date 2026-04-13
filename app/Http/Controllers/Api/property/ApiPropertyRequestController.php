@@ -200,7 +200,7 @@ class ApiPropertyRequestController extends Controller
             'full_name' => $validated['full_name'],
             'phone' => $validated['phone'],
             'notes' => $validated['notes'] ?? null,
-            'property_type' => $property->type ?? null,
+            'property_type' => \App\Rules\PropertyTypeRule::normalize($property->property_type ?? null),
             'category_id' => $property->category_id ?? null,
             'city_id' => $cityId,
             'region' => $city ? $city->name_ar : null,
@@ -275,7 +275,7 @@ class ApiPropertyRequestController extends Controller
                     ->filter(fn ($v, $k) => $k !== null && $k !== '')
                     ->toArray();
 
-                $allStatuses = PropertyRequestStatus::active()->ordered()->pluck('name_ar')->toArray();
+                $allStatuses = PropertyRequestStatus::forTenant($ownerId)->active()->ordered()->pluck('name_ar')->toArray();
                 $byStatus = [];
                 foreach ($allStatuses as $statusName) {
                     $byStatus[$statusName] = $statusCounts[$statusName] ?? 0;
@@ -357,9 +357,12 @@ class ApiPropertyRequestController extends Controller
         if (!empty($validated['responsible_employee_id'])) {
             $employeeId = (int) $validated['responsible_employee_id'];
 
-            $query->whereHas('customer', function ($sub) use ($employeeId, $ownerId) {
-                $sub->where('user_id', $ownerId)
-                    ->where('responsible_employee_id', $employeeId);
+            $query->where(function ($q) use ($employeeId, $ownerId) {
+                $q->where('users_property_requests.responsible_employee_id', $employeeId)
+                    ->orWhereHas('customer', function ($sub) use ($employeeId, $ownerId) {
+                        $sub->where('user_id', $ownerId)
+                            ->where('responsible_employee_id', $employeeId);
+                    });
             });
         }
 
@@ -499,7 +502,7 @@ class ApiPropertyRequestController extends Controller
             // Cache dynamic/meta options (1 hour TTL) — statuses, purchase_goals, seriousness, stages, procedures, types, priorities, employees
             $metaCacheKey = "property_request_filter_options_meta_{$ownerId}";
             $metaData = Cache::remember($metaCacheKey, 3600, function () use ($ownerId) {
-                $statuses = PropertyRequestStatus::ordered()
+                $statuses = PropertyRequestStatus::forTenant($ownerId)->ordered()
                     ->get(['id', 'name_ar', 'name_en']);
 
                 $purchaseGoals = UserPropertyRequest::where('user_id', $ownerId)
@@ -627,7 +630,7 @@ class ApiPropertyRequestController extends Controller
         }
 
         if (in_array('status', $doMeta)) {
-            $metaData['status'] = PropertyRequestStatus::ordered()->get(['id', 'name_ar', 'name_en']);
+            $metaData['status'] = PropertyRequestStatus::forTenant($ownerId)->ordered()->get(['id', 'name_ar', 'name_en']);
         }
 
         if (in_array('purchase_goals', $doMeta)) {

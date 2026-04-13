@@ -24,6 +24,12 @@ class PropertyRequestCustomerService
     public function autoCreateFromRequest(UserPropertyRequest $propertyRequest): ?ApiCustomer
     {
         try {
+            if ($propertyRequest->customer_id !== null) {
+                return ApiCustomer::where('id', (int) $propertyRequest->customer_id)
+                    ->where('user_id', $propertyRequest->user_id)
+                    ->first();
+            }
+
             // Get settings (with caching)
             $settings = $this->getSettings($propertyRequest->user_id);
 
@@ -70,6 +76,14 @@ class PropertyRequestCustomerService
 
             // Determine stage ID: use from settings if available, otherwise use default
             $stageId = $settings ? $settings->default_stage_id : $defaultStageId;
+
+            if ($stageId === null) {
+                Log::warning('Auto-create customer skipped - no default stage available', [
+                    'property_request_id' => $propertyRequest->id,
+                    'user_id' => $propertyRequest->user_id,
+                ]);
+                return null;
+            }
 
             // Create customer in transaction
             return $this->createCustomer($propertyRequest, $settings, $normalizedPhone, $stageId);
@@ -142,13 +156,11 @@ class PropertyRequestCustomerService
      */
     private function shouldCreateCustomer(?PropertyRequestAutoCustomerSetting $settings, int $userId): bool
     {
-        // If settings exist, use them
-        if ($settings) {
-            return $settings->auto_create_customer && $settings->default_stage_id;
+        if (!$settings) {
+            return true;
         }
 
-        // If no settings exist, enable by default if tenant has at least one active stage
-        return $this->getDefaultStageId($userId) !== null;
+        return $settings->auto_create_customer && $settings->default_stage_id !== null;
     }
 
     /**
@@ -285,7 +297,8 @@ class PropertyRequestCustomerService
             // Get settings and stage ID (always attempt creation for command usage)
             $settings = $this->getSettings($propertyRequest->user_id);
             $defaultStageId = $this->getDefaultStageId($propertyRequest->user_id);
-            $stageId = $settings ? $settings->default_stage_id : $defaultStageId;
+            // If a settings row exists but default_stage_id is null, fall back to first active stage
+            $stageId = $settings?->default_stage_id ?? $defaultStageId;
 
             // If no stage ID available, skip creation
             if (!$stageId) {

@@ -87,11 +87,12 @@ class PropertyConflictDetectionService
             ];
         }
         
-        if (isset($data['type']) && !in_array($data['type'], ['residential', 'commercial'])) {
+        $propertyType = $data['property_type'] ?? ($data['type'] ?? null);
+        if ($propertyType !== null && !in_array($propertyType, ['residential', 'commercial'])) {
             $conflicts[] = [
                 'type' => 'validation',
-                'field' => 'type',
-                'message' => 'Type must be either "residential" or "commercial"',
+                'field' => 'property_type',
+                'message' => 'Property type must be either "residential" or "commercial"',
                 'severity' => 'error'
             ];
         }

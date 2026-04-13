@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\Inquiry;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Rules\PropertyTypeRule;
 
 /**
  * Store Inquiry Request
@@ -17,6 +18,16 @@ class StoreInquiryRequest extends FormRequest
     public function authorize(): bool
     {
         return true; // Authorization handled by middleware
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('property_type')) {
+            $normalized = PropertyTypeRule::normalize(is_string($this->input('property_type')) ? $this->input('property_type') : null);
+            if ($normalized !== null) {
+                $this->merge(['property_type' => $normalized]);
+            }
+        }
     }
 
     /**
@@ -37,7 +48,7 @@ class StoreInquiryRequest extends FormRequest
             
             // Inquiry details
             'inquiry_type' => ['nullable', 'string', 'max:100'],
-            'property_type' => ['nullable', 'string', 'max:100'],
+            'property_type' => PropertyTypeRule::nullableRule(),
             'urgency' => ['nullable', 'string', 'in:low,medium,high,urgent'],
             
             // Budget & Property specs

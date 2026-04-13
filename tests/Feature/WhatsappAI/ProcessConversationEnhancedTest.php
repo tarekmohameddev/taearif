@@ -113,7 +113,7 @@ class ProcessConversationEnhancedTest extends TestCase
         return array_merge([
             'is_real_estate_inquiry' => true,
             'inquiry_type'           => 'rent',
-            'property_type'          => 'apartment',
+            'property_type'          => 'residential',
             'budget_min'             => null,
             'budget_max'             => 3000,
             'currency'               => 'SAR',
@@ -167,7 +167,7 @@ class ProcessConversationEnhancedTest extends TestCase
         $extraction = $this->baseExtraction([
             'city'         => 'جدة',
             'inquiry_type' => 'buy',
-            'property_type'=> 'villa',
+            'property_type'=> 'residential',
         ]);
 
         $conversation = $this->createConversation($userId);

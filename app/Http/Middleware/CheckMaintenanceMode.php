@@ -105,7 +105,7 @@ class CheckMaintenanceMode
                 'api_general_settingsData' => $api_general_settingsData,
             ];
 
-            return response()->view('user-front.maintenance_mode', $data);
+            return response()->view('errors.503', $data, 503);
         }
 
         return $next($request);

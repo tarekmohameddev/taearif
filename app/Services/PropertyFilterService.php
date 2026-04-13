@@ -30,7 +30,7 @@ class PropertyFilterService
             ->leftJoin('user_countries', 'user_countries.id', '=', 'user_property_contents.country_id')
             ->where('user_property_contents.language_id', $userCurrentLang->id)
             // --- Dynamic filters
-            ->when($request->filled('type') && $request->type !== 'all', fn($q) => $q->where('user_properties.type', $request->type))
+            ->when($request->filled('property_type') && $request->property_type !== 'all', fn($q) => $q->where('user_properties.property_type', $request->property_type))
             ->when($request->filled('purpose') && $request->purpose !== 'all', fn($q) => $q->where('user_properties.purpose', $request->purpose))
             ->when($request->filled('category') && $request->category !== 'all', fn($q) => $q->where('user_properties.category_id', $request->category))
             ->when($request->filled('min'), fn($q) => $q->where('user_properties.price', '>=', intval($request->min)))

@@ -17,8 +17,7 @@ class AssignmentService
     public function getEmployees(int $userId): array
     {
         $requestCountSub = 'SELECT COUNT(DISTINCT upr.id) FROM users_property_requests upr ' .
-            'INNER JOIN api_customers ac ON ac.id = upr.customer_id AND ac.user_id = upr.user_id ' .
-            'WHERE ac.responsible_employee_id = u.id AND upr.user_id = ? AND upr.is_active = 1';
+            'WHERE upr.responsible_employee_id = u.id AND upr.user_id = ? AND upr.is_active = 1';
 
         $employees = DB::table('users as u')
             ->where('u.tenant_id', $userId)
@@ -65,12 +64,9 @@ class AssignmentService
     public function getUnassignedCount(int $userId): int
     {
         return (int) DB::table('users_property_requests as upr')
-            ->join('api_customers as ac', function ($j) use ($userId) {
-                $j->on('ac.id', '=', 'upr.customer_id')->where('ac.user_id', '=', $userId);
-            })
             ->where('upr.user_id', $userId)
             ->where('upr.is_active', 1)
-            ->whereNull('ac.responsible_employee_id')
+            ->whereNull('upr.responsible_employee_id')
             ->selectRaw('COUNT(DISTINCT upr.id) as c')
             ->value('c');
     }
@@ -97,15 +93,15 @@ class AssignmentService
 
             foreach ($matchingEmployees as $employeeId) {
                 if ($this->hasCapacity($employeeId, $employeeCapacities)) {
-                    $success = $this->assignCustomer($userId, $requestRow->customer_id, $employeeId);
+                    $success = $this->assignPropertyRequest(
+                        $userId,
+                        (int) $requestRow->id,
+                        (int) $employeeId,
+                        Carbon::now(),
+                        $assignments
+                    );
                     if ($success) {
                         $assignedCount++;
-                        $assignments[] = [
-                            'requestId' => (string) $requestRow->id,
-                            'customerId' => (string) $requestRow->customer_id,
-                            'employeeId' => (string) $employeeId,
-                            'assignedAt' => Carbon::now()->toIso8601String(),
-                        ];
                         $employeeCapacities[$employeeId]['current']++;
                         $assigned = true;
                         break;
@@ -188,6 +184,29 @@ class AssignmentService
                     ];
                 }
                 continue;
+            }
+
+            if (str_starts_with($idString, 'property_request_')) {
+                $requestId = (int) substr($idString, strlen('property_request_'));
+                if ($requestId > 0) {
+                    $ok = $this->assignPropertyRequest($userId, $requestId, (int) $employeeId, $now, $assignments);
+                    if ($ok) {
+                        $assignedCount++;
+                    }
+                }
+                continue;
+            }
+
+            // Backward compat: numeric IDs may refer to property request IDs (preferred) or customer IDs.
+            if (ctype_digit($idString)) {
+                $numericId = (int) $idString;
+                if ($numericId > 0 && $this->propertyRequestExists($userId, $numericId)) {
+                    $ok = $this->assignPropertyRequest($userId, $numericId, (int) $employeeId, $now, $assignments);
+                    if ($ok) {
+                        $assignedCount++;
+                    }
+                    continue;
+                }
             }
 
             $customerId = $this->resolveCompositeRequestIdToCustomerId($userId, $idString);
@@ -337,18 +356,17 @@ class AssignmentService
     private function getUnassignedPropertyRequests(int $userId)
     {
         $sub = DB::table('users_property_requests as upr')
-            ->join('api_customers as c', function ($j) use ($userId) {
+            ->leftJoin('api_customers as c', function ($j) use ($userId) {
                 $j->on('c.id', '=', 'upr.customer_id')->where('c.user_id', '=', $userId);
             })
             ->leftJoin('user_cities as uc', 'upr.city_id', '=', 'uc.id')
             ->where('upr.user_id', $userId)
             ->where('upr.is_active', 1)
-            ->whereNull('c.responsible_employee_id')
-            ->whereNull('c.deleted_at')
+            ->whereNull('upr.responsible_employee_id')
             ->select([
                 'upr.id',
                 'c.id as customer_id',
-                'c.source',
+                DB::raw("COALESCE(c.source, upr.source, 'website') as source"),
                 'upr.budget_from',
                 'upr.budget_to',
                 'upr.category_id',
@@ -370,8 +388,7 @@ class AssignmentService
         $capacities = [];
         
         $requestCountSub = 'SELECT COUNT(DISTINCT upr.id) FROM users_property_requests upr ' .
-            'INNER JOIN api_customers ac ON ac.id = upr.customer_id AND ac.user_id = upr.user_id ' .
-            'WHERE ac.responsible_employee_id = u.id AND upr.user_id = ? AND upr.is_active = 1';
+            'WHERE upr.responsible_employee_id = u.id AND upr.user_id = ? AND upr.is_active = 1';
 
         $employees = DB::table('users as u')
             ->where('u.tenant_id', $userId)
@@ -510,20 +527,16 @@ class AssignmentService
     }
 
     /**
-     * Get property type - checks both category_id and property_type.
+     * Get canonical property type for rule evaluation.
      *
      * @param object $customer Customer data
      * @return string
      */
     private function getPropertyType(object $customer): string
     {
-        // Check category_id first (villa, apartment, etc.)
-        if (!empty($customer->category_id)) {
-            return $customer->category_id;
-        }
-        
-        // Fall back to property_type (residential, commercial, etc.)
-        return $customer->property_type ?? '';
+        // Important: category_id is a different concept (property sub-category).
+        // For rule evaluation, propertyType must be the canonical enum-like field.
+        return (string) ($customer->property_type ?? '');
     }
 
     /**
@@ -567,5 +580,68 @@ class AssignmentService
         } catch (\Exception $e) {
             return false;
         }
+    }
+
+    /**
+     * Assign an employee to a property request (primary source of truth).
+     * Optionally sync to linked customer if customer_id exists.
+     */
+    private function assignPropertyRequest(
+        int $userId,
+        int $requestId,
+        int $employeeId,
+        Carbon $now,
+        array &$assignments
+    ): bool {
+        $updated = DB::table('users_property_requests')
+            ->where('id', $requestId)
+            ->where('user_id', $userId)
+            ->update([
+                'responsible_employee_id' => $employeeId,
+                'updated_at' => $now,
+            ]);
+
+        $rowExistsAndMatches = $updated === 0 && DB::table('users_property_requests')
+            ->where('id', $requestId)
+            ->where('user_id', $userId)
+            ->where('responsible_employee_id', $employeeId)
+            ->exists();
+
+        if ($updated <= 0 && !$rowExistsAndMatches) {
+            return false;
+        }
+
+        $customerId = DB::table('users_property_requests')
+            ->where('id', $requestId)
+            ->where('user_id', $userId)
+            ->value('customer_id');
+
+        if ($customerId !== null) {
+            DB::table('api_customers')
+                ->where('id', (int) $customerId)
+                ->where('user_id', $userId)
+                ->update([
+                    'responsible_employee_id' => $employeeId,
+                    'updated_at' => $now,
+                ]);
+        }
+
+        $assignments[] = [
+            'requestId' => 'property_request_' . $requestId,
+            'customerId' => $customerId !== null ? (string) $customerId : null,
+            'employeeId' => (string) $employeeId,
+            'assignedAt' => $now->toIso8601String(),
+        ];
+
+        return true;
+    }
+
+    private function propertyRequestExists(int $userId, int $requestId): bool
+    {
+        return DB::table('users_property_requests')
+            ->where('user_id', $userId)
+            ->where('is_active', 1)
+            ->where('id', $requestId)
+            ->exists();
     }
 }

@@ -54,7 +54,7 @@ class RequestRepositoryTest extends TestCase
 
         $id = $this->insertPropertyRequest([
             'purpose'     => 'rent',
-            'property_type' => 'apartment',
+            'property_type' => 'residential',
             'budget_from' => 1000,
             'budget_to'   => 2000,
             'area_from'   => 80,
@@ -65,7 +65,7 @@ class RequestRepositoryTest extends TestCase
 
         $this->assertNotNull($unified);
         $this->assertEquals('rent', $unified->purpose);
-        $this->assertEquals('apartment', $unified->propertyType);
+        $this->assertEquals('residential', $unified->propertyType);
         $this->assertEquals(1000.0, $unified->budgetFrom);
         $this->assertEquals(2000.0, $unified->budgetTo);
         $this->assertEquals(80, $unified->areaFrom);

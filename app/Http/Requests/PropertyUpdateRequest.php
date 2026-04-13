@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\User\BasicSetting;
 use App\Models\User\Language;
+use App\Rules\PropertyTypeRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 
@@ -38,6 +39,7 @@ class PropertyUpdateRequest extends FormRequest
             // 'beds' => 'required_if:type,residential',
             // 'bath' => 'required_if:type,residential',
             'purpose' => 'nullable',
+            'property_type' => PropertyTypeRule::requiredRule(),
             'area' => 'nullable',
             'status' => 'required',
             // 'amenities' => 'required',
