@@ -369,19 +369,22 @@ class RequestsController extends ApiController
                 ->values()
                 ->all();
 
-            // Districts: distinct string values from users_property_requests.district
-            $districtValues = DB::table('users_property_requests')
-                ->where('user_id', $userId)
-                ->whereNotNull('district')
-                ->where('district', '!=', '')
+            // Districts: distinct districts via districts_id → user_districts
+            $districts = DB::table('users_property_requests as upr')
+                ->join('user_districts as d', 'upr.districts_id', '=', 'd.id')
+                ->where('upr.user_id', $userId)
+                ->whereNotNull('upr.districts_id')
                 ->distinct()
-                ->orderBy('district')
-                ->pluck('district');
-
-            $districts = $districtValues->map(fn (string $value) => [
-                'value' => $value,
-                'label' => $value,
-            ])->values()->all();
+                ->orderBy('d.name_ar')
+                ->get(['d.id', 'd.name_ar as label', 'd.name_en as labelEn'])
+                ->map(fn ($d) => [
+                    'id' => (int) $d->id,
+                    'value' => (int) $d->id,
+                    'label' => $d->label ?? '',
+                    'labelEn' => $d->labelEn ?? $d->label ?? '',
+                ])
+                ->values()
+                ->all();
 
             return [
                 'types' => $types,
