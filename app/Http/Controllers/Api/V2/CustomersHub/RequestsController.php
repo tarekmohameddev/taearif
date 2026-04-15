@@ -378,7 +378,6 @@ class RequestsController extends ApiController
                 ->orderBy('d.name_ar')
                 ->get(['d.id', 'd.name_ar as label', 'd.name_en as labelEn'])
                 ->map(fn ($d) => [
-                    'id' => (int) $d->id,
                     'value' => (int) $d->id,
                     'label' => $d->label ?? '',
                     'labelEn' => $d->labelEn ?? $d->label ?? '',
