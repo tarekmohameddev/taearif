@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 class PropertyRequestStatus extends Model
 {
@@ -31,6 +32,12 @@ class PropertyRequestStatus extends Model
      */
     public static function ensureWorkflowStatusesForTenant(int $userId): void
     {
+        // Some deployments use a global property_request_statuses table (no user_id column).
+        // In that case, per-tenant workflow rows are not supported.
+        if (!Schema::hasColumn('property_request_statuses', 'user_id')) {
+            return;
+        }
+
         $templates = [
             [
                 'slug' => 'in_progress',
@@ -78,6 +85,10 @@ class PropertyRequestStatus extends Model
      */
     public function scopeForTenant($query, int $userId)
     {
+        if (!Schema::hasColumn('property_request_statuses', 'user_id')) {
+            return $query;
+        }
+
         return $query->where(function ($q) use ($userId) {
             $q->whereNull('user_id')->orWhere('user_id', $userId);
         });

@@ -198,6 +198,40 @@ class RequestsController extends ApiController
         $comparison = $this->aggregator->getComparisonStats($userId, $filters);
         $stats = array_merge($stats, $comparison);
 
+        // All-time property-request stats (broker scoped only; intentionally ignores list filters/date ranges)
+        $dealClosed = (int) DB::table('users_property_requests as upr')
+            ->where('upr.user_id', $userId)
+            ->where('upr.is_active', 1)
+            ->where('upr.customers_hub_stage_id', 'deal_completed')
+            ->count();
+
+        $dealNotClosed = (int) DB::table('users_property_requests as upr')
+            ->where('upr.user_id', $userId)
+            ->where('upr.is_active', 1)
+            ->where('upr.customers_hub_stage_id', 'deal_rejected')
+            ->count();
+
+        $effectiveStatusSql = "COALESCE(chsm.customers_hub_status,
+            CASE
+                WHEN upr.is_archived = 1 THEN 'dismissed'
+                WHEN upr.is_read = 1 THEN 'in_progress'
+                ELSE 'pending'
+            END
+        )";
+        $underProcess = (int) DB::table('users_property_requests as upr')
+            ->leftJoin('property_request_statuses as prs', 'upr.status_id', '=', 'prs.id')
+            ->leftJoin('customers_hub_status_mapping as chsm', 'prs.slug', '=', 'chsm.property_request_status_slug')
+            ->where('upr.user_id', $userId)
+            ->where('upr.is_active', 1)
+            ->whereNotIn(DB::raw($effectiveStatusSql), ['dismissed', 'completed'])
+            ->count();
+
+        $stats = array_merge($stats, [
+            'underProcess' => $underProcess,
+            'dealClosed' => $dealClosed,
+            'dealNotClosed' => $dealNotClosed,
+        ]);
+
         try {
             $stages = $this->aggregator->getStageStats($userId, $filters);
         } catch (\Throwable $e) {
