@@ -2,6 +2,8 @@
 
 namespace App\Domain\CustomersHub\Services;
 
+use App\Models\ApiCustomer;
+use App\Support\PhoneNormalizer;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -131,9 +133,9 @@ class ActionsAggregatorService
         $stats = $query->selectRaw("
             SUM(CASE WHEN type IN ('new_inquiry', 'callback_request', 'whatsapp_incoming') AND status IN ('pending', 'in_progress') THEN 1 ELSE 0 END) as inbox,
             SUM(CASE WHEN type IN ('follow_up', 'site_visit') AND status IN ('pending', 'in_progress') THEN 1 ELSE 0 END) as followups,
-            SUM(CASE WHEN status IN ('pending', 'in_progress') THEN 1 ELSE 0 END) as pending,
-            SUM(CASE WHEN dueDate < NOW() AND status IN ('pending', 'in_progress') THEN 1 ELSE 0 END) as overdue,
-            SUM(CASE WHEN DATE(dueDate) = CURRENT_DATE AND status IN ('pending', 'in_progress') THEN 1 ELSE 0 END) as today,
+            SUM(CASE WHEN status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as pending,
+            SUM(CASE WHEN dueDate < NOW() AND status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as overdue,
+            SUM(CASE WHEN DATE(dueDate) = CURRENT_DATE AND status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as today,
             SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
         ")->first();
 
@@ -148,6 +150,41 @@ class ActionsAggregatorService
     }
 
     /**
+     * Raw counts for the previous calendar month vs reference month labels (Customers Hub list stats).
+     */
+    public function getComparisonStats(int $userId, array $filters = []): array
+    {
+        $now = Carbon::now();
+
+        if (!empty($filters['date_from'])) {
+            $refDate = Carbon::parse($filters['date_from'])->startOfMonth();
+        } else {
+            $refDate = $now->copy()->subMonthNoOverflow()->startOfMonth();
+        }
+
+        $currentStart = $refDate->copy()->startOfMonth();
+
+        $compareStart = $refDate->copy()->subMonthNoOverflow()->startOfMonth();
+        $compareEnd = $compareStart->copy()->endOfMonth();
+
+        $compareFilters = $filters;
+        $compareFilters['date_from'] = $compareStart->toDateString();
+        $compareFilters['date_to'] = $compareEnd->toDateString();
+
+        $compareStats = $this->getStats($userId, $compareFilters);
+
+        return [
+            'inboxComparing' => $compareStats['inbox'],
+            'followupsComparing' => $compareStats['followups'],
+            'pendingComparing' => $compareStats['pending'],
+            'overdueComparing' => $compareStats['overdue'],
+            'completedComparing' => $compareStats['completed'],
+            'month starts comparing' => $currentStart->format('F Y'),
+            'month ends comparing' => $compareStart->format('F Y'),
+        ];
+    }
+
+    /**
      * Get stage statistics for the filtered actions (pipeline: customers_hub_stages).
      * Returns request count and percentage per pipeline stage (requests + inquiries).
      */
@@ -155,7 +192,7 @@ class ActionsAggregatorService
     {
         try {
             [$countsRequests, $countsInquiries, $total] = $this->getHubStageCounts($userId, $filters);
-            return $this->buildHubStagesArray($countsRequests, $countsInquiries, $total);
+            return $this->buildHubStagesArray($userId, $countsRequests, $countsInquiries, $total);
         } catch (\Throwable $e) {
             return [];
         }
@@ -200,12 +237,17 @@ class ActionsAggregatorService
     /**
      * Build stages array from customers_hub_stages with requestCount + inquiry count and percentage.
      */
-    private function buildHubStagesArray(\Illuminate\Support\Collection $countsRequests, \Illuminate\Support\Collection $countsInquiries, int $total): array
+    private function buildHubStagesArray(int $userId, \Illuminate\Support\Collection $countsRequests, \Illuminate\Support\Collection $countsInquiries, int $total): array
     {
-        $stages = DB::table('customers_hub_stages')
-            ->where('is_active', true)
-            ->orderBy('order')
-            ->get(['stage_id', 'stage_name_ar', 'stage_name_en', 'color', 'order']);
+        $presenter = app(CustomersHubStagesPresenter::class);
+        $stages = $presenter->listStages($userId, true)
+            ->map(fn ($s) => (object) [
+                'stage_id' => $s->stage_id,
+                'stage_name_ar' => $s->stage_name_ar,
+                'stage_name_en' => $s->stage_name_en,
+                'color' => $s->color,
+                'order' => (int) $s->order,
+            ]);
 
         if ($stages->isEmpty()) {
             return [];
@@ -331,7 +373,11 @@ class ActionsAggregatorService
 
         // Assignees (requires ac join)
         if ($hasAssignees) {
-            $query->whereIn('ac.responsible_employee_id', $filters['assignees']);
+            $query->where(function ($q) use ($filters) {
+                $q->whereIn('upr.responsible_employee_id', $filters['assignees'])
+                    ->orWhereIn('ac.responsible_employee_id', $filters['assignees'])
+                    ->orWhereIn('ac_phone.responsible_employee_id', $filters['assignees']);
+            });
         }
 
         // Customer ID (requires ac join)
@@ -953,12 +999,39 @@ class ActionsAggregatorService
                         }
                         continue;
                     }
+
                     $customerId = $customerMap[$actionId] ?? null;
+
+                    // Property requests: always keep both users_property_requests and api_customers in sync.
+                    if ($parsed && $parsed['table'] === 'users_property_requests') {
+                        if ($customerId !== null) {
+                            $ok = $this->syncAssignWithCustomer($userId, (int) $parsed['sourceId'], (int) $customerId, $assignedTo, $now);
+                            if ($ok) {
+                                $result['success'][] = $actionId;
+                            } else {
+                                $result['failed'][] = $actionId;
+                                $result['failures'][] = ['actionId' => $actionId, 'reason' => 'UPDATE_FAILED'];
+                            }
+                            continue;
+                        }
+
+                        $outcome = $this->resolveOrCreateCustomerForPropertyRequest($userId, (int) $parsed['sourceId'], $assignedTo, $now);
+                        if ($outcome['success']) {
+                            $result['success'][] = $actionId;
+                        } else {
+                            $result['failed'][] = $actionId;
+                            $result['failures'][] = ['actionId' => $actionId, 'reason' => $outcome['reason']];
+                        }
+                        continue;
+                    }
+
+                    // Other action types: keep existing behavior.
                     if ($customerId === null) {
                         $result['failed'][] = $actionId;
                         $result['failures'][] = ['actionId' => $actionId, 'reason' => 'NO_CUSTOMER'];
                         continue;
                     }
+
                     $updated = DB::table('api_customers')
                         ->where('id', $customerId)
                         ->where('user_id', $userId)
@@ -1265,6 +1338,12 @@ class ActionsAggregatorService
                 'aci.region_name as state',
                 'aci.budget as budgetMin',
                 'aci.budget as budgetMax',
+                DB::raw("NULL as propertyRequestStatusId"),
+                DB::raw("NULL as propertyRequestStatusSlug"),
+                DB::raw("NULL as propertyRequestStatusNameAr"),
+                DB::raw("NULL as propertyRequestStatusNameEn"),
+                DB::raw("NULL as districts_id"),
+                DB::raw("NULL as districtAR"),
             ]);
     }
 
@@ -1283,8 +1362,10 @@ class ActionsAggregatorService
                     ->on('ac_phone.phone_number', '=', 'upr.phone');
             })
             ->leftJoin('user_cities as uc', 'upr.city_id', '=', 'uc.id')
+            ->leftJoin('user_districts as ud_req', 'upr.districts_id', '=', 'ud_req.id')
             ->leftJoin('property_request_statuses as prs', 'upr.status_id', '=', 'prs.id')
-            ->leftJoin('users as u2', DB::raw('u2.id'), '=', DB::raw('COALESCE(ac.responsible_employee_id, ac_phone.responsible_employee_id)'))
+            ->leftJoin('customers_hub_status_mapping as chsm', 'prs.slug', '=', 'chsm.property_request_status_slug')
+            ->leftJoin('users as u2', DB::raw('u2.id'), '=', DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id, ac_phone.responsible_employee_id)'))
             ->where('upr.user_id', $userId)
             ->where('upr.is_active', 1)
             ->select([
@@ -1302,15 +1383,13 @@ class ActionsAggregatorService
                     WHEN 'لاحقًا / استكشاف فقط' THEN 'low'
                     ELSE 'medium'
                 END as priority"),
-                DB::raw("CASE
-                    WHEN prs.slug = 'cancelled' THEN 'dismissed'
-                    WHEN prs.slug = 'contract_signed' THEN 'completed'
-                    WHEN prs.slug = 'new' THEN 'pending'
-                    WHEN prs.slug IN ('follow_up', 'property_found') THEN 'in_progress'
-                    WHEN upr.is_archived = 1 THEN 'dismissed'
-                    WHEN upr.is_read = 1 THEN 'in_progress'
-                    ELSE 'pending'
-                END as status"),
+                DB::raw("COALESCE(chsm.customers_hub_status,
+                    CASE
+                        WHEN upr.is_archived = 1 THEN 'dismissed'
+                        WHEN upr.is_read = 1 THEN 'in_progress'
+                        ELSE 'pending'
+                    END
+                ) as status"),
                 DB::raw("COALESCE(upr.source, 'website') as source"),
                 DB::raw("'property_request' as objectType"),
                 DB::raw("NULL as dueDate"),
@@ -1319,7 +1398,7 @@ class ActionsAggregatorService
                 'upr.updated_at as updatedAt',
                 DB::raw("NULL as completedAt"),
                 DB::raw("NULL as completedBy"),
-                DB::raw('COALESCE(ac.responsible_employee_id, ac_phone.responsible_employee_id) as assignedTo'),
+                DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id, ac_phone.responsible_employee_id) as assignedTo'),
                 DB::raw("CONCAT(COALESCE(u2.first_name, ''), ' ', COALESCE(u2.last_name, '')) as assignedToName"),
                 DB::raw("JSON_OBJECT(
                     'propertyRequestId', upr.id,
@@ -1339,6 +1418,12 @@ class ActionsAggregatorService
                 'upr.region as state',
                 'upr.budget_from as budgetMin',
                 'upr.budget_to as budgetMax',
+                'upr.status_id as propertyRequestStatusId',
+                'prs.slug as propertyRequestStatusSlug',
+                'prs.name_ar as propertyRequestStatusNameAr',
+                'prs.name_en as propertyRequestStatusNameEn',
+                'upr.districts_id as districts_id',
+                'ud_req.name_ar as districtAR',
             ]);
     }
 
@@ -1394,6 +1479,12 @@ class ActionsAggregatorService
                 DB::raw("NULL as state"),
                 DB::raw("NULL as budgetMin"),
                 DB::raw("NULL as budgetMax"),
+                DB::raw("NULL as propertyRequestStatusId"),
+                DB::raw("NULL as propertyRequestStatusSlug"),
+                DB::raw("NULL as propertyRequestStatusNameAr"),
+                DB::raw("NULL as propertyRequestStatusNameEn"),
+                DB::raw("NULL as districts_id"),
+                DB::raw("NULL as districtAR"),
             ]);
     }
 
@@ -1551,7 +1642,6 @@ class ActionsAggregatorService
                     });
                     break;
                 case 'all':
-                    $query->whereIn('status', ['pending', 'in_progress']);
                     break;
                 case 'completed':
                     $query->where('status', 'completed');
@@ -1562,11 +1652,6 @@ class ActionsAggregatorService
         // Types filter
         if (!empty($filters['types']) && is_array($filters['types'])) {
             $query->whereIn('type', $filters['types']);
-        }
-
-        // Status filter
-        if (!empty($filters['statuses']) && is_array($filters['statuses'])) {
-            $query->whereIn('status', $filters['statuses']);
         }
 
         // Sources filter
@@ -1775,10 +1860,22 @@ class ActionsAggregatorService
                 ->get(['id', 'customers_hub_stage_id']);
             $stageIdsToLoad = $requestRows->pluck('customers_hub_stage_id')->filter()->unique()->values()->all();
             if (!empty($stageIdsToLoad)) {
-                $stages = DB::table('customers_hub_stages')
-                    ->whereIn('stage_id', $stageIdsToLoad)
-                    ->where('is_active', true)
-                    ->get(['id', 'stage_id', 'stage_name_ar', 'stage_name_en']);
+                $stages = DB::table('customers_hub_stages as s')
+                    ->leftJoin('customers_hub_stage_overrides as o', function ($join) use ($userId) {
+                        $join->on('o.stage_id', '=', 's.stage_id')
+                            ->where('o.user_id', '=', DB::raw((int) $userId));
+                    })
+                    ->whereIn('s.stage_id', $stageIdsToLoad)
+                    ->where('s.is_active', true)
+                    ->where(function ($w) use ($userId) {
+                        $w->where('s.is_system', true)->orWhere('s.user_id', $userId);
+                    })
+                    ->get([
+                        's.id',
+                        's.stage_id',
+                        DB::raw('COALESCE(o.stage_name_ar, s.stage_name_ar) as stage_name_ar'),
+                        DB::raw('COALESCE(o.stage_name_en, s.stage_name_en) as stage_name_en'),
+                    ]);
                 $stageByStageId = $stages->keyBy('stage_id');
                 foreach ($requestRows as $row) {
                     if ($row->customers_hub_stage_id === null) {
@@ -1803,10 +1900,22 @@ class ActionsAggregatorService
                 ->get(['id', 'stage_id']);
             $inquiryStageIds = $inquiryRows->pluck('stage_id')->filter()->unique()->values()->all();
             if (!empty($inquiryStageIds)) {
-                $stages = DB::table('customers_hub_stages')
-                    ->whereIn('stage_id', $inquiryStageIds)
-                    ->where('is_active', true)
-                    ->get(['id', 'stage_id', 'stage_name_ar', 'stage_name_en']);
+                $stages = DB::table('customers_hub_stages as s')
+                    ->leftJoin('customers_hub_stage_overrides as o', function ($join) use ($userId) {
+                        $join->on('o.stage_id', '=', 's.stage_id')
+                            ->where('o.user_id', '=', DB::raw((int) $userId));
+                    })
+                    ->whereIn('s.stage_id', $inquiryStageIds)
+                    ->where('s.is_active', true)
+                    ->where(function ($w) use ($userId) {
+                        $w->where('s.is_system', true)->orWhere('s.user_id', $userId);
+                    })
+                    ->get([
+                        's.id',
+                        's.stage_id',
+                        DB::raw('COALESCE(o.stage_name_ar, s.stage_name_ar) as stage_name_ar'),
+                        DB::raw('COALESCE(o.stage_name_en, s.stage_name_en) as stage_name_en'),
+                    ]);
                 $stageByStageId = $stages->keyBy('stage_id');
                 foreach ($inquiryRows as $row) {
                     if ($row->stage_id === null) {
@@ -1854,7 +1963,22 @@ class ActionsAggregatorService
             $metadata = json_decode($metadata, true) ?? [];
         }
 
+        // Stable numeric ids for Customers Hub status values (v2).
+        // This is intentionally separate from users_property_requests.status_id.
+        $hubStatusIdMap = [
+            'pending' => 1,
+            'in_progress' => 2,
+            'in_waiting' => 3,
+            'completed' => 4,
+            'dismissed' => 5,
+            'snoozed' => 6,
+        ];
+        $hubStatusId = $hubStatusIdMap[$item->status] ?? null;
+
         return (object) [
+            // Alias to make it explicit what to pass to:
+            // GET /api/v2/customers-hub/requests/{requestId}
+            'requestId' => $item->id,
             'id' => $item->id,
             'customerId' => $item->customerId,
             'customerName' => $item->customerName,
@@ -1864,6 +1988,7 @@ class ActionsAggregatorService
             'description' => $item->description,
             'priority' => $item->priority,
             'status' => $item->status,
+            'Status_hub_Id' => $hubStatusId,
             'source' => $item->source ?? '',
             'objectType' => $item->objectType ?? '',
             'dueDate' => $item->dueDate ? Carbon::parse($item->dueDate)->toIso8601String() : null,
@@ -1878,11 +2003,174 @@ class ActionsAggregatorService
             'propertyType' => $item->propertyType ?? null,
             'city' => $item->city ?? null,
             'state' => $item->state ?? null,
+            'districts_id' => isset($item->districts_id) && $item->districts_id !== null ? (int) $item->districts_id : null,
+            'districtAR' => $item->districtAR ?? null,
             'budgetMin' => isset($item->budgetMin) && $item->budgetMin !== null ? (float) $item->budgetMin : null,
             'budgetMax' => isset($item->budgetMax) && $item->budgetMax !== null ? (float) $item->budgetMax : null,
+            // For property_request objectType only (users_property_requests.status_id).
+            // Null for inquiry/reminder/appointments.
+            'propertyRequestStatusId' => isset($item->propertyRequestStatusId) && $item->propertyRequestStatusId !== null
+                ? (int) $item->propertyRequestStatusId
+                : null,
+            'propertyRequestStatus' => isset($item->propertyRequestStatusId) && $item->propertyRequestStatusId !== null
+                ? [
+                    'id' => (int) $item->propertyRequestStatusId,
+                    'slug' => $item->propertyRequestStatusSlug ?? null,
+                    'name_ar' => $item->propertyRequestStatusNameAr ?? null,
+                    'name_en' => $item->propertyRequestStatusNameEn ?? null,
+                ]
+                : null,
             'metadata' => $metadata,
             'sourceTable' => $item->sourceTable,
             'sourceId' => $item->sourceId,
+        ];
+    }
+
+    private function syncAssignWithCustomer(int $userId, int $uprId, int $customerId, int $assignedTo, Carbon $now): bool
+    {
+        try {
+            return (bool) DB::transaction(function () use ($userId, $uprId, $customerId, $assignedTo, $now) {
+                $customerQuery = DB::table('api_customers')
+                    ->where('id', $customerId)
+                    ->where('user_id', $userId);
+
+                $uprQuery = DB::table('users_property_requests')
+                    ->where('id', $uprId)
+                    ->where('user_id', $userId);
+
+                $customerUpdated = (int) $customerQuery->update(['responsible_employee_id' => $assignedTo, 'updated_at' => $now]);
+                $uprUpdated = (int) $uprQuery->update(['responsible_employee_id' => $assignedTo, 'updated_at' => $now]);
+
+                // MySQL returns 0 if the row exists but values are unchanged, so treat as success if row exists.
+                $customerOk = $customerUpdated > 0 || $customerQuery->exists();
+                $uprOk = $uprUpdated > 0 || $uprQuery->exists();
+
+                return $customerOk && $uprOk;
+            });
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Resolve (or create) a customer for a property request, then assign and sync both tables.
+     *
+     * @return array{success: bool, reason?: string}
+     */
+    private function resolveOrCreateCustomerForPropertyRequest(int $userId, int $sourceId, int $assignedTo, Carbon $now): array
+    {
+        $upr = DB::table('users_property_requests')
+            ->where('id', $sourceId)
+            ->where('user_id', $userId)
+            ->first(['id', 'full_name', 'phone', 'city_id', 'districts_id', 'customers_hub_stage_id']);
+
+        if (!$upr) {
+            return ['success' => false, 'reason' => 'NOT_FOUND'];
+        }
+
+        $normalizedPhone = PhoneNormalizer::normalize($upr->phone ?? null);
+        if (!$normalizedPhone) {
+            return ['success' => false, 'reason' => 'NO_PHONE'];
+        }
+
+        try {
+            return DB::transaction(function () use ($userId, $upr, $normalizedPhone, $assignedTo, $now) {
+                $existing = DB::table('api_customers')
+                    ->where('user_id', $userId)
+                    ->where('phone_number', $normalizedPhone)
+                    ->whereNull('deleted_at')
+                    ->first(['id']);
+
+                if ($existing) {
+                    DB::table('users_property_requests')
+                        ->where('id', $upr->id)
+                        ->where('user_id', $userId)
+                        ->update(['customer_id' => $existing->id, 'updated_at' => $now]);
+
+                    $ok = $this->syncAssignWithCustomer($userId, (int) $upr->id, (int) $existing->id, $assignedTo, $now);
+                    return $ok ? ['success' => true] : ['success' => false, 'reason' => 'UPDATE_FAILED'];
+                }
+
+                $defaults = $this->getDefaultCustomerDefaults($userId);
+                $customersHubStageId = $upr->customers_hub_stage_id ?? $defaults['customers_hub_stage_id'];
+
+                $customer = ApiCustomer::create([
+                    'user_id' => $userId,
+                    'name' => $upr->full_name,
+                    'phone_number' => $normalizedPhone,
+                    'email' => null,
+                    'note' => null,
+                    'password' => bcrypt('12345678'),
+
+                    // Legacy pipeline fields
+                    'stage_id' => $defaults['stage_id'],
+                    'type_id' => $defaults['type_id'],
+                    'priority_id' => $defaults['priority_id'],
+                    'procedure_id' => $defaults['procedure_id'],
+
+                    // CustomersHub pipeline fields
+                    'customers_hub_stage_id' => $customersHubStageId,
+                    'customers_hub_stage_changed_at' => $now,
+
+                    'responsible_employee_id' => $assignedTo,
+                    'city_id' => $upr->city_id,
+                    'district_id' => $upr->districts_id,
+                    'created_by_type' => 'system',
+                    'created_by_id' => null,
+                    'source' => 'property_request',
+                    'source_id' => $upr->id,
+                ]);
+
+                DB::table('users_property_requests')
+                    ->where('id', $upr->id)
+                    ->where('user_id', $userId)
+                    ->update([
+                        'customer_id' => $customer->id,
+                        'responsible_employee_id' => $assignedTo,
+                        'updated_at' => $now,
+                    ]);
+
+                return ['success' => true];
+            });
+        } catch (\Throwable $e) {
+            return ['success' => false, 'reason' => 'CREATE_CUSTOMER_FAILED'];
+        }
+    }
+
+    /**
+     * Load default customer attributes (first active record per tenant).
+     *
+     * @return array{type_id: int|null, priority_id: int|null, procedure_id: int|null, stage_id: int|null, customers_hub_stage_id: string|null}
+     */
+    private function getDefaultCustomerDefaults(int $userId): array
+    {
+        $customersHubStageId = DB::table('customers_hub_stages')
+            ->where('is_active', true)
+            ->orderBy('id', 'asc')
+            ->value('stage_id');
+
+        return [
+            'type_id' => DB::table('users_api_customers_types')
+                ->where('user_id', $userId)
+                ->where('is_active', true)
+                ->orderBy('order')
+                ->value('id'),
+            'priority_id' => DB::table('users_api_customers_priorities')
+                ->where('user_id', $userId)
+                ->where('is_active', true)
+                ->orderBy('order')
+                ->value('id'),
+            'procedure_id' => DB::table('users_api_customers_procedures')
+                ->where('user_id', $userId)
+                ->where('is_active', true)
+                ->orderBy('order')
+                ->value('id'),
+            'stage_id' => DB::table('users_api_customers_stages')
+                ->where('user_id', $userId)
+                ->where('is_active', true)
+                ->orderBy('order')
+                ->value('id'),
+            'customers_hub_stage_id' => $customersHubStageId,
         ];
     }
 

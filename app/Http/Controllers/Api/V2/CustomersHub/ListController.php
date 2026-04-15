@@ -90,7 +90,10 @@ class ListController extends ApiController
         $data = $validated['data'] ?? [];
 
         $updateData = match ($action) {
-            'update_stage' => ['stage_id' => $data['stageId'] ?? null],
+            'update_stage' => [
+                'customers_hub_stage_id' => $data['stageId'] ?? null,
+                'customers_hub_stage_changed_at' => now(),
+            ],
             'update_priority' => ['priority_id' => $data['priorityId'] ?? null],
             'update_type' => ['type_id' => $data['typeId'] ?? null],
             'assign_employee' => ['responsible_employee_id' => $data['employeeId'] ?? null],

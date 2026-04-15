@@ -637,12 +637,12 @@ class PurchaseRequestController extends Controller
             $query->whereHas('contents', function($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%");
-            })->orWhere('type', 'like', "%{$search}%");
+            })->orWhere('property_type', 'like', "%{$search}%");
         }
 
         // Type filter
         if ($request->has('type') && $request->type) {
-            $query->where('type', $request->type);
+            $query->where('property_type', $request->type);
         }
 
         // Price range filters
@@ -674,7 +674,7 @@ class PurchaseRequestController extends Controller
             return [
                 'id' => $property->id,
                 'price' => $property->price,
-                'type' => $property->type,
+                'property_type' => $property->property_type,
                 'area' => $property->area,
                 'beds' => $property->beds,
                 'bath' => $property->bath,

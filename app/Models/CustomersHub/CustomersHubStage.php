@@ -16,11 +16,17 @@ class CustomersHubStage extends Model
         'order',
         'description',
         'is_active',
+        'is_global',
+        'user_id',
+        'is_system',
     ];
 
     protected $casts = [
         'order' => 'integer',
         'is_active' => 'boolean',
+        'is_global' => 'boolean',
+        'user_id' => 'integer',
+        'is_system' => 'boolean',
     ];
 
     /**

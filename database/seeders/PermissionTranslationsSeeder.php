@@ -160,6 +160,78 @@ class PermissionTranslationsSeeder extends Seeder
                 'name_ar' => 'حذف سجل إدارة العملاء',
             ],
 
+            // Rentals
+            'rentals.view' => [
+                'name_en' => 'Rentals - View',
+                'name_ar' => 'الإيجارات - عرض',
+            ],
+            'rentals.create' => [
+                'name_en' => 'Rentals - Create',
+                'name_ar' => 'الإيجارات - إنشاء',
+            ],
+            'rentals.update' => [
+                'name_en' => 'Rentals - Update',
+                'name_ar' => 'الإيجارات - تحديث',
+            ],
+            'rentals.delete' => [
+                'name_en' => 'Rentals - Delete',
+                'name_ar' => 'الإيجارات - حذف',
+            ],
+
+            // Buildings
+            'buildings.view' => [
+                'name_en' => 'View Buildings',
+                'name_ar' => 'عرض المباني',
+            ],
+            'buildings.create' => [
+                'name_en' => 'Create Building',
+                'name_ar' => 'إنشاء مبنى',
+            ],
+            'buildings.update' => [
+                'name_en' => 'Update Building',
+                'name_ar' => 'تحديث مبنى',
+            ],
+            'buildings.delete' => [
+                'name_en' => 'Delete Building',
+                'name_ar' => 'حذف مبنى',
+            ],
+
+            // Property requests
+            'property_requests.view' => [
+                'name_en' => 'View Property Requests',
+                'name_ar' => 'عرض طلبات العقار',
+            ],
+            'property_requests.create' => [
+                'name_en' => 'Create Property Request',
+                'name_ar' => 'إنشاء طلب عقار',
+            ],
+            'property_requests.update' => [
+                'name_en' => 'Update Property Request',
+                'name_ar' => 'تحديث طلب عقار',
+            ],
+            'property_requests.delete' => [
+                'name_en' => 'Delete Property Request',
+                'name_ar' => 'حذف طلب عقار',
+            ],
+
+            // Job applications
+            'job_applications.view' => [
+                'name_en' => 'View Job Applications',
+                'name_ar' => 'عرض طلبات التوظيف',
+            ],
+            'job_applications.create' => [
+                'name_en' => 'Create Job Application',
+                'name_ar' => 'إنشاء طلب توظيف',
+            ],
+            'job_applications.update' => [
+                'name_en' => 'Update Job Application',
+                'name_ar' => 'تحديث طلب توظيف',
+            ],
+            'job_applications.delete' => [
+                'name_en' => 'Delete Job Application',
+                'name_ar' => 'حذف طلب توظيف',
+            ],
+
             // Customers Hub — Analytics
             'customers_hub_analytics.view' => [
                 'name_en' => 'View Customers Hub Analytics',
@@ -248,6 +320,160 @@ class PermissionTranslationsSeeder extends Seeder
             'customers_hub_ai_matching.delete' => [
                 'name_en' => 'Delete Customers Hub AI Matching',
                 'name_ar' => 'حذف المطابقة الذكية في مركز العملاء',
+            ],
+
+            // Pixels
+            'pixels.view' => [
+                'name_en' => 'View Pixels',
+                'name_ar' => 'عرض البكسلات',
+            ],
+            'pixels.create' => [
+                'name_en' => 'Create Pixel',
+                'name_ar' => 'إنشاء بكسل',
+            ],
+            'pixels.update' => [
+                'name_en' => 'Update Pixel',
+                'name_ar' => 'تحديث بكسل',
+            ],
+            'pixels.delete' => [
+                'name_en' => 'Delete Pixel',
+                'name_ar' => 'حذف بكسل',
+            ],
+
+            // WhatsApp Center — Numbers
+            'whatsapp_center_numbers.view' => [
+                'name_en' => 'View WhatsApp Numbers',
+                'name_ar' => 'عرض أرقام واتساب',
+            ],
+            'whatsapp_center_numbers.create' => [
+                'name_en' => 'Create WhatsApp Number',
+                'name_ar' => 'إنشاء رقم واتساب',
+            ],
+            'whatsapp_center_numbers.update' => [
+                'name_en' => 'Update WhatsApp Number',
+                'name_ar' => 'تحديث رقم واتساب',
+            ],
+            'whatsapp_center_numbers.delete' => [
+                'name_en' => 'Delete WhatsApp Number',
+                'name_ar' => 'حذف رقم واتساب',
+            ],
+
+            // WhatsApp Center — Campaigns
+            'whatsapp_center_campaigns.view' => [
+                'name_en' => 'View WhatsApp Campaigns',
+                'name_ar' => 'عرض حملات واتساب',
+            ],
+            'whatsapp_center_campaigns.create' => [
+                'name_en' => 'Create WhatsApp Campaign',
+                'name_ar' => 'إنشاء حملة واتساب',
+            ],
+            'whatsapp_center_campaigns.update' => [
+                'name_en' => 'Update WhatsApp Campaign',
+                'name_ar' => 'تحديث حملة واتساب',
+            ],
+            'whatsapp_center_campaigns.delete' => [
+                'name_en' => 'Delete WhatsApp Campaign',
+                'name_ar' => 'حذف حملة واتساب',
+            ],
+
+            // WhatsApp Center — Templates
+            'whatsapp_center_templates.view' => [
+                'name_en' => 'View WhatsApp Templates',
+                'name_ar' => 'عرض قوالب واتساب',
+            ],
+            'whatsapp_center_templates.create' => [
+                'name_en' => 'Create WhatsApp Template',
+                'name_ar' => 'إنشاء قالب واتساب',
+            ],
+            'whatsapp_center_templates.update' => [
+                'name_en' => 'Update WhatsApp Template',
+                'name_ar' => 'تحديث قالب واتساب',
+            ],
+            'whatsapp_center_templates.delete' => [
+                'name_en' => 'Delete WhatsApp Template',
+                'name_ar' => 'حذف قالب واتساب',
+            ],
+
+            // WhatsApp Chat
+            'whatsapp_chat.view' => [
+                'name_en' => 'View WhatsApp Chat',
+                'name_ar' => 'عرض محادثات واتساب',
+            ],
+            'whatsapp_chat.create' => [
+                'name_en' => 'Send WhatsApp Messages',
+                'name_ar' => 'إرسال رسائل واتساب',
+            ],
+
+            // SMS Campaigns
+            'sms_campaigns.view' => [
+                'name_en' => 'View SMS Campaigns',
+                'name_ar' => 'عرض حملات الرسائل النصية',
+            ],
+            'sms_campaigns.create' => [
+                'name_en' => 'Create SMS Campaign',
+                'name_ar' => 'إنشاء حملة رسائل نصية',
+            ],
+            'sms_campaigns.update' => [
+                'name_en' => 'Update SMS Campaign',
+                'name_ar' => 'تحديث حملة رسائل نصية',
+            ],
+            'sms_campaigns.delete' => [
+                'name_en' => 'Delete SMS Campaign',
+                'name_ar' => 'حذف حملة رسائل نصية',
+            ],
+
+            // Email Campaigns
+            'email_campaigns.view' => [
+                'name_en' => 'View Email Campaigns',
+                'name_ar' => 'عرض حملات البريد الإلكتروني',
+            ],
+            'email_campaigns.create' => [
+                'name_en' => 'Create Email Campaign',
+                'name_ar' => 'إنشاء حملة بريد إلكتروني',
+            ],
+            'email_campaigns.update' => [
+                'name_en' => 'Update Email Campaign',
+                'name_ar' => 'تحديث حملة بريد إلكتروني',
+            ],
+            'email_campaigns.delete' => [
+                'name_en' => 'Delete Email Campaign',
+                'name_ar' => 'حذف حملة بريد إلكتروني',
+            ],
+
+            // Blogs
+            'blogs.view' => [
+                'name_en' => 'View Blogs',
+                'name_ar' => 'عرض المدونات',
+            ],
+            'blogs.create' => [
+                'name_en' => 'Create Blog',
+                'name_ar' => 'إنشاء تدوينة',
+            ],
+            'blogs.update' => [
+                'name_en' => 'Update Blog',
+                'name_ar' => 'تحديث تدوينة',
+            ],
+            'blogs.delete' => [
+                'name_en' => 'Delete Blog',
+                'name_ar' => 'حذف تدوينة',
+            ],
+
+            // Employees
+            'employees.view' => [
+                'name_en' => 'View Employees',
+                'name_ar' => 'عرض الموظفين',
+            ],
+            'employees.create' => [
+                'name_en' => 'Create Employee',
+                'name_ar' => 'إنشاء موظف',
+            ],
+            'employees.update' => [
+                'name_en' => 'Update Employee',
+                'name_ar' => 'تحديث موظف',
+            ],
+            'employees.delete' => [
+                'name_en' => 'Delete Employee',
+                'name_ar' => 'حذف موظف',
             ],
 
         ];

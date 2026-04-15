@@ -63,6 +63,11 @@ class RequestsController extends ApiController
      * POST /api/v2/customers-hub/requests/list
      *
      * Get paginated list of customer actions with filtering.
+     *
+     * Status filtering: sending `tab` (e.g. `all`, `completed`) applies status rules in ActionsAggregatorService::applyFilters.
+     * To include every Customers Hub status (pending through completed/dismissed, etc.), omit both `tab` and `statuses`.
+     * To limit to property requests only while keeping all statuses, omit `tab` and `statuses` and pass `objectTypes: ["property_request"]`
+     * (and/or `types: ["property_match"]` per your UI).
      */
     public function list(RequestsListRequest $request): JsonResponse
     {
@@ -190,6 +195,8 @@ class RequestsController extends ApiController
 
         // Get stats
         $stats = $this->aggregator->getStats($userId, $filters);
+        $comparison = $this->aggregator->getComparisonStats($userId, $filters);
+        $stats = array_merge($stats, $comparison);
 
         try {
             $stages = $this->aggregator->getStageStats($userId, $filters);
@@ -314,10 +321,8 @@ class RequestsController extends ApiController
             ];
 
             // Pipeline stages (customers_hub_stages) for request list filtering
-            $stages = DB::table('customers_hub_stages')
-                ->where('is_active', true)
-                ->orderBy('order')
-                ->get(['id', 'stage_id', 'stage_name_ar', 'stage_name_en'])
+            $presenter = app(\App\Domain\CustomersHub\Services\CustomersHubStagesPresenter::class);
+            $stages = $presenter->listStages($userId, true)
                 ->map(fn ($s) => [
                     'id' => (int) $s->id,
                     'stage_id' => $s->stage_id,
@@ -348,6 +353,36 @@ class RequestsController extends ApiController
                     'email' => $e->email,
                 ]);
 
+            // Cities: distinct cities via districts_id → user_districts
+            $cities = DB::table('users_property_requests as upr')
+                ->join('user_districts as d', 'upr.districts_id', '=', 'd.id')
+                ->where('upr.user_id', $userId)
+                ->whereNotNull('d.city_id')
+                ->distinct()
+                ->orderBy('d.city_name_ar')
+                ->get(['d.city_id as value', 'd.city_name_ar as label', 'd.city_name_en as labelEn'])
+                ->map(fn ($city) => [
+                    'value' => (int) $city->value,
+                    'label' => $city->label ?? '',
+                    'labelEn' => $city->labelEn ?? $city->label ?? '',
+                ])
+                ->values()
+                ->all();
+
+            // Districts: distinct string values from users_property_requests.district
+            $districtValues = DB::table('users_property_requests')
+                ->where('user_id', $userId)
+                ->whereNotNull('district')
+                ->where('district', '!=', '')
+                ->distinct()
+                ->orderBy('district')
+                ->pluck('district');
+
+            $districts = $districtValues->map(fn (string $value) => [
+                'value' => $value,
+                'label' => $value,
+            ])->values()->all();
+
             return [
                 'types' => $types,
                 'statuses' => $statuses,
@@ -360,6 +395,8 @@ class RequestsController extends ApiController
                 'customerTypes' => $customerTypes,
                 'customerPriorities' => $customerPriorities,
                 'employees' => $employees,
+                'cities' => $cities,
+                'districts' => $districts,
             ];
         });
 
@@ -546,9 +583,21 @@ class RequestsController extends ApiController
         // Resolve pipeline stage: stage_id (string) or status_id (integer -> lookup customers_hub_stages.id)
         $stageIdString = null;
         if (array_key_exists('stage_id', $validated) && $validated['stage_id'] !== null && $validated['stage_id'] !== '') {
-            $stageIdString = DB::table('customers_hub_stages')->where('stage_id', $validated['stage_id'])->where('is_active', true)->value('stage_id');
+            $stageIdString = DB::table('customers_hub_stages')
+                ->where('stage_id', $validated['stage_id'])
+                ->where('is_active', true)
+                ->where(function ($w) use ($userId) {
+                    $w->where('is_system', true)->orWhere('user_id', $userId);
+                })
+                ->value('stage_id');
         } elseif (array_key_exists('status_id', $validated) && $validated['status_id'] !== null) {
-            $stageIdString = DB::table('customers_hub_stages')->where('id', (int) $validated['status_id'])->where('is_active', true)->value('stage_id');
+            $stageIdString = DB::table('customers_hub_stages')
+                ->where('id', (int) $validated['status_id'])
+                ->where('is_active', true)
+                ->where(function ($w) use ($userId) {
+                    $w->where('is_system', true)->orWhere('user_id', $userId);
+                })
+                ->value('stage_id');
         }
 
         if ($stageIdString !== null) {
@@ -1114,7 +1163,7 @@ class RequestsController extends ApiController
                     'address'        => optional($prop->first_content)->address ?? $prop->address ?? null,
                     'price'          => $prop->price ?? null,
                     'purpose'        => $prop->purpose ?? null,
-                    'type'           => $prop->type ?? null,
+                    'property_type'  => $prop->property_type ?? null,
                     'beds'           => $prop->beds ?? null,
                     'baths'          => $prop->bath ?? null,
                     'area'           => $prop->area ?? null,

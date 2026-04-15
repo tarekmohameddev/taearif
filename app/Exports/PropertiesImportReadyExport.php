@@ -95,7 +95,7 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
 
         // Apply type filter
         if (!empty($this->filters['type'])) {
-            $query->where('type', $this->filters['type']);
+            $query->where('property_type', $this->filters['type']);
         }
 
         // Apply price filters
@@ -284,7 +284,7 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
             $content?->address ?? '',
             $content?->description ?? '',
             PropertyExcelMapping::purposeToExcel($property->purpose ?? null),
-            PropertyExcelMapping::typeToExcel($property->type ?? null),
+            PropertyExcelMapping::typeToExcel($property->property_type ?? null),
             $property->area ?? '',
             $property->beds ?? '',
             $property->bath ?? '',

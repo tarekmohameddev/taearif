@@ -93,7 +93,7 @@ class CustomerAssignedPropertyService
                 'pc.address',
                 'p.price',
                 'p.purpose',
-                'p.type',
+                'p.property_type',
                 'acap.created_at as attached_at',
             ]);
 
@@ -112,7 +112,7 @@ class CustomerAssignedPropertyService
                 'address' => $row->address,
                 'price' => $row->price,
                 'purpose' => $row->purpose,
-                'type' => $row->type,
+                'property_type' => $row->property_type,
                 'attachedAt' => $row->attached_at ? Carbon::parse($row->attached_at)->toIso8601String() : null,
             ];
         })->values()->all();

@@ -181,16 +181,15 @@ class CustomersListService
      */
     public function getFilterOptions(int $userId): array
     {
+        $presenter = app(\App\Domain\CustomersHub\Services\CustomersHubStagesPresenter::class);
+
         return [
-            'stages' => DB::table('customers_hub_stages')
-                ->where('is_active', true)
-                ->orderBy('order')
-                ->get([
-                    DB::raw('stage_id as id'),
-                    'stage_name_ar as label',
-                    'stage_name_en as labelEn',
-                    'color',
-                ]),
+            'stages' => $presenter->listStages($userId, true)->map(fn ($s) => [
+                'id' => $s->stage_id,
+                'label' => $s->stage_name_ar,
+                'labelEn' => $s->stage_name_en ?? $s->stage_name_ar,
+                'color' => $s->color,
+            ]),
 
             'priorities' => DB::table('users_api_customers_priorities')
                 ->where('user_id', $userId)
@@ -300,15 +299,19 @@ class CustomersListService
         $query = DB::table('api_customers')
             ->where('api_customers.user_id', $userId)
             ->leftJoin('customers_hub_stages as stage', 'api_customers.customers_hub_stage_id', '=', 'stage.stage_id')
+            ->leftJoin('customers_hub_stage_overrides as stage_o', function ($join) use ($userId) {
+                $join->on('stage_o.stage_id', '=', 'stage.stage_id')
+                    ->where('stage_o.user_id', '=', DB::raw((int) $userId));
+            })
             ->leftJoin('users_api_customers_priorities as priority', 'api_customers.priority_id', '=', 'priority.id')
             ->leftJoin('users_api_customers_types as type', 'api_customers.type_id', '=', 'type.id')
             ->leftJoin('users as employee', 'api_customers.responsible_employee_id', '=', 'employee.id')
             ->select([
                 'api_customers.*',
                 'stage.stage_id as hub_stage_id',
-                'stage.stage_name_ar as stage_name',
-                'stage.stage_name_en as stage_name_en',
-                'stage.color as stage_color',
+                DB::raw('COALESCE(stage_o.stage_name_ar, stage.stage_name_ar) as stage_name'),
+                DB::raw('COALESCE(stage_o.stage_name_en, stage.stage_name_en) as stage_name_en'),
+                DB::raw('COALESCE(stage_o.color, stage.color) as stage_color'),
                 'priority.name as priority_name',
                 'priority.color as priority_color',
                 'type.name as type_name',

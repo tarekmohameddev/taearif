@@ -28,21 +28,18 @@ class PipelineService
      */
     public function resolveNewStageId(int|string $newStageId): ?string
     {
-        if (is_int($newStageId) || (is_string($newStageId) && ctype_digit($newStageId))) {
-            $row = DB::table('customers_hub_stages')
-                ->where('id', (int) $newStageId)
-                ->where('is_active', true)
-                ->first(['stage_id']);
+        // Backward compatible: without user context, only validate active system stages.
+        $presenter = app(CustomersHubStagesPresenter::class);
+        return $presenter->resolveStageIdString(0, $newStageId, true);
+    }
 
-            return $row ? $row->stage_id : null;
-        }
-
-        $exists = DB::table('customers_hub_stages')
-            ->where('stage_id', $newStageId)
-            ->where('is_active', true)
-            ->exists();
-
-        return $exists ? (string) $newStageId : null;
+    /**
+     * Resolve newStageId for a given tenant (system + tenant custom stages).
+     */
+    public function resolveNewStageIdForTenant(int $tenantUserId, int|string $newStageId): ?string
+    {
+        $presenter = app(CustomersHubStagesPresenter::class);
+        return $presenter->resolveStageIdString($tenantUserId, $newStageId, true);
     }
 
     /**
@@ -50,10 +47,18 @@ class PipelineService
      */
     public function getPipelineBoard(int $userId, array $filters = []): array
     {
-        $stages = DB::table('customers_hub_stages')
-            ->where('is_active', true)
-            ->orderBy('order')
-            ->get(['id', 'stage_id', 'stage_name_ar', 'stage_name_en', 'color', 'order']);
+        $presenter = app(CustomersHubStagesPresenter::class);
+        $stages = $presenter->listStages($userId, true)
+            ->map(function ($s) {
+                return (object) [
+                    'id' => $s->id,
+                    'stage_id' => $s->stage_id,
+                    'stage_name_ar' => $s->stage_name_ar,
+                    'stage_name_en' => $s->stage_name_en,
+                    'color' => $s->color,
+                    'order' => (int) $s->order,
+                ];
+            });
 
         $stagesData = [];
         $totalCount = 0;
@@ -64,13 +69,13 @@ class PipelineService
                     $join->on('ac.id', '=', 'upr.customer_id')
                         ->on('ac.user_id', '=', DB::raw((int) $userId));
                 })
-                ->leftJoin('users as emp', 'ac.responsible_employee_id', '=', 'emp.id')
+                ->leftJoin('users as emp', DB::raw('emp.id'), '=', DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id)'))
                 ->where('upr.user_id', $userId)
                 ->where('upr.customers_hub_stage_id', $stage->stage_id)
                 ->where('upr.is_active', 1)
                 ->where('upr.is_archived', 0);
 
-            $this->applyFilters($requestsQuery, $filters);
+            $this->applyFilters($requestsQuery, $filters, $userId);
 
             $requests = $requestsQuery
                 ->select([
@@ -83,7 +88,7 @@ class PipelineService
                     'upr.seriousness',
                     'upr.created_at',
                     'upr.updated_at',
-                    'ac.responsible_employee_id as assigned_employee_id',
+                    DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id) as assigned_employee_id'),
                     DB::raw("CONCAT(COALESCE(emp.first_name, ''), ' ', COALESCE(emp.last_name, '')) as assigned_employee_name"),
                 ])
                 ->limit(100)
@@ -137,13 +142,13 @@ class PipelineService
             ->leftJoin('api_customers as ac', function ($join) use ($userId) {
                 $join->on('ac.id', '=', 'upr.customer_id')->on('ac.user_id', '=', DB::raw((int) $userId));
             })
-            ->leftJoin('users as emp', 'ac.responsible_employee_id', '=', 'emp.id')
+            ->leftJoin('users as emp', DB::raw('emp.id'), '=', DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id)'))
             ->where('upr.user_id', $userId)
             ->whereNull('upr.customers_hub_stage_id')
             ->where('upr.is_active', 1)
             ->where('upr.is_archived', 0);
 
-        $this->applyFilters($unassignedRequests, $filters);
+            $this->applyFilters($unassignedRequests, $filters, $userId);
 
         $unassignedInquiries = DB::table('api_customer_inquiry as aci')
             ->leftJoin('api_customers as ac', 'aci.customer_id', '=', 'ac.id')
@@ -157,7 +162,7 @@ class PipelineService
         $ur = $unassignedRequests->select([
             'upr.id', 'upr.full_name', 'upr.phone', 'upr.property_type', 'upr.budget_from', 'upr.budget_to',
             'upr.seriousness', 'upr.created_at', 'upr.updated_at',
-            'ac.responsible_employee_id as assigned_employee_id',
+            DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id) as assigned_employee_id'),
             DB::raw("CONCAT(COALESCE(emp.first_name, ''), ' ', COALESCE(emp.last_name, '')) as assigned_employee_name"),
         ])->limit(100)->get();
 
@@ -297,16 +302,23 @@ class PipelineService
                 ->where('upr.user_id', $userId)
                 ->where('upr.is_active', 1)
                 ->where('upr.is_archived', 0);
-            $this->applyFilters($q, $filters);
+            $this->applyFilters($q, $filters, $userId);
             return $q;
         };
 
         $totalRequests = (clone $baseQuery())->count();
 
-        $stages = DB::table('customers_hub_stages')
-            ->where('is_active', true)
-            ->orderBy('order')
-            ->get(['id', 'stage_id', 'stage_name_ar', 'color', 'order']);
+        $presenter = app(CustomersHubStagesPresenter::class);
+        $stages = $presenter->listStages($userId, true)
+            ->map(function ($s) {
+                return (object) [
+                    'id' => $s->id,
+                    'stage_id' => $s->stage_id,
+                    'stage_name_ar' => $s->stage_name_ar,
+                    'color' => $s->color,
+                    'order' => (int) $s->order,
+                ];
+            });
         $numStages = $stages->count();
         $avgPerStage = $numStages > 0 ? $totalRequests / $numStages : 0;
         $threshold = $avgPerStage * 1.5;
@@ -424,24 +436,15 @@ class PipelineService
      */
     public function getStageByStageIdOrId(int|string $stageIdOrId): ?object
     {
-        $query = DB::table('customers_hub_stages')->where('is_active', true);
+        // Backward compatible: without user context, return active system stage only.
+        $presenter = app(CustomersHubStagesPresenter::class);
+        return $presenter->getEffectiveStageForTenant(0, $stageIdOrId, true);
+    }
 
-        if (is_int($stageIdOrId) || (is_string($stageIdOrId) && ctype_digit($stageIdOrId))) {
-            $row = (clone $query)->where('id', (int) $stageIdOrId)->first(['id', 'stage_id', 'stage_name_ar', 'stage_name_en']);
-        } else {
-            $row = (clone $query)->where('stage_id', (string) $stageIdOrId)->first(['id', 'stage_id', 'stage_name_ar', 'stage_name_en']);
-        }
-
-        if (!$row) {
-            return null;
-        }
-
-        return (object) [
-            'id' => (int) $row->id,
-            'stage_id' => $row->stage_id,
-            'name_ar' => $row->stage_name_ar,
-            'name_en' => $row->stage_name_en ?? $row->stage_name_ar,
-        ];
+    public function getStageByStageIdOrIdForTenant(int $tenantUserId, int|string $stageIdOrId): ?object
+    {
+        $presenter = app(CustomersHubStagesPresenter::class);
+        return $presenter->getEffectiveStageForTenant($tenantUserId, $stageIdOrId, true);
     }
 
     /**
@@ -466,14 +469,14 @@ class PipelineService
     /**
      * Apply filters to pipeline requests query (users_property_requests as upr).
      */
-    private function applyFilters(\Illuminate\Database\Query\Builder $query, array $filters): void
+    private function applyFilters(\Illuminate\Database\Query\Builder $query, array $filters, ?int $tenantUserId = null): void
     {
-        $stageIds = $this->resolveStageFilterToStageIds($filters['stage_id'] ?? $filters['status_id'] ?? null);
+        $stageIds = $this->resolveStageFilterToStageIds($filters['stage_id'] ?? $filters['status_id'] ?? null, $tenantUserId);
         if (!empty($stageIds)) {
             $query->whereIn('upr.customers_hub_stage_id', $stageIds);
         }
         if (!empty($filters['status']) && is_array($filters['status'])) {
-            $query->whereIn('upr.customers_hub_stage_id', $this->resolveStageFilterToStageIds($filters['status']));
+            $query->whereIn('upr.customers_hub_stage_id', $this->resolveStageFilterToStageIds($filters['status'], $tenantUserId));
         }
         if (!empty($filters['property_type']) && is_array($filters['property_type'])) {
             $query->whereIn('upr.property_type', $filters['property_type']);
@@ -500,7 +503,10 @@ class PipelineService
             });
         }
         if (!empty($filters['assignedEmployeeId'])) {
-            $query->where('ac.responsible_employee_id', (int) $filters['assignedEmployeeId']);
+            $query->where(function ($q) use ($filters) {
+                $q->where('upr.responsible_employee_id', (int) $filters['assignedEmployeeId'])
+                    ->orWhere('ac.responsible_employee_id', (int) $filters['assignedEmployeeId']);
+            });
         }
         if (!empty($filters['search'])) {
             $search = '%' . $filters['search'] . '%';
@@ -517,7 +523,7 @@ class PipelineService
      * @param  array|null  $values
      * @return array<string>
      */
-    private function resolveStageFilterToStageIds($values): array
+    private function resolveStageFilterToStageIds($values, ?int $tenantUserId = null): array
     {
         if (!is_array($values) || empty($values)) {
             return [];
@@ -525,7 +531,19 @@ class PipelineService
         $stageIds = [];
         foreach ($values as $v) {
             if (is_int($v) || (is_string($v) && ctype_digit($v))) {
-                $sid = DB::table('customers_hub_stages')->where('id', (int) $v)->where('is_active', true)->value('stage_id');
+                $q = DB::table('customers_hub_stages')
+                    ->where('id', (int) $v)
+                    ->where('is_active', true);
+
+                if ($tenantUserId !== null) {
+                    $q->where(function ($w) use ($tenantUserId) {
+                        $w->where('is_system', true)->orWhere('user_id', $tenantUserId);
+                    });
+                } else {
+                    $q->where('is_system', true);
+                }
+
+                $sid = $q->value('stage_id');
                 if ($sid !== null) {
                     $stageIds[] = $sid;
                 }

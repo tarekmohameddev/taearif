@@ -105,7 +105,7 @@ class FixLegacyIncompleteProperties extends Command
                 'address' => $propertyContent?->address,
                 'description' => $propertyContent?->description,
                 'purpose' => $property->purpose,
-                'type' => $property->type,
+                'property_type' => $property->property_type,
                 'area' => $property->area,
             ];
 
@@ -125,7 +125,7 @@ class FixLegacyIncompleteProperties extends Command
                     'User ID' => $property->user_id,
                     'Title' => $propertyContent?->title ?? 'NULL',
                     'Address' => $propertyContent?->address ?? 'NULL',
-                    'Type' => $property->type ?? 'NULL',
+                    'Type' => $property->property_type ?? 'NULL',
                     'Area' => $property->area ?? 'NULL',
                     'Missing Fields' => implode(', ', $missingFields),
                 ];
@@ -202,7 +202,7 @@ class FixLegacyIncompleteProperties extends Command
         // Process in chunks to avoid memory issues
         // Select only fields we need to avoid loading large JSON features that might trigger features_text virtual column issues
         $query = $baseQuery()
-            ->select(['id', 'user_id', 'price', 'purpose', 'type', 'area', 'completion_status']);
+            ->select(['id', 'user_id', 'price', 'purpose', 'property_type', 'area', 'completion_status']);
 
         $totalToProcess = $query->count();
         $this->output->progressStart($totalToProcess);
@@ -381,7 +381,7 @@ class FixLegacyIncompleteProperties extends Command
             'address' => $propertyContent?->address,
             'description' => $propertyContent?->description,
             'purpose' => $property->purpose,
-            'type' => $property->type,
+            'property_type' => $property->property_type,
             'area' => $property->area,
         ];
 

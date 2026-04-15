@@ -47,7 +47,7 @@ class PropertyRequestAutoCustomerSetting extends Model
 
         if (!$settings) {
             return [
-                'auto_create_customer' => false,
+                'auto_create_customer' => true,
                 'default_stage_id' => null,
             ];
         }

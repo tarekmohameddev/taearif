@@ -51,6 +51,7 @@ use App\Http\Controllers\Api\{
     ResetPasswordController,
     property\ApiPropertyRequestController,
     property\ApiPropertyRequestSettingsController,
+    property\PropertyRequestStatusController,
     blog\BlogController,
     blog\PostController,
     blog\MediaController as BlogMediaController,
@@ -817,6 +818,12 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::put('/property-requests/customer/{customerID}/employee', [ApiPropertyRequestController::class, 'assignEmployeeToCustomer'])->middleware('can:property_requests.update');
         // update employee (property request)
         Route::put('/property-requests/{id}/employee', [ApiPropertyRequestController::class, 'updateEmployee'])->middleware('can:property_requests.update');
+
+        // Property Request Statuses CRUD (global defaults + per-tenant custom)
+        Route::get('/property-request-statuses', [PropertyRequestStatusController::class, 'index'])->middleware('can:property_requests.view');
+        Route::post('/property-request-statuses', [PropertyRequestStatusController::class, 'store'])->middleware('can:property_requests.update');
+        Route::put('/property-request-statuses/{id}', [PropertyRequestStatusController::class, 'update'])->middleware('can:property_requests.update');
+        Route::delete('/property-request-statuses/{id}', [PropertyRequestStatusController::class, 'destroy'])->middleware('can:property_requests.update');
     });
 
 

@@ -696,6 +696,11 @@ class User extends Authenticatable
         return (int) $this->employees()->where('active', true)->count();
     }
 
+    public function propertyRequests()
+    {
+        return $this->hasMany(\App\Models\Api\UserPropertyRequest::class, 'user_id');
+    }
+
     public function employeeAddons()
     {
         return $this->hasMany(EmployeeAddon::class, 'user_id');

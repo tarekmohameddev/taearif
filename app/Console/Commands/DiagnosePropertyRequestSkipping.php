@@ -40,7 +40,7 @@ class DiagnosePropertyRequestSkipping extends Command
 
         // Get property requests that don't have linked customers
         $query = UserPropertyRequest::whereNotNull('phone')
-            ->whereDoesntHave('customers');
+            ->whereNull('customer_id');
 
         if ($tenantId) {
             $query->where('user_id', $tenantId);

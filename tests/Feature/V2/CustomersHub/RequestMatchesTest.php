@@ -84,7 +84,7 @@ class RequestMatchesTest extends TestCase
 
         $requestId = $this->createPropertyRequest($tenant->id, [
             'city'          => 'الرياض',
-            'property_type' => 'apartment',
+            'property_type' => 'residential',
         ]);
 
         $requestCompositeId = "property_request_{$requestId}";
@@ -121,7 +121,7 @@ class RequestMatchesTest extends TestCase
 
         $requestId = $this->createPropertyRequest($tenant->id, [
             'city'          => 'الرياض',
-            'property_type' => 'apartment',
+            'property_type' => 'residential',
         ]);
 
         // Insert a fake property match (property may not exist, match is still returned)
@@ -207,7 +207,7 @@ class RequestMatchesTest extends TestCase
         // Create a request belonging to tenant2
         $requestId = $this->createPropertyRequest($tenant2->id, [
             'city'          => 'الرياض',
-            'property_type' => 'apartment',
+            'property_type' => 'residential',
         ]);
 
         $res = $this->getJson("/api/v2/customers-hub/requests/property_request_{$requestId}/matches");
@@ -226,7 +226,7 @@ class RequestMatchesTest extends TestCase
 
         $requestId = $this->createPropertyRequest($tenant->id, [
             'city'          => 'الرياض',
-            'property_type' => 'apartment',
+            'property_type' => 'residential',
         ]);
 
         $res = $this->getJson("/api/v2/customers-hub/requests/property_request_{$requestId}/matches");

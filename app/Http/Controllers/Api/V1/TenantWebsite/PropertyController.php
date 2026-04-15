@@ -124,7 +124,7 @@ class PropertyController extends Controller
 					->orWhere('address', 'like', "%{$q}%");
 			});
 		}
-		foreach (['type','beds','bath','city_id','state_id','category_id','project_id'] as $eq) {
+		foreach (['property_type','beds','bath','city_id','state_id','category_id','project_id'] as $eq) {
 			if (!is_null($request->query($eq))) {
 				if (in_array($eq, ['city_id','state_id','category_id'])) {
 					$query->whereHas('contents', function ($qbuilder) use ($eq, $request) {
@@ -340,8 +340,8 @@ class PropertyController extends Controller
             'bedrooms' => (int) ($property->beds ?? 0),
             'bathrooms' => (int) ($property->bath ?? 0),
             'area' => isset($property->area) ? formatNumberWithoutTrailingZeros($property->area) : '0',
-            'type' => $this->translator->translateType($property->type),
-            'type_en' => $property->type ?? '',
+            'property_type' => $this->translator->translateType($property->property_type),
+            'property_type_en' => $property->property_type ?? '',
             'transactionType' => $this->translator->translatePurpose($normalizedPurpose),
             'transactionType_en' => $normalizedPurpose,
             'image' => $featured,
@@ -464,8 +464,8 @@ class PropertyController extends Controller
 			'bedrooms' => (int) ($p->beds ?? 0),
 			'bathrooms' => (int) ($p->bath ?? 0),
 			'area' => isset($p->area) ? formatNumberWithoutTrailingZeros($p->area) : '0',
-			'type' => $this->translator->translateType($p->type),
-			'type_en' => $p->type,
+			'property_type' => $this->translator->translateType($p->property_type),
+			'property_type_en' => $p->property_type,
 			'transactionType' => $this->translator->translatePurpose($normalizedPurpose),
 			'transactionType_en' => $normalizedPurpose,
 			'image' => $featured,

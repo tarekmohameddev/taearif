@@ -68,9 +68,18 @@ class PropertyRequestDetailBuilder
         $stage = null;
         if (!empty($propertyRequest->customers_hub_stage_id)) {
             $stageRow = DB::table('customers_hub_stages')
-                ->where('stage_id', $propertyRequest->customers_hub_stage_id)
-                ->where('is_active', true)
-                ->first(['id', 'stage_id', 'stage_name_ar', 'stage_name_en']);
+                ->leftJoin('customers_hub_stage_overrides as o', function ($join) use ($userId) {
+                    $join->on('o.stage_id', '=', 'customers_hub_stages.stage_id')
+                        ->where('o.user_id', '=', DB::raw((int) $userId));
+                })
+                ->where('customers_hub_stages.stage_id', $propertyRequest->customers_hub_stage_id)
+                ->where('customers_hub_stages.is_active', true)
+                ->first([
+                    'customers_hub_stages.id as id',
+                    'customers_hub_stages.stage_id as stage_id',
+                    DB::raw('COALESCE(o.stage_name_ar, customers_hub_stages.stage_name_ar) as stage_name_ar'),
+                    DB::raw('COALESCE(o.stage_name_en, customers_hub_stages.stage_name_en) as stage_name_en'),
+                ]);
             if ($stageRow) {
                 $stageId = $stageRow->stage_id;
                 $stage = [
@@ -108,6 +117,27 @@ class PropertyRequestDetailBuilder
             : null;
         $assignedToName = trim((string) ($action->assignedToName ?? ''));
 
+        if ($assignedTo === null || $assignedToName === '') {
+            // Primary: request-level assignment (source of truth)
+            $uprAssignee = DB::table('users_property_requests as upr')
+                ->leftJoin('users as u', 'upr.responsible_employee_id', '=', 'u.id')
+                ->where('upr.user_id', $userId)
+                ->where('upr.id', $propertyRequestId)
+                ->select([
+                    'upr.responsible_employee_id',
+                    DB::raw("CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as assigned_to_name"),
+                ])
+                ->first();
+
+            if ($assignedTo === null && $uprAssignee && $uprAssignee->responsible_employee_id !== null) {
+                $assignedTo = (int) $uprAssignee->responsible_employee_id;
+            }
+            if ($assignedToName === '' && $uprAssignee) {
+                $assignedToName = trim((string) ($uprAssignee->assigned_to_name ?? ''));
+            }
+        }
+
+        // Fallback: customer-level assignment (when request has no explicit assignment)
         if ($assignedTo === null || $assignedToName === '') {
             $assignee = DB::table('api_customers as ac')
                 ->leftJoin('users as u', 'ac.responsible_employee_id', '=', 'u.id')
@@ -211,9 +241,18 @@ class PropertyRequestDetailBuilder
         $stage = null;
         if (!empty($inquiry->stage_id)) {
             $stageRow = DB::table('customers_hub_stages')
-                ->where('stage_id', $inquiry->stage_id)
-                ->where('is_active', true)
-                ->first(['id', 'stage_id', 'stage_name_ar', 'stage_name_en']);
+                ->leftJoin('customers_hub_stage_overrides as o', function ($join) use ($userId) {
+                    $join->on('o.stage_id', '=', 'customers_hub_stages.stage_id')
+                        ->where('o.user_id', '=', DB::raw((int) $userId));
+                })
+                ->where('customers_hub_stages.stage_id', $inquiry->stage_id)
+                ->where('customers_hub_stages.is_active', true)
+                ->first([
+                    'customers_hub_stages.id as id',
+                    'customers_hub_stages.stage_id as stage_id',
+                    DB::raw('COALESCE(o.stage_name_ar, customers_hub_stages.stage_name_ar) as stage_name_ar'),
+                    DB::raw('COALESCE(o.stage_name_en, customers_hub_stages.stage_name_en) as stage_name_en'),
+                ]);
             if ($stageRow) {
                 $stageId = $stageRow->stage_id;
                 $stage = [
@@ -468,11 +507,12 @@ class PropertyRequestDetailBuilder
     /**
      * Get property summaries for a list of property IDs (for requests list).
      * Returns array of summary arrays: id, title, address, slug, price, featuredImage, district, city,
-     * propertyType (شقة/فيلا), area, size, listingType, listingTypeLabel (للبيع/للإيجار).
+     * propertyType (residential/commercial/agricultural/industrial), category (شقة/فيلا), area, size,
+     * listingType, listingTypeLabel (للبيع/للإيجار).
      * Uses user_properties + user_property_contents (first per property) + user_districts + api_user_categories.
      *
      * @param  array<int>  $propertyIds
-     * @return array<int, array{id: int, title: string|null, address: string|null, slug: string|null, price: float|null, featuredImage: string|null, district: string|null, city: string|null, propertyType: string|null, area: int|null, size: string|null, listingType: string|null, listingTypeLabel: string|null}>
+     * @return array<int, array{id: int, title: string|null, address: string|null, slug: string|null, price: float|null, featuredImage: string|null, district: string|null, city: string|null, propertyType: string|null, category: string|null, area: int|null, size: string|null, listingType: string|null, listingTypeLabel: string|null}>
      */
     public function getPropertySummariesForIds(int $userId, array $propertyIds): array
     {
@@ -501,6 +541,7 @@ class PropertyRequestDetailBuilder
                 'p.price',
                 'p.featured_image',
                 'p.purpose',
+                'p.property_type',
                 'p.area',
                 'p.size',
                 'pc.title',
@@ -530,7 +571,8 @@ class PropertyRequestDetailBuilder
                 'featuredImage' => $featuredImage,
                 'district' => $row->district !== null ? (string) $row->district : null,
                 'city' => $row->city !== null ? (string) $row->city : null,
-                'propertyType' => $row->category_name !== null ? (string) $row->category_name : null,
+                'propertyType' => $row->property_type !== null ? (string) $row->property_type : null,
+                'category' => $row->category_name !== null ? (string) $row->category_name : null,
                 'area' => isset($row->area) && $row->area !== null ? (int) $row->area : null,
                 'size' => $row->size !== null && $row->size !== '' ? (string) $row->size : null,
                 'listingType' => $listingType,

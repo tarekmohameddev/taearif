@@ -146,11 +146,11 @@ class RouteServiceProvider extends ServiceProvider
         }));
 
         RateLimiter::for('api_tenant_reservations', $only(function (Request $request) {
-            return Limit::perMinute(5)->by($request->ip());
+            return Limit::perMinute(60)->by($request->ip());
         }));
 
         RateLimiter::for('api_tenant_job_applications', $only(function (Request $request) {
-            return Limit::perMinute(10)->by($request->ip());
+            return Limit::perMinute(100)->by($request->ip());
         }));
 
         RateLimiter::for('admin_api_login', $only(function (Request $request) {

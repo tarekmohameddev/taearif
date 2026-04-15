@@ -17,6 +17,7 @@ class CheckTenantsMissingStages extends Command
      * @var string
      */
     protected $signature = 'property-requests:check-missing-stages 
+                            {--tenant= : Check a specific tenant by ID}
                             {--unlinked-only : Only check tenants with unlinked property requests}';
 
     /**
@@ -31,15 +32,29 @@ class CheckTenantsMissingStages extends Command
      */
     public function handle(): int
     {
+        $tenantId = $this->option('tenant');
         $unlinkedOnly = (bool) $this->option('unlinked-only');
 
         $this->info('Checking tenants for missing customer stages...');
         $this->newLine();
 
-        if ($unlinkedOnly) {
+        if ($tenantId) {
+            // Check specific tenant
+            $tenant = User::where('account_type', 'tenant')
+                ->where('id', $tenantId)
+                ->first();
+
+            if (!$tenant) {
+                $this->error("Tenant with ID {$tenantId} not found.");
+                return self::FAILURE;
+            }
+
+            $tenantIds = [$tenantId];
+            $this->info("Checking specific tenant: {$tenant->name} (ID: {$tenantId})");
+        } elseif ($unlinkedOnly) {
             // Get tenants from property requests that don't have linked customers
             $tenantIds = UserPropertyRequest::whereNotNull('phone')
-                ->whereDoesntHave('customers')
+                ->whereNull('customer_id')
                 ->distinct()
                 ->pluck('user_id')
                 ->toArray();
@@ -85,7 +100,7 @@ class CheckTenantsMissingStages extends Command
             // Count unlinked property requests for this tenant
             $unlinkedRequests = UserPropertyRequest::where('user_id', $tenantId)
                 ->whereNotNull('phone')
-                ->whereDoesntHave('customers')
+                ->whereNull('customer_id')
                 ->count();
 
             $hasStage = $activeStages > 0;

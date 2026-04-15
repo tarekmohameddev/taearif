@@ -68,7 +68,7 @@ class RequestRematchTest extends TestCase
         $requestId = $this->createPropertyRequest($tenant->id, [
             'is_ignored'    => 1,
             'city'          => 'الرياض',
-            'property_type' => 'apartment',
+            'property_type' => 'residential',
         ]);
 
         $res = $this->postJson("/api/v2/customers-hub/requests/property_request_{$requestId}/rematch");
@@ -105,7 +105,7 @@ class RequestRematchTest extends TestCase
 
         $requestId = $this->createPropertyRequest($tenant->id, [
             'city'          => 'الرياض',
-            'property_type' => 'apartment',
+            'property_type' => 'residential',
         ]);
 
         $matchingMock = $this->mock(MatchingService::class);
@@ -151,7 +151,7 @@ class RequestRematchTest extends TestCase
 
         $requestId = $this->createPropertyRequest($tenant2->id, [
             'city'          => 'الرياض',
-            'property_type' => 'apartment',
+            'property_type' => 'residential',
         ]);
 
         $this->postJson("/api/v2/customers-hub/requests/property_request_{$requestId}/rematch")

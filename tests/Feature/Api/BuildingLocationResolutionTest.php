@@ -210,7 +210,7 @@ class BuildingLocationResolutionTest extends TestCase
             'price' => 1000000,
             'pricePerMeter' => 1200,
             'purpose' => 'sale',
-            'type' => 'residential',
+            'property_type' => 'residential',
             'area' => 500,
             'status' => 1,
             'property_status' => 'available',
