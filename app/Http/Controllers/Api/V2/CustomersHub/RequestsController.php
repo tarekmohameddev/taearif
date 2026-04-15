@@ -376,11 +376,12 @@ class RequestsController extends ApiController
                 ->whereNotNull('upr.districts_id')
                 ->distinct()
                 ->orderBy('d.name_ar')
-                ->get(['d.id', 'd.name_ar as label', 'd.name_en as labelEn'])
+                ->get(['d.id', 'd.city_id as cityId', 'd.name_ar as label', 'd.name_en as labelEn'])
                 ->map(fn ($d) => [
                     'value' => (int) $d->id,
                     'label' => $d->label ?? '',
                     'labelEn' => $d->labelEn ?? $d->label ?? '',
+                    'cityId' => isset($d->cityId) && $d->cityId !== null ? (int) $d->cityId : null,
                 ])
                 ->values()
                 ->all();
