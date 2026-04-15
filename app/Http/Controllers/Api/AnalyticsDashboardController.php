@@ -417,6 +417,10 @@ class AnalyticsDashboardController extends Controller
         $dbData = Cache::remember($dbCacheKey, 300, function() use ($user) {
             return [
                 'totalcustomers' => ApiCustomer::where('user_id', $user->id)->count(),
+                'sold' => DB::table('user_properties')
+                    ->where('user_id', $user->id)
+                    ->where('purpose', 'sold')
+                    ->count(),
                 'purposeCounts' => DB::table('user_properties')
                     ->where('user_id', $user->id)
                     ->select('purpose', DB::raw('COUNT(*) as total'))
@@ -427,6 +431,7 @@ class AnalyticsDashboardController extends Controller
         });
 
         $totalcustomers = $dbData['totalcustomers'];
+        $sold = (int) ($dbData['sold'] ?? 0);
         $purposeCounts = $dbData['purposeCounts'];
         $propertiesTotal = $purposeCounts->sum('total');
 
@@ -443,6 +448,7 @@ class AnalyticsDashboardController extends Controller
             'totalcustomers' => $totalcustomers,
             'properties' => [
                 'total' => $propertiesTotal,
+                'sold' => $sold,
                 'properties_purposes' => $purposeCounts,
             ],
         ];
