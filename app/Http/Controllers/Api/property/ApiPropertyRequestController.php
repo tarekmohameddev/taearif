@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 use App\Models\Api\UserPropertyRequest;
 use App\Models\User\UserCity;
+use App\Models\User\RealestateManagement\Property;
 use App\Http\Requests\Api\Property\StorePropertyRequestRequest;
 use App\Http\Requests\Api\Property\UpdatePropertyRequestRequest;
 use App\Http\Requests\Api\Property\UpdateStatusPropertyRequestRequest;
@@ -29,6 +30,7 @@ use App\Models\PropertyRequestStatus;
 use App\Models\User;
 use App\Models\ApiCustomer;
 use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
+use App\Rules\PropertyTypeRule;
 
 class ApiPropertyRequestController extends Controller
 {
@@ -735,13 +737,60 @@ class ApiPropertyRequestController extends Controller
     public function update(UpdatePropertyRequestRequest $request, $id)
     {
         $user = Auth::user();
+        $ownerId = $user && method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
         $propertyRequest = UserPropertyRequest::where('id', $id)
-            ->where('user_id', $user->id)
+            ->where('user_id', $ownerId)
             ->firstOrFail();
 
         $data = $request->validated();
+
+        // Normalize property_type to canonical lowercase value
+        if (array_key_exists('property_type', $data) && $data['property_type'] !== null) {
+            $data['property_type'] = PropertyTypeRule::normalize(is_string($data['property_type']) ? $data['property_type'] : null);
+        }
+
+        // Map region (city_id) → set city_id and Arabic name into region (mirrors store() behavior)
+        if (array_key_exists('region', $data) && $data['region'] !== null) {
+            $regionId = (int) $data['region'];
+            $city = UserCity::find($regionId);
+            $data['city_id'] = $regionId;
+            $data['region'] = $city ? $city->name_ar : null;
+        }
+
+        // Validate property_ids: ensure they exist and belong to this tenant
+        if (array_key_exists('property_ids', $data) && is_array($data['property_ids'])) {
+            $requested = array_values(array_unique(array_filter(array_map('intval', $data['property_ids']), static fn (int $pid): bool => $pid > 0)));
+            if ($requested !== []) {
+                $validIds = Property::query()
+                    ->where('user_id', $ownerId)
+                    ->whereIn('id', $requested)
+                    ->pluck('id')
+                    ->all();
+
+                sort($validIds);
+                $sortedRequested = $requested;
+                sort($sortedRequested);
+
+                if ($validIds !== $sortedRequested) {
+                    return response()->json([
+                        'message' => 'One or more property IDs are invalid or do not belong to this tenant.',
+                        'errors' => [
+                            'property_ids' => ['The selected property IDs are invalid or unauthorized for this tenant.'],
+                        ],
+                    ], 422);
+                }
+            }
+            $data['property_ids'] = $requested;
+        }
+
         $propertyRequest->update($data);
-        return response()->json(['message' => 'Property request updated successfully']);
+
+        $propertyRequest->load(['statusOption', 'customer', 'district']);
+
+        return response()->json([
+            'message' => 'Property request updated successfully',
+            'data' => $propertyRequest,
+        ]);
     }
 
     public function updateStatus(UpdateStatusPropertyRequestRequest $request, $id): JsonResponse
