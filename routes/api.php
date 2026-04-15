@@ -685,6 +685,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::prefix('rms')->middleware(['can:rentals.view'])->group(function () {
         // Dashboard
         Route::get('dashboard', [RmsDashboardController::class, 'index']);
+        Route::get('sales-stats', [RmsDashboardController::class, 'salesStats']);
 
         // Filtered Payments Endpoints
         Route::get('payments/collections', [RmsDashboardController::class, 'paymentsCollections']);

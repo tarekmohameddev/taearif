@@ -1500,4 +1500,65 @@ class DashboardService
             ],
         ];
     }
+
+    /**
+     * Sales / portfolio stats for RMS dashboard cards (إجمالي المبيعات، للبيع، للإيجار، نسبة الإشغال).
+     * Occupancy counts only active rentals whose end_date has not passed (guards stale status rows).
+     */
+    public function getSalesStats(int $userId): array
+    {
+        $today = Carbon::now('Asia/Riyadh')->toDateString();
+
+        $complete = fn () => Property::where('user_id', $userId)->where('completion_status', 'complete');
+
+        $totalSalesValue = (float) $complete()->sum('price');
+
+        $forSaleCount = (int) $complete()->where('purpose', 'sale')->count();
+        $forSaleValue = (float) $complete()->where('purpose', 'sale')->sum('price');
+
+        $forRentCount = (int) $complete()->where('purpose', 'rent')->count();
+        $forRentValue = (float) $complete()->where('purpose', 'rent')->sum('price');
+
+        $forSalePercentage = $totalSalesValue > 0
+            ? round(($forSaleValue / $totalSalesValue) * 100, 2)
+            : 0.0;
+        $forRentPercentage = $totalSalesValue > 0
+            ? round(($forRentValue / $totalSalesValue) * 100, 2)
+            : 0.0;
+
+        $occupiedCount = (int) Property::where('user_id', $userId)
+            ->where('purpose', 'rent')
+            ->where('completion_status', 'complete')
+            ->whereHas('rentals', function ($query) use ($today) {
+                $query->where('status', 'active')
+                    ->whereNotNull('end_date')
+                    ->whereDate('end_date', '>=', $today);
+            })
+            ->count();
+
+        $occupancyPercentage = $forRentCount > 0
+            ? round(($occupiedCount / $forRentCount) * 100, 2)
+            : 0.0;
+
+        return [
+            'total_sales' => [
+                'value' => $totalSalesValue,
+            ],
+            'for_sale' => [
+                'count' => $forSaleCount,
+                'value' => $forSaleValue,
+                'percentage' => $forSalePercentage,
+            ],
+            'for_rent' => [
+                'count' => $forRentCount,
+                'value' => $forRentValue,
+                'percentage' => $forRentPercentage,
+            ],
+            'occupancy' => [
+                'occupied_count' => $occupiedCount,
+                'total_count' => $forRentCount,
+                'percentage' => $occupancyPercentage,
+            ],
+        ];
+    }
 }
