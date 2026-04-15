@@ -192,7 +192,7 @@ class ActionsAggregatorService
     {
         try {
             [$countsRequests, $countsInquiries, $total] = $this->getHubStageCounts($userId, $filters);
-            return $this->buildHubStagesArray($countsRequests, $countsInquiries, $total);
+            return $this->buildHubStagesArray($userId, $countsRequests, $countsInquiries, $total);
         } catch (\Throwable $e) {
             return [];
         }
@@ -237,12 +237,17 @@ class ActionsAggregatorService
     /**
      * Build stages array from customers_hub_stages with requestCount + inquiry count and percentage.
      */
-    private function buildHubStagesArray(\Illuminate\Support\Collection $countsRequests, \Illuminate\Support\Collection $countsInquiries, int $total): array
+    private function buildHubStagesArray(int $userId, \Illuminate\Support\Collection $countsRequests, \Illuminate\Support\Collection $countsInquiries, int $total): array
     {
-        $stages = DB::table('customers_hub_stages')
-            ->where('is_active', true)
-            ->orderBy('order')
-            ->get(['stage_id', 'stage_name_ar', 'stage_name_en', 'color', 'order']);
+        $presenter = app(CustomersHubStagesPresenter::class);
+        $stages = $presenter->listStages($userId, true)
+            ->map(fn ($s) => (object) [
+                'stage_id' => $s->stage_id,
+                'stage_name_ar' => $s->stage_name_ar,
+                'stage_name_en' => $s->stage_name_en,
+                'color' => $s->color,
+                'order' => (int) $s->order,
+            ]);
 
         if ($stages->isEmpty()) {
             return [];
@@ -1337,6 +1342,8 @@ class ActionsAggregatorService
                 DB::raw("NULL as propertyRequestStatusSlug"),
                 DB::raw("NULL as propertyRequestStatusNameAr"),
                 DB::raw("NULL as propertyRequestStatusNameEn"),
+                DB::raw("NULL as districts_id"),
+                DB::raw("NULL as districtAR"),
             ]);
     }
 
@@ -1355,6 +1362,7 @@ class ActionsAggregatorService
                     ->on('ac_phone.phone_number', '=', 'upr.phone');
             })
             ->leftJoin('user_cities as uc', 'upr.city_id', '=', 'uc.id')
+            ->leftJoin('user_districts as ud_req', 'upr.districts_id', '=', 'ud_req.id')
             ->leftJoin('property_request_statuses as prs', 'upr.status_id', '=', 'prs.id')
             ->leftJoin('customers_hub_status_mapping as chsm', 'prs.slug', '=', 'chsm.property_request_status_slug')
             ->leftJoin('users as u2', DB::raw('u2.id'), '=', DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id, ac_phone.responsible_employee_id)'))
@@ -1414,6 +1422,8 @@ class ActionsAggregatorService
                 'prs.slug as propertyRequestStatusSlug',
                 'prs.name_ar as propertyRequestStatusNameAr',
                 'prs.name_en as propertyRequestStatusNameEn',
+                'upr.districts_id as districts_id',
+                'ud_req.name_ar as districtAR',
             ]);
     }
 
@@ -1473,6 +1483,8 @@ class ActionsAggregatorService
                 DB::raw("NULL as propertyRequestStatusSlug"),
                 DB::raw("NULL as propertyRequestStatusNameAr"),
                 DB::raw("NULL as propertyRequestStatusNameEn"),
+                DB::raw("NULL as districts_id"),
+                DB::raw("NULL as districtAR"),
             ]);
     }
 
@@ -1848,10 +1860,22 @@ class ActionsAggregatorService
                 ->get(['id', 'customers_hub_stage_id']);
             $stageIdsToLoad = $requestRows->pluck('customers_hub_stage_id')->filter()->unique()->values()->all();
             if (!empty($stageIdsToLoad)) {
-                $stages = DB::table('customers_hub_stages')
-                    ->whereIn('stage_id', $stageIdsToLoad)
-                    ->where('is_active', true)
-                    ->get(['id', 'stage_id', 'stage_name_ar', 'stage_name_en']);
+                $stages = DB::table('customers_hub_stages as s')
+                    ->leftJoin('customers_hub_stage_overrides as o', function ($join) use ($userId) {
+                        $join->on('o.stage_id', '=', 's.stage_id')
+                            ->where('o.user_id', '=', DB::raw((int) $userId));
+                    })
+                    ->whereIn('s.stage_id', $stageIdsToLoad)
+                    ->where('s.is_active', true)
+                    ->where(function ($w) use ($userId) {
+                        $w->where('s.is_system', true)->orWhere('s.user_id', $userId);
+                    })
+                    ->get([
+                        's.id',
+                        's.stage_id',
+                        DB::raw('COALESCE(o.stage_name_ar, s.stage_name_ar) as stage_name_ar'),
+                        DB::raw('COALESCE(o.stage_name_en, s.stage_name_en) as stage_name_en'),
+                    ]);
                 $stageByStageId = $stages->keyBy('stage_id');
                 foreach ($requestRows as $row) {
                     if ($row->customers_hub_stage_id === null) {
@@ -1876,10 +1900,22 @@ class ActionsAggregatorService
                 ->get(['id', 'stage_id']);
             $inquiryStageIds = $inquiryRows->pluck('stage_id')->filter()->unique()->values()->all();
             if (!empty($inquiryStageIds)) {
-                $stages = DB::table('customers_hub_stages')
-                    ->whereIn('stage_id', $inquiryStageIds)
-                    ->where('is_active', true)
-                    ->get(['id', 'stage_id', 'stage_name_ar', 'stage_name_en']);
+                $stages = DB::table('customers_hub_stages as s')
+                    ->leftJoin('customers_hub_stage_overrides as o', function ($join) use ($userId) {
+                        $join->on('o.stage_id', '=', 's.stage_id')
+                            ->where('o.user_id', '=', DB::raw((int) $userId));
+                    })
+                    ->whereIn('s.stage_id', $inquiryStageIds)
+                    ->where('s.is_active', true)
+                    ->where(function ($w) use ($userId) {
+                        $w->where('s.is_system', true)->orWhere('s.user_id', $userId);
+                    })
+                    ->get([
+                        's.id',
+                        's.stage_id',
+                        DB::raw('COALESCE(o.stage_name_ar, s.stage_name_ar) as stage_name_ar'),
+                        DB::raw('COALESCE(o.stage_name_en, s.stage_name_en) as stage_name_en'),
+                    ]);
                 $stageByStageId = $stages->keyBy('stage_id');
                 foreach ($inquiryRows as $row) {
                     if ($row->stage_id === null) {
@@ -1967,6 +2003,8 @@ class ActionsAggregatorService
             'propertyType' => $item->propertyType ?? null,
             'city' => $item->city ?? null,
             'state' => $item->state ?? null,
+            'districts_id' => isset($item->districts_id) && $item->districts_id !== null ? (int) $item->districts_id : null,
+            'districtAR' => $item->districtAR ?? null,
             'budgetMin' => isset($item->budgetMin) && $item->budgetMin !== null ? (float) $item->budgetMin : null,
             'budgetMax' => isset($item->budgetMax) && $item->budgetMax !== null ? (float) $item->budgetMax : null,
             // For property_request objectType only (users_property_requests.status_id).

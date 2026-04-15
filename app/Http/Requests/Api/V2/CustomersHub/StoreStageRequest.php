@@ -14,14 +14,12 @@ class StoreStageRequest extends BaseApiFormRequest
     public function rules()
     {
         return [
-            'stage_id' => 'required|string|max:50|regex:/^[a-zA-Z0-9_]+$/|unique:customers_hub_stages,stage_id',
             'stage_name_ar' => 'required|string|max:255',
             'stage_name_en' => 'required|string|max:255',
             'color' => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'order' => 'required|integer|min:1',
             'description' => 'nullable|string',
             'is_active' => 'nullable|boolean',
-            'is_global' => 'nullable|boolean',
         ];
     }
 }

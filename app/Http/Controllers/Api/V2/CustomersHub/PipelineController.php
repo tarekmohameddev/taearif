@@ -77,14 +77,14 @@ class PipelineController extends ApiController
         $requestId = isset($validated['requestId']) ? (int) $validated['requestId'] : (isset($validated['customerId']) ? (int) $validated['customerId'] : null);
         $inquiryId = isset($validated['inquiryId']) ? (int) $validated['inquiryId'] : null;
         $userId = $this->getTenantUserId($request);
-        $stageIdString = $this->pipelineService->resolveNewStageId($validated['newStageId']);
+        $stageIdString = $this->pipelineService->resolveNewStageIdForTenant($userId, $validated['newStageId']);
         if ($stageIdString === null) {
             return $this->error('Invalid stage', 422, [
                 'newStageId' => ['The specified stage does not exist or is not active.'],
             ]);
         }
 
-        $newStage = $this->pipelineService->getStageByStageIdOrId($validated['newStageId']);
+        $newStage = $this->pipelineService->getStageByStageIdOrIdForTenant($userId, $validated['newStageId']);
         if (!$newStage) {
             return $this->error('Invalid stage', 422, [
                 'newStageId' => ['The specified stage does not exist or is not active.'],
@@ -211,7 +211,7 @@ class PipelineController extends ApiController
             : array_map('intval', $validated['customerIds'] ?? []);
 
         $userId = $this->getTenantUserId($request);
-        $stageIdString = $this->pipelineService->resolveNewStageId($validated['newStageId']);
+        $stageIdString = $this->pipelineService->resolveNewStageIdForTenant($userId, $validated['newStageId']);
         if ($stageIdString === null) {
             return $this->error('Invalid stage', 422, [
                 'newStageId' => ['The specified stage does not exist or is not active.'],
