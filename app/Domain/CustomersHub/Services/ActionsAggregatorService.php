@@ -400,9 +400,9 @@ class ActionsAggregatorService
             $query->whereIn('uc.name_ar', $filters['cities']);
         }
 
-        // States
-        if (!empty($filters['states']) && is_array($filters['states'])) {
-            $query->whereIn('upr.region', $filters['states']);
+        // Districts
+        if (!empty($filters['districts']) && is_array($filters['districts'])) {
+            $query->whereIn('upr.districts_id', $filters['districts']);
         }
 
         // Budget range
@@ -1849,9 +1849,9 @@ class ActionsAggregatorService
             $query->whereIn('city', $filters['cities']);
         }
 
-        // States filter (request-level)
-        if (!empty($filters['states']) && is_array($filters['states'])) {
-            $query->whereIn('state', $filters['states']);
+        // Districts filter (request-level)
+        if (!empty($filters['districts']) && is_array($filters['districts'])) {
+            $query->whereIn('districts_id', $filters['districts']);
         }
 
         // Budget range filter: request's budget range overlaps [budget_min, budget_max]

@@ -10334,7 +10334,7 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="property_categories", type="array", @OA\Items(type="string")),
  *             @OA\Property(property="property_types", type="array", @OA\Items(type="string")),
  *             @OA\Property(property="cities", type="array", @OA\Items(type="string")),
- *             @OA\Property(property="states", type="array", @OA\Items(type="string")),
+ *             @OA\Property(property="districts", type="array", @OA\Items(type="integer")),
  *             @OA\Property(property="budget_min", type="number", minimum=0),
  *             @OA\Property(property="budget_max", type="number", minimum=0),
  *             @OA\Property(property="date_from", type="string"),
