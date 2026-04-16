@@ -226,10 +226,16 @@ class RequestsController extends ApiController
             ->whereNotIn(DB::raw($effectiveStatusSql), ['dismissed', 'completed'])
             ->count();
 
+        $total = (int) DB::table('users_property_requests as upr')
+            ->where('upr.user_id', $userId)
+            ->where('upr.is_active', 1)
+            ->count();
+
         $stats = array_merge($stats, [
             'underProcess' => $underProcess,
             'dealClosed' => $dealClosed,
             'dealNotClosed' => $dealNotClosed,
+            'total' => $total,
         ]);
 
         try {
