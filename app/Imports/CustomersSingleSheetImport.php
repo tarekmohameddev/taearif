@@ -180,6 +180,7 @@ class CustomersSingleSheetImport implements OnEachRow, WithHeadingRow, WithValid
                 'type_id' => $typeId,
                 'priority_id' => $priorityId,
                 'stage_id' => $stageId,
+                'customers_hub_stage_id' => 'new_lead',
                 'procedure_id' => $procedureId,
                 'city_id' => $cityId,
                 'district_id' => $districtId,

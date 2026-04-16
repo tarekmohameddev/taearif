@@ -445,6 +445,7 @@ PROMPT;
             'name' => $conversation->customer_name ?? 'WhatsApp Customer',
             'phone_number' => $conversation->customer_phone,
             'priority_id' => 1,
+            'customers_hub_stage_id' => 'new_lead',
             'password' => bcrypt('12345678'),
         ]);
 

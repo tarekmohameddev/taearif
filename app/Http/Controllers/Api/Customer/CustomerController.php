@@ -484,6 +484,7 @@ class CustomerController extends Controller
                     'type_id'      => $request->type_id,
                     'responsible_employee_id' => $request->responsible_employee_id,
                     'stage_id'     => $request->stage_id,
+                    'customers_hub_stage_id' => $request->input('customers_hub_stage_id') ?: 'new_lead',
                     'procedure_id' => $request->procedure_id,
                     'phone_number' => $request->phone_number,
                     'password'     => bcrypt($request->password ?? '12345678'),
