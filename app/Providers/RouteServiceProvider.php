@@ -60,6 +60,7 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapWebRoutes();
         $this->mapAdminRoutes();
         $this->mapAdminApiRoutes();
+        $this->mapMobileRoutes();
     }
 
     /**
@@ -119,6 +120,19 @@ class RouteServiceProvider extends ServiceProvider
     }
 
     /**
+     * Define the "mobile api" routes for the application.
+     *
+     * These routes are typically stateless.
+     */
+    protected function mapMobileRoutes(): void
+    {
+        Route::prefix('api/mobile')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/mobile.php'));
+    }
+
+    /**
      * Named rate limiters; outside production all return Limit::none().
      */
     protected function registerProductionAwareRateLimiters(): void
@@ -134,6 +148,10 @@ class RouteServiceProvider extends ServiceProvider
         };
 
         RateLimiter::for('api', $only(function (Request $request) {
+            return Limit::perMinute(60)->by(optional($request->user())->id ?: $request->ip());
+        }));
+
+        RateLimiter::for('api_mobile', $only(function (Request $request) {
             return Limit::perMinute(60)->by(optional($request->user())->id ?: $request->ip());
         }));
 
