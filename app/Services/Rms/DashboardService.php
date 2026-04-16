@@ -1519,6 +1519,12 @@ class DashboardService
         $forRentCount = (int) $complete()->where('purpose', 'rent')->count();
         $forRentValue = (float) $complete()->where('purpose', 'rent')->sum('price');
 
+        $soldCount = (int) $complete()->where('purpose', 'sold')->count();
+        $soldValue = (float) $complete()->where('purpose', 'sold')->sum('price');
+
+        $rentedCount = (int) $complete()->where('purpose', 'rented')->count();
+        $rentedValue = (float) $complete()->where('purpose', 'rented')->sum('price');
+
         $forSalePercentage = $totalSalesValue > 0
             ? round(($forSaleValue / $totalSalesValue) * 100, 2)
             : 0.0;
@@ -1553,6 +1559,14 @@ class DashboardService
                 'count' => $forRentCount,
                 'value' => $forRentValue,
                 'percentage' => $forRentPercentage,
+            ],
+            'sold' => [
+                'count' => $soldCount,
+                'value' => $soldValue,
+            ],
+            'rented' => [
+                'count' => $rentedCount,
+                'value' => $rentedValue,
             ],
             'occupancy' => [
                 'occupied_count' => $occupiedCount,
