@@ -120,19 +120,6 @@ class RouteServiceProvider extends ServiceProvider
     }
 
     /**
-     * Define the "mobile api" routes for the application.
-     *
-     * These routes are typically stateless.
-     */
-    protected function mapMobileRoutes(): void
-    {
-        Route::prefix('api/mobile')
-            ->middleware('api')
-            ->namespace($this->namespace)
-            ->group(base_path('routes/mobile.php'));
-    }
-
-    /**
      * Named rate limiters; outside production all return Limit::none().
      */
     protected function registerProductionAwareRateLimiters(): void
