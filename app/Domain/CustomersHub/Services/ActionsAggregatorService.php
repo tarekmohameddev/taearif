@@ -1721,6 +1721,37 @@ class ActionsAggregatorService
             }
         }
 
+        // Exclude stages filter (pipeline: exclude requests and inquiries in given customers_hub stage ids)
+        if (!empty($filters['excludeStages']) && is_array($filters['excludeStages'])) {
+            $excludeStageIdStrings = $this->resolveStagesFilterToStageIds($filters['excludeStages']);
+            if (!empty($excludeStageIdStrings)) {
+                $query->where(function ($q) use ($userId, $excludeStageIdStrings) {
+                    // Property requests: keep rows not in excluded stages
+                    $q->where(function ($q2) use ($userId, $excludeStageIdStrings) {
+                        $q2->where('sourceTable', 'users_property_requests')
+                            ->whereNotIn('sourceId', function ($sub) use ($userId, $excludeStageIdStrings) {
+                                $sub->select('id')->from('users_property_requests')
+                                    ->where('user_id', $userId)
+                                    ->whereIn('customers_hub_stage_id', $excludeStageIdStrings);
+                            });
+                    })
+                    // Inquiries: keep rows not in excluded stages
+                    ->orWhere(function ($q2) use ($userId, $excludeStageIdStrings) {
+                        $q2->where('sourceTable', 'api_customer_inquiry')
+                            ->whereNotIn('sourceId', function ($sub) use ($userId, $excludeStageIdStrings) {
+                                $sub->select('id')->from('api_customer_inquiry')
+                                    ->where('user_id', $userId)
+                                    ->whereIn('stage_id', $excludeStageIdStrings);
+                            });
+                    })
+                    // Pass-through: non request/inquiry rows are unaffected
+                    ->orWhere(function ($q2) {
+                        $q2->whereNotIn('sourceTable', ['users_property_requests', 'api_customer_inquiry']);
+                    });
+                });
+            }
+        }
+
         // Exclude specific action ID
         if (!empty($filters['exclude_id'])) {
             $query->where('id', '!=', $filters['exclude_id']);

@@ -28,6 +28,7 @@ class RequestsListRequest extends BaseApiFormRequest
             'budget_max' => $r->input('budgetMax') ?? $r->input('budget_max'),
             'objectTypes' => $r->input('selectedObjectTypes') ?? $r->input('objectTypes'),
             'stages' => $r->input('selectedStages') ?? $r->input('stages'),
+            'excludeStages' => $r->input('excludeStages'),
             'appointment_types' => $r->input('selectedAppointmentTypes') ?? $r->input('appointment_types'),
         ]);
     }
@@ -69,6 +70,8 @@ class RequestsListRequest extends BaseApiFormRequest
             'objectTypes.*' => 'string|in:inquiry,property_request,reminder,request_appointment,request_reminder',
             'stages' => 'nullable|array',
             'stages.*' => 'integer',
+            'excludeStages' => 'nullable|array',
+            'excludeStages.*' => 'integer',
             'appointment_types' => 'nullable|array',
             'appointment_types.*' => 'string|in:site_visit,office_meeting,phone_call,video_call,contract_signing,other',
         ];
