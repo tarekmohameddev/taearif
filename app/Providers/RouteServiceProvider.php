@@ -36,8 +36,6 @@ class RouteServiceProvider extends ServiceProvider
         // Pattern for domain route parameter
         Route::pattern('domain', '[a-z0-9.\-]+');
 
-        $this->registerProductionAwareRateLimiters();
-
         // Admin routes are loaded in mapAdminRoutes() method
         // But we need to ensure they're loaded here too for proper registration
         Route::middleware(['web', 'setlang', 'setadminlocale'])
@@ -46,7 +44,23 @@ class RouteServiceProvider extends ServiceProvider
         ->name('admin.')
         ->group(base_path('routes/admin.php'));
 
+        // Admin dashboard API routes (separate file from public API)
+        Route::prefix('api')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/admin-api.php'));
+
         parent::boot();
+    }
+
+    /**
+     * Configure the rate limiters for the application.
+     *
+     * Note: Laravel calls this from the parent `boot()` method.
+     */
+    protected function configureRateLimiting(): void
+    {
+        $this->registerProductionAwareRateLimiters();
     }
 
     /**
@@ -117,6 +131,16 @@ class RouteServiceProvider extends ServiceProvider
             ->middleware('api')
             ->namespace($this->namespace)
             ->group(base_path('routes/admin-api.php'));
+    }
+
+    /**
+     * Mobile API routes.
+     *
+     * Currently mobile endpoints live under `routes/api.php`.
+     */
+    protected function mapMobileRoutes(): void
+    {
+        // Intentionally left blank.
     }
 
     /**

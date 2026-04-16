@@ -192,7 +192,7 @@ class GenerateMobilePostmanCollection extends Command
 
     private function displayNameFor(string $method, string $uri, string $fallback): string
     {
-        $path = '/' . Str::after($uri, 'api/mobile');
+        $path = '/' . ltrim(Str::after($uri, 'api/mobile'), '/');
         $path = preg_replace('/\{(\w+)\}/', ':$1', $path);
         return "{$method} {$path}";
     }
