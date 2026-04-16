@@ -239,7 +239,9 @@ class RequestsController extends ApiController
         ]);
 
         try {
-            $stages = $this->aggregator->getStageStats($userId, $filters);
+            $stageFilters = $filters;
+            unset($stageFilters['excludeStatuses']);
+            $stages = $this->aggregator->getStageStats($userId, $stageFilters);
         } catch (\Throwable $e) {
             $stages = [];
         }

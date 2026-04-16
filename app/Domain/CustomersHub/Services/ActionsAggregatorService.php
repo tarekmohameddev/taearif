@@ -1649,6 +1649,17 @@ class ActionsAggregatorService
             }
         }
 
+        // Statuses include/exclude filters (Customers Hub status values)
+        // - statuses: include only these statuses (IN)
+        // - excludeStatuses: exclude these statuses (NOT IN)
+        // Empty arrays are ignored.
+        if (!empty($filters['statuses']) && is_array($filters['statuses'])) {
+            $query->whereIn('status', $filters['statuses']);
+        }
+        if (!empty($filters['excludeStatuses']) && is_array($filters['excludeStatuses'])) {
+            $query->whereNotIn('status', $filters['excludeStatuses']);
+        }
+
         // Types filter
         if (!empty($filters['types']) && is_array($filters['types'])) {
             $query->whereIn('type', $filters['types']);
