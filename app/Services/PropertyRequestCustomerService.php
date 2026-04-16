@@ -204,7 +204,6 @@ class PropertyRequestCustomerService
                     'phone_number' => $normalizedPhone,
                     'email' => null,
                     'stage_id' => $stageId,
-                    'customers_hub_stage_id' => 'new_lead',
                     'city_id' => $propertyRequest->city_id,
                     'district_id' => $propertyRequest->districts_id,
                     'note' => $this->buildCustomerNote($propertyRequest),

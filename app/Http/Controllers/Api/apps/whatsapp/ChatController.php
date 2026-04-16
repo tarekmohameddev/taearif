@@ -475,7 +475,6 @@ public function handleWhatsappWebhook(Request $request)
                 'name'         => $contactName,
                 'phone_number' => $fromNumber,
                 'priority'     => 1,
-                'customers_hub_stage_id' => 'new_lead',
                 'password'     => bcrypt('12345678'),
             ]);
 
