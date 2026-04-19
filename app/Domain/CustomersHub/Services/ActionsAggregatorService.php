@@ -562,6 +562,30 @@ class ActionsAggregatorService
     }
 
     /**
+     * Resolve property_request_statuses.id for a tenant slug (per-merchant row preferred, then global user_id NULL).
+     */
+    private function resolvePropertyRequestStatusId(int $userId, string $slug): ?int
+    {
+        $id = DB::table('property_request_statuses')
+            ->where('user_id', $userId)
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->value('id');
+
+        if ($id !== null) {
+            return (int) $id;
+        }
+
+        $id = DB::table('property_request_statuses')
+            ->whereNull('user_id')
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->value('id');
+
+        return $id !== null ? (int) $id : null;
+    }
+
+    /**
      * Complete an action (mark as done).
      */
     public function completeAction(int $userId, string $actionId): bool
@@ -586,15 +610,22 @@ class ActionsAggregatorService
                     ]) > 0;
 
             case 'users_property_requests':
+                $updateData = [
+                    'is_read' => 1,
+                    'is_archived' => 0,
+                    'customers_hub_stage_id' => 'deal_completed',
+                    'updated_at' => $now,
+                ];
+
+                $statusId = $this->resolvePropertyRequestStatusId($userId, 'completed');
+                if ($statusId !== null) {
+                    $updateData['status_id'] = $statusId;
+                }
+
                 return DB::table('users_property_requests')
                     ->where('id', $parsed['sourceId'])
                     ->where('user_id', $userId)
-                    ->update([
-                        'is_read' => 1,
-                        'is_archived' => 0,
-                        'customers_hub_stage_id' => 'deal_completed',
-                        'updated_at' => $now,
-                    ]) > 0;
+                    ->update($updateData) > 0;
 
             case 'reminders':
                 return DB::table('reminders')
@@ -646,14 +677,21 @@ class ActionsAggregatorService
                     ]) > 0;
 
             case 'users_property_requests':
+                $updateData = [
+                    'is_archived' => 1,
+                    'customers_hub_stage_id' => 'deal_rejected',
+                    'updated_at' => $now,
+                ];
+
+                $statusId = $this->resolvePropertyRequestStatusId($userId, 'cancelled');
+                if ($statusId !== null) {
+                    $updateData['status_id'] = $statusId;
+                }
+
                 return DB::table('users_property_requests')
                     ->where('id', $parsed['sourceId'])
                     ->where('user_id', $userId)
-                    ->update([
-                        'is_archived' => 1,
-                        'customers_hub_stage_id' => 'deal_rejected',
-                        'updated_at' => $now,
-                    ]) > 0;
+                    ->update($updateData) > 0;
 
             case 'reminders':
                 return DB::table('reminders')

@@ -80,6 +80,38 @@ class CompleteAndDismissTest extends TestCase
         ]) ? (object) DB::table('api_customers')->where('id', DB::table('api_customers')->max('id'))->first() : null;
     }
 
+    /**
+     * Match ActionsAggregatorService::resolvePropertyRequestStatusId (tenant row, then global).
+     */
+    private function resolveExpectedPropertyRequestStatusId(int $userId, string $slug): ?int
+    {
+        if (!Schema::hasTable('property_request_statuses')) {
+            return null;
+        }
+
+        $id = DB::table('property_request_statuses')
+            ->where('user_id', $userId)
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->value('id');
+
+        if ($id !== null) {
+            return (int) $id;
+        }
+
+        if (!Schema::hasColumn('property_request_statuses', 'user_id')) {
+            return null;
+        }
+
+        $id = DB::table('property_request_statuses')
+            ->whereNull('user_id')
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->value('id');
+
+        return $id !== null ? (int) $id : null;
+    }
+
     /** @test */
     public function complete_property_request_sets_stage_to_deal_completed(): void
     {
@@ -100,6 +132,12 @@ class CompleteAndDismissTest extends TestCase
         $this->assertEquals('deal_completed', $row->customers_hub_stage_id);
         $this->assertEquals(1, $row->is_read);
         $this->assertEquals(0, $row->is_archived);
+
+        if (Schema::hasColumn('users_property_requests', 'status_id')) {
+            $completedStatusId = $this->resolveExpectedPropertyRequestStatusId($tenant->id, 'completed');
+            $this->assertNotNull($completedStatusId, 'Completed status should exist for tenant or globally');
+            $this->assertEquals($completedStatusId, (int) $row->status_id);
+        }
     }
 
     /** @test */
@@ -123,6 +161,12 @@ class CompleteAndDismissTest extends TestCase
         $row = DB::table('users_property_requests')->where('id', $requestId)->first();
         $this->assertEquals('deal_rejected', $row->customers_hub_stage_id);
         $this->assertEquals(1, $row->is_archived);
+
+        if (Schema::hasColumn('users_property_requests', 'status_id')) {
+            $cancelledStatusId = $this->resolveExpectedPropertyRequestStatusId($tenant->id, 'cancelled');
+            $this->assertNotNull($cancelledStatusId, 'Cancelled status should exist for tenant or globally');
+            $this->assertEquals($cancelledStatusId, (int) $row->status_id);
+        }
     }
 
     /** @test */
