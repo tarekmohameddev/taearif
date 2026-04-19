@@ -137,7 +137,11 @@ class ActionsAggregatorService
             $stats = $query->selectRaw("
                 SUM(CASE WHEN type IN ('new_inquiry', 'callback_request', 'whatsapp_incoming') AND status IN ('pending', 'in_progress') THEN 1 ELSE 0 END) as inbox,
                 SUM(CASE WHEN type IN ('follow_up', 'site_visit') AND status IN ('pending', 'in_progress') THEN 1 ELSE 0 END) as followups,
-                SUM(CASE WHEN status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as pending,
+                SUM(CASE 
+                    WHEN customers_hub_stage_id IS NULL THEN 1
+                    WHEN customers_hub_stage_id NOT IN ('deal_completed', 'deal_rejected') THEN 1
+                    ELSE 0 
+                END) as pending,
                 SUM(CASE WHEN dueDate < NOW() AND status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as overdue,
                 SUM(CASE WHEN DATE(dueDate) = CURRENT_DATE AND status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as today,
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
@@ -1498,6 +1502,7 @@ class ActionsAggregatorService
                 DB::raw("NULL as propertyRequestStatusNameEn"),
                 DB::raw("NULL as districts_id"),
                 DB::raw("NULL as districtAR"),
+                DB::raw("NULL as customers_hub_stage_id"),
             ]);
     }
 
