@@ -199,44 +199,49 @@ class RequestsController extends ApiController
         $stats = array_merge($stats, $comparison);
 
         // All-time property-request stats (broker scoped only; intentionally ignores list filters/date ranges)
-        $dealClosed = (int) DB::table('users_property_requests as upr')
-            ->where('upr.user_id', $userId)
-            ->where('upr.is_active', 1)
-            ->where('upr.customers_hub_stage_id', 'deal_completed')
-            ->count();
+        // Cache these for 60 seconds since they change infrequently
+        $globalCounts = Cache::remember("ch_global_counts_{$userId}", 60, function () use ($userId) {
+            $dealClosed = (int) DB::table('users_property_requests as upr')
+                ->where('upr.user_id', $userId)
+                ->where('upr.is_active', 1)
+                ->where('upr.customers_hub_stage_id', 'deal_completed')
+                ->count();
 
-        $dealNotClosed = (int) DB::table('users_property_requests as upr')
-            ->where('upr.user_id', $userId)
-            ->where('upr.is_active', 1)
-            ->where('upr.customers_hub_stage_id', 'deal_rejected')
-            ->count();
+            $dealNotClosed = (int) DB::table('users_property_requests as upr')
+                ->where('upr.user_id', $userId)
+                ->where('upr.is_active', 1)
+                ->where('upr.customers_hub_stage_id', 'deal_rejected')
+                ->count();
 
-        $effectiveStatusSql = "COALESCE(chsm.customers_hub_status,
-            CASE
-                WHEN upr.is_archived = 1 THEN 'dismissed'
-                WHEN upr.is_read = 1 THEN 'in_progress'
-                ELSE 'pending'
-            END
-        )";
-        $underProcess = (int) DB::table('users_property_requests as upr')
-            ->leftJoin('property_request_statuses as prs', 'upr.status_id', '=', 'prs.id')
-            ->leftJoin('customers_hub_status_mapping as chsm', 'prs.slug', '=', 'chsm.property_request_status_slug')
-            ->where('upr.user_id', $userId)
-            ->where('upr.is_active', 1)
-            ->whereNotIn(DB::raw($effectiveStatusSql), ['dismissed', 'completed'])
-            ->count();
+            $effectiveStatusSql = "COALESCE(chsm.customers_hub_status,
+                CASE
+                    WHEN upr.is_archived = 1 THEN 'dismissed'
+                    WHEN upr.is_read = 1 THEN 'in_progress'
+                    ELSE 'pending'
+                END
+            )";
+            $underProcess = (int) DB::table('users_property_requests as upr')
+                ->leftJoin('property_request_statuses as prs', 'upr.status_id', '=', 'prs.id')
+                ->leftJoin('customers_hub_status_mapping as chsm', 'prs.slug', '=', 'chsm.property_request_status_slug')
+                ->where('upr.user_id', $userId)
+                ->where('upr.is_active', 1)
+                ->whereNotIn(DB::raw($effectiveStatusSql), ['dismissed', 'completed'])
+                ->count();
 
-        $total = (int) DB::table('users_property_requests as upr')
-            ->where('upr.user_id', $userId)
-            ->where('upr.is_active', 1)
-            ->count();
+            $total = (int) DB::table('users_property_requests as upr')
+                ->where('upr.user_id', $userId)
+                ->where('upr.is_active', 1)
+                ->count();
 
-        $stats = array_merge($stats, [
-            'underProcess' => $underProcess,
-            'dealClosed' => $dealClosed,
-            'dealNotClosed' => $dealNotClosed,
-            'total' => $total,
-        ]);
+            return [
+                'underProcess' => $underProcess,
+                'dealClosed' => $dealClosed,
+                'dealNotClosed' => $dealNotClosed,
+                'total' => $total,
+            ];
+        });
+
+        $stats = array_merge($stats, $globalCounts);
 
         try {
             $stageFilters = $filters;
