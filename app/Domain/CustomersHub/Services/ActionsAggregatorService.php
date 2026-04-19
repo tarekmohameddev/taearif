@@ -1945,14 +1945,28 @@ class ActionsAggregatorService
     {
         $items = $items->values();
         
-        // Collect stage IDs from items that have customers_hub_stage_id already populated
-        $stageIds = $items->filter(function ($item) {
-            return !empty($item->customers_hub_stage_id);
-        })->pluck('customers_hub_stage_id')->unique()->values()->all();
+        // Collect stage IDs AND related user IDs from property requests
+        $stageIds = [];
+        $relatedUserIds = [];
+        
+        foreach ($items as $item) {
+            if (!empty($item->customers_hub_stage_id)) {
+                $stageIds[] = $item->customers_hub_stage_id;
+                
+                // Collect user_id from property requests to find their custom stages
+                if ($item->objectType === 'property_request' && !empty($item->userId)) {
+                    $relatedUserIds[] = $item->userId;
+                }
+            }
+        }
+        
+        $stageIds = array_unique($stageIds);
+        $relatedUserIds = array_unique($relatedUserIds);
 
         $stageByStageId = [];
         if (!empty($stageIds)) {
             // Single query to load all stage objects (both system and user-specific)
+            // Include stages owned by property request owners for cross-user visibility
             $stages = DB::table('customers_hub_stages as s')
                 ->leftJoin('customers_hub_stage_overrides as o', function ($join) use ($userId) {
                     $join->on('o.stage_id', '=', 's.stage_id')
@@ -1960,10 +1974,15 @@ class ActionsAggregatorService
                 })
                 ->whereIn('s.stage_id', $stageIds)
                 ->where('s.is_active', true)
-                ->where(function ($w) use ($userId) {
+                ->where(function ($w) use ($userId, $relatedUserIds) {
                     $w->where('s.is_system', true)
                       ->orWhere('s.user_id', $userId)
                       ->orWhereNull('s.user_id');
+                    
+                    // Include stages owned by property request owners
+                    if (!empty($relatedUserIds)) {
+                        $w->orWhereIn('s.user_id', $relatedUserIds);
+                    }
                 })
                 ->get([
                     's.id',
