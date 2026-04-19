@@ -424,11 +424,21 @@ class ApiPropertyRequestController extends Controller
         $tz = config('app.timezone', 'UTC');
         $now = Carbon::now($tz);
 
+        // Build a numeric UTC offset string (e.g. "+03:00") so CONVERT_TZ works
+        // even when MySQL named-timezone tables are not populated.
+        $offsetMinutes = $now->utcOffset();
+        $offsetSign    = $offsetMinutes >= 0 ? '+' : '-';
+        $absMinutes    = abs($offsetMinutes);
+        $tzOffset      = $offsetSign
+            . str_pad(intdiv($absMinutes, 60), 2, '0', STR_PAD_LEFT)
+            . ':'
+            . str_pad($absMinutes % 60, 2, '0', STR_PAD_LEFT);
+
         $windowStart = $now->copy()->subDays(6)->startOfDay()->utc();
         $windowEnd = $now->copy()->endOfDay()->utc();
 
         $incomingSub = DB::table('users_property_requests')
-            ->selectRaw("DATE(CONVERT_TZ(created_at,'UTC',?)) AS day", [$tz])
+            ->selectRaw("DATE(CONVERT_TZ(created_at,'+00:00',?)) AS day", [$tzOffset])
             ->where('user_id', $tenantId)
             ->whereBetween('created_at', [$windowStart, $windowEnd]);
 
@@ -447,7 +457,7 @@ class ApiPropertyRequestController extends Controller
                             ->orWhere('prs.user_id', $tenantId);
                     });
             })
-            ->selectRaw("DATE(CONVERT_TZ(upr.updated_at,'UTC',?)) AS day", [$tz])
+            ->selectRaw("DATE(CONVERT_TZ(upr.updated_at,'+00:00',?)) AS day", [$tzOffset])
             ->where('upr.user_id', $tenantId)
             ->whereBetween('upr.updated_at', [$windowStart, $windowEnd]);
 
@@ -478,7 +488,7 @@ class ApiPropertyRequestController extends Controller
         $followupsSub = DB::query()
             ->fromSub($earliestPerRequest, 'fu')
             ->join('users_property_requests as upr', 'upr.id', '=', 'fu.property_request_id')
-            ->selectRaw("DATE(CONVERT_TZ(fu.earliest,'UTC',?)) AS day", [$tz])
+            ->selectRaw("DATE(CONVERT_TZ(fu.earliest,'+00:00',?)) AS day", [$tzOffset])
             ->where('upr.user_id', $tenantId)
             ->whereBetween('fu.earliest', [$windowStart, $windowEnd]);
 
