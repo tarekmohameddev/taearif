@@ -1298,7 +1298,7 @@ class ActionsAggregatorService
                         })->orWhere(function ($j3) {
                             // matched by phone number
                             $j3->whereNotNull('upr_dedup.phone')
-                                ->whereNotNull(DB::raw("'{$userId}'"))
+                                ->whereNotNull('ac.phone_number')
                                 ->on('upr_dedup.phone', '=', 'ac.phone_number');
                         });
                     });
