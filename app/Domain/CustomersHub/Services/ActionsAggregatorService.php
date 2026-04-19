@@ -581,6 +581,7 @@ class ActionsAggregatorService
                     ->update([
                         'is_read' => 1,
                         'is_archived' => 0,
+                        'stage_id' => 'deal_completed',
                         'updated_at' => $now,
                     ]) > 0;
 
@@ -591,6 +592,7 @@ class ActionsAggregatorService
                     ->update([
                         'is_read' => 1,
                         'is_archived' => 0,
+                        'customers_hub_stage_id' => 'deal_completed',
                         'updated_at' => $now,
                     ]) > 0;
 
@@ -639,6 +641,7 @@ class ActionsAggregatorService
                     ->where('user_id', $userId)
                     ->update([
                         'is_archived' => 1,
+                        'stage_id' => 'deal_rejected',
                         'updated_at' => $now,
                     ]) > 0;
 
@@ -648,6 +651,7 @@ class ActionsAggregatorService
                     ->where('user_id', $userId)
                     ->update([
                         'is_archived' => 1,
+                        'customers_hub_stage_id' => 'deal_rejected',
                         'updated_at' => $now,
                     ]) > 0;
 
