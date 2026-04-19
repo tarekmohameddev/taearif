@@ -427,14 +427,18 @@ class ApiPropertyRequestController extends Controller
         $windowStart = $now->copy()->subDays(6)->startOfDay()->utc();
         $windowEnd = $now->copy()->endOfDay()->utc();
 
-        $incoming = DB::table('users_property_requests')
-            ->selectRaw("DATE(CONVERT_TZ(created_at,'UTC',?)) AS day, COUNT(*) AS cnt", [$tz])
+        $incomingSub = DB::table('users_property_requests')
+            ->selectRaw("DATE(CONVERT_TZ(created_at,'UTC',?)) AS day", [$tz])
             ->where('user_id', $tenantId)
-            ->whereBetween('created_at', [$windowStart, $windowEnd])
-            ->groupByRaw("DATE(CONVERT_TZ(created_at,'UTC',?))", [$tz])
+            ->whereBetween('created_at', [$windowStart, $windowEnd]);
+
+        $incoming = DB::query()
+            ->fromSub($incomingSub, 'r')
+            ->select('day', DB::raw('COUNT(*) AS cnt'))
+            ->groupBy('day')
             ->pluck('cnt', 'day');
 
-        $completed = DB::table('users_property_requests as upr')
+        $completedSub = DB::table('users_property_requests as upr')
             ->join('property_request_statuses as prs', function ($join) use ($tenantId) {
                 $join->on('prs.id', '=', 'upr.status_id')
                     ->where('prs.slug', 'completed')
@@ -443,10 +447,14 @@ class ApiPropertyRequestController extends Controller
                             ->orWhere('prs.user_id', $tenantId);
                     });
             })
-            ->selectRaw("DATE(CONVERT_TZ(upr.updated_at,'UTC',?)) AS day, COUNT(*) AS cnt", [$tz])
+            ->selectRaw("DATE(CONVERT_TZ(upr.updated_at,'UTC',?)) AS day", [$tz])
             ->where('upr.user_id', $tenantId)
-            ->whereBetween('upr.updated_at', [$windowStart, $windowEnd])
-            ->groupByRaw("DATE(CONVERT_TZ(upr.updated_at,'UTC',?))", [$tz])
+            ->whereBetween('upr.updated_at', [$windowStart, $windowEnd]);
+
+        $completed = DB::query()
+            ->fromSub($completedSub, 'r')
+            ->select('day', DB::raw('COUNT(*) AS cnt'))
+            ->groupBy('day')
             ->pluck('cnt', 'day');
 
         $nowUtc = $now->copy()->utc();
@@ -467,13 +475,17 @@ class ApiPropertyRequestController extends Controller
             ->select('property_request_id', DB::raw('MIN(`datetime`) AS earliest'))
             ->groupBy('property_request_id');
 
-        $followups = DB::query()
+        $followupsSub = DB::query()
             ->fromSub($earliestPerRequest, 'fu')
             ->join('users_property_requests as upr', 'upr.id', '=', 'fu.property_request_id')
-            ->selectRaw("DATE(CONVERT_TZ(fu.earliest,'UTC',?)) AS day, COUNT(*) AS cnt", [$tz])
+            ->selectRaw("DATE(CONVERT_TZ(fu.earliest,'UTC',?)) AS day", [$tz])
             ->where('upr.user_id', $tenantId)
-            ->whereBetween('fu.earliest', [$windowStart, $windowEnd])
-            ->groupByRaw("DATE(CONVERT_TZ(fu.earliest,'UTC',?))", [$tz])
+            ->whereBetween('fu.earliest', [$windowStart, $windowEnd]);
+
+        $followups = DB::query()
+            ->fromSub($followupsSub, 'r')
+            ->select('day', DB::raw('COUNT(*) AS cnt'))
+            ->groupBy('day')
             ->pluck('cnt', 'day');
 
         $series = [];
