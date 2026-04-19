@@ -31,6 +31,7 @@ use App\Models\User;
 use App\Models\ApiCustomer;
 use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
 use App\Rules\PropertyTypeRule;
+use Illuminate\Support\Carbon;
 
 class ApiPropertyRequestController extends Controller
 {
@@ -401,6 +402,98 @@ class ApiPropertyRequestController extends Controller
         }
 
         return response()->json(['status' => 'success', 'data' => $data]);
+    }
+
+    /**
+     * GET /api/v1/property-requests/stats
+     *
+     * Per-day aggregates for the last 7 calendar days (inclusive), oldest → newest.
+     *
+     * Timezone: calendar boundaries use config('app.timezone'); DB timestamps are treated as UTC
+     * for CONVERT_TZ(..., 'UTC', app_tz) before DATE().
+     *
+     * Metrics: incoming = created_at day; completed = updated_at day when status slug is
+     * "completed" (no completed_at column); followups = calendar day of earliest pending
+     * appointment/reminder with datetime > now.
+     */
+    public function stats(): JsonResponse
+    {
+        $user = Auth::user();
+        $tenantId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+
+        $tz = config('app.timezone', 'UTC');
+        $now = Carbon::now($tz);
+
+        $windowStart = $now->copy()->subDays(6)->startOfDay()->utc();
+        $windowEnd = $now->copy()->endOfDay()->utc();
+
+        $incoming = DB::table('users_property_requests')
+            ->selectRaw("DATE(CONVERT_TZ(created_at,'UTC',?)) AS day, COUNT(*) AS cnt", [$tz])
+            ->where('user_id', $tenantId)
+            ->whereBetween('created_at', [$windowStart, $windowEnd])
+            ->groupByRaw("DATE(CONVERT_TZ(created_at,'UTC',?))", [$tz])
+            ->pluck('cnt', 'day');
+
+        $completed = DB::table('users_property_requests as upr')
+            ->join('property_request_statuses as prs', function ($join) use ($tenantId) {
+                $join->on('prs.id', '=', 'upr.status_id')
+                    ->where('prs.slug', 'completed')
+                    ->where(function ($q) use ($tenantId) {
+                        $q->whereNull('prs.user_id')
+                            ->orWhere('prs.user_id', $tenantId);
+                    });
+            })
+            ->selectRaw("DATE(CONVERT_TZ(upr.updated_at,'UTC',?)) AS day, COUNT(*) AS cnt", [$tz])
+            ->where('upr.user_id', $tenantId)
+            ->whereBetween('upr.updated_at', [$windowStart, $windowEnd])
+            ->groupByRaw("DATE(CONVERT_TZ(upr.updated_at,'UTC',?))", [$tz])
+            ->pluck('cnt', 'day');
+
+        $nowUtc = $now->copy()->utc();
+
+        $pendingActionsUnion = DB::table('property_request_appointments')
+            ->select('property_request_id', 'datetime')
+            ->where('status', 'pending')
+            ->where('datetime', '>', $nowUtc)
+            ->unionAll(
+                DB::table('property_request_reminders')
+                    ->select('property_request_id', 'datetime')
+                    ->where('status', 'pending')
+                    ->where('datetime', '>', $nowUtc)
+            );
+
+        $earliestPerRequest = DB::query()
+            ->fromSub($pendingActionsUnion, 'sub')
+            ->select('property_request_id', DB::raw('MIN(`datetime`) AS earliest'))
+            ->groupBy('property_request_id');
+
+        $followups = DB::query()
+            ->fromSub($earliestPerRequest, 'fu')
+            ->join('users_property_requests as upr', 'upr.id', '=', 'fu.property_request_id')
+            ->selectRaw("DATE(CONVERT_TZ(fu.earliest,'UTC',?)) AS day, COUNT(*) AS cnt", [$tz])
+            ->where('upr.user_id', $tenantId)
+            ->whereBetween('fu.earliest', [$windowStart, $windowEnd])
+            ->groupByRaw("DATE(CONVERT_TZ(fu.earliest,'UTC',?))", [$tz])
+            ->pluck('cnt', 'day');
+
+        $series = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = $now->copy()->subDays($i)->format('Y-m-d');
+            $series[] = [
+                'date' => $date,
+                'incoming' => (int) ($incoming[$date] ?? 0),
+                'completed' => (int) ($completed[$date] ?? 0),
+                'followups' => (int) ($followups[$date] ?? 0),
+            ];
+        }
+
+        return response()->json([
+            'meta' => [
+                'generatedAt' => $now->copy()->utc()->toIso8601String(),
+                'timezone' => $tz,
+            ],
+            'series' => $series,
+        ]);
     }
 
     /**
