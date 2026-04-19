@@ -1961,7 +1961,9 @@ class ActionsAggregatorService
                 ->whereIn('s.stage_id', $stageIds)
                 ->where('s.is_active', true)
                 ->where(function ($w) use ($userId) {
-                    $w->where('s.is_system', true)->orWhere('s.user_id', $userId);
+                    $w->where('s.is_system', true)
+                      ->orWhere('s.user_id', $userId)
+                      ->orWhereNull('s.user_id');
                 })
                 ->get([
                     's.id',
