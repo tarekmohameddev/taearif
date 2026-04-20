@@ -65,8 +65,12 @@ class ActionsAggregatorService
      */
     public function getUnifiedQuery(int $userId, array $filters = []): \Illuminate\Database\Query\Builder
     {
-        $inquiriesQuery = $this->getInquiriesSubquery($userId);
-        $propertyRequestsQuery = $this->getPropertyRequestsSubquery($userId);
+        // Resolve stage filters early so they can be pushed into UNION arms
+        $stageIds       = $this->resolveStagesFilterToStageIds($filters['stages'] ?? []);
+        $excludeStageIds = $this->resolveStagesFilterToStageIds($filters['excludeStages'] ?? []);
+
+        $inquiriesQuery       = $this->getInquiriesSubquery($userId, $stageIds, $excludeStageIds);
+        $propertyRequestsQuery = $this->getPropertyRequestsSubquery($userId, $stageIds, $excludeStageIds);
         $remindersQuery = $this->getRemindersSubquery($userId);
 
         // Build UNION ALL.
@@ -80,7 +84,7 @@ class ActionsAggregatorService
         // Wrap in subquery for filtering and ordering
         $query = DB::query()->fromSub($unionQuery, 'actions');
 
-        // Apply filters
+        // Apply filters (but skip stages/excludeStages as they're already pushed into arms)
         $this->applyFilters($query, $filters, $userId);
 
         return $query;
@@ -93,20 +97,34 @@ class ActionsAggregatorService
     {
         $query = $this->getUnifiedQuery($userId, $filters);
 
-        // Get total count before pagination
-        $totalQuery = clone $query;
-        $total = $totalQuery->count();
-
         // Apply sorting
         $sortBy = $filters['sort_by'] ?? 'updatedAt';
         $sortDir = $filters['sort_dir'] ?? 'desc';
         $query->orderBy($sortBy, $sortDir);
 
-        // Apply pagination
+        // Add window function to get total count without a separate scan.
+        // Must explicitly select actions.* first: when $query->columns is null,
+        // addSelect() initialises it to [rawExpr] instead of ['*', rawExpr],
+        // which would cause the outer SELECT to return only _totalRows and omit
+        // every other column (triggering "Undefined property: stdClass::$metadata").
+        $query->select([DB::raw('actions.*'), DB::raw('COUNT(*) OVER() AS _totalRows')]);
+
+        // Apply pagination and get items with total count in one query
         $items = $query->limit($limit)->offset($offset)->get();
 
-        // Transform items
+        // Extract total from first item, or fall back to count if no results but not at start
+        $total = 0;
+        if ($items->isNotEmpty()) {
+            $total = (int) ($items->first()->_totalRows ?? 0);
+        } elseif ($offset > 0) {
+            // Edge case: pagination offset is beyond available rows; run count separately
+            $totalQuery = $this->getUnifiedQuery($userId, $filters);
+            $total = $totalQuery->count();
+        }
+
+        // Strip the synthetic _totalRows column before transforming
         $items = $items->map(function ($item) {
+            unset($item->_totalRows);
             return $this->transformAction($item);
         });
 
@@ -165,7 +183,7 @@ class ActionsAggregatorService
     {
         $cacheKey = 'ch_comparison_stats_' . $userId . '_' . md5(json_encode($filters));
         
-        return Cache::remember($cacheKey, 60, function () use ($userId, $filters) {
+        return Cache::remember($cacheKey, 300, function () use ($userId, $filters) {
             $now = Carbon::now();
 
             if (!empty($filters['date_from'])) {
@@ -385,7 +403,13 @@ class ActionsAggregatorService
 
         // Sources
         if (!empty($filters['sources']) && is_array($filters['sources'])) {
-            $query->whereIn(DB::raw('COALESCE(upr.source, \'website\')'), $filters['sources']);
+            // Instead of COALESCE which defeats index use, use OR pattern with NULL check
+            $query->where(function ($q) use ($filters) {
+                $q->whereIn('upr.source', $filters['sources']);
+                if (in_array('website', $filters['sources'])) {
+                    $q->orWhereNull('upr.source');
+                }
+            });
         }
 
         // Assignees (requires ac join)
@@ -1312,8 +1336,12 @@ class ActionsAggregatorService
      *  2. If an active property_request already exists for the same tenant and the same
      *     customer (matched by customer_id OR by phone number), the inquiry is suppressed —
      *     the property_request card already represents that customer.
+     *
+     * @param int $userId
+     * @param array $stageIds Stage IDs to include (empty = all)
+     * @param array $excludeStageIds Stage IDs to exclude (empty = none)
      */
-    private function getInquiriesSubquery(int $userId): \Illuminate\Database\Query\Builder
+    private function getInquiriesSubquery(int $userId, array $stageIds = [], array $excludeStageIds = []): \Illuminate\Database\Query\Builder
     {
         // Subquery: MAX inquiry id per customer for this tenant
         $latestIds = DB::table('api_customer_inquiry')
@@ -1321,29 +1349,40 @@ class ActionsAggregatorService
             ->where('user_id', $userId)
             ->groupBy('customer_id');
 
-        return DB::table('api_customer_inquiry as aci')
+        $query = DB::table('api_customer_inquiry as aci')
             ->joinSub($latestIds, 'li', 'aci.id', '=', 'li.id')
             ->join('api_customers as ac', 'aci.customer_id', '=', 'ac.id')
             ->leftJoin('users as u', 'aci.responsible_employee_id', '=', 'u.id')
-            ->leftJoin('users_property_requests as upr_dedup', function ($join) use ($userId) {
-                $join->where('upr_dedup.user_id', $userId)
-                    ->where('upr_dedup.is_active', 1)
-                    ->where(function ($j2) {
-                        $j2->where(function ($j3) {
-                            // matched by customer_id
-                            $j3->whereNotNull('upr_dedup.customer_id')
-                                ->on('upr_dedup.customer_id', '=', 'aci.customer_id');
-                        })->orWhere(function ($j3) {
-                            // matched by phone number
-                            $j3->whereNotNull('upr_dedup.phone')
-                                ->whereNotNull('ac.phone_number')
-                                ->on('upr_dedup.phone', '=', 'ac.phone_number');
-                        });
-                    });
+            // Dedup by customer_id: suppress inquiry if active property_request exists with same customer_id
+            ->whereNotExists(function ($sub) use ($userId) {
+                $sub->select(DB::raw(1))
+                    ->from('users_property_requests as upr_d1')
+                    ->where('upr_d1.user_id', $userId)
+                    ->where('upr_d1.is_active', 1)
+                    ->whereColumn('upr_d1.customer_id', 'aci.customer_id')
+                    ->whereNotNull('upr_d1.customer_id');
             })
-            ->where('aci.user_id', $userId)
-            ->whereNull('upr_dedup.id')
-            ->select([
+            // Dedup by phone: suppress inquiry if active property_request exists with same phone
+            ->whereNotExists(function ($sub) use ($userId) {
+                $sub->select(DB::raw(1))
+                    ->from('users_property_requests as upr_d2')
+                    ->where('upr_d2.user_id', $userId)
+                    ->where('upr_d2.is_active', 1)
+                    ->whereColumn('upr_d2.phone', 'ac.phone_number')
+                    ->whereNotNull('upr_d2.phone')
+                    ->whereNotNull('ac.phone_number');
+            })
+            ->where('aci.user_id', $userId);
+
+        // Push stage filters into the UNION arm to allow MySQL to use indexes
+        if (!empty($stageIds)) {
+            $query->whereIn('aci.stage_id', $stageIds);
+        }
+        if (!empty($excludeStageIds)) {
+            $query->whereNotIn('aci.stage_id', $excludeStageIds);
+        }
+
+        return $query->select([
                 DB::raw("CONCAT('inquiry_', aci.id) as id"),
                 'aci.customer_id as customerId',
                 'ac.name as customerName',
@@ -1407,10 +1446,14 @@ class ActionsAggregatorService
 
     /**
      * Build property requests subquery.
+     *
+     * @param int $userId
+     * @param array $stageIds Stage IDs to include (empty = all)
+     * @param array $excludeStageIds Stage IDs to exclude (empty = none)
      */
-    private function getPropertyRequestsSubquery(int $userId): \Illuminate\Database\Query\Builder
+    private function getPropertyRequestsSubquery(int $userId, array $stageIds = [], array $excludeStageIds = []): \Illuminate\Database\Query\Builder
     {
-        return DB::table('users_property_requests as upr')
+        $query = DB::table('users_property_requests as upr')
             ->leftJoin('api_customers as ac', function ($join) {
                 $join->on('ac.id', '=', 'upr.customer_id')
                     ->on('ac.user_id', '=', 'upr.user_id');
@@ -1425,8 +1468,17 @@ class ActionsAggregatorService
             ->leftJoin('customers_hub_status_mapping as chsm', 'prs.slug', '=', 'chsm.property_request_status_slug')
             ->leftJoin('users as u2', DB::raw('u2.id'), '=', DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id, ac_phone.responsible_employee_id)'))
             ->where('upr.user_id', $userId)
-            ->where('upr.is_active', 1)
-            ->select([
+            ->where('upr.is_active', 1);
+
+        // Push stage filters into the UNION arm to allow MySQL to use indexes
+        if (!empty($stageIds)) {
+            $query->whereIn('upr.customers_hub_stage_id', $stageIds);
+        }
+        if (!empty($excludeStageIds)) {
+            $query->whereNotIn('upr.customers_hub_stage_id', $excludeStageIds);
+        }
+
+        return $query->select([
                 DB::raw("CONCAT('property_request_', upr.id) as id"),
                 DB::raw('COALESCE(ac.id, ac_phone.id) as customerId'),
                 DB::raw("COALESCE(ac.name, ac_phone.name, upr.full_name) as customerName"),
@@ -1727,6 +1779,8 @@ class ActionsAggregatorService
 
         // Sources filter
         if (!empty($filters['sources']) && is_array($filters['sources'])) {
+            // Applies to all action objectTypes: e.g. inquiries use 'inquiry', reminders use 'manual'.
+            // For property_request rows, `source` is already normalised in the UNION arm SELECT.
             $query->whereIn('source', $filters['sources']);
         }
 
@@ -1769,59 +1823,11 @@ class ActionsAggregatorService
         }
 
         // Stages filter (pipeline: requests and inquiries in given customers_hub stage_id or id)
-        if (!empty($filters['stages']) && is_array($filters['stages'])) {
-            $stageIdStrings = $this->resolveStagesFilterToStageIds($filters['stages']);
-            if (!empty($stageIdStrings)) {
-                $query->where(function ($q) use ($userId, $stageIdStrings) {
-                    $q->where(function ($q2) use ($userId, $stageIdStrings) {
-                        $q2->where('sourceTable', 'users_property_requests')
-                            ->whereIn('sourceId', function ($sub) use ($userId, $stageIdStrings) {
-                                $sub->select('id')->from('users_property_requests')
-                                    ->where('user_id', $userId)
-                                    ->whereIn('customers_hub_stage_id', $stageIdStrings);
-                            });
-                    })->orWhere(function ($q2) use ($userId, $stageIdStrings) {
-                        $q2->where('sourceTable', 'api_customer_inquiry')
-                            ->whereIn('sourceId', function ($sub) use ($userId, $stageIdStrings) {
-                                $sub->select('id')->from('api_customer_inquiry')
-                                    ->where('user_id', $userId)
-                                    ->whereIn('stage_id', $stageIdStrings);
-                            });
-                    });
-                });
-            }
-        }
+        // NOTE: This is now handled in the UNION arms (getPropertyRequestsSubquery + getInquiriesSubquery)
+        // to allow MySQL to use indexes before materialisation. Skipped here.
 
         // Exclude stages filter (pipeline: exclude requests and inquiries in given customers_hub stage ids)
-        if (!empty($filters['excludeStages']) && is_array($filters['excludeStages'])) {
-            $excludeStageIdStrings = $this->resolveStagesFilterToStageIds($filters['excludeStages']);
-            if (!empty($excludeStageIdStrings)) {
-                $query->where(function ($q) use ($userId, $excludeStageIdStrings) {
-                    // Property requests: keep rows not in excluded stages
-                    $q->where(function ($q2) use ($userId, $excludeStageIdStrings) {
-                        $q2->where('sourceTable', 'users_property_requests')
-                            ->whereNotIn('sourceId', function ($sub) use ($userId, $excludeStageIdStrings) {
-                                $sub->select('id')->from('users_property_requests')
-                                    ->where('user_id', $userId)
-                                    ->whereIn('customers_hub_stage_id', $excludeStageIdStrings);
-                            });
-                    })
-                    // Inquiries: keep rows not in excluded stages
-                    ->orWhere(function ($q2) use ($userId, $excludeStageIdStrings) {
-                        $q2->where('sourceTable', 'api_customer_inquiry')
-                            ->whereNotIn('sourceId', function ($sub) use ($userId, $excludeStageIdStrings) {
-                                $sub->select('id')->from('api_customer_inquiry')
-                                    ->where('user_id', $userId)
-                                    ->whereIn('stage_id', $excludeStageIdStrings);
-                            });
-                    })
-                    // Pass-through: non request/inquiry rows are unaffected
-                    ->orWhere(function ($q2) {
-                        $q2->whereNotIn('sourceTable', ['users_property_requests', 'api_customer_inquiry']);
-                    });
-                });
-            }
-        }
+        // NOTE: This is now handled in the UNION arms. Skipped here.
 
         // Exclude specific action ID
         if (!empty($filters['exclude_id'])) {
@@ -1998,7 +2004,7 @@ class ActionsAggregatorService
     private function transformAction(object $item): object
     {
         // Parse metadata JSON if string
-        $metadata = $item->metadata;
+        $metadata = $item->metadata ?? null;
         if (is_string($metadata)) {
             $metadata = json_decode($metadata, true) ?? [];
         }
@@ -2226,18 +2232,19 @@ class ActionsAggregatorService
         if (empty($values)) {
             return [];
         }
-        $stageIds = [];
-        foreach ($values as $v) {
-            if (is_int($v) || (is_string($v) && ctype_digit($v))) {
-                $sid = DB::table('customers_hub_stages')->where('id', (int) $v)->where('is_active', true)->value('stage_id');
-                if ($sid !== null) {
-                    $stageIds[] = $sid;
-                }
-            } else {
-                $stageIds[] = (string) $v;
-            }
-        }
 
-        return array_values(array_unique($stageIds));
+        // Separate numeric IDs from string IDs
+        $numericIds = array_filter($values, fn($v) => is_int($v) || (is_string($v) && ctype_digit($v)));
+        $stringIds  = array_filter($values, fn($v) => !is_int($v) && !(is_string($v) && ctype_digit($v)));
+
+        // Batch query all numeric IDs in one go
+        $resolved = empty($numericIds) ? [] : DB::table('customers_hub_stages')
+            ->whereIn('id', array_map('intval', $numericIds))
+            ->where('is_active', true)
+            ->pluck('stage_id')
+            ->toArray();
+
+        // Merge resolved numeric stage_ids with the string stage_ids passed directly
+        return array_values(array_unique(array_merge($resolved, array_map('strval', $stringIds))));
     }
 }

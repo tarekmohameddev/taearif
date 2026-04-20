@@ -79,11 +79,14 @@ class RequestsController extends ApiController
         $offset = $validated['offset'] ?? 0;
 
         // isUpdated flag depends on per-viewer last viewed timestamp, so include it in the cache key.
+        // Use a short-lived (10s) micro-cache for the viewed_at value itself.
         $viewerId = $request->user()->id;
-        $viewedRow = DB::table('customers_hub_requests_list_viewed')
-            ->where('user_id', $viewerId)
-            ->first(['viewed_at']);
-        $viewedAt = $viewedRow?->viewed_at ? Carbon::parse($viewedRow->viewed_at) : null;
+        $viewedAtRaw = Cache::remember("ch:viewed:{$viewerId}", 10, function () use ($viewerId) {
+            return DB::table('customers_hub_requests_list_viewed')
+                ->where('user_id', $viewerId)
+                ->value('viewed_at');
+        });
+        $viewedAt = $viewedAtRaw ? Carbon::parse($viewedAtRaw) : null;
 
         $cacheKey = 'ch:reqs:list:'
             . $userId . ':'
@@ -301,6 +304,10 @@ class RequestsController extends ApiController
             ['user_id'],
             ['viewed_at']
         );
+        
+        // Invalidate the micro-cache so the new viewed_at is picked up on next request
+        Cache::forget("ch:viewed:{$viewerId}");
+        
         return $this->success(['viewedAt' => $now->toIso8601String()]);
     }
 
@@ -1208,33 +1215,40 @@ class RequestsController extends ApiController
             ->get(['pm.id', 'pm.property_id', 'pm.match_score', 'pm.database_score', 'pm.ai_score',
                    'pm.match_explanation', 'pm.matched_criteria', 'pm.is_reviewed']);
 
-        $matchItems = $matches->map(function ($m) {
-            $prop = \App\Models\User\RealestateManagement\Property::find($m->property_id);
-            return [
-                'match_id'        => $m->id,
-                'property_id'     => $m->property_id,
-                'match_score'     => (int) $m->match_score,
-                'database_score'  => (int) $m->database_score,
-                'ai_score'        => (int) $m->ai_score,
-                'match_explanation' => $m->match_explanation,
-                'matched_criteria'  => is_string($m->matched_criteria)
-                    ? json_decode($m->matched_criteria, true)
-                    : $m->matched_criteria,
-                'is_reviewed'     => (bool) $m->is_reviewed,
-                'property'        => $prop ? [
-                    'id'             => $prop->id,
-                    'title'          => optional($prop->first_content)->title ?? null,
-                    'featured_image' => $prop->featured_image_url ?? null,
-                    'address'        => optional($prop->first_content)->address ?? $prop->address ?? null,
-                    'price'          => $prop->price ?? null,
-                    'purpose'        => $prop->purpose ?? null,
-                    'property_type'  => $prop->property_type ?? null,
-                    'beds'           => $prop->beds ?? null,
-                    'baths'          => $prop->bath ?? null,
-                    'area'           => $prop->area ?? null,
-                ] : null,
-            ];
-        })->values()->all();
+        $matchItems = [];
+        if ($matches->isNotEmpty()) {
+            // Batch-load all properties instead of per-row (N+1 fix)
+            $propertyIds = $matches->pluck('property_id')->unique()->all();
+            $properties  = \App\Models\User\RealestateManagement\Property::findMany($propertyIds)->keyBy('id');
+
+            $matchItems = $matches->map(function ($m) use ($properties) {
+                $prop = $properties->get($m->property_id);
+                return [
+                    'match_id'        => $m->id,
+                    'property_id'     => $m->property_id,
+                    'match_score'     => (int) $m->match_score,
+                    'database_score'  => (int) $m->database_score,
+                    'ai_score'        => (int) $m->ai_score,
+                    'match_explanation' => $m->match_explanation,
+                    'matched_criteria'  => is_string($m->matched_criteria)
+                        ? json_decode($m->matched_criteria, true)
+                        : $m->matched_criteria,
+                    'is_reviewed'     => (bool) $m->is_reviewed,
+                    'property'        => $prop ? [
+                        'id'             => $prop->id,
+                        'title'          => optional($prop->first_content)->title ?? null,
+                        'featured_image' => $prop->featured_image_url ?? null,
+                        'address'        => optional($prop->first_content)->address ?? $prop->address ?? null,
+                        'price'          => $prop->price ?? null,
+                        'purpose'        => $prop->purpose ?? null,
+                        'property_type'  => $prop->property_type ?? null,
+                        'beds'           => $prop->beds ?? null,
+                        'baths'          => $prop->bath ?? null,
+                        'area'           => $prop->area ?? null,
+                    ] : null,
+                ];
+            })->values()->all();
+        }
 
         return $this->success([
             'request_id'             => $requestId,
