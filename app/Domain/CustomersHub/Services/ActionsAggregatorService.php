@@ -1945,23 +1945,13 @@ class ActionsAggregatorService
     {
         $items = $items->values();
         
-        // Collect stage IDs AND related user IDs from property requests
         $stageIds = [];
-        $relatedUserIds = [];
-        
         foreach ($items as $item) {
             if (!empty($item->customers_hub_stage_id)) {
                 $stageIds[] = $item->customers_hub_stage_id;
-                
-                // Collect user_id from property requests to find their custom stages
-                if ($item->objectType === 'property_request' && !empty($item->userId)) {
-                    $relatedUserIds[] = $item->userId;
-                }
             }
         }
-        
         $stageIds = array_unique($stageIds);
-        $relatedUserIds = array_unique($relatedUserIds);
 
         $stageByStageId = [];
         if (!empty($stageIds)) {
@@ -1974,16 +1964,6 @@ class ActionsAggregatorService
                 })
                 ->whereIn('s.stage_id', $stageIds)
                 ->where('s.is_active', true)
-                ->where(function ($w) use ($userId, $relatedUserIds) {
-                    $w->where('s.is_system', true)
-                      ->orWhere('s.user_id', $userId)
-                      ->orWhereNull('s.user_id');
-                    
-                    // Include stages owned by property request owners
-                    if (!empty($relatedUserIds)) {
-                        $w->orWhereIn('s.user_id', $relatedUserIds);
-                    }
-                })
                 ->get([
                     's.id',
                     's.stage_id',
@@ -2001,10 +1981,10 @@ class ActionsAggregatorService
                 $s = $stageByStageId[$item->customers_hub_stage_id];
                 $item->stage_id = $item->customers_hub_stage_id;
                 $item->stage = (object) [
-                    'id' => (int) $s['id'],
-                    'stage_id' => $s['stage_id'],
-                    'nameAr' => $s['stage_name_ar'],
-                    'nameEn' => $s['stage_name_en'] ?? $s['stage_name_ar'],
+                    'id' => (int) $s->id,
+                    'stage_id' => $s->stage_id,
+                    'nameAr' => $s->stage_name_ar,
+                    'nameEn' => $s->stage_name_en ?? $s->stage_name_ar,
                 ];
             }
 
@@ -2083,6 +2063,7 @@ class ActionsAggregatorService
             'metadata' => $metadata,
             'sourceTable' => $item->sourceTable,
             'sourceId' => $item->sourceId,
+            'customers_hub_stage_id' => $item->customers_hub_stage_id ?? null,
         ];
     }
 
