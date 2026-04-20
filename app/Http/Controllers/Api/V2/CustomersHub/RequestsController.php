@@ -78,192 +78,207 @@ class RequestsController extends ApiController
         $limit = $validated['limit'] ?? 50;
         $offset = $validated['offset'] ?? 0;
 
-        // Get list
-        $result = $this->aggregator->getList($userId, $filters, $limit, $offset);
-
-        $items = $result['items'];
-        $propertyRequestSourceIds = $items->filter(function ($item) {
-            return ($item->objectType ?? '') === 'property_request';
-        })->pluck('sourceId')->filter()->unique()->values()->all();
-        $inquirySourceIds = $items->filter(function ($item) {
-            return ($item->objectType ?? '') === 'inquiry';
-        })->pluck('sourceId')->filter()->unique()->values()->all();
-
-        $appointmentsByRequest = [];
-        $remindersByRequest = [];
-        $appointmentsByInquiry = [];
-        $remindersByInquiry = [];
-        $now = Carbon::now();
-        if (!empty($propertyRequestSourceIds)) {
-            $appointmentRows = DB::table('property_request_appointments')
-                ->where('user_id', $userId)
-                ->whereIn('property_request_id', $propertyRequestSourceIds)
-                ->orderBy('datetime', 'asc')
-                ->get();
-            foreach ($appointmentRows as $row) {
-                $appointmentsByRequest[$row->property_request_id][] = $this->propertyRequestDetailBuilder->formatPropertyRequestAppointment($row);
-            }
-            $reminderRows = DB::table('property_request_reminders')
-                ->where('user_id', $userId)
-                ->whereIn('property_request_id', $propertyRequestSourceIds)
-                ->orderBy('datetime', 'asc')
-                ->get();
-            foreach ($reminderRows as $row) {
-                $remindersByRequest[$row->property_request_id][] = $this->propertyRequestDetailBuilder->formatPropertyRequestReminder($row, $now);
-            }
-        }
-        if (!empty($inquirySourceIds)) {
-            $appointmentRows = DB::table('inquiry_appointments')
-                ->where('user_id', $userId)
-                ->whereIn('inquiry_id', $inquirySourceIds)
-                ->orderBy('datetime', 'asc')
-                ->get();
-            foreach ($appointmentRows as $row) {
-                $appointmentsByInquiry[$row->inquiry_id][] = $this->propertyRequestDetailBuilder->formatPropertyRequestAppointment($row);
-            }
-            $reminderRows = DB::table('inquiry_reminders')
-                ->where('user_id', $userId)
-                ->whereIn('inquiry_id', $inquirySourceIds)
-                ->orderBy('datetime', 'asc')
-                ->get();
-            foreach ($reminderRows as $row) {
-                $remindersByInquiry[$row->inquiry_id][] = $this->propertyRequestDetailBuilder->formatPropertyRequestReminder($row, $now);
-            }
-        }
-
-        // Load property_ids per property request and batch-load property summaries
-        $propertiesByRequestId = [];
-        if (!empty($propertyRequestSourceIds)) {
-            $requestRows = DB::table('users_property_requests')
-                ->where('user_id', $userId)
-                ->whereIn('id', $propertyRequestSourceIds)
-                ->get(['id', 'property_ids']);
-            foreach ($requestRows as $row) {
-                $ids = $row->property_ids;
-                if (is_string($ids)) {
-                    $decoded = json_decode($ids, true);
-                    $ids = is_array($decoded) ? $decoded : [];
-                }
-                $ids = is_array($ids) ? $ids : [];
-                $propertiesByRequestId[(int) $row->id] = array_values(array_filter(array_map(function ($id) {
-                    return is_numeric($id) ? (int) $id : null;
-                }, $ids)));
-            }
-            $allPropertyIds = array_values(array_unique(array_merge(...array_values($propertiesByRequestId))));
-            $summariesById = $this->propertyRequestDetailBuilder->getPropertySummariesForIds($userId, $allPropertyIds);
-            foreach ($propertiesByRequestId as $requestId => $ids) {
-                $propertiesByRequestId[$requestId] = array_values(array_filter(array_map(function ($id) use ($summariesById) {
-                    return $summariesById[$id] ?? null;
-                }, $ids)));
-            }
-        }
-
-        $items->each(function ($item) use ($appointmentsByRequest, $remindersByRequest, $appointmentsByInquiry, $remindersByInquiry, $propertiesByRequestId) {
-            if (($item->objectType ?? '') === 'property_request' && isset($item->sourceId)) {
-                $item->appointments = $appointmentsByRequest[$item->sourceId] ?? [];
-                $item->reminders = $remindersByRequest[$item->sourceId] ?? [];
-                $item->properties = $propertiesByRequestId[$item->sourceId] ?? [];
-            } elseif (($item->objectType ?? '') === 'inquiry' && isset($item->sourceId)) {
-                $item->appointments = $appointmentsByInquiry[$item->sourceId] ?? [];
-                $item->reminders = $remindersByInquiry[$item->sourceId] ?? [];
-                $item->properties = [];
-            } else {
-                $item->appointments = [];
-                $item->reminders = [];
-                $item->properties = [];
-            }
-        });
-
-        // isUpdated flag: true only when request existed at last view and was modified since (per viewer)
+        // isUpdated flag depends on per-viewer last viewed timestamp, so include it in the cache key.
         $viewerId = $request->user()->id;
         $viewedRow = DB::table('customers_hub_requests_list_viewed')
             ->where('user_id', $viewerId)
             ->first(['viewed_at']);
         $viewedAt = $viewedRow?->viewed_at ? Carbon::parse($viewedRow->viewed_at) : null;
-        $items->each(function ($item) use ($viewedAt) {
-            if ($viewedAt === null) {
-                $item->isUpdated = false;
-                return;
+
+        $cacheKey = 'ch:reqs:list:'
+            . $userId . ':'
+            . $viewerId . ':'
+            . ($viewedAt?->toIso8601String() ?? 'null') . ':'
+            . md5(json_encode([
+                'filters' => $filters,
+                'limit' => $limit,
+                'offset' => $offset,
+            ]));
+
+        $payload = Cache::remember($cacheKey, 30, function () use ($userId, $filters, $limit, $offset, $viewedAt) {
+            // Get list
+            $result = $this->aggregator->getList($userId, $filters, $limit, $offset);
+
+            $items = $result['items'];
+            $propertyRequestSourceIds = $items->filter(function ($item) {
+                return ($item->objectType ?? '') === 'property_request';
+            })->pluck('sourceId')->filter()->unique()->values()->all();
+            $inquirySourceIds = $items->filter(function ($item) {
+                return ($item->objectType ?? '') === 'inquiry';
+            })->pluck('sourceId')->filter()->unique()->values()->all();
+
+            $appointmentsByRequest = [];
+            $remindersByRequest = [];
+            $appointmentsByInquiry = [];
+            $remindersByInquiry = [];
+            $now = Carbon::now();
+            if (!empty($propertyRequestSourceIds)) {
+                $appointmentRows = DB::table('property_request_appointments')
+                    ->where('user_id', $userId)
+                    ->whereIn('property_request_id', $propertyRequestSourceIds)
+                    ->orderBy('datetime', 'asc')
+                    ->get();
+                foreach ($appointmentRows as $row) {
+                    $appointmentsByRequest[$row->property_request_id][] = $this->propertyRequestDetailBuilder->formatPropertyRequestAppointment($row);
+                }
+                $reminderRows = DB::table('property_request_reminders')
+                    ->where('user_id', $userId)
+                    ->whereIn('property_request_id', $propertyRequestSourceIds)
+                    ->orderBy('datetime', 'asc')
+                    ->get();
+                foreach ($reminderRows as $row) {
+                    $remindersByRequest[$row->property_request_id][] = $this->propertyRequestDetailBuilder->formatPropertyRequestReminder($row, $now);
+                }
             }
-            $createdAt = $item->createdAt ? Carbon::parse($item->createdAt) : null;
-            $updatedAt = $item->updatedAt ? Carbon::parse($item->updatedAt) : null;
-            $item->isUpdated = $createdAt !== null
-                && $updatedAt !== null
-                && $createdAt->lte($viewedAt)
-                && $updatedAt->gt($viewedAt);
-        });
+            if (!empty($inquirySourceIds)) {
+                $appointmentRows = DB::table('inquiry_appointments')
+                    ->where('user_id', $userId)
+                    ->whereIn('inquiry_id', $inquirySourceIds)
+                    ->orderBy('datetime', 'asc')
+                    ->get();
+                foreach ($appointmentRows as $row) {
+                    $appointmentsByInquiry[$row->inquiry_id][] = $this->propertyRequestDetailBuilder->formatPropertyRequestAppointment($row);
+                }
+                $reminderRows = DB::table('inquiry_reminders')
+                    ->where('user_id', $userId)
+                    ->whereIn('inquiry_id', $inquirySourceIds)
+                    ->orderBy('datetime', 'asc')
+                    ->get();
+                foreach ($reminderRows as $row) {
+                    $remindersByInquiry[$row->inquiry_id][] = $this->propertyRequestDetailBuilder->formatPropertyRequestReminder($row, $now);
+                }
+            }
 
-        // Get stats
-        $stats = $this->aggregator->getStats($userId, $filters);
-        $comparison = $this->aggregator->getComparisonStats($userId, $filters);
-        $stats = array_merge($stats, $comparison);
+            // Load property_ids per property request and batch-load property summaries
+            $propertiesByRequestId = [];
+            if (!empty($propertyRequestSourceIds)) {
+                $requestRows = DB::table('users_property_requests')
+                    ->where('user_id', $userId)
+                    ->whereIn('id', $propertyRequestSourceIds)
+                    ->get(['id', 'property_ids']);
+                foreach ($requestRows as $row) {
+                    $ids = $row->property_ids;
+                    if (is_string($ids)) {
+                        $decoded = json_decode($ids, true);
+                        $ids = is_array($decoded) ? $decoded : [];
+                    }
+                    $ids = is_array($ids) ? $ids : [];
+                    $propertiesByRequestId[(int) $row->id] = array_values(array_filter(array_map(function ($id) {
+                        return is_numeric($id) ? (int) $id : null;
+                    }, $ids)));
+                }
+                $allPropertyIds = array_values(array_unique(array_merge(...array_values($propertiesByRequestId))));
+                $summariesById = $this->propertyRequestDetailBuilder->getPropertySummariesForIds($userId, $allPropertyIds);
+                foreach ($propertiesByRequestId as $requestId => $ids) {
+                    $propertiesByRequestId[$requestId] = array_values(array_filter(array_map(function ($id) use ($summariesById) {
+                        return $summariesById[$id] ?? null;
+                    }, $ids)));
+                }
+            }
 
-        // All-time property-request stats (broker scoped only; intentionally ignores list filters/date ranges)
-        // Cache these for 60 seconds since they change infrequently
-        $globalCounts = Cache::remember("ch_global_counts_{$userId}", 60, function () use ($userId) {
-            $dealClosed = (int) DB::table('users_property_requests as upr')
-                ->where('upr.user_id', $userId)
-                ->where('upr.is_active', 1)
-                ->where('upr.customers_hub_stage_id', 'deal_completed')
-                ->count();
+            $items->each(function ($item) use ($appointmentsByRequest, $remindersByRequest, $appointmentsByInquiry, $remindersByInquiry, $propertiesByRequestId) {
+                if (($item->objectType ?? '') === 'property_request' && isset($item->sourceId)) {
+                    $item->appointments = $appointmentsByRequest[$item->sourceId] ?? [];
+                    $item->reminders = $remindersByRequest[$item->sourceId] ?? [];
+                    $item->properties = $propertiesByRequestId[$item->sourceId] ?? [];
+                } elseif (($item->objectType ?? '') === 'inquiry' && isset($item->sourceId)) {
+                    $item->appointments = $appointmentsByInquiry[$item->sourceId] ?? [];
+                    $item->reminders = $remindersByInquiry[$item->sourceId] ?? [];
+                    $item->properties = [];
+                } else {
+                    $item->appointments = [];
+                    $item->reminders = [];
+                    $item->properties = [];
+                }
+            });
 
-            $dealNotClosed = (int) DB::table('users_property_requests as upr')
-                ->where('upr.user_id', $userId)
-                ->where('upr.is_active', 1)
-                ->where('upr.customers_hub_stage_id', 'deal_rejected')
-                ->count();
+            $items->each(function ($item) use ($viewedAt) {
+                if ($viewedAt === null) {
+                    $item->isUpdated = false;
+                    return;
+                }
+                $createdAt = $item->createdAt ? Carbon::parse($item->createdAt) : null;
+                $updatedAt = $item->updatedAt ? Carbon::parse($item->updatedAt) : null;
+                $item->isUpdated = $createdAt !== null
+                    && $updatedAt !== null
+                    && $createdAt->lte($viewedAt)
+                    && $updatedAt->gt($viewedAt);
+            });
 
-            $effectiveStatusSql = "COALESCE(chsm.customers_hub_status,
-                CASE
-                    WHEN upr.is_archived = 1 THEN 'dismissed'
-                    WHEN upr.is_read = 1 THEN 'in_progress'
-                    ELSE 'pending'
-                END
-            )";
-            $underProcess = (int) DB::table('users_property_requests as upr')
-                ->leftJoin('property_request_statuses as prs', 'upr.status_id', '=', 'prs.id')
-                ->leftJoin('customers_hub_status_mapping as chsm', 'prs.slug', '=', 'chsm.property_request_status_slug')
-                ->where('upr.user_id', $userId)
-                ->where('upr.is_active', 1)
-                ->whereNotIn(DB::raw($effectiveStatusSql), ['dismissed', 'completed'])
-                ->count();
+            // Get stats
+            $stats = $this->aggregator->getStats($userId, $filters);
+            $comparison = $this->aggregator->getComparisonStats($userId, $filters);
+            $stats = array_merge($stats, $comparison);
 
-            $total = (int) DB::table('users_property_requests as upr')
-                ->where('upr.user_id', $userId)
-                ->where('upr.is_active', 1)
-                ->count();
+            // All-time property-request stats (broker scoped only; intentionally ignores list filters/date ranges)
+            // Cache these for 60 seconds since they change infrequently
+            $globalCounts = Cache::remember("ch_global_counts_{$userId}", 60, function () use ($userId) {
+                $dealClosed = (int) DB::table('users_property_requests as upr')
+                    ->where('upr.user_id', $userId)
+                    ->where('upr.is_active', 1)
+                    ->where('upr.customers_hub_stage_id', 'deal_completed')
+                    ->count();
+
+                $dealNotClosed = (int) DB::table('users_property_requests as upr')
+                    ->where('upr.user_id', $userId)
+                    ->where('upr.is_active', 1)
+                    ->where('upr.customers_hub_stage_id', 'deal_rejected')
+                    ->count();
+
+                $effectiveStatusSql = "COALESCE(chsm.customers_hub_status,
+                    CASE
+                        WHEN upr.is_archived = 1 THEN 'dismissed'
+                        WHEN upr.is_read = 1 THEN 'in_progress'
+                        ELSE 'pending'
+                    END
+                )";
+                $underProcess = (int) DB::table('users_property_requests as upr')
+                    ->leftJoin('property_request_statuses as prs', 'upr.status_id', '=', 'prs.id')
+                    ->leftJoin('customers_hub_status_mapping as chsm', 'prs.slug', '=', 'chsm.property_request_status_slug')
+                    ->where('upr.user_id', $userId)
+                    ->where('upr.is_active', 1)
+                    ->whereNotIn(DB::raw($effectiveStatusSql), ['dismissed', 'completed'])
+                    ->count();
+
+                $total = (int) DB::table('users_property_requests as upr')
+                    ->where('upr.user_id', $userId)
+                    ->where('upr.is_active', 1)
+                    ->count();
+
+                return [
+                    'underProcess' => $underProcess,
+                    'dealClosed' => $dealClosed,
+                    'dealNotClosed' => $dealNotClosed,
+                    'total' => $total,
+                ];
+            });
+
+            $stats = array_merge($stats, $globalCounts);
+
+            try {
+                $stageFilters = $filters;
+                unset($stageFilters['excludeStatuses']);
+                $stages = $this->aggregator->getStageStats($userId, $stageFilters);
+            } catch (\Throwable $e) {
+                $stages = [];
+            }
 
             return [
-                'underProcess' => $underProcess,
-                'dealClosed' => $dealClosed,
-                'dealNotClosed' => $dealNotClosed,
-                'total' => $total,
+                'actions' => $items,
+                'stats' => $stats,
+                'stages' => $stages,
+                'pagination' => [
+                    'total' => $result['total'],
+                    'limit' => $result['limit'],
+                    'offset' => $result['offset'],
+                    'hasMore' => $result['hasMore'],
+                    'sortBy' => $result['sortBy'],
+                    'sortDir' => $result['sortDir'],
+                ],
             ];
         });
 
-        $stats = array_merge($stats, $globalCounts);
-
-        try {
-            $stageFilters = $filters;
-            unset($stageFilters['excludeStatuses']);
-            $stages = $this->aggregator->getStageStats($userId, $stageFilters);
-        } catch (\Throwable $e) {
-            $stages = [];
-        }
-
-        return $this->success([
-            'actions' => $items,
-            'stats' => $stats,
-            'stages' => $stages,
-            'pagination' => [
-                'total' => $result['total'],
-                'limit' => $result['limit'],
-                'offset' => $result['offset'],
-                'hasMore' => $result['hasMore'],
-                'sortBy' => $result['sortBy'],
-                'sortDir' => $result['sortDir'],
-            ],
-        ]);
+        return $this->success($payload);
     }
 
     /**
