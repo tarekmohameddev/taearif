@@ -420,15 +420,25 @@ class RequestsController extends ApiController
                 ->get(['id', 'name as label', 'value', 'icon', 'color']);
 
             // Employees (assignees)
-            $employees = User::where('tenant_id', $userId)
-                ->where('account_type', 'employee')
-                ->where('active', true)
-                ->get(['id', 'first_name', 'last_name', 'email'])
-                ->map(fn($e) => [
-                    'id' => $e->id,
+            $employees = DB::table('users_property_requests as upr')
+                ->join('users as u', 'u.id', '=', 'upr.responsible_employee_id')
+                ->where('upr.user_id', $userId)
+                ->where('upr.is_active', 1)
+                ->whereNotNull('upr.responsible_employee_id')
+                ->where('u.tenant_id', $userId)
+                ->where('u.account_type', 'employee')
+                ->where('u.active', true)
+                ->groupBy('u.id', 'u.first_name', 'u.last_name', 'u.email')
+                ->selectRaw('u.id, u.first_name, u.last_name, u.email, COUNT(*) as propertyRequestsCount')
+                ->orderByDesc('propertyRequestsCount')
+                ->get()
+                ->map(fn ($e) => [
+                    'id' => (int) $e->id,
                     'label' => trim(($e->first_name ?? '') . ' ' . ($e->last_name ?? '')),
                     'email' => $e->email,
-                ]);
+                    'propertyRequestsCount' => (int) $e->propertyRequestsCount,
+                ])
+                ->values();
 
             // Cities: distinct cities via districts_id → user_districts
             $cities = DB::table('users_property_requests as upr')
