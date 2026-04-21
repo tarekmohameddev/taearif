@@ -1,5 +1,22 @@
 <?php
 
+/*
+|--------------------------------------------------------------------------
+| Mobile API Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register mobile API routes for your application.
+| These routes are loaded by the RouteServiceProvider within a group which
+| is assigned the "mobile" middleware group. Enjoy building your mobile API!
+|
+*/
+
+// There is tooling to produce API docs in Postman form:
+//     Command: php artisan postman:mobile (also exposed as Composer script postman:mobile in composer.json).
+//     Output: docs/api/mobile/postman/mobile.collection.json
+//     Environment: docs/api/mobile/postman/mobile.environment.json / (see GenerateMobilePostmanCollection).
+//
+
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\Mobile\AuthController;
