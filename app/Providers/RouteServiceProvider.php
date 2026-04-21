@@ -134,13 +134,14 @@ class RouteServiceProvider extends ServiceProvider
     }
 
     /**
-     * Mobile API routes.
-     *
-     * Currently mobile endpoints live under `routes/api.php`.
+     * Mobile API routes (`routes/mobile.php`, prefix `api/mobile`).
      */
     protected function mapMobileRoutes(): void
     {
-        // Intentionally left blank.
+        Route::prefix('api/mobile')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/mobile.php'));
     }
 
     /**
