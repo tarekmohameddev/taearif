@@ -1353,6 +1353,13 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
         Route::put('/{stage_id}', [\App\Http\Controllers\Api\V2\CustomersHub\StagesController::class, 'update']);
         Route::delete('/{stage_id}', [\App\Http\Controllers\Api\V2\CustomersHub\StagesController::class, 'destroy']);
     });
+
+    // 8. IGNORE LIST
+    Route::prefix('ignored-customers')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\V2\CustomersHub\IgnoredCustomersController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\V2\CustomersHub\IgnoredCustomersController::class, 'store']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\V2\CustomersHub\IgnoredCustomersController::class, 'destroy']);
+    });
 });
 
 // Owner Rental Management System Routes (v1)

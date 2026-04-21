@@ -13,6 +13,7 @@ use Modules\WhatsappAI\Entities\WhatsappConversation;
 use App\Models\Api\ApiCustomerInquiry;
 use App\Models\Api\UserPropertyRequest;
 use App\Models\ApiCustomer;
+use App\Domain\CustomersHub\Services\IgnoredCustomersService;
 
 class ProcessConversation implements ShouldQueue
 {
@@ -58,32 +59,47 @@ class ProcessConversation implements ShouldQueue
                 return;
             }
 
-            // Build transcript from text + captions + location messages for richer AI context
-            $transcript = $conversation->messages()
-                ->whereIn('message_type', ['text', 'image', 'video', 'document', 'location'])
+            // Build transcript only from messages that have not been processed yet.
+            // On the first run (cursor is null) all messages are included.
+            // On subsequent runs only messages after the cursor are included so we
+            // analyse new content only and avoid creating duplicate records.
+            $messageQuery = $conversation->messages()
+                ->whereIn('message_type', ['text', 'image', 'video', 'document', 'location', 'audio']);
+
+            if ($conversation->last_processed_message_id) {
+                $messageQuery->where('id', '>', $conversation->last_processed_message_id);
+            }
+
+            $newMessages = $messageQuery->orderBy('id')->get();
+
+            if ($newMessages->isEmpty()) {
+                $conversation->update(['status' => 'archived']);
+                return;
+            }
+
+            // Track the highest message ID so we can advance the cursor after processing.
+            $lastMessageId = $newMessages->max('id');
+
+            $transcript = $newMessages
                 ->pluck('content')
                 ->filter()
                 ->implode("\n");
 
             if (empty($transcript)) {
-                // Log::info('No text content in conversation', ['id' => $this->conversationId]);
                 $conversation->update(['status' => 'archived']);
                 return;
             }
 
-            // Log::info('Processing conversation with AI', [
-            //     'id' => $this->conversationId,
-            //     'message_count' => $conversation->message_count,
-            //     'transcript_length' => strlen($transcript),
-            // ]);
-
             // Call OpenAI for analysis
             $extraction = $this->analyzeWithAI($transcript);
 
-            // Update conversation with extracted data
+            // Persist the AI-extracted fields on the conversation. Status and cursor
+            // are intentionally NOT set here — they are only advanced after the
+            // inquiry is successfully created below. This ensures that if inquiry
+            // creation throws and the job retries, the status is still 'collecting'
+            // (so the retry guard at the top of handle() does not short-circuit)
+            // and the cursor has not moved (so the same new messages are re-analysed).
             $conversation->update([
-                'status' => 'processed',
-                'processed_at' => now(),
                 'is_real_estate_inquiry' => $extraction['is_real_estate_inquiry'] ?? false,
                 'inquiry_type' => $extraction['inquiry_type'] ?? null,
                 'property_type' => $extraction['property_type'] ?? null,
@@ -100,18 +116,43 @@ class ProcessConversation implements ShouldQueue
                 'extracted_data' => $extraction,
             ]);
 
-            // Create inquiry if it's a real estate inquiry
+            // Create/update inquiry if it's a real estate inquiry
             if ($extraction['is_real_estate_inquiry'] ?? false) {
-                $inquiry = $this->createInquiry($conversation, $extraction, $transcript);
-                $conversation->update(['inquiry_id' => $inquiry->id]);
-                
-                // Log::info('Inquiry created from conversation', [
-                //     'conversation_id' => $conversation->id,
-                //     'inquiry_id' => $inquiry->id,
-                // ]);
-            }
+                // Check ignore list before creating any records for this customer
+                $ignoredService = app(IgnoredCustomersService::class);
+                if ($ignoredService->isIgnored(
+                    $conversation->user_id,
+                    $conversation->customer_phone,
+                    $conversation->customer_id ?: null
+                )) {
+                    Log::info('ProcessConversation: phone/customer is on ignore list — skipping inquiry and property request creation', [
+                        'conversation_id' => $this->conversationId,
+                        'phone'           => $conversation->customer_phone,
+                        'customer_id'     => $conversation->customer_id,
+                        'tenant_user_id'  => $conversation->user_id,
+                    ]);
+                    $conversation->update(['status' => 'archived']);
+                    return;
+                }
 
-            // Log::info('Conversation processed successfully', ['id' => $this->conversationId]);
+                $inquiry = $this->createInquiry($conversation, $extraction, $transcript);
+
+                // Inquiry created successfully — now it is safe to mark the
+                // conversation as processed and advance the cursor.
+                $conversation->update([
+                    'status' => 'processed',
+                    'processed_at' => now(),
+                    'last_processed_message_id' => $lastMessageId,
+                    'inquiry_id' => $inquiry->id,
+                ]);
+            } else {
+                // Not a real-estate inquiry — nothing to create, mark processed.
+                $conversation->update([
+                    'status' => 'processed',
+                    'processed_at' => now(),
+                    'last_processed_message_id' => $lastMessageId,
+                ]);
+            }
 
         } catch (\Throwable $e) {
             Log::error('ProcessConversation Job Error', [
@@ -151,12 +192,6 @@ class ProcessConversation implements ShouldQueue
 
         $model = config('whatsappai.model', 'gpt-4o-mini');
         $prompt = $this->buildPrompt($transcript);
-
-        // Log::info('Calling OpenAI API', [
-        //     'conversation_id' => $this->conversationId,
-        //     'model' => $model,
-        //     'prompt_length' => strlen($prompt),
-        // ]);
 
         try {
             $client = OpenAI::client($apiKey);
@@ -201,7 +236,6 @@ class ProcessConversation implements ShouldQueue
             return $data;
 
         } catch (\TypeError $e) {
-            // Handle TypeError from OpenAI client (usually means API returned error response)
             $errorDetails = [
                 'error' => $e->getMessage(),
                 'error_class' => 'TypeError',
@@ -210,7 +244,6 @@ class ProcessConversation implements ShouldQueue
                 'line' => $e->getLine(),
             ];
 
-            // Try to extract more context from the exception
             $previous = $e->getPrevious();
             if ($previous) {
                 $errorDetails['previous_error'] = $previous->getMessage();
@@ -221,14 +254,12 @@ class ProcessConversation implements ShouldQueue
 
             return ['is_real_estate_inquiry' => false];
         } catch (\OpenAI\Exceptions\ErrorException $e) {
-            // Handle OpenAI-specific exceptions
             $errorDetails = [
                 'error' => $e->getMessage(),
                 'error_class' => 'OpenAI\Exceptions\ErrorException',
                 'conversation_id' => $this->conversationId,
             ];
 
-            // Try to get response body if available
             if (method_exists($e, 'getResponse')) {
                 try {
                     $response = $e->getResponse();
@@ -244,7 +275,6 @@ class ProcessConversation implements ShouldQueue
 
             return ['is_real_estate_inquiry' => false];
         } catch (\Throwable $e) {
-            // Log detailed error information for any other exceptions
             $errorDetails = [
                 'error' => $e->getMessage(),
                 'error_class' => get_class($e),
@@ -253,7 +283,6 @@ class ProcessConversation implements ShouldQueue
                 'line' => $e->getLine(),
             ];
 
-            // If it's an OpenAI exception, try to extract more details
             if (method_exists($e, 'getResponse')) {
                 try {
                     $response = $e->getResponse();
@@ -265,7 +294,6 @@ class ProcessConversation implements ShouldQueue
                 }
             }
 
-            // Try to get previous exception
             $previous = $e->getPrevious();
             if ($previous) {
                 $errorDetails['previous_error'] = $previous->getMessage();
@@ -330,7 +358,10 @@ PROMPT;
     }
 
     /**
-     * Create customer inquiry from extracted data
+     * Create customer inquiry from extracted data.
+     * Also upserts the property request: updates the earliest active request for
+     * this customer with any missing structured fields and appends the new AI
+     * summary to the notes. Creates a new property request only when none exists.
      */
     private function createInquiry(WhatsappConversation $conversation, array $extraction, string $transcript): ApiCustomerInquiry
     {
@@ -341,7 +372,7 @@ PROMPT;
             $extraction['city'] ?? null,
         ]));
 
-        // Create api_customer_inquiry
+        // Create api_customer_inquiry (always — one per processing session for history)
         $inquiryData = [
             'user_id' => $conversation->user_id,
             'customer_id' => $customer->id,
@@ -380,40 +411,126 @@ PROMPT;
         // Resolve region dynamically from city name
         $regionName = $this->resolveRegionFromCity($conversation->user_id, $extraction['city'] ?? null);
 
-        // Create users_property_requests
-        $propertyRequestData = [
-            'user_id' => $conversation->user_id,
-            'customer_id' => $customer->id,
-            'phone' => $conversation->customer_phone,
-            'full_name' => $conversation->customer_name ?? 'WhatsApp Customer',
-            'notes' => $extraction['summary'] ?? $transcript,
-            'inquiry_type' => $extraction['inquiry_type'] ?? null,
-            'property_type' => $extraction['property_type'] ?? null,
-            'purpose' => $this->mapInquiryTypeToPurpose($extraction['inquiry_type'] ?? null),
-            'budget_from' => $extraction['budget_min'] ?? null,
-            'budget_to' => $extraction['budget_max'] ?? null,
-            'currency' => $extraction['currency'] ?? 'SAR',
-            'bedrooms' => $extraction['bedrooms'] ?? null,
-            'bathrooms' => $extraction['bathrooms'] ?? null,
-            'furnished' => $extraction['furnished'] ?? null,
-            'area_from' => $extraction['area_min'] ?? null,
-            'area_to' => $extraction['area_max'] ?? null,
-            'seriousness' => $this->mapUrgencyToSeriousness($extraction['urgency'] ?? null),
-            'city' => $extraction['city'] ?? null,
-            'district' => $extraction['district'] ?? null,
-            'location' => $location ?: null,
-            'region' => $regionName,
-            'latitude' => $latitude,
-            'longitude' => $longitude,
-            'source' => 'whatsapp',
-            'contact_on_whatsapp' => true,
-            'lang' => 'ar',
-            'detected_entities_json' => json_encode($extraction),
-        ];
-
-        UserPropertyRequest::create($propertyRequestData);
+        $this->upsertPropertyRequest($customer, $extraction, $conversation, $location, $latitude, $longitude, $regionName);
 
         return $inquiry;
+    }
+
+    /**
+     * Find the customer's earliest active property request and fill in any missing
+     * structured fields. The notes field is always appended with the new session
+     * summary so it builds a running history. If no active request exists, a new
+     * one is created (first-time behaviour).
+     */
+    private function upsertPropertyRequest(
+        ApiCustomer $customer,
+        array $extraction,
+        WhatsappConversation $conversation,
+        string $location,
+        ?float $latitude,
+        ?float $longitude,
+        ?string $regionName
+    ): void {
+        // Priority 1: match by customer_id (exact, avoids cross-customer collisions).
+        $existing = UserPropertyRequest::where('user_id', $conversation->user_id)
+            ->where('customer_id', $customer->id)
+            ->where('is_active', 1)
+            ->orderBy('created_at')
+            ->first();
+
+        // Priority 2: phone fallback — only when the matched row is unclaimed
+        // (customer_id IS NULL) or already belongs to the same customer.
+        // This prevents accidentally merging data into another customer's request
+        // when two distinct customer records share the same phone number.
+        if (!$existing) {
+            $existing = UserPropertyRequest::where('user_id', $conversation->user_id)
+                ->where('phone', $conversation->customer_phone)
+                ->where(function ($q) use ($customer) {
+                    $q->whereNull('customer_id')
+                      ->orWhere('customer_id', $customer->id);
+                })
+                ->where('is_active', 1)
+                ->orderBy('created_at')
+                ->first();
+        }
+
+        $newSummary = $extraction['summary'] ?? null;
+
+        if ($existing) {
+            // Structured fields: only fill when currently NULL
+            $structuredFields = [
+                'property_type'  => $extraction['property_type'] ?? null,
+                'purpose'        => $this->mapInquiryTypeToPurpose($extraction['inquiry_type'] ?? null),
+                'budget_from'    => $extraction['budget_min'] ?? null,
+                'budget_to'      => $extraction['budget_max'] ?? null,
+                'currency'       => $extraction['currency'] ?? null,
+                'bedrooms'       => $extraction['bedrooms'] ?? null,
+                'bathrooms'      => $extraction['bathrooms'] ?? null,
+                'furnished'      => $extraction['furnished'] ?? null,
+                'area_from'      => $extraction['area_min'] ?? null,
+                'area_to'        => $extraction['area_max'] ?? null,
+                'seriousness'    => $this->mapUrgencyToSeriousness($extraction['urgency'] ?? null),
+                'city'           => $extraction['city'] ?? null,
+                'district'       => $extraction['district'] ?? null,
+                'location'       => $location ?: null,
+                'region'         => $regionName,
+                'latitude'       => $latitude,
+                'longitude'      => $longitude,
+                'inquiry_type'   => $extraction['inquiry_type'] ?? null,
+            ];
+
+            $updates = [];
+            foreach ($structuredFields as $field => $value) {
+                if ($value !== null && $existing->$field === null) {
+                    $updates[$field] = $value;
+                }
+            }
+
+            // Notes: always append new summary (separated by divider) so we get a
+            // running history of every session's AI summary on the same request.
+            if ($newSummary !== null) {
+                $updates['notes'] = $existing->notes
+                    ? $existing->notes . "\n---\n" . $newSummary
+                    : $newSummary;
+            }
+
+            if (!empty($updates)) {
+                $existing->update($updates);
+            }
+
+            return;
+        }
+
+        // No existing active request — create a fresh one (first-time behaviour)
+        UserPropertyRequest::create([
+            'user_id'             => $conversation->user_id,
+            'customer_id'         => $customer->id,
+            'phone'               => $conversation->customer_phone,
+            'full_name'           => $conversation->customer_name ?? 'WhatsApp Customer',
+            'notes'               => $newSummary,
+            'inquiry_type'        => $extraction['inquiry_type'] ?? null,
+            'property_type'       => $extraction['property_type'] ?? null,
+            'purpose'             => $this->mapInquiryTypeToPurpose($extraction['inquiry_type'] ?? null),
+            'budget_from'         => $extraction['budget_min'] ?? null,
+            'budget_to'           => $extraction['budget_max'] ?? null,
+            'currency'            => $extraction['currency'] ?? 'SAR',
+            'bedrooms'            => $extraction['bedrooms'] ?? null,
+            'bathrooms'           => $extraction['bathrooms'] ?? null,
+            'furnished'           => $extraction['furnished'] ?? null,
+            'area_from'           => $extraction['area_min'] ?? null,
+            'area_to'             => $extraction['area_max'] ?? null,
+            'seriousness'         => $this->mapUrgencyToSeriousness($extraction['urgency'] ?? null),
+            'city'                => $extraction['city'] ?? null,
+            'district'            => $extraction['district'] ?? null,
+            'location'            => $location ?: null,
+            'region'              => $regionName,
+            'latitude'            => $latitude,
+            'longitude'           => $longitude,
+            'source'              => 'whatsapp',
+            'contact_on_whatsapp' => true,
+            'lang'                => 'ar',
+            'detected_entities_json' => json_encode($extraction),
+        ]);
     }
 
     /**
@@ -527,4 +644,3 @@ PROMPT;
         return null;
     }
 }
-

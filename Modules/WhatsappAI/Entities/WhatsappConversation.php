@@ -38,6 +38,7 @@ class WhatsappConversation extends Model
         'extracted_data',
         'inquiry_id',
         'processed_at',
+        'last_processed_message_id',
     ];
 
     protected $casts = [
