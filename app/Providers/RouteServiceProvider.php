@@ -33,6 +33,8 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        $this->configureRateLimiting();
+
         // Pattern for domain route parameter
         Route::pattern('domain', '[a-z0-9.\-]+');
 
@@ -56,7 +58,7 @@ class RouteServiceProvider extends ServiceProvider
     /**
      * Configure the rate limiters for the application.
      *
-     * Note: Laravel calls this from the parent `boot()` method.
+     * Must be invoked from {@see boot()}; the framework parent does not call this automatically.
      */
     protected function configureRateLimiting(): void
     {
@@ -135,11 +137,12 @@ class RouteServiceProvider extends ServiceProvider
 
     /**
      * Mobile API routes (`routes/mobile.php`, prefix `api/mobile`).
+     * Uses 'mobile-api' middleware group which excludes hardcoded throttle.
      */
     protected function mapMobileRoutes(): void
     {
         Route::prefix('api/mobile')
-            ->middleware('api')
+            ->middleware('mobile-api')
             ->namespace($this->namespace)
             ->group(base_path('routes/mobile.php'));
     }
@@ -164,7 +167,7 @@ class RouteServiceProvider extends ServiceProvider
         }));
 
         RateLimiter::for('api_mobile', $only(function (Request $request) {
-            return Limit::perMinute(60)->by(optional($request->user())->id ?: $request->ip());
+            return Limit::perMinute(120)->by(optional($request->user())->id ?: $request->ip());
         }));
 
         RateLimiter::for('api_tracking', $only(function (Request $request) {

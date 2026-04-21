@@ -53,6 +53,14 @@ class Kernel extends HttpKernel
             'throttle:admin_api_general',
             'bindings',
         ],
+
+        'mobile-api' => [
+            \App\Http\Middleware\SanctumTokenOnlyForApi::class,
+            'bindings',
+            \App\Http\Middleware\SetTenantSessionDomain::class,
+            \App\Http\Middleware\SetTenantForPermissions::class,
+            \App\Http\Middleware\CompressResponse::class,
+        ],
         // 'api' => [
         //     \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         //     'throttle:api',
