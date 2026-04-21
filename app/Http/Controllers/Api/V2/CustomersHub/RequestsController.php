@@ -81,7 +81,7 @@ class RequestsController extends ApiController
         $userId = $this->getTenantUserId($request);
 
         $filters = $validated;
-        $limit = $validated['limit'] ?? 50;
+        $limit = $validated['limit'] ?? 25;
         $offset = $validated['offset'] ?? 0;
         $statsFilters = $validated;
         unset($statsFilters['limit'], $statsFilters['offset'], $statsFilters['sort_by'], $statsFilters['sort_dir']);
