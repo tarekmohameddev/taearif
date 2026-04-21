@@ -156,9 +156,13 @@ class GenerateMobilePostmanCollection extends Command
 
         $body = $this->exampleBodyFor($r['method'], $r['uri']);
         if ($body !== null) {
+            $flags = JSON_UNESCAPED_SLASHES;
+            if (is_array($body)) {
+                $flags |= JSON_PRETTY_PRINT;
+            }
             $request['body'] = [
                 'mode' => 'raw',
-                'raw' => json_encode($body, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+                'raw' => json_encode($body, $flags),
                 'options' => [
                     'raw' => ['language' => 'json'],
                 ],
@@ -198,20 +202,27 @@ class GenerateMobilePostmanCollection extends Command
     }
 
     /**
-     * @return array<string, mixed>|null
+     * @return array<string, mixed>|\stdClass|null
      */
-    private function exampleBodyFor(string $method, string $uri): ?array
+    private function exampleBodyFor(string $method, string $uri): array|\stdClass|null
     {
         if (!in_array($method, ['POST', 'PATCH', 'PUT'], true)) {
             return null;
         }
 
+        $dynamic = $this->matchDynamicBody($method, $uri);
+        if ($dynamic !== null) {
+            return $dynamic;
+        }
+
         return match ($uri) {
             'api/mobile/auth/login' => ['email' => 'user@example.com', 'password' => 'secret'],
             'api/mobile/auth/forgot-password' => ['email' => 'user@example.com'],
+            'api/mobile/auth/logout' => new \stdClass(),
+            'api/mobile/notifications/read-all' => new \stdClass(),
             'api/mobile/profile' => ['name' => 'Ahmed Ali', 'phone' => '0509999999'],
             'api/mobile/devices' => ['token' => 'your-fcm-or-apns-token', 'platform' => 'android'],
-            default => $this->matchDynamicBody($method, $uri),
+            default => $method === 'POST' ? new \stdClass() : null,
         };
     }
 
