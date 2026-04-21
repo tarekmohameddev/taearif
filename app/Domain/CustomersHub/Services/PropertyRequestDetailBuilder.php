@@ -521,15 +521,16 @@ class PropertyRequestDetailBuilder
             return [];
         }
 
+        // Build a scoped subquery that only includes property_ids from the current page
+        $firstContentPerProperty = DB::table('user_property_contents')
+            ->whereIn('property_id', $propertyIds)
+            ->selectRaw('property_id, MIN(id) AS content_id')
+            ->groupBy('property_id');
+
         $rows = DB::table('user_properties as p')
             ->where('p.user_id', $userId)
             ->whereIn('p.id', $propertyIds)
-            ->leftJoin(
-                DB::raw('(SELECT property_id, MIN(id) AS content_id FROM user_property_contents GROUP BY property_id) AS first_pc'),
-                'first_pc.property_id',
-                '=',
-                'p.id'
-            )
+            ->leftJoinSub($firstContentPerProperty, 'first_pc', 'first_pc.property_id', '=', 'p.id')
             ->leftJoin('user_property_contents as pc', function ($join) {
                 $join->on('pc.property_id', '=', 'p.id')
                     ->on('pc.id', '=', DB::raw('first_pc.content_id'));

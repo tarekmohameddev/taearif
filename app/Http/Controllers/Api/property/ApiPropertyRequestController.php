@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 use App\Models\Api\UserPropertyRequest;
 use App\Models\User\UserCity;
+use App\Models\User\RealestateManagement\Property;
 use App\Http\Requests\Api\Property\StorePropertyRequestRequest;
 use App\Http\Requests\Api\Property\UpdatePropertyRequestRequest;
 use App\Http\Requests\Api\Property\UpdateStatusPropertyRequestRequest;
@@ -29,6 +30,8 @@ use App\Models\PropertyRequestStatus;
 use App\Models\User;
 use App\Models\ApiCustomer;
 use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
+use App\Rules\PropertyTypeRule;
+use Illuminate\Support\Carbon;
 use App\Domain\CustomersHub\Services\IgnoredCustomersService;
 
 class ApiPropertyRequestController extends Controller
@@ -422,6 +425,120 @@ class ApiPropertyRequestController extends Controller
     }
 
     /**
+     * GET /api/v1/property-requests/stats
+     *
+     * Per-day aggregates for the last 7 calendar days (inclusive), oldest → newest.
+     *
+     * Timezone: calendar boundaries use config('app.timezone'); DB timestamps are treated as UTC
+     * for CONVERT_TZ(..., 'UTC', app_tz) before DATE().
+     *
+     * Metrics: incoming = created_at day; completed = updated_at day when status slug is
+     * "completed" (no completed_at column); followups = calendar day of earliest pending
+     * appointment/reminder with datetime > now.
+     */
+    public function stats(): JsonResponse
+    {
+        $user = Auth::user();
+        $tenantId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+
+        $tz = config('app.timezone', 'UTC');
+        $now = Carbon::now($tz);
+
+        // Build a numeric UTC offset string (e.g. "+03:00") so CONVERT_TZ works
+        // even when MySQL named-timezone tables are not populated.
+        $offsetMinutes = $now->utcOffset();
+        $offsetSign    = $offsetMinutes >= 0 ? '+' : '-';
+        $absMinutes    = abs($offsetMinutes);
+        $tzOffset      = $offsetSign
+            . str_pad(intdiv($absMinutes, 60), 2, '0', STR_PAD_LEFT)
+            . ':'
+            . str_pad($absMinutes % 60, 2, '0', STR_PAD_LEFT);
+
+        $windowStart = $now->copy()->subDays(6)->startOfDay()->utc();
+        $windowEnd = $now->copy()->endOfDay()->utc();
+
+        $incomingSub = DB::table('users_property_requests')
+            ->selectRaw("DATE(CONVERT_TZ(created_at,'+00:00',?)) AS day", [$tzOffset])
+            ->where('user_id', $tenantId)
+            ->whereBetween('created_at', [$windowStart, $windowEnd]);
+
+        $incoming = DB::query()
+            ->fromSub($incomingSub, 'r')
+            ->select('day', DB::raw('COUNT(*) AS cnt'))
+            ->groupBy('day')
+            ->pluck('cnt', 'day');
+
+        $completedSub = DB::table('users_property_requests as upr')
+            ->join('property_request_statuses as prs', function ($join) use ($tenantId) {
+                $join->on('prs.id', '=', 'upr.status_id')
+                    ->where('prs.slug', 'completed')
+                    ->where(function ($q) use ($tenantId) {
+                        $q->whereNull('prs.user_id')
+                            ->orWhere('prs.user_id', $tenantId);
+                    });
+            })
+            ->selectRaw("DATE(CONVERT_TZ(upr.updated_at,'+00:00',?)) AS day", [$tzOffset])
+            ->where('upr.user_id', $tenantId)
+            ->whereBetween('upr.updated_at', [$windowStart, $windowEnd]);
+
+        $completed = DB::query()
+            ->fromSub($completedSub, 'r')
+            ->select('day', DB::raw('COUNT(*) AS cnt'))
+            ->groupBy('day')
+            ->pluck('cnt', 'day');
+
+        $nowUtc = $now->copy()->utc();
+
+        $pendingActionsUnion = DB::table('property_request_appointments')
+            ->select('property_request_id', 'datetime')
+            ->where('status', 'pending')
+            ->where('datetime', '>', $nowUtc)
+            ->unionAll(
+                DB::table('property_request_reminders')
+                    ->select('property_request_id', 'datetime')
+                    ->where('status', 'pending')
+                    ->where('datetime', '>', $nowUtc)
+            );
+
+        $earliestPerRequest = DB::query()
+            ->fromSub($pendingActionsUnion, 'sub')
+            ->select('property_request_id', DB::raw('MIN(`datetime`) AS earliest'))
+            ->groupBy('property_request_id');
+
+        $followupsSub = DB::query()
+            ->fromSub($earliestPerRequest, 'fu')
+            ->join('users_property_requests as upr', 'upr.id', '=', 'fu.property_request_id')
+            ->selectRaw("DATE(CONVERT_TZ(fu.earliest,'+00:00',?)) AS day", [$tzOffset])
+            ->where('upr.user_id', $tenantId)
+            ->whereBetween('fu.earliest', [$windowStart, $windowEnd]);
+
+        $followups = DB::query()
+            ->fromSub($followupsSub, 'r')
+            ->select('day', DB::raw('COUNT(*) AS cnt'))
+            ->groupBy('day')
+            ->pluck('cnt', 'day');
+
+        $series = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = $now->copy()->subDays($i)->format('Y-m-d');
+            $series[] = [
+                'date' => $date,
+                'incoming' => (int) ($incoming[$date] ?? 0),
+                'completed' => (int) ($completed[$date] ?? 0),
+                'followups' => (int) ($followups[$date] ?? 0),
+            ];
+        }
+
+        return response()->json([
+            'meta' => [
+                'generatedAt' => $now->copy()->utc()->toIso8601String(),
+                'timezone' => $tz,
+            ],
+            'series' => $series,
+        ]);
+    }
+
+    /**
      * Get filter options for property requests (dropdown data).
      *
      * Query params:
@@ -755,13 +872,60 @@ class ApiPropertyRequestController extends Controller
     public function update(UpdatePropertyRequestRequest $request, $id)
     {
         $user = Auth::user();
+        $ownerId = $user && method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
         $propertyRequest = UserPropertyRequest::where('id', $id)
-            ->where('user_id', $user->id)
+            ->where('user_id', $ownerId)
             ->firstOrFail();
 
         $data = $request->validated();
+
+        // Normalize property_type to canonical lowercase value
+        if (array_key_exists('property_type', $data) && $data['property_type'] !== null) {
+            $data['property_type'] = PropertyTypeRule::normalize(is_string($data['property_type']) ? $data['property_type'] : null);
+        }
+
+        // Map region (city_id) → set city_id and Arabic name into region (mirrors store() behavior)
+        if (array_key_exists('region', $data) && $data['region'] !== null) {
+            $regionId = (int) $data['region'];
+            $city = UserCity::find($regionId);
+            $data['city_id'] = $regionId;
+            $data['region'] = $city ? $city->name_ar : null;
+        }
+
+        // Validate property_ids: ensure they exist and belong to this tenant
+        if (array_key_exists('property_ids', $data) && is_array($data['property_ids'])) {
+            $requested = array_values(array_unique(array_filter(array_map('intval', $data['property_ids']), static fn (int $pid): bool => $pid > 0)));
+            if ($requested !== []) {
+                $validIds = Property::query()
+                    ->where('user_id', $ownerId)
+                    ->whereIn('id', $requested)
+                    ->pluck('id')
+                    ->all();
+
+                sort($validIds);
+                $sortedRequested = $requested;
+                sort($sortedRequested);
+
+                if ($validIds !== $sortedRequested) {
+                    return response()->json([
+                        'message' => 'One or more property IDs are invalid or do not belong to this tenant.',
+                        'errors' => [
+                            'property_ids' => ['The selected property IDs are invalid or unauthorized for this tenant.'],
+                        ],
+                    ], 422);
+                }
+            }
+            $data['property_ids'] = $requested;
+        }
+
         $propertyRequest->update($data);
-        return response()->json(['message' => 'Property request updated successfully']);
+
+        $propertyRequest->load(['statusOption', 'customer', 'district']);
+
+        return response()->json([
+            'message' => 'Property request updated successfully',
+            'data' => $propertyRequest,
+        ]);
     }
 
     public function updateStatus(UpdateStatusPropertyRequestRequest $request, $id): JsonResponse

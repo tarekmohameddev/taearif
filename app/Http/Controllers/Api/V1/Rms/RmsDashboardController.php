@@ -77,6 +77,18 @@ class RmsDashboardController extends BaseApiController
     }
 
     /**
+     * Portfolio / sales summary for dashboard cards.
+     */
+    public function salesStats(Request $request)
+    {
+        return $this->executeWithExceptionHandling(function () {
+            $data = $this->dashboardService->getSalesStats($this->getUserId());
+
+            return $this->success($data);
+        }, 'retrieve sales stats');
+    }
+
+    /**
      * Build filters array from request parameters
      */
     protected function buildFilters(Request $request): array

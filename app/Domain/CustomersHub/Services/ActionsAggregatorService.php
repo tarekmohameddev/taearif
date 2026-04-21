@@ -6,6 +6,7 @@ use App\Models\ApiCustomer;
 use App\Support\PhoneNormalizer;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -64,8 +65,12 @@ class ActionsAggregatorService
      */
     public function getUnifiedQuery(int $userId, array $filters = []): \Illuminate\Database\Query\Builder
     {
-        $inquiriesQuery = $this->getInquiriesSubquery($userId);
-        $propertyRequestsQuery = $this->getPropertyRequestsSubquery($userId);
+        // Resolve stage filters early so they can be pushed into UNION arms
+        $stageIds       = $this->resolveStagesFilterToStageIds($filters['stages'] ?? []);
+        $excludeStageIds = $this->resolveStagesFilterToStageIds($filters['excludeStages'] ?? []);
+
+        $inquiriesQuery       = $this->getInquiriesSubquery($userId, $stageIds, $excludeStageIds);
+        $propertyRequestsQuery = $this->getPropertyRequestsSubquery($userId, $stageIds, $excludeStageIds);
         $remindersQuery = $this->getRemindersSubquery($userId);
 
         // Build UNION ALL.
@@ -79,7 +84,7 @@ class ActionsAggregatorService
         // Wrap in subquery for filtering and ordering
         $query = DB::query()->fromSub($unionQuery, 'actions');
 
-        // Apply filters
+        // Apply filters (but skip stages/excludeStages as they're already pushed into arms)
         $this->applyFilters($query, $filters, $userId);
 
         return $query;
@@ -92,20 +97,34 @@ class ActionsAggregatorService
     {
         $query = $this->getUnifiedQuery($userId, $filters);
 
-        // Get total count before pagination
-        $totalQuery = clone $query;
-        $total = $totalQuery->count();
-
         // Apply sorting
         $sortBy = $filters['sort_by'] ?? 'updatedAt';
         $sortDir = $filters['sort_dir'] ?? 'desc';
         $query->orderBy($sortBy, $sortDir);
 
-        // Apply pagination
+        // Add window function to get total count without a separate scan.
+        // Must explicitly select actions.* first: when $query->columns is null,
+        // addSelect() initialises it to [rawExpr] instead of ['*', rawExpr],
+        // which would cause the outer SELECT to return only _totalRows and omit
+        // every other column (triggering "Undefined property: stdClass::$metadata").
+        $query->select([DB::raw('actions.*'), DB::raw('COUNT(*) OVER() AS _totalRows')]);
+
+        // Apply pagination and get items with total count in one query
         $items = $query->limit($limit)->offset($offset)->get();
 
-        // Transform items
+        // Extract total from first item, or fall back to count if no results but not at start
+        $total = 0;
+        if ($items->isNotEmpty()) {
+            $total = (int) ($items->first()->_totalRows ?? 0);
+        } elseif ($offset > 0) {
+            // Edge case: pagination offset is beyond available rows; run count separately
+            $totalQuery = $this->getUnifiedQuery($userId, $filters);
+            $total = $totalQuery->count();
+        }
+
+        // Strip the synthetic _totalRows column before transforming
         $items = $items->map(function ($item) {
+            unset($item->_totalRows);
             return $this->transformAction($item);
         });
 
@@ -128,25 +147,33 @@ class ActionsAggregatorService
      */
     public function getStats(int $userId, array $filters = []): array
     {
-        $query = $this->getUnifiedQuery($userId, $filters);
+        $cacheKey = 'ch_stats_' . $userId . '_' . md5(json_encode($filters));
+        
+        return Cache::remember($cacheKey, 30, function () use ($userId, $filters) {
+            $query = $this->getUnifiedQuery($userId, $filters);
 
-        $stats = $query->selectRaw("
-            SUM(CASE WHEN type IN ('new_inquiry', 'callback_request', 'whatsapp_incoming') AND status IN ('pending', 'in_progress') THEN 1 ELSE 0 END) as inbox,
-            SUM(CASE WHEN type IN ('follow_up', 'site_visit') AND status IN ('pending', 'in_progress') THEN 1 ELSE 0 END) as followups,
-            SUM(CASE WHEN status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as pending,
-            SUM(CASE WHEN dueDate < NOW() AND status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as overdue,
-            SUM(CASE WHEN DATE(dueDate) = CURRENT_DATE AND status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as today,
-            SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
-        ")->first();
+            $stats = $query->selectRaw("
+                SUM(CASE WHEN type IN ('new_inquiry', 'callback_request', 'whatsapp_incoming') AND status IN ('pending', 'in_progress') THEN 1 ELSE 0 END) as inbox,
+                SUM(CASE WHEN type IN ('follow_up', 'site_visit') AND status IN ('pending', 'in_progress') THEN 1 ELSE 0 END) as followups,
+                SUM(CASE 
+                    WHEN customers_hub_stage_id IS NULL THEN 1
+                    WHEN customers_hub_stage_id NOT IN ('deal_completed', 'deal_rejected') THEN 1
+                    ELSE 0 
+                END) as pending,
+                SUM(CASE WHEN dueDate < NOW() AND status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as overdue,
+                SUM(CASE WHEN DATE(dueDate) = CURRENT_DATE AND status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as today,
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
+            ")->first();
 
-        return [
-            'inbox' => (int) ($stats->inbox ?? 0),
-            'followups' => (int) ($stats->followups ?? 0),
-            'pending' => (int) ($stats->pending ?? 0),
-            'overdue' => (int) ($stats->overdue ?? 0),
-            'today' => (int) ($stats->today ?? 0),
-            'completed' => (int) ($stats->completed ?? 0),
-        ];
+            return [
+                'inbox' => (int) ($stats->inbox ?? 0),
+                'followups' => (int) ($stats->followups ?? 0),
+                'pending' => (int) ($stats->pending ?? 0),
+                'overdue' => (int) ($stats->overdue ?? 0),
+                'today' => (int) ($stats->today ?? 0),
+                'completed' => (int) ($stats->completed ?? 0),
+            ];
+        });
     }
 
     /**
@@ -154,34 +181,38 @@ class ActionsAggregatorService
      */
     public function getComparisonStats(int $userId, array $filters = []): array
     {
-        $now = Carbon::now();
+        $cacheKey = 'ch_comparison_stats_' . $userId . '_' . md5(json_encode($filters));
+        
+        return Cache::remember($cacheKey, 300, function () use ($userId, $filters) {
+            $now = Carbon::now();
 
-        if (!empty($filters['date_from'])) {
-            $refDate = Carbon::parse($filters['date_from'])->startOfMonth();
-        } else {
-            $refDate = $now->copy()->subMonthNoOverflow()->startOfMonth();
-        }
+            if (!empty($filters['date_from'])) {
+                $refDate = Carbon::parse($filters['date_from'])->startOfMonth();
+            } else {
+                $refDate = $now->copy()->subMonthNoOverflow()->startOfMonth();
+            }
 
-        $currentStart = $refDate->copy()->startOfMonth();
+            $currentStart = $refDate->copy()->startOfMonth();
 
-        $compareStart = $refDate->copy()->subMonthNoOverflow()->startOfMonth();
-        $compareEnd = $compareStart->copy()->endOfMonth();
+            $compareStart = $refDate->copy()->subMonthNoOverflow()->startOfMonth();
+            $compareEnd = $compareStart->copy()->endOfMonth();
 
-        $compareFilters = $filters;
-        $compareFilters['date_from'] = $compareStart->toDateString();
-        $compareFilters['date_to'] = $compareEnd->toDateString();
+            $compareFilters = $filters;
+            $compareFilters['date_from'] = $compareStart->toDateString();
+            $compareFilters['date_to'] = $compareEnd->toDateString();
 
-        $compareStats = $this->getStats($userId, $compareFilters);
+            $compareStats = $this->getStats($userId, $compareFilters);
 
-        return [
-            'inboxComparing' => $compareStats['inbox'],
-            'followupsComparing' => $compareStats['followups'],
-            'pendingComparing' => $compareStats['pending'],
-            'overdueComparing' => $compareStats['overdue'],
-            'completedComparing' => $compareStats['completed'],
-            'month starts comparing' => $currentStart->format('F Y'),
-            'month ends comparing' => $compareStart->format('F Y'),
-        ];
+            return [
+                'inboxComparing' => $compareStats['inbox'],
+                'followupsComparing' => $compareStats['followups'],
+                'pendingComparing' => $compareStats['pending'],
+                'overdueComparing' => $compareStats['overdue'],
+                'completedComparing' => $compareStats['completed'],
+                'month starts comparing' => $currentStart->format('F Y'),
+                'month ends comparing' => $compareStart->format('F Y'),
+            ];
+        });
     }
 
     /**
@@ -190,12 +221,16 @@ class ActionsAggregatorService
      */
     public function getStageStats(int $userId, array $filters = []): array
     {
-        try {
-            [$countsRequests, $countsInquiries, $total] = $this->getHubStageCounts($userId, $filters);
-            return $this->buildHubStagesArray($userId, $countsRequests, $countsInquiries, $total);
-        } catch (\Throwable $e) {
-            return [];
-        }
+        $cacheKey = 'ch_stage_stats_' . $userId . '_' . md5(json_encode($filters));
+        
+        return Cache::remember($cacheKey, 30, function () use ($userId, $filters) {
+            try {
+                [$countsRequests, $countsInquiries, $total] = $this->getHubStageCounts($userId, $filters);
+                return $this->buildHubStagesArray($userId, $countsRequests, $countsInquiries, $total);
+            } catch (\Throwable $e) {
+                return [];
+            }
+        });
     }
 
     /**
@@ -368,7 +403,13 @@ class ActionsAggregatorService
 
         // Sources
         if (!empty($filters['sources']) && is_array($filters['sources'])) {
-            $query->whereIn(DB::raw('COALESCE(upr.source, \'website\')'), $filters['sources']);
+            // Instead of COALESCE which defeats index use, use OR pattern with NULL check
+            $query->where(function ($q) use ($filters) {
+                $q->whereIn('upr.source', $filters['sources']);
+                if (in_array('website', $filters['sources'])) {
+                    $q->orWhereNull('upr.source');
+                }
+            });
         }
 
         // Assignees (requires ac join)
@@ -400,9 +441,9 @@ class ActionsAggregatorService
             $query->whereIn('uc.name_ar', $filters['cities']);
         }
 
-        // States
-        if (!empty($filters['states']) && is_array($filters['states'])) {
-            $query->whereIn('upr.region', $filters['states']);
+        // Districts
+        if (!empty($filters['districts']) && is_array($filters['districts'])) {
+            $query->whereIn('upr.districts_id', $filters['districts']);
         }
 
         // Budget range
@@ -545,6 +586,30 @@ class ActionsAggregatorService
     }
 
     /**
+     * Resolve property_request_statuses.id for a tenant slug (per-merchant row preferred, then global user_id NULL).
+     */
+    private function resolvePropertyRequestStatusId(int $userId, string $slug): ?int
+    {
+        $id = DB::table('property_request_statuses')
+            ->where('user_id', $userId)
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->value('id');
+
+        if ($id !== null) {
+            return (int) $id;
+        }
+
+        $id = DB::table('property_request_statuses')
+            ->whereNull('user_id')
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->value('id');
+
+        return $id !== null ? (int) $id : null;
+    }
+
+    /**
      * Complete an action (mark as done).
      */
     public function completeAction(int $userId, string $actionId): bool
@@ -564,18 +629,27 @@ class ActionsAggregatorService
                     ->update([
                         'is_read' => 1,
                         'is_archived' => 0,
+                        'stage_id' => 'deal_completed',
                         'updated_at' => $now,
                     ]) > 0;
 
             case 'users_property_requests':
+                $updateData = [
+                    'is_read' => 1,
+                    'is_archived' => 0,
+                    'customers_hub_stage_id' => 'deal_completed',
+                    'updated_at' => $now,
+                ];
+
+                $statusId = $this->resolvePropertyRequestStatusId($userId, 'completed');
+                if ($statusId !== null) {
+                    $updateData['status_id'] = $statusId;
+                }
+
                 return DB::table('users_property_requests')
                     ->where('id', $parsed['sourceId'])
                     ->where('user_id', $userId)
-                    ->update([
-                        'is_read' => 1,
-                        'is_archived' => 0,
-                        'updated_at' => $now,
-                    ]) > 0;
+                    ->update($updateData) > 0;
 
             case 'reminders':
                 return DB::table('reminders')
@@ -622,17 +696,26 @@ class ActionsAggregatorService
                     ->where('user_id', $userId)
                     ->update([
                         'is_archived' => 1,
+                        'stage_id' => 'deal_rejected',
                         'updated_at' => $now,
                     ]) > 0;
 
             case 'users_property_requests':
+                $updateData = [
+                    'is_archived' => 1,
+                    'customers_hub_stage_id' => 'deal_rejected',
+                    'updated_at' => $now,
+                ];
+
+                $statusId = $this->resolvePropertyRequestStatusId($userId, 'cancelled');
+                if ($statusId !== null) {
+                    $updateData['status_id'] = $statusId;
+                }
+
                 return DB::table('users_property_requests')
                     ->where('id', $parsed['sourceId'])
                     ->where('user_id', $userId)
-                    ->update([
-                        'is_archived' => 1,
-                        'updated_at' => $now,
-                    ]) > 0;
+                    ->update($updateData) > 0;
 
             case 'reminders':
                 return DB::table('reminders')
@@ -1253,8 +1336,12 @@ class ActionsAggregatorService
      *  2. If an active property_request already exists for the same tenant and the same
      *     customer (matched by customer_id OR by phone number), the inquiry is suppressed —
      *     the property_request card already represents that customer.
+     *
+     * @param int $userId
+     * @param array $stageIds Stage IDs to include (empty = all)
+     * @param array $excludeStageIds Stage IDs to exclude (empty = none)
      */
-    private function getInquiriesSubquery(int $userId): \Illuminate\Database\Query\Builder
+    private function getInquiriesSubquery(int $userId, array $stageIds = [], array $excludeStageIds = []): \Illuminate\Database\Query\Builder
     {
         // Subquery: MAX inquiry id per customer for this tenant
         $latestIds = DB::table('api_customer_inquiry')
@@ -1262,31 +1349,40 @@ class ActionsAggregatorService
             ->where('user_id', $userId)
             ->groupBy('customer_id');
 
-        return DB::table('api_customer_inquiry as aci')
+        $query = DB::table('api_customer_inquiry as aci')
             ->joinSub($latestIds, 'li', 'aci.id', '=', 'li.id')
             ->join('api_customers as ac', 'aci.customer_id', '=', 'ac.id')
             ->leftJoin('users as u', 'aci.responsible_employee_id', '=', 'u.id')
-            ->where('aci.user_id', $userId)
-            // Suppress inquiry when an active property_request already exists for this customer
-            ->whereNotExists(function ($q) use ($userId) {
-                $q->selectRaw('1')
-                    ->from('users_property_requests as upr')
-                    ->where('upr.user_id', $userId)
-                    ->where('upr.is_active', 1)
-                    ->where(function ($q2) {
-                        $q2->where(function ($q3) {
-                            // matched by customer_id
-                            $q3->whereNotNull('upr.customer_id')
-                                ->whereColumn('upr.customer_id', 'aci.customer_id');
-                        })->orWhere(function ($q3) {
-                            // matched by phone number
-                            $q3->whereNotNull('upr.phone')
-                                ->whereNotNull('ac.phone_number')
-                                ->whereColumn('upr.phone', 'ac.phone_number');
-                        });
-                    });
+            // Dedup by customer_id: suppress inquiry if active property_request exists with same customer_id
+            ->whereNotExists(function ($sub) use ($userId) {
+                $sub->select(DB::raw(1))
+                    ->from('users_property_requests as upr_d1')
+                    ->where('upr_d1.user_id', $userId)
+                    ->where('upr_d1.is_active', 1)
+                    ->whereColumn('upr_d1.customer_id', 'aci.customer_id')
+                    ->whereNotNull('upr_d1.customer_id');
             })
-            ->select([
+            // Dedup by phone: suppress inquiry if active property_request exists with same phone
+            ->whereNotExists(function ($sub) use ($userId) {
+                $sub->select(DB::raw(1))
+                    ->from('users_property_requests as upr_d2')
+                    ->where('upr_d2.user_id', $userId)
+                    ->where('upr_d2.is_active', 1)
+                    ->whereColumn('upr_d2.phone', 'ac.phone_number')
+                    ->whereNotNull('upr_d2.phone')
+                    ->whereNotNull('ac.phone_number');
+            })
+            ->where('aci.user_id', $userId);
+
+        // Push stage filters into the UNION arm to allow MySQL to use indexes
+        if (!empty($stageIds)) {
+            $query->whereIn('aci.stage_id', $stageIds);
+        }
+        if (!empty($excludeStageIds)) {
+            $query->whereNotIn('aci.stage_id', $excludeStageIds);
+        }
+
+        return $query->select([
                 DB::raw("CONCAT('inquiry_', aci.id) as id"),
                 'aci.customer_id as customerId',
                 'ac.name as customerName',
@@ -1344,15 +1440,20 @@ class ActionsAggregatorService
                 DB::raw("NULL as propertyRequestStatusNameEn"),
                 DB::raw("NULL as districts_id"),
                 DB::raw("NULL as districtAR"),
+                'aci.stage_id as customers_hub_stage_id',
             ]);
     }
 
     /**
      * Build property requests subquery.
+     *
+     * @param int $userId
+     * @param array $stageIds Stage IDs to include (empty = all)
+     * @param array $excludeStageIds Stage IDs to exclude (empty = none)
      */
-    private function getPropertyRequestsSubquery(int $userId): \Illuminate\Database\Query\Builder
+    private function getPropertyRequestsSubquery(int $userId, array $stageIds = [], array $excludeStageIds = []): \Illuminate\Database\Query\Builder
     {
-        return DB::table('users_property_requests as upr')
+        $query = DB::table('users_property_requests as upr')
             ->leftJoin('api_customers as ac', function ($join) {
                 $join->on('ac.id', '=', 'upr.customer_id')
                     ->on('ac.user_id', '=', 'upr.user_id');
@@ -1367,8 +1468,17 @@ class ActionsAggregatorService
             ->leftJoin('customers_hub_status_mapping as chsm', 'prs.slug', '=', 'chsm.property_request_status_slug')
             ->leftJoin('users as u2', DB::raw('u2.id'), '=', DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id, ac_phone.responsible_employee_id)'))
             ->where('upr.user_id', $userId)
-            ->where('upr.is_active', 1)
-            ->select([
+            ->where('upr.is_active', 1);
+
+        // Push stage filters into the UNION arm to allow MySQL to use indexes
+        if (!empty($stageIds)) {
+            $query->whereIn('upr.customers_hub_stage_id', $stageIds);
+        }
+        if (!empty($excludeStageIds)) {
+            $query->whereNotIn('upr.customers_hub_stage_id', $excludeStageIds);
+        }
+
+        return $query->select([
                 DB::raw("CONCAT('property_request_', upr.id) as id"),
                 DB::raw('COALESCE(ac.id, ac_phone.id) as customerId'),
                 DB::raw("COALESCE(ac.name, ac_phone.name, upr.full_name) as customerName"),
@@ -1424,6 +1534,7 @@ class ActionsAggregatorService
                 'prs.name_en as propertyRequestStatusNameEn',
                 'upr.districts_id as districts_id',
                 'ud_req.name_ar as districtAR',
+                'upr.customers_hub_stage_id as customers_hub_stage_id',
             ]);
     }
 
@@ -1485,6 +1596,7 @@ class ActionsAggregatorService
                 DB::raw("NULL as propertyRequestStatusNameEn"),
                 DB::raw("NULL as districts_id"),
                 DB::raw("NULL as districtAR"),
+                DB::raw("NULL as customers_hub_stage_id"),
             ]);
     }
 
@@ -1649,6 +1761,17 @@ class ActionsAggregatorService
             }
         }
 
+        // Statuses include/exclude filters (Customers Hub status values)
+        // - statuses: include only these statuses (IN)
+        // - excludeStatuses: exclude these statuses (NOT IN)
+        // Empty arrays are ignored.
+        if (!empty($filters['statuses']) && is_array($filters['statuses'])) {
+            $query->whereIn('status', $filters['statuses']);
+        }
+        if (!empty($filters['excludeStatuses']) && is_array($filters['excludeStatuses'])) {
+            $query->whereNotIn('status', $filters['excludeStatuses']);
+        }
+
         // Types filter
         if (!empty($filters['types']) && is_array($filters['types'])) {
             $query->whereIn('type', $filters['types']);
@@ -1656,6 +1779,8 @@ class ActionsAggregatorService
 
         // Sources filter
         if (!empty($filters['sources']) && is_array($filters['sources'])) {
+            // Applies to all action objectTypes: e.g. inquiries use 'inquiry', reminders use 'manual'.
+            // For property_request rows, `source` is already normalised in the UNION arm SELECT.
             $query->whereIn('source', $filters['sources']);
         }
 
@@ -1698,28 +1823,11 @@ class ActionsAggregatorService
         }
 
         // Stages filter (pipeline: requests and inquiries in given customers_hub stage_id or id)
-        if (!empty($filters['stages']) && is_array($filters['stages'])) {
-            $stageIdStrings = $this->resolveStagesFilterToStageIds($filters['stages']);
-            if (!empty($stageIdStrings)) {
-                $query->where(function ($q) use ($userId, $stageIdStrings) {
-                    $q->where(function ($q2) use ($userId, $stageIdStrings) {
-                        $q2->where('sourceTable', 'users_property_requests')
-                            ->whereIn('sourceId', function ($sub) use ($userId, $stageIdStrings) {
-                                $sub->select('id')->from('users_property_requests')
-                                    ->where('user_id', $userId)
-                                    ->whereIn('customers_hub_stage_id', $stageIdStrings);
-                            });
-                    })->orWhere(function ($q2) use ($userId, $stageIdStrings) {
-                        $q2->where('sourceTable', 'api_customer_inquiry')
-                            ->whereIn('sourceId', function ($sub) use ($userId, $stageIdStrings) {
-                                $sub->select('id')->from('api_customer_inquiry')
-                                    ->where('user_id', $userId)
-                                    ->whereIn('stage_id', $stageIdStrings);
-                            });
-                    });
-                });
-            }
-        }
+        // NOTE: This is now handled in the UNION arms (getPropertyRequestsSubquery + getInquiriesSubquery)
+        // to allow MySQL to use indexes before materialisation. Skipped here.
+
+        // Exclude stages filter (pipeline: exclude requests and inquiries in given customers_hub stage ids)
+        // NOTE: This is now handled in the UNION arms. Skipped here.
 
         // Exclude specific action ID
         if (!empty($filters['exclude_id'])) {
@@ -1807,9 +1915,9 @@ class ActionsAggregatorService
             $query->whereIn('city', $filters['cities']);
         }
 
-        // States filter (request-level)
-        if (!empty($filters['states']) && is_array($filters['states'])) {
-            $query->whereIn('state', $filters['states']);
+        // Districts filter (request-level)
+        if (!empty($filters['districts']) && is_array($filters['districts'])) {
+            $query->whereIn('districts_id', $filters['districts']);
         }
 
         // Budget range filter: request's budget range overlaps [budget_min, budget_max]
@@ -1842,112 +1950,50 @@ class ActionsAggregatorService
     private function enrichItemsWithHubStage(Collection $items, int $userId): Collection
     {
         $items = $items->values();
-        $propertyRequestIds = $items->filter(function ($item) {
-            return ($item->sourceTable ?? '') === 'users_property_requests';
-        })->pluck('sourceId')->filter()->unique()->values()->all();
-
-        $inquiryIds = $items->filter(function ($item) {
-            return ($item->sourceTable ?? '') === 'api_customer_inquiry';
-        })->pluck('sourceId')->filter()->unique()->values()->all();
-
-        $requestStageMap = [];
-        $inquiryStageMap = [];
-
-        if (!empty($propertyRequestIds)) {
-            $requestRows = DB::table('users_property_requests')
-                ->where('user_id', $userId)
-                ->whereIn('id', $propertyRequestIds)
-                ->get(['id', 'customers_hub_stage_id']);
-            $stageIdsToLoad = $requestRows->pluck('customers_hub_stage_id')->filter()->unique()->values()->all();
-            if (!empty($stageIdsToLoad)) {
-                $stages = DB::table('customers_hub_stages as s')
-                    ->leftJoin('customers_hub_stage_overrides as o', function ($join) use ($userId) {
-                        $join->on('o.stage_id', '=', 's.stage_id')
-                            ->where('o.user_id', '=', DB::raw((int) $userId));
-                    })
-                    ->whereIn('s.stage_id', $stageIdsToLoad)
-                    ->where('s.is_active', true)
-                    ->where(function ($w) use ($userId) {
-                        $w->where('s.is_system', true)->orWhere('s.user_id', $userId);
-                    })
-                    ->get([
-                        's.id',
-                        's.stage_id',
-                        DB::raw('COALESCE(o.stage_name_ar, s.stage_name_ar) as stage_name_ar'),
-                        DB::raw('COALESCE(o.stage_name_en, s.stage_name_en) as stage_name_en'),
-                    ]);
-                $stageByStageId = $stages->keyBy('stage_id');
-                foreach ($requestRows as $row) {
-                    if ($row->customers_hub_stage_id === null) {
-                        $requestStageMap[$row->id] = null;
-                        continue;
-                    }
-                    $s = $stageByStageId->get($row->customers_hub_stage_id);
-                    $requestStageMap[$row->id] = $s ? (object) [
-                        'id' => (int) $s->id,
-                        'stage_id' => $s->stage_id,
-                        'nameAr' => $s->stage_name_ar,
-                        'nameEn' => $s->stage_name_en ?? $s->stage_name_ar,
-                    ] : null;
-                }
+        
+        $stageIds = [];
+        foreach ($items as $item) {
+            if (!empty($item->customers_hub_stage_id)) {
+                $stageIds[] = $item->customers_hub_stage_id;
             }
         }
+        $stageIds = array_unique($stageIds);
 
-        if (!empty($inquiryIds)) {
-            $inquiryRows = DB::table('api_customer_inquiry')
-                ->where('user_id', $userId)
-                ->whereIn('id', $inquiryIds)
-                ->get(['id', 'stage_id']);
-            $inquiryStageIds = $inquiryRows->pluck('stage_id')->filter()->unique()->values()->all();
-            if (!empty($inquiryStageIds)) {
-                $stages = DB::table('customers_hub_stages as s')
-                    ->leftJoin('customers_hub_stage_overrides as o', function ($join) use ($userId) {
-                        $join->on('o.stage_id', '=', 's.stage_id')
-                            ->where('o.user_id', '=', DB::raw((int) $userId));
-                    })
-                    ->whereIn('s.stage_id', $inquiryStageIds)
-                    ->where('s.is_active', true)
-                    ->where(function ($w) use ($userId) {
-                        $w->where('s.is_system', true)->orWhere('s.user_id', $userId);
-                    })
-                    ->get([
-                        's.id',
-                        's.stage_id',
-                        DB::raw('COALESCE(o.stage_name_ar, s.stage_name_ar) as stage_name_ar'),
-                        DB::raw('COALESCE(o.stage_name_en, s.stage_name_en) as stage_name_en'),
-                    ]);
-                $stageByStageId = $stages->keyBy('stage_id');
-                foreach ($inquiryRows as $row) {
-                    if ($row->stage_id === null) {
-                        $inquiryStageMap[$row->id] = null;
-                        continue;
-                    }
-                    $s = $stageByStageId->get($row->stage_id);
-                    $inquiryStageMap[$row->id] = $s ? (object) [
-                        'id' => (int) $s->id,
-                        'stage_id' => $s->stage_id,
-                        'nameAr' => $s->stage_name_ar,
-                        'nameEn' => $s->stage_name_en ?? $s->stage_name_ar,
-                    ] : null;
-                }
-            }
+        $stageByStageId = [];
+        if (!empty($stageIds)) {
+            // Single query to load all stage objects (both system and user-specific)
+            // Include stages owned by property request owners for cross-user visibility
+            $stages = DB::table('customers_hub_stages as s')
+                ->leftJoin('customers_hub_stage_overrides as o', function ($join) use ($userId) {
+                    $join->on('o.stage_id', '=', 's.stage_id')
+                        ->where('o.user_id', '=', DB::raw((int) $userId));
+                })
+                ->whereIn('s.stage_id', $stageIds)
+                ->where('s.is_active', true)
+                ->get([
+                    's.id',
+                    's.stage_id',
+                    DB::raw('COALESCE(o.stage_name_ar, s.stage_name_ar) as stage_name_ar'),
+                    DB::raw('COALESCE(o.stage_name_en, s.stage_name_en) as stage_name_en'),
+                ]);
+            $stageByStageId = $stages->keyBy('stage_id')->toArray();
         }
 
-        return $items->map(function ($item) use ($requestStageMap, $inquiryStageMap) {
-            if (($item->sourceTable ?? '') === 'users_property_requests') {
-                $stageData = $requestStageMap[$item->sourceId] ?? null;
-                $item->stage_id = $stageData ? $stageData->stage_id : null;
-                $item->stage = $stageData;
-                return $item;
-            }
-            if (($item->sourceTable ?? '') === 'api_customer_inquiry') {
-                $stageData = $inquiryStageMap[$item->sourceId] ?? null;
-                $item->stage_id = $stageData ? $stageData->stage_id : null;
-                $item->stage = $stageData;
-                return $item;
-            }
+        return $items->map(function ($item) use ($stageByStageId) {
             $item->stage_id = null;
             $item->stage = null;
+
+            if (!empty($item->customers_hub_stage_id) && isset($stageByStageId[$item->customers_hub_stage_id])) {
+                $s = $stageByStageId[$item->customers_hub_stage_id];
+                $item->stage_id = $item->customers_hub_stage_id;
+                $item->stage = (object) [
+                    'id' => (int) $s->id,
+                    'stage_id' => $s->stage_id,
+                    'nameAr' => $s->stage_name_ar,
+                    'nameEn' => $s->stage_name_en ?? $s->stage_name_ar,
+                ];
+            }
+
             return $item;
         });
     }
@@ -1958,7 +2004,7 @@ class ActionsAggregatorService
     private function transformAction(object $item): object
     {
         // Parse metadata JSON if string
-        $metadata = $item->metadata;
+        $metadata = $item->metadata ?? null;
         if (is_string($metadata)) {
             $metadata = json_decode($metadata, true) ?? [];
         }
@@ -2023,6 +2069,7 @@ class ActionsAggregatorService
             'metadata' => $metadata,
             'sourceTable' => $item->sourceTable,
             'sourceId' => $item->sourceId,
+            'customers_hub_stage_id' => $item->customers_hub_stage_id ?? null,
         ];
     }
 
@@ -2185,18 +2232,19 @@ class ActionsAggregatorService
         if (empty($values)) {
             return [];
         }
-        $stageIds = [];
-        foreach ($values as $v) {
-            if (is_int($v) || (is_string($v) && ctype_digit($v))) {
-                $sid = DB::table('customers_hub_stages')->where('id', (int) $v)->where('is_active', true)->value('stage_id');
-                if ($sid !== null) {
-                    $stageIds[] = $sid;
-                }
-            } else {
-                $stageIds[] = (string) $v;
-            }
-        }
 
-        return array_values(array_unique($stageIds));
+        // Separate numeric IDs from string IDs
+        $numericIds = array_filter($values, fn($v) => is_int($v) || (is_string($v) && ctype_digit($v)));
+        $stringIds  = array_filter($values, fn($v) => !is_int($v) && !(is_string($v) && ctype_digit($v)));
+
+        // Batch query all numeric IDs in one go
+        $resolved = empty($numericIds) ? [] : DB::table('customers_hub_stages')
+            ->whereIn('id', array_map('intval', $numericIds))
+            ->where('is_active', true)
+            ->pluck('stage_id')
+            ->toArray();
+
+        // Merge resolved numeric stage_ids with the string stage_ids passed directly
+        return array_values(array_unique(array_merge($resolved, array_map('strval', $stringIds))));
     }
 }

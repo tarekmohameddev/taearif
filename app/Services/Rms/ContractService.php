@@ -99,6 +99,15 @@ class ContractService
                 ->where('status', 'pending')
                 ->update(['status' => 'void']);
 
+            $rental = $contract->rental;
+            if ($rental) {
+                $rental->update(['status' => 'inactive']);
+                if ($rental->unit_id) {
+                    $property = \App\Models\User\RealestateManagement\Property::find($rental->unit_id);
+                    $property?->updatePropertyStatus();
+                }
+            }
+
             return $contract;
         });
     }

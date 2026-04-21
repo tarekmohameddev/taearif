@@ -37,6 +37,8 @@ class ApiCustomer extends Authenticatable
         'priority_id', // 1, 2, 3
         'responsible_employee_id',
         'stage_id', // 1, 2, 3, 4, 5
+        'customers_hub_stage_id', // customers_hub_stages.stage_id (e.g. new_lead)
+        'customers_hub_stage_changed_at',
         'procedure_id', // 1 meeting 2 visit
         'city_id',
         'district_id',
