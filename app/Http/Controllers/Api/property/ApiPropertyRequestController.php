@@ -32,6 +32,7 @@ use App\Models\ApiCustomer;
 use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
 use App\Rules\PropertyTypeRule;
 use Illuminate\Support\Carbon;
+use App\Domain\CustomersHub\Services\IgnoredCustomersService;
 
 class ApiPropertyRequestController extends Controller
 {
@@ -117,6 +118,16 @@ class ApiPropertyRequestController extends Controller
         }
 
         $data['property_ids'] = $propertyIds;
+
+        // Ignore-list guard: reject creation if this phone/customer is on the tenant's ignore list
+        $incomingPhone = $data['phone'] ?? null;
+        if ($incomingPhone && app(IgnoredCustomersService::class)->isIgnored($tenant->id, (string) $incomingPhone)) {
+            return response()->json([
+                'message'    => 'هذا العميل/الرقم موجود في قائمة التجاهل.',
+                'message_en' => 'This customer/phone is on the ignore list.',
+                'error_code' => 'CUSTOMER_IGNORED',
+            ], 422);
+        }
 
         $propertyRequest = UserPropertyRequest::create($data);
 
@@ -215,6 +226,15 @@ class ApiPropertyRequestController extends Controller
             'is_archived' => false,
             'property_ids' => [$property->id],
         ];
+
+        // Ignore-list guard: reject creation if this phone/customer is on the tenant's ignore list
+        if (app(IgnoredCustomersService::class)->isIgnored($tenant->id, (string) $validated['phone'])) {
+            return response()->json([
+                'message'    => 'هذا العميل/الرقم موجود في قائمة التجاهل.',
+                'message_en' => 'This customer/phone is on the ignore list.',
+                'error_code' => 'CUSTOMER_IGNORED',
+            ], 422);
+        }
 
         $propertyRequest = UserPropertyRequest::create($data);
 

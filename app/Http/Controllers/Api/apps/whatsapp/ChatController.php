@@ -24,6 +24,7 @@ use App\Models\User;
 use App\Models\WhatsappUser;
 use App\Domain\Communication\Contracts\CommunicationService;
 use App\Domain\Communication\WhatsApp\Services\WhatsAppWebhookService;
+use App\Domain\CustomersHub\Services\IgnoredCustomersService;
 use Illuminate\Support\Str;
 
 
@@ -342,6 +343,20 @@ public function handleWhatsappWebhook(Request $request)
 
             // Debug the data being saved
             \Log::info('Inquiry Data Being Saved', $inquiryData);
+
+            // Ignore-list guard: skip creating inquiry and property request if customer is ignored
+            if ($userId !== null && app(IgnoredCustomersService::class)->isIgnored(
+                (int) $userId,
+                (string) $whatsappNumber,
+                $customer ? $customer->id : null
+            )) {
+                Log::info('ChatController: phone/customer is on ignore list — skipping inquiry creation', [
+                    'phone'           => $whatsappNumber,
+                    'customer_id'     => $customer ? $customer->id : null,
+                    'tenant_user_id'  => $userId,
+                ]);
+                return response()->json(['status' => 'ignored', 'message' => 'Customer is on ignore list'], 200);
+            }
 
             // Save to inquiry table with all new fields
             $inquiry = ApiCustomerInquiry::create($inquiryData);

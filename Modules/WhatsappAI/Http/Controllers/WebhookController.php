@@ -11,6 +11,7 @@ use App\Models\WhatsappUser;
 use Modules\WhatsappAI\Entities\WhatsappConversation;
 use Modules\WhatsappAI\Entities\WhatsappMessage;
 use Modules\WhatsappAI\Jobs\ProcessConversation;
+use Modules\WhatsappAI\Jobs\TranscribeAudio;
 
 class WebhookController extends Controller
 {
@@ -84,7 +85,7 @@ class WebhookController extends Controller
             }
 
             // Store the message
-            WhatsappMessage::create([
+            $storedMessage = WhatsappMessage::create([
                 'conversation_id' => $conversation->id,
                 'whatsapp_message_id' => $message['id'] ?? null,
                 // Ensure we only store values supported by the DB enum.
@@ -94,6 +95,13 @@ class WebhookController extends Controller
                 'media_url' => $mediaUrl,
                 'raw_payload' => $message,
             ]);
+
+            // Dispatch audio transcription immediately so the transcript is ready
+            // before ProcessConversation runs (which is delayed by session_timeout).
+            if ($storedMessageType === 'audio') {
+                TranscribeAudio::dispatch($storedMessage->id)
+                    ->onQueue(config('whatsappai.queue', 'default'));
+            }
 
             // Update conversation
             $conversation->increment('message_count');
