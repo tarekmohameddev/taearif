@@ -319,12 +319,17 @@ class PropertyRequestDetailBuilder
      */
     public function formatPropertyRequestAppointment(object $row): array
     {
+        $datetime = null;
+        if (isset($row->datetime) && $row->datetime !== null && $row->datetime !== '') {
+            $datetime = Carbon::parse($row->datetime)->toIso8601String();
+        }
+
         return [
             'id' => $row->id,
             'title' => $row->title,
             'type' => $row->type,
-            'datetime' => Carbon::parse($row->datetime)->toIso8601String(),
-            'duration' => (int) $row->duration,
+            'datetime' => $datetime,
+            'duration' => isset($row->duration) && $row->duration !== null ? (int) $row->duration : null,
             'status' => $row->status ?? 'scheduled',
             'priority' => $this->mapPriorityAppointmentToString((int) ($row->priority ?? 2)),
             'notes' => $row->notes,

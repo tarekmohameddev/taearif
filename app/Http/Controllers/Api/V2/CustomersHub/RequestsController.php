@@ -49,6 +49,12 @@ use Carbon\Carbon;
  */
 class RequestsController extends ApiController
 {
+    /**
+     * Chunk size for WHERE IN when hydrating list rows (appointments, reminders, property ids).
+     * Avoids oversized bound-parameter lists and keeps each round-trip bounded per tenant.
+     */
+    private const CH_LIST_WHERE_IN_CHUNK = 500;
+
     private ActionsAggregatorService $aggregator;
 
     private PropertyRequestDetailBuilder $propertyRequestDetailBuilder;
@@ -77,6 +83,8 @@ class RequestsController extends ApiController
         $filters = $validated;
         $limit = $validated['limit'] ?? 50;
         $offset = $validated['offset'] ?? 0;
+        $statsFilters = $validated;
+        unset($statsFilters['limit'], $statsFilters['offset'], $statsFilters['sort_by'], $statsFilters['sort_dir']);
 
         // isUpdated flag depends on per-viewer last viewed timestamp, so include it in the cache key.
         // Use a short-lived (10s) micro-cache for the viewed_at value itself.
@@ -98,7 +106,7 @@ class RequestsController extends ApiController
                 'offset' => $offset,
             ]));
 
-        $payload = Cache::remember($cacheKey, 30, function () use ($userId, $filters, $limit, $offset, $viewedAt) {
+        $payload = Cache::remember($cacheKey, 30, function () use ($userId, $filters, $statsFilters, $limit, $offset, $viewedAt) {
             // Get list
             $result = $this->aggregator->getList($userId, $filters, $limit, $offset);
 
@@ -110,67 +118,67 @@ class RequestsController extends ApiController
                 return ($item->objectType ?? '') === 'inquiry';
             })->pluck('sourceId')->filter()->unique()->values()->all();
 
-            $appointmentsByRequest = [];
-            $remindersByRequest = [];
-            $appointmentsByInquiry = [];
-            $remindersByInquiry = [];
             $now = Carbon::now();
-            if (!empty($propertyRequestSourceIds)) {
-                $appointmentRows = DB::table('property_request_appointments')
-                    ->where('user_id', $userId)
-                    ->whereIn('property_request_id', $propertyRequestSourceIds)
-                    ->orderBy('datetime', 'asc')
-                    ->get();
-                foreach ($appointmentRows as $row) {
-                    $appointmentsByRequest[$row->property_request_id][] = $this->propertyRequestDetailBuilder->formatPropertyRequestAppointment($row);
-                }
-                $reminderRows = DB::table('property_request_reminders')
-                    ->where('user_id', $userId)
-                    ->whereIn('property_request_id', $propertyRequestSourceIds)
-                    ->orderBy('datetime', 'asc')
-                    ->get();
-                foreach ($reminderRows as $row) {
-                    $remindersByRequest[$row->property_request_id][] = $this->propertyRequestDetailBuilder->formatPropertyRequestReminder($row, $now);
-                }
-            }
-            if (!empty($inquirySourceIds)) {
-                $appointmentRows = DB::table('inquiry_appointments')
-                    ->where('user_id', $userId)
-                    ->whereIn('inquiry_id', $inquirySourceIds)
-                    ->orderBy('datetime', 'asc')
-                    ->get();
-                foreach ($appointmentRows as $row) {
-                    $appointmentsByInquiry[$row->inquiry_id][] = $this->propertyRequestDetailBuilder->formatPropertyRequestAppointment($row);
-                }
-                $reminderRows = DB::table('inquiry_reminders')
-                    ->where('user_id', $userId)
-                    ->whereIn('inquiry_id', $inquirySourceIds)
-                    ->orderBy('datetime', 'asc')
-                    ->get();
-                foreach ($reminderRows as $row) {
-                    $remindersByInquiry[$row->inquiry_id][] = $this->propertyRequestDetailBuilder->formatPropertyRequestReminder($row, $now);
-                }
-            }
+            $appointmentsByRequest = $this->batchLoadFormattedByForeignKey(
+                'property_request_appointments',
+                $userId,
+                'property_request_id',
+                $propertyRequestSourceIds,
+                'datetime',
+                fn ($row) => $this->propertyRequestDetailBuilder->formatPropertyRequestAppointment($row)
+            );
+            $remindersByRequest = $this->batchLoadFormattedByForeignKey(
+                'property_request_reminders',
+                $userId,
+                'property_request_id',
+                $propertyRequestSourceIds,
+                'datetime',
+                fn ($row) => $this->propertyRequestDetailBuilder->formatPropertyRequestReminder($row, $now)
+            );
+            $appointmentsByInquiry = $this->batchLoadFormattedByForeignKey(
+                'inquiry_appointments',
+                $userId,
+                'inquiry_id',
+                $inquirySourceIds,
+                'datetime',
+                fn ($row) => $this->propertyRequestDetailBuilder->formatPropertyRequestAppointment($row)
+            );
+            $remindersByInquiry = $this->batchLoadFormattedByForeignKey(
+                'inquiry_reminders',
+                $userId,
+                'inquiry_id',
+                $inquirySourceIds,
+                'datetime',
+                fn ($row) => $this->propertyRequestDetailBuilder->formatPropertyRequestReminder($row, $now)
+            );
 
             // Load property_ids per property request and batch-load property summaries
             $propertiesByRequestId = [];
             if (!empty($propertyRequestSourceIds)) {
-                $requestRows = DB::table('users_property_requests')
-                    ->where('user_id', $userId)
-                    ->whereIn('id', $propertyRequestSourceIds)
-                    ->get(['id', 'property_ids']);
-                foreach ($requestRows as $row) {
-                    $ids = $row->property_ids;
-                    if (is_string($ids)) {
-                        $decoded = json_decode($ids, true);
-                        $ids = is_array($decoded) ? $decoded : [];
+                foreach (array_chunk($propertyRequestSourceIds, self::CH_LIST_WHERE_IN_CHUNK) as $idChunk) {
+                    $requestRows = DB::table('users_property_requests')
+                        ->where('user_id', $userId)
+                        ->whereIn('id', $idChunk)
+                        ->get(['id', 'property_ids']);
+                    foreach ($requestRows as $row) {
+                        $ids = $row->property_ids;
+                        if (is_string($ids)) {
+                            $decoded = json_decode($ids, true);
+                            $ids = is_array($decoded) ? $decoded : [];
+                        }
+                        $ids = is_array($ids) ? $ids : [];
+                        $propertiesByRequestId[(int) $row->id] = array_values(array_filter(array_map(function ($id) {
+                            return is_numeric($id) ? (int) $id : null;
+                        }, $ids)));
                     }
-                    $ids = is_array($ids) ? $ids : [];
-                    $propertiesByRequestId[(int) $row->id] = array_values(array_filter(array_map(function ($id) {
-                        return is_numeric($id) ? (int) $id : null;
-                    }, $ids)));
                 }
-                $allPropertyIds = array_values(array_unique(array_merge(...array_values($propertiesByRequestId))));
+                $mergedPropertyIds = [];
+                foreach ($propertiesByRequestId as $ids) {
+                    foreach ($ids as $pid) {
+                        $mergedPropertyIds[] = $pid;
+                    }
+                }
+                $allPropertyIds = array_values(array_unique($mergedPropertyIds));
                 $summariesById = $this->propertyRequestDetailBuilder->getPropertySummariesForIds($userId, $allPropertyIds);
                 foreach ($propertiesByRequestId as $requestId => $ids) {
                     $propertiesByRequestId[$requestId] = array_values(array_filter(array_map(function ($id) use ($summariesById) {
@@ -209,13 +217,13 @@ class RequestsController extends ApiController
             });
 
             // Get stats
-            $stats = $this->aggregator->getStats($userId, $filters);
-            $comparison = $this->aggregator->getComparisonStats($userId, $filters);
+            $stats = $this->aggregator->getStats($userId, $statsFilters);
+            $comparison = $this->aggregator->getComparisonStats($userId, $statsFilters);
             $stats = array_merge($stats, $comparison);
 
             // All-time property-request stats (broker scoped only; intentionally ignores list filters/date ranges)
-            // Cache these for 60 seconds since they change infrequently
-            $globalCounts = Cache::remember("ch_global_counts_{$userId}", 60, function () use ($userId) {
+            // Cache these for 120 seconds since they change infrequently
+            $globalCounts = Cache::remember("ch_global_counts_{$userId}", 120, function () use ($userId) {
                 $dealClosed = (int) DB::table('users_property_requests as upr')
                     ->where('upr.user_id', $userId)
                     ->where('upr.is_active', 1)
@@ -259,7 +267,7 @@ class RequestsController extends ApiController
             $stats = array_merge($stats, $globalCounts);
 
             try {
-                $stageFilters = $filters;
+                $stageFilters = $statsFilters;
                 unset($stageFilters['excludeStatuses']);
                 $stages = $this->aggregator->getStageStats($userId, $stageFilters);
             } catch (\Throwable $e) {
@@ -803,11 +811,23 @@ class RequestsController extends ApiController
         $title = !empty($validated['title']) ? $validated['title'] : (
             $validated['type'] === 'site_visit' ? 'معاينة عقار' : 'موعد طلب عقار'
         );
-        $duration = (int) ($validated['duration'] ?? 30);
+        $duration = array_key_exists('duration', $validated) ? ($validated['duration'] !== null ? (int) $validated['duration'] : null) : null;
         $priorityDb = $this->mapPriorityAppointmentToDb($validated['priority'] ?? 'medium');
-        $datetime = !empty($validated['datetime'])
-            ? Carbon::parse($validated['datetime'])->toDateTimeString()
-            : now()->toDateTimeString();
+        $datetime = null;
+        if (array_key_exists('datetime', $validated) && !empty($validated['datetime'])) {
+            $dt = Carbon::parse($validated['datetime']);
+            if ($dt->lt(Carbon::now())) {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'INVALID_DATETIME',
+                        'message' => 'Invalid datetime',
+                        'message_ar' => 'تاريخ/وقت غير صالح',
+                    ],
+                ], 422);
+            }
+            $datetime = $dt->toDateTimeString();
+        }
         $now = now();
 
         if ($isInquiry) {
@@ -1415,6 +1435,46 @@ class RequestsController extends ApiController
     // =========================================================================
     // PRIVATE HELPERS
     // =========================================================================
+
+    /**
+     * Load rows in chunks of foreign-key IDs, format each row, and group by that FK (int => list of formatted values).
+     * Keeps one query shape per chunk (tenant-scoped via user_id) instead of unbounded IN lists.
+     *
+     * @param  callable(object): mixed  $formatter
+     * @return array<int, array<int, mixed>>
+     */
+    private function batchLoadFormattedByForeignKey(
+        string $table,
+        int $userId,
+        string $foreignKeyColumn,
+        array $foreignIds,
+        string $orderColumn,
+        callable $formatter
+    ): array {
+        $foreignIds = array_values(array_unique(array_filter(array_map('intval', $foreignIds))));
+        if ($foreignIds === []) {
+            return [];
+        }
+
+        $bucket = [];
+        foreach (array_chunk($foreignIds, self::CH_LIST_WHERE_IN_CHUNK) as $chunk) {
+            $rows = DB::table($table)
+                ->where('user_id', $userId)
+                ->whereIn($foreignKeyColumn, $chunk)
+                ->orderBy($orderColumn, 'asc')
+                ->get();
+
+            foreach ($rows as $row) {
+                $fk = (int) ($row->{$foreignKeyColumn} ?? 0);
+                if ($fk <= 0) {
+                    continue;
+                }
+                $bucket[$fk][] = $formatter($row);
+            }
+        }
+
+        return $bucket;
+    }
 
     /**
      * Get the tenant user ID from request.
