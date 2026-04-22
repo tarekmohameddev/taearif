@@ -135,6 +135,10 @@ class PropertyController extends Controller
 				}
 			}
 		}
+		// Featured filter
+		if ($request->boolean('featured')) {
+			$query->where('featured', 1);
+		}
 		if ($request->filled('price_from')) $query->where('price', '>=', $request->query('price_from'));
 		if ($request->filled('price_to')) $query->where('price', '<=', $request->query('price_to'));
 		if ($request->filled('area_from')) $query->where('area', '>=', $request->query('area_from'));
