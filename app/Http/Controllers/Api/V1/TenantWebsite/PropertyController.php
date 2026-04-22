@@ -469,6 +469,7 @@ class PropertyController extends Controller
 			'transactionType' => $this->translator->translatePurpose($normalizedPurpose),
 			'transactionType_en' => $normalizedPurpose,
 			'image' => $featured,
+			'featured' => (bool) $p->featured,
 			'status' => $isUnavailable ? 'unavailable' : 'available',
 			'show_reservations' => (bool) $p->show_reservations,
 			'createdAt' => $p->created_at?->toISOString(),
