@@ -31,6 +31,16 @@ class EmployeeController extends Controller
     {
         $tenantId = $this->tenantId();
 
+        $assignmentService = app(AssignmentService::class);
+        $workloadByEmployeeId = collect($assignmentService->getEmployees($tenantId))
+            ->mapWithKeys(function (array $row) {
+                $id = isset($row['id']) ? (int) $row['id'] : null;
+                if (!$id) {
+                    return [];
+                }
+                return [$id => $row];
+            });
+
         $q = User::where('tenant_id', $tenantId)
             ->where('account_type', 'employee')
             ->when($request->filled('q'), function ($qb) use ($request) {
@@ -48,12 +58,17 @@ class EmployeeController extends Controller
         $employees = $q->paginate((int)($request->per_page ?? 20));
 
         // Add roles and permissions to each employee
-        $employees->getCollection()->transform(function ($employee) use ($tenantId) {
+        $employees->getCollection()->transform(function ($employee) use ($tenantId, $workloadByEmployeeId) {
             // Set tenant context for Spatie
             app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
 
             $employee->roles = $employee->roles->pluck('name', 'id');
             $employee->permissions = $employee->getPermissionNames();
+
+            $workload = $workloadByEmployeeId->get((int) $employee->id) ?? [];
+            $employee->customerCount = $workload['customerCount'] ?? 0;
+            $employee->activeCount = $workload['activeCount'] ?? 0;
+            $employee->loadPercentage = $workload['loadPercentage'] ?? 0;
             return $employee;
         });
 
