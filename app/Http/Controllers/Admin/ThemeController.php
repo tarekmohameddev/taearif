@@ -70,13 +70,13 @@ class ThemeController extends Controller
         $validated = $request->validate([
             'theme_id' => 'required|string|unique:api_themes_settings,theme_id|max:50',
             'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'description' => 'required|string',
             'thumbnail' => 'required|string|max:500',
             'category' => 'nullable|string|max:100',
             'is_free' => 'sometimes|boolean',
             'is_enabled' => 'sometimes|boolean',
-            'price' => 'nullable|numeric|min:0',
-            'currency' => 'nullable|string|size:3',
+            'price' => 'nullable|required_if:is_free,0|numeric|min:0',
+            'currency' => 'nullable|required_if:is_free,0|string|size:3',
             'popular' => 'sometimes|boolean',
         ]);
 
@@ -90,9 +90,6 @@ class ThemeController extends Controller
         if ($validated['is_free']) {
             $validated['price'] = null;
         }
-
-        // Ensure NOT NULL columns never receive null (empty form → null via ConvertEmptyStringsToNull)
-        $validated['description'] = $validated['description'] ?? '';
 
         ApiThemeSettings::create($validated);
 
@@ -132,14 +129,14 @@ class ThemeController extends Controller
         $theme = $this->themeService->getThemeById($request->theme_id);
 
         $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'description' => 'nullable|string',
-            'thumbnail' => 'sometimes|string|max:500',
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'thumbnail' => 'required|string|max:500',
             'category' => 'nullable|string|max:100',
             'is_free' => 'boolean',
             'is_enabled' => 'boolean',
-            'price' => 'nullable|numeric|min:0',
-            'currency' => 'nullable|string|size:3',
+            'price' => 'nullable|required_if:is_free,0|numeric|min:0',
+            'currency' => 'nullable|required_if:is_free,0|string|size:3',
             'popular' => 'boolean',
         ]);
 

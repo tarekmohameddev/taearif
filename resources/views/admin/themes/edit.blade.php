@@ -55,7 +55,7 @@
                             <div class="col-lg-12">
                                 <div class="form-group">
                                     <label>الوصف</label>
-                                    <textarea class="form-control" name="description" rows="3">{{ old('description', $theme->description) }}</textarea>
+                                    <textarea class="form-control" name="description" rows="3" required>{{ old('description', $theme->description) }}</textarea>
                                     @error('description')
                                         <p class="text-danger">{{ $message }}</p>
                                     @enderror
