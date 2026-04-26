@@ -440,38 +440,33 @@ class RequestsController extends ApiController
                 ])
                 ->values();
 
-            // Cities: distinct cities via districts_id → user_districts
-            $cities = DB::table('users_property_requests as upr')
-                ->join('user_districts as d', 'upr.districts_id', '=', 'd.id')
-                ->where('upr.user_id', $userId)
-                ->whereNotNull('d.city_id')
-                ->distinct()
-                ->orderBy('d.city_name_ar')
-                ->get(['d.city_id as value', 'd.city_name_ar as label', 'd.city_name_en as labelEn'])
-                ->map(fn ($city) => [
-                    'value' => (int) $city->value,
-                    'label' => $city->label ?? '',
-                    'labelEn' => $city->labelEn ?? $city->label ?? '',
-                ])
-                ->values()
-                ->all();
-
-            // Districts: distinct districts via districts_id → user_districts
-            $districts = DB::table('users_property_requests as upr')
+            // Single query: fetch all distinct districts for this tenant
+            $districtRows = DB::table('users_property_requests as upr')
                 ->join('user_districts as d', 'upr.districts_id', '=', 'd.id')
                 ->where('upr.user_id', $userId)
                 ->whereNotNull('upr.districts_id')
                 ->distinct()
                 ->orderBy('d.name_ar')
-                ->get(['d.id', 'd.city_id as cityId', 'd.name_ar as label', 'd.name_en as labelEn'])
+                ->get(['d.id', 'd.city_id', 'd.city_name_ar', 'd.city_name_en', 'd.name_ar as label', 'd.name_en as labelEn']);
+
+            // Derive districts list
+            $districts = $districtRows->map(fn ($d) => [
+                'value'   => (int) $d->id,
+                'label'   => $d->label ?? '',
+                'labelEn' => $d->labelEn ?? $d->label ?? '',
+                'cityId'  => $d->city_id !== null ? (int) $d->city_id : null,
+            ])->values()->all();
+
+            // Derive cities list from same rows (unique by city_id, sorted by city_name_ar)
+            $cities = $districtRows
+                ->filter(fn ($d) => $d->city_id !== null)
+                ->unique('city_id')
+                ->sortBy('city_name_ar')
                 ->map(fn ($d) => [
-                    'value' => (int) $d->id,
-                    'label' => $d->label ?? '',
-                    'labelEn' => $d->labelEn ?? $d->label ?? '',
-                    'cityId' => isset($d->cityId) && $d->cityId !== null ? (int) $d->cityId : null,
-                ])
-                ->values()
-                ->all();
+                    'value'   => (int) $d->city_id,
+                    'label'   => $d->city_name_ar ?? '',
+                    'labelEn' => $d->city_name_en ?? $d->city_name_ar ?? '',
+                ])->values()->all();
 
             return [
                 'types' => $types,
