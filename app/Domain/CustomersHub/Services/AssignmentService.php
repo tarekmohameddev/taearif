@@ -16,10 +16,16 @@ class AssignmentService
      */
     public function getEmployees(int $userId): array
     {
-        $requestCountSub = 'SELECT COUNT(DISTINCT upr.id) FROM users_property_requests upr ' .
-            'WHERE upr.responsible_employee_id = u.id AND upr.user_id = ? AND upr.is_active = 1';
-
         $employees = DB::table('users as u')
+            ->leftJoin(
+                DB::raw('(SELECT responsible_employee_id, COUNT(DISTINCT id) as request_count
+                          FROM users_property_requests
+                          WHERE user_id = ' . (int) $userId . ' AND is_active = 1
+                          GROUP BY responsible_employee_id) as upr_counts'),
+                'upr_counts.responsible_employee_id',
+                '=',
+                'u.id'
+            )
             ->where('u.tenant_id', $userId)
             ->where('u.account_type', 'employee')
             ->select([
@@ -30,9 +36,8 @@ class AssignmentService
                 'u.phone',
                 'u.active as is_active',
                 'u.max_capacity',
-                DB::raw("({$requestCountSub}) as request_count"),
+                DB::raw('COALESCE(upr_counts.request_count, 0) as request_count'),
             ])
-            ->addBinding($userId, 'select')
             ->get();
 
         return array_map(function ($employee) {
