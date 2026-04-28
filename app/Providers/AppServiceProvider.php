@@ -59,6 +59,21 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        // Per-request singleton to avoid repeating the "default language" query
+        // across controllers, view composers, and Blade partials.
+        $this->app->singleton('defaultLanguage', function () {
+            return \App\Models\Language::where('is_default', 1)->first();
+        });
+
+        // Resolve the currently selected language (session override) once per request.
+        $this->app->singleton('currentLanguage', function () {
+            $code = session()->get('lang');
+            if ($code) {
+                return \App\Models\Language::where('code', $code)->first() ?: app('defaultLanguage');
+            }
+            return app('defaultLanguage');
+        });
+
         $this->app->bind(
             \App\Domain\Communication\Contracts\CommunicationService::class,
             \App\Domain\Communication\Services\CommunicationServiceImpl::class
@@ -153,11 +168,24 @@ class AppServiceProvider extends ServiceProvider
             }
 
             View::composer('*', function ($view) {
+                // This composer runs once PER rendered view/partial.
+                // Cache its work so we don't re-query the DB dozens of times per request (Debugbar duplicates).
+                static $shared = null;
+                if ($shared !== null) {
+                    $view->with($shared);
+                    return;
+                }
+
+                $isAdmin = request()->is('admin*');
+                $isApi = request()->is('api*');
+
                 // $api_Banner_settingsData = null;
                 $api_general_settingsData = null;
 
-                $username = request()->segment(1);
-                $user = User::where('username', $username)->first();
+                // Tenant resolution is only for frontend tenant routes (/{username}/...).
+                // On admin/api routes it causes duplicate lookups like username='admin'.
+                $username = (!$isAdmin && !$isApi) ? request()->segment(1) : null;
+                $user = $username ? User::where('username', $username)->first() : null;
 
                 // if ($user) {
                     // $api_Banner_settingsData = ApiBannerSetting::where('user_id', $user->id)->first();
@@ -168,29 +196,34 @@ class AppServiceProvider extends ServiceProvider
                 //     $api_Banner_settingsData = json_decode($api_Banner_settingsData);
                 // }
 
-                if (session()->has('lang')) {
-                    $currentLang = Language::where('code', session()->get('lang'))->first();
-                } else {
-                    $currentLang = Language::where('is_default', 1)->first();
-                }
+                $currentLang = app()->bound('currentLanguage') ? app('currentLanguage') : (session()->has('lang')
+                    ? Language::where('code', session()->get('lang'))->first()
+                    : Language::where('is_default', 1)->first());
 
                 $bs = $currentLang->basic_setting;
                 $be = $currentLang->basic_extended;
                 Config::set('app.timezone', $bs->timezone);
 
-                $menus = Menu::where('language_id', $currentLang->id)->count() > 0
-                    ? Menu::where('language_id', $currentLang->id)->first()->menus
-                    : json_encode([]);
+                // Menus are frontend-only. Admin views don't need them and they were a big source of duplicates.
+                $menus = json_encode([]);
+                if (!$isAdmin && !$isApi) {
+                    $menuRow = Menu::where('language_id', $currentLang->id)->first();
+                    $menus = $menuRow ? $menuRow->menus : json_encode([]);
+                }
 
                 $rtl = $currentLang->rtl == 1 ? 1 : 0;
 
-                $view->with('bs', $bs);
-                $view->with('be', $be);
-                // $view->with('api_Banner_settingsData', $api_Banner_settingsData);
-                // $view->with('api_general_settingsData', $api_general_settingsData);
-                $view->with('currentLang', $currentLang);
-                $view->with('menus', $menus);
-                $view->with('rtl', $rtl);
+                $shared = [
+                    'bs' => $bs,
+                    'be' => $be,
+                    // 'api_Banner_settingsData' => $api_Banner_settingsData,
+                    // 'api_general_settingsData' => $api_general_settingsData,
+                    'currentLang' => $currentLang,
+                    'menus' => $menus,
+                    'rtl' => $rtl,
+                ];
+
+                $view->with($shared);
             });
 
             View::composer(['user.*'], function ($view) {
@@ -430,11 +463,46 @@ class AppServiceProvider extends ServiceProvider
             View::share('langs', $langs);
 
             View::composer(['admin.layout', 'admin.partials.top-navbar', 'admin.partials.side-navbar', 'admin.partials.styles'], function ($view) {
-                $view->with('adminLanguages', \App\Models\Language::orderBy('is_default', 'desc')->get());
+                // This composer is attached to multiple admin partials, so it may run multiple times
+                // during the same request. Cache its work to avoid duplicate queries in Debugbar.
+                static $adminShared = null;
+                if ($adminShared !== null) {
+                    $view->with($adminShared);
+                    return;
+                }
+
+                $adminLanguages = \App\Models\Language::orderBy('is_default', 'desc')->get();
                 $locale = app()->getLocale();
-                $lang = \App\Models\Language::where('code', $locale)->first();
-                // RTL when language has rtl=1 or when locale is Arabic (admin is Arabic-first)
-                $view->with('admin_rtl', ($lang && (int) $lang->rtl === 1) || $locale === 'ar');
+
+                // Prefer request-scoped current language when available.
+                $currentLang = app()->bound('currentLanguage')
+                    ? app('currentLanguage')
+                    : \App\Models\Language::where('code', $locale)->first();
+
+                $admin_rtl = ($currentLang && (int) $currentLang->rtl === 1) || $locale === 'ar';
+
+                $defaultLang = app('defaultLanguage');
+
+                $adminUser = Auth::guard('admin')->user();
+                if ($adminUser) {
+                    $adminUser->loadMissing('role');
+                }
+
+                $adminPermissions = [];
+                if ($adminUser && !empty($adminUser->role)) {
+                    $permissions = $adminUser->role->permissions;
+                    $adminPermissions = is_array($permissions) ? $permissions : (json_decode($permissions, true) ?: []);
+                }
+
+                $adminShared = [
+                    'adminLanguages' => $adminLanguages,
+                    'admin_rtl' => $admin_rtl,
+                    'defaultLang' => $defaultLang,
+                    'adminUser' => $adminUser,
+                    'adminPermissions' => $adminPermissions,
+                ];
+
+                $view->with($adminShared);
             });
 
             View::share('socials', $socials);

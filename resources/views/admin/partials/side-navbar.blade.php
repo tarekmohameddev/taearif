@@ -1,10 +1,7 @@
 @php
-    $default = \App\Models\Language::where('is_default', 1)->first();
-    $admin = Auth::guard('admin')->user();
-    if (!empty($admin->role)) {
-        $permissions = $admin->role->permissions;
-        $permissions = is_array($permissions) ? $permissions : (json_decode($permissions, true) ?: []);
-    }
+    $default = $defaultLang ?? null;
+    $admin = $adminUser ?? Auth::guard('admin')->user();
+    $permissions = $adminPermissions ?? [];
 @endphp
 
 <div class="sidebar sidebar-style-2" @if (request()->cookie('admin-theme') == 'dark') data-background-color="dark2" @endif>

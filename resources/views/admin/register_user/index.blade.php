@@ -256,12 +256,12 @@
                                         <td>
                                             <input type="checkbox" class="bulk-check" data-val="{{ $user->id }}">
                                         </td>
-                                        <td>{{ \App\Models\User\BasicSetting::firstOrNew(['user_id' => $user->id])->company_name ?? '—' }}</td>
+                                        <td>{{ $user->basic_setting?->company_name ?? '—' }}</td>
                                         <td>{{ $user->phone }}</td>
                                         <td><a href="https://{{$user->username}}.taearif.com/ar/" target="_blank">https://{{$user->username}}.taearif.com/ar/</a></td>
                                         @php
-                                        $currPackage = \App\Http\Helpers\UserPermissionHelper::currPackageOrPending($user->id);
-                                        $currMemb = \App\Http\Helpers\UserPermissionHelper::currMembOrPending($user->id);
+                                        $currMemb = $user->currentMembership ?? $user->pendingMembership;
+                                        $currPackage = $currMemb?->package;
                                         @endphp
                                         <td>
                                             @if ($currPackage)
