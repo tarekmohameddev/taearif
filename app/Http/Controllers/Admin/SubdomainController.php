@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use Carbon\Carbon;
 use App\Models\User;
+use App\Models\Package;
 use Illuminate\Http\Request;
 use App\Models\User\BasicSetting;
 use App\Http\Controllers\Controller;
@@ -20,22 +21,27 @@ class SubdomainController extends Controller
 
     public function index(Request $request)
     {
-
-        $users = User::all();
-        $userIds = [];
-        foreach ($users as $key => $user) {
-            if (cPackageHasSubdomain($user)) {
-                $userIds[] = $user->id;
-            }
-        }
-
         $type = $request->type;
         $username = $request->username;
-        $subdomains = User::whereHas('memberships', function ($q) {
-            $q->where('status', '=', 1)
-                ->where('start_date', '<=', Carbon::now()->format('Y-m-d'))
-                ->where('expire_date', '>=', Carbon::now()->format('Y-m-d'));
-        })->when($type, function ($query, $type) {
+
+        // Filter users at the DB level instead of looping all users and calling helpers (prevents N+1)
+        $subdomainPackageIds = Package::query()
+            ->where('features', 'LIKE', '%"Subdomain"%')
+            ->pluck('id');
+
+        $subdomains = User::query()
+            ->whereHas('memberships', function ($q) use ($subdomainPackageIds) {
+                $q->where('status', '=', 1)
+                    ->where('start_date', '<=', Carbon::now()->format('Y-m-d'))
+                    ->where('expire_date', '>=', Carbon::now()->format('Y-m-d'))
+                    ->when($subdomainPackageIds->isNotEmpty(), function ($mq) use ($subdomainPackageIds) {
+                        $mq->whereIn('package_id', $subdomainPackageIds);
+                    }, function ($mq) {
+                        // If no packages have the Subdomain feature, return no results.
+                        $mq->whereRaw('1 = 0');
+                    });
+            })
+            ->when($type, function ($query, $type) {
             if ($type == 'pending') {
                 return $query->where('subdomain_status', 0);
             } elseif ($type == 'connected') {
@@ -43,9 +49,9 @@ class SubdomainController extends Controller
             }
         })->when($username, function ($query, $username) {
             return $query->where('username', 'LIKE', '%' . $username . '%');
-        })->when(!empty($userIds), function ($query) use ($userIds) {
-            return $query->whereIn('id', $userIds);
-        })->latest()->paginate(10);
+        })
+            ->latest()
+            ->paginate(10);
         $data['subdomains'] = $subdomains;
 
         return view('admin.subdomains.index', $data);
