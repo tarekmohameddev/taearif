@@ -118,6 +118,93 @@ class RequestsController extends ApiController
                 return ($item->objectType ?? '') === 'inquiry';
             })->pluck('sourceId')->filter()->unique()->values()->all();
 
+            // Page-level enrichment to keep the response contract stable while keeping
+            // the UNION query slim (no pre-pagination joins for cities/districts/assignee names).
+            // - city: derived from users_property_requests.city_id -> user_cities.name_ar
+            // - districtAR: derived from users_property_requests.districts_id -> user_districts.name_ar
+            // - assignedToName: derived from users.id for any non-null assignedTo values
+            if (!empty($propertyRequestSourceIds)) {
+                $uprRows = [];
+                foreach (array_chunk($propertyRequestSourceIds, self::CH_LIST_WHERE_IN_CHUNK) as $idChunk) {
+                    $uprRows = array_merge($uprRows, DB::table('users_property_requests')
+                        ->where('user_id', $userId)
+                        ->whereIn('id', $idChunk)
+                        ->get(['id', 'city_id', 'districts_id'])
+                        ->all());
+                }
+
+                $cityIds = [];
+                $districtIds = [];
+                $uprById = [];
+                foreach ($uprRows as $r) {
+                    $uprById[(int) $r->id] = $r;
+                    if (!empty($r->city_id)) {
+                        $cityIds[] = (int) $r->city_id;
+                    }
+                    if (!empty($r->districts_id)) {
+                        $districtIds[] = (int) $r->districts_id;
+                    }
+                }
+                $cityIds = array_values(array_unique($cityIds));
+                $districtIds = array_values(array_unique($districtIds));
+
+                $cityNameById = empty($cityIds) ? [] : DB::table('user_cities')
+                    ->whereIn('id', $cityIds)
+                    ->pluck('name_ar', 'id')
+                    ->mapWithKeys(fn ($v, $k) => [(int) $k => $v !== null ? (string) $v : null])
+                    ->all();
+
+                $districtById = [];
+                if (!empty($districtIds)) {
+                    $districtById = DB::table('user_districts')
+                        ->whereIn('id', $districtIds)
+                        ->get(['id', 'name_ar', 'city_name_ar'])
+                        ->mapWithKeys(fn ($d) => [(int) $d->id => [
+                            'districtAR' => $d->name_ar !== null ? (string) $d->name_ar : null,
+                            'cityAR' => $d->city_name_ar !== null ? (string) $d->city_name_ar : null,
+                        ]])
+                        ->all();
+                }
+
+                $items->each(function ($item) use ($uprById, $cityNameById, $districtById) {
+                    if (($item->objectType ?? '') !== 'property_request' || empty($item->sourceId)) {
+                        return;
+                    }
+                    $upr = $uprById[(int) $item->sourceId] ?? null;
+                    if (!$upr) {
+                        return;
+                    }
+
+                    if (($item->city ?? null) === null && !empty($upr->city_id)) {
+                        $item->city = $cityNameById[(int) $upr->city_id] ?? null;
+                    }
+                    if (!empty($upr->districts_id) && isset($districtById[(int) $upr->districts_id])) {
+                        $d = $districtById[(int) $upr->districts_id];
+                        if (($item->districtAR ?? null) === null) {
+                            $item->districtAR = $d['districtAR'];
+                        }
+                        if (($item->city ?? null) === null) {
+                            $item->city = $d['cityAR'];
+                        }
+                    }
+                });
+            }
+
+            $assigneeIds = $items->pluck('assignedTo')->filter()->unique()->values()->all();
+            if (!empty($assigneeIds)) {
+                $nameByUserId = DB::table('users')
+                    ->whereIn('id', $assigneeIds)
+                    ->get(['id', 'first_name', 'last_name'])
+                    ->mapWithKeys(fn ($u) => [(int) $u->id => trim((string) ($u->first_name ?? '') . ' ' . (string) ($u->last_name ?? ''))])
+                    ->all();
+
+                $items->each(function ($item) use ($nameByUserId) {
+                    if (!empty($item->assignedTo) && (empty($item->assignedToName) || trim((string) $item->assignedToName) === '')) {
+                        $item->assignedToName = $nameByUserId[(int) $item->assignedTo] ?? '';
+                    }
+                });
+            }
+
             $now = Carbon::now();
             $appointmentsByRequest = $this->batchLoadFormattedByForeignKey(
                 'property_request_appointments',
