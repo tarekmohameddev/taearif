@@ -258,15 +258,24 @@ if (!function_exists('getUserHref')) {
 if (!function_exists('format_price')) {
     function format_price($value): string
     {
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()
-                ->get('lang'))
-                ->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)
-                ->first();
+        // Memoize per request to avoid duplicate Language/basic_extended queries on list views.
+        static $bex = null;
+        if ($bex === null) {
+            if (app()->bound('currentLanguage')) {
+                $currentLang = app('currentLanguage');
+            } elseif (session()->has('lang')) {
+                $currentLang = Language::where('code', session()->get('lang'))->first();
+            } else {
+                $currentLang = Language::where('is_default', 1)->first();
+            }
+
+            // Accessing the relation triggers at most one query per request now.
+            $bex = $currentLang ? $currentLang->basic_extended : null;
         }
-        $bex = $currentLang->basic_extended;
+
+        if (!$bex) {
+            return (string) $value;
+        }
         if ($bex->base_currency_symbol_position == 'left') {
             return $bex->base_currency_symbol . $value;
         } else {
