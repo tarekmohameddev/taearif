@@ -8,7 +8,7 @@ namespace App\Http\Controllers\Api;
  *
  * @OA\Info(
  *     title="Main API",
- *     version="1.0.0",
+ *     version="1.0.1",
  *     description="Tenant/user API defined in routes/api.php. Authentication: Laravel Sanctum (Bearer token). Admin Dashboard API is at docs/admin-dashboard-api-v1/openapi.json"
  * )
  * @OA\Server(
