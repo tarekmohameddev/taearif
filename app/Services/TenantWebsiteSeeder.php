@@ -213,21 +213,19 @@ class TenantWebsiteSeeder
      */
     protected function seedStaticPages(User $tenant, array $staticPages): void
     {
-        foreach ($staticPages as $pageId => $components) {
-            // Sort components by position
-            $sortedComponents = collect($components)
-                ->sortBy('position')
-                ->values()
-                ->all();
+        foreach ($staticPages as $pageId => $payload) {
+            $normalized = TenantStaticPage::normalizeIncomingPayload($payload);
+            $attrs = ['components' => $normalized['components']];
+            if ($normalized['url_explicit']) {
+                $attrs['url'] = $normalized['url'];
+            }
 
             TenantStaticPage::updateOrCreate(
                 [
                 'user_id' => $tenant->id,
                 'page_id' => $pageId,
                 ],
-                [
-                'components' => $sortedComponents,
-                ]
+                $attrs
             );
         }
     }

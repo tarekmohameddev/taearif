@@ -51,7 +51,14 @@ class GetTenantController extends Controller
             }
             $pages = TenantPage::where('user_id', $tenant->id)->get()->keyBy('page_id')->map->components;
             $staticPages = TenantStaticPage::where('user_id', $tenant->id)->get();
-            $staticPagesData = $staticPages->isEmpty() ? null : $staticPages->keyBy('page_id')->map->components;
+            $staticPagesData = $staticPages->isEmpty()
+                ? null
+                : $staticPages->keyBy('page_id')->map(static function (TenantStaticPage $p) {
+                    return [
+                        'components' => $p->components ?? [],
+                        'url' => $p->url,
+                    ];
+                });
             $globals = TenantGlobalComponent::where('user_id', $tenant->id)->first();
             $layout = TenantWebsiteLayout::where('user_id', $tenant->id)->first();
             $basicSetting = BasicSetting::where('user_id', $tenant->id)->first();

@@ -226,9 +226,10 @@ class TenantWebsiteApiTest extends TestCase
             'data' => [],
         ]);
 
-        $response = $this->postJson('/api/v1/tenant-website/getTenant', ['websiteName' => 'acme'])
+        $this->postJson('/api/v1/tenant-website/getTenant', ['websiteName' => 'acme'])
             ->assertOk()
-            ->assertJsonPath('StaticPages.terms.0.id', 'sp1');
+            ->assertJsonPath('StaticPages.terms.components.0.id', 'sp1')
+            ->assertJsonPath('StaticPages.terms.url', null);
     }
 
     public function test_public_get_pages_and_single_page(): void
@@ -271,6 +272,141 @@ class TenantWebsiteApiTest extends TestCase
     public function test_components_catalog_public(): void
     {
         $this->getJson('/api/v1/tenant-website/components/catalog')->assertOk();
+    }
+
+    public function test_content_static_pages_requires_auth(): void
+    {
+        $this->getJson('/api/content/static-pages')->assertStatus(401);
+        $this->postJson('/api/content/static-pages', [
+            'page_id' => 'privacy',
+            'components' => [],
+        ])->assertStatus(401);
+    }
+
+    public function test_content_static_pages_index_returns_three_slots(): void
+    {
+        $tenant = $this->createTenant();
+        $this->actingAs($tenant, 'sanctum');
+
+        $this->getJson('/api/content/static-pages')
+            ->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonCount(3, 'data.pages')
+            ->assertJsonPath('data.pages.0.page_id', 'privacy')
+            ->assertJsonPath('data.pages.1.page_id', 'terms')
+            ->assertJsonPath('data.pages.2.page_id', 'profile');
+    }
+
+    public function test_content_static_pages_crud_and_get_tenant_url(): void
+    {
+        $tenant = $this->createTenant();
+        $this->actingAs($tenant, 'sanctum');
+
+        $components = [
+            ['id' => 'c1', 'type' => 'text', 'name' => 'Text', 'componentName' => 't1', 'data' => [], 'position' => 0],
+        ];
+
+        $this->postJson('/api/content/static-pages', [
+            'page_id' => 'privacy',
+            'components' => $components,
+            'url' => 'https://example.com/video.mp4',
+        ])->assertOk()
+            ->assertJsonPath('data.page.page_id', 'privacy')
+            ->assertJsonPath('data.page.url', 'https://example.com/video.mp4');
+
+        $this->assertDatabaseHas('tenant_static_pages', [
+            'user_id' => $tenant->id,
+            'page_id' => 'privacy',
+            'url' => 'https://example.com/video.mp4',
+        ]);
+
+        $this->putJson('/api/content/static-pages/privacy', [
+            'url' => null,
+        ])->assertOk()
+            ->assertJsonPath('data.page.url', null);
+
+        $this->getJson('/api/content/static-pages/privacy')
+            ->assertOk()
+            ->assertJsonPath('data.page.components.0.id', 'c1');
+
+        TenantPage::create(['id' => (string) \Illuminate\Support\Str::uuid(), 'user_id' => $tenant->id, 'page_id' => 'homepage', 'components' => []]);
+        TenantGlobalComponent::create(['id' => (string) \Illuminate\Support\Str::uuid(), 'user_id' => $tenant->id, 'data' => []]);
+        TenantWebsiteLayout::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $tenant->id,
+            'data' => [],
+        ]);
+
+        $this->postJson('/api/v1/tenant-website/getTenant', ['websiteName' => 'acme'])
+            ->assertOk()
+            ->assertJsonPath('StaticPages.privacy.components.0.id', 'c1')
+            ->assertJsonPath('StaticPages.privacy.url', null);
+
+        $this->deleteJson('/api/content/static-pages/privacy')->assertOk();
+        $this->assertDatabaseMissing('tenant_static_pages', [
+            'user_id' => $tenant->id,
+            'page_id' => 'privacy',
+        ]);
+    }
+
+    public function test_content_static_pages_store_validation(): void
+    {
+        $tenant = $this->createTenant();
+        $this->actingAs($tenant, 'sanctum');
+
+        $this->postJson('/api/content/static-pages', [
+            'page_id' => 'invalid',
+            'components' => [],
+        ])->assertStatus(422);
+
+        $this->getJson('/api/content/static-pages/not-a-page')->assertStatus(404);
+    }
+
+    public function test_content_static_pages_other_user_does_not_see_peer_data(): void
+    {
+        $tenantA = $this->createTenant('acme');
+        $tenantB = $this->createTenant('other');
+
+        $this->actingAs($tenantA, 'sanctum');
+        $this->postJson('/api/content/static-pages', [
+            'page_id' => 'terms',
+            'components' => [
+                ['id' => 'secret', 'type' => 'text', 'name' => 'Text', 'componentName' => 't1', 'data' => [], 'position' => 0],
+            ],
+        ])->assertOk();
+
+        $this->actingAs($tenantB, 'sanctum');
+        $this->getJson('/api/content/static-pages/terms')
+            ->assertOk()
+            ->assertJsonPath('data.page.components', [])
+            ->assertJsonPath('data.page.url', null);
+    }
+
+    public function test_save_pages_static_pages_nested_format_with_url(): void
+    {
+        $tenant = $this->createTenant();
+        $this->actingAs($tenant, 'sanctum');
+
+        $staticPages = [
+            'terms' => [
+                'components' => [
+                    ['id' => 'sp1', 'type' => 'text', 'name' => 'Text', 'componentName' => 'text1', 'data' => [], 'position' => 0],
+                ],
+                'url' => 'https://cdn.example.com/terms-banner.jpg',
+            ],
+        ];
+
+        $this->postJson('/api/v1/tenant-website/save-pages', [
+            'tenantId' => 'acme',
+            'pages' => ['homepage' => []],
+            'StaticPages' => $staticPages,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('tenant_static_pages', [
+            'user_id' => $tenant->id,
+            'page_id' => 'terms',
+            'url' => 'https://cdn.example.com/terms-banner.jpg',
+        ]);
     }
 }
 
