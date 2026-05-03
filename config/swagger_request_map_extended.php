@@ -81,4 +81,26 @@ return [
     ],
     'App\Http\Controllers\Api\V1\Sms\CampaignController@pause' => [],
     'App\Http\Controllers\Api\V1\WhatsApp\CampaignController@pause' => [],
+
+    // Runtime FormRequest (user + route); explicit map so swagger:generate-api-paths does not warn
+    'App\Http\Controllers\Api\property\PropertyRequestStatusController@store' => [
+        'name_ar' => 'required|string|max:100',
+        'name_en' => 'nullable|string|max:100',
+        'slug' => 'required|string|max:100',
+        'display_order' => 'nullable|integer|min:1',
+        'is_active' => 'nullable|boolean',
+    ],
+    'App\Http\Controllers\Api\property\PropertyRequestStatusController@update' => [
+        'name_ar' => 'sometimes|required|string|max:100',
+        'name_en' => 'nullable|string|max:100',
+        'slug' => 'sometimes|required|string|max:100',
+        'display_order' => 'nullable|integer|min:1',
+        'is_active' => 'nullable|boolean',
+    ],
+    'App\Http\Controllers\Api\V2\CustomersHub\RequestsController@markRead' => [],
+    'App\Http\Controllers\Api\V2\CustomersHub\RequestsController@markUnread' => [],
+    'App\Http\Controllers\Api\V2\CustomersHub\RequestsController@ignore' => [
+        'is_ignored' => 'nullable|boolean',
+    ],
+    'App\Http\Controllers\Api\V2\CustomersHub\RequestsController@rematch' => [],
 ];
