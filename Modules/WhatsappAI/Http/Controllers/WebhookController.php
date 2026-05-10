@@ -43,6 +43,8 @@ class WebhookController extends Controller
             }
 
             $phoneNumberId = $entry['metadata']['phone_number_id'] ?? null;
+            $displayPhoneNumber = $entry['metadata']['display_phone_number'] ?? null;
+            $wabaId = $request->input('entry.0.id');
             $message = $entry['messages'][0] ?? null;
             $customerPhone = $message['from'] ?? null;
 
@@ -56,8 +58,21 @@ class WebhookController extends Controller
                 ->first();
 
             if (!$whatsappUser) {
-                Log::warning('WhatsApp user not found', ['phone_id' => $phoneNumberId]);
-                return response()->json(['status' => 'ignored', 'message' => 'WhatsApp user not found'], 404);
+                $knownWhatsappUser = WhatsappUser::where('phone_id', $phoneNumberId)->first();
+
+                Log::warning('WhatsApp user not found', [
+                    'phone_id' => $phoneNumberId,
+                    'display_phone_number' => $displayPhoneNumber,
+                    'waba_id' => $wabaId,
+                    'customer_phone' => $customerPhone,
+                    'message_id' => $message['id'] ?? null,
+                    'message_type' => $message['type'] ?? null,
+                    'known_whatsapp_user_id' => $knownWhatsappUser?->id,
+                    'known_user_id' => $knownWhatsappUser?->user_id,
+                    'known_status' => $knownWhatsappUser?->status,
+                ]);
+
+                return response()->json(['status' => 'ignored', 'message' => 'WhatsApp user not found']);
             }
 
             // Get or create conversation
