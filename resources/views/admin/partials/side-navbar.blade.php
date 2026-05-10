@@ -87,6 +87,15 @@
                     </li>
                 @endif
 
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Location Management', $permissions)))
+                    <li class="nav-item @if (request()->is('admin/location-management*')) active @endif">
+                        <a href="{{ route('admin.location.index') }}">
+                            <i data-lucide="map-pin"></i>
+                            <p>{{ __('admin.location_management') }}</p>
+                        </a>
+                    </li>
+                @endif
+
                 {{-- ========== WITH DROPDOWN (bottom) ========== --}}
                 {{-- Package --}}
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Packages', $permissions)))

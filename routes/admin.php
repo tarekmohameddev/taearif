@@ -447,6 +447,15 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/offline/gateway/delete', 'Admin\GatewayController@delete')->name('offline.gateway.delete');
     });
 
+    Route::group(['middleware' => 'checkpermission:Location Management'], function () {
+        Route::get('/location-management', 'Admin\LocationManagementController@index')->name('location.index');
+        Route::post('/location-management/city/store', 'Admin\LocationManagementController@storeCity')->name('location.city.store');
+        Route::post('/location-management/city/update', 'Admin\LocationManagementController@updateCity')->name('location.city.update');
+        Route::post('/location-management/city/sync', 'Admin\LocationManagementController@syncCity')->name('location.city.sync');
+        Route::post('/location-management/district/store', 'Admin\LocationManagementController@storeDistrict')->name('location.district.store');
+        Route::post('/location-management/district/update', 'Admin\LocationManagementController@updateDistrict')->name('location.district.update');
+    });
+
     Route::group(['middleware' => 'checkpermission:Role Management'], function () {
         // Admin Roles Routes
         Route::get('/roles', 'Admin\RoleController@index')->name('role.index');
