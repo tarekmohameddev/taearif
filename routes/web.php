@@ -184,6 +184,42 @@ Route::get('myfatoorah/cancel', 'MyFatoorahController@cancel')->name('myfatoorah
 Route::post('/mf/app/success',  [\App\Http\Controllers\Webhook\MyFatoorahWebhookController::class,'handle'])->name('mf.app.success');
 Route::post('/mf/app/cancel',   fn() => response('cancel', 200))->name('mf.app.cancel');
 
+/*
+|--------------------------------------------------------------------------
+| Membership Payment Gateway Callbacks
+|--------------------------------------------------------------------------
+| Success / cancel / notify endpoints called by external payment gateways.
+| CSRF exemptions for these URIs live in App\Http\Middleware\VerifyCsrfToken.
+| Legacy gateways whose controllers were removed (Paytm, Mercadopago,
+| Razorpay) and the offline/trial flows (Front\CheckoutController) are
+| intentionally not registered here.
+*/
+Route::prefix('membership')->group(function () {
+    Route::get('paypal/success',          'Payment\PaypalController@successPayment')->name('membership.paypal.success');
+    Route::get('paypal/cancel',           'Payment\PaypalController@cancelPayment')->name('membership.paypal.cancel');
+    Route::get('stripe/cancel',           'Payment\StripeController@cancelPayment')->name('membership.stripe.cancel');
+    Route::get('paystack/success',        'Payment\PaystackController@successPayment')->name('membership.paystack.success');
+    Route::get('instamojo/success',       'Payment\InstamojoController@successPayment')->name('membership.instamojo.success');
+    Route::post('instamojo/cancel',       'Payment\InstamojoController@cancelPayment')->name('membership.instamojo.cancel');
+    Route::post('flutterwave/success',    'Payment\FlutterWaveController@successPayment')->name('membership.flutterwave.success');
+    Route::post('flutterwave/cancel',     'Payment\FlutterWaveController@cancelPayment')->name('membership.flutterwave.cancel');
+    Route::get('mollie/success',          'Payment\MollieController@successPayment')->name('membership.mollie.success');
+    Route::post('mollie/cancel',          'Payment\MollieController@cancelPayment')->name('membership.mollie.cancel');
+    Route::get('anet/cancel',             'Payment\AuthorizenetController@cancelPayment')->name('membership.anet.cancel');
+    Route::post('phonepe/success',        'Payment\PhonePeController@successPayment')->name('membership.phonepe.success');
+    Route::post('phonepe/cancel',         'Payment\PhonePeController@cancelPayment')->name('membership.phonepe.cancel');
+    Route::get('perfect_money/success',   'Payment\PerfectMoneyController@successPayment')->name('membership.perfect_money.success');
+    Route::get('perfect_money/cancel',    'Payment\PerfectMoneyController@cancelPayment')->name('membership.perfect_money.cancel');
+    Route::get('xendit/success',          'Payment\XenditController@successPayment')->name('membership.xendit.success');
+    Route::get('yoco/success',            'Payment\YocoController@successPayment')->name('membership.yoco.success');
+    Route::get('toyyibpay/success',       'Payment\ToyyibpayController@successPayment')->name('membership.toyyibpay.success');
+    Route::post('paytabs/success',        'Payment\PaytabsController@successPayment')->name('membership.paytabs.success');
+    Route::get('midtrans/success',        'Payment\MidtransController@successPayment')->name('membership.midtrans.success');
+    Route::post('iyzico/success',         'Payment\IyzicoController@successPayment')->name('membership.iyzico.success');
+    Route::post('arb/success',            'Payment\ArbController@successPayment')->name('membership.arb.success');
+    Route::post('arb/cancel',             'Payment\ArbController@failedPayment')->name('membership.arb.cancel');
+});
+
 Route::domain($domain)->group(function () {
     // Cron
     Route::get('/expired', 'CronJobController@expired')->name('cron.expired');
