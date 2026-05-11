@@ -138,6 +138,7 @@ use App\Http\Controllers\Api\V1\TenantWebsite\{
     PublishController,
     FormController,
     PixelController as TenantWebsitePixelController,
+    StaticPageController,
 };
 use App\Http\Controllers\Api\V1\Analytics\PageviewController;
 use App\Http\Controllers\Api\V1\Analytics\Ga4AnalyticsController;
@@ -453,6 +454,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/content/menu', [ApiMenuController::class, 'index']);
     Route::put('/content/menu', [ApiMenuController::class, 'update']);
 });
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/content/static-pages', [StaticPageController::class, 'index']);
+    Route::post('/content/static-pages', [StaticPageController::class, 'store']);
+    Route::get('/content/static-pages/{pageId}', [StaticPageController::class, 'show'])
+        ->where('pageId', 'privacy|terms|profile');
+    Route::put('/content/static-pages/{pageId}', [StaticPageController::class, 'update'])
+        ->where('pageId', 'privacy|terms|profile');
+    Route::patch('/content/static-pages/{pageId}', [StaticPageController::class, 'update'])
+        ->where('pageId', 'privacy|terms|profile');
+    Route::delete('/content/static-pages/{pageId}', [StaticPageController::class, 'destroy'])
+        ->where('pageId', 'privacy|terms|profile');
+});
+
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/settings/theme', [ThemeSettingsController::class, 'index']);

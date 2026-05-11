@@ -1,11 +1,8 @@
 @extends('admin.layout')
 
 @php
-	$admin = Auth::guard('admin')->user();
-	if (!empty($admin->role)) {
-		$permissions = $admin->role->permissions;
-		$permissions = is_array($permissions) ? $permissions : (json_decode($permissions, true) ?: []);
-	}
+	$admin = $adminUser ?? Auth::guard('admin')->user();
+	$permissions = $adminPermissions ?? [];
 @endphp
 
 @section('content')
@@ -55,7 +52,7 @@
 						<div class="col-8 col-stats">
 							<div class="numbers">
 								<p class="card-category text-muted mb-1">{{__('Registered Users')}}</p>
-								<h4 class="card-title font-weight-bold mb-0">{{App\Models\User::count()}}</h4>
+								<h4 class="card-title font-weight-bold mb-0">{{ number_format($counts['users'] ?? 0) }}</h4>
 							</div>
 						</div>
 					</div>
@@ -78,7 +75,7 @@
 						<div class="col-8 col-stats">
 							<div class="numbers">
 								<p class="card-category text-muted mb-1">{{__('Subscribers')}}</p>
-								<h4 class="card-title font-weight-bold mb-0">{{App\Models\Subscriber::count()}}</h4>
+								<h4 class="card-title font-weight-bold mb-0">{{ number_format($counts['subscribers'] ?? 0) }}</h4>
 							</div>
 						</div>
 					</div>
@@ -101,7 +98,7 @@
 						<div class="col-8 col-stats">
 							<div class="numbers">
 								<p class="card-category text-muted mb-1">{{__('Packages')}}</p>
-								<h4 class="card-title font-weight-bold mb-0">{{App\Models\Package::count()}}</h4>
+								<h4 class="card-title font-weight-bold mb-0">{{ number_format($counts['packages'] ?? 0) }}</h4>
 							</div>
 						</div>
 					</div>
@@ -124,7 +121,7 @@
 						<div class="col-8 col-stats">
 							<div class="numbers">
 								<p class="card-category text-muted mb-1">{{__('Payment Logs')}}</p>
-								<h4 class="card-title font-weight-bold mb-0">{{App\Models\Membership::count()}}</h4>
+								<h4 class="card-title font-weight-bold mb-0">{{ number_format($counts['memberships'] ?? 0) }}</h4>
 							</div>
 						</div>
 					</div>
@@ -146,7 +143,7 @@
 						<div class="col-8 col-stats">
 							<div class="numbers">
 								<p class="card-category text-muted mb-1">{{__('Admins')}}</p>
-								<h4 class="card-title font-weight-bold mb-0">{{App\Models\Admin::count()}}</h4>
+								<h4 class="card-title font-weight-bold mb-0">{{ number_format($counts['admins'] ?? 0) }}</h4>
 							</div>
 						</div>
 					</div>
@@ -168,7 +165,7 @@
 						<div class="col-8 col-stats">
 							<div class="numbers">
 								<p class="card-category text-muted mb-1">{{__('Blog')}}</p>
-								<h4 class="card-title font-weight-bold mb-0">{{$defaultLang->blogs()->count()}}</h4>
+								<h4 class="card-title font-weight-bold mb-0">{{ number_format($counts['blogs'] ?? 0) }}</h4>
 							</div>
 						</div>
 					</div>

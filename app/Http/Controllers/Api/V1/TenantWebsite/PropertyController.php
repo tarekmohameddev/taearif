@@ -135,6 +135,10 @@ class PropertyController extends Controller
 				}
 			}
 		}
+		// Featured filter
+		if ($request->boolean('featured')) {
+			$query->where('featured', 1);
+		}
 		if ($request->filled('price_from')) $query->where('price', '>=', $request->query('price_from'));
 		if ($request->filled('price_to')) $query->where('price', '<=', $request->query('price_to'));
 		if ($request->filled('area_from')) $query->where('area', '>=', $request->query('area_from'));
@@ -469,6 +473,7 @@ class PropertyController extends Controller
 			'transactionType' => $this->translator->translatePurpose($normalizedPurpose),
 			'transactionType_en' => $normalizedPurpose,
 			'image' => $featured,
+			'featured' => (bool) $p->featured,
 			'status' => $isUnavailable ? 'unavailable' : 'available',
 			'show_reservations' => (bool) $p->show_reservations,
 			'createdAt' => $p->created_at?->toISOString(),

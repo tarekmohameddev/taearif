@@ -125,6 +125,7 @@ class ProjectController extends Controller
                 'minPrice' => isset($project->min_price) ? (string) $project->min_price : '0',
                 'maxPrice' => isset($project->max_price) ? (string) $project->max_price : '0',
                 'image' => $featured,
+                'featured' => (bool) $project->featured,
                 'images' => $images,
                 'videoUrl' => $project->video_url ?? null,
                 'amenities' => $this->getAmenitiesArray($project),

@@ -1,10 +1,7 @@
 @php
-    $default = \App\Models\Language::where('is_default', 1)->first();
-    $admin = Auth::guard('admin')->user();
-    if (!empty($admin->role)) {
-        $permissions = $admin->role->permissions;
-        $permissions = is_array($permissions) ? $permissions : (json_decode($permissions, true) ?: []);
-    }
+    $default = $defaultLang ?? null;
+    $admin = $adminUser ?? Auth::guard('admin')->user();
+    $permissions = $adminPermissions ?? [];
 @endphp
 
 <div class="sidebar sidebar-style-2" @if (request()->cookie('admin-theme') == 'dark') data-background-color="dark2" @endif>
@@ -86,6 +83,15 @@
                         <a href="{{ route('admin.sidebar-item.index') }}">
                             <i data-lucide="menu"></i>
                             <p>{{ __('Sidebar Items') }}</p>
+                        </a>
+                    </li>
+                @endif
+
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Location Management', $permissions)))
+                    <li class="nav-item @if (request()->is('admin/location-management*')) active @endif">
+                        <a href="{{ route('admin.location.index') }}">
+                            <i data-lucide="map-pin"></i>
+                            <p>{{ __('admin.location_management') }}</p>
                         </a>
                     </li>
                 @endif

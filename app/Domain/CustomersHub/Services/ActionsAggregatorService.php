@@ -69,9 +69,13 @@ class ActionsAggregatorService
         $stageIds       = $this->resolveStagesFilterToStageIds($filters['stages'] ?? []);
         $excludeStageIds = $this->resolveStagesFilterToStageIds($filters['excludeStages'] ?? []);
 
-        $inquiriesQuery       = $this->getInquiriesSubquery($userId, $stageIds, $excludeStageIds);
-        $propertyRequestsQuery = $this->getPropertyRequestsSubquery($userId, $stageIds, $excludeStageIds);
-        $remindersQuery = $this->getRemindersSubquery($userId);
+        // Push date filters into UNION arms to avoid post-materialization filtering
+        $dateFrom = !empty($filters['date_from']) ? (string) $filters['date_from'] : null;
+        $dateTo = !empty($filters['date_to']) ? (string) $filters['date_to'] : null;
+
+        $inquiriesQuery       = $this->getInquiriesSubquery($userId, $stageIds, $excludeStageIds, $dateFrom, $dateTo);
+        $propertyRequestsQuery = $this->getPropertyRequestsSubquery($userId, $stageIds, $excludeStageIds, $dateFrom, $dateTo);
+        $remindersQuery = $this->getRemindersSubquery($userId, $dateFrom, $dateTo);
 
         // Build UNION ALL.
         // property_request_appointments and property_request_reminders are intentionally excluded here:
@@ -102,29 +106,21 @@ class ActionsAggregatorService
         $sortDir = $filters['sort_dir'] ?? 'desc';
         $query->orderBy($sortBy, $sortDir);
 
-        // Add window function to get total count without a separate scan.
-        // Must explicitly select actions.* first: when $query->columns is null,
-        // addSelect() initialises it to [rawExpr] instead of ['*', rawExpr],
-        // which would cause the outer SELECT to return only _totalRows and omit
-        // every other column (triggering "Undefined property: stdClass::$metadata").
-        $query->select([DB::raw('actions.*'), DB::raw('COUNT(*) OVER() AS _totalRows')]);
+        // Page query: select only the row columns. Previously we used
+        // COUNT(*) OVER() AS _totalRows to compute the total in the same
+        // query, but that forced MySQL to materialise the entire UNION
+        // derived set + filesort even when LIMIT was small. We now compute
+        // the total via a separate cached query (see getCachedTotalCount).
+        $query->select(DB::raw('actions.*'));
 
-        // Apply pagination and get items with total count in one query
         $items = $query->limit($limit)->offset($offset)->get();
 
-        // Extract total from first item, or fall back to count if no results but not at start
-        $total = 0;
-        if ($items->isNotEmpty()) {
-            $total = (int) ($items->first()->_totalRows ?? 0);
-        } elseif ($offset > 0) {
-            // Edge case: pagination offset is beyond available rows; run count separately
-            $totalQuery = $this->getUnifiedQuery($userId, $filters);
-            $total = $totalQuery->count();
-        }
+        // Total count is computed separately and cached (see getCachedTotalCount).
+        // The empty-page-with-offset edge case is handled implicitly: the cached
+        // count reflects the full filter set regardless of the requested page.
+        $total = $this->getCachedTotalCount($userId, $filters);
 
-        // Strip the synthetic _totalRows column before transforming
         $items = $items->map(function ($item) {
-            unset($item->_totalRows);
             return $this->transformAction($item);
         });
 
@@ -140,6 +136,25 @@ class ActionsAggregatorService
             'sortBy' => $sortBy,
             'sortDir' => $sortDir,
         ];
+    }
+
+    /**
+     * Total count of actions matching the given filters, cached for 60s.
+     *
+     * Computed separately from the page query so the heavy UNION + ORDER BY
+     * does not have to materialise the entire result set with COUNT(*) OVER().
+     * Filter-only key (no limit/offset/sort) so all pages share the same cache.
+     */
+    private function getCachedTotalCount(int $userId, array $filters): int
+    {
+        $countFilters = $filters;
+        unset($countFilters['limit'], $countFilters['offset'], $countFilters['sort_by'], $countFilters['sort_dir']);
+
+        $cacheKey = 'ch:total:' . $userId . ':' . md5(json_encode($countFilters));
+
+        return Cache::remember($cacheKey, 60, function () use ($userId, $countFilters) {
+            return (int) $this->getUnifiedQuery($userId, $countFilters)->count();
+        });
     }
 
     /**
@@ -1341,7 +1356,13 @@ class ActionsAggregatorService
      * @param array $stageIds Stage IDs to include (empty = all)
      * @param array $excludeStageIds Stage IDs to exclude (empty = none)
      */
-    private function getInquiriesSubquery(int $userId, array $stageIds = [], array $excludeStageIds = []): \Illuminate\Database\Query\Builder
+    private function getInquiriesSubquery(
+        int $userId,
+        array $stageIds = [],
+        array $excludeStageIds = [],
+        ?string $dateFrom = null,
+        ?string $dateTo = null
+    ): \Illuminate\Database\Query\Builder
     {
         // Subquery: MAX inquiry id per customer for this tenant
         $latestIds = DB::table('api_customer_inquiry')
@@ -1380,6 +1401,14 @@ class ActionsAggregatorService
         }
         if (!empty($excludeStageIds)) {
             $query->whereNotIn('aci.stage_id', $excludeStageIds);
+        }
+
+        // Push date filters into this UNION arm (createdAt maps to aci.created_at)
+        if (!empty($dateFrom)) {
+            $query->where('aci.created_at', '>=', $dateFrom);
+        }
+        if (!empty($dateTo)) {
+            $query->where('aci.created_at', '<=', $dateTo);
         }
 
         return $query->select([
@@ -1430,6 +1459,7 @@ class ActionsAggregatorService
                 'aci.user_id as userId',
                 'aci.property_type as propertyCategory',
                 DB::raw("NULL as propertyType"),
+                DB::raw("NULL as city_id"),
                 'aci.city as city',
                 'aci.region_name as state',
                 'aci.budget as budgetMin',
@@ -1451,7 +1481,13 @@ class ActionsAggregatorService
      * @param array $stageIds Stage IDs to include (empty = all)
      * @param array $excludeStageIds Stage IDs to exclude (empty = none)
      */
-    private function getPropertyRequestsSubquery(int $userId, array $stageIds = [], array $excludeStageIds = []): \Illuminate\Database\Query\Builder
+    private function getPropertyRequestsSubquery(
+        int $userId,
+        array $stageIds = [],
+        array $excludeStageIds = [],
+        ?string $dateFrom = null,
+        ?string $dateTo = null
+    ): \Illuminate\Database\Query\Builder
     {
         $query = DB::table('users_property_requests as upr')
             ->leftJoin('api_customers as ac', function ($join) {
@@ -1462,11 +1498,8 @@ class ActionsAggregatorService
                 $join->on('ac_phone.user_id', '=', 'upr.user_id')
                     ->on('ac_phone.phone_number', '=', 'upr.phone');
             })
-            ->leftJoin('user_cities as uc', 'upr.city_id', '=', 'uc.id')
-            ->leftJoin('user_districts as ud_req', 'upr.districts_id', '=', 'ud_req.id')
             ->leftJoin('property_request_statuses as prs', 'upr.status_id', '=', 'prs.id')
             ->leftJoin('customers_hub_status_mapping as chsm', 'prs.slug', '=', 'chsm.property_request_status_slug')
-            ->leftJoin('users as u2', DB::raw('u2.id'), '=', DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id, ac_phone.responsible_employee_id)'))
             ->where('upr.user_id', $userId)
             ->where('upr.is_active', 1);
 
@@ -1476,6 +1509,14 @@ class ActionsAggregatorService
         }
         if (!empty($excludeStageIds)) {
             $query->whereNotIn('upr.customers_hub_stage_id', $excludeStageIds);
+        }
+
+        // Push date filters into this UNION arm (createdAt maps to upr.created_at)
+        if (!empty($dateFrom)) {
+            $query->where('upr.created_at', '>=', $dateFrom);
+        }
+        if (!empty($dateTo)) {
+            $query->where('upr.created_at', '<=', $dateTo);
         }
 
         return $query->select([
@@ -1509,7 +1550,7 @@ class ActionsAggregatorService
                 DB::raw("NULL as completedAt"),
                 DB::raw("NULL as completedBy"),
                 DB::raw('COALESCE(upr.responsible_employee_id, ac.responsible_employee_id, ac_phone.responsible_employee_id) as assignedTo'),
-                DB::raw("CONCAT(COALESCE(u2.first_name, ''), ' ', COALESCE(u2.last_name, '')) as assignedToName"),
+                DB::raw("NULL as assignedToName"),
                 DB::raw("JSON_OBJECT(
                     'propertyRequestId', upr.id,
                     'propertyType', upr.property_type,
@@ -1524,7 +1565,8 @@ class ActionsAggregatorService
                 'upr.user_id as userId',
                 'upr.category_id as propertyCategory',
                 'upr.property_type as propertyType',
-                DB::raw('uc.name_ar as city'),
+                'upr.city_id as city_id',
+                DB::raw('NULL as city'),
                 'upr.region as state',
                 'upr.budget_from as budgetMin',
                 'upr.budget_to as budgetMax',
@@ -1533,7 +1575,7 @@ class ActionsAggregatorService
                 'prs.name_ar as propertyRequestStatusNameAr',
                 'prs.name_en as propertyRequestStatusNameEn',
                 'upr.districts_id as districts_id',
-                'ud_req.name_ar as districtAR',
+                DB::raw('NULL as districtAR'),
                 'upr.customers_hub_stage_id as customers_hub_stage_id',
             ]);
     }
@@ -1541,13 +1583,22 @@ class ActionsAggregatorService
     /**
      * Build reminders subquery.
      */
-    private function getRemindersSubquery(int $userId): \Illuminate\Database\Query\Builder
+    private function getRemindersSubquery(int $userId, ?string $dateFrom = null, ?string $dateTo = null): \Illuminate\Database\Query\Builder
     {
-        return DB::table('reminders as r')
+        $query = DB::table('reminders as r')
             ->join('api_customers as ac', 'r.customer_id', '=', 'ac.id')
             ->where('r.user_id', $userId)
-            ->whereNull('r.deleted_at')
-            ->select([
+            ->whereNull('r.deleted_at');
+
+        // Push date filters into this UNION arm (createdAt maps to r.created_at)
+        if (!empty($dateFrom)) {
+            $query->where('r.created_at', '>=', $dateFrom);
+        }
+        if (!empty($dateTo)) {
+            $query->where('r.created_at', '<=', $dateTo);
+        }
+
+        return $query->select([
                 DB::raw("CONCAT('reminder_', r.id) as id"),
                 'r.customer_id as customerId',
                 'ac.name as customerName',
@@ -1586,6 +1637,7 @@ class ActionsAggregatorService
                 'r.user_id as userId',
                 DB::raw("NULL as propertyCategory"),
                 DB::raw("NULL as propertyType"),
+                DB::raw("NULL as city_id"),
                 DB::raw("NULL as city"),
                 DB::raw("NULL as state"),
                 DB::raw("NULL as budgetMin"),
@@ -1891,13 +1943,8 @@ class ActionsAggregatorService
             $query->whereIn('propertyType', $filters['property_types']);
         }
 
-        // Date range filter
-        if (!empty($filters['date_from'])) {
-            $query->where('createdAt', '>=', $filters['date_from']);
-        }
-        if (!empty($filters['date_to'])) {
-            $query->where('createdAt', '<=', $filters['date_to']);
-        }
+        // Date range filter is pushed into UNION arms in getUnifiedQuery() to avoid
+        // post-materialization filtering on the derived table. Intentionally skipped here.
 
         // Search filter
         if (!empty($filters['search'])) {
@@ -1911,8 +1958,36 @@ class ActionsAggregatorService
         }
 
         // Cities filter (request-level)
+        // - For inquiries: `city` is a string column on api_customer_inquiry.
+        // - For property_requests: we avoid joining user_cities in the UNION for performance; we filter by upr.city_id instead.
         if (!empty($filters['cities']) && is_array($filters['cities'])) {
-            $query->whereIn('city', $filters['cities']);
+            $cityNames = array_values(array_filter(array_map('strval', $filters['cities'])));
+            $cityIds = [];
+            if (!empty($cityNames)) {
+                $cityIds = DB::table('user_cities')
+                    ->whereIn('name_ar', $cityNames)
+                    ->pluck('id')
+                    ->map(fn ($v) => (int) $v)
+                    ->values()
+                    ->all();
+            }
+
+            $query->where(function ($q) use ($cityNames, $cityIds) {
+                if (!empty($cityNames)) {
+                    // Non-property_request rows (inquiry) keep string city match.
+                    $q->orWhere(function ($q2) use ($cityNames) {
+                        $q2->where('objectType', '!=', 'property_request')
+                            ->whereIn('city', $cityNames);
+                    });
+                }
+                if (!empty($cityIds)) {
+                    // Property requests match by city_id.
+                    $q->orWhere(function ($q2) use ($cityIds) {
+                        $q2->where('objectType', 'property_request')
+                            ->whereIn('city_id', $cityIds);
+                    });
+                }
+            });
         }
 
         // Districts filter (request-level)

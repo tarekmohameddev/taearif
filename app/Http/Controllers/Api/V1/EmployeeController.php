@@ -27,9 +27,18 @@ class EmployeeController extends Controller
     }
 
     // GET /employees
-    public function index(Request $request)
+    public function index(Request $request, \App\Domain\CustomersHub\Services\AssignmentService $assignmentService)
     {
         $tenantId = $this->tenantId();
+
+        $workloadByEmployeeId = collect($assignmentService->getEmployees($tenantId))
+            ->mapWithKeys(function (array $row) {
+                $id = isset($row['id']) ? (int) $row['id'] : null;
+                if (!$id) {
+                    return [];
+                }
+                return [$id => $row];
+            });
 
         $q = User::where('tenant_id', $tenantId)
             ->where('account_type', 'employee')
@@ -45,15 +54,22 @@ class EmployeeController extends Controller
             ->when($request->filled('active'), fn($qb) => $qb->where('active', (bool)$request->boolean('active')))
             ->orderByDesc('id');
 
-        $employees = $q->paginate((int)($request->per_page ?? 20));
+        // Set Spatie team context ONCE before the query (not per-employee inside the loop)
+        app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
 
-        // Add roles and permissions to each employee
-        $employees->getCollection()->transform(function ($employee) use ($tenantId) {
-            // Set tenant context for Spatie
-            app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
+        // Eager-load roles so the loop below fires zero additional queries for roles/permissions
+        $employees = $q->with('roles')->paginate((int)($request->per_page ?? 20));
 
+        $employees->getCollection()->transform(function ($employee) use ($workloadByEmployeeId) {
+            // roles relation is already loaded — no extra query
             $employee->roles = $employee->roles->pluck('name', 'id');
+            // getPermissionNames() uses Spatie's cache; with roles eager-loaded it won't re-query
             $employee->permissions = $employee->getPermissionNames();
+
+            $workload = $workloadByEmployeeId->get((int) $employee->id) ?? [];
+            $employee->customerCount   = $workload['customerCount'] ?? 0;
+            $employee->activeCount     = $workload['activeCount'] ?? 0;
+            $employee->loadPercentage  = $workload['loadPercentage'] ?? 0;
             return $employee;
         });
 

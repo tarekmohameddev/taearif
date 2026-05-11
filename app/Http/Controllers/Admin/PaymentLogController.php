@@ -25,20 +25,49 @@ class PaymentLogController extends Controller
      */
     public function __construct()
     {
-        $abs = BasicSetting::first();
-        Config::set('app.timezone', $abs->timezone);
+        // Avoid repeated "basic_settings limit 1" queries across requests.
+        // AppServiceProvider already sets timezone from language-specific settings for most views;
+        // this is a safe fallback for places that still rely on Admin BasicSetting.
+        $abs = cache()->remember('admin.basic_settings.first', 300, function () {
+            return BasicSetting::query()->select('id', 'timezone')->first();
+        });
+        if ($abs && !empty($abs->timezone)) {
+            Config::set('app.timezone', $abs->timezone);
+        }
     }
 
     public function index(Request $request)
     {
         $search = $request->search;
         $data['memberships'] = Membership::query()
-        ->where('payment_method', 'arb') 
-        ->when($search, function ($query, $search) {
-            return $query->where('transaction_id', 'like', '%' . $search . '%');
-        })
-        ->orderBy('id', 'DESC')
-        ->paginate(10);
+            ->select([
+                'id',
+                'transaction_id',
+                'price',
+                'status',
+                'payment_method',
+                'transaction_details',
+                'settings',
+                'discount',
+                'package_price',
+                'currency',
+                'package_id',
+                'user_id',
+                'start_date',
+                'expire_date',
+                'modified',
+                'is_trial',
+            ])
+            ->with([
+                'user:id,first_name,last_name,username,company_name,email,phone',
+                'package:id,title,term',
+            ])
+            ->where('payment_method', 'arb')
+            ->when($search, function ($query, $search) {
+                return $query->where('transaction_id', 'like', '%' . $search . '%');
+            })
+            ->orderBy('id', 'DESC')
+            ->paginate(10);
         return view('admin.payment_log.index', $data);
     }
 

@@ -15,10 +15,26 @@ class PropertyRequestAppointmentsRemindersTest extends TestCase
 {
     use DatabaseTransactions;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // This repo's test suite uses a pre-migrated MySQL test DB (see phpunit.xml).
+        // Skip cleanly when core tables aren't present to avoid hard errors.
+        if (!Schema::hasTable('users')) {
+            $this->markTestSkipped('Required tables missing in test DB. Run migrations on test DB.');
+        }
+    }
+
     private function requirePropertyRequestTables(): void
     {
-        if (!Schema::hasTable('property_request_appointments') || !Schema::hasTable('property_request_reminders')) {
-            $this->markTestSkipped('property_request_appointments and property_request_reminders tables required. Run migrations on test DB.');
+        if (
+            !Schema::hasTable('users')
+            || !Schema::hasTable('users_property_requests')
+            || !Schema::hasTable('property_request_appointments')
+            || !Schema::hasTable('property_request_reminders')
+        ) {
+            $this->markTestSkipped('Required tables missing in test DB. Run migrations on test DB.');
         }
     }
 
@@ -112,6 +128,38 @@ class PropertyRequestAppointmentsRemindersTest extends TestCase
             'property_request_id' => $prId,
             'user_id' => $tenant->id,
             'type' => 'site_visit',
+            'status' => 'scheduled',
+        ]);
+    }
+
+    /** @test */
+    public function create_appointment_without_datetime_and_duration_persists_nulls_and_returns_nulls(): void
+    {
+        $this->requirePropertyRequestTables();
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        $prId = $this->createPropertyRequestForUser($tenant->id);
+        Sanctum::actingAs($tenant);
+
+        $res = $this->postJson("/api/v2/customers-hub/requests/property_request_{$prId}/appointments", [
+            'type' => 'office_meeting',
+            'title' => 'اجتماع مكتب',
+            'priority' => 'medium',
+        ]);
+
+        $res->assertStatus(201);
+        $res->assertJsonPath('success', true);
+        $res->assertJsonPath('data.appointment.requestId', "property_request_{$prId}")
+            ->assertJsonPath('data.appointment.type', 'office_meeting')
+            ->assertJsonPath('data.appointment.title', 'اجتماع مكتب')
+            ->assertJsonPath('data.appointment.datetime', null)
+            ->assertJsonPath('data.appointment.duration', null);
+
+        $this->assertDatabaseHas('property_request_appointments', [
+            'property_request_id' => $prId,
+            'user_id' => $tenant->id,
+            'type' => 'office_meeting',
+            'datetime' => null,
+            'duration' => null,
             'status' => 'scheduled',
         ]);
     }

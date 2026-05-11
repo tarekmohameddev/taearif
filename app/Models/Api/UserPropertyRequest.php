@@ -23,6 +23,9 @@ class UserPropertyRequest extends Model
             if (!isset($model->customers_hub_stage_id) || $model->customers_hub_stage_id === null) {
                 $model->customers_hub_stage_id = CustomersHubStage::getDefaultStageId();
             }
+
+            // Force medium priority at creation time (Customers Hub derives priority from seriousness)
+            $model->seriousness = 'خلال 3 أشهر';
         });
 
         $forgetStats = function (UserPropertyRequest $model): void {

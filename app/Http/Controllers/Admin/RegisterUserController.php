@@ -69,7 +69,12 @@ class RegisterUserController extends Controller
             })->get();
 
         $users = User::where('account_type', 'tenant')
-            ->with('referrer')->when($term, function ($query, $term) {
+            ->with([
+                'referrer',
+                'basic_setting',
+                'currentMembership.package',
+                'pendingMembership.package',
+            ])->when($term, function ($query, $term) {
                 $query->where(function ($q) use ($term) {
                     $q->where('username', 'like', "%$term%")
                       ->orWhere('email', 'like', "%$term%")

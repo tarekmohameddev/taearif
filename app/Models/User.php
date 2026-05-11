@@ -238,6 +238,25 @@ class User extends Authenticatable
         return $this->hasMany('App\Models\Membership', 'user_id');
     }
 
+    public function currentMembership()
+    {
+        $today = now()->toDateString();
+
+        return $this->hasOne(\App\Models\Membership::class, 'user_id')
+            ->where('status', 1)
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('expire_date', '>=', $today)
+            ->latestOfMany();
+    }
+
+    public function pendingMembership()
+    {
+        return $this->hasOne(\App\Models\Membership::class, 'user_id')
+            ->where('status', 0)
+            ->whereYear('start_date', '<>', 9999)
+            ->latestOfMany();
+    }
+
     public function activeMembership()
     {
         return $this->hasOne('App\Models\Membership', 'user_id')

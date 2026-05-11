@@ -10,11 +10,15 @@ use App\Models\Language;
 use App\Models\Membership;
 use App\Models\ApiCustomer;
 use App\Models\BasicSetting;
+use App\Models\Subscriber;
+use App\Models\Package;
+use App\Models\Admin;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Config;
 use App\Models\User\RealestateManagement\Project;
 use App\Models\User\RealestateManagement\Property;
+use App\Models\User\Blog;
 
 class DashboardController extends Controller
 {
@@ -46,7 +50,16 @@ class DashboardController extends Controller
             ])
             ->get();
 
-        $data['defaultLang'] = Language::where('is_default', 1)->first();
+        $data['defaultLang'] = app('defaultLanguage');
+
+        $data['counts'] = [
+            'users' => (int) User::count(),
+            'subscribers' => (int) Subscriber::count(),
+            'packages' => (int) Package::count(),
+            'memberships' => (int) Membership::count(),
+            'admins' => (int) Admin::count(),
+            'blogs' => (int) Blog::where('language_id', optional($data['defaultLang'])->id)->count(),
+        ];
 
         $data['customersTotal'] = ApiCustomer::count();
         $data['projectsTotal']  = Project::count();

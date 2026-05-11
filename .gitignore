@@ -71,7 +71,9 @@ check_user_1205.sql
 phpunit.xml
 postman_property_request_example.json
 app/Http/Helpers/Helper.php.backup
+/taearifV2
 /front-next
+/front-end-files/
 test-admin-login.json
 compare_routes_postman.php
 .cursor/debug.log

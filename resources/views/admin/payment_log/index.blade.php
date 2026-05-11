@@ -1,6 +1,8 @@
 @extends('admin.layout')
 @php
-$selLang = \App\Models\Language::where('code', request()->input('language'))->first();
+$selLang = request()->filled('language')
+    ? \App\Models\Language::where('code', request()->input('language'))->first()
+    : null;
 @endphp
 @section('styles')
 <style>
@@ -235,7 +237,7 @@ $selLang = \App\Models\Language::where('code', request()->input('language'))->fi
                                                             <div class="owner-details-row"><span class="label">{{__('Username')}}</span><span class="value">{{ !empty($membership->user) ? $membership->user->username : '-' }}</span></div>
                                                             <div class="owner-details-row"><span class="label">{{__('Company')}}</span><span class="value">{{ !empty($membership->user) ? $membership->user->company_name : 'N/A' }}</span></div>
                                                             <div class="owner-details-row"><span class="label">{{__('Email')}}</span><span class="value">{{ !empty($membership->user) ? $membership->user->email : '-' }}</span></div>
-                                                            <div class="owner-details-row"><span class="label">{{__('Phone')}}</span><span class="value">{{ !empty($membership->user) ? $membership->user->phone_number : '-' }}</span></div>
+                                                            <div class="owner-details-row"><span class="label">{{__('Phone')}}</span><span class="value">{{ !empty($membership->user) ? ($membership->user->phone ?? '-') : '-' }}</span></div>
                                                         </div>
                                                         <div class="owner-details-section">
                                                             <h3>{{__('Payment details')}}</h3>

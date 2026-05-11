@@ -31,7 +31,7 @@ class SetLangMiddleware
          if (session()->has('lang')) {
            app()->setLocale(session()->get('lang'));
          } else {
-           $defaultLang = Language::where('is_default', 1)->first();
+          $defaultLang = app()->bound('defaultLanguage') ? app('defaultLanguage') : Language::where('is_default', 1)->first();
            if (!empty($defaultLang)) {
              app()->setLocale($defaultLang->code);
            }

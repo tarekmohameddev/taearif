@@ -19,6 +19,7 @@ class UserApiCustomerPriority extends Model
             $id = (int) $model->user_id;
             if ($id > 0) {
                 Cache::forget("property_request_filter_options_meta_{$id}");
+                Cache::forget("ch:reqs:filter-options:{$id}");
             }
         };
 

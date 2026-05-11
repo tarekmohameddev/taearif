@@ -96,14 +96,15 @@ class PageService
             if ($staticPages !== null) {
                 $sentStaticPageIds = array_keys($staticPages);
 
-                foreach ($staticPages as $pageId => $components) {
-                    $components = collect($components)
-                        ->sortBy('position')
-                        ->values()
-                        ->all();
+                foreach ($staticPages as $pageId => $payload) {
+                    $normalized = TenantStaticPage::normalizeIncomingPayload($payload);
+                    $attrs = ['components' => $normalized['components']];
+                    if ($normalized['url_explicit']) {
+                        $attrs['url'] = $normalized['url'];
+                    }
                     TenantStaticPage::updateOrCreate(
                         ['user_id' => $tenant->id, 'page_id' => $pageId],
-                        ['components' => $components]
+                        $attrs
                     );
                 }
 

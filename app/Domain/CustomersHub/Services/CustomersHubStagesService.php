@@ -22,18 +22,21 @@ class CustomersHubStagesService
             $userId = 0;
         }
 
-        $presenter = app(CustomersHubStagesPresenter::class);
-        $rows = $presenter->stagesQueryForTenant($userId, $activeOnly);
-
         $allowedOrder = in_array($orderBy, ['order', 'created_at'], true) ? $orderBy : 'order';
-        $rows->orderBy($allowedOrder)->orderBy('id');
+        $cacheKey = "ch:stages:{$userId}:" . ($activeOnly ? '1' : '0') . ":{$allowedOrder}";
 
-        $filtered = $rows->get();
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 600, function () use ($userId, $activeOnly, $allowedOrder) {
+            $presenter = app(CustomersHubStagesPresenter::class);
+            $rows = $presenter->stagesQueryForTenant($userId, $activeOnly);
+            $rows->orderBy($allowedOrder)->orderBy('id');
 
-        return [
-            'stages' => $filtered->map(fn ($s) => $this->stageToArray($s))->values()->all(),
-            'total' => $filtered->count(),
-        ];
+            $filtered = $rows->get();
+
+            return [
+                'stages' => $filtered->map(fn ($s) => $this->stageToArray($s))->values()->all(),
+                'total' => $filtered->count(),
+            ];
+        });
     }
 
     /**
@@ -65,7 +68,7 @@ class CustomersHubStagesService
             ]);
         }
 
-        return CustomersHubStage::create([
+        $stage = CustomersHubStage::create([
             'stage_id' => $stageId,
             'stage_name_ar' => $data['stage_name_ar'],
             'stage_name_en' => $data['stage_name_en'],
@@ -77,6 +80,10 @@ class CustomersHubStagesService
             'user_id' => $tenantUserId,
             'is_system' => false,
         ]);
+
+        $this->forgetStagesCache($tenantUserId);
+
+        return $stage;
     }
 
     /**
@@ -124,6 +131,8 @@ class CustomersHubStagesService
                 $stage->order = (int) $effective->order;
             }
 
+            $this->forgetStagesCache($tenantUserId);
+
             return $stage;
         }
 
@@ -148,6 +157,8 @@ class CustomersHubStagesService
         }
 
         $stage->save();
+
+        $this->forgetStagesCache($tenantUserId);
 
         return $stage;
     }
@@ -189,6 +200,8 @@ class CustomersHubStagesService
                 $count
             );
         }
+
+        $this->forgetStagesCache($tenantUserId);
 
         $stage->delete();
     }
@@ -237,6 +250,16 @@ class CustomersHubStagesService
             'created_at' => $this->timestampToIso($s->created_at ?? null),
             'updated_at' => $this->timestampToIso($s->updated_at ?? null),
         ];
+    }
+
+    private function forgetStagesCache(int $userId): void
+    {
+        foreach ([true, false] as $activeOnly) {
+            foreach (['order', 'created_at'] as $orderBy) {
+                $key = "ch:stages:{$userId}:" . ($activeOnly ? '1' : '0') . ":{$orderBy}";
+                \Illuminate\Support\Facades\Cache::forget($key);
+            }
+        }
     }
 
     private function timestampToIso(mixed $value): ?string
