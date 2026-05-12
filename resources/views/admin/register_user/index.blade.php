@@ -111,7 +111,12 @@
                         <button class="btn btn-danger float-lg-right float-none btn-sm ml-2 mt-1 d-none bulk-delete" data-href="{{ route('admin.register.user.bulk.delete') }}"><i class="flaticon-interface-5"></i>
                             {{ __('Delete') }}</button>
                         <button class="btn btn-primary float-lg-right float-none btn-sm ml-2 mt-1" data-toggle="modal" data-target="#addUserModal"><i class="fas fa-plus"></i> {{ __('Add User') }}</button>
-                        <form action="{{ url()->full() }}" class="float-lg-right float-none">
+                        <form action="{{ route('admin.register.user') }}" method="GET" class="float-lg-right float-none">
+                            @foreach ($userListQuery as $filterName => $filterValue)
+                                @if ($filterName !== 'term')
+                                    <input type="hidden" name="{{ $filterName }}" value="{{ $filterValue }}">
+                                @endif
+                            @endforeach
                             <input type="text" name="term" class="form-control min-w-250" value="{{ request()->input('term') }}" placeholder="{{ __('Search by name / email / phone number') }}">
                         </form>
                     </div>
@@ -126,7 +131,10 @@
 
                             {{-- Filters Collapse --}}
                             <div class="collapse hide" id="dateFilterCollapse">
-                                <form action="{{ url()->full() }}" method="GET" class="float-lg-right float-none ml-2">
+                                <form action="{{ route('admin.register.user') }}" method="GET" class="float-lg-right float-none ml-2">
+                                    @if (array_key_exists('term', $userListQuery))
+                                        <input type="hidden" name="term" value="{{ $userListQuery['term'] }}">
+                                    @endif
                                     <div class="input-group date-range-filter flex-wrap">
 
                                         {{-- Date From --}}
@@ -233,7 +241,7 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-lg-12">
-                        @if (count($users) == 0)
+                        @if ($users->total() == 0)
                         <h3 class="text-center">{{ __('NO USER FOUND') }}</h3>
                         @else
                         <div class="table-responsive">
@@ -266,7 +274,7 @@
                                         <td>
                                             @if ($currPackage)
                                             <a target="_blank" href="{{route('admin.package.edit', $currPackage->id)}}">{{$currPackage->title}}</a>
-                                            <span class="badge badge-secondary badge-xs mr-2">{{$currPackage->term}}</span>
+                                            <span class="badge badge-secondary badge-xs mr-2">{{ __($currPackage->term) }}</span>
                                             <button type="submit" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#editCurrentPackage"><i class="far fa-edit"></i></button>
                                             <form action="{{route('admin.user.currPackage.remove')}}" class="d-inline-block deleteform" method="POST">
                                                 @csrf
@@ -276,26 +284,26 @@
 
                                             <p class="mb-0">
                                                 @if ($currMemb->is_trial == 1)
-                                                (Expire Date: {{Carbon\Carbon::parse($currMemb->expire_date)->format('M-d-Y')}})
+                                                ({{ __('Expire Date') }}: {{Carbon\Carbon::parse($currMemb->expire_date)->format('M-d-Y')}})
                                                 <span class="badge badge-primary">تجريبية</span>
                                                 @else
-                                                (Expire Date: {{$currPackage->term === 'lifetime' ? "Lifetime" : Carbon\Carbon::parse($currMemb->expire_date)->format('M-d-Y')}})
+                                                ({{ __('Expire Date') }}: {{$currPackage->term === 'lifetime' ? __('Lifetime') : Carbon\Carbon::parse($currMemb->expire_date)->format('M-d-Y')}})
                                                 @endif
                                                 @if ($currMemb->status == 0)
                                             <form id="statusForm{{$currMemb->id}}" class="d-inline-block" action="{{route('admin.payment-log.update')}}" method="post">
                                                 @csrf
                                                 <input type="hidden" name="id" value="{{$currMemb->id}}">
                                                 <select class="form-control form-control-sm bg-warning" name="status" onchange="document.getElementById('statusForm{{$currMemb->id}}').submit();">
-                                                    <option value=0 selected>Pending</option>
-                                                    <option value=1>Success</option>
-                                                    <option value=2>Rejected</option>
+                                                    <option value=0 selected>{{ __('Pending') }}</option>
+                                                    <option value=1>{{ __('Success') }}</option>
+                                                    <option value=2>{{ __('Rejected') }}</option>
                                                 </select>
                                             </form>
                                             @endif
                                             </p>
 
                                             @else
-                                            <a data-target="#addCurrentPackage" data-toggle="modal" class="btn btn-xs btn-primary text-white"><i class="fas fa-plus"></i> Add Package</a>
+                                            <a data-target="#addCurrentPackage" data-toggle="modal" class="btn btn-xs btn-primary text-white"><i class="fas fa-plus"></i> {{ __('Add Package') }}</a>
                                             @endif
 
                                         </td>
@@ -343,7 +351,7 @@
                     <div class="d-inline-block mx-auto">
 
 
-                        {{ $users->appends(request()->except('page'))->links() }}
+                        {{ $users->appends($userListQuery)->links() }}
 
                     </div>
                 </div>
@@ -357,7 +365,7 @@
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLongTitle">Add User</h5>
+                <h5 class="modal-title" id="exampleModalLongTitle">{{ __('Add User') }}</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -366,26 +374,26 @@
                 <form action="{{ route('admin.register.user.store') }}" method="POST" id="ajaxForm">
                     @csrf
                     <div class="form-group">
-                        <label for="">Username *</label>
+                        <label for="">{{ __('Username') }} *</label>
                         <input class="form-control" type="text" name="username">
                         <p id="errusername" class="text-danger mb-0 em"></p>
                     </div>
                     <div class="form-group">
-                        <label for="">Email *</label>
+                        <label for="">{{ __('Email') }} *</label>
                         <input class="form-control" type="email" name="email">
                         <p id="erremail" class="text-danger mb-0 em"></p>
                     </div>
                     <div class="form-group">
-                        <label for="">Password *</label>
+                        <label for="">{{ __('Password') }} *</label>
                         <input class="form-control" type="password" name="password">
                         <p id="errpassword" class="text-danger mb-0 em"></p>
                     </div>
                     <div class="form-group">
-                        <label for="">Confirm Password *</label>
+                        <label for="">{{ __('Confirm Password') }} *</label>
                         <input class="form-control" type="password" name="password_confirmation">
                     </div>
                     <div class="form-group">
-                        <label for="">Package / Plan *</label>
+                        <label for="">{{ __('Package / Plan') }} *</label>
                         <select name="package_id" class="form-control">
                             @if (!empty($packages))
                             @foreach ($packages as $package)
@@ -398,7 +406,7 @@
                         <p id="errpackage_id" class="text-danger mb-0 em"></p>
                     </div>
                     <div class="form-group">
-                        <label for="">Payment Gateway *</label>
+                        <label for="">{{ __('Payment Gateway') }} *</label>
                         <select name="payment_gateway" class="form-control">
                             @if (!empty($gateways))
                             @foreach ($gateways as $gateway)
@@ -409,17 +417,17 @@
                         <p id="errpayment_gateway" class="text-danger mb-0 em"></p>
                     </div>
                     <div class="form-group">
-                        <label for="">Publicly Hidden *</label>
+                        <label for="">{{ __('Publicly Hidden') }} *</label>
                         <select name="online_status" class="form-control">
-                            <option value="1">No</option>
-                            <option value="0">Yes</option>
+                            <option value="1">{{ __('No') }}</option>
+                            <option value="0">{{ __('Yes') }}</option>
                         </select>
                         <p id="erronline_status" class="text-danger mb-0 em"></p>
                     </div>
                 </form>
             </div>
             <div class="modal-footer text-center">
-                <button id="submitBtn" type="button" class="btn btn-primary">Add User</button>
+                <button id="submitBtn" type="button" class="btn btn-primary">{{ __('Add User') }}</button>
             </div>
         </div>
     </div>

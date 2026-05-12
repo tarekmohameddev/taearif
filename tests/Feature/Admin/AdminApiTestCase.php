@@ -16,6 +16,12 @@ abstract class AdminApiTestCase extends TestCase
     use DatabaseTransactions;
 
     /**
+     * When false, setUp will not truncate shared admin tables.
+     * Use for legacy web admin feature tests against imported dumps.
+     */
+    protected bool $shouldResetAdminData = true;
+
+    /**
      * Ensure shared admin tables exist before running tests.
      */
     protected function setUp(): void
@@ -36,7 +42,10 @@ abstract class AdminApiTestCase extends TestCase
         $this->ensurePackagesTable();
         $this->ensureSanctumTables();
         $this->ensureAdminImpersonationsTable();
-        $this->resetAdminData();
+
+        if ($this->shouldResetAdminData) {
+            $this->resetAdminData();
+        }
     }
 
     /**

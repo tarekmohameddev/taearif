@@ -53,6 +53,7 @@ class RegisterUserController extends Controller
 
     public function index(Request $request)
     {
+        $userListQuery = $this->userListQuery($request);
         $term = $request->term;
         $startDate = $request->filled('start_date') ? Carbon::createFromFormat('Y-m-d', $request->start_date)->startOfDay() : null;
         $endDate   = $request->filled('end_date') ? Carbon::createFromFormat('Y-m-d', $request->end_date)->endOfDay() : null;
@@ -87,50 +88,54 @@ class RegisterUserController extends Controller
         ->when($referredBy, fn($q, $r) => $q->where('referred_by', $r))
 
         ->when($subscriptionStart && $subscriptionEnd, function ($query) use ($subscriptionStart, $subscriptionEnd) {
-            $query->whereHas('activeMembership', function ($q) use ($subscriptionStart, $subscriptionEnd) {
+            $query->whereHas('currentMembership', function ($q) use ($subscriptionStart, $subscriptionEnd) {
                 $q->whereBetween('expire_date', [$subscriptionStart, $subscriptionEnd]);
             });
         })
         ->when($subscriptionStart && !$subscriptionEnd, function ($query) use ($subscriptionStart) {
-            $query->whereHas('activeMembership', function ($q) use ($subscriptionStart) {
+            $query->whereHas('currentMembership', function ($q) use ($subscriptionStart) {
                 $q->where('expire_date', '>=', $subscriptionStart);
             });
         })
         ->when(!$subscriptionStart && $subscriptionEnd, function ($query) use ($subscriptionEnd) {
-            $query->whereHas('activeMembership', function ($q) use ($subscriptionEnd) {
+            $query->whereHas('currentMembership', function ($q) use ($subscriptionEnd) {
                 $q->where('expire_date', '<=', $subscriptionEnd);
             });
         })
             // Filter by active membership status
         ->when($activeMembership === '1', function ($query) {
-            // Only users who have an active subscription currently
-            $query->whereHas('memberships', function ($q) {
-                $q->where('status', 1)
-                ->where('expire_date', '>=', now());
-            });
+            $query->whereHas('currentMembership');
         })
         ->when($activeMembership === '0', function ($query) {
-            //Users who do not have an active subscription
-            $query->whereDoesntHave('memberships', function ($q) {
-                $q->where('status', 1)
-                ->where('expire_date', '>=', now());
-            });
+            $query->whereDoesntHave('currentMembership');
         })
         // paid vs trial filter
         ->when($paidMember === 'paid', function ($q) {
-            // only those whose membership row has payment_method = "Arb"
-            $q->whereHas('memberships', function ($m) {
-                $m->where('payment_method', 'Arb');
+            $q->whereHas('currentMembership', function ($m) {
+                $m->whereIn('package_id', [
+                    MembershipService::PAID_YEARLY_PACKAGE_ID,
+                    MembershipService::PAID_MONTHLY_PACKAGE_ID,
+                ]);
             });
         })
         ->when($paidMember === 'trial', function ($q) {
-            // only those whose membership row has payment_method = "-"
-            $q->whereHas('memberships', function ($m) {
-                $m->where('transaction_details', 'Trial')->where('payment_method', '-');
+            $q->whereHas('currentMembership', function ($m) {
+                $m->where(function ($membership) {
+                    $membership->where('transaction_details', 'Trial')
+                        ->where('payment_method', '-');
+                });
             });
         })
         ->orderBy('id', 'DESC')
         ->paginate(10);
+
+        if ($userListQuery !== []) {
+            $users->appends($userListQuery);
+        }
+
+        if ($users->total() > 0 && $users->count() === 0) {
+            return redirect()->route('admin.register.user', $userListQuery);
+        }
 
         // $affiliateUsers = User::whereNotNull('referral_code')->get(['id','username','email']);
         $affiliateUsers = User::where('account_type', 'tenant')
@@ -173,8 +178,37 @@ class RegisterUserController extends Controller
             'affiliateUsers',
             'activeMembership',
             'paidMember',
-            'activeUsers'
+            'activeUsers',
+            'userListQuery'
         ));
+    }
+
+    private function userListQuery(Request $request): array
+    {
+        $advancedFilterKeys = [
+            'start_date',
+            'end_date',
+            'subscription_start',
+            'subscription_end',
+            'active_membership',
+            'paid_member',
+            'referred_by',
+        ];
+
+        $query = [];
+
+        if (collect($advancedFilterKeys)->contains(fn (string $key) => $request->query->has($key))) {
+            $query = array_merge(
+                array_fill_keys($advancedFilterKeys, ''),
+                $request->only($advancedFilterKeys)
+            );
+        }
+
+        if ($request->query->has('term')) {
+            $query['term'] = (string) $request->query('term', '');
+        }
+
+        return $query;
     }
 
     public function view($id)
