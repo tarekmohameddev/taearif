@@ -57,6 +57,7 @@ use App\Http\Controllers\Api\{
     blog\MediaController as BlogMediaController,
     blog\CategoriesController,
     project\ProjectController,
+    project\ProjectPropertyController,
     property\PropertyController,
     content\FooterSettingController,
     content\ApiBannerSettingController,
@@ -345,6 +346,11 @@ Route::middleware('auth:sanctum')->group(function () {
 // --- Projects ---
 Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     Route::get   ('/projects',            [ProjectController::class, 'index'])->middleware('can:projects.view');
+    Route::get   ('/projects/{project}/properties', [ProjectPropertyController::class, 'index'])->middleware('can:projects.view');
+    Route::post  ('/projects/{project}/properties', [ProjectPropertyController::class, 'store'])->middleware('can:properties.create');
+    Route::post  ('/projects/{project}/properties/attach', [ProjectPropertyController::class, 'attach'])->middleware('can:properties.update');
+    Route::patch ('/projects/{project}/properties/{property}', [ProjectPropertyController::class, 'update'])->middleware('can:properties.update');
+    Route::delete('/projects/{project}/properties/{property}', [ProjectPropertyController::class, 'destroy'])->middleware('can:properties.update');
     Route::get   ('/projects/{id}',       [ProjectController::class, 'show'])->middleware('can:projects.view');
     Route::post  ('/projects',            [ProjectController::class, 'store'])->middleware('can:projects.create');
     Route::post  ('/projects/{id}',       [ProjectController::class, 'update'])->middleware('can:projects.update');
