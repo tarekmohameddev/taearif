@@ -45,17 +45,17 @@
                     <label class="selectgroup-item">
                       <input type="radio" name="status" value="1" class="selectgroup-input"
                         {{ $paystack->status == 1 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Active</span>
+                      <span class="selectgroup-button">{{ __('Active') }}</span>
                     </label>
                     <label class="selectgroup-item">
                       <input type="radio" name="status" value="0" class="selectgroup-input"
                         {{ $paystack->status == 0 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Deactive</span>
+                      <span class="selectgroup-button">{{ __('Deactive') }}</span>
                     </label>
                   </div>
                 </div>
                 <div class="form-group">
-                  <label>Paystack Secret Key</label>
+                  <label>Paystack {{ __('Secret Key') }}</label>
                   <input class="form-control" name="key" value="{{ $paystackInfo['key'] }}">
                   @if ($errors->has('key'))
                     <p class="mb-0 text-danger">{{ $errors->first('key') }}</p>
@@ -104,18 +104,18 @@
                     <label class="selectgroup-item">
                       <input type="radio" name="status" value="1" class="selectgroup-input"
                         {{ $mollie->status == 1 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Active</span>
+                      <span class="selectgroup-button">{{ __('Active') }}</span>
                     </label>
                     <label class="selectgroup-item">
                       <input type="radio" name="status" value="0" class="selectgroup-input"
                         {{ $mollie->status == 0 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Deactive</span>
+                      <span class="selectgroup-button">{{ __('Deactive') }}</span>
                     </label>
                   </div>
                 </div>
 
                 <div class="form-group">
-                  <label>Mollie Payment Key</label>
+                  <label>Mollie {{ __('Payment Key') }}</label>
                   <input class="form-control" name="key" value="{{ $mollieInfo['key'] }}">
                   @if ($errors->has('key'))
                     <p class="mb-0 text-danger">{{ $errors->first('key') }}</p>
@@ -354,24 +354,24 @@
                     <label class="selectgroup-item">
                       <input type="radio" name="status" value="1" class="selectgroup-input"
                         {{ $flutterwave->status == 1 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Active</span>
+                      <span class="selectgroup-button">{{ __('Active') }}</span>
                     </label>
                     <label class="selectgroup-item">
                       <input type="radio" name="status" value="0" class="selectgroup-input"
                         {{ $flutterwave->status == 0 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Deactive</span>
+                      <span class="selectgroup-button">{{ __('Deactive') }}</span>
                     </label>
                   </div>
                 </div>
                 <div class="form-group">
-                  <label>Flutterwave Public Key</label>
+                  <label>Flutterwave {{ __('Public Key') }}</label>
                   <input class="form-control" name="public_key" value="{{ $flutterwaveInfo['public_key'] }}">
                   @if ($errors->has('public_key'))
                     <p class="mb-0 text-danger">{{ $errors->first('public_key') }}</p>
                   @endif
                 </div>
                 <div class="form-group">
-                  <label>Flutterwave Secret Key</label>
+                  <label>Flutterwave {{ __('Secret Key') }}</label>
                   <input class="form-control" name="secret_key" value="{{ $flutterwaveInfo['secret_key'] }}">
                   @if ($errors->has('secret_key'))
                     <p class="mb-0 text-danger">{{ $errors->first('secret_key') }}</p>
@@ -421,18 +421,18 @@
                     <label class="selectgroup-item">
                       <input type="radio" name="status" value="1" class="selectgroup-input"
                         {{ $razorpay->status == 1 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Active</span>
+                      <span class="selectgroup-button">{{ __('Active') }}</span>
                     </label>
                     <label class="selectgroup-item">
                       <input type="radio" name="status" value="0" class="selectgroup-input"
                         {{ $razorpay->status == 0 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Deactive</span>
+                      <span class="selectgroup-button">{{ __('Deactive') }}</span>
                     </label>
                   </div>
                 </div>
 
                 <div class="form-group">
-                  <label>Razorpay Key</label>
+                  <label>Razorpay {{ __('Key') }}</label>
                   <input class="form-control" name="key" value="{{ $razorpayInfo['key'] }}">
                   @if ($errors->has('key'))
                     <p class="mb-0 text-danger">{{ $errors->first('key') }}</p>
@@ -440,7 +440,7 @@
                 </div>
 
                 <div class="form-group">
-                  <label>Razorpay Secret</label>
+                  <label>Razorpay {{ __('Secret') }}</label>
                   <input class="form-control" name="secret" value="{{ $razorpayInfo['secret'] }}">
                   @if ($errors->has('secret'))
                     <p class="mb-0 text-danger">{{ $errors->first('secret') }}</p>
@@ -490,34 +490,34 @@
                 <label class="selectgroup-item">
                   <input type="radio" name="status" value="1" class="selectgroup-input"
                     {{ $mercadopago->status == 1 ? 'checked' : '' }}>
-                  <span class="selectgroup-button">Active</span>
+                  <span class="selectgroup-button">{{ __('Active') }}</span>
                 </label>
                 <label class="selectgroup-item">
                   <input type="radio" name="status" value="0" class="selectgroup-input"
                     {{ $mercadopago->status == 0 ? 'checked' : '' }}>
-                  <span class="selectgroup-button">Deactive</span>
+                  <span class="selectgroup-button">{{ __('Deactive') }}</span>
                 </label>
               </div>
             </div>
 
             <div class="form-group">
-              <label>Mercado Pago Test Mode</label>
+              <label>Mercado Pago {{ __('Test Mode') }}</label>
               <div class="selectgroup w-100">
                 <label class="selectgroup-item">
                   <input type="radio" name="sandbox_check" value="1" class="selectgroup-input"
                     {{ $mercadopagoInfo['sandbox_check'] == 1 ? 'checked' : '' }}>
-                  <span class="selectgroup-button">Active</span>
+                  <span class="selectgroup-button">{{ __('Active') }}</span>
                 </label>
                 <label class="selectgroup-item">
                   <input type="radio" name="sandbox_check" value="0" class="selectgroup-input"
                     {{ $mercadopagoInfo['sandbox_check'] == 0 ? 'checked' : '' }}>
-                  <span class="selectgroup-button">Deactive</span>
+                  <span class="selectgroup-button">{{ __('Deactive') }}</span>
                 </label>
               </div>
             </div>
 
             <div class="form-group">
-              <label>Mercadopago Token</label>
+              <label>Mercadopago {{ __('Token') }}</label>
               <input class="form-control" name="token" value="{{ $mercadopagoInfo['token'] }}">
               @if ($errors->has('token'))
                 <p class="mb-0 text-danger">{{ $errors->first('token') }}</p>
@@ -563,24 +563,24 @@
                     <label class="selectgroup-item">
                       <input type="radio" name="status" value="1" class="selectgroup-input"
                         {{ $stripe->status == 1 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Active</span>
+                      <span class="selectgroup-button">{{ __('Active') }}</span>
                     </label>
                     <label class="selectgroup-item">
                       <input type="radio" name="status" value="0" class="selectgroup-input"
                         {{ $stripe->status == 0 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Deactive</span>
+                      <span class="selectgroup-button">{{ __('Deactive') }}</span>
                     </label>
                   </div>
                 </div>
                 <div class="form-group">
-                  <label>Stripe Key</label>
+                  <label>Stripe {{ __('Key') }}</label>
                   <input class="form-control" name="key" value="{{ $stripeInfo['key'] }}">
                   @if ($errors->has('key'))
                     <p class="mb-0 text-danger">{{ $errors->first('key') }}</p>
                   @endif
                 </div>
                 <div class="form-group">
-                  <label>Stripe Secret</label>
+                  <label>Stripe {{ __('Secret') }}</label>
                   <input class="form-control" name="secret" value="{{ $stripeInfo['secret'] }}">
                   @if ($errors->has('secret'))
                     <p class="mb-0 text-danger">{{ $errors->first('secret') }}</p>
@@ -956,39 +956,39 @@
                     <label class="selectgroup-item">
                       <input type="radio" name="status" value="1" class="selectgroup-input"
                         {{ $instamojo->status == 1 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Active</span>
+                      <span class="selectgroup-button">{{ __('Active') }}</span>
                     </label>
                     <label class="selectgroup-item">
                       <input type="radio" name="status" value="0" class="selectgroup-input"
                         {{ $instamojo->status == 0 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Deactive</span>
+                      <span class="selectgroup-button">{{ __('Deactive') }}</span>
                     </label>
                   </div>
                 </div>
                 <div class="form-group">
-                  <label>Test Mode</label>
+                  <label>{{ __('Test Mode') }}</label>
                   <div class="selectgroup w-100">
                     <label class="selectgroup-item">
                       <input type="radio" name="sandbox_check" value="1" class="selectgroup-input"
                         {{ $instamojoInfo['sandbox_check'] == 1 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Active</span>
+                      <span class="selectgroup-button">{{ __('Active') }}</span>
                     </label>
                     <label class="selectgroup-item">
                       <input type="radio" name="sandbox_check" value="0" class="selectgroup-input"
                         {{ $instamojoInfo['sandbox_check'] == 0 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Deactive</span>
+                      <span class="selectgroup-button">{{ __('Deactive') }}</span>
                     </label>
                   </div>
                 </div>
                 <div class="form-group">
-                  <label>Instamojo API Key</label>
+                  <label>Instamojo {{ __('API Key') }}</label>
                   <input class="form-control" name="key" value="{{ $instamojoInfo['key'] }}">
                   @if ($errors->has('key'))
                     <p class="mb-0 text-danger">{{ $errors->first('key') }}</p>
                   @endif
                 </div>
                 <div class="form-group">
-                  <label>Instamojo Auth Token</label>
+                  <label>Instamojo {{ __('Auth Token') }}</label>
                   <input class="form-control" name="token" value="{{ $instamojoInfo['token'] }}">
                   @if ($errors->has('token'))
                     <p class="mb-0 text-danger">{{ $errors->first('token') }}</p>
@@ -1322,48 +1322,48 @@
                 <label class="selectgroup-item">
                   <input type="radio" name="status" value="1" class="selectgroup-input"
                     {{ $phonepe->status == 1 ? 'checked' : '' }}>
-                  <span class="selectgroup-button">Active</span>
+                  <span class="selectgroup-button">{{ __('Active') }}</span>
                 </label>
                 <label class="selectgroup-item">
                   <input type="radio" name="status" value="0" class="selectgroup-input"
                     {{ $phonepe->status == 0 ? 'checked' : '' }}>
-                  <span class="selectgroup-button">Deactive</span>
+                  <span class="selectgroup-button">{{ __('Deactive') }}</span>
                 </label>
               </div>
             </div>
 
             <div class="form-group">
-              <label>PhonePe Test Mode</label>
+              <label>PhonePe {{ __('Test Mode') }}</label>
               <div class="selectgroup w-100">
                 <label class="selectgroup-item">
                   <input type="radio" name="sandbox_check" value="1" class="selectgroup-input"
                     {{ $phonePeInfo['sandbox_check'] == 1 ? 'checked' : '' }}>
-                  <span class="selectgroup-button">Active</span>
+                  <span class="selectgroup-button">{{ __('Active') }}</span>
                 </label>
                 <label class="selectgroup-item">
                   <input type="radio" name="sandbox_check" value="0" class="selectgroup-input"
                     {{ $phonePeInfo['sandbox_check'] == 0 ? 'checked' : '' }}>
-                  <span class="selectgroup-button">Deactive</span>
+                  <span class="selectgroup-button">{{ __('Deactive') }}</span>
                 </label>
               </div>
             </div>
 
             <div class="form-group">
-              <label>PhonePe MerchantId</label>
+              <label>PhonePe {{ __('Merchant ID') }}</label>
               <input class="form-control" name="merchant_id" value="{{ $phonePeInfo['merchant_id'] }}">
               @if ($errors->has('merchant_id'))
                 <p class="mb-0 text-danger">{{ $errors->first('merchant_id') }}</p>
               @endif
             </div>
             <div class="form-group">
-              <label>PhonePe Salt Key</label>
+              <label>PhonePe {{ __('Salt Key') }}</label>
               <input class="form-control" name="salt_key" value="{{ $phonePeInfo['salt_key'] }}">
               @if ($errors->has('salt_key'))
                 <p class="mb-0 text-danger">{{ $errors->first('salt_key') }}</p>
               @endif
             </div>
             <div class="form-group">
-              <label>PhonePe Salt Index</label>
+              <label>PhonePe {{ __('Salt Index') }}</label>
               <input class="form-control" name="salt_index" value="{{ $phonePeInfo['salt_index'] }}">
               @if ($errors->has('salt_index'))
                 <p class="mb-0 text-danger">{{ $errors->first('salt_index') }}</p>
@@ -1411,17 +1411,17 @@
                     <label class="selectgroup-item">
                       <input type="radio" name="status" value="1" class="selectgroup-input"
                         {{ $paytm->status == 1 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Active</span>
+                      <span class="selectgroup-button">{{ __('Active') }}</span>
                     </label>
                     <label class="selectgroup-item">
                       <input type="radio" name="status" value="0" class="selectgroup-input"
                         {{ $paytm->status == 0 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Deactive</span>
+                      <span class="selectgroup-button">{{ __('Deactive') }}</span>
                     </label>
                   </div>
                 </div>
                 <div class="form-group">
-                  <label>Paytm Environment</label>
+                  <label>Paytm {{ __('Environment') }}</label>
                   <div class="selectgroup w-100">
                     <label class="selectgroup-item">
                       <input type="radio" name="environment" value="local" class="selectgroup-input"
@@ -1439,28 +1439,28 @@
                   @endif
                 </div>
                 <div class="form-group">
-                  <label>Paytm Merchant Key</label>
+                  <label>Paytm {{ __('Merchant Key') }}</label>
                   <input class="form-control" name="secret" value="{{ $paytmInfo['secret'] }}">
                   @if ($errors->has('secret'))
                     <p class="mb-0 text-danger">{{ $errors->first('secret') }}</p>
                   @endif
                 </div>
                 <div class="form-group">
-                  <label>Paytm Merchant mid</label>
+                  <label>Paytm {{ __('Merchant ID') }}</label>
                   <input class="form-control" name="merchant" value="{{ $paytmInfo['merchant'] }}">
                   @if ($errors->has('merchant'))
                     <p class="mb-0 text-danger">{{ $errors->first('merchant') }}</p>
                   @endif
                 </div>
                 <div class="form-group">
-                  <label>Paytm Merchant website</label>
+                  <label>Paytm {{ __('Merchant Website') }}</label>
                   <input class="form-control" name="website" value="{{ $paytmInfo['website'] }}">
                   @if ($errors->has('website'))
                     <p class="mb-0 text-danger">{{ $errors->first('website') }}</p>
                   @endif
                 </div>
                 <div class="form-group">
-                  <label>Industry type id</label>
+                  <label>{{ __('Industry type id') }}</label>
                   <input class="form-control" name="industry" value="{{ $paytmInfo['industry'] }}">
                   @if ($errors->has('industry'))
                     <p class="mb-0 text-danger">{{ $errors->first('industry') }}</p>
@@ -1509,34 +1509,34 @@
                     <label class="selectgroup-item">
                       <input type="radio" name="status" value="1" class="selectgroup-input"
                         {{ $anet->status == 1 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Active</span>
+                      <span class="selectgroup-button">{{ __('Active') }}</span>
                     </label>
                     <label class="selectgroup-item">
                       <input type="radio" name="status" value="0" class="selectgroup-input"
                         {{ $anet->status == 0 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Deactive</span>
+                      <span class="selectgroup-button">{{ __('Deactive') }}</span>
                     </label>
                   </div>
                 </div>
 
                 <div class="form-group">
-                  <label>Authorize.Net Test Mode</label>
+                  <label>Authorize.Net {{ __('Test Mode') }}</label>
                   <div class="selectgroup w-100">
                     <label class="selectgroup-item">
                       <input type="radio" name="sandbox_check" value="1" class="selectgroup-input"
                         {{ $anetInfo['sandbox_check'] == 1 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Active</span>
+                      <span class="selectgroup-button">{{ __('Active') }}</span>
                     </label>
                     <label class="selectgroup-item">
                       <input type="radio" name="sandbox_check" value="0" class="selectgroup-input"
                         {{ $anetInfo['sandbox_check'] == 0 ? 'checked' : '' }}>
-                      <span class="selectgroup-button">Deactive</span>
+                      <span class="selectgroup-button">{{ __('Deactive') }}</span>
                     </label>
                   </div>
                 </div>
 
                 <div class="form-group">
-                  <label>API Login ID</label>
+                  <label>{{ __('API Login ID') }}</label>
                   <input class="form-control" name="login_id" value="{{ $anetInfo['login_id'] }}">
                   @if ($errors->has('login_id'))
                     <p class="mb-0 text-danger">{{ $errors->first('login_id') }}</p>
@@ -1544,7 +1544,7 @@
                 </div>
 
                 <div class="form-group">
-                  <label>Transaction Key</label>
+                  <label>{{ __('Transaction Key') }}</label>
                   <input class="form-control" name="transaction_key" value="{{ $anetInfo['transaction_key'] }}">
                   @if ($errors->has('transaction_key'))
                     <p class="mb-0 text-danger">{{ $errors->first('transaction_key') }}</p>
@@ -1552,7 +1552,7 @@
                 </div>
 
                 <div class="form-group">
-                  <label>Public Client Key</label>
+                  <label>{{ __('Public Client Key') }}</label>
                   <input class="form-control" name="public_key" value="{{ $anetInfo['public_key'] }}">
                   @if ($errors->has('public_key'))
                     <p class="mb-0 text-danger">{{ $errors->first('public_key') }}</p>

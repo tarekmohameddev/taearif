@@ -300,7 +300,7 @@
 
 @section('content')
     <div class="page-header">
-        <h4 class="page-title">إدارة عناصر الشريط الجانبي</h4>
+        <h4 class="page-title">{{ __('Manage Sidebar Items') }}</h4>
         <ul class="breadcrumbs">
             <li class="nav-home">
                 <a href="{{ route('admin.dashboard') }}">
@@ -311,7 +311,7 @@
                 <i class="flaticon-right-arrow"></i>
             </li>
             <li class="nav-item">
-                <a href="#">إدارة عناصر الشريط الجانبي</a>
+                <a href="#">{{ __('Manage Sidebar Items') }}</a>
             </li>
         </ul>
     </div>
@@ -323,9 +323,9 @@
             <div class="card sidebar-item-card">
                 <div class="card-header sidebar-item-header">
                     <div class="d-flex justify-content-between align-items-center flex-row-reverse">
-                        <h4 class="card-title text-right">قائمة عناصر الشريط الجانبي</h4>
+                        <h4 class="card-title text-right">{{ __('Sidebar Item List') }}</h4>
                         <a href="{{ route('admin.sidebar-item.create') }}" class="btn btn-add-new">
-                            <i class="fas fa-plus ml-2"></i> إضافة عنصر جديد
+                            <i class="fas fa-plus ml-2"></i> {{ __('Add Sidebar Item') }}
                         </a>
                     </div>
                 </div>
@@ -335,14 +335,14 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>العنصر</th>
-                                    <th>الأيقونة</th>
-                                    <th>المسار</th>
-                                    <th>الوصول</th>
-                                    <th>الشرط</th>
-                                    <th>الترتيب</th>
-                                    <th>الحالة</th>
-                                    <th class="text-center">الإجراءات</th>
+                                    <th>{{ __('Item') }}</th>
+                                    <th>{{ __('Icon') }}</th>
+                                    <th>{{ __('Path') }}</th>
+                                    <th>{{ __('Access') }}</th>
+                                    <th>{{ __('Condition') }}</th>
+                                    <th>{{ __('Order') }}</th>
+                                    <th>{{ __('Status') }}</th>
+                                    <th class="text-center">{{ __('Actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -354,12 +354,12 @@
                                                 <div class="title-wrap">
                                                     <span class="main-title">{{ $item->title }}</span>
                                                     @if($item->is_active)
-                                                        <span class="status-dot online" title="مفعل"></span>
+                                                        <span class="status-dot online" title="{{ __('Active') }}"></span>
                                                     @else
-                                                        <span class="status-dot offline" title="معطل"></span>
+                                                        <span class="status-dot offline" title="{{ __('Inactive') }}"></span>
                                                     @endif
                                                 </div>
-                                                <div class="desc-text" title="{{ $item->description }}">{{ $item->description ?? 'لا يوجد وصف' }}</div>
+                                                <div class="desc-text" title="{{ $item->description }}">{{ $item->description ?? __('No description') }}</div>
                                             </div>
                                         </td>
                                         <td>
@@ -402,7 +402,7 @@
                                             @if($item->permission)
                                                 <span class="badge-modern badge-info-soft">{{ $item->permission }}</span>
                                             @else
-                                                <span class="badge-modern badge-secondary-soft">عام</span>
+                                                <span class="badge-modern badge-secondary-soft">{{ __('Public') }}</span>
                                             @endif
                                         </td>
                                         <td>
@@ -418,17 +418,17 @@
                                         <td>
                                             @if($item->is_active)
                                                 <span class="badge-modern badge-success-soft">
-                                                    <i class="fas fa-check-circle ml-1"></i> مفعل
+                                                    <i class="fas fa-check-circle ml-1"></i> {{ __('Active') }}
                                                 </span>
                                             @else
                                                 <span class="badge-modern badge-danger-soft">
-                                                    <i class="fas fa-times-circle ml-1"></i> معطل
+                                                    <i class="fas fa-times-circle ml-1"></i> {{ __('Inactive') }}
                                                 </span>
                                             @endif
                                         </td>
                                         <td>
                                             <div class="d-flex justify-content-center">
-                                                <a class="btn btn-info action-btn" href="{{ route('admin.sidebar-item.edit', $item->id) }}" title="تعديل">
+                                                <a class="btn btn-info action-btn" href="{{ route('admin.sidebar-item.edit', $item->id) }}" title="{{ __('Edit') }}">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                                 
@@ -436,16 +436,16 @@
                                                     @csrf
                                                     <input type="hidden" name="item_id" value="{{ $item->id }}">
                                                     <button type="submit" class="btn action-btn {{ $item->is_active ? 'btn-warning' : 'btn-success' }}" 
-                                                        title="{{ $item->is_active ? 'تعطيل' : 'تفعيل' }}">
+                                                        title="{{ $item->is_active ? __('Disable') : __('Enable') }}">
                                                         <i class="fas {{ $item->is_active ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i>
                                                     </button>
                                                 </form>
 
                                                 <form class="d-inline-block" action="{{ route('admin.sidebar-item.delete') }}" method="POST" 
-                                                    onsubmit="return confirm('هل أنت متأكد من حذف هذا العنصر؟');">
+                                                    onsubmit="return confirm(@json(__('Are you sure you want to delete this sidebar item?')));">
                                                     @csrf
                                                     <input type="hidden" name="item_id" value="{{ $item->id }}">
-                                                    <button type="submit" class="btn btn-danger action-btn" title="حذف">
+                                                    <button type="submit" class="btn btn-danger action-btn" title="{{ __('Delete') }}">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </form>
@@ -456,7 +456,7 @@
                                     <tr>
                                         <td colspan="9" class="text-center py-5 text-muted">
                                             <i class="fas fa-folder-open fa-3x mb-3 d-block"></i>
-                                            لا توجد عناصر مضافة حالياً
+                                            {{ __('No sidebar items have been added yet.') }}
                                         </td>
                                     </tr>
                                 @endforelse

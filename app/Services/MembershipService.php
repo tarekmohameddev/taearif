@@ -17,6 +17,8 @@ use Carbon\Carbon;
 class MembershipService
 {
     const FREE_PACKAGE_ID = 16;
+    const PAID_YEARLY_PACKAGE_ID = 24;
+    const PAID_MONTHLY_PACKAGE_ID = 26;
     const TRIAL_PACKAGE_ID = 26;
 
     // Package terms

@@ -7,11 +7,11 @@
             <div class="card">
                 <div class="card-header">
                     <h4 class="card-title">
-                        <i class="fas fa-envelope"></i> إدارة قوالب البريد الإلكتروني
+                        <i class="fas fa-envelope"></i> {{ __('Email Templates Management') }}
                     </h4>
                     <div class="card-tools">
                         <a href="{{ route('admin.email-templates.create') }}" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> إنشاء قالب جديد
+                            <i class="fas fa-plus"></i> {{ __('Create New Template') }}
                         </a>
                     </div>
                 </div>
@@ -19,7 +19,7 @@
                     @if(session('success'))
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
                             {{ session('success') }}
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <button type="button" class="close" data-dismiss="alert" aria-label="{{ __('Close') }}">
                                 <span aria-hidden="true">&times;</span>
                             </button>
                         </div>
@@ -30,13 +30,13 @@
                             <table class="table table-bordered table-striped">
                                 <thead>
                                     <tr>
-                                        <th>الاسم</th>
-                                        <th>النوع</th>
-                                        <th>اللغة</th>
-                                        <th>الموضوع</th>
-                                        <th>الحالة</th>
-                                        <th>تاريخ الإنشاء</th>
-                                        <th>الإجراءات</th>
+                                        <th>{{ __('Name') }}</th>
+                                        <th>{{ __('Type') }}</th>
+                                        <th>{{ __('Language') }}</th>
+                                        <th>{{ __('Subject') }}</th>
+                                        <th>{{ __('Status') }}</th>
+                                        <th>{{ __('Created') }}</th>
+                                        <th>{{ __('Actions') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -57,44 +57,44 @@
                                             <td>{{ $template->subject }}</td>
                                             <td>
                                                 @if($template->status)
-                                                    <span class="badge badge-success">نشط</span>
+                                                    <span class="badge badge-success">{{ __('Active') }}</span>
                                                 @else
-                                                    <span class="badge badge-danger">غير نشط</span>
+                                                    <span class="badge badge-danger">{{ __('Inactive') }}</span>
                                                 @endif
                                             </td>
-                                            <td>{{ $template->created_at ? $template->created_at->format('Y-m-d H:i') : 'غير محدد' }}</td>
+                                            <td>{{ $template->created_at ? $template->created_at->format('Y-m-d H:i') : __('Not set') }}</td>
                                             <td>
                                                 <div class="btn-group" role="group">
-                                                    <a href="{{ route('admin.email-templates.show', $template) }}" 
-                                                       class="btn btn-sm btn-info" title="عرض">
+                                                    <a href="{{ route('admin.email-templates.show', $template) }}"
+                                                       class="btn btn-sm btn-info" title="{{ __('View') }}">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
-                                                    <a href="{{ route('admin.email-templates.edit', $template) }}" 
-                                                       class="btn btn-sm btn-warning" title="تعديل">
+                                                    <a href="{{ route('admin.email-templates.edit', $template) }}"
+                                                       class="btn btn-sm btn-warning" title="{{ __('Edit') }}">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
-                                                    <a href="{{ route('admin.email-templates.preview', $template) }}" 
-                                                       class="btn btn-sm btn-primary" title="معاينة">
+                                                    <a href="{{ route('admin.email-templates.preview', $template) }}"
+                                                       class="btn btn-sm btn-primary" title="{{ __('Preview') }}">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
-                                                    <form action="{{ route('admin.email-templates.toggle-status', $template) }}" 
+                                                    <form action="{{ route('admin.email-templates.toggle-status', $template) }}"
                                                           method="POST" style="display: inline;">
                                                         @csrf
-                                                        <button type="submit" class="btn btn-sm {{ $template->status ? 'btn-secondary' : 'btn-success' }}" 
-                                                                title="{{ $template->status ? 'إلغاء تفعيل' : 'تفعيل' }}">
+                                                        <button type="submit" class="btn btn-sm {{ $template->status ? 'btn-secondary' : 'btn-success' }}"
+                                                                title="{{ $template->status ? __('Deactivate') : __('Activate') }}">
                                                             <i class="fas fa-{{ $template->status ? 'pause' : 'play' }}"></i>
                                                         </button>
                                                     </form>
-                                                    <a href="{{ route('admin.email-templates.duplicate', $template) }}" 
-                                                       class="btn btn-sm btn-info" title="نسخ">
+                                                    <a href="{{ route('admin.email-templates.duplicate', $template) }}"
+                                                       class="btn btn-sm btn-info" title="{{ __('Duplicate') }}">
                                                         <i class="fas fa-copy"></i>
                                                     </a>
-                                                    <form action="{{ route('admin.email-templates.destroy', $template) }}" 
-                                                          method="POST" style="display: inline;" 
-                                                          onsubmit="return confirm('هل أنت متأكد من حذف هذا القالب؟')">
+                                                    <form action="{{ route('admin.email-templates.destroy', $template) }}"
+                                                          method="POST" style="display: inline;"
+                                                          onsubmit="return confirm(@json(__('Are you sure you want to delete this template?')))">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button type="submit" class="btn btn-sm btn-danger" title="حذف">
+                                                        <button type="submit" class="btn btn-sm btn-danger" title="{{ __('Delete') }}">
                                                             <i class="fas fa-trash"></i>
                                                         </button>
                                                     </form>
@@ -112,10 +112,10 @@
                     @else
                         <div class="text-center py-5">
                             <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                            <h5 class="text-muted">لا توجد قوالب بريد إلكتروني</h5>
-                            <p class="text-muted">ابدأ بإنشاء قالب جديد لإدارة رسائل البريد الإلكتروني</p>
+                            <h5 class="text-muted">{{ __('No email templates found') }}</h5>
+                            <p class="text-muted">{{ __('Start by creating a new template to manage email messages') }}</p>
                             <a href="{{ route('admin.email-templates.create') }}" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> إنشاء قالب جديد
+                                <i class="fas fa-plus"></i> {{ __('Create New Template') }}
                             </a>
                         </div>
                     @endif

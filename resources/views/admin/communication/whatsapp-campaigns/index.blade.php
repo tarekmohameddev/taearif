@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="page-header">
-    <h4 class="page-title">حملات واتس اب</h4>
+    <h4 class="page-title">{{ __('WhatsApp Campaigns') }}</h4>
     <ul class="breadcrumbs">
         <li class="nav-home">
             <a href="{{ route('admin.dashboard') }}">
@@ -13,13 +13,13 @@
             <i class="flaticon-right-arrow"></i>
         </li>
         <li class="nav-item">
-            <a href="{{ route('admin.communication.whatsapp') }}">التواصل</a>
+            <a href="{{ route('admin.communication.whatsapp') }}">{{ __('Communication') }}</a>
         </li>
         <li class="separator">
             <i class="flaticon-right-arrow"></i>
         </li>
         <li class="nav-item">
-            <a href="#">حملات واتس اب</a>
+            <a href="#">{{ __('WhatsApp Campaigns') }}</a>
         </li>
     </ul>
 </div>
@@ -28,24 +28,24 @@
     <div class="col-md-12">
         <div class="card">
             <div class="card-header">
-                <div class="card-title">قائمة الحملات</div>
+                <div class="card-title">{{ __('Campaign List') }}</div>
             </div>
             <div class="card-body">
                 <form method="GET" action="{{ route('admin.whatsapp-campaigns.index') }}" class="form-inline mb-4">
                     <div class="form-group mr-3">
-                        <label for="status" class="mr-2">الحالة:</label>
+                        <label for="status" class="mr-2">{{ __('Status') }}:</label>
                         <select name="status" id="status" class="form-control">
-                            <option value="">جميع الحالات</option>
+                            <option value="">{{ __('All Statuses') }}</option>
                             @foreach($statusOptions as $value => $label)
                                 <option value="{{ $value }}" {{ request('status') == $value ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>
                     <button type="submit" class="btn btn-info">
-                        <i class="fas fa-filter"></i> تصفية
+                        <i class="fas fa-filter"></i> {{ __('Filter') }}
                     </button>
                     <a href="{{ route('admin.whatsapp-campaigns.index') }}" class="btn btn-secondary ml-2">
-                        <i class="fas fa-times"></i> إعادة تعيين
+                        <i class="fas fa-times"></i> {{ __('Reset') }}
                     </a>
                 </form>
 
@@ -54,15 +54,15 @@
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>الاسم</th>
-                                <th>المستأجر</th>
-                                <th>رقم واتس اب</th>
-                                <th>الحالة</th>
-                                <th>المستلمين</th>
-                                <th>المرسلة</th>
-                                <th>الفاشلة</th>
-                                <th>تاريخ الإنشاء</th>
-                                <th>الإجراءات</th>
+                                <th>{{ __('Name') }}</th>
+                                <th>{{ __('Tenant') }}</th>
+                                <th>{{ __('WhatsApp Number') }}</th>
+                                <th>{{ __('Status') }}</th>
+                                <th>{{ __('Recipients') }}</th>
+                                <th>{{ __('Sent') }}</th>
+                                <th>{{ __('Failed') }}</th>
+                                <th>{{ __('Created') }}</th>
+                                <th>{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -92,22 +92,22 @@
                                     <td>
                                         @switch($campaign->status)
                                             @case('draft')
-                                                <span class="badge badge-secondary">مسودة</span>
+                                                <span class="badge badge-secondary">{{ __('Draft') }}</span>
                                                 @break
                                             @case('scheduled')
-                                                <span class="badge badge-info">مجدولة</span>
+                                                <span class="badge badge-info">{{ __('Scheduled') }}</span>
                                                 @break
                                             @case('in_progress')
-                                                <span class="badge badge-primary">قيد الإرسال</span>
+                                                <span class="badge badge-primary">{{ __('In Progress') }}</span>
                                                 @break
                                             @case('paused')
-                                                <span class="badge badge-warning">متوقفة</span>
+                                                <span class="badge badge-warning">{{ __('Paused') }}</span>
                                                 @break
                                             @case('sent')
-                                                <span class="badge badge-success">مرسلة</span>
+                                                <span class="badge badge-success">{{ __('Sent') }}</span>
                                                 @break
                                             @case('failed')
-                                                <span class="badge badge-danger">فاشلة</span>
+                                                <span class="badge badge-danger">{{ __('Failed') }}</span>
                                                 @break
                                             @default
                                                 <span class="badge badge-light">{{ $campaign->status }}</span>
@@ -118,7 +118,7 @@
                                     <td>{{ $campaign->failed_count ?? 0 }}</td>
                                     <td>{{ $campaign->created_at ? $campaign->created_at->format('Y-m-d H:i') : '—' }}</td>
                                     <td>
-                                        <a href="{{ route('admin.whatsapp-campaigns.show', $campaign) }}" class="btn btn-sm btn-info" title="عرض">
+                                        <a href="{{ route('admin.whatsapp-campaigns.show', $campaign) }}" class="btn btn-sm btn-info" title="{{ __('View') }}">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                     </td>
@@ -127,7 +127,7 @@
                                 <tr>
                                     <td colspan="10" class="text-center text-muted">
                                         <i class="fas fa-inbox fa-2x mb-2"></i><br>
-                                        لا توجد حملات.
+                                        {{ __('No campaigns found.') }}
                                     </td>
                                 </tr>
                             @endforelse

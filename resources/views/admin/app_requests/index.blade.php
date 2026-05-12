@@ -55,9 +55,9 @@
                                         ];
 
                                         $statusLabels = [
-                                            'pending' => 'قيد الانتظار',
-                                            'approved' => 'تم القبول',
-                                            'rejected' => 'مرفوض',
+                                            'pending' => __('Pending'),
+                                            'approved' => __('Approved'),
+                                            'rejected' => __('Rejected'),
                                         ];
                                     @endphp
 

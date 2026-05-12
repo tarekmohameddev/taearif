@@ -94,3 +94,5 @@ run_db_checks.php
 my-skill/agents/openai.yaml
 .gemini/settings.json
 _misc_files/db/*
+scripts/git-hooks/
+.cursor/

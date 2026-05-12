@@ -2,7 +2,7 @@
 
 @section('content')
   <div class="page-header">
-    <h4 class="page-title">البريد الإلكتروني</h4>
+    <h4 class="page-title">{{ __('Email') }}</h4>
     <ul class="breadcrumbs">
       <li class="nav-home">
         <a href="{{route('admin.dashboard')}}">
@@ -13,13 +13,13 @@
         <i class="flaticon-right-arrow"></i>
       </li>
       <li class="nav-item">
-        <a href="#">التواصل</a>
+        <a href="#">{{ __('Communication') }}</a>
       </li>
       <li class="separator">
         <i class="flaticon-right-arrow"></i>
       </li>
       <li class="nav-item">
-        <a href="#">البريد الإلكتروني</a>
+        <a href="#">{{ __('Email') }}</a>
       </li>
     </ul>
   </div>
@@ -35,11 +35,11 @@
               <div class="col-md-8">
                 <h5 class="mb-2">
                   <i class="fas fa-power-off"></i>
-                  <strong>التحكم الرئيسي في إشعارات البريد الإلكتروني</strong>
+                  <strong>{{ __('Master control for email notifications') }}</strong>
                 </h5>
                 <p class="mb-0 text-muted">
                   <i class="fas fa-info-circle"></i>
-                  استخدم هذا الزر للتحكم في جميع رسائل البريد الإلكتروني دفعة واحدة (رسائل الترحيب، انتهاء الباقة، إعادة تعيين كلمة المرور، إلخ)
+                  {{ __('Use this switch to control all email messages at once (welcome messages, package expiration, password reset, etc.)') }}
                 </p>
               </div>
               <div class="col-md-4 text-right">
@@ -51,8 +51,8 @@
                     <label for="email_notifications_enabled" class="toggle-label">
                       <span class="toggle-slider"></span>
                       <span class="toggle-text">
-                        <span class="toggle-on">تفعيل الكل</span>
-                        <span class="toggle-off">إيقاف الكل</span>
+                        <span class="toggle-on">{{ __('Enable All') }}</span>
+                        <span class="toggle-off">{{ __('Disable All') }}</span>
                       </span>
                     </label>
                   </div>
@@ -72,15 +72,15 @@
         <div class="tab-bar">
           <button class="tab-button {{(request('tab') == 'smtp_settings' || !request('tab')) ? 'active' : ''}}"
                   data-tab="smtp_settings">
-            إعدادات SMTP
+            {{ __('SMTP Settings') }}
           </button>
           <button class="tab-button {{request('tab') == 'email_templates' ? 'active' : ''}}"
                   data-tab="email_templates">
-            إعدادات القوالب
+            {{ __('Template Settings') }}
           </button>
           <button class="tab-button {{request('tab') == 'test_email' ? 'active' : ''}}"
                   data-tab="test_email">
-            اختبار البريد الإلكتروني
+            {{ __('Test Email') }}
           </button>
         </div>
       </div>
@@ -93,10 +93,10 @@
       <div class="card">
         <div class="card-header">
           <div class="d-flex justify-content-between align-items-center">
-            <h4 id="tab-title" class="card-title">إعدادات SMTP</h4>
+            <h4 id="tab-title" class="card-title">{{ __('SMTP Settings') }}</h4>
             <div class="card-tools">
               <a href="{{route('admin.email-templates.index')}}" class="btn btn-outline-primary btn-sm">
-                <i class="fas fa-cog"></i> إدارة القوالب
+                <i class="fas fa-cog"></i> {{ __('Manage Templates') }}
               </a>
             </div>
           </div>
@@ -110,11 +110,11 @@
               <div class="row">
                 <div class="col-lg-12">
                   <div class="form-group">
-                    <label class="form-label">تفعيل SMTP</label>
+                    <label class="form-label">{{ __('Enable SMTP') }}</label>
                     <div class="custom-control custom-switch">
                       <input type="checkbox" class="custom-control-input" id="is_smtp" name="is_smtp" value="1"
                              {{($abs->is_smtp ?? 0) ? 'checked' : ''}}>
-                      <label class="custom-control-label" for="is_smtp">استخدام SMTP لإرسال البريد الإلكتروني</label>
+                      <label class="custom-control-label" for="is_smtp">{{ __('Use SMTP to send email') }}</label>
                     </div>
                   </div>
                 </div>
@@ -123,14 +123,14 @@
               <div class="row">
                 <div class="col-lg-6">
                   <div class="form-group">
-                    <label for="smtp_host"><strong>خادم SMTP</strong></label>
+                    <label for="smtp_host"><strong>{{ __('SMTP Host') }}</strong></label>
                     <input type="text" class="form-control" id="smtp_host" name="smtp_host"
                            value="{{$abs->smtp_host ?? ''}}" placeholder="smtp.gmail.com">
                   </div>
                 </div>
                 <div class="col-lg-6">
                   <div class="form-group">
-                    <label for="smtp_port"><strong>منفذ SMTP</strong></label>
+                    <label for="smtp_port"><strong>{{ __('SMTP Port') }}</strong></label>
                     <input type="text" class="form-control" id="smtp_port" name="smtp_port"
                            value="{{$abs->smtp_port ?? '587'}}" placeholder="587">
                   </div>
@@ -140,16 +140,16 @@
               <div class="row">
                 <div class="col-lg-6">
                   <div class="form-group">
-                    <label for="smtp_username"><strong>اسم المستخدم</strong></label>
+                    <label for="smtp_username"><strong>{{ __('Username') }}</strong></label>
                     <input type="text" class="form-control" id="smtp_username" name="smtp_username"
                            value="{{$abs->smtp_username ?? ''}}" placeholder="your-email@gmail.com">
                   </div>
                 </div>
                 <div class="col-lg-6">
                   <div class="form-group">
-                    <label for="smtp_password"><strong>كلمة المرور</strong></label>
+                    <label for="smtp_password"><strong>{{ __('Password') }}</strong></label>
                     <input type="password" class="form-control" id="smtp_password" name="smtp_password"
-                           value="{{$abs->smtp_password ?? ''}}" placeholder="كلمة المرور">
+                           value="{{$abs->smtp_password ?? ''}}" placeholder="{{ __('Password') }}">
                   </div>
                 </div>
               </div>
@@ -157,7 +157,7 @@
               <div class="row">
                 <div class="col-lg-6">
                   <div class="form-group">
-                    <label for="encryption"><strong>التشفير</strong></label>
+                    <label for="encryption"><strong>{{ __('Encryption') }}</strong></label>
                     <select class="form-control" id="encryption" name="encryption">
                       <option value="TLS" {{($abs->encryption ?? 'TLS') == 'TLS' ? 'selected' : ''}}>TLS</option>
                       <option value="SSL" {{($abs->encryption ?? '') == 'SSL' ? 'selected' : ''}}>SSL</option>
@@ -166,7 +166,7 @@
                 </div>
                 <div class="col-lg-6">
                   <div class="form-group">
-                    <label for="from_mail"><strong>البريد الإلكتروني المرسل</strong></label>
+                    <label for="from_mail"><strong>{{ __('From Email') }}</strong></label>
                     <input type="email" class="form-control" id="from_mail" name="from_mail"
                            value="{{$abs->from_mail ?? ''}}" placeholder="noreply@example.com">
                   </div>
@@ -176,9 +176,9 @@
               <div class="row">
                 <div class="col-lg-12">
                   <div class="form-group">
-                    <label for="from_name"><strong>اسم المرسل</strong></label>
+                    <label for="from_name"><strong>{{ __('From Name') }}</strong></label>
                     <input type="text" class="form-control" id="from_name" name="from_name"
-                           value="{{$abs->from_name ?? ''}}" placeholder="اسم الشركة">
+                           value="{{$abs->from_name ?? ''}}" placeholder="{{ __('Company name') }}">
                   </div>
                 </div>
               </div>
@@ -186,7 +186,7 @@
               <div class="row">
                 <div class="col-lg-12">
                   <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> حفظ الإعدادات
+                    <i class="fas fa-save"></i> {{ __('Save Settings') }}
                   </button>
                 </div>
               </div>
@@ -203,7 +203,7 @@
                 <div class="col-lg-12">
                   <div class="alert alert-info">
                     <i class="fas fa-info-circle"></i>
-                    <strong>إعدادات الإشعارات:</strong> تحكم في تفعيل/إلغاء تفعيل الإشعارات الإلكترونية لكل نوع من الرسائل.
+                    <strong>{{ __('Notification settings:') }}</strong> {{ __('Control enabling or disabling email notifications for each message type.') }}
                   </div>
                 </div>
               </div>
@@ -212,7 +212,7 @@
                 <div class="col-lg-4">
                   <div class="form-group">
                     <label for="welcome_message_email_enabled">
-                      <strong>تفعيل رسالة الترحيب بالبريد الإلكتروني</strong>
+                      <strong>{{ __('Enable welcome email message') }}</strong>
                     </label>
                     <div class="toggle-switch-container">
                       <div class="toggle-switch">
@@ -226,14 +226,14 @@
                           </span>
                         </label>
                       </div>
-                      <span class="toggle-description">إرسال رسالة ترحيب بالبريد الإلكتروني عند التسجيل</span>
+                      <span class="toggle-description">{{ __('Send a welcome email when a user registers') }}</span>
                     </div>
                   </div>
                 </div>
                 <div class="col-lg-4">
                   <div class="form-group">
                     <label for="subscription_expiration_email_enabled">
-                      <strong>تفعيل إشعار انتهاء الاشتراك بالبريد الإلكتروني</strong>
+                      <strong>{{ __('Enable subscription expired email notification') }}</strong>
                     </label>
                     <div class="toggle-switch-container">
                       <div class="toggle-switch">
@@ -247,14 +247,14 @@
                           </span>
                         </label>
                       </div>
-                      <span class="toggle-description">إرسال إشعار قبل انتهاء الاشتراك بالبريد الإلكتروني</span>
+                      <span class="toggle-description">{{ __('Send an email notification before subscription expires') }}</span>
                     </div>
                   </div>
                 </div>
                 <div class="col-lg-4">
                   <div class="form-group">
                     <label for="subscription_expired_email_enabled">
-                      <strong>تفعيل إشعار انتهاء الاشتراك بالبريد الإلكتروني</strong>
+                      <strong>{{ __('Enable subscription expired email notification') }}</strong>
                     </label>
                     <div class="toggle-switch-container">
                       <div class="toggle-switch">
@@ -268,7 +268,7 @@
                           </span>
                         </label>
                       </div>
-                      <span class="toggle-description">إرسال إشعار عند انتهاء الاشتراك بالبريد الإلكتروني</span>
+                      <span class="toggle-description">{{ __('Send an email notification when subscription expires') }}</span>
                     </div>
                   </div>
                 </div>
@@ -276,9 +276,9 @@
               <div class="row">
                 <div class="col-lg-6">
                   <div class="form-group">
-                    <label for="email_password_reset_template"><strong>قالب إعادة تعيين كلمة المرور</strong></label>
+                    <label for="email_password_reset_template"><strong>{{ __('Password reset template') }}</strong></label>
                     <select class="form-control" id="email_password_reset_template" name="email_password_reset_template">
-                      <option value="">اختر قالب أو اتركه فارغاً</option>
+                      <option value="">{{ __('Select a template or leave blank') }}</option>
                       @php
                           try {
                               $emailPasswordResetTemplates = \App\Models\EmailTemplate::active()->ofType('password_reset')->get();
@@ -294,15 +294,15 @@
                     </select>
                     <small class="text-info">
                       <i class="fas fa-info-circle"></i>
-                      <a href="{{route('admin.email-templates.create')}}?type=password_reset" target="_blank">إنشاء قالب جديد</a>
+                      <a href="{{route('admin.email-templates.create')}}?type=password_reset" target="_blank">{{ __('Create New Template') }}</a>
                     </small>
                   </div>
                 </div>
                 <div class="col-lg-6">
                   <div class="form-group">
-                    <label for="welcome_message_template"><strong>قالب رسالة الترحيب</strong></label>
+                    <label for="welcome_message_template"><strong>{{ __('Welcome message template') }}</strong></label>
                     <select class="form-control" id="welcome_message_template" name="welcome_message_template">
-                      <option value="">اختر قالب أو اتركه فارغاً</option>
+                      <option value="">{{ __('Select a template or leave blank') }}</option>
                       @php
                           try {
                               $welcomeTemplates = \App\Models\EmailTemplate::active()->ofType('welcome')->get();
@@ -318,7 +318,7 @@
                     </select>
                     <small class="text-info">
                       <i class="fas fa-info-circle"></i>
-                      <a href="{{route('admin.email-templates.create')}}?type=welcome" target="_blank">إنشاء قالب جديد</a>
+                      <a href="{{route('admin.email-templates.create')}}?type=welcome" target="_blank">{{ __('Create New Template') }}</a>
                     </small>
                   </div>
                 </div>
@@ -327,9 +327,9 @@
               <div class="row">
                 <div class="col-lg-6">
                   <div class="form-group">
-                    <label for="subscription_expiration_template"><strong>قالب انتهاء الاشتراك</strong></label>
+                    <label for="subscription_expiration_template"><strong>{{ __('Subscription expiration template') }}</strong></label>
                     <select class="form-control" id="subscription_expiration_template" name="subscription_expiration_template">
-                      <option value="">اختر قالب أو اتركه فارغاً</option>
+                      <option value="">{{ __('Select a template or leave blank') }}</option>
                       @php
                           try {
                               $subscriptionTemplates = \App\Models\EmailTemplate::active()->ofType('subscription_expiration')->get();
@@ -345,15 +345,15 @@
                     </select>
                     <small class="text-info">
                       <i class="fas fa-info-circle"></i>
-                      <a href="{{route('admin.email-templates.create')}}?type=subscription_expiration" target="_blank">إنشاء قالب جديد</a>
+                      <a href="{{route('admin.email-templates.create')}}?type=subscription_expiration" target="_blank">{{ __('Create New Template') }}</a>
                     </small>
                   </div>
                 </div>
                 <div class="col-lg-6">
                   <div class="form-group">
-                    <label for="subscription_expired_template"><strong>قالب انتهاء الاشتراك</strong></label>
+                    <label for="subscription_expired_template"><strong>{{ __('Subscription expiration template') }}</strong></label>
                     <select class="form-control" id="subscription_expired_template" name="subscription_expired_template">
-                      <option value="">اختر قالب أو اتركه فارغاً</option>
+                      <option value="">{{ __('Select a template or leave blank') }}</option>
                       @php
                           try {
                               $expiredTemplates = \App\Models\EmailTemplate::active()->ofType('subscription_expired')->get();
@@ -369,7 +369,7 @@
                     </select>
                     <small class="text-info">
                       <i class="fas fa-info-circle"></i>
-                      <a href="{{route('admin.email-templates.create')}}?type=subscription_expired" target="_blank">إنشاء قالب جديد</a>
+                      <a href="{{route('admin.email-templates.create')}}?type=subscription_expired" target="_blank">{{ __('Create New Template') }}</a>
                     </small>
                   </div>
                 </div>
@@ -379,7 +379,7 @@
                 <div class="col-lg-12">
                   <div class="alert alert-info">
                     <i class="fas fa-info-circle"></i>
-                    <strong>ملاحظة:</strong> اختر قالب من القوالب المحفوظة أو اتركه فارغاً للرسالة العادية. يمكنك إنشاء قوالب جديدة من خلال الروابط أعلاه.
+                    <strong>{{ __('Note:') }}</strong> {{ __('Select a saved template or leave blank for the default message. You can create new templates using the links above.') }}
                   </div>
                 </div>
               </div>
@@ -387,7 +387,7 @@
               <div class="row">
                 <div class="col-lg-12">
                   <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> حفظ إعدادات القوالب
+                    <i class="fas fa-save"></i> {{ __('Save template settings') }}
                   </button>
                 </div>
               </div>
@@ -399,7 +399,7 @@
                 <div class="card">
                   <div class="card-header">
                     <h6 class="mb-0">
-                      <i class="fas fa-list"></i> القوالب المتاحة
+                      <i class="fas fa-list"></i> {{ __('Available Templates') }}
                     </h6>
                   </div>
                   <div class="card-body">
@@ -416,11 +416,11 @@
                         <table class="table table-striped">
                           <thead>
                             <tr>
-                              <th>اسم القالب</th>
-                              <th>النوع</th>
-                              <th>اللغة</th>
-                              <th>الحالة</th>
-                              <th>الإجراءات</th>
+                              <th>{{ __('Template Name') }}</th>
+                              <th>{{ __('Type') }}</th>
+                              <th>{{ __('Language') }}</th>
+                              <th>{{ __('Status') }}</th>
+                              <th>{{ __('Actions') }}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -436,17 +436,17 @@
                                 <td><span class="badge badge-secondary">{{$template->language_label}}</span></td>
                                 <td>
                                   @if($template->status)
-                                    <span class="badge badge-success">نشط</span>
+                                    <span class="badge badge-success">{{ __('Active') }}</span>
                                   @else
-                                    <span class="badge badge-danger">غير نشط</span>
+                                    <span class="badge badge-danger">{{ __('Inactive') }}</span>
                                   @endif
                                 </td>
                                 <td>
                                   <div class="btn-group" role="group">
-                                    <a href="{{route('admin.email-templates.edit', $template)}}" class="btn btn-sm btn-warning" title="تعديل">
+                                    <a href="{{route('admin.email-templates.edit', $template)}}" class="btn btn-sm btn-warning" title="{{ __('Edit') }}">
                                       <i class="fas fa-edit"></i>
                                     </a>
-                                    <a href="{{route('admin.email-templates.preview', $template)}}" class="btn btn-sm btn-info" title="معاينة">
+                                    <a href="{{route('admin.email-templates.preview', $template)}}" class="btn btn-sm btn-info" title="{{ __('Preview') }}">
                                       <i class="fas fa-eye"></i>
                                     </a>
                                   </div>
@@ -459,13 +459,13 @@
                     @else
                       <div class="text-center text-muted">
                         <i class="fas fa-inbox fa-2x mb-2"></i><br>
-                        لا توجد قوالب بعد.
+                        {{ __('No templates yet.') }}
                       </div>
                     @endif
 
                     <div class="text-center mt-3">
                       <a href="{{route('admin.email-templates.create')}}" class="btn btn-sm btn-primary mt-2">
-                        <i class="fas fa-plus"></i> إنشاء قالب جديد
+                        <i class="fas fa-plus"></i> {{ __('Create New Template') }}
                       </a>
                     </div>
                   </div>
@@ -480,7 +480,7 @@
               <div class="col-lg-12">
                 <div class="alert alert-info">
                   <i class="fas fa-info-circle"></i>
-                  <strong>اختبار البريد الإلكتروني:</strong> استخدم هذه الأداة لاختبار إعدادات SMTP وإرسال رسالة تجريبية.
+                  <strong>{{ __('Test email:') }}</strong> {{ __('Use this tool to test SMTP settings and send a test message.') }}
                 </div>
               </div>
             </div>
@@ -488,7 +488,7 @@
             <div class="row">
               <div class="col-lg-6">
                 <div class="form-group">
-                  <label for="test_email_address"><strong>البريد الإلكتروني للاختبار</strong></label>
+                  <label for="test_email_address"><strong>{{ __('Test email address') }}</strong></label>
                   <input type="email" class="form-control" id="test_email_address"
                          placeholder="test@example.com">
                 </div>
@@ -498,7 +498,7 @@
                   <label>&nbsp;</label>
                   <div>
                     <button type="button" class="btn btn-info" onclick="testEmailConfiguration()">
-                      <i class="fas fa-paper-plane"></i> إرسال رسالة اختبار
+                      <i class="fas fa-paper-plane"></i> {{ __('Send test message') }}
                     </button>
                   </div>
                 </div>
@@ -556,9 +556,9 @@ function switchTab(tabName) {
 
     // Update card title
     var titles = {
-        'smtp_settings': 'إعدادات SMTP',
-        'email_templates': 'إعدادات القوالب',
-        'test_email': 'اختبار البريد الإلكتروني'
+        'smtp_settings': '{{ __('SMTP Settings') }}',
+        'email_templates': '{{ __('Template Settings') }}',
+        'test_email': '{{ __('Test Email') }}'
     };
     $('#tab-title').text(titles[tabName]);
 }
@@ -567,12 +567,12 @@ function testEmailConfiguration() {
     var testEmail = $('#test_email_address').val();
 
     if (!testEmail || !testEmail.includes('@')) {
-        showNotification('يرجى إدخال بريد إلكتروني صحيح', 'error');
+        showNotification(@json(__('Please enter a valid email address')), 'error');
         return;
     }
 
     var resultDiv = $('#test-result');
-    resultDiv.html('<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> جاري إرسال رسالة الاختبار...</div>').show();
+    resultDiv.html('<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> {{ __('Sending test message...') }}</div>').show();
 
     $.post('{{route("admin.email-communication.test")}}', {
         _token: '{{csrf_token()}}',
@@ -584,7 +584,7 @@ function testEmailConfiguration() {
             resultDiv.html('<div class="alert alert-danger"><i class="fas fa-times"></i> ' + response.message + '</div>');
         }
     }).fail(function() {
-        resultDiv.html('<div class="alert alert-danger"><i class="fas fa-times"></i> فشل في إرسال رسالة الاختبار. تأكد من إعدادات SMTP.</div>');
+        resultDiv.html('<div class="alert alert-danger"><i class="fas fa-times"></i> @json(__('Failed to send test message. Check SMTP settings.'))</div>');
     });
 }
 

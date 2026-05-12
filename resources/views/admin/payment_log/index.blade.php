@@ -225,7 +225,7 @@ $selLang = request()->filled('language')
                                                     <h5 class="modal-title" id="exampleModalLabel">{{__('Owner Details')}}
                                                     </h5>
                                                     <button type="button" class="close" data-dismiss="modal"
-                                                        aria-label="Close">
+                                                        aria-label="{{ __('Close') }}">
                                                     <span aria-hidden="true">&times;</span>
                                                     </button>
                                                 </div>
@@ -235,7 +235,7 @@ $selLang = request()->filled('language')
                                                             <h3>{{__('User details')}}</h3>
                                                             <div class="owner-details-row"><span class="label">{{__('Name')}}</span><span class="value">{{ !empty($membership->user) ? $membership->user->first_name.' '.$membership->user->last_name : '-' }}</span></div>
                                                             <div class="owner-details-row"><span class="label">{{__('Username')}}</span><span class="value">{{ !empty($membership->user) ? $membership->user->username : '-' }}</span></div>
-                                                            <div class="owner-details-row"><span class="label">{{__('Company')}}</span><span class="value">{{ !empty($membership->user) ? $membership->user->company_name : 'N/A' }}</span></div>
+                                                            <div class="owner-details-row"><span class="label">{{__('Company')}}</span><span class="value">{{ !empty($membership->user) ? $membership->user->company_name : __('N/A') }}</span></div>
                                                             <div class="owner-details-row"><span class="label">{{__('Email')}}</span><span class="value">{{ !empty($membership->user) ? $membership->user->email : '-' }}</span></div>
                                                             <div class="owner-details-row"><span class="label">{{__('Phone')}}</span><span class="value">{{ !empty($membership->user) ? ($membership->user->phone ?? '-') : '-' }}</span></div>
                                                         </div>
@@ -252,12 +252,12 @@ $selLang = request()->filled('language')
                                                         <div class="owner-details-section">
                                                             <h3>{{__('Package Details')}}</h3>
                                                             <div class="owner-details-row"><span class="label">{{__('Title')}}</span><span class="value">{{ !empty($membership->package) ? $membership->package->title : '-' }}</span></div>
-                                                            <div class="owner-details-row"><span class="label">{{__('Term')}}</span><span class="value">{{ !empty($membership->package) ? $membership->package->term : '-' }}</span></div>
+                                                            <div class="owner-details-row"><span class="label">{{__('Term')}}</span><span class="value">{{ !empty($membership->package) ? __($membership->package->term) : '-' }}</span></div>
                                                             <div class="owner-details-row">
                                                                 <span class="label">{{__('Start Date')}}</span>
                                                                 <span class="value">
                                                                     @if (\Illuminate\Support\Carbon::parse($membership->start_date)->format('Y') == '9999')
-                                                                        <span class="badge badge-danger">Never Activated</span>
+                                                                        <span class="badge badge-danger">{{ __('Never Activated') }}</span>
                                                                     @else
                                                                         {{ \Illuminate\Support\Carbon::parse($membership->start_date)->format('M-d-Y') }}
                                                                     @endif
@@ -271,7 +271,7 @@ $selLang = request()->filled('language')
                                                                     @else
                                                                         @if ($membership->modified == 1)
                                                                             {{ \Illuminate\Support\Carbon::parse($membership->expire_date)->addDay()->format('M-d-Y') }}
-                                                                            <span class="badge badge-primary btn-xs">modified by Admin</span>
+                                                                            <span class="badge badge-primary btn-xs">{{ __('Modified by Admin') }}</span>
                                                                         @else
                                                                             {{ !empty($membership->package) && $membership->package->term == 'lifetime' ? __('Lifetime') : \Illuminate\Support\Carbon::parse($membership->expire_date)->format('M-d-Y') }}
                                                                         @endif

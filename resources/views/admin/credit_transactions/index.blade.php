@@ -211,7 +211,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">{{ __('Refund Transaction') }}</h5>
-                <button type="button" class="close" data-dismiss="modal">
+                <button type="button" class="close" data-dismiss="modal" aria-label="{{ __('Close') }}">
                     <span>&times;</span>
                 </button>
             </div>
@@ -232,9 +232,18 @@
 </div>
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
+@php
+    $creditTxI18n = [
+        'errorPrefix' => __('Error'),
+        'genericError' => __('Something went wrong'),
+        'deleteConfirm' => __('Are you sure you want to delete this transaction?'),
+        'deletedSuccess' => __('Transaction deleted successfully'),
+    ];
+@endphp
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(document).ready(function() {
+    const creditTxI18n = @json($creditTxI18n);
     // Status update
     $('.status-dropdown').on('change', function () {
         let $this = $(this);
@@ -255,7 +264,7 @@ $(document).ready(function() {
                 alert(response.message);
             },
             error: function(xhr) {
-                alert('Error: ' + (xhr.responseJSON?.message || 'Something went wrong'));
+                alert(creditTxI18n.errorPrefix + ': ' + (xhr.responseJSON?.message || creditTxI18n.genericError));
                 location.reload();
             }
         });
@@ -288,14 +297,14 @@ $(document).ready(function() {
                 location.reload();
             },
             error: function(xhr) {
-                alert('Error: ' + (xhr.responseJSON?.message || 'Something went wrong'));
+                alert(creditTxI18n.errorPrefix + ': ' + (xhr.responseJSON?.message || creditTxI18n.genericError));
             }
         });
     });
 
     // Delete button
     $('.delete-btn').on('click', function() {
-        if (confirm('{{ __("Are you sure you want to delete this transaction?") }}')) {
+        if (confirm(creditTxI18n.deleteConfirm)) {
             let id = $(this).data('id');
             let token = $('meta[name="csrf-token"]').attr('content');
 
@@ -306,11 +315,11 @@ $(document).ready(function() {
                     _token: token
                 },
                 success: function (response) {
-                    alert('{{ __("Transaction deleted successfully") }}');
+                    alert(creditTxI18n.deletedSuccess);
                     location.reload();
                 },
                 error: function(xhr) {
-                    alert('Error: ' + (xhr.responseJSON?.message || 'Something went wrong'));
+                    alert(creditTxI18n.errorPrefix + ': ' + (xhr.responseJSON?.message || creditTxI18n.genericError));
                 }
             });
         }

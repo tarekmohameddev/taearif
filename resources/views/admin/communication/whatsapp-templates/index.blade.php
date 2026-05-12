@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="page-header">
-    <h4 class="page-title">إدارة قوالب واتس اب</h4>
+    <h4 class="page-title">{{ __('WhatsApp Templates Management') }}</h4>
     <ul class="breadcrumbs">
         <li class="nav-home">
             <a href="{{route('admin.dashboard')}}">
@@ -13,13 +13,13 @@
             <i class="flaticon-right-arrow"></i>
         </li>
         <li class="nav-item">
-            <a href="{{route('admin.communication.whatsapp')}}">التواصل</a>
+            <a href="{{route('admin.communication.whatsapp')}}">{{ __('Communication') }}</a>
         </li>
         <li class="separator">
             <i class="flaticon-right-arrow"></i>
         </li>
         <li class="nav-item">
-            <a href="#">قوالب واتس اب</a>
+            <a href="#">{{ __('WhatsApp Templates') }}</a>
         </li>
     </ul>
 </div>
@@ -29,9 +29,9 @@
         <div class="card">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
-                    <div class="card-title">قوالب واتس اب</div>
+                    <div class="card-title">{{ __('WhatsApp Templates') }}</div>
                     <a href="{{route('admin.whatsapp-templates.create')}}" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> إنشاء قالب جديد
+                        <i class="fas fa-plus"></i> {{ __('Create New Template') }}
                     </a>
                 </div>
             </div>
@@ -41,36 +41,36 @@
                     <div class="col-md-12">
                         <form method="GET" action="{{route('admin.whatsapp-templates.index')}}" class="form-inline">
                             <div class="form-group mr-3">
-                                <label for="type" class="mr-2">النوع:</label>
+                                <label for="type" class="mr-2">{{ __('Type') }}:</label>
                                 <select name="type" id="type" class="form-control">
-                                    <option value="">جميع الأنواع</option>
+                                    <option value="">{{ __('All Types') }}</option>
                                     @foreach(\App\Models\WhatsAppTemplate::getTypes() as $key => $label)
                                         <option value="{{$key}}" {{request('type') == $key ? 'selected' : ''}}>{{$label}}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="form-group mr-3">
-                                <label for="language" class="mr-2">اللغة:</label>
+                                <label for="language" class="mr-2">{{ __('Language') }}:</label>
                                 <select name="language" id="language" class="form-control">
-                                    <option value="">جميع اللغات</option>
+                                    <option value="">{{ __('All Languages') }}</option>
                                     @foreach(\App\Models\WhatsAppTemplate::getLanguages() as $key => $label)
                                         <option value="{{$key}}" {{request('language') == $key ? 'selected' : ''}}>{{$label}}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="form-group mr-3">
-                                <label for="status" class="mr-2">الحالة:</label>
+                                <label for="status" class="mr-2">{{ __('Status') }}:</label>
                                 <select name="status" id="status" class="form-control">
-                                    <option value="">جميع الحالات</option>
-                                    <option value="active" {{request('status') == 'active' ? 'selected' : ''}}>نشط</option>
-                                    <option value="inactive" {{request('status') == 'inactive' ? 'selected' : ''}}>غير نشط</option>
+                                    <option value="">{{ __('All Statuses') }}</option>
+                                    <option value="active" {{request('status') == 'active' ? 'selected' : ''}}>{{ __('Active') }}</option>
+                                    <option value="inactive" {{request('status') == 'inactive' ? 'selected' : ''}}>{{ __('Inactive') }}</option>
                                 </select>
                             </div>
                             <button type="submit" class="btn btn-info">
-                                <i class="fas fa-filter"></i> تصفية
+                                <i class="fas fa-filter"></i> {{ __('Filter') }}
                             </button>
                             <a href="{{route('admin.whatsapp-templates.index')}}" class="btn btn-secondary ml-2">
-                                <i class="fas fa-times"></i> إعادة تعيين
+                                <i class="fas fa-times"></i> {{ __('Reset') }}
                             </a>
                         </form>
                     </div>
@@ -81,13 +81,13 @@
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th>اسم القالب</th>
-                                <th>النوع</th>
-                                <th>اللغة</th>
-                                <th>عدد الأحرف</th>
-                                <th>الحالة</th>
-                                <th>تاريخ الإنشاء</th>
-                                <th>الإجراءات</th>
+                                <th>{{ __('Template Name') }}</th>
+                                <th>{{ __('Type') }}</th>
+                                <th>{{ __('Language') }}</th>
+                                <th>{{ __('Character Count') }}</th>
+                                <th>{{ __('Status') }}</th>
+                                <th>{{ __('Created') }}</th>
+                                <th>{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -108,36 +108,36 @@
                                     <td>{{$template->character_count}}</td>
                                     <td>
                                         @if($template->status)
-                                            <span class="badge badge-success">نشط</span>
+                                            <span class="badge badge-success">{{ __('Active') }}</span>
                                         @else
-                                            <span class="badge badge-danger">غير نشط</span>
+                                            <span class="badge badge-danger">{{ __('Inactive') }}</span>
                                         @endif
                                     </td>
-                                    <td>{{$template->created_at ? $template->created_at->format('Y-m-d H:i') : 'N/A'}}</td>
+                                    <td>{{$template->created_at ? $template->created_at->format('Y-m-d H:i') : __('Not set') }}</td>
                                     <td>
                                         <div class="btn-group" role="group">
-                                            <a href="{{route('admin.whatsapp-templates.show', $template)}}" class="btn btn-sm btn-info" title="عرض">
+                                            <a href="{{route('admin.whatsapp-templates.show', $template)}}" class="btn btn-sm btn-info" title="{{ __('View') }}">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <a href="{{route('admin.whatsapp-templates.edit', $template)}}" class="btn btn-sm btn-warning" title="تعديل">
+                                            <a href="{{route('admin.whatsapp-templates.edit', $template)}}" class="btn btn-sm btn-warning" title="{{ __('Edit') }}">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <a href="{{route('admin.whatsapp-templates.preview', $template)}}" class="btn btn-sm btn-secondary" title="معاينة">
+                                            <a href="{{route('admin.whatsapp-templates.preview', $template)}}" class="btn btn-sm btn-secondary" title="{{ __('Preview') }}">
                                                 <i class="fas fa-search"></i>
                                             </a>
-                                            <a href="{{route('admin.whatsapp-templates.duplicate', $template)}}" class="btn btn-sm btn-primary" title="نسخ">
+                                            <a href="{{route('admin.whatsapp-templates.duplicate', $template)}}" class="btn btn-sm btn-primary" title="{{ __('Duplicate') }}">
                                                 <i class="fas fa-copy"></i>
                                             </a>
                                             <form action="{{route('admin.whatsapp-templates.toggle-status', $template)}}" method="POST" style="display: inline;">
                                                 @csrf
-                                                <button type="submit" class="btn btn-sm {{$template->status ? 'btn-warning' : 'btn-success'}}" title="{{$template->status ? 'إلغاء تفعيل' : 'تفعيل'}}">
+                                                <button type="submit" class="btn btn-sm {{$template->status ? 'btn-warning' : 'btn-success'}}" title="{{$template->status ? __('Deactivate') : __('Activate') }}">
                                                     <i class="fas fa-{{$template->status ? 'pause' : 'play'}}"></i>
                                                 </button>
                                             </form>
-                                            <form action="{{route('admin.whatsapp-templates.destroy', $template)}}" method="POST" style="display: inline;" onsubmit="return confirm('هل أنت متأكد من حذف هذا القالب؟')">
+                                            <form action="{{route('admin.whatsapp-templates.destroy', $template)}}" method="POST" style="display: inline;" onsubmit="return confirm(@json(__('Are you sure you want to delete this template?')))">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger" title="حذف">
+                                                <button type="submit" class="btn btn-sm btn-danger" title="{{ __('Delete') }}">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>
@@ -148,7 +148,7 @@
                                 <tr>
                                     <td colspan="8" class="text-center text-muted">
                                         <i class="fas fa-inbox fa-2x mb-2"></i><br>
-                                        لا توجد قوالب بعد. <a href="{{route('admin.whatsapp-templates.create')}}">إنشاء قالب جديد</a>
+                                        {{ __('No templates yet.') }} <a href="{{route('admin.whatsapp-templates.create')}}">{{ __('Create New Template') }}</a>
                                     </td>
                                 </tr>
                             @endforelse
