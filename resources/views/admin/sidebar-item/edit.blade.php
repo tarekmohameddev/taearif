@@ -92,7 +92,7 @@
 
 @section('content')
     <div class="page-header">
-        <h4 class="page-title">تعديل عنصر الشريط الجانبي</h4>
+        <h4 class="page-title">{{ __('Edit Sidebar Item') }}</h4>
         <ul class="breadcrumbs">
             <li class="nav-home">
                 <a href="{{ route('admin.dashboard') }}">
@@ -103,13 +103,13 @@
                 <i class="flaticon-right-arrow"></i>
             </li>
             <li class="nav-item">
-                <a href="{{ route('admin.sidebar-item.index') }}">عناصر الشريط الجانبي</a>
+                <a href="{{ route('admin.sidebar-item.index') }}">{{ __('Sidebar Items') }}</a>
             </li>
             <li class="separator">
                 <i class="flaticon-right-arrow"></i>
             </li>
             <li class="nav-item">
-                <a href="#">تعديل</a>
+                <a href="#">{{ __('Edit') }}</a>
             </li>
         </ul>
     </div>
@@ -118,7 +118,7 @@
         <div class="col-md-10 mx-auto">
             <div class="card form-card">
                 <div class="card-header form-header">
-                    <h4 class="card-title text-right">تعديل بيانات العنصر: {{ $item->title }}</h4>
+                    <h4 class="card-title text-right">{{ __('Edit item data:') }} {{ $item->title }}</h4>
                 </div>
                 <form id="ajaxForm" action="{{ route('admin.sidebar-item.update') }}" method="POST">
                     @csrf
@@ -127,22 +127,22 @@
                         <div class="row">
                             <div class="col-lg-6">
                                 <div class="form-group text-right">
-                                    <label>العنوان <span class="text-danger">*</span></label>
+                                    <label>{{ __('Title') }} <span class="text-danger">*</span></label>
                                     <input class="form-control" type="text" name="title" value="{{ old('title', $item->title) }}" required>
-                                    <p class="input-hint">العنوان الذي سيظهر في الشريط الجانبي</p>
+                                    <p class="input-hint">{{ __('The title shown in the sidebar') }}</p>
                                     <p id="errtitle" class="mb-0 text-danger em small"></p>
                                 </div>
                             </div>
                             <div class="col-lg-6">
                                 <div class="form-group text-right">
-                                    <label>الأيقونة <span class="text-danger">*</span></label>
+                                    <label>{{ __('Icon') }} <span class="text-danger">*</span></label>
                                     <div class="d-flex align-items-center">
                                         <div id="iconPreviewBox" class="icon-preview ml-3" style="width: 60px; flex-shrink: 0;">
                                             <i class="{{ $item->icon }}"></i>
                                         </div>
                                         <input class="form-control" type="text" name="icon" id="iconInput" value="{{ old('icon', $item->icon) }}" required>
                                     </div>
-                                    <p class="input-hint">اسم الأيقونة (مثال: fas fa-home أو settings)</p>
+                                    <p class="input-hint">{{ __('Icon name or class (FontAwesome or Flaticon)') }}</p>
                                     <p id="erricon" class="mb-0 text-danger em small"></p>
                                 </div>
                             </div>
@@ -151,8 +151,8 @@
                         <div class="row">
                             <div class="col-lg-12">
                                 <div class="form-group text-right">
-                                    <label>الوصف</label>
-                                    <textarea class="form-control" name="description" rows="2">{{ old('description', $item->description) }}</textarea>
+                                    <label>{{ __('Description') }}</label>
+                                    <textarea class="form-control" name="description" rows="2" placeholder="{{ __('Brief description for this item') }}">{{ old('description', $item->description) }}</textarea>
                                     <p id="errdescription" class="mb-0 text-danger em small"></p>
                                 </div>
                             </div>
@@ -161,19 +161,19 @@
                         <div class="row">
                             <div class="col-lg-6">
                                 <div class="form-group text-right">
-                                    <label>المسار <span class="text-danger">*</span></label>
+                                    <label>{{ __('Path') }} <span class="text-danger">*</span></label>
                                     <input class="form-control" type="text" name="path" value="{{ old('path', $item->path) }}" 
                                         required style="direction: ltr; text-align: left;">
-                                    <p class="input-hint">مسار الصفحة (مثال: /admin/settings)</p>
+                                    <p class="input-hint">{{ __('The page path this item links to') }} ({{ __('Example: /admin/settings') }})</p>
                                     <p id="errpath" class="mb-0 text-danger em small"></p>
                                 </div>
                             </div>
                             <div class="col-lg-6">
                                 <div class="form-group text-right">
-                                    <label>الترتيب <span class="text-danger">*</span></label>
+                                    <label>{{ __('Order') }} <span class="text-danger">*</span></label>
                                     <input class="form-control" type="number" name="order" value="{{ old('order', $item->order) }}" 
                                         min="0" required>
-                                    <p class="input-hint">ترتيب العنصر (الأقل يظهر أولاً)</p>
+                                    <p class="input-hint">{{ __('Order in the menu (lower numbers appear first)') }}</p>
                                     <p id="errorder" class="mb-0 text-danger em small"></p>
                                 </div>
                             </div>
@@ -182,23 +182,23 @@
                         <div class="row">
                             <div class="col-lg-6">
                                 <div class="form-group text-right">
-                                    <label>الصلاحية</label>
+                                    <label>{{ __('Permission') }}</label>
                                     <input class="form-control" type="text" name="permission" value="{{ old('permission', $item->permission) }}" 
-                                        placeholder="مثال: settings.view" style="direction: ltr; text-align: left;">
-                                    <p class="input-hint">اتركه فارغاً لإظهاره لجميع المستخدمين</p>
+                                        placeholder="{{ __('Example: role.manage or settings.view') }}" style="direction: ltr; text-align: left;">
+                                    <p class="input-hint">{{ __('Leave blank to show to all users') }}</p>
                                     <p id="errpermission" class="mb-0 text-danger em small"></p>
                                 </div>
                             </div>
                             <div class="col-lg-6">
                                 <div class="form-group text-right">
-                                    <label>نوع الشرط</label>
+                                    <label>{{ __('Condition type') }}</label>
                                     <select class="form-control" name="condition_type">
-                                        <option value="">لا يوجد شرط</option>
-                                        <option value="has_projects" {{ old('condition_type', $item->condition_type) == 'has_projects' ? 'selected' : '' }}>يحتوي على مشاريع</option>
-                                        <option value="has_properties" {{ old('condition_type', $item->condition_type) == 'has_properties' ? 'selected' : '' }}>يحتوي على عقارات</option>
-                                        <option value="is_affiliate_approved" {{ old('condition_type', $item->condition_type) == 'is_affiliate_approved' ? 'selected' : '' }}>شراكة معتمدة</option>
+                                        <option value="">{{ __('No condition') }}</option>
+                                        <option value="has_projects" {{ old('condition_type', $item->condition_type) == 'has_projects' ? 'selected' : '' }}>{{ __('Has projects') }}</option>
+                                        <option value="has_properties" {{ old('condition_type', $item->condition_type) == 'has_properties' ? 'selected' : '' }}>{{ __('Has properties') }}</option>
+                                        <option value="is_affiliate_approved" {{ old('condition_type', $item->condition_type) == 'is_affiliate_approved' ? 'selected' : '' }}>{{ __('Affiliate approved') }}</option>
                                     </select>
-                                    <p class="input-hint">شرط إضافي لإظهار العنصر</p>
+                                    <p class="input-hint">{{ __('Show this item only when this condition is met') }}</p>
                                     <p id="errcondition_type" class="mb-0 text-danger em small"></p>
                                 </div>
                             </div>
@@ -209,7 +209,7 @@
                                 <div class="form-check text-right">
                                     <label class="form-check-label">
                                         <input class="form-check-input" type="checkbox" name="is_active" value="1" {{ old('is_active', $item->is_active) ? 'checked' : '' }}>
-                                        <span class="form-check-sign font-weight-bold">تفعيل العنصر في الشريط الجانبي</span>
+                                        <span class="form-check-sign font-weight-bold">{{ __('Activate this item in the sidebar') }}</span>
                                     </label>
                                 </div>
                             </div>
@@ -217,9 +217,9 @@
                     </div>
                     <div class="card-action text-right">
                         <button id="submitBtn" class="btn btn-submit" type="button">
-                            <i class="fas fa-save mr-2"></i> تحديث البيانات
+                            <i class="fas fa-save mr-2"></i> {{ __('Update Data') }}
                         </button>
-                        <a href="{{ route('admin.sidebar-item.index') }}" class="btn btn-cancel">إلغاء</a>
+                        <a href="{{ route('admin.sidebar-item.index') }}" class="btn btn-cancel">{{ __('Cancel') }}</a>
                     </div>
                 </form>
             </div>
@@ -263,7 +263,7 @@
                 var form = $('#ajaxForm');
                 var url = form.attr('action');
 
-                $(this).attr('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> جاري التحديث...');
+                $(this).attr('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> ' + @json(__('Updating...')));
 
                 $.ajax({
                     url: url,
@@ -273,7 +273,7 @@
                         window.location.href = '{{ route("admin.sidebar-item.index") }}';
                     },
                     error: function(xhr) {
-                        $('#submitBtn').attr('disabled', false).html('<i class="fas fa-save mr-2"></i> تحديث البيانات');
+                        $('#submitBtn').attr('disabled', false).html('<i class="fas fa-save mr-2"></i> ' + @json(__('Update Data')));
                         if (xhr.status === 422) {
                             var errors = xhr.responseJSON.errors;
                             $('.em').text('');
@@ -281,7 +281,7 @@
                                 $('#err' + key).text(value[0]);
                             });
                         } else {
-                            alert('حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى.');
+                            alert(@json(__('An unexpected error occurred. Please try again.')));
                         }
                     }
                 });

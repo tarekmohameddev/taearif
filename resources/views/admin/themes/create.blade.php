@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="page-header">
-        <h4 class="page-title">إضافة سمة جديدة</h4>
+        <h4 class="page-title">{{ __('Add new theme') }}</h4>
         <ul class="breadcrumbs">
             <li class="nav-home">
                 <a href="{{ route('admin.dashboard') }}">
@@ -13,13 +13,13 @@
                 <i class="flaticon-right-arrow"></i>
             </li>
             <li class="nav-item">
-                <a href="{{ route('admin.themes.index') }}">السمات</a>
+                <a href="{{ route('admin.themes.index') }}">{{ __('Themes') }}</a>
             </li>
             <li class="separator">
                 <i class="flaticon-right-arrow"></i>
             </li>
             <li class="nav-item">
-                <a href="#">إضافة سمة جديدة</a>
+                <a href="#">{{ __('Add new theme') }}</a>
             </li>
         </ul>
     </div>
@@ -27,7 +27,7 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">إضافة سمة جديدة</div>
+                    <div class="card-title">{{ __('Add new theme') }}</div>
                 </div>
                 <form action="{{ route('admin.themes.store') }}" method="POST">
                     @csrf
@@ -35,9 +35,9 @@
                         <div class="row">
                             <div class="col-lg-6">
                                 <div class="form-group">
-                                    <label>معرف السمة (Theme ID) *</label>
+                                    <label>{{ __('Theme ID') }} *</label>
                                     <input class="form-control" type="text" name="theme_id" value="{{ old('theme_id') }}" required>
-                                    <p class="text-warning mt-2 mb-0">يجب أن يكون فريداً (مثال: premium_theme)</p>
+                                    <p class="text-warning mt-2 mb-0">{{ __('Theme ID must be unique (e.g. premium_theme)') }}</p>
                                     @error('theme_id')
                                         <p class="text-danger">{{ $message }}</p>
                                     @enderror
@@ -45,7 +45,7 @@
                             </div>
                             <div class="col-lg-6">
                                 <div class="form-group">
-                                    <label>اسم السمة *</label>
+                                    <label>{{ __('Theme name') }} *</label>
                                     <input class="form-control" type="text" name="name" value="{{ old('name') }}" required>
                                     @error('name')
                                         <p class="text-danger">{{ $message }}</p>
@@ -56,7 +56,7 @@
                         <div class="row">
                             <div class="col-lg-12">
                                 <div class="form-group">
-                                    <label>الوصف</label>
+                                    <label>{{ __('Description') }}</label>
                                     <textarea class="form-control" name="description" rows="3" required>{{ old('description') }}</textarea>
                                     @error('description')
                                         <p class="text-danger">{{ $message }}</p>
@@ -67,9 +67,9 @@
                         <div class="row">
                             <div class="col-lg-6">
                                 <div class="form-group">
-                                    <label>مسار الصورة المصغرة *</label>
+                                    <label>{{ __('Thumbnail path') }} *</label>
                                     <input class="form-control" type="text" name="thumbnail" value="{{ old('thumbnail') }}" 
-                                        placeholder="themes/اسم_السمة/thumb.png" required>
+                                        placeholder="{{ __('themes/theme_name/thumb.png') }}" required>
                                     @error('thumbnail')
                                         <p class="text-danger">{{ $message }}</p>
                                     @enderror
@@ -77,9 +77,9 @@
                             </div>
                             <div class="col-lg-6">
                                 <div class="form-group">
-                                    <label>الفئة</label>
+                                    <label>{{ __('Category') }}</label>
                                     <input class="form-control" type="text" name="category" value="{{ old('category') }}" 
-                                        placeholder="عقارات، حديث، أعمال، إلخ">
+                                        placeholder="{{ __('Theme category examples placeholder') }}">
                                     @error('category')
                                         <p class="text-danger">{{ $message }}</p>
                                     @enderror
@@ -92,7 +92,7 @@
                                     <input type="hidden" name="is_free" value="0">
                                     <label>
                                         <input type="checkbox" name="is_free" value="1" {{ old('is_free') ? 'checked' : '' }}>
-                                        سمة مجانية
+                                        {{ __('Free theme') }}
                                     </label>
                                 </div>
                             </div>
@@ -101,7 +101,7 @@
                                     <input type="hidden" name="is_enabled" value="0">
                                     <label>
                                         <input type="checkbox" name="is_enabled" value="1" {{ old('is_enabled', true) ? 'checked' : '' }}>
-                                        مفعل
+                                        {{ __('Enabled') }}
                                     </label>
                                 </div>
                             </div>
@@ -110,7 +110,7 @@
                                     <input type="hidden" name="popular" value="0">
                                     <label>
                                         <input type="checkbox" name="popular" value="1" {{ old('popular') ? 'checked' : '' }}>
-                                        شائع
+                                        {{ __('Popular') }}
                                     </label>
                                 </div>
                             </div>
@@ -118,7 +118,7 @@
                         <div class="row" id="priceFields">
                             <div class="col-lg-6">
                                 <div class="form-group">
-                                    <label>السعر</label>
+                                    <label>{{ __('Price') }}</label>
                                     <input class="form-control" type="number" name="price" value="{{ old('price') }}" 
                                         step="0.01" min="0" placeholder="0.00">
                                     @error('price')
@@ -128,7 +128,7 @@
                             </div>
                             <div class="col-lg-6">
                                 <div class="form-group">
-                                    <label>العملة</label>
+                                    <label>{{ __('Currency') }}</label>
                                     <input class="form-control" type="text" name="currency" value="{{ old('currency', 'SAR') }}" 
                                         maxlength="3" placeholder="SAR">
                                     @error('currency')
@@ -139,8 +139,8 @@
                         </div>
                     </div>
                     <div class="card-action">
-                        <button class="btn btn-success" type="submit">حفظ</button>
-                        <a href="{{ route('admin.themes.index') }}" class="btn btn-danger">إلغاء</a>
+                        <button class="btn btn-success" type="submit">{{ __('Save') }}</button>
+                        <a href="{{ route('admin.themes.index') }}" class="btn btn-danger">{{ __('Cancel') }}</a>
                     </div>
                 </form>
             </div>

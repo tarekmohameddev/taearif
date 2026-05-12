@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>معاينة قالب واتس اب - {{$whatsappTemplate->name}}</title>
+    <title>{{ __('Preview WhatsApp Template') }} - {{$whatsappTemplate->name}}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -78,13 +78,13 @@
 <body>
     <div class="preview-container">
         <a href="{{route('admin.whatsapp-templates.show', $whatsappTemplate)}}" class="back-btn">
-            <i class="fas fa-arrow-right"></i> رجوع للقالب
+            <i class="fas fa-arrow-right"></i> {{ __('Back to Template') }}
         </a>
 
         <div class="template-info">
             <div class="row">
                 <div class="col-md-8">
-                    <h2><i class="fas fa-eye"></i> معاينة القالب</h2>
+                    <h2><i class="fas fa-eye"></i> {{ __('Template Preview') }}</h2>
                     <h4>{{$whatsappTemplate->name}}</h4>
                     @if($whatsappTemplate->description)
                         <p class="text-muted">{{$whatsappTemplate->description}}</p>
@@ -95,53 +95,53 @@
                     <span class="badge badge-secondary">{{$whatsappTemplate->language_label}}</span>
                     <br>
                     <span class="character-count {{$whatsappTemplate->character_count > 1600 ? 'warning' : 'success'}}">
-                        <i class="fas fa-font"></i> {{$whatsappTemplate->character_count}} / 1600 حرف
+                        <i class="fas fa-font"></i> {{$whatsappTemplate->character_count}} / 1600 {{ __('characters') }}
                     </span>
                 </div>
             </div>
         </div>
 
         <div class="template-info">
-            <h5><i class="fas fa-mobile-alt"></i> كيف سيظهر في واتس اب:</h5>
+            <h5><i class="fas fa-mobile-alt"></i> {{ __('How it will appear in WhatsApp:') }}</h5>
             <div class="whatsapp-message">
                 <div class="template-content">{{$whatsappTemplate->preview_content}}</div>
             </div>
         </div>
 
         <div class="template-info">
-            <h5><i class="fas fa-code"></i> المحتوى الأصلي:</h5>
+            <h5><i class="fas fa-code"></i> {{ __('Original Content') }}:</h5>
             <div class="bg-light p-3 rounded">
                 <code class="template-content">{{$whatsappTemplate->content}}</code>
             </div>
         </div>
 
         <div class="template-info">
-            <h5><i class="fas fa-info-circle"></i> معلومات القالب:</h5>
+            <h5><i class="fas fa-info-circle"></i> {{ __('Template Information') }}:</h5>
             <div class="row">
                 <div class="col-md-6">
-                    <strong>اسم القالب:</strong> {{$whatsappTemplate->name}}<br>
-                    <strong>النوع:</strong> {{$whatsappTemplate->type_label}}<br>
-                    <strong>اللغة:</strong> {{$whatsappTemplate->language_label}}
+                    <strong>{{ __('Template Name') }}:</strong> {{$whatsappTemplate->name}}<br>
+                    <strong>{{ __('Type') }}:</strong> {{$whatsappTemplate->type_label}}<br>
+                    <strong>{{ __('Language') }}:</strong> {{$whatsappTemplate->language_label}}
                 </div>
                 <div class="col-md-6">
-                    <strong>عدد الأحرف:</strong> {{$whatsappTemplate->character_count}}<br>
-                    <strong>الحالة:</strong> 
+                    <strong>{{ __('Character count:') }}</strong> {{$whatsappTemplate->character_count}}<br>
+                    <strong>{{ __('Status') }}:</strong> 
                     @if($whatsappTemplate->status)
-                        <span class="badge badge-success">نشط</span>
+                        <span class="badge badge-success">{{ __('Active') }}</span>
                     @else
-                        <span class="badge badge-danger">غير نشط</span>
+                        <span class="badge badge-danger">{{ __('Inactive') }}</span>
                     @endif<br>
-                    <strong>تاريخ الإنشاء:</strong> {{$whatsappTemplate->created_at ? $whatsappTemplate->created_at->format('Y-m-d H:i') : 'N/A'}}
+                    <strong>{{ __('Created') }}:</strong> {{$whatsappTemplate->created_at ? $whatsappTemplate->created_at->format('Y-m-d H:i') : 'N/A'}}
                 </div>
             </div>
         </div>
 
         <div class="text-center mt-4">
             <a href="{{route('admin.whatsapp-templates.edit', $whatsappTemplate)}}" class="btn btn-warning">
-                <i class="fas fa-edit"></i> تعديل القالب
+                <i class="fas fa-edit"></i> {{ __('Edit Template') }}
             </a>
             <a href="{{route('admin.whatsapp-templates.index')}}" class="btn btn-secondary">
-                <i class="fas fa-list"></i> جميع القوالب
+                <i class="fas fa-list"></i> {{ __('All Templates') }}
             </a>
         </div>
     </div>

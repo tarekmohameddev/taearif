@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redirecting...</title>
+    <title>{{ __('Redirecting...') }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -39,8 +39,8 @@
 <body>
     <div class="redirect-container">
         <div class="spinner"></div>
-        <h3>Redirecting to your account...</h3>
-        <p>Please wait while we log you in.</p>
+        <h3>{{ __('Redirecting to your account...') }}</h3>
+        <p>{{ __('Please wait while we log you in.') }}</p>
     </div>
 
     <script>

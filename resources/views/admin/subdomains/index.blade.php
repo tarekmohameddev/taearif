@@ -1,8 +1,16 @@
 @extends('admin.layout')
 
 @section('content')
+@php
+    $subdomainType = request()->input('type');
+    $subdomainPageTitles = [
+        'pending' => __('Pending Subdomains'),
+        'connected' => __('Connected Subdomains'),
+    ];
+    $subdomainPageTitle = empty($subdomainType) ? __('All Subdomains') : ($subdomainPageTitles[$subdomainType] ?? __('All Subdomains'));
+@endphp
     <div class="page-header">
-        <h4 class="page-title">{{empty(request()->input('type')) ? 'All' : ucfirst(request()->input('type'))}} {{__('Subdomains')}}</h4>
+        <h4 class="page-title">{{ $subdomainPageTitle }}</h4>
         <ul class="breadcrumbs">
             <li class="nav-home">
                 <a href="{{route('admin.dashboard')}}">
@@ -19,7 +27,7 @@
                 <i class="flaticon-right-arrow"></i>
             </li>
             <li class="nav-item">
-                <a href="#">{{empty(request()->input('type')) ? 'All' : ucfirst(request()->input('type'))}}</a>
+                <a href="#">{{ $subdomainPageTitle }}</a>
             </li>
         </ul>
     </div>
@@ -29,7 +37,7 @@
                 <div class="card-header">
                     <div class="row">
                         <div class="col-lg-4">
-                            <div class="card-title d-inline-block">{{__('All Subdomains')}}</div>
+                            <div class="card-title d-inline-block">{{ $subdomainPageTitle }}</div>
                         </div>
                         <div class="col-lg-6 offset-lg-2 mt-2 mt-lg-0">
                             <form action="{{request()->url()}}" class="float-right d-flex">
@@ -118,7 +126,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title" id="exampleModalLongTitle">{{__('Send Mail')}}</h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="{{ __('Close') }}">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
                             </div>

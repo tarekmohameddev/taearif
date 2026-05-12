@@ -1,6 +1,6 @@
 @extends('admin.layout')
 
-@section('title', 'Affiliate Management')
+@section('title', __('Affiliate Management'))
 
 @section('content')
 <div class="page-header">
@@ -60,7 +60,7 @@
                         <th>{{ __('Full Name') }}</th>
                         <th>{{ __('Bank Name') }}</th>
                         <th>{{ __('Pending') }}</th>
-                        <th>{{ __('نسبة') }}</th>
+                        <th>{{ __('Commission Rate') }}</th>
                         <th>{{ __('Start Date') }}</th> <!-- New column -->
                         <th>{{ __('To Date') }}</th> <!-- New column -->
                         <th>{{ __('Account Number') }}</th>
@@ -85,7 +85,7 @@
                                 </span>
                             </td>
                             <td class="{{ $affiliate->pending_amount > 0 ? 'text-danger fw-bold' : '' }}">
-                                {{ number_format($affiliate->pending_amount, 2) }} ريال
+                                {{ number_format($affiliate->pending_amount, 2) }} {{ __('SAR') }}
                             </td>
                             <td>{{ number_format($affiliate->commission_percentage * 100, 2) }}%</td>
                             <td>
@@ -112,14 +112,14 @@
                                 @php
                                     $status = strtolower($affiliate->request_status);
                                     $statusLabels = [
-                                        'pending' => 'Pending',
-                                        'approved' => 'Approved',
-                                        'rejected' => 'Rejected'
+                                        'pending' => __('Pending'),
+                                        'approved' => __('Approved'),
+                                        'rejected' => __('Rejected'),
                                     ];
                                 @endphp
                                 <span class="badge badge-{{ $status == 'approved' ? 'success' : ($status == 'rejected' ? 'danger' : 'warning') }}"
                                     style="font-size: 0.65rem; padding: 0.25rem 0.5rem;">
-                                    {{ __($statusLabels[$status] ?? ucfirst($status)) }}
+                                    {{ $statusLabels[$status] ?? ucfirst($status) }}
                                 </span>
                             </td>
                             <td>
@@ -139,12 +139,12 @@
                                 <a href="{{ route('admin.affiliates.paymentHistory', $affiliate->id) }}" class="btn btn-xs btn-info py-1 px-2" style="font-size: 0.65rem;">{{ __('View Payments') }}</a>
                                 <!-- Edit Commission -->
                                 <button type="button" class="btn btn-xs btn-warning" onclick="openEditCommissionModal(this)"
-                                    data-toggle="modal" data-target="#editCommissionModal" data-user-id="{{ $affiliate->user_id }}">{{ __('تعديل نسبة') }}</button>
+                                    data-toggle="modal" data-target="#editCommissionModal" data-user-id="{{ $affiliate->user_id }}">{{ __('Edit Commission Rate') }}</button>
                                 <!-- Edit Dates -->
                                 <button type="button" class="btn btn-xs btn-primary" onclick="openEditDateModal(this)"
                                     data-toggle="modal" data-target="#edit_date_Modal" data-user-id="{{ $affiliate->user_id }}"
                                     data-start-date="{{ $affiliate->start_date_value ? $affiliate->start_date_value->format('Y-m-d') : '' }}"
-                                    data-to-date="{{ $affiliate->to_date_value ? $affiliate->to_date_value->format('Y-m-d') : '' }}">{{ __('تعديل المدة') }}</button>
+                                    data-to-date="{{ $affiliate->to_date_value ? $affiliate->to_date_value->format('Y-m-d') : '' }}">{{ __('Edit Duration') }}</button>
                             </td>
                         </tr>
                     @endforeach
@@ -159,8 +159,8 @@
   <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
           <div class="modal-header">
-              <h5 class="modal-title" id="editCommissionModalTitle">Edit Commission</h5>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <h5 class="modal-title" id="editCommissionModalTitle">{{ __('Edit Commission') }}</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="{{ __('Close') }}">
                   <span aria-hidden="true">&times;</span>
               </button>
           </div>
@@ -170,14 +170,14 @@
                   <input type="hidden" name="user_id" id="modal_user_id">
 
                   <div class="form-group">
-                      <label for="commission_value">Commission Value</label>
+                      <label for="commission_value">{{ __('Commission Value') }}</label>
                       <input type="number" name="commission_value" class="form-control" id="modal_commission_value" step="0.01" required>
                   </div>
               </form>
           </div>
           <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
-              <button type="submit" form="editCommissionForm" class="btn btn-primary">Save changes</button>
+              <button type="submit" form="editCommissionForm" class="btn btn-primary">{{ __('Save changes') }}</button>
           </div>
       </div>
   </div>
@@ -188,8 +188,8 @@
   <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
           <div class="modal-header">
-              <h5 class="modal-title" id="edit_date_ModalTitle">Edit date</h5>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <h5 class="modal-title" id="edit_date_ModalTitle">{{ __('Edit date') }}</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="{{ __('Close') }}">
                   <span aria-hidden="true">&times;</span>
               </button>
           </div>
@@ -199,18 +199,18 @@
                   <input type="hidden" name="user_id" id="editDateUserId">
 
                   <div class="form-group">
-                      <label for="date_value">Start date Value</label>
+                      <label for="date_value">{{ __('Start date Value') }}</label>
                       <input type="date" name="start_date_value" class="form-control" id="start_date_value" required>
                   </div>
                   <div class="form-group">
-                      <label for="date_value">To date Value</label>
+                      <label for="date_value">{{ __('To date Value') }}</label>
                       <input type="date" name="to_date_value" class="form-control" id="to_date_value" required>
                   </div>
               </form>
           </div>
           <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
-              <button type="submit" form="edit_date_Form" class="btn btn-primary">Save changes</button>
+              <button type="submit" form="edit_date_Form" class="btn btn-primary">{{ __('Save changes') }}</button>
           </div>
       </div>
   </div>

@@ -1,8 +1,17 @@
 @extends('admin.layout')
 
 @section('content')
+@php
+    $domainType = request()->input('type');
+    $domainPageTitles = [
+        'pending' => __('Pending Custom Domains'),
+        'connected' => __('Connected Custom Domains'),
+        'rejected' => __('Rejected Custom Domains'),
+    ];
+    $domainPageTitle = empty($domainType) ? __('All Custom Domains') : ($domainPageTitles[$domainType] ?? __('All Custom Domains'));
+@endphp
 <div class="page-header">
-    <h4 class="page-title">{{empty(request()->input('type')) ? 'All' : ucfirst(request()->input('type'))}} Custom Domains</h4>
+    <h4 class="page-title">{{ $domainPageTitle }}</h4>
     <ul class="breadcrumbs">
         <li class="nav-home">
             <a href="{{route('admin.dashboard')}}">
@@ -19,7 +28,7 @@
             <i class="flaticon-right-arrow"></i>
         </li>
         <li class="nav-item">
-            <a href="#">{{empty(request()->input('type')) ? __('All') : ucfirst(request()->input('type'))}} {{__('Requests')}}</a>
+            <a href="#">{{ $domainPageTitle }}</a>
         </li>
     </ul>
 </div>
@@ -92,9 +101,9 @@
                                         </td>
                                         <td>
                                             @if ($rcDomain->ssl)
-                                                <span class="badge badge-success">Enabled</span>
+                                                <span class="badge badge-success">{{ __('Enabled') }}</span>
                                             @else
-                                                <span class="badge badge-secondary">Disabled</span>
+                                                <span class="badge badge-secondary">{{ __('Disabled') }}</span>
                                             @endif
                                         </td>
                                         <td>
@@ -150,7 +159,7 @@
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title" id="exampleModalLongTitle">{{__('Send Mail')}}</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="{{ __('Close') }}">
                             <span aria-hidden="true">&times;</span>
                             </button>
                         </div>

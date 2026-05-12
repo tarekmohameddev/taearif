@@ -80,7 +80,7 @@
                     <td>
                         @switch($t->type)
 
-                        @case('pending') <span class="badge badge-info">{{ __('pending') }}</span> @break
+                        @case('pending') <span class="badge badge-info">{{ __('Pending') }}</span> @break
                         @default <span class="badge badge-success">{{ __('Collected') }}</span>
 
                         @endswitch
@@ -114,7 +114,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">{{ __('Approve All Pending') }}</h5>
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="{{ __('Close') }}">&times;</button>
                 </div>
 
                 <div class="modal-body">

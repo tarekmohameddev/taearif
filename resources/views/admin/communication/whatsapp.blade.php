@@ -2,7 +2,7 @@
 
 @section('content')
   <div class="page-header">
-    <h4 class="page-title">واتس اب</h4>
+    <h4 class="page-title">{{ __('WhatsApp') }}</h4>
     <ul class="breadcrumbs">
       <li class="nav-home">
         <a href="{{route('admin.dashboard')}}">
@@ -13,13 +13,13 @@
         <i class="flaticon-right-arrow"></i>
       </li>
       <li class="nav-item">
-        <a href="#">التواصل</a>
+        <a href="#">{{ __('Communication') }}</a>
       </li>
       <li class="separator">
         <i class="flaticon-right-arrow"></i>
       </li>
       <li class="nav-item">
-        <a href="#">واتس اب</a>
+        <a href="#">{{ __('WhatsApp') }}</a>
       </li>
     </ul>
   </div>
@@ -35,11 +35,11 @@
               <div class="col-md-8">
                 <h5 class="mb-2">
                   <i class="fas fa-power-off"></i>
-                  <strong>التحكم الرئيسي في إشعارات واتس اب</strong>
+                  <strong>{{ __('Master control for WhatsApp notifications') }}</strong>
                 </h5>
                 <p class="mb-0 text-muted">
                   <i class="fas fa-info-circle"></i>
-                  استخدم هذا الزر للتحكم في جميع رسائل واتس اب دفعة واحدة (رسائل الترحيب، انتهاء الباقة، إعادة تعيين كلمة المرور، إلخ)
+                  {{ __('Use this switch to control all WhatsApp messages at once (welcome messages, package expiration, password reset, etc.)') }}
                 </p>
               </div>
               <div class="col-md-4 text-right">
@@ -51,8 +51,8 @@
                     <label for="whatsapp_notifications_enabled" class="toggle-label">
                       <span class="toggle-slider"></span>
                       <span class="toggle-text">
-                        <span class="toggle-on">تفعيل الكل</span>
-                        <span class="toggle-off">إيقاف الكل</span>
+                        <span class="toggle-on">{{ __('Enable All') }}</span>
+                        <span class="toggle-off">{{ __('Disable All') }}</span>
                       </span>
                     </label>
                   </div>
@@ -86,7 +86,7 @@
               <i class="fas fa-hand-holding-heart"></i>
             </div>
             <div class="tab-text-content">
-                <span class="tab-label">رسالة الترحيب</span>
+                <span class="tab-label">{{ __('Welcome Message') }}</span>
                 <span class="tab-header-api"></span>
             </div>
             <div class="active-indicator"></div>
@@ -98,7 +98,7 @@
               <i class="fas fa-hourglass-half"></i>
             </div>
             <div class="tab-text-content">
-                <span class="tab-label">اشعار قبل انتهاء الباقة</span>
+                <span class="tab-label">{{ __('Pre-expiration package notice') }}</span>
                 <span class="tab-header-api"></span>
             </div>
             <div class="active-indicator"></div>
@@ -110,7 +110,7 @@
               <i class="fas fa-calendar-times"></i>
             </div>
             <div class="tab-text-content">
-                <span class="tab-label">إشعار انتهاء الباقة</span>
+                <span class="tab-label">{{ __('Package expiration notice') }}</span>
                 <span class="tab-header-api"></span>
             </div>
             <div class="active-indicator"></div>
@@ -122,7 +122,7 @@
               <i class="fas fa-key"></i>
             </div>
             <div class="tab-text-content">
-                <span class="tab-label">إعادة تعيين كلمة المرور</span>
+                <span class="tab-label">{{ __('Password Reset') }}</span>
                 <span class="tab-header-api"></span>
             </div>
             <div class="active-indicator"></div>
@@ -134,7 +134,7 @@
               <i class="fas fa-shield-alt"></i>
             </div>
             <div class="tab-text-content">
-                <span class="tab-label">رمز التسجيل</span>
+                <span class="tab-label">{{ __('Registration OTP') }}</span>
                 <span class="tab-header-api"></span>
             </div>
             <div class="active-indicator"></div>
@@ -148,7 +148,7 @@
 
       <div class="card">
         <div class="card-header">
-          <div class="card-title" id="tab-title">إعدادات Meta & Evolution API</div>
+          <div class="card-title" id="tab-title">{{ __('Meta & Evolution API Settings') }}</div>
         </div>
         <div class="card-body pt-5 pb-4">
           <div class="row">
@@ -166,12 +166,12 @@
                           <i class="fab fa-facebook-messenger fa-3x text-primary"></i>
                         </div>
                         <h5 class="card-title">Meta Cloud API</h5>
-                        <p class="card-text">استخدم واجهة برمجة تطبيقات Meta الرسمية لإرسال رسائل واتس اب</p>
+                        <p class="card-text">{{ __('Use the official Meta API to send WhatsApp messages') }}</p>
                         <div class="service-status">
                           @if(($abs->whatsapp_service ?? '') == 'meta_cloud')
-                            <span class="badge badge-success">مفعل</span>
+                            <span class="badge badge-success">{{ __('Enabled') }}</span>
                           @else
-                            <span class="badge badge-secondary">غير مفعل</span>
+                            <span class="badge badge-secondary">{{ __('Disabled') }}</span>
                           @endif
                         </div>
                       </div>
@@ -185,12 +185,12 @@
                           <i class="fab fa-whatsapp fa-3x text-success"></i>
                         </div>
                         <h5 class="card-title">Evolution API</h5>
-                        <p class="card-text">استخدم Evolution API لإرسال رسائل واتس اب من خلال خادم محلي</p>
+                        <p class="card-text">{{ __('Use Evolution API to send WhatsApp messages through a local server') }}</p>
                         <div class="service-status">
                           @if(($abs->whatsapp_service ?? '') == 'evolution_api')
-                            <span class="badge badge-success">مفعل</span>
+                            <span class="badge badge-success">{{ __('Enabled') }}</span>
                           @else
-                            <span class="badge badge-secondary">غير مفعل</span>
+                            <span class="badge badge-secondary">{{ __('Disabled') }}</span>
                           @endif
                         </div>
                       </div>
@@ -207,8 +207,8 @@
                         <div class="form-group">
                           <label for="meta_access_token"><strong>Access Token **</strong></label>
                           <input type="text" class="form-control" id="meta_access_token" name="meta_access_token"
-                                 value="{{$abs->meta_access_token ?? ''}}" placeholder="أدخل Meta Access Token">
-                          <p class="text-muted">يمكن الحصول عليه من Meta for Developers</p>
+                                 value="{{$abs->meta_access_token ?? ''}}" placeholder="{{ __('Enter Meta Access Token') }}">
+                          <p class="text-muted">{{ __('Available from Meta for Developers') }}</p>
                           @error('meta_access_token')
                             <p class="text-danger">{{ $message }}</p>
                           @enderror
@@ -244,13 +244,13 @@
                         <div class="form-group">
                           <label for="meta_template_name"><strong>Template Name</strong></label>
                           <select class="form-control" id="meta_template_name" name="meta_template_name" onchange="console.log('Template changed to:', this.value); saveTemplateSelection()">
-                            <option value="">اختر قالب من Facebook أو اتركه فارغاً للرسالة العادية</option>
+                            <option value="">{{ __('Select a Facebook template or leave blank for a plain message') }}</option>
                           </select>
-                          <p class="text-muted">سيتم جلب القوالب من Facebook Meta API تلقائياً</p>
+                          <p class="text-muted">{{ __('Templates will be fetched automatically from the Facebook Meta API') }}</p>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i>
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplates()">
-                              <i class="fas fa-sync"></i> تحديث القوالب من Facebook
+                              <i class="fas fa-sync"></i> {{ __('Refresh templates from Facebook') }}
                             </button>
                           </small>
                           @error('meta_template_name')
@@ -275,13 +275,13 @@
                       <div class="col-lg-12">
                         <div class="form-group">
                           <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> حفظ إعدادات Meta Cloud API
+                            <i class="fas fa-save"></i> {{ __('Save Meta Cloud API settings') }}
                           </button>
                           <button type="button" class="btn btn-info ml-2" onclick="checkConfiguration()">
-                            <i class="fas fa-check-circle"></i> فحص الإعدادات
+                            <i class="fas fa-check-circle"></i> {{ __('Check configuration') }}
                           </button>
                           <button type="button" class="btn btn-warning ml-2" onclick="testWhatsApp()">
-                            <i class="fas fa-paper-plane"></i> اختبار الإرسال
+                            <i class="fas fa-paper-plane"></i> {{ __('Test sending') }}
                           </button>
                         </div>
                       </div>
@@ -299,7 +299,7 @@
                           <label for="evolution_api_url"><strong>API URL **</strong></label>
                           <input type="url" class="form-control" id="evolution_api_url" name="evolution_api_url"
                                  value="{{$abs->evolution_api_url ?? ''}}" placeholder="https://your-evolution-api.com">
-                          <p class="text-muted">رابط Evolution API الخاص بك</p>
+                          <p class="text-muted">{{ __('Your Evolution API URL') }}</p>
                           @error('evolution_api_url')
                             <p class="text-danger">{{ $message }}</p>
                           @enderror
@@ -312,7 +312,7 @@
                         <div class="form-group">
                           <label for="evolution_api_key"><strong>API Key **</strong></label>
                           <input type="text" class="form-control" id="evolution_api_key" name="evolution_api_key"
-                                 value="{{$abs->evolution_api_key ?? ''}}" placeholder="أدخل API Key">
+                                 value="{{$abs->evolution_api_key ?? ''}}" placeholder="{{ __('Enter API Key') }}">
                           @error('evolution_api_key')
                             <p class="text-danger">{{ $message }}</p>
                           @enderror
@@ -337,13 +337,13 @@
                       <div class="col-lg-12">
                         <div class="form-group">
                           <button type="submit" class="btn btn-success">
-                            <i class="fas fa-save"></i> حفظ إعدادات Evolution API
+                            <i class="fas fa-save"></i> {{ __('Save Evolution API settings') }}
                           </button>
                           <button type="button" class="btn btn-info ml-2" onclick="checkConfiguration()">
-                            <i class="fas fa-check-circle"></i> فحص الإعدادات
+                            <i class="fas fa-check-circle"></i> {{ __('Check configuration') }}
                           </button>
                           <button type="button" class="btn btn-warning ml-2" onclick="testWhatsApp()">
-                            <i class="fas fa-paper-plane"></i> اختبار الإرسال
+                            <i class="fas fa-paper-plane"></i> {{ __('Test sending') }}
                           </button>
                         </div>
                       </div>
@@ -361,7 +361,7 @@
                     <div class="col-lg-12">
                       <div class="form-group">
                         <label for="welcome_message_enabled">
-                          <strong>تفعيل رسالة الترحيب</strong>
+                          <strong>{{ __('Enable welcome message') }}</strong>
                           <span class="api-indicator" style="font-size: 12px; margin-left: 10px;"></span>
                         </label>
                         <div class="toggle-switch-container">
@@ -376,7 +376,7 @@
                               </span>
                             </label>
                           </div>
-                          <span class="toggle-description">إرسال رسالة ترحيب عند التسجيل لأول مرة</span>
+                          <span class="toggle-description">{{ __('Send a welcome message on first registration') }}</span>
                         </div>
                       </div>
                     </div>
@@ -385,12 +385,12 @@
                   <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
-                        <label for="welcome_message_text"><strong>نص احتياطي (Fallback) لرسالة الترحيب</strong></label>
+                        <label for="welcome_message_text"><strong>{{ __('Fallback text for welcome message') }}</strong></label>
                         <textarea class="form-control" id="welcome_message_text" name="welcome_message_text" rows="4"
                                   placeholder=" مرحباً بك  في منصة تعاريف ! شكراً لك على التسجيل...">{{$abs->welcome_message_text ?? ''}}</textarea>
-                        <p class="text-muted">هذا النص يُستخدم فقط كخطة بديلة عند عدم استخدام/فشل قالب Meta. عند اختيار قالب Meta مع خدمة Meta Cloud، محتوى الرسالة يأتي من القالب المعتمد في Meta.</p>
+                        <p class="text-muted">{{ __('This text is only used as a fallback when a Meta template is not used or fails. When a Meta template is selected with Meta Cloud, message content comes from the approved Meta template.') }}</p>
                         <button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="forceUpdateTextAreas()">
-                          <i class="fas fa-sync"></i> تحديث النص حسب API المحدد
+                          <i class="fas fa-sync"></i> {{ __('Update text for selected API') }}
                         </button>
                         @error('welcome_message_text')
                           <p class="text-danger">{{ $message }}</p>
@@ -402,19 +402,19 @@
                   <div class="row">
                     <div class="col-lg-6">
                       <div class="form-group">
-                        <label for="welcome_message_delay"><strong>تأخير الإرسال (بالثواني)</strong></label>
+                        <label for="welcome_message_delay"><strong>{{ __('Send delay (seconds)') }}</strong></label>
                         <input type="number" class="form-control" id="welcome_message_delay" name="welcome_message_delay"
                                value="{{$abs->welcome_message_delay ?? 5}}" min="0" max="300">
-                        <p class="text-muted">تأخير إرسال الرسالة بعد التسجيل</p>
+                        <p class="text-muted">{{ __('Delay sending the message after registration') }}</p>
                       </div>
                     </div>
                     <div class="col-lg-6">
                         <div class="form-group">
-                          <label for="welcome_message_template"><strong>اسم القالب <span class="template-api-label">(Meta API)</span></strong></label>
+                          <label for="welcome_message_template"><strong>{{ __('Template Name') }} <span class="template-api-label">(Meta API)</span></strong></label>
                           <select class="form-control" id="welcome_message_template" name="welcome_message_template">
-                            <option value="">اختر قالب أو اتركه فارغاً</option>
+                            <option value="">{{ __('Select a template or leave blank') }}</option>
                             <optgroup label="Meta API Templates" class="meta-api-optgroup">
-                              <option value="" disabled>جاري تحميل القوالب من Facebook...</option>
+                              <option value="" disabled>{{ __('Loading templates from Facebook...') }}</option>
                             </optgroup>
                             <optgroup label="Local Templates" class="local-templates-optgroup">
                               @php
@@ -431,18 +431,18 @@
                               @endforeach
                             </optgroup>
                           </select>
-                          <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
+                          <p class="text-muted template-description">{{ __('Select a template from Meta API or locally saved templates') }}</p>
                           <div class="alert alert-info mt-2 mb-0">
-                            عند اختيار قالب مع Meta Cloud، نص الرسالة يُدار من Meta (وليس من مربع النص).
+                            {{ __('When a template is selected with Meta Cloud, message text is managed by Meta (not the text box).') }}
                           </div>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i>
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForWelcome(true)">
-                              <i class="fas fa-sync"></i> تحديث قوالب Meta API
+                              <i class="fas fa-sync"></i> {{ __('Refresh Meta API templates') }}
                             </button>
-                            <small class="text-muted ml-2">(يتم التحميل تلقائياً ويتم حفظه لمدة 24 ساعة)</small>
+                            <small class="text-muted ml-2">{{ __('(Loaded automatically and cached for 24 hours)') }}</small>
                             <a href="{{route('admin.whatsapp-templates.create')}}?type=welcome" target="_blank" class="btn btn-sm btn-outline-success ml-2 create-local-template-btn">
-                              <i class="fas fa-plus"></i> إنشاء قالب محلي
+                              <i class="fas fa-plus"></i> {{ __('Create local template') }}
                             </a>
                           </small>
                         </div>
@@ -453,10 +453,10 @@
                     <div class="col-lg-12">
                       <div class="form-group">
                         <button type="submit" class="btn btn-primary">
-                          <i class="fas fa-save"></i> حفظ إعدادات رسالة الترحيب
+                          <i class="fas fa-save"></i> {{ __('Save welcome message settings') }}
                         </button>
                         <button type="button" class="btn btn-warning ml-2" onclick="testWelcomeMessage()">
-                          <i class="fas fa-paper-plane"></i> اختبار الرسالة
+                          <i class="fas fa-paper-plane"></i> {{ __('Test message') }}
                         </button>
                       </div>
                     </div>
@@ -473,7 +473,7 @@
                     <div class="col-lg-12">
                       <div class="form-group">
                         <label for="subscription_expiration_enabled">
-                          <strong>تفعيل رسالة انتهاء الباقة</strong>
+                          <strong>{{ __('Enable package expiration message') }}</strong>
                           <span class="api-indicator" style="font-size: 12px; margin-left: 10px;"></span>
                         </label>
                         <div class="toggle-switch-container">
@@ -488,7 +488,7 @@
                               </span>
                             </label>
                           </div>
-                          <span class="toggle-description">إرسال رسالة تنبيه قبل انتهاء الباقة</span>
+                          <span class="toggle-description">{{ __('Send an alert before the package expires') }}</span>
                         </div>
                       </div>
                     </div>
@@ -497,12 +497,12 @@
                   <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
-                        <label for="subscription_expiration_text"><strong>نص احتياطي (Fallback) لرسالة انتهاء الباقة</strong></label>
+                        <label for="subscription_expiration_text"><strong>{{ __('Fallback text for package expiration message') }}</strong></label>
                         <textarea class="form-control" id="subscription_expiration_text" name="subscription_expiration_text" rows="4"
                                   placeholder="تنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً...">{{$abs->subscription_expiration_text ?? 'تنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً.'}}</textarea>
-                        <p class="text-muted">هذا النص يُستخدم فقط كخطة بديلة عند عدم استخدام/فشل قالب Meta. عند اختيار قالب Meta مع خدمة Meta Cloud، محتوى الرسالة يأتي من القالب المعتمد في Meta.</p>
+                        <p class="text-muted">{{ __('This text is only used as a fallback when a Meta template is not used or fails. When a Meta template is selected with Meta Cloud, message content comes from the approved Meta template.') }}</p>
                         <button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="forceUpdateTextAreas()">
-                          <i class="fas fa-sync"></i> تحديث النص حسب API المحدد
+                          <i class="fas fa-sync"></i> {{ __('Update text for selected API') }}
                         </button>
                         @error('subscription_expiration_text')
                           <p class="text-danger">{{ $message }}</p>
@@ -514,19 +514,19 @@
                   <div class="row">
                     <div class="col-lg-6">
                       <div class="form-group">
-                        <label for="subscription_expiration_days_before"><strong>عدد الأيام قبل الانتهاء</strong></label>
+                        <label for="subscription_expiration_days_before"><strong>{{ __('Days before expiration') }}</strong></label>
                         <input type="number" class="form-control" id="subscription_expiration_days_before" name="subscription_expiration_days_before"
                                value="{{$abs->subscription_expiration_days_before ?? 3}}" min="1" max="30">
-                        <p class="text-muted">إرسال التنبيه قبل انتهاء الباقة بـ</p>
+                        <p class="text-muted">{{ __('Send the alert this many days before package expiration') }}</p>
                       </div>
                     </div>
                     <div class="col-lg-6">
                         <div class="form-group">
-                          <label for="subscription_expiration_template"><strong>اسم القالب <span class="template-api-label">(Meta API)</span></strong></label>
+                          <label for="subscription_expiration_template"><strong>{{ __('Template Name') }} <span class="template-api-label">(Meta API)</span></strong></label>
                           <select class="form-control" id="subscription_expiration_template" name="subscription_expiration_template">
-                            <option value="">اختر قالب أو اتركه فارغاً</option>
+                            <option value="">{{ __('Select a template or leave blank') }}</option>
                             <optgroup label="Meta API Templates" class="meta-api-optgroup">
-                              <option value="" disabled>جاري تحميل القوالب من Facebook...</option>
+                              <option value="" disabled>{{ __('Loading templates from Facebook...') }}</option>
                             </optgroup>
                             <optgroup label="Local Templates" class="local-templates-optgroup">
                               @php
@@ -543,18 +543,18 @@
                               @endforeach
                             </optgroup>
                           </select>
-                          <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
+                          <p class="text-muted template-description">{{ __('Select a template from Meta API or locally saved templates') }}</p>
                           <div class="alert alert-info mt-2 mb-0">
-                            عند اختيار قالب مع Meta Cloud، نص الرسالة يُدار من Meta (وليس من مربع النص).
+                            {{ __('When a template is selected with Meta Cloud, message text is managed by Meta (not the text box).') }}
                           </div>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i>
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForSubscription(true)">
-                              <i class="fas fa-sync"></i> تحديث قوالب Meta API
+                              <i class="fas fa-sync"></i> {{ __('Refresh Meta API templates') }}
                             </button>
-                            <small class="text-muted ml-2">(يتم التحميل تلقائياً ويتم حفظه لمدة 24 ساعة)</small>
+                            <small class="text-muted ml-2">{{ __('(Loaded automatically and cached for 24 hours)') }}</small>
                             <a href="{{route('admin.whatsapp-templates.create')}}?type=subscription_expiration" target="_blank" class="btn btn-sm btn-outline-success ml-2 create-local-template-btn">
-                              <i class="fas fa-plus"></i> إنشاء قالب محلي
+                              <i class="fas fa-plus"></i> {{ __('Create local template') }}
                             </a>
                           </small>
                         </div>
@@ -564,10 +564,10 @@
                   <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
-                        <label for="subscription_expiration_send_time"><strong>وقت إرسال التنبيه</strong></label>
+                        <label for="subscription_expiration_send_time"><strong>{{ __('Alert send time') }}</strong></label>
                         <input type="time" class="form-control" id="subscription_expiration_send_time" name="subscription_expiration_send_time"
                                value="{{$abs->subscription_expiration_send_time ?? '09:00'}}">
-                        <p class="text-muted">الوقت اليومي لإرسال تنبيهات انتهاء الباقة</p>
+                        <p class="text-muted">{{ __('Daily time to send package expiration alerts') }}</p>
                       </div>
                     </div>
                   </div>
@@ -576,10 +576,10 @@
                     <div class="col-lg-12">
                       <div class="form-group">
                         <button type="submit" class="btn btn-primary">
-                          <i class="fas fa-save"></i> حفظ إعدادات رسالة انتهاء الباقة
+                          <i class="fas fa-save"></i> {{ __('Save package expiration message settings') }}
                         </button>
                         <button type="button" class="btn btn-warning ml-2" onclick="testSubscriptionExpiration()">
-                          <i class="fas fa-paper-plane"></i> اختبار الرسالة
+                          <i class="fas fa-paper-plane"></i> {{ __('Test message') }}
                         </button>
                       </div>
                     </div>
@@ -596,7 +596,7 @@
                     <div class="col-lg-12">
                       <div class="form-group">
                         <label for="subscription_expired_enabled">
-                          <strong>تفعيل إشعار انتهاء الباقة</strong>
+                          <strong>{{ __('Enable package expired notification') }}</strong>
                           <span class="api-indicator" style="font-size: 12px; margin-left: 10px;"></span>
                         </label>
                         <div class="toggle-switch-container">
@@ -611,7 +611,7 @@
                               </span>
                             </label>
                           </div>
-                          <span class="toggle-description">إرسال إشعار عند انتهاء الباقة فعلياً</span>
+                          <span class="toggle-description">{{ __('Send a notification when the package actually expires') }}</span>
                         </div>
                       </div>
                     </div>
@@ -620,15 +620,15 @@
                   <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
-                        <label for="subscription_expired_text"><strong>نص احتياطي (Fallback) لإشعار انتهاء الباقة</strong></label>
+                        <label for="subscription_expired_text"><strong>{{ __('Fallback text for package expired notification') }}</strong></label>
                         <textarea class="form-control" id="subscription_expired_text" name="subscription_expired_text" rows="4" placeholder="مرحبا {name}
 انتهى اشتراكك وتم نقلك إلى الباقة المجانية.
 يمكنك الترقية في أي وقت.">{{trim($abs->subscription_expired_text ?? 'مرحبا {name}
 انتهى اشتراكك وتم نقلك إلى الباقة المجانية.
 يمكنك الترقية في أي وقت.')}}</textarea>
-                        <p class="text-muted">هذا النص يُستخدم فقط كخطة بديلة عند عدم استخدام/فشل قالب Meta. عند اختيار قالب Meta مع خدمة Meta Cloud، محتوى الرسالة يأتي من القالب المعتمد في Meta.</p>
+                        <p class="text-muted">{{ __('This text is only used as a fallback when a Meta template is not used or fails. When a Meta template is selected with Meta Cloud, message content comes from the approved Meta template.') }}</p>
                         <button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="forceUpdateTextAreas()">
-                          <i class="fas fa-sync"></i> تحديث النص حسب API المحدد
+                          <i class="fas fa-sync"></i> {{ __('Update text for selected API') }}
                         </button>
                         @error('subscription_expired_text')
                           <p class="text-danger">{{ $message }}</p>
@@ -640,19 +640,19 @@
                   <div class="row">
                   <div class="col-lg-6">
                       <div class="form-group">
-                        <label for="subscription_expired_send_time"><strong>وقت إرسال الإشعار</strong></label>
+                        <label for="subscription_expired_send_time"><strong>{{ __('Notification send time') }}</strong></label>
                         <input type="time" class="form-control" id="subscription_expired_send_time" name="subscription_expired_send_time"
                                value="{{$abs->subscription_expired_send_time ?? '09:00'}}">
-                        <p class="text-muted">الوقت اليومي لإرسال إشعارات انتهاء الباقة</p>
+                        <p class="text-muted">{{ __('Daily time to send package expired notifications') }}</p>
                       </div>
                     </div>
                     <div class="col-lg-6">
                         <div class="form-group">
-                          <label for="subscription_expired_template"><strong>اسم القالب <span class="template-api-label">(Meta API)</span></strong></label>
+                          <label for="subscription_expired_template"><strong>{{ __('Template Name') }} <span class="template-api-label">(Meta API)</span></strong></label>
                           <select class="form-control" id="subscription_expired_template" name="subscription_expired_template">
-                            <option value="">اختر قالب أو اتركه فارغاً</option>
+                            <option value="">{{ __('Select a template or leave blank') }}</option>
                             <optgroup label="Meta API Templates" class="meta-api-optgroup">
-                              <option value="" disabled>جاري تحميل القوالب من Facebook...</option>
+                              <option value="" disabled>{{ __('Loading templates from Facebook...') }}</option>
                             </optgroup>
                             <optgroup label="Local Templates" class="local-templates-optgroup">
                               @php
@@ -669,18 +669,18 @@
                               @endforeach
                             </optgroup>
                           </select>
-                          <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
+                          <p class="text-muted template-description">{{ __('Select a template from Meta API or locally saved templates') }}</p>
                           <div class="alert alert-info mt-2 mb-0">
-                            عند اختيار قالب مع Meta Cloud، نص الرسالة يُدار من Meta (وليس من مربع النص).
+                            {{ __('When a template is selected with Meta Cloud, message text is managed by Meta (not the text box).') }}
                           </div>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i>
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForExpired(true)">
-                              <i class="fas fa-sync"></i> تحديث قوالب Meta API
+                              <i class="fas fa-sync"></i> {{ __('Refresh Meta API templates') }}
                             </button>
-                            <small class="text-muted ml-2">(يتم التحميل تلقائياً ويتم حفظه لمدة 24 ساعة)</small>
+                            <small class="text-muted ml-2">{{ __('(Loaded automatically and cached for 24 hours)') }}</small>
                             <a href="{{route('admin.whatsapp-templates.create')}}?type=subscription_expired" target="_blank" class="btn btn-sm btn-outline-success ml-2 create-local-template-btn">
-                              <i class="fas fa-plus"></i> إنشاء قالب محلي
+                              <i class="fas fa-plus"></i> {{ __('Create local template') }}
                             </a>
                           </small>
                         </div>
@@ -692,10 +692,10 @@
                     <div class="col-lg-12">
                       <div class="form-group">
                         <button type="submit" class="btn btn-primary">
-                          <i class="fas fa-save"></i> حفظ إعدادات إشعار انتهاء الباقة
+                          <i class="fas fa-save"></i> {{ __('Save package expired notification settings') }}
                         </button>
                         <button type="button" class="btn btn-warning ml-2" onclick="testSubscriptionExpired()">
-                          <i class="fas fa-paper-plane"></i> اختبار الإشعار
+                          <i class="fas fa-paper-plane"></i> {{ __('Test notification') }}
                         </button>
                       </div>
                     </div>
@@ -721,7 +721,7 @@
                     <div class="col-lg-12">
                       <div class="form-group">
                         <label for="password_reset_enabled">
-                          <strong>تفعيل رسالة إعادة تعيين كلمة المرور</strong>
+                          <strong>{{ __('Enable password reset message') }}</strong>
                           <span class="api-indicator" style="font-size: 12px; margin-left: 10px;"></span>
                         </label>
                         <div class="toggle-switch-container">
@@ -736,7 +736,7 @@
                               </span>
                             </label>
                           </div>
-                          <span class="toggle-description">إرسال رسالة إعادة تعيين كلمة المرور عبر واتس اب</span>
+                          <span class="toggle-description">{{ __('Send password reset messages via WhatsApp') }}</span>
                         </div>
                       </div>
                     </div>
@@ -745,22 +745,22 @@
                   <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
-                        <label for="password_reset_text"><strong>نص احتياطي (Fallback) لرسالة إعادة التعيين</strong></label>
+                        <label for="password_reset_text"><strong>{{ __('Fallback text for password reset message') }}</strong></label>
                         <textarea class="form-control" id="password_reset_text" name="password_reset_text" rows="4"
-                                  placeholder="رمز إعادة تعيين كلمة المرور: {code}
+                                  placeholder="{{ __('Password reset code: {code}
 
-هذا الرمز صالح لمدة 15 دقيقة.
+This code is valid for 15 minutes.
 
-أو يمكنك الضغط على الرابط التالي:
-{reset_url}?code={code}">{{trim($abs->password_reset_text ?? 'رمز إعادة تعيين كلمة المرور: {code}
+Or click the following link:
+{reset_url}?code={code}') }}">{{ trim($abs->password_reset_text ?? __('Password reset code: {code}
 
-هذا الرمز صالح لمدة 15 دقيقة.
+This code is valid for 15 minutes.
 
-أو يمكنك الضغط على الرابط التالي:
-{reset_url}?code={code}')}}</textarea>
-                        <p class="text-muted">هذا النص يُستخدم فقط كخطة بديلة عند عدم استخدام/فشل قالب Meta. عند اختيار قالب Meta مع خدمة Meta Cloud، محتوى الرسالة يأتي من القالب المعتمد في Meta.</p>
+Or click the following link:
+{reset_url}?code={code}')) }}</textarea>
+                        <p class="text-muted">{{ __('This text is only used as a fallback when a Meta template is not used or fails. When a Meta template is selected with Meta Cloud, message content comes from the approved Meta template.') }}</p>
                         <button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="forceUpdateTextAreas()">
-                          <i class="fas fa-sync"></i> تحديث النص حسب API المحدد
+                          <i class="fas fa-sync"></i> {{ __('Update text for selected API') }}
                         </button>
                         @error('password_reset_text')
                           <p class="text-danger">{{ $message }}</p>
@@ -772,11 +772,11 @@
                   <div class="row">
                     <div class="col-lg-12">
                         <div class="form-group">
-                          <label for="password_reset_template"><strong>اسم القالب <span class="template-api-label">(Meta API)</span></strong></label>
+                          <label for="password_reset_template"><strong>{{ __('Template Name') }} <span class="template-api-label">(Meta API)</span></strong></label>
                           <select class="form-control" id="password_reset_template" name="password_reset_template">
-                            <option value="">اختر قالب أو اتركه فارغاً</option>
+                            <option value="">{{ __('Select a template or leave blank') }}</option>
                             <optgroup label="Meta API Templates" class="meta-api-optgroup">
-                              <option value="" disabled>جاري تحميل القوالب من Facebook...</option>
+                              <option value="" disabled>{{ __('Loading templates from Facebook...') }}</option>
                             </optgroup>
                             <optgroup label="Local Templates" class="local-templates-optgroup">
                               @php
@@ -793,18 +793,18 @@
                               @endforeach
                             </optgroup>
                           </select>
-                          <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
+                          <p class="text-muted template-description">{{ __('Select a template from Meta API or locally saved templates') }}</p>
                           <div class="alert alert-info mt-2 mb-0">
-                            عند اختيار قالب مع Meta Cloud، نص الرسالة يُدار من Meta (وليس من مربع النص).
+                            {{ __('When a template is selected with Meta Cloud, message text is managed by Meta (not the text box).') }}
                           </div>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i>
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForPasswordReset(true)">
-                              <i class="fas fa-sync"></i> تحديث قوالب Meta API
+                              <i class="fas fa-sync"></i> {{ __('Refresh Meta API templates') }}
                             </button>
-                            <small class="text-muted ml-2">(يتم التحميل تلقائياً ويتم حفظه لمدة 24 ساعة)</small>
+                            <small class="text-muted ml-2">{{ __('(Loaded automatically and cached for 24 hours)') }}</small>
                             <a href="{{route('admin.whatsapp-templates.create')}}?type=password_reset" target="_blank" class="btn btn-sm btn-outline-success ml-2 create-local-template-btn">
-                              <i class="fas fa-plus"></i> إنشاء قالب محلي
+                              <i class="fas fa-plus"></i> {{ __('Create local template') }}
                             </a>
                           </small>
                         </div>
@@ -814,14 +814,14 @@
                   <div class="row">
                     <div class="col-lg-6">
                       <div class="form-group">
-                        <label for="password_reset_max_sends_per_hour"><strong>الحد الأقصى لإرسال reset password (لكل ساعة)</strong></label>
+                        <label for="password_reset_max_sends_per_hour"><strong>{{ __('Maximum password reset sends per hour') }}</strong></label>
                         <input type="number" class="form-control" id="password_reset_max_sends_per_hour" name="password_reset_max_sends_per_hour"
                                value="{{ $abs->password_reset_max_sends_per_hour ?? 5 }}" min="1" max="100">
-                        <p class="text-muted">مثال: 5 يعني يمكن إرسال كود إعادة التعيين حتى 5 مرات خلال ساعة لكل مستخدم.</p>
+                        <p class="text-muted">{{ __('Example: 5 means a reset code can be sent up to 5 times per hour per user.') }}</p>
                         <small class="text-info d-block">
                           <i class="fas fa-info-circle"></i>
-                          الحد الفعّال الحالي المطبق في الـ API:
-                          <strong>{{ (int) ($abs->password_reset_max_sends_per_hour ?? 5) }}</strong> / ساعة
+                          {{ __('Current effective limit applied in the API:') }}
+                          <strong>{{ (int) ($abs->password_reset_max_sends_per_hour ?? 5) }}</strong> / {{ __('hour') }}
                         </small>
                       </div>
                     </div>
@@ -831,10 +831,10 @@
                     <div class="col-lg-12">
                       <div class="form-group">
                         <button type="submit" class="btn btn-primary">
-                          <i class="fas fa-save"></i> حفظ إعدادات رسالة إعادة تعيين كلمة المرور
+                          <i class="fas fa-save"></i> {{ __('Save password reset message settings') }}
                         </button>
                         <button type="button" class="btn btn-warning ml-2" onclick="testPasswordReset()">
-                          <i class="fas fa-paper-plane"></i> اختبار الرسالة
+                          <i class="fas fa-paper-plane"></i> {{ __('Test message') }}
                         </button>
                       </div>
                     </div>
@@ -850,11 +850,11 @@
                   <div class="row">
                     <div class="col-lg-12">
                         <div class="form-group">
-                          <label for="registration_otp_template"><strong>اسم قالب رمز التسجيل <span class="template-api-label">(Meta API)</span></strong></label>
+                          <label for="registration_otp_template"><strong>{{ __('Registration OTP template name') }} <span class="template-api-label">(Meta API)</span></strong></label>
                           <select class="form-control" id="registration_otp_template" name="registration_otp_template">
-                            <option value="">اختر قالب أو اتركه فارغاً (نص عادي)</option>
+                            <option value="">{{ __('Select a template or leave blank (plain text)') }}</option>
                             <optgroup label="Meta API Templates" class="meta-api-optgroup">
-                              <option value="" disabled>جاري تحميل القوالب من Facebook...</option>
+                              <option value="" disabled>{{ __('Loading templates from Facebook...') }}</option>
                             </optgroup>
                             <optgroup label="Local Templates" class="local-templates-optgroup">
                               @php
@@ -871,15 +871,15 @@
                               @endforeach
                             </optgroup>
                           </select>
-                          <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً لرسائل رمز التسجيل</p>
+                          <p class="text-muted template-description">{{ __('Select a template from Meta API or locally saved templates for registration OTP messages') }}</p>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i>
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForRegistrationOtp(true)">
-                              <i class="fas fa-sync"></i> تحديث قوالب Meta API
+                              <i class="fas fa-sync"></i> {{ __('Refresh Meta API templates') }}
                             </button>
-                            <small class="text-muted ml-2">(يتم التحميل تلقائياً ويتم حفظه لمدة 24 ساعة)</small>
+                            <small class="text-muted ml-2">{{ __('(Loaded automatically and cached for 24 hours)') }}</small>
                             <a href="{{route('admin.whatsapp-templates.create')}}?type=registration_otp" target="_blank" class="btn btn-sm btn-outline-success ml-2 create-local-template-btn">
-                              <i class="fas fa-plus"></i> إنشاء قالب محلي
+                              <i class="fas fa-plus"></i> {{ __('Create local template') }}
                             </a>
                           </small>
                         </div>
@@ -889,14 +889,14 @@
                   <div class="row">
                     <div class="col-lg-6">
                       <div class="form-group">
-                        <label for="otp_max_sends_per_hour"><strong>الحد الأقصى لإرسال OTP (لكل ساعة)</strong></label>
+                        <label for="otp_max_sends_per_hour"><strong>{{ __('Maximum OTP sends per hour') }}</strong></label>
                         <input type="number" class="form-control" id="otp_max_sends_per_hour" name="otp_max_sends_per_hour"
                                value="{{ $abs->otp_max_sends_per_hour ?? 5 }}" min="1" max="100">
-                        <p class="text-muted">مثال: 10 يعني يمكن إرسال OTP حتى 10 مرات خلال ساعة لكل رقم.</p>
+                        <p class="text-muted">{{ __('Example: 10 means an OTP can be sent up to 10 times per hour per number.') }}</p>
                         <small class="text-info d-block">
                           <i class="fas fa-info-circle"></i>
-                          الحد الفعّال الحالي المطبق في الـ API:
-                          <strong>{{ (int) ($abs->otp_max_sends_per_hour ?? 5) }}</strong> / ساعة
+                          {{ __('Current effective limit applied in the API:') }}
+                          <strong>{{ (int) ($abs->otp_max_sends_per_hour ?? 5) }}</strong> / {{ __('hour') }}
                         </small>
                       </div>
                     </div>
@@ -906,10 +906,10 @@
                     <div class="col-lg-12">
                       <div class="form-group">
                         <button type="submit" class="btn btn-primary">
-                          <i class="fas fa-save"></i> حفظ إعدادات قالب رمز التسجيل
+                          <i class="fas fa-save"></i> {{ __('Save registration OTP template settings') }}
                         </button>
                         <button type="button" class="btn btn-warning ml-2" onclick="testRegistrationOtp()">
-                          <i class="fas fa-paper-plane"></i> اختبار الرسالة
+                          <i class="fas fa-paper-plane"></i> {{ __('Test message') }}
                         </button>
                       </div>
                     </div>
@@ -937,7 +937,7 @@
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="testModalLabel">اختبار إرسال رسالة واتس اب</h5>
+          <h5 class="modal-title" id="testModalLabel">{{ __('Test WhatsApp message sending') }}</h5>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
@@ -946,15 +946,15 @@
           @csrf
           <div class="modal-body">
             <div class="form-group">
-              <label for="test_phone"><strong>رقم الهاتف للاختبار **</strong></label>
+              <label for="test_phone"><strong>{{ __('Test phone number') }} **</strong></label>
               <input type="text" class="form-control" id="test_phone" name="test_phone"
                      placeholder="+966501234567" required>
-              <p class="text-muted">أدخل رقم الهاتف مع رمز الدولة لإرسال رسالة اختبار</p>
+              <p class="text-muted">{{ __('Enter a phone number with country code to send a test message') }}</p>
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">إلغاء</button>
-            <button type="submit" class="btn btn-primary">إرسال رسالة اختبار</button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Cancel') }}</button>
+            <button type="submit" class="btn btn-primary">{{ __('Send test message') }}</button>
           </div>
         </form>
       </div>
@@ -1034,8 +1034,8 @@ $(document).ready(function() {
         $(this).addClass('border-primary');
 
         // Update status badges
-        $('.service-status .badge').removeClass('badge-success').addClass('badge-secondary').text('غير مفعل');
-        $(this).find('.service-status .badge').removeClass('badge-secondary').addClass('badge-success').text('مفعل');
+        $('.service-status .badge').removeClass('badge-success').addClass('badge-secondary').text('{{ __('Disabled') }}');
+        $(this).find('.service-status .badge').removeClass('badge-secondary').addClass('badge-success').text('{{ __('Enabled') }}');
 
         // Show/hide forms
         $('.service-form').hide();
@@ -1052,14 +1052,14 @@ $(document).ready(function() {
             $('button[onclick="loadMetaTemplates()"]').show();
             $('.meta-api-optgroup').show();
             $('.template-api-label').text('(Meta API)');
-            $('.template-description').text('اختر قالب من Meta API أو القوالب المحفوظة محلياً');
+            $('.template-description').text('{{ __('Select a template from Meta API or locally saved templates') }}');
         } else {
             $('.create-local-template-btn').show();
             $('button[onclick*="loadMetaTemplatesFor"]').hide();
             $('button[onclick="loadMetaTemplates()"]').hide();
             $('.meta-api-optgroup').hide();
             $('.template-api-label').text('(Evolution API)');
-            $('.template-description').text('اختر قالب من القوالب المحفوظة محلياً فقط');
+            $('.template-description').text('{{ __('Select a template from locally saved templates only') }}');
         }
 
         // Auto-load Meta templates when Meta Cloud is selected
@@ -1099,12 +1099,12 @@ function switchTab(tabName) {
 
     // Update card title
     var titles = {
-        'meta_evolution': 'إعدادات Meta & Evolution API',
-        'welcome_message': 'إعدادات رسالة الترحيب',
-        'subscription_expiration': 'إعدادات رسالة انتهاء الباقة',
-        'subscription_expired': 'إعدادات إشعار انتهاء الباقة',
-        'password_reset': 'إعدادات رسالة إعادة تعيين كلمة المرور',
-        'registration_otp': 'إعدادات قالب رمز التسجيل'
+        'meta_evolution': '{{ __('Meta & Evolution API Settings') }}',
+        'welcome_message': '{{ __('Welcome message settings') }}',
+        'subscription_expiration': '{{ __('Package expiration message settings') }}',
+        'subscription_expired': '{{ __('Package expired notification settings') }}',
+        'password_reset': '{{ __('Password reset message settings') }}',
+        'registration_otp': '{{ __('Registration OTP template settings') }}'
     };
     $('#tab-title').text(titles[tabName]);
 }
@@ -1114,7 +1114,7 @@ function showTestModal() {
 }
 
 function testWhatsApp() {
-    var phone = prompt('أدخل رقم الهاتف للاختبار:', '+201147170572');
+    var phone = prompt('@json(__('Enter test phone number:'))', '+201147170572');
     if (phone) {
         console.log('Testing WhatsApp with phone:', phone);
         console.log('Route URL:', '{{route("admin.communication.test-whatsapp")}}');
@@ -1129,7 +1129,7 @@ function testWhatsApp() {
             console.error('WhatsApp test failed:', xhr);
             console.error('Status:', xhr.status);
             console.error('Response:', xhr.responseText);
-            alert('حدث خطأ أثناء اختبار واتس اب: ' + (xhr.responseJSON?.message || xhr.statusText || 'Unknown error'));
+            alert('@json(__('An error occurred while testing WhatsApp: '))' + (xhr.responseJSON?.message || xhr.statusText || 'Unknown error'));
         });
     }
 }
@@ -1148,12 +1148,12 @@ function checkConfiguration() {
         console.error('Configuration check failed:', xhr);
         console.error('Status:', xhr.status);
         console.error('Response:', xhr.responseText);
-        alert('حدث خطأ أثناء فحص الإعدادات: ' + (xhr.responseJSON?.message || xhr.statusText || 'Unknown error'));
+        alert('@json(__('An error occurred while checking configuration: '))' + (xhr.responseJSON?.message || xhr.statusText || 'Unknown error'));
     });
 }
 
 function testWelcomeMessage() {
-    var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
+    var phone = prompt('@json(__('Enter test phone number:'))', '+966501234567');
     if (phone) {
         var selectedTemplate = $('#welcome_message_template').val();
         $.post('{{route("admin.communication.welcome-message.test")}}', {
@@ -1163,13 +1163,13 @@ function testWelcomeMessage() {
         }, function(response) {
             location.reload();
         }).fail(function() {
-            alert('حدث خطأ أثناء اختبار رسالة الترحيب');
+            alert('@json(__('An error occurred while testing the welcome message'))');
         });
     }
 }
 
 function testSubscriptionExpiration() {
-    var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
+    var phone = prompt('@json(__('Enter test phone number:'))', '+966501234567');
     if (phone) {
         var selectedTemplate = $('#subscription_expiration_template').val();
         $.post('{{route("admin.communication.subscription-expiration.test")}}', {
@@ -1179,13 +1179,13 @@ function testSubscriptionExpiration() {
         }, function(response) {
             location.reload();
         }).fail(function() {
-            alert('حدث خطأ أثناء اختبار رسالة انتهاء الباقة');
+            alert('@json(__('An error occurred while testing the package expiration message'))');
         });
     }
 }
 
 function testSubscriptionExpired() {
-    var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
+    var phone = prompt('@json(__('Enter test phone number:'))', '+966501234567');
     if (phone) {
         var selectedTemplate = $('#subscription_expired_template').val();
         $.post('{{route("admin.communication.subscription-expired.test")}}', {
@@ -1195,13 +1195,13 @@ function testSubscriptionExpired() {
         }, function(response) {
             location.reload();
         }).fail(function() {
-            alert('حدث خطأ أثناء اختبار إشعار انتهاء الباقة');
+            alert('@json(__('An error occurred while testing the package expired notification'))');
         });
     }
 }
 
 function testPasswordReset() {
-    var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
+    var phone = prompt('@json(__('Enter test phone number:'))', '+966501234567');
     if (phone) {
         var selectedTemplate = $('#password_reset_template').val();
         $.post('{{route("admin.communication.password-reset.test")}}', {
@@ -1211,13 +1211,13 @@ function testPasswordReset() {
         }, function(response) {
             location.reload();
         }).fail(function() {
-            alert('حدث خطأ أثناء اختبار رسالة إعادة تعيين كلمة المرور');
+            alert('@json(__('An error occurred while testing the password reset message'))');
         });
     }
 }
 
 function testRegistrationOtp() {
-    var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
+    var phone = prompt('@json(__('Enter test phone number:'))', '+966501234567');
     if (phone) {
         var selectedTemplate = $('#registration_otp_template').val();
         $.post('{{route("admin.communication.registration-otp.test")}}', {
@@ -1227,7 +1227,7 @@ function testRegistrationOtp() {
         }, function(response) {
             location.reload();
         }).fail(function() {
-            alert('حدث خطأ أثناء اختبار رسالة رمز التسجيل');
+            alert('@json(__('An error occurred while testing the registration OTP message'))');
         });
     }
 }
@@ -1245,7 +1245,7 @@ function loadMetaTemplatesForRegistrationOtp(force = false) {
 
     // Show loading state
     if (button.length > 0) {
-        button.html('<i class="fas fa-spinner fa-spin"></i> جاري التحميل...');
+        button.html('<i class="fas fa-spinner fa-spin"></i> {{ __('Loading...') }}');
         button.prop('disabled', true);
     }
 
@@ -1270,22 +1270,22 @@ function loadMetaTemplatesForRegistrationOtp(force = false) {
                     metaOptgroup.append(option);
                 });
 
-                showNotification('تم تحميل ' + response.templates.length + ' قالب من Meta API بنجاح', 'success');
+                showNotification(@json(__('Loaded :count templates from Meta API successfully')).replace(':count', response.templates.length), 'success');
             } else {
-                metaOptgroup.append('<option value="" disabled>لا توجد قوالب متاحة</option>');
-                showNotification('لا توجد قوالب متاحة في Meta API', 'warning');
+                metaOptgroup.append('<option value="" disabled>' + @json(__('No templates available')) + '</option>');
+                showNotification(@json(__('No templates available in Meta API')), 'warning');
             }
         } else {
-            metaOptgroup.append('<option value="" disabled>خطأ في التحميل</option>');
-            showNotification('خطأ في تحميل القوالب: ' + response.message, 'error');
+            metaOptgroup.append('<option value="" disabled>' + @json(__('Load error')) + '</option>');
+            showNotification(@json(__('Error loading templates: ')) + response.message, 'error');
         }
     }).fail(function() {
-        metaOptgroup.append('<option value="" disabled>خطأ في الاتصال</option>');
-        showNotification('خطأ في الاتصال بـ Meta API', 'error');
+        metaOptgroup.append('<option value="" disabled>' + @json(__('Connection error')) + '</option>');
+        showNotification(@json(__('Error connecting to Meta API')), 'error');
     }).always(function() {
         // Reset button state
         if (button.length > 0) {
-            button.html('<i class="fas fa-sync"></i> تحديث قوالب Meta API');
+            button.html('<i class="fas fa-sync"></i> {{ __('Refresh Meta API templates') }}');
             button.prop('disabled', false);
         }
     });
@@ -1296,7 +1296,7 @@ function loadMetaTemplates() {
     var button = $('button[onclick="loadMetaTemplates()"]');
 
     // Show loading state
-    button.html('<i class="fas fa-spinner fa-spin"></i> جاري التحميل...');
+    button.html('<i class="fas fa-spinner fa-spin"></i> {{ __('Loading...') }}');
     button.prop('disabled', true);
 
     $.get('{{route("admin.communication.fetch-meta-templates")}}', function(response) {
@@ -1322,23 +1322,23 @@ function loadMetaTemplates() {
                 });
 
                 // Show success message
-                showNotification('تم تحميل ' + response.templates.length + ' قالب من Facebook بنجاح', 'success');
+                showNotification(@json(__('Loaded :count templates from Facebook successfully')).replace(':count', response.templates.length), 'success');
 
                 // Initialize template selection after loading
                 setTimeout(function() {
                     initializeTemplateSelection();
                 }, 500);
             } else {
-                showNotification('لم يتم العثور على قوالب معتمدة في Facebook', 'warning');
+                showNotification(@json(__('No approved templates found on Facebook')), 'warning');
             }
         } else {
-            showNotification('فشل في تحميل القوالب: ' + response.message, 'error');
+            showNotification(@json(__('Failed to load templates: ')) + response.message, 'error');
         }
     }).fail(function() {
-        showNotification('حدث خطأ في الاتصال بالخادم', 'error');
+        showNotification(@json(__('A server connection error occurred')), 'error');
     }).always(function() {
         // Reset button state
-        button.html('<i class="fas fa-sync"></i> تحديث القوالب من Facebook');
+        button.html('<i class="fas fa-sync"></i> {{ __('Refresh templates from Facebook') }}');
         button.prop('disabled', false);
     });
 }
@@ -1393,16 +1393,16 @@ function initializeApiSelection() {
         // Select Meta Cloud card
         $('.service-card[data-service="meta_cloud"]').addClass('border-primary');
         $('.service-card[data-service="evolution_api"]').removeClass('border-primary');
-        $('.service-card[data-service="meta_cloud"] .service-status .badge').removeClass('badge-secondary').addClass('badge-success').text('مفعل');
-        $('.service-card[data-service="evolution_api"] .service-status .badge').removeClass('badge-success').addClass('badge-secondary').text('غير مفعل');
+        $('.service-card[data-service="meta_cloud"] .service-status .badge').removeClass('badge-secondary').addClass('badge-success').text('{{ __('Enabled') }}');
+        $('.service-card[data-service="evolution_api"] .service-status .badge').removeClass('badge-success').addClass('badge-secondary').text('{{ __('Disabled') }}');
         $('.service-form').hide();
         $('#meta-cloud-form').show();
     } else {
         // Select Evolution API card
         $('.service-card[data-service="evolution_api"]').addClass('border-primary');
         $('.service-card[data-service="meta_cloud"]').removeClass('border-primary');
-        $('.service-card[data-service="evolution_api"] .service-status .badge').removeClass('badge-secondary').addClass('badge-success').text('مفعل');
-        $('.service-card[data-service="meta_cloud"] .service-status .badge').removeClass('badge-success').addClass('badge-secondary').text('غير مفعل');
+        $('.service-card[data-service="evolution_api"] .service-status .badge').removeClass('badge-secondary').addClass('badge-success').text('{{ __('Enabled') }}');
+        $('.service-card[data-service="meta_cloud"] .service-status .badge').removeClass('badge-success').addClass('badge-secondary').text('{{ __('Disabled') }}');
         $('.service-form').hide();
         $('#evolution-api-form').show();
     }
@@ -1418,7 +1418,7 @@ function initializeApiSelection() {
         $('button[onclick="forceUpdateTextAreas()"]').show();
         $('.meta-api-optgroup').show();
         $('.template-api-label').text('(Meta API)');
-        $('.template-description').text('اختر قالب من Meta API أو القوالب المحفوظة محلياً');
+        $('.template-description').text('{{ __('Select a template from Meta API or locally saved templates') }}');
     } else {
         $('.create-local-template-btn').show();
         $('button[onclick*="loadMetaTemplatesFor"]').hide();
@@ -1426,7 +1426,7 @@ function initializeApiSelection() {
         $('button[onclick="forceUpdateTextAreas()"]').hide();
         $('.meta-api-optgroup').hide();
         $('.template-api-label').text('(Evolution API)');
-        $('.template-description').text('اختر قالب من القوالب المحفوظة محلياً فقط');
+        $('.template-description').text('{{ __('Select a template from locally saved templates only') }}');
     }
 
     // Show initial notification
@@ -1457,7 +1457,7 @@ function setApiSelection(api) {
 
     // Show notification
     var apiName = api === 'meta' ? 'Meta Cloud API' : 'Evolution API';
-    showNotification('تم التبديل إلى ' + apiName + ' - تم تحديث النصوص والقالب', 'info');
+    showNotification(@json(__('Switched to :api - text and template updated')).replace(':api', apiName), 'info');
 }
 
 function forceUpdateTextAreas() {
@@ -1540,7 +1540,12 @@ function updateTextsForMeta() {
         welcome: 'مرحبا {name}\nأهلاً وسهلاً بك في منصتنا!\nنتمنى لك تجربة ممتعة.',
         subscription_expiration: 'مرحبا {name}\nتنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً.\nيرجى تجديد اشتراكك للاستمرار في الاستفادة من خدماتنا.',
         subscription_expired: 'مرحبا {name}\nانتهى اشتراكك وتم نقلك إلى الباقة المجانية.\nيمكنك الترقية في أي وقت.',
-        password_reset: 'رمز إعادة تعيين كلمة المرور: {code}\n\nهذا الرمز صالح لمدة 15 دقيقة.\n\nأو يمكنك الضغط على الرابط التالي:\n{reset_url}?code={code}'
+        password_reset: @json(__('Password reset code: {code}
+
+This code is valid for 15 minutes.
+
+Or click the following link:
+{reset_url}?code={code}'))
     };
 
     updateTextAreas(metaTexts);
@@ -1552,7 +1557,12 @@ function updateTextsForEvolution() {
         welcome: 'مرحبا {name}\n مرحباً بك  في منصة تعاريف !\nنحن سعداء لانضمامك إلينا.',
         subscription_expiration: 'مرحبًا {name} 👋،\nنود تذكيرك أن باقتك {package_name} ستنتهي بتاريخ {expiry_date}.\nتبقى 3 أيام فقط للاستفادة من خدماتك قبل انتهاء الباقة.\n\n🔄 جدّد الآن لتفادي انقطاع الخدمة.',
         subscription_expired: 'مرحبا {name}\nانتهى اشتراكك.\nيمكنك الترقية في أي وقت.',
-        password_reset: 'رمز إعادة تعيين كلمة المرور: {code}\n\nهذا الرمز صالح لمدة 15 دقيقة.\n\nأو يمكنك الضغط على الرابط التالي:\n{reset_url}?code={code}'
+        password_reset: @json(__('Password reset code: {code}
+
+This code is valid for 15 minutes.
+
+Or click the following link:
+{reset_url}?code={code}'))
     };
 
     updateTextAreas(evolutionTexts);
@@ -1613,7 +1623,12 @@ function isDefaultText(text, type) {
             'مرحبا {name}\nانتهى اشتراكك.\nيمكنك الترقية في أي وقت.'
         ],
         password_reset: [
-            'رمز إعادة تعيين كلمة المرور: {code}\n\nهذا الرمز صالح لمدة 15 دقيقة.\n\nأو يمكنك الضغط على الرابط التالي:\n{reset_url}?code={code}'
+            @json(__('Password reset code: {code}
+
+This code is valid for 15 minutes.
+
+Or click the following link:
+{reset_url}?code={code}'))
         ]
     };
 
@@ -1633,7 +1648,7 @@ function updateTemplateDropdownsForEvolution() {
 
     // Update template labels and descriptions for Evolution API
     $('.template-api-label').text('(Evolution API)');
-    $('.template-description').text('اختر قالب من القوالب المحفوظة محلياً فقط');
+    $('.template-description').text('{{ __('Select a template from locally saved templates only') }}');
 }
 
 function updateTemplateDropdownsForMeta() {
@@ -1641,7 +1656,7 @@ function updateTemplateDropdownsForMeta() {
     $('.meta-api-optgroup').show();
     $('.local-templates-optgroup').each(function() {
         $(this).empty();
-        $(this).append('<option disabled>Meta API - استخدم قوالب Meta API فقط</option>');
+        $(this).append('<option disabled>' + @json(__('Meta API - use Meta API templates only')) + '</option>');
     });
 
     // Hide "Create Local Template" buttons for Meta API
@@ -1653,7 +1668,7 @@ function updateTemplateDropdownsForMeta() {
 
     // Update template labels and descriptions for Meta API
     $('.template-api-label').text('(Meta API)');
-    $('.template-description').text('اختر قالب من Meta API أو القوالب المحفوظة محلياً');
+    $('.template-description').text('{{ __('Select a template from Meta API or locally saved templates') }}');
 }
 
 function loadMetaTemplatesForSelect(selectId, messageType) {
@@ -1682,7 +1697,7 @@ function loadMetaTemplatesForSelect(selectId, messageType) {
     }
 
     // Show loading state
-    button.html('<i class="fas fa-spinner fa-spin"></i> جاري التحميل...');
+    button.html('<i class="fas fa-spinner fa-spin"></i> {{ __('Loading...') }}');
     button.prop('disabled', true);
 
     $.get('{{route("admin.communication.fetch-meta-templates")}}', function(response) {
@@ -1696,24 +1711,24 @@ function loadMetaTemplatesForSelect(selectId, messageType) {
             populateTemplatesInSelect(select, response.templates, messageType);
 
             if (response.templates && response.templates.length > 0) {
-                showNotification('تم تحميل ' + response.templates.length + ' قالب من Meta API بنجاح', 'success');
+                showNotification(@json(__('Loaded :count templates from Meta API successfully')).replace(':count', response.templates.length), 'success');
             } else {
-                showNotification('لم يتم العثور على قوالب معتمدة في Meta API', 'warning');
+                showNotification(@json(__('No approved templates found in Meta API')), 'warning');
             }
         } else {
             var metaGroup = select.find('optgroup[label="Meta API Templates"]');
             metaGroup.empty();
-            metaGroup.append('<option value="" disabled>فشل في تحميل القوالب: ' + response.message + '</option>');
-            showNotification('فشل في تحميل القوالب: ' + response.message, 'error');
+            metaGroup.append('<option value="" disabled>' + @json(__('Failed to load templates: ')) + response.message + '</option>');
+            showNotification(@json(__('Failed to load templates: ')) + response.message, 'error');
         }
     }).fail(function() {
         var metaGroup = select.find('optgroup[label="Meta API Templates"]');
         metaGroup.empty();
-        metaGroup.append('<option value="" disabled>حدث خطأ في الاتصال بالخادم</option>');
-        showNotification('حدث خطأ في الاتصال بالخادم', 'error');
+        metaGroup.append('<option value="" disabled>' + @json(__('A server connection error occurred')) + '</option>');
+        showNotification(@json(__('A server connection error occurred')), 'error');
     }).always(function() {
         // Reset button state
-        button.html('<i class="fas fa-sync"></i> تحديث قوالب Meta API');
+        button.html('<i class="fas fa-sync"></i> {{ __('Refresh Meta API templates') }}');
         button.prop('disabled', false);
     });
 }
@@ -1757,7 +1772,7 @@ function populateTemplatesInSelect(select, templates, messageType) {
             metaGroup.append(option);
         });
     } else {
-        metaGroup.append('<option value="" disabled>لم يتم العثور على قوالب معتمدة في Meta API</option>');
+        metaGroup.append('<option value="" disabled>' + @json(__('No approved templates found in Meta API')) + '</option>');
     }
 
     if (messageType === 'password_reset') {
@@ -1817,16 +1832,16 @@ function saveTemplateSelection() {
             if (response.success) {
                 $('#template-saved-icon').show();
                 $('#template-unsaved-icon').hide();
-                showNotification('تم حفظ القالب للاختبار: ' + selectedTemplate, 'success');
+                showNotification(@json(__('Template saved for testing: ')) + selectedTemplate, 'success');
             } else {
                 $('#template-saved-icon').hide();
                 $('#template-unsaved-icon').show();
-                showNotification('فشل في حفظ القالب: ' + response.message, 'error');
+                showNotification(@json(__('Failed to save template: ')) + response.message, 'error');
             }
         }).fail(function() {
             $('#template-saved-icon').hide();
             $('#template-unsaved-icon').show();
-            showNotification('حدث خطأ أثناء حفظ القالب', 'error');
+            showNotification(@json(__('An error occurred while saving the template')), 'error');
         });
     } else {
         // Hide the testing section if no template selected
@@ -1841,19 +1856,19 @@ function testSelectedTemplate() {
     var selectedTemplate = $('#selected_template_display').val();
 
     if (!phoneNumber) {
-        alert('يرجى إدخال رقم الهاتف للاختبار');
+        alert(@json(__('Please enter a test phone number')));
         return;
     }
 
     if (!selectedTemplate) {
-        alert('يرجى اختيار قالب أولاً');
+        alert(@json(__('Please select a template first')));
         return;
     }
 
     // Disable button and show loading
     var btn = $('#test-template-btn');
     var originalText = btn.html();
-    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> جاري الإرسال...');
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> ' + @json(__('Sending...')));
 
     $.post('{{route("admin.communication.test-selected-template")}}', {
         _token: '{{csrf_token()}}',
@@ -1865,7 +1880,7 @@ function testSelectedTemplate() {
             showNotification(response.message, 'error');
         }
     }).fail(function() {
-        showNotification('حدث خطأ أثناء إرسال رسالة الاختبار', 'error');
+        showNotification(@json(__('An error occurred while sending the test message')), 'error');
     }).always(function() {
         // Re-enable button
         btn.prop('disabled', false).html(originalText);
@@ -1885,7 +1900,7 @@ function clearTemplateSelection() {
         template_name: ''
     }, function(response) {
         if (response.success) {
-            showNotification('تم إلغاء اختيار القالب', 'info');
+            showNotification(@json(__('Template selection cleared')), 'info');
         }
     });
 }
