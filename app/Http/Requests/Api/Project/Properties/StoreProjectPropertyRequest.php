@@ -18,7 +18,7 @@ class StoreProjectPropertyRequest extends BaseApiFormRequest
     {
         return array_merge([
             'title' => 'required|max:255',
-            'address' => 'required',
+            'address' => 'nullable|string|max:255',
             'description' => 'required',
             'featured_image' => 'required|string',
             'gallery' => 'nullable|array',

@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\User\Language;
 use App\Models\User\RealestateManagement\ApiUserCategory;
 use App\Models\User\RealestateManagement\Project;
+use App\Models\User\RealestateManagement\ProjectContent;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\PropertyContent;
 use App\Models\User\UserDistrict;
@@ -27,7 +28,7 @@ class ProjectPropertyTest extends TestCase
 
     private function skipIfMissingSchema(): void
     {
-        foreach (['users', 'user_projects', 'user_properties', 'user_property_contents', 'user_districts', 'api_permissions', 'api_model_has_permissions', 'memberships', 'packages', 'user_languages'] as $table) {
+        foreach (['users', 'user_projects', 'user_project_contents', 'user_properties', 'user_property_contents', 'user_districts', 'api_permissions', 'api_model_has_permissions', 'memberships', 'packages', 'user_languages'] as $table) {
             if (!Schema::hasTable($table)) {
                 $this->markTestSkipped("Missing DB table: {$table}.");
             }
@@ -160,6 +161,23 @@ class ProjectPropertyTest extends TestCase
         return $property;
     }
 
+    private function seedDefaultLanguageProjectContent(User $tenant, Project $project, ?string $address): ProjectContent
+    {
+        $languageId = Language::query()
+            ->where('user_id', $tenant->id)
+            ->where('is_default', 1)
+            ->value('id');
+
+        return ProjectContent::query()->create([
+            'user_id' => $tenant->id,
+            'project_id' => $project->id,
+            'language_id' => $languageId,
+            'title' => 'Project marketing ' . $project->id,
+            'slug' => 'project-marketing-' . $project->id,
+            'address' => $address,
+        ]);
+    }
+
     public function test_create_property_under_project_sets_project_id_and_location(): void
     {
         $this->skipIfMissingSchema();
@@ -219,6 +237,174 @@ class ProjectPropertyTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonPath('status', 'error');
+    }
+
+    public function test_create_inherits_address_and_coordinates_from_project_when_omitted(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, ['projects.view', 'properties.create']);
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+        $project->update([
+            'latitude' => 24.7136,
+            'longitude' => 46.6753,
+        ]);
+        $this->seedDefaultLanguageProjectContent($tenant, $project, 'Inherited From Project Content');
+        $district = $this->createDistrict();
+
+        $response = $this->postJson("/api/projects/{$project->id}/properties", [
+            'title' => 'Unit Inherit',
+            'description' => 'Inherited coords and address',
+            'featured_image' => 'properties/unit-inherit.jpg',
+            'district_id' => $district->id,
+            'purpose' => 'sale',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.property.address', 'Inherited From Project Content');
+
+        $this->assertEqualsWithDelta(24.7136, (float) $response->json('data.property.location.latitude'), 0.00001);
+        $this->assertEqualsWithDelta(46.6753, (float) $response->json('data.property.location.longitude'), 0.00001);
+
+        $propertyId = (int) $response->json('data.property.id');
+        $this->assertDatabaseHas('user_properties', [
+            'id' => $propertyId,
+            'project_id' => $project->id,
+            'latitude' => 24.7136,
+            'longitude' => 46.6753,
+        ]);
+        $this->assertDatabaseHas('user_property_contents', [
+            'property_id' => $propertyId,
+            'address' => 'Inherited From Project Content',
+        ]);
+    }
+
+    public function test_create_overrides_inherited_address_and_coordinates(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, ['projects.view', 'properties.create']);
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+        $project->update([
+            'latitude' => 1.111,
+            'longitude' => 2.222,
+        ]);
+        $this->seedDefaultLanguageProjectContent($tenant, $project, 'Should Not Appear');
+        $district = $this->createDistrict();
+
+        $response = $this->postJson("/api/projects/{$project->id}/properties", [
+            'title' => 'Unit Override',
+            'address' => 'Request Address Line',
+            'description' => 'Override test',
+            'featured_image' => 'properties/unit-override.jpg',
+            'district_id' => $district->id,
+            'purpose' => 'sale',
+            'latitude' => 25.2048,
+            'longitude' => 55.2708,
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.property.address', 'Request Address Line');
+
+        $this->assertEqualsWithDelta(25.2048, (float) $response->json('data.property.location.latitude'), 0.00001);
+        $this->assertEqualsWithDelta(55.2708, (float) $response->json('data.property.location.longitude'), 0.00001);
+
+        $propertyId = (int) $response->json('data.property.id');
+        $this->assertDatabaseHas('user_properties', [
+            'id' => $propertyId,
+            'latitude' => 25.2048,
+            'longitude' => 55.2708,
+        ]);
+        $this->assertDatabaseHas('user_property_contents', [
+            'property_id' => $propertyId,
+            'address' => 'Request Address Line',
+        ]);
+    }
+
+    public function test_create_returns_422_when_address_missing_after_merge(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, ['projects.view', 'properties.create']);
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+        $this->seedDefaultLanguageProjectContent($tenant, $project, '   ');
+        $district = $this->createDistrict();
+
+        $response = $this->postJson("/api/projects/{$project->id}/properties", [
+            'title' => 'Unit No Address',
+            'description' => 'No usable address',
+            'featured_image' => 'properties/unit-no-addr.jpg',
+            'district_id' => $district->id,
+            'purpose' => 'sale',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('message', 'Address is required when not provided by the project content.');
+    }
+
+    public function test_create_returns_422_when_address_missing_and_no_project_content_row(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, ['projects.view', 'properties.create']);
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+        $district = $this->createDistrict();
+
+        $response = $this->postJson("/api/projects/{$project->id}/properties", [
+            'title' => 'Unit No Content',
+            'description' => 'No project content row',
+            'featured_image' => 'properties/unit-no-content.jpg',
+            'district_id' => $district->id,
+            'purpose' => 'sale',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('message', 'Address is required when not provided by the project content.');
+    }
+
+    public function test_create_rejects_address_longer_than_255_characters(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, ['projects.view', 'properties.create']);
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+        $district = $this->createDistrict();
+
+        $response = $this->postJson("/api/projects/{$project->id}/properties", [
+            'title' => 'Unit Long Address',
+            'address' => str_repeat('a', 256),
+            'description' => 'Too long',
+            'featured_image' => 'properties/unit-long.jpg',
+            'district_id' => $district->id,
+            'purpose' => 'sale',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('message', 'Validation failed');
+
+        $this->assertArrayHasKey('address', $response->json('errors'));
     }
 
     public function test_attach_existing_property_is_idempotent_and_blocks_other_project(): void

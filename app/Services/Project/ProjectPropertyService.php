@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\User\Language;
 use App\Models\User\RealestateManagement\ApiUserCategory;
 use App\Models\User\RealestateManagement\Project;
+use App\Models\User\RealestateManagement\ProjectContent;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\PropertyContent;
 use App\Models\User\RealestateManagement\PropertySliderImg;
@@ -44,6 +45,21 @@ class ProjectPropertyService
         $this->assertPropertyQuota($tenantOwnerId);
         $project = $this->resolveProjectForTenant($tenantOwnerId, $projectId);
         $defaultLanguage = $this->resolveDefaultLanguage($tenantOwnerId);
+        $projectContent = ProjectContent::query()
+            ->where('project_id', $project->id)
+            ->where('language_id', $defaultLanguage->id)
+            ->first();
+
+        $payload = $this->mergeInheritedProjectLocation($project, $projectContent, $payload);
+
+        $effectiveAddress = trim((string) ($payload['address'] ?? ''));
+        if ($effectiveAddress === '') {
+            throw new HttpException(422, 'Address is required when not provided by the project content.');
+        }
+        if (strlen($effectiveAddress) > 255) {
+            throw new HttpException(422, 'The address may not be greater than 255 characters.');
+        }
+
         $location = $this->normalizeLocation($payload);
 
         $property = null;
@@ -319,6 +335,39 @@ class ProjectPropertyService
         }
 
         return $language;
+    }
+
+    private function mergeInheritedProjectLocation(
+        Project $project,
+        ?ProjectContent $projectContent,
+        array $payload,
+    ): array {
+        $out = array_merge([], $payload);
+
+        $trimmedRequestAddress = array_key_exists('address', $out)
+            ? trim((string) $out['address'])
+            : '';
+        if ($trimmedRequestAddress !== '') {
+            $out['address'] = $trimmedRequestAddress;
+        } elseif ($projectContent && trim((string) ($projectContent->address ?? '')) !== '') {
+            $out['address'] = trim((string) $projectContent->address);
+        } else {
+            $out['address'] = $trimmedRequestAddress;
+        }
+
+        foreach (['latitude', 'longitude'] as $coord) {
+            $hasKey = array_key_exists($coord, $out);
+            $val = $hasKey ? $out[$coord] : null;
+            $missing = !$hasKey || $val === null || $val === '';
+            if ($missing) {
+                $inherited = $project->{$coord};
+                if ($inherited !== null && $inherited !== '') {
+                    $out[$coord] = $inherited;
+                }
+            }
+        }
+
+        return $out;
     }
 
     private function buildPropertyPayload(array $payload, int $projectId, bool $includeProjectId = true): array
