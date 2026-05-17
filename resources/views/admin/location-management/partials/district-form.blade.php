@@ -1,5 +1,5 @@
 {{-- Add district --}}
-<div class="modal fade" id="createDistrictModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade location-management-modal" id="createDistrictModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -45,7 +45,7 @@
 </div>
 
 {{-- Edit district (names only) --}}
-<div class="modal fade" id="editDistrictModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade location-management-modal" id="editDistrictModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">

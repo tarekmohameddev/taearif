@@ -22,13 +22,26 @@ class LocationManagementController extends Controller
         $perPage = 25;
         $cityPage = max(1, (int) $request->query('city_page', 1));
 
-        $totalCities = (int) DB::table('user_districts')
-            ->whereNotNull('city_id')
+        $cityGroupsQuery = DB::table('user_districts')->whereNotNull('city_id');
+
+        if ($request->filled('city_search')) {
+            $term = $request->query('city_search');
+            $cityGroupsQuery->where(function ($q) use ($term) {
+                $q->where('city_name_ar', 'like', '%' . $term . '%')
+                    ->orWhere('city_name_en', 'like', '%' . $term . '%')
+                    ->orWhere('country_name_ar', 'like', '%' . $term . '%')
+                    ->orWhere('country_name_en', 'like', '%' . $term . '%');
+                if (ctype_digit((string) $term)) {
+                    $q->orWhere('city_id', (int) $term);
+                }
+            });
+        }
+
+        $totalCities = (int) (clone $cityGroupsQuery)
             ->selectRaw('COUNT(DISTINCT city_id) as aggregate')
             ->value('aggregate');
 
-        $cityGroups = DB::table('user_districts')
-            ->whereNotNull('city_id')
+        $cityGroups = (clone $cityGroupsQuery)
             ->selectRaw('
                 city_id,
                 MAX(city_name_ar) as city_name_ar,

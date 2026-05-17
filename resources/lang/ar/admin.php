@@ -29,6 +29,7 @@ return [
     'all_cities' => 'كل المدن',
     'search' => 'بحث',
     'district_name' => 'اسم الحي',
+    'city_search_placeholder' => 'المدينة، الدولة (ع/EN)، أو معرف المدينة',
     'apply' => 'تطبيق',
     'reset' => 'إعادة ضبط',
 
