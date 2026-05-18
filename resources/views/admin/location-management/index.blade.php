@@ -43,10 +43,144 @@
   .main-panel .page-inner {
     direction: rtl !important;
   }
+
+  /* Buttons — black background, white text */
+  .location-management .btn.btn-primary,
+  .location-management-modal .btn.btn-primary,
+  .location-management .btn.btn-location-action,
+  .location-management-modal .btn.btn-location-action {
+    background-color: #000000 !important;
+    background-image: none !important;
+    border: 1px solid #000000 !important;
+    border-color: #000000 !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  .location-management .btn.btn-primary:hover,
+  .location-management .btn.btn-primary:focus,
+  .location-management .btn.btn-primary:active,
+  .location-management-modal .btn.btn-primary:hover,
+  .location-management-modal .btn.btn-primary:focus,
+  .location-management-modal .btn.btn-primary:active,
+  .location-management .btn.btn-location-action:hover,
+  .location-management .btn.btn-location-action:focus,
+  .location-management .btn.btn-location-action:active,
+  .location-management-modal .btn.btn-location-action:hover,
+  .location-management-modal .btn.btn-location-action:focus,
+  .location-management-modal .btn.btn-location-action:active {
+    background-color: #1a1a1a !important;
+    background-image: none !important;
+    border-color: #1a1a1a !important;
+    color: #ffffff !important;
+  }
+
+  .location-management .btn.btn-secondary,
+  .location-management-modal .btn.btn-secondary,
+  .location-management a.btn.btn-secondary {
+    background-color: #000000 !important;
+    background-image: none !important;
+    border: 1px solid #000000 !important;
+    border-color: #000000 !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  .location-management .btn.btn-secondary:hover,
+  .location-management .btn.btn-secondary:focus,
+  .location-management .btn.btn-secondary:active,
+  .location-management-modal .btn.btn-secondary:hover,
+  .location-management-modal .btn.btn-secondary:focus,
+  .location-management-modal .btn.btn-secondary:active,
+  .location-management a.btn.btn-secondary:hover,
+  .location-management a.btn.btn-secondary:focus {
+    background-color: #1a1a1a !important;
+    background-image: none !important;
+    border-color: #1a1a1a !important;
+    color: #ffffff !important;
+  }
+
+  /* Pagination */
+  .location-management .pagination .page-link {
+    color: #000000 !important;
+    border-color: var(--border-color) !important;
+    background: var(--bg-card) !important;
+  }
+
+  .location-management .pagination .page-item.active .page-link {
+    background-color: #000000 !important;
+    background-image: none !important;
+    border-color: #000000 !important;
+    color: #ffffff !important;
+  }
+
+  .location-management .pagination .page-link:hover {
+    background-color: #1a1a1a !important;
+    border-color: #1a1a1a !important;
+    color: #ffffff !important;
+  }
+
+  /* Status badges */
+  .location-management .badge-success {
+    background: var(--success-light) !important;
+    color: var(--success-color) !important;
+  }
+
+  .location-management .badge-warning {
+    background: rgba(245, 158, 11, 0.12) !important;
+    color: var(--warning-color) !important;
+  }
+
+  /* Tabs */
+  .location-management .nav-tabs .nav-link.active {
+    color: #000000 !important;
+    border-color: var(--border-color) var(--border-color) var(--bg-card) !important;
+  }
+
+  .location-management .nav-tabs .nav-link:hover {
+    color: #000000 !important;
+    border-color: var(--border-color) !important;
+  }
+
+  /* Modal header — space title and × apart (RTL-safe) */
+  .location-management-modal .modal-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 1.25rem 1.5rem !important;
+    gap: 1.5rem;
+  }
+
+  .location-management-modal .modal-header .modal-title {
+    flex: 1 1 auto;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.4;
+  }
+
+  [dir="rtl"] .location-management-modal .modal-header .modal-title {
+    text-align: right;
+  }
+
+  .location-management-modal .modal-header .close {
+    position: relative !important;
+    float: none !important;
+    margin: 0 !important;
+    padding: 0.25rem 0.5rem !important;
+    flex: 0 0 auto;
+    font-size: 1.5rem;
+    line-height: 1;
+    opacity: 0.55;
+  }
+
+  .location-management-modal .modal-header .close:hover {
+    opacity: 0.85;
+  }
 </style>
 @endsection
 
 @section('content')
+<div class="location-management">
   <div class="page-header">
     <h4 class="page-title">{{ __('admin.location_management') }}</h4>
     <ul class="breadcrumbs">
@@ -85,7 +219,16 @@
         <div class="card-header pb-0">
           @php
             $hasDistrictQuery = request()->has('filter_city_id') || request()->has('district_search') || request()->has('page');
-            $activeTab = request('tab') === 'districts' || (!request()->has('tab') && $hasDistrictQuery) ? 'districts' : 'cities';
+            $hasCityQuery = request()->has('city_search') || request()->has('city_page');
+            if (request('tab') === 'districts') {
+              $activeTab = 'districts';
+            } elseif (request('tab') === 'cities' || $hasCityQuery) {
+              $activeTab = 'cities';
+            } elseif (!request()->has('tab') && $hasDistrictQuery) {
+              $activeTab = 'districts';
+            } else {
+              $activeTab = 'cities';
+            }
           @endphp
           <ul class="nav nav-tabs" id="locationTabs" role="tablist">
             <li class="nav-item">
@@ -110,6 +253,27 @@
                   <i class="fas fa-plus"></i> {{ __('admin.add_city') }}
                 </button>
               </div>
+
+              <form method="get" action="{{ route('admin.location.index') }}#cities-pane" id="cityFilterForm" class="form-row mb-3">
+                <input type="hidden" name="tab" id="city_tab_param" value="cities">
+                @if (request()->has('page'))
+                  <input type="hidden" name="page" value="{{ request('page') }}">
+                @endif
+                @if (request()->filled('filter_city_id'))
+                  <input type="hidden" name="filter_city_id" value="{{ request('filter_city_id') }}">
+                @endif
+                @if (request()->filled('district_search'))
+                  <input type="hidden" name="district_search" value="{{ request('district_search') }}">
+                @endif
+                <div class="col-md-8 mb-2">
+                  <label class="small d-block">{{ __('admin.search') }}</label>
+                  <input type="text" name="city_search" class="form-control" value="{{ request('city_search') }}" placeholder="{{ __('admin.city_search_placeholder') }}">
+                </div>
+                <div class="col-md-4 mb-2 d-flex align-items-end">
+                  <button type="submit" class="btn btn-primary mr-2">{{ __('admin.apply') }}</button>
+                  <a href="{{ route('admin.location.index', ['tab' => 'cities']) }}#cities-pane" class="btn btn-secondary">{{ __('admin.reset') }}</a>
+                </div>
+              </form>
 
               <div class="table-responsive">
                 <table class="table table-striped table-hover">
@@ -147,18 +311,18 @@
                           @endif
                         </td>
                         <td>
-                          <button type="button" class="btn btn-secondary btn-sm edit-city-btn"
-                            data-city_id="{{ $row->city_id }}"
-                            data-city_name_ar="{{ e($row->city_name_ar) }}"
-                            data-city_name_en="{{ e($row->city_name_en) }}"
-                            data-country_name_ar="{{ e($row->country_name_ar) }}"
-                            data-country_name_en="{{ e($row->country_name_en) }}"
+                          <button type="button" class="btn btn-location-action btn-sm edit-city-btn"
+                            data-city-id="{{ $row->city_id }}"
+                            data-city-name-ar="{{ e($row->city_name_ar) }}"
+                            data-city-name-en="{{ e($row->city_name_en) }}"
+                            data-country-name-ar="{{ e($row->country_name_ar) }}"
+                            data-country-name-en="{{ e($row->country_name_en) }}"
                             data-toggle="modal" data-target="#editCityModal">
                             <i class="fas fa-edit"></i> {{ __('admin.edit_city') }}
                           </button>
                           @if (!$row->in_user_cities)
-                            <button type="button" class="btn btn-success btn-sm sync-city-btn ml-1"
-                              data-city_id="{{ $row->city_id }}"
+                            <button type="button" class="btn btn-primary btn-sm sync-city-btn ml-1"
+                              data-city-id="{{ $row->city_id }}"
                               data-toggle="modal" data-target="#syncCityModal">
                               <i class="fas fa-link"></i> {{ __('admin.sync') }}
                             </button>
@@ -174,7 +338,7 @@
                 </table>
               </div>
               <div class="d-flex justify-content-center">
-                {{ $citiesPaginator->appends(array_merge(request()->query(), ['tab' => 'cities']))->links() }}
+                {{ $citiesPaginator->appends(array_merge(request()->query(), ['tab' => 'cities']))->fragment('cities-pane')->links() }}
               </div>
             </div>
 
@@ -230,10 +394,10 @@
                         </td>
                         <td>{{ $d->name_ar }}<br><small class="text-muted">{{ $d->name_en }}</small></td>
                         <td>
-                          <button type="button" class="btn btn-secondary btn-sm edit-district-btn"
-                            data-district_id="{{ $d->id }}"
-                            data-name_ar="{{ e($d->name_ar) }}"
-                            data-name_en="{{ e($d->name_en) }}"
+                          <button type="button" class="btn btn-location-action btn-sm edit-district-btn"
+                            data-district-id="{{ $d->id }}"
+                            data-name-ar="{{ e($d->name_ar) }}"
+                            data-name-en="{{ e($d->name_en) }}"
                             data-toggle="modal" data-target="#editDistrictModal">
                             <i class="fas fa-edit"></i> {{ __('admin.edit_district') }}
                           </button>
@@ -259,7 +423,10 @@
 
   @include('admin.location-management.partials.city-form')
   @include('admin.location-management.partials.district-form')
+</div>
+@endsection
 
+@section('scripts')
   <script>
     function rememberLocationTab(pane) {
       if (pane !== '#cities-pane' && pane !== '#districts-pane') return;
@@ -301,12 +468,12 @@
         localStorage.setItem(tabStorageKey, '#districts-pane');
       } else {
         var savedPane = localStorage.getItem(tabStorageKey);
-        if (savedPane && $('a[href=\"' + savedPane + '\"]').length) {
-          $('a[href=\"' + savedPane + '\"]').tab('show');
+        if (savedPane && $('a[href="' + savedPane + '"]').length) {
+          $('a[href="' + savedPane + '"]').tab('show');
         }
       }
 
-      $('a[data-toggle=\"tab\"]').on('shown.bs.tab', function (e) {
+      $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
         var pane = $(e.target).attr('href'); // #cities-pane | #districts-pane
         if (pane) {
           localStorage.setItem(tabStorageKey, pane);
@@ -319,27 +486,39 @@
         $('#district_tab_param').val('districts');
       });
 
+      $('#cityFilterForm').on('submit', function () {
+        $('#city_tab_param').val('cities');
+      });
+
       // Keep refresh pinned to the currently visible pane.
       rememberLocationTab($('#locationTabs .nav-link.active').attr('href'));
 
-      $('.edit-city-btn').on('click', function () {
-        var $btn = $(this);
-        $('#edit_city_id').val($btn.data('city_id'));
-        $('#edit_city_name_ar').val($btn.data('city_name_ar'));
-        $('#edit_city_name_en').val($btn.data('city_name_en'));
-        $('#edit_country_name_ar').val($btn.data('country_name_ar'));
-        $('#edit_country_name_en').val($btn.data('country_name_en'));
+      function fillEditCityModal($btn) {
+        var cityId = $btn.attr('data-city-id') || '';
+        $('#edit_city_id').val(cityId);
+        $('#edit_city_id_display').val(cityId);
+        $('#edit_city_name_ar').val($btn.attr('data-city-name-ar') || '');
+        $('#edit_city_name_en').val($btn.attr('data-city-name-en') || '');
+        $('#edit_country_name_ar').val($btn.attr('data-country-name-ar') || '');
+        $('#edit_country_name_en').val($btn.attr('data-country-name-en') || '');
+      }
+
+      function fillEditDistrictModal($btn) {
+        $('#edit_district_id').val($btn.attr('data-district-id') || '');
+        $('#edit_district_name_ar').val($btn.attr('data-name-ar') || '');
+        $('#edit_district_name_en').val($btn.attr('data-name-en') || '');
+      }
+
+      $(document).on('click', '.edit-city-btn', function () {
+        fillEditCityModal($(this));
       });
 
-      $('.sync-city-btn').on('click', function () {
-        $('#sync_city_id').val($(this).data('city_id'));
+      $(document).on('click', '.sync-city-btn', function () {
+        $('#sync_city_id').val($(this).attr('data-city-id') || '');
       });
 
-      $('.edit-district-btn').on('click', function () {
-        var $btn = $(this);
-        $('#edit_district_id').val($btn.data('district_id'));
-        $('#edit_district_name_ar').val($btn.data('name_ar'));
-        $('#edit_district_name_en').val($btn.data('name_en'));
+      $(document).on('click', '.edit-district-btn', function () {
+        fillEditDistrictModal($(this));
       });
 
       var ctx = @json(old('form_context'));

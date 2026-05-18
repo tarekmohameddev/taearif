@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
+use App\Domain\Communication\WhatsApp\Services\SyncWhatsappAiConversationToCommunicationService;
 use Modules\WhatsappAI\Jobs\ForwardWebhook;
 use App\Models\WhatsappUser;
 use Modules\WhatsappAI\Entities\WhatsappConversation;
@@ -15,6 +16,9 @@ use Modules\WhatsappAI\Jobs\TranscribeAudio;
 
 class WebhookController extends Controller
 {
+    public function __construct(
+        private readonly SyncWhatsappAiConversationToCommunicationService $communicationSyncService,
+    ) {}
     /**
      * Handle incoming WhatsApp webhook
      * This is a PASSIVE collector - no auto-reply
@@ -35,101 +39,45 @@ class WebhookController extends Controller
                 return $this->verifyWebhook($request);
             }
 
-            // Extract Meta webhook data
-            $entry = $request->input('entry.0.changes.0.value');
-
-            if (!$entry || empty($entry['messages'])) {
+            $entries = $request->input('entry', []);
+            if (! is_array($entries) || $entries === []) {
                 return response()->json(['status' => 'ok', 'message' => 'No messages in payload']);
             }
 
-            $phoneNumberId = $entry['metadata']['phone_number_id'] ?? null;
-            $displayPhoneNumber = $entry['metadata']['display_phone_number'] ?? null;
-            $wabaId = $request->input('entry.0.id');
-            $message = $entry['messages'][0] ?? null;
-            $customerPhone = $message['from'] ?? null;
+            $processed = 0;
+            $storedConversationId = null;
+            $storedMessageCount = null;
 
-            if (!$phoneNumberId || !$message || !$customerPhone) {
-                return response()->json(['status' => 'ignored', 'message' => 'Missing required fields'], 400);
+            foreach ($entries as $webhookEntry) {
+                $changes = $webhookEntry['changes'] ?? [];
+                if (! is_array($changes)) {
+                    continue;
+                }
+
+                foreach ($changes as $change) {
+                    $entry = $change['value'] ?? null;
+                    if (! is_array($entry) || empty($entry['messages']) || ! is_array($entry['messages'])) {
+                        continue;
+                    }
+
+                    foreach ($entry['messages'] as $message) {
+                        if (! is_array($message)) {
+                            continue;
+                        }
+
+                        $result = $this->storeIncomingMessage($entry, $message, $webhookEntry['id'] ?? null);
+                        if ($result !== null) {
+                            $processed++;
+                            $storedConversationId = $result['conversation_id'];
+                            $storedMessageCount = $result['message_count'];
+                        }
+                    }
+                }
             }
 
-            // Find WhatsApp user by phone_number_id
-            $whatsappUser = WhatsappUser::where('phone_id', $phoneNumberId)
-                ->where('status', 'active')
-                ->first();
-
-            if (!$whatsappUser) {
-                $knownWhatsappUser = WhatsappUser::where('phone_id', $phoneNumberId)->first();
-
-                Log::warning('WhatsApp user not found', [
-                    'phone_id' => $phoneNumberId,
-                    'display_phone_number' => $displayPhoneNumber,
-                    'waba_id' => $wabaId,
-                    'customer_phone' => $customerPhone,
-                    'message_id' => $message['id'] ?? null,
-                    'message_type' => $message['type'] ?? null,
-                    'known_whatsapp_user_id' => $knownWhatsappUser?->id,
-                    'known_user_id' => $knownWhatsappUser?->user_id,
-                    'known_status' => $knownWhatsappUser?->status,
-                ]);
-
-                return response()->json(['status' => 'ignored', 'message' => 'WhatsApp user not found']);
+            if ($processed === 0) {
+                return response()->json(['status' => 'ok', 'message' => 'No messages in payload']);
             }
-
-            // Get or create conversation
-            $conversation = WhatsappConversation::firstOrCreate(
-                [
-                    'whatsapp_user_id' => $whatsappUser->id,
-                    'customer_phone' => $customerPhone,
-                ],
-                [
-                    'user_id' => $whatsappUser->user_id,
-                    'status' => 'collecting',
-                    'customer_name' => $entry['contacts'][0]['profile']['name'] ?? null,
-                ]
-            );
-
-            // Extract message content based on type
-            $incomingMessageType = $message['type'] ?? 'text';
-            $storedMessageType = $this->normalizeMessageTypeForStorage($incomingMessageType);
-            $content = $this->extractMessageContent($message, $incomingMessageType);
-
-            // Extract media URL based on message type
-            $mediaUrl = null;
-            if (in_array($incomingMessageType, ['image', 'document', 'audio', 'video']) && isset($message[$incomingMessageType]['url'])) {
-                $mediaUrl = $message[$incomingMessageType]['url'];
-            }
-
-            // Store the message
-            $storedMessage = WhatsappMessage::create([
-                'conversation_id' => $conversation->id,
-                'whatsapp_message_id' => $message['id'] ?? null,
-                // Ensure we only store values supported by the DB enum.
-                // The original WhatsApp type is preserved in raw_payload (and in content for unsupported types).
-                'message_type' => $storedMessageType,
-                'content' => $content,
-                'media_url' => $mediaUrl,
-                'raw_payload' => $message,
-            ]);
-
-            // Dispatch audio transcription immediately so the transcript is ready
-            // before ProcessConversation runs (which is delayed by session_timeout).
-            if ($storedMessageType === 'audio') {
-                TranscribeAudio::dispatch($storedMessage->id)
-                    ->onQueue(config('whatsappai.queue', 'default'));
-            }
-
-            // Update conversation
-            $conversation->increment('message_count');
-            $conversation->update([
-                'last_message_at' => now(),
-                'status' => 'collecting', // Reset to collecting if it was processed
-            ]);
-
-            // Dispatch delayed job to process conversation (5 minutes)
-            $delayMinutes = config('whatsappai.session_timeout', 5);
-            ProcessConversation::dispatch($conversation->id)
-                ->delay(now()->addMinutes($delayMinutes))
-                ->onQueue(config('whatsappai.queue', 'default'));
 
             // Log::info('Message stored and job scheduled', [
             //     'conversation_id' => $conversation->id,
@@ -139,8 +87,9 @@ class WebhookController extends Controller
 
             return response()->json([
                 'status' => 'stored',
-                'conversation_id' => $conversation->id,
-                'message_count' => $conversation->message_count,
+                'conversation_id' => $storedConversationId,
+                'message_count' => $storedMessageCount,
+                'processed' => $processed,
             ]);
 
         } catch (\Throwable $e) {
@@ -154,6 +103,136 @@ class WebhookController extends Controller
                 'message' => 'Internal server error',
             ], 500);
         }
+    }
+
+    /**
+     * @return array{conversation_id: int, message_count: int}|null
+     */
+    private function storeIncomingMessage(array $entry, array $message, mixed $wabaId): ?array
+    {
+        $phoneNumberId = $entry['metadata']['phone_number_id'] ?? null;
+        $displayPhoneNumber = $entry['metadata']['display_phone_number'] ?? null;
+        $customerPhone = $message['from'] ?? null;
+
+        if (!$phoneNumberId || !$customerPhone) {
+            Log::warning('WhatsApp AI webhook missing required fields', [
+                'phone_id' => $phoneNumberId,
+                'display_phone_number' => $displayPhoneNumber,
+                'waba_id' => $wabaId,
+                'customer_phone' => $customerPhone,
+                'message_id' => $message['id'] ?? null,
+                'message_type' => $message['type'] ?? null,
+            ]);
+
+            return null;
+        }
+
+        $whatsappUser = WhatsappUser::where('phone_id', $phoneNumberId)
+            ->where('status', 'active')
+            ->first();
+
+        if (!$whatsappUser) {
+            $knownWhatsappUser = WhatsappUser::where('phone_id', $phoneNumberId)->first();
+
+            Log::warning('WhatsApp user not found', [
+                'phone_id' => $phoneNumberId,
+                'display_phone_number' => $displayPhoneNumber,
+                'waba_id' => $wabaId,
+                'customer_phone' => $customerPhone,
+                'message_id' => $message['id'] ?? null,
+                'message_type' => $message['type'] ?? null,
+                'known_whatsapp_user_id' => $knownWhatsappUser?->id,
+                'known_user_id' => $knownWhatsappUser?->user_id,
+                'known_status' => $knownWhatsappUser?->status,
+            ]);
+
+            return null;
+        }
+
+        $conversation = WhatsappConversation::firstOrCreate(
+            [
+                'whatsapp_user_id' => $whatsappUser->id,
+                'customer_phone' => $customerPhone,
+            ],
+            [
+                'user_id' => $whatsappUser->user_id,
+                'status' => 'collecting',
+                'customer_name' => $entry['contacts'][0]['profile']['name'] ?? null,
+            ]
+        );
+
+        $incomingMessageType = $message['type'] ?? 'text';
+        $storedMessageType = $this->normalizeMessageTypeForStorage($incomingMessageType);
+        $content = $this->extractMessageContent($message, $incomingMessageType);
+
+        $mediaUrl = null;
+        if (in_array($incomingMessageType, ['image', 'document', 'audio', 'video'], true) && isset($message[$incomingMessageType]['url'])) {
+            $mediaUrl = $message[$incomingMessageType]['url'];
+        }
+
+        $providerMessageId = $message['id'] ?? null;
+        $messageWasNew = true;
+
+        if ($providerMessageId !== null && $providerMessageId !== '') {
+            $storedMessage = WhatsappMessage::firstOrCreate(
+                ['whatsapp_message_id' => (string) $providerMessageId],
+                [
+                    'conversation_id' => $conversation->id,
+                    'message_type' => $storedMessageType,
+                    'content' => $content,
+                    'media_url' => $mediaUrl,
+                    'raw_payload' => $message,
+                ]
+            );
+            $messageWasNew = $storedMessage->wasRecentlyCreated;
+        } else {
+            $storedMessage = WhatsappMessage::create([
+                'conversation_id' => $conversation->id,
+                'whatsapp_message_id' => null,
+                'message_type' => $storedMessageType,
+                'content' => $content,
+                'media_url' => $mediaUrl,
+                'raw_payload' => $message,
+            ]);
+        }
+
+        try {
+            $this->communicationSyncService->sync(
+                $conversation,
+                $storedMessage,
+                is_array($entry['metadata'] ?? null) ? $entry['metadata'] : null,
+                incrementUnread: $messageWasNew,
+            );
+        } catch (\Throwable $syncError) {
+            Log::error('whatsapp_ai.communication_sync.exception', [
+                'error' => $syncError->getMessage(),
+                'whatsapp_conversation_id' => $conversation->id,
+                'whatsapp_message_id' => $storedMessage->id,
+            ]);
+        }
+
+        if ($messageWasNew) {
+            if ($storedMessageType === 'audio') {
+                TranscribeAudio::dispatch($storedMessage->id)
+                    ->onQueue(config('whatsappai.queue', 'default'));
+            }
+
+            $conversation->increment('message_count');
+            $conversation->update([
+                'last_message_at' => now(),
+                'status' => 'collecting',
+            ]);
+
+            $delayMinutes = config('whatsappai.session_timeout', 5);
+            ProcessConversation::dispatch($conversation->id)
+                ->delay(now()->addMinutes($delayMinutes))
+                ->onQueue(config('whatsappai.queue', 'default'));
+        }
+
+        return [
+            'conversation_id' => (int) $conversation->id,
+            'message_count' => (int) $conversation->message_count,
+        ];
     }
 
     private function mirrorWebhookToForwardUrl(Request $request): void

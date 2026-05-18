@@ -29,6 +29,7 @@ return [
     'all_cities' => 'All cities',
     'search' => 'Search',
     'district_name' => 'District name',
+    'city_search_placeholder' => 'City, country (AR/EN), or city ID',
     'apply' => 'Apply',
     'reset' => 'Reset',
 

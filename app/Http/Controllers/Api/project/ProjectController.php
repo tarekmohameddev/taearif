@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\Api\Project\StoreProjectRequest;
 use App\Http\Requests\Api\Project\UpdateProjectRequest;
 use App\Models\User\RealestateManagement\Amenity;
+use App\Http\Resources\Api\ProjectPropertyResource;
 use App\Models\User\RealestateManagement\Project;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\ProjectType;
@@ -578,42 +579,7 @@ class ProjectController extends Controller
      */
     private function formatProperty($property): array
     {
-        $content = $property->contents->first();
-
-        return [
-            'id' => $property->id,
-            'project_id' => $property->project_id,
-            'title' => optional($content)->title ?? '',
-            'slug' => optional($content)->slug ?? '',
-            'address' => optional($content)->address ?? '',
-            'description' => optional($content)->description ?? '',
-            'price' => $property->price,
-            'pricePerMeter' => $property->pricePerMeter,
-            'purpose' => $property->purpose,
-            'property_type' => $property->property_type,
-            'beds' => $property->beds,
-            'bath' => $property->bath,
-            'area' => $property->area,
-            'size' => $property->size,
-            'featured_image' => $property->featured_image ? asset($property->featured_image) : null,
-            'gallery' => $property->galleryImages->map(fn($img) => asset($img->image))->toArray(),
-            'location' => [
-                'latitude' => $property->latitude,
-                'longitude' => $property->longitude,
-            ],
-            'status' => (bool) $property->status,
-            'featured' => (bool) $property->featured,
-            'show_reservations' => (bool) $property->show_reservations,
-            'property_status' => $property->property_status,
-            'features' => $property->features ?? [],
-            'faqs' => $property->faqs ?? [],
-            'category_id' => $property->category_id,
-            'payment_method' => $property->payment_method,
-            'video_url' => $property->video_url ? asset($property->video_url) : null,
-            'virtual_tour' => $property->virtual_tour ? asset($property->virtual_tour) : null,
-            'created_at' => $property->created_at?->toISOString(),
-            'updated_at' => $property->updated_at?->toISOString(),
-        ];
+        return (new ProjectPropertyResource($property))->resolve();
     }
 
 

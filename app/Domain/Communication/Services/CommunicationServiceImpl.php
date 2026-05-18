@@ -39,7 +39,9 @@ class CommunicationServiceImpl implements CommunicationService
         string $content,
         string $channel = 'whatsapp',
         ?string $providerMessageId = null,
-        array $meta = []
+        array $meta = [],
+        ?\DateTimeInterface $createdAt = null,
+        bool $incrementUnread = true,
     ): ?Message {
         try {
             if ($userId <= 0 || trim($externalPartyIdentifier) === '' || trim($content) === '') {
@@ -61,6 +63,7 @@ class CommunicationServiceImpl implements CommunicationService
 
             $channel = strtolower(trim($channel));
             $normalizedIdentifier = $this->normalizeExternalPartyIdentifier($externalPartyIdentifier);
+            $skipUnreadIncrement = ! $incrementUnread || ! empty($meta['skip_unread_increment']);
 
             if ($providerMessageId !== null && $providerMessageId !== '') {
                 $existing = Message::where('provider_message_id', $providerMessageId)
@@ -86,6 +89,8 @@ class CommunicationServiceImpl implements CommunicationService
                 $content,
                 $providerMessageId,
                 $meta,
+                $createdAt,
+                $skipUnreadIncrement,
                 &$message,
                 &$conversationNewlyCreated,
                 &$conversation
@@ -100,6 +105,8 @@ class CommunicationServiceImpl implements CommunicationService
                 );
                 $conversationNewlyCreated = $conversation->wasRecentlyCreated;
 
+                $messageAt = $createdAt !== null ? \Illuminate\Support\Carbon::parse($createdAt) : now();
+
                 $message = Message::create([
                     'conversation_id' => $conversation->id,
                     'user_id' => $userId,
@@ -108,9 +115,11 @@ class CommunicationServiceImpl implements CommunicationService
                     'status' => 'received',
                     'provider_message_id' => $providerMessageId,
                     'meta' => $meta,
+                    'created_at' => $messageAt,
+                    'updated_at' => $messageAt,
                 ]);
 
-                $conversation->update(['last_message_at' => now()]);
+                $conversation->update(['last_message_at' => $messageAt]);
 
                 // Always create/update WaConversationState for WhatsApp so the conversation appears in api/v1/whatsapp/conversations
                 $waNumberId = isset($meta['wa_number_id']) ? (int) $meta['wa_number_id'] : null;
@@ -175,10 +184,12 @@ class CommunicationServiceImpl implements CommunicationService
                     }
 
                     $preview = is_scalar($content) ? (string) $content : (string) json_encode($content ?? '');
-                    $state->increment('unread_count');
+                    if (! $skipUnreadIncrement) {
+                        $state->increment('unread_count');
+                    }
                     $state->update([
                         'last_message_preview' => \Illuminate\Support\Str::limit($preview, 500),
-                        'last_message_time' => now(),
+                        'last_message_time' => $messageAt,
                     ]);
                 }
 

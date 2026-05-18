@@ -1,5 +1,5 @@
 {{-- Add city + first district --}}
-<div class="modal fade" id="createCityModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade location-management-modal" id="createCityModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -79,7 +79,7 @@
 </div>
 
 {{-- Edit city group (all snapshot fields on user_districts) --}}
-<div class="modal fade" id="editCityModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade location-management-modal" id="editCityModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -93,6 +93,10 @@
         <input type="hidden" name="form_context" value="edit_city">
         <input type="hidden" name="city_id" id="edit_city_id" value="{{ old('city_id') }}">
         <div class="modal-body">
+          <div class="form-group">
+            <label>{{ __('admin.city_id') }}</label>
+            <input type="text" id="edit_city_id_display" class="form-control" value="{{ old('city_id') }}" readonly disabled>
+          </div>
           <div class="row">
             <div class="col-md-6">
               <div class="form-group">
@@ -136,7 +140,7 @@
 </div>
 
 {{-- Sync city to user_cities --}}
-<div class="modal fade" id="syncCityModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade location-management-modal" id="syncCityModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -194,7 +198,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('admin.close') }}</button>
-          <button type="submit" class="btn btn-success">{{ __('admin.sync') }}</button>
+          <button type="submit" class="btn btn-primary">{{ __('admin.sync') }}</button>
         </div>
       </form>
     </div>
