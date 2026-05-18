@@ -33,7 +33,10 @@ class MessageController extends BaseApiController
     {
         $tenantOwnerId = (int) auth()->user()->tenantOwnerId();
 
-        $conversation = Conversation::where('user_id', $tenantOwnerId)->find($id);
+        $conversation = Conversation::query()
+            ->where('user_id', $tenantOwnerId)
+            ->where('channel', 'whatsapp')
+            ->find($id);
         if (! $conversation) {
             return response()->json(['status' => 'error', 'code' => 'WA_CONVERSATION_NOT_FOUND', 'message' => 'Conversation not found.'], 404);
         }

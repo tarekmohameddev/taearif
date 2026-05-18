@@ -12,7 +12,8 @@ class WhatsAppConversationService
     {
         $query = WaConversationState::query()
             ->with(['conversation', 'waNumber'])
-            ->where('user_id', $userId);
+            ->where('user_id', $userId)
+            ->whereHas('conversation', fn ($q) => $q->where('channel', 'whatsapp'));
 
         if (isset($filters['status']) && $filters['status'] !== null && $filters['status'] !== '') {
             $query->where('status', (string) $filters['status']);
@@ -27,7 +28,17 @@ class WhatsAppConversationService
             });
         }
 
+        $allowedSortColumns = [
+            'last_message_time',
+            'unread_count',
+            'status',
+            'created_at',
+            'updated_at',
+        ];
         $sortBy = $filters['sort_by'] ?? 'last_message_time';
+        if (! in_array($sortBy, $allowedSortColumns, true)) {
+            $sortBy = 'last_message_time';
+        }
         $sortDir = strtolower($filters['sort_dir'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
         $query->orderBy($sortBy, $sortDir);
 
@@ -40,6 +51,7 @@ class WhatsAppConversationService
             ->with(['conversation', 'waNumber'])
             ->where('user_id', $userId)
             ->where('conversation_id', $conversationId)
+            ->whereHas('conversation', fn ($q) => $q->where('channel', 'whatsapp'))
             ->first();
     }
 
