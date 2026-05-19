@@ -643,6 +643,8 @@ Route::post('/whatsapp/webhook', [ChatController::class, 'handleWhatsappWebhook'
 Route::post('/isthara', [IstharaController::class, 'store']);
 
 // Location lookups (public)
+Route::get('/cities', [CityController::class, 'index'])
+    ->middleware('throttle:api_standard_60');
 Route::get('/districts', [DistrictController::class, 'index'])
     ->middleware('throttle:api_standard_60');
 
