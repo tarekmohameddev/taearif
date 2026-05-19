@@ -87,6 +87,17 @@ class ApiUserCategory extends Model
         return self::where('slug', 'other')->value('id');
     }
 
+    public function isOtherCategory(): bool
+    {
+        if ($this->slug === 'other') {
+            return true;
+        }
+
+        $name = mb_strtolower(trim((string) $this->name));
+
+        return in_array($name, ['أخرى', 'آخرى', 'other', 'etc', 'etc..'], true);
+    }
+
     public function scopeVisibleForUser($query, $userId)
     {
         return $query
