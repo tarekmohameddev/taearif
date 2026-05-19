@@ -96,6 +96,30 @@ class PropertyCategoriesApiTest extends TestCase
     }
 
     /** @test */
+    public function it_returns_other_category_last(): void
+    {
+        ApiUserCategory::updateOrCreate(
+            ['slug' => 'other'],
+            ['name' => 'أخرى', 'type' => 'property', 'is_active' => 1, 'icon' => null]
+        );
+        ApiUserCategory::updateOrCreate(
+            ['slug' => 'duplex'],
+            ['name' => 'دوبلكس', 'type' => 'property', 'is_active' => 1, 'icon' => null]
+        );
+
+        Cache::forget('api_property_categories_list');
+
+        Sanctum::actingAs($this->user);
+        $resp = $this->getJson('/api/properties/categories');
+
+        $resp->assertOk();
+        $names = collect($resp->json('data'))->pluck('name')->values()->all();
+
+        $this->assertSame('أخرى', end($names));
+        $this->assertNotSame('أخرى', $names[0]);
+    }
+
+    /** @test */
     public function it_is_idempotent_by_slug_and_does_not_create_duplicates(): void
     {
         $rows = [

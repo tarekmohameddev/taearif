@@ -927,10 +927,14 @@ class PropertyController extends Controller
         // Reduced TTL from 1 hour to 5 minutes to reduce stale data risk
         // Observer now handles automatic invalidation on category changes
         $categories = Cache::remember('api_property_categories_list', 300, function () {
-            return ApiUserCategory::where('is_active', true)
+            return ApiUserCategory::query()
+                ->where('is_active', true)
                 ->where('type', 'property')
-                ->get(['id', 'name'])
-                ->toArray();
+                ->get(['id', 'name', 'slug'])
+                ->sortBy(fn (ApiUserCategory $cat) => [$cat->isOtherCategory() ? 1 : 0, $cat->name])
+                ->values()
+                ->map(fn (ApiUserCategory $cat) => ['id' => $cat->id, 'name' => $cat->name])
+                ->all();
         });
 
         return response()->json([
