@@ -3,21 +3,29 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User\UserDistrict;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class DistrictController extends Controller
 {
-    //
-    public function index(Request $request)
+    /**
+     * GET /api/districts
+     * GET /api/districts?city_id=1
+     *
+     * Public lookup of rows from user_districts. city_id is optional.
+     */
+    public function index(Request $request): JsonResponse
     {
-        $cityId = $request->query('city_id');
+        $request->validate([
+            'city_id' => ['sometimes', 'nullable', 'integer', 'exists:user_districts,city_id'],
+        ]);
 
-        $districts = DB::table('user_districts')
-            ->when($cityId, function ($query) use ($cityId) {
-                $query->where('city_id', $cityId);
+        $districts = UserDistrict::query()
+            ->when($request->filled('city_id'), function ($query) use ($request) {
+                $query->where('city_id', (int) $request->input('city_id'));
             })
-            ->orderBy('id')
+            ->orderBy('name_ar')
             ->get();
 
         return response()->json(['data' => $districts]);

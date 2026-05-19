@@ -642,6 +642,10 @@ Route::post('/whatsapp/webhook', [ChatController::class, 'handleWhatsappWebhook'
 // Isthara (public)
 Route::post('/isthara', [IstharaController::class, 'store']);
 
+// Location lookups (public)
+Route::get('/districts', [DistrictController::class, 'index'])
+    ->middleware('throttle:api_standard_60');
+
 // Property requests (public)
 Route::post('/v1/property-requests/public', [ApiPropertyRequestController::class, 'store']);
 // Property interest (public - no authentication required)
