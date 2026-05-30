@@ -24,6 +24,7 @@ class BuildingController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = Auth::user();
+        $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
 
         // Get Arabic language ID for property contents
         $arabicLang = \App\Models\User\Language::where('user_id', $user->id)
@@ -32,7 +33,7 @@ class BuildingController extends Controller
 
         $languageId = $arabicLang ? $arabicLang->id : null;
 
-        $query = Building::where('user_id', $user->id)
+        $query = Building::where('user_id', $owner->id)
             ->with([
                 'user:id,username,email',
                 'meters',
@@ -151,7 +152,8 @@ class BuildingController extends Controller
     public function show($id): JsonResponse
     {
         $user = Auth::user();
-        
+        $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+
         // Get Arabic language ID for property contents
         $arabicLang = \App\Models\User\Language::where('user_id', $user->id)
             ->where('code', 'ar')
@@ -160,7 +162,7 @@ class BuildingController extends Controller
         $languageId = $arabicLang ? $arabicLang->id : null;
         
         $building = Building::where('id', $id)
-            ->where('user_id', $user->id)
+            ->where('user_id', $owner->id)
             ->with([
                 'user:id,username,email',
                 'meters',

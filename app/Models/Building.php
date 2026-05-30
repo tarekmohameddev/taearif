@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\User;
+use App\Models\User\RealestateManagement\Project;
 use App\Models\User\RealestateManagement\Property;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -21,6 +22,7 @@ class Building extends Model
         'deed_number',
         'deed_image',
         'user_id',
+        'project_id',
     ];
 
     protected $casts = [
@@ -36,6 +38,14 @@ class Building extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the project this building belongs to (optional).
+     */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class, 'project_id');
     }
 
     /**

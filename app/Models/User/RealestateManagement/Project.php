@@ -244,4 +244,9 @@ class Project extends Model
         return $this->hasMany(Property::class, 'project_id');
     }
 
+    public function buildings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Building::class, 'project_id');
+    }
+
 }

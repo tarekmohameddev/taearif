@@ -2,6 +2,7 @@
 
 namespace App\Models\Api\Rms;
 
+use App\Models\User\RealestateManagement\Property;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -45,6 +46,15 @@ class RmContract extends Model
     public function rental()
     {
         return $this->belongsTo(RmRental::class, 'rental_id');
+    }
+
+    /**
+     * Direct access to the unit — uses the snapshot property_id stored on creation.
+     * property() stays as the legacy alias; unit() is the canonical name per Blueprint v1.
+     */
+    public function unit()
+    {
+        return $this->belongsTo(Property::class, 'property_id');
     }
 
     public function isActive()

@@ -104,6 +104,16 @@ class Property extends Model
     }
 
     /**
+     * Owners of this unit with their ownership percentage and type.
+     */
+    public function owners()
+    {
+        return $this->belongsToMany(\App\Models\User::class, 'property_owners', 'property_id', 'owner_id')
+                    ->withPivot('ownership_percentage', 'ownership_type')
+                    ->withTimestamps();
+    }
+
+    /**
      * Customers this property is assigned to (pivot api_customer_assigned_property).
      */
     public function assignedCustomers()
