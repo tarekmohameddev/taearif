@@ -84,16 +84,26 @@ class PropertyObserver
     
     public function updated(Property $m): void {
         $ctx = AuditContext::data();
+        $original = $m->getOriginal();
+        $changes = ['before' => $original, 'after' => $m->getAttributes()];
+
+        if (array_key_exists('unit_status', $original)
+            && ($original['unit_status'] ?? null) !== $m->unit_status) {
+            $changes['unit_status'] = [
+                'old' => $original['unit_status'] ?? null,
+                'new' => $m->unit_status,
+            ];
+        }
+
         PropertyLog::create(array_merge($ctx, [
             'property_id' => $m->id,
             'tenant_id'   => $ctx['tenant_id'] ?? $m->user_id,
             'action'      => 'updated',
-            'changes'     => ['before'=>$m->getOriginal(), 'after'=>$m->getAttributes()],
+            'changes'     => $changes,
         ]));
         
         // Clear property cards cache when property is updated
         // Check if fields that affect statistics have changed
-        $original = $m->getOriginal();
         $completionChanged = isset($original['completion_status']) && 
                             ($original['completion_status'] ?? null) !== $m->completion_status;
         $purposeChanged = isset($original['purpose']) && 

@@ -28,7 +28,11 @@ class ProjectPropertyController extends Controller
         try {
             $owner = $this->resolveTenantOwner();
             $perPage = max(1, min((int) $request->query('per_page', 25), 100));
-            $properties = $this->projectPropertyService->listForProject($owner->id, $project, $perPage);
+            $properties = $this->projectPropertyService->listForProject($owner->id, $project, $perPage, $request->only([
+                'unit_status', 'listing_purpose', 'category_id', 'property_type',
+                'price_from', 'price_to', 'floor_number', 'city_id', 'state_id',
+                'payment_method', 'search',
+            ]));
 
             return response()->json([
                 'status' => 'success',

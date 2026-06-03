@@ -351,6 +351,7 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     Route::post  ('/projects/{project}/properties/attach', [ProjectPropertyController::class, 'attach'])->middleware('can:properties.update');
     Route::patch ('/projects/{project}/properties/{property}', [ProjectPropertyController::class, 'update'])->middleware('can:properties.update');
     Route::delete('/projects/{project}/properties/{property}', [ProjectPropertyController::class, 'destroy'])->middleware('can:properties.update');
+    Route::get   ('/projects/{id}/property-counters', [ProjectController::class, 'propertyCounters'])->middleware('can:projects.view');
     Route::get   ('/projects/{id}',       [ProjectController::class, 'show'])->middleware('can:projects.view');
     Route::post  ('/projects',            [ProjectController::class, 'store'])->middleware('can:projects.create');
     Route::post  ('/projects/{id}',       [ProjectController::class, 'update'])->middleware('can:projects.update');
@@ -382,7 +383,22 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     Route::post  ('/properties/drafts/{id}/complete',     [PropertyController::class, 'completeDraft'])->middleware('can:properties.create');
     Route::post  ('/properties/drafts/bulk-complete',     [PropertyController::class, 'bulkCompleteDrafts'])->middleware('can:properties.create');
 
+    Route::post  ('/properties/bulk',                     [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'bulkCreate'])->middleware('can:properties.create');
+    Route::post  ('/properties/import/excel',           [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'importExcel'])->middleware('can:properties.create');
+    Route::get   ('/properties/import/{batchId}/preview', [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'importPreview'])->middleware('can:properties.view');
+    Route::post  ('/properties/import/{batchId}/apply',   [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'importApply'])->middleware('can:properties.create');
+    Route::get   ('/properties/import/{batchId}/report',  [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'importReport'])->middleware('can:properties.view');
+
     Route::get   ('/properties/{id}',                    [PropertyController::class, 'show'])->middleware('can:properties.view');
+    Route::patch ('/properties/{id}/status',             [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'changeStatus'])->middleware('can:properties.change_status');
+    Route::get   ('/properties/{id}/audit-logs',         [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'auditLogs'])->middleware('can:properties.view_audit_log');
+    Route::get   ('/properties/{id}/internal-notes',     [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'internalNotes'])->middleware('can:properties.view');
+    Route::post  ('/properties/{id}/internal-notes',     [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'storeInternalNote'])->middleware('can:properties.update');
+    Route::get   ('/properties/{id}/archive',            [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'archive'])->middleware('can:properties.view');
+    Route::post  ('/properties/{id}/archive',            [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'storeArchiveItem'])->middleware('can:properties.update');
+    Route::get   ('/properties/{id}/crm-counters',       [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'crmCounters'])->middleware('can:properties.view');
+    Route::get   ('/properties/{id}/crm-relations',      [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'crmRelations'])->middleware('can:properties.view');
+    Route::post  ('/properties/{id}/crm-relations',      [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'storeCrmRelation'])->middleware('can:properties.update');
     Route::post  ('/properties/bulk-import',             [PropertyController::class, 'bulkImport'])->middleware('can:properties.create');
     // Route::get   ('/properties/bulk-import/template',    [PropertyController::class, 'downloadTemplate']); // Moved to public routes
     Route::post  ('/properties',                         [PropertyController::class, 'store'])->middleware('can:properties.create');
@@ -406,6 +422,8 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     Route::post  ('/buildings/upload-deed-image',       [App\Http\Controllers\Api\BuildingController::class, 'uploadDeedImage'])->middleware('can:buildings.create');
     Route::put   ('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'update'])->middleware('can:buildings.update');
     Route::delete('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'destroy'])->middleware('can:buildings.delete');
+
+    Route::post('/advertising-imports/link', [App\Http\Controllers\Api\AdvertisingImportController::class, 'storeFromLink'])->middleware('can:properties.create');
 });
 
 // --- Content ---
@@ -1105,6 +1123,9 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
     // Tenant Website Projects (public)
     Route::get('{tenantId}/projects', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'index']);
     Route::get('{tenantId}/projects/{slug}', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'show']);
+
+    Route::get('{tenantId}/buildings', [\App\Http\Controllers\Api\V1\TenantWebsite\BuildingController::class, 'index']);
+    Route::get('{tenantId}/buildings/{slug}', [\App\Http\Controllers\Api\V1\TenantWebsite\BuildingController::class, 'show']);
 
     // Tenant Website Posts (public)
     Route::get('{tenantId}/posts', [\App\Http\Controllers\Api\V1\TenantWebsite\PostController::class, 'index']);

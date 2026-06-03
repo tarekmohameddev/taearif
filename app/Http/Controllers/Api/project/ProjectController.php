@@ -279,6 +279,8 @@ class ProjectController extends Controller
             "featured" => $project->featured,
             "complete_status" => $project->complete_status ?? "Unknown",
             "units" => $project->units ?? 0,
+            "units_count" => $project->properties()->count(),
+            "units_display_only" => $project->units ?? 0,
             "completion_date" => $project->completion_date ?? "N/A",
             "developer" => $project->developer ?? "Unknown",
             "published" => $project->published,
@@ -826,6 +828,44 @@ class ProjectController extends Controller
                 "featured" => $project->featured
             ]
         ]);
+    }
+
+    public function propertyCounters(int $id): JsonResponse
+    {
+        $project = Project::query()->find($id);
+        if (! $project) {
+            return response()->json(['status' => 'error', 'message' => 'Project not found'], 404);
+        }
+
+        $base = Property::query()->where('project_id', $id);
+        $counts = [
+            'total' => (clone $base)->count(),
+            'available' => (clone $base)->where('unit_status', 'available')->count(),
+            'reserved' => (clone $base)->where('unit_status', 'reserved')->count(),
+            'sold' => (clone $base)->where('unit_status', 'sold')->count(),
+            'rented' => (clone $base)->where('unit_status', 'rented')->count(),
+            'sale_units' => (clone $base)->where('listing_purpose', 'sale')->count(),
+            'rent_units' => (clone $base)->where('listing_purpose', 'rent')->count(),
+        ];
+
+        $byCategory = (clone $base)
+            ->join('api_user_categories', 'user_properties.category_id', '=', 'api_user_categories.id')
+            ->selectRaw('api_user_categories.name, COUNT(*) as total')
+            ->groupBy('api_user_categories.name')
+            ->pluck('total', 'name')
+            ->all();
+
+        if (! empty($byCategory)) {
+            $counts['by_category'] = $byCategory;
+        }
+
+        foreach (['available', 'reserved', 'sold', 'rented', 'sale_units', 'rent_units'] as $key) {
+            if (($counts[$key] ?? 0) === 0) {
+                unset($counts[$key]);
+            }
+        }
+
+        return response()->json(['status' => 'success', 'data' => $counts]);
     }
 
     public function userProjects(Request $request)

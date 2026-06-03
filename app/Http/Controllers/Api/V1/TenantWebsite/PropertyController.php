@@ -69,7 +69,13 @@ class PropertyController extends Controller
 		$propertiesById = Property::query()
 			->with(['contents', 'galleryImages', 'project.contents'])
 			->where('user_id', $tenant->id)
-			->where('status', 1)
+			->when(config('properties.backfill_complete'), function ($q) {
+				$q->where('publish_status', 'published');
+			}, function ($q) {
+				$q->where('status', 1)->where(function ($inner) {
+					$inner->where('publish_status', 'published')->orWhereNull('publish_status');
+				});
+			})
 			->whereIn('id', $propertyIds)
 			->get()
 			->keyBy('id');
@@ -109,8 +115,20 @@ class PropertyController extends Controller
 
 		$query = Property::query()
 			->with(['contents', 'galleryImages', 'project.contents'])
-			->where('user_id', $tenant->id)
-			->where('status', 1);
+			->where('user_id', $tenant->id);
+
+		if (config('properties.backfill_complete')) {
+			$query->where('publish_status', 'published');
+		} else {
+			$query->where('status', 1)
+				->where(function ($q) {
+					$q->where('publish_status', 'published')->orWhereNull('publish_status');
+				});
+		}
+
+		if ($unitStatus = $request->query('unit_status')) {
+			$query->where('unit_status', $unitStatus);
+		}
 
 		// Filters
 		if ($purpose = $request->query('purpose')) {
@@ -474,6 +492,9 @@ class PropertyController extends Controller
 			'transactionType_en' => $normalizedPurpose,
 			'image' => $featured,
 			'featured' => (bool) $p->featured,
+			'unit_status' => $p->unit_status ?? ($isUnavailable ? 'sold' : 'available'),
+			'listing_purpose' => $p->listing_purpose,
+			'publish_status' => $p->publish_status,
 			'status' => $isUnavailable ? 'unavailable' : 'available',
 			'show_reservations' => (bool) $p->show_reservations,
 			'createdAt' => $p->created_at?->toISOString(),

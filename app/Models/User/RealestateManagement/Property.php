@@ -4,6 +4,7 @@ namespace App\Models\User\RealestateManagement;
 
 use App\Models\User;
 use App\Models\Building;
+use App\Services\Property\PropertyStatusSyncService;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User\RealestateManagement\Project;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -45,6 +46,13 @@ class Property extends Model
         'price',
         'pricePerMeter',
         'purpose',
+        'listing_purpose',
+        'unit_status',
+        'publish_status',
+        'source_broker_type',
+        'source_broker_id',
+        'source_broker_name',
+        'source_broker_phone',
         'property_type',
         'beds',
         'bath',
@@ -76,6 +84,13 @@ class Property extends Model
         'completed_at',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (Property $property) {
+            app(PropertyStatusSyncService::class)->syncModel($property);
+        });
+    }
+
     public function displayFaqs(): array
     {
         return collect($this->faqs ?? [])
@@ -96,6 +111,21 @@ class Property extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by', 'id');
+    }
+
+    public function sourceBroker()
+    {
+        return $this->belongsTo(User::class, 'source_broker_id', 'id');
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(\App\Models\Property\PropertyDocument::class, 'property_id');
+    }
+
+    public function crmRelations(): HasMany
+    {
+        return $this->hasMany(\App\Models\Property\PropertyCrmRelation::class, 'property_id');
     }
 
     public function category()
@@ -191,6 +221,9 @@ class Property extends Model
             'price' => $request['price'],
             'pricePerMeter' => $request['pricePerMeter'] ?? null,
             'purpose' => $request['purpose'] ?? null,
+            'listing_purpose' => $request['listing_purpose'] ?? null,
+            'unit_status' => $request['unit_status'] ?? null,
+            'publish_status' => $request['publish_status'] ?? null,
             'property_type' => $request['property_type'] ?? ($request['type'] ?? null),
             'beds' => $request['beds'] ?? null,
             'bath' => $request['bath'] ?? null,
@@ -239,6 +272,9 @@ class Property extends Model
             'price' => $requestData['price'] ?? null,
             'pricePerMeter' => $requestData['pricePerMeter'] ?? $this->pricePerMeter,
             'purpose' => $requestData['purpose'] ?? null,
+            'listing_purpose' => $requestData['listing_purpose'] ?? $this->listing_purpose,
+            'unit_status' => $requestData['unit_status'] ?? $this->unit_status,
+            'publish_status' => $requestData['publish_status'] ?? $this->publish_status,
             'property_type' => $requestData['property_type'] ?? ($requestData['type'] ?? null),
             'beds' => $requestData['beds'] ?? null,
             'bath' => $requestData['bath'] ?? null,

@@ -172,6 +172,15 @@ class ProjectController extends Controller
 			'floorplanImages',
 			'specifications',
 			'types',
+			'properties' => function ($q) {
+				if (config('properties.backfill_complete')) {
+					$q->where('publish_status', 'published');
+				} else {
+					$q->where(function ($inner) {
+						$inner->where('publish_status', 'published')->orWhereNull('publish_status');
+					})->where('status', 1);
+				}
+			},
 			'properties.contents',
 			'properties.galleryImages',
 		])
@@ -327,6 +336,9 @@ class ProjectController extends Controller
 				'latitude' => $property->latitude,
 				'longitude' => $property->longitude,
 			],
+			'unit_status' => $property->unit_status ?? 'available',
+			'listing_purpose' => $property->listing_purpose,
+			'publish_status' => $property->publish_status,
 			'status' => (bool) $property->status,
 			'featured' => (bool) $property->featured,
 			'show_reservations' => (bool) $property->show_reservations,

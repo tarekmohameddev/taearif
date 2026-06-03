@@ -178,6 +178,125 @@ class ProjectPropertyTest extends TestCase
         ]);
     }
 
+    public function test_index_lists_properties_for_project_with_status_fields(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, ['projects.view']);
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+        $property = $this->createProperty($tenant, $project->id);
+        $property->update([
+            'listing_purpose' => 'sale',
+            'unit_status' => 'available',
+            'publish_status' => 'published',
+        ]);
+
+        $response = $this->getJson("/api/projects/{$project->id}/properties?per_page=10");
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.pagination.total', 1)
+            ->assertJsonPath('data.properties.0.id', $property->id)
+            ->assertJsonPath('data.properties.0.project_id', $project->id)
+            ->assertJsonPath('data.properties.0.listing_purpose', 'sale')
+            ->assertJsonPath('data.properties.0.unit_status', 'available')
+            ->assertJsonPath('data.properties.0.publish_status', 'published');
+    }
+
+    public function test_index_returns_not_found_for_unknown_project(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->grantPermissions($tenant, ['projects.view']);
+        Sanctum::actingAs($tenant);
+
+        $this->getJson('/api/projects/999999999/properties')
+            ->assertNotFound()
+            ->assertJsonPath('status', 'error');
+    }
+
+    public function test_properties_index_unassigned_filter_excludes_linked_units(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, ['properties.view']);
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+        $unassigned = $this->createProperty($tenant, null);
+        $linked = $this->createProperty($tenant, $project->id);
+
+        $unassigned->contents()->update(['title' => 'Unassigned Picker Unit']);
+        $linked->contents()->update(['title' => 'Linked Project Unit']);
+
+        $response = $this->getJson('/api/properties?unassigned=1&per_page=50');
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success');
+
+        $ids = collect($response->json('data.properties'))->pluck('id')->all();
+
+        $this->assertContains($unassigned->id, $ids);
+        $this->assertNotContains($linked->id, $ids);
+    }
+
+    public function test_orchestration_create_new_units_then_attach_existing(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, [
+            'projects.view',
+            'properties.create',
+            'properties.update',
+        ]);
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+        $district = $this->createDistrict();
+        $existing = $this->createProperty($tenant, null);
+
+        $this->postJson("/api/projects/{$project->id}/properties", [
+            'title' => 'Orchestration Unit One',
+            'address' => 'Block A',
+            'description' => 'First new unit after project save',
+            'featured_image' => 'properties/orch-unit-1.jpg',
+            'district_id' => $district->id,
+            'purpose' => 'sale',
+        ])->assertCreated()
+            ->assertJsonPath('data.property.project_id', $project->id);
+
+        $this->postJson("/api/projects/{$project->id}/properties", [
+            'title' => 'Orchestration Unit Two',
+            'address' => 'Block B',
+            'description' => 'Second new unit after project save',
+            'featured_image' => 'properties/orch-unit-2.jpg',
+            'district_id' => $district->id,
+            'purpose' => 'sale',
+        ])->assertCreated();
+
+        $this->postJson("/api/projects/{$project->id}/properties/attach", [
+            'property_ids' => [$existing->id],
+        ])->assertOk()
+            ->assertJsonPath('data.properties.0.project_id', $project->id);
+
+        $list = $this->getJson("/api/projects/{$project->id}/properties?per_page=50");
+
+        $list->assertOk()
+            ->assertJsonPath('data.pagination.total', 3);
+
+        $ids = collect($list->json('data.properties'))->pluck('id')->all();
+        $this->assertContains($existing->id, $ids);
+    }
+
     public function test_create_property_under_project_sets_project_id_and_location(): void
     {
         $this->skipIfMissingSchema();

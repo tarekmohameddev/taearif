@@ -1556,7 +1556,6 @@ class PropertyController extends Controller
                 'features',
                 // 'transaction_type',
                 // 'category_id',
-                'project_id',
                 'city_id',
                 'state_id',
                 "facade_id",
@@ -2149,6 +2148,10 @@ class PropertyController extends Controller
         if ($request->has('category_id') && !empty($request->category_id)) {
             $categoryIds = is_array($request->category_id) ? $request->category_id : [$request->category_id];
             $propertiesQuery->whereIn('category_id', $categoryIds);
+        }
+
+        if (filter_var($request->input('unassigned'), FILTER_VALIDATE_BOOLEAN)) {
+            $propertiesQuery->whereNull('user_properties.project_id');
         }
 
         // Filter by payment_method

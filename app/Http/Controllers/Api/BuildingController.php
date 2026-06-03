@@ -33,7 +33,13 @@ class BuildingController extends Controller
 
         $languageId = $arabicLang ? $arabicLang->id : null;
 
+        $archived = $request->query('is_archived', '0');
         $query = Building::where('user_id', $owner->id)
+            ->when($archived !== null && $archived !== '', function ($q) use ($archived) {
+                $q->where('is_archived', filter_var($archived, FILTER_VALIDATE_BOOLEAN));
+            }, function ($q) {
+                $q->where('is_archived', false);
+            })
             ->with([
                 'user:id,username,email',
                 'meters',
@@ -107,7 +113,10 @@ class BuildingController extends Controller
 
         try {
             $user = Auth::user();
-            $data = $request->only(['name', 'deed_number']);
+            $data = $request->only([
+                'name', 'slug', 'deed_number', 'description', 'featured_image', 'owner_name',
+                'owner_phone', 'address', 'city_id', 'state_id', 'latitude', 'longitude', 'project_id',
+            ]);
             $data['user_id'] = $user->id;
 
             // Check if request is JSON (raw) or form-data for image handling logic
@@ -239,7 +248,11 @@ class BuildingController extends Controller
         }
 
         try {
-            $data = $request->only(['name', 'deed_number', 'image', 'deed_image']);
+            $data = $request->only([
+                'name', 'deed_number', 'image', 'deed_image', 'description', 'featured_image',
+                'owner_name', 'owner_phone', 'address', 'city_id', 'state_id', 'latitude', 'longitude',
+                'project_id', 'slug',
+            ]);
             $building->fill($data)->save();
             $this->syncBuildingMeters($building, $request);
 
@@ -296,16 +309,10 @@ class BuildingController extends Controller
         }
 
         try {
-            if ($building->image) {
-                $this->deleteImage($building->image);
-            }
-            if ($building->deed_image) {
-                $this->deleteImage($building->deed_image);
-            }
-            $building->delete();
+            $building->update(['is_archived' => true]);
             return response()->json([
                 'status' => 'success',
-                'message' => 'Building deleted successfully'
+                'message' => 'Building archived successfully'
             ]);
         } catch (\Exception $e) {
             return response()->json([

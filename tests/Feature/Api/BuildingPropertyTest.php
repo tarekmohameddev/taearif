@@ -11,11 +11,13 @@ use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\PropertyContent;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
+use Tests\Concerns\EnsuresPropertyStatusColumns;
 use Tests\TestCase;
 
 class BuildingPropertyTest extends TestCase
 {
     use DatabaseTransactions;
+    use EnsuresPropertyStatusColumns;
 
     /** @test */
     public function index_returns_paginated_units_with_status_for_building(): void
@@ -36,6 +38,7 @@ class BuildingPropertyTest extends TestCase
 
         $rented = $this->createUnit($user, $building->id, $language->id, [
             'title' => 'Unit Rented',
+            'purpose' => 'rent',
             'property_status' => 'rented',
             'status' => 0,
         ]);
@@ -63,8 +66,14 @@ class BuildingPropertyTest extends TestCase
         $rentedRow = collect($response->json('data.properties'))->firstWhere('id', $rented->id);
 
         $this->assertSame('available', $availableRow['property_status']);
+        $this->assertSame('sale', $availableRow['listing_purpose']);
+        $this->assertSame('available', $availableRow['unit_status']);
+        $this->assertSame('published', $availableRow['publish_status']);
         $this->assertSame(1, $availableRow['status']);
         $this->assertSame('rented', $rentedRow['property_status']);
+        $this->assertSame('rent', $rentedRow['listing_purpose']);
+        $this->assertSame('rented', $rentedRow['unit_status']);
+        $this->assertSame('draft', $rentedRow['publish_status']);
         $this->assertSame(0, $rentedRow['status']);
         $this->assertSame($building->id, $availableRow['building_id']);
     }
@@ -148,7 +157,7 @@ class BuildingPropertyTest extends TestCase
     }
 
     /**
-     * @param array{title?: string, property_status?: string, status?: int} $overrides
+     * @param array{title?: string, purpose?: string, property_status?: string, status?: int} $overrides
      */
     private function createUnit(User $user, int $buildingId, int $languageId, array $overrides = []): Property
     {
@@ -158,7 +167,7 @@ class BuildingPropertyTest extends TestCase
             'building_id' => $buildingId,
             'price' => 1000000,
             'pricePerMeter' => 1200,
-            'purpose' => 'sale',
+            'purpose' => $overrides['purpose'] ?? 'sale',
             'property_type' => 'residential',
             'area' => 500,
             'status' => $overrides['status'] ?? 1,

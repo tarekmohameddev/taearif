@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Building;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class BuildingRequest extends FormRequest
 {
@@ -14,9 +15,17 @@ class BuildingRequest extends FormRequest
     public function rules()
     {
         $isJsonRequest = $this->isJson() || $this->header('Content-Type') === 'application/json';
-        
+        $user = $this->user();
+        $ownerId = $user && method_exists($user, 'tenantOwnerId') ? $user->tenantOwnerId() : ($user?->id ?? 0);
+
         $rules = [
             'name' => 'required|string|max:255',
+            'slug' => [
+                'nullable',
+                'string',
+                'max:191',
+                Rule::unique('buildings', 'slug')->where(fn ($q) => $q->where('user_id', $ownerId)),
+            ],
             'deed_number' => 'nullable|string|max:255',
             'water_meter_numbers' => 'nullable|array',
             'water_meter_numbers.*' => 'string|max:255',
