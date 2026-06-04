@@ -6,6 +6,7 @@ namespace Tests\Feature\E2E;
 
 use App\Models\OtpVerification;
 use App\Models\User;
+use App\Services\WhatsAppService;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -49,6 +50,22 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
         return $token;
     }
 
+    private function mockWhatsAppOtpDelivery(bool $sent = true): void
+    {
+        $this->mock(WhatsAppService::class, function ($mock) use ($sent) {
+            $mock->shouldReceive('sendRegistrationOtp')->andReturn($sent);
+        });
+    }
+
+    private function skipIfUsersTableMissing(): void
+    {
+        try {
+            DB::table('users')->limit(1)->count();
+        } catch (QueryException $e) {
+            $this->markTestSkipped('Schema/users missing for OTP tests: ' . $e->getMessage());
+        }
+    }
+
     /** @test */
     public function send_otp_requires_phone(): void
     {
@@ -59,18 +76,55 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
     }
 
     /** @test */
-    public function send_otp_creates_otp_record_for_existing_user(): void
+    public function send_otp_rejects_registered_phone_without_auth(): void
     {
+        $this->skipIfUsersTableMissing();
+
         try {
+            $plainPassword = 'password123';
+            $phone = '+9665' . random_int(100000000, 999999999);
+            $email = 'otp-e2e-registered@example.com';
+
+            $this->createActiveTenantWithKnownPassword($email, $phone, $plainPassword);
+            $countBefore = OtpVerification::query()->where('identifier', $phone)->count();
+
+            $response = $this->postJson('/api/auth/send-otp', [
+                'phone' => $phone,
+            ]);
+
+            $response->assertStatus(409)
+                ->assertJsonPath('success', false)
+                ->assertJsonPath('error', 'phone_already_registered');
+
+            $this->assertSame(
+                $countBefore,
+                OtpVerification::query()->where('identifier', $phone)->count(),
+                'Expected no new OTP row for registered phone without auth.'
+            );
+        } catch (QueryException $e) {
+            $this->markTestSkipped('Schema/users missing for OTP tests: ' . $e->getMessage());
+        }
+    }
+
+    /** @test */
+    public function send_otp_creates_otp_record_for_authenticated_user(): void
+    {
+        $this->skipIfUsersTableMissing();
+
+        try {
+            $this->mockWhatsAppOtpDelivery(true);
+
             $plainPassword = 'password123';
             $phone = '+9665' . random_int(100000000, 999999999);
             $email = 'otp-e2e-send@example.com';
 
             $user = $this->createActiveTenantWithKnownPassword($email, $phone, $plainPassword);
+            $token = $this->loginAndGetToken($email, $plainPassword);
 
-            $response = $this->postJson('/api/auth/send-otp', [
-                'phone' => $phone,
-            ]);
+            $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+                ->postJson('/api/auth/send-otp', [
+                    'phone' => $phone,
+                ]);
 
             $response->assertStatus(200)
                 ->assertJsonPath('success', true)
@@ -96,16 +150,74 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
     }
 
     /** @test */
+    public function send_otp_creates_record_for_new_phone(): void
+    {
+        $this->skipIfUsersTableMissing();
+
+        try {
+            $this->mockWhatsAppOtpDelivery(true);
+
+            $phone = '+9665' . random_int(100000000, 999999999);
+
+            $response = $this->postJson('/api/auth/send-otp', [
+                'phone' => $phone,
+            ]);
+
+            $response->assertStatus(200)
+                ->assertJsonPath('success', true)
+                ->assertJsonPath('message', 'OTP sent.');
+
+            $otp = OtpVerification::query()
+                ->whereNull('user_id')
+                ->where('identifier', $phone)
+                ->where('context', OtpVerification::CONTEXT_REGISTRATION)
+                ->first();
+
+            $this->assertNotNull($otp, 'Expected pre-registration OTP row.');
+            $this->assertNull($otp->verified_at);
+            $this->assertTrue($otp->otp_expires_at->isFuture());
+        } catch (QueryException $e) {
+            $this->markTestSkipped('Schema/users missing for OTP tests: ' . $e->getMessage());
+        }
+    }
+
+    /** @test */
+    public function send_otp_returns_delivery_failed_when_whatsapp_fails(): void
+    {
+        $this->skipIfUsersTableMissing();
+
+        try {
+            $this->mockWhatsAppOtpDelivery(false);
+
+            $phone = '+9665' . random_int(100000000, 999999999);
+
+            $response = $this->postJson('/api/auth/send-otp', [
+                'phone' => $phone,
+            ]);
+
+            $response->assertStatus(503)
+                ->assertJsonPath('success', false)
+                ->assertJsonPath('error', 'delivery_failed');
+        } catch (QueryException $e) {
+            $this->markTestSkipped('Schema/users missing for OTP tests: ' . $e->getMessage());
+        }
+    }
+
+    /** @test */
     public function send_otp_rate_limits_after_5_sends_per_hour(): void
     {
+        $this->skipIfUsersTableMissing();
+
         try {
+            $this->mockWhatsAppOtpDelivery(true);
+
             $plainPassword = 'password123';
             $phone = '+9665' . random_int(100000000, 999999999);
             $email = 'otp-e2e-rate-limit@example.com';
 
             $user = $this->createActiveTenantWithKnownPassword($email, $phone, $plainPassword);
+            $token = $this->loginAndGetToken($email, $plainPassword);
 
-            // Seed 5 OTP rows within the last hour so createOrRefreshForUser hits the rate-limit check.
             for ($i = 0; $i < 5; $i++) {
                 DB::table('otp_verifications')->insert([
                     'user_id' => $user->id,
@@ -120,9 +232,10 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
                 ]);
             }
 
-            $response = $this->postJson('/api/auth/send-otp', [
-                'phone' => $phone,
-            ]);
+            $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+                ->postJson('/api/auth/send-otp', [
+                    'phone' => $phone,
+                ]);
 
             $response->assertStatus(422)
                 ->assertJsonPath('success', false)
@@ -134,8 +247,35 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
     }
 
     /** @test */
+    public function verify_otp_rejects_registered_phone_without_auth(): void
+    {
+        $this->skipIfUsersTableMissing();
+
+        try {
+            $plainPassword = 'password123';
+            $phone = '+9665' . random_int(100000000, 999999999);
+            $email = 'otp-e2e-verify-blocked@example.com';
+
+            $this->createActiveTenantWithKnownPassword($email, $phone, $plainPassword);
+
+            $response = $this->postJson('/api/auth/verify-otp', [
+                'phone' => $phone,
+                'otp' => '12345',
+            ]);
+
+            $response->assertStatus(409)
+                ->assertJsonPath('success', false)
+                ->assertJsonPath('error', 'phone_already_registered');
+        } catch (QueryException $e) {
+            $this->markTestSkipped('Schema/users missing for OTP verify block tests: ' . $e->getMessage());
+        }
+    }
+
+    /** @test */
     public function verify_otp_sets_phone_verified_at_on_success(): void
     {
+        $this->skipIfUsersTableMissing();
+
         try {
             $plainPassword = 'password123';
             $phone = '+9665' . random_int(100000000, 999999999);
@@ -162,7 +302,6 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
 
             $response->assertOk()
                 ->assertJsonPath('success', true)
-                ->assertJsonPath('error', null)
                 ->assertJsonPath('message', 'Phone verified.');
 
             $this->assertNotNull($user->fresh()->phone_verified_at, 'Expected phone_verified_at to be set.');
@@ -174,6 +313,8 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
     /** @test */
     public function verify_otp_returns_expected_error_codes(): void
     {
+        $this->skipIfUsersTableMissing();
+
         try {
             $plainPassword = 'password123';
             $phone = '+9665' . random_int(100000000, 999999999);
@@ -183,7 +324,6 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
             $token = $this->loginAndGetToken($email, $plainPassword);
 
             $cases = [
-                // error => [setup, sendOtp, expectedOtpAttemptsAfterOrNull]
                 'otp_not_found' => ['none', '12345', null],
                 'otp_invalid' => ['invalid', '000000', 1],
                 'otp_expired' => ['expired', '12345', null],
@@ -252,4 +392,3 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
         }
     }
 }
-

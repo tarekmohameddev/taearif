@@ -340,8 +340,10 @@ namespace App\Http\Controllers\Api;
  *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"phone"},
  *             @OA\Property(property="phone", type="string"),
  *         )),
- *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
- *         @OA\Response(response=401, description="Unauthenticated")
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="success", type="boolean", example=true), @OA\Property(property="message", type="string", example="OTP sent."))),
+ *         @OA\Response(response=409, description="Phone already registered", @OA\JsonContent(type="object", @OA\Property(property="success", type="boolean", example=false), @OA\Property(property="error", type="string", example="phone_already_registered"), @OA\Property(property="message", type="string"))),
+ *         @OA\Response(response=422, description="Rate limit or validation error"),
+ *         @OA\Response(response=503, description="WhatsApp delivery failed", @OA\JsonContent(type="object", @OA\Property(property="success", type="boolean", example=false), @OA\Property(property="error", type="string", example="delivery_failed"), @OA\Property(property="message", type="string")))
  *     )
  *
  * )
@@ -358,8 +360,9 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="otp", type="string"),
  *             @OA\Property(property="phone", type="string"),
  *         )),
- *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
- *         @OA\Response(response=401, description="Unauthenticated")
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="success", type="boolean", example=true), @OA\Property(property="message", type="string"), @OA\Property(property="verified_token", type="string", format="uuid", nullable=true), @OA\Property(property="data", type="object", nullable=true))),
+ *         @OA\Response(response=409, description="Phone already registered", @OA\JsonContent(type="object", @OA\Property(property="success", type="boolean", example=false), @OA\Property(property="error", type="string", example="phone_already_registered"), @OA\Property(property="message", type="string"))),
+ *         @OA\Response(response=422, description="Invalid or expired OTP")
  *     )
  *
  * )
