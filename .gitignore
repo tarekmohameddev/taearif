@@ -57,6 +57,9 @@ composer.lock
 database/seeders/RentalDashboardTestSeeder833.php
 database/seeds/RentalDashboardTestSeeder833.php
 
+# Jira notes and exports (local only, do not push)
+/jira/
+
 # Test scripts folder (local only, do not push)
 /test-scripts/
 test-webhook.php
