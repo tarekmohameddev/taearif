@@ -39,6 +39,7 @@ use Carbon\Carbon;
 use App\Services\AlibabaOssService;
 use App\Services\MembershipCacheService;
 use App\Services\PropertyListCacheVersionService;
+use App\Http\Resources\Api\PropertyListResource;
 use App\Http\Resources\Api\PropertyResource;
 use App\Http\Requests\Api\Property\BulkCompletePropertyDraftsRequest;
 use App\Http\Requests\Api\Property\BulkImportPropertiesRequest;
@@ -1979,6 +1980,7 @@ class PropertyController extends Controller
             'creator:id,first_name,last_name,username,email,account_type',
             'galleryImages:id,property_id,image', // Added to prevent N+1
             'UserPropertyCharacteristics:id,property_id', // Added if needed for filtering
+            'building:id,name,slug,user_id',
             'project.contents',
         ];
 
@@ -2152,6 +2154,22 @@ class PropertyController extends Controller
 
         if (filter_var($request->input('unassigned'), FILTER_VALIDATE_BOOLEAN)) {
             $propertiesQuery->whereNull('user_properties.project_id');
+        }
+
+        if ($request->filled('unit_status')) {
+            $propertiesQuery->where('user_properties.unit_status', $request->unit_status);
+        }
+
+        if ($request->filled('listing_purpose')) {
+            $propertiesQuery->where('user_properties.listing_purpose', $request->listing_purpose);
+        }
+
+        if ($request->filled('publish_status')) {
+            $propertiesQuery->where('user_properties.publish_status', $request->publish_status);
+        }
+
+        if ($request->filled('building_id')) {
+            $propertiesQuery->where('user_properties.building_id', (int) $request->building_id);
         }
 
         // Filter by payment_method
@@ -2533,6 +2551,9 @@ class PropertyController extends Controller
 
             // Extract cached values
             $availablePurposes = $filterOptions['purposes'];
+            $availableUnitStatuses = $filterOptions['unit_status'];
+            $availableListingPurposes = $filterOptions['listing_purpose'];
+            $availablePublishStatuses = $filterOptions['publish_status'];
             $priceRange = $filterOptions['price_range'];
             $areaRange = $filterOptions['area_range'];
             $availableTypes = $filterOptions['types'];
@@ -2550,6 +2571,9 @@ class PropertyController extends Controller
             'price_range' => $priceRange,
             'area_range' => $areaRange,
             'purpose' => $availablePurposes,
+            'unit_status' => $availableUnitStatuses ?? ['available', 'reserved', 'sold', 'rented'],
+            'listing_purpose' => $availableListingPurposes ?? ['sale', 'rent'],
+            'publish_status' => $availablePublishStatuses ?? ['draft', 'published'],
             'property_type' => $availableTypes,
             'beds' => $availableBeds,
             'bath' => $availableBath,
@@ -2567,9 +2591,10 @@ class PropertyController extends Controller
         $requestedFields = $request->input('fields');
         $allowedFields = [
             'id', 'visits', 'title', 'address', 'slug', 'price', 'property_type', 'beds', 'bath',
-            'area', 'transaction_type', 'features', 'status', 'featured_image', 'featured',
+            'area', 'purpose', 'transaction_type', 'listing_purpose', 'unit_status', 'publish_status',
+            'property_status', 'features', 'status', 'featured_image', 'featured',
             'show_reservations', 'created_at', 'updated_at', 'payment_method', 'creator',
-            'latitude', 'longitude'
+            'latitude', 'longitude', 'project_id', 'building_id', 'project', 'building',
         ];
 
         $fieldsToInclude = null;
@@ -2608,46 +2633,12 @@ class PropertyController extends Controller
                 $analyticsSlug = $slug;
             }
 
-            // Get project data if relationship is loaded
-            $projectData = null;
-            if ($property->relationLoaded('project') && $property->project) {
-                $projectContent = $property->project->contents->first();
-                $projectData = [
-                    'id' => $property->project->id,
-                    'title' => optional($projectContent)->title ?? '',
-                    'slug' => optional($projectContent)->slug ?? '',
-                ];
-            }
-
-            $propertyData = [
-                'id'               => $property->id,
-                'visits'           => (int) ($viewsBySlug[$analyticsSlug] ?? 0),
-                'title'            => $content->title ?? 'No Title',
-                'address'          => $content->address ?? 'No Address',
-                'slug'             => $slug,
-                'price'            => $property->price,
-                'property_type'    => $property->property_type,
-                'beds'             => $property->beds,
-                'bath'             => $property->bath,
-                'area'             => isset($property->area) ? formatNumberWithoutTrailingZeros($property->area) : null,
-                'transaction_type' => $property->purpose,
-                'features'         => $property->features,
-                'status'           => $property->status,
-                'featured_image'   => asset($property->featured_image),
-                'featured'         => (bool) $property->featured,
-                'show_reservations' => (bool) $property->show_reservations,
-                'created_at'       => $property->created_at->toISOString(),
-                'updated_at'       => $property->updated_at->toISOString(),
-                'payment_method'   => $property->payment_method,
-                'latitude'         => $property->latitude !== null ? (float) $property->latitude : null,
-                'longitude'        => $property->longitude !== null ? (float) $property->longitude : null,
-                'project'          => $projectData,
-                'creator' => $property->creator ? [
-                    'id'   => $property->creator->id,
-                    'name' => trim(($property->creator->first_name ?? '') . ' ' . ($property->creator->last_name ?? '')) ?: ($property->creator->username ?? $property->creator->email),
-                    'type' => $property->creator->account_type,
-                ] : null,
-            ];
+            $propertyData = (new PropertyListResource($property))
+                ->additional([
+                    'visits' => (int) ($viewsBySlug[$analyticsSlug] ?? 0),
+                    'content' => $content,
+                ])
+                ->resolve();
 
             // Filter fields if field selection is requested
             if ($fieldsToInclude !== null) {
