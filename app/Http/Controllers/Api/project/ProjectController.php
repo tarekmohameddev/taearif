@@ -65,6 +65,7 @@ class ProjectController extends Controller
         } catch (\Throwable $e) {}
 
         $projects = Project::with(['contents', 'specifications', 'types', 'creator', 'properties.contents', 'properties.galleryImages'])
+            ->withCount('properties')
             ->whereIn('user_id', $allowedUserIds)
             ->orderBy('id', 'desc')
             ->paginate(10);
@@ -147,7 +148,8 @@ class ProjectController extends Controller
                 "longitude"       => $project->longitude,
                 "featured"        => (bool) $project->featured,
                 "complete_status" => $project->complete_status,
-                "units"           => $project->units,
+                "units"           => $project->units, // legacy manual field; use units_count for dashboards
+                "units_count"     => (int) $project->properties_count,
                 "completion_date" => $project->completion_date,
                 "developer"       => $project->developer,
                 "published"       => (bool) $project->published,
@@ -216,7 +218,9 @@ class ProjectController extends Controller
             'creator',
             'properties.contents',
             'properties.galleryImages',
-        ])->find($id);
+        ])
+            ->withCount('properties')
+            ->find($id);
 
         if (!$project) {
             return response()->json([
@@ -279,7 +283,7 @@ class ProjectController extends Controller
             "featured" => $project->featured,
             "complete_status" => $project->complete_status ?? "Unknown",
             "units" => $project->units ?? 0,
-            "units_count" => $project->properties()->count(),
+            "units_count" => (int) $project->properties_count,
             "units_display_only" => $project->units ?? 0,
             "completion_date" => $project->completion_date ?? "N/A",
             "developer" => $project->developer ?? "Unknown",
