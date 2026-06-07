@@ -5,6 +5,7 @@ namespace App\Models\User\RealestateManagement;
 use App\Models\User;
 use App\Models\Building;
 use App\Services\Property\PropertyStatusSyncService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User\RealestateManagement\Project;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -573,6 +574,20 @@ class Property extends Model
     }
 
         return asset(ltrim($path, '/'));
+    }
+
+    /**
+     * Scope for tenant public website: only published listings (with legacy fallback).
+     */
+    public function scopePublishedForPublic(Builder $query): Builder
+    {
+        if (config('properties.backfill_complete')) {
+            return $query->where('publish_status', 'published');
+        }
+
+        return $query->where('status', 1)->where(function ($q) {
+            $q->where('publish_status', 'published')->orWhereNull('publish_status');
+        });
     }
 
     /**

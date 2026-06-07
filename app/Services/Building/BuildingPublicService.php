@@ -5,7 +5,6 @@ namespace App\Services\Building;
 use App\Models\Building;
 use App\Models\User\RealestateManagement\Property;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Config;
 
 class BuildingPublicService
 {
@@ -36,13 +35,6 @@ class BuildingPublicService
             ->where('user_id', $building->user_id)
             ->with(['contents', 'galleryImages']);
 
-        if (Config::get('properties.backfill_complete')) {
-            return $query->where('publish_status', 'published');
-        }
-
-        return $query->where(function ($q) {
-            $q->where('publish_status', 'published')
-                ->orWhereNull('publish_status');
-        })->where('status', 1);
+        return $query->publishedForPublic();
     }
 }

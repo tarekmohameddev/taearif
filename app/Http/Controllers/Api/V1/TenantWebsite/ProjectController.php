@@ -172,15 +172,7 @@ class ProjectController extends Controller
 			'floorplanImages',
 			'specifications',
 			'types',
-			'properties' => function ($q) {
-				if (config('properties.backfill_complete')) {
-					$q->where('publish_status', 'published');
-				} else {
-					$q->where(function ($inner) {
-						$inner->where('publish_status', 'published')->orWhereNull('publish_status');
-					})->where('status', 1);
-				}
-			},
+			'properties' => fn ($q) => $q->publishedForPublic(),
 			'properties.contents',
 			'properties.galleryImages',
 		])

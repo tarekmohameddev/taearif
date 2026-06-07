@@ -35,14 +35,7 @@ class SearchController extends Controller
             ->with(['contents', 'galleryImages', 'project.contents'])
             ->where('user_id', $tenant->id);
 
-        if (config('properties.backfill_complete')) {
-            $propertiesQuery->where('publish_status', 'published');
-        } else {
-            $propertiesQuery->where('status', 1)
-                ->where(function ($q) {
-                    $q->where('publish_status', 'published')->orWhereNull('publish_status');
-                });
-        }
+        $propertiesQuery->publishedForPublic();
 
         if ($title) {
             $propertiesQuery->whereHas('contents', function ($q) use ($title) {

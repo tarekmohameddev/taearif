@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
+use App\Http\Resources\Api\V1\TenantWebsite\PropertyPublicResource;
 use App\Models\User;
 
 class AiExportController extends Controller
@@ -49,7 +50,7 @@ class AiExportController extends Controller
                 ->where('user_id', $tenant->id);
 
             if (!$includeDrafts) {
-                $propertiesQuery->where('status', 1);
+                $propertiesQuery->publishedForPublic();
             }
 
             if ($since) {
@@ -143,7 +144,7 @@ class AiExportController extends Controller
                 ->with(['contents', 'galleryImages', 'proertyAmenities.amenity', 'UserPropertyCharacteristics'])
                 ->where('user_id', $tenant->id);
             if (!$includeDrafts) {
-                $propertiesQuery->where('status', 1);
+                $propertiesQuery->publishedForPublic();
             }
             if ($since) {
                 $propertiesQuery->where('updated_at', '>=', $since);
@@ -237,14 +238,16 @@ class AiExportController extends Controller
             'price' => $property->price,
             'pricePerMeter' => $property->pricePerMeter,
             'purpose' => $property->purpose,
+            'listing_purpose' => $property->listing_purpose,
+            'unit_status' => $property->unit_status,
+            'publish_status' => $property->publish_status,
             'property_type' => $property->property_type,
             'beds' => $property->beds,
             'bath' => $property->bath,
             'area' => $property->area,
             'size' => $property->size ?? null,
             'features' => $property->features ?? [],
-            'characteristics' => $property->UserPropertyCharacteristics ?? null,
-            'status' => (bool) $property->status,
+            'characteristics' => PropertyPublicResource::publicCharacteristics($property->UserPropertyCharacteristics),
             'featured' => (bool) $property->featured,
             'featured_image' => $featured,
             'gallery' => $images,

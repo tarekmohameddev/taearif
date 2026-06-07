@@ -22,7 +22,7 @@ class ReservationController extends Controller
 
         $property = Property::query()
             ->where('user_id', $tenant->id)
-            ->where('status', 1)
+            ->publishedForPublic()
             ->whereHas('contents', function ($q) use ($propertySlug) {
                 $q->where('slug', $propertySlug);
             })
