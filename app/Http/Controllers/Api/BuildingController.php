@@ -65,6 +65,14 @@ class BuildingController extends Controller
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
+        if ($request->filled('project_id')) {
+            $query->where('project_id', (int) $request->project_id);
+        }
+
+        if (filter_var($request->input('unassigned'), FILTER_VALIDATE_BOOLEAN)) {
+            $query->whereNull('project_id');
+        }
+
         $buildings = $query->paginate($request->get('per_page', 15));
 
         // Transform the properties data to include only needed fields

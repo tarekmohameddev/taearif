@@ -2,14 +2,22 @@
 
 namespace App\Http\Requests\Building;
 
+use App\Http\Requests\Concerns\ValidatesTenantProjectId;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class BuildingRequest extends FormRequest
 {
+    use ValidatesTenantProjectId;
+
     public function authorize()
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->normalizeNullableProjectId();
     }
 
     public function rules()
@@ -41,6 +49,6 @@ class BuildingRequest extends FormRequest
             $rules['deed_image'] = 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120';
         }
 
-        return $rules;
+        return array_merge($rules, $this->tenantProjectIdRules());
     }
 }

@@ -3,13 +3,21 @@
 namespace App\Http\Requests\Api\Building;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
+use App\Http\Requests\Concerns\ValidatesTenantProjectId;
 use Illuminate\Validation\Rule;
 
 class UpdateBuildingRequest extends BaseApiFormRequest
 {
+    use ValidatesTenantProjectId;
+
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->normalizeNullableProjectId();
     }
 
     public function rules(): array
@@ -18,7 +26,7 @@ class UpdateBuildingRequest extends BaseApiFormRequest
         $ownerId = $user && method_exists($user, 'tenantOwnerId') ? $user->tenantOwnerId() : ($user?->id ?? 0);
         $buildingId = (int) $this->route('id');
 
-        return [
+        return array_merge([
             'name' => 'sometimes|required|string|max:255',
             'slug' => [
                 'sometimes',
@@ -36,6 +44,6 @@ class UpdateBuildingRequest extends BaseApiFormRequest
             'electricity_meter_numbers.*' => 'string|max:255',
             'image' => 'nullable|string|max:500',
             'deed_image' => 'nullable|string|max:500',
-        ];
+        ], $this->tenantProjectIdRules(sometimes: true));
     }
 }
