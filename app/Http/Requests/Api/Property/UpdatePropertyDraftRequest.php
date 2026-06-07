@@ -3,9 +3,16 @@
 namespace App\Http\Requests\Api\Property;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
+use App\Http\Requests\Concerns\ValidatesTenantProjectId;
 
 class UpdatePropertyDraftRequest extends BaseApiFormRequest
 {
+    use ValidatesTenantProjectId;
+
+    protected function prepareForValidation(): void
+    {
+        $this->normalizeNullableProjectId();
+    }
     public function authorize()
     {
         return true;
@@ -13,7 +20,7 @@ class UpdatePropertyDraftRequest extends BaseApiFormRequest
 
     public function rules()
     {
-        return [
+        return array_merge([
             'title' => 'sometimes|string|max:255',
             'address' => 'sometimes|nullable|string|max:255',
             'description' => 'sometimes|nullable|string',
@@ -36,8 +43,7 @@ class UpdatePropertyDraftRequest extends BaseApiFormRequest
             'latitude' => 'sometimes|nullable|numeric',
             'longitude' => 'sometimes|nullable|numeric',
             'category_id' => 'sometimes|nullable|integer',
-            'project_id' => 'sometimes|nullable|integer',
             'building_id' => 'sometimes|nullable|integer',
-        ];
+        ], $this->tenantProjectIdRules(sometimes: true));
     }
 }
