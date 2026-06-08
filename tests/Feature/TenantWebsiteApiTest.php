@@ -408,6 +408,199 @@ class TenantWebsiteApiTest extends TestCase
             'url' => 'https://cdn.example.com/terms-banner.jpg',
         ]);
     }
+
+    public function test_public_static_pages_list_and_show_without_auth(): void
+    {
+        $tenant = $this->createTenant();
+        $components = [
+            ['id' => 'c1', 'type' => 'text', 'name' => 'Text', 'componentName' => 't1', 'data' => [], 'position' => 0],
+        ];
+        TenantStaticPage::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $tenant->id,
+            'page_id' => 'privacy',
+            'components' => $components,
+        ]);
+        TenantStaticPage::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $tenant->id,
+            'page_id' => 'profile',
+            'components' => $components,
+        ]);
+
+        $this->getJson('/api/v1/tenant-website/acme/static-pages')
+            ->assertOk()
+            ->assertJsonCount(2, 'pages')
+            ->assertJsonPath('pages.0.page_id', 'privacy')
+            ->assertJsonPath('pages.1.page_id', 'profile');
+
+        $this->getJson('/api/v1/tenant-website/acme/static-pages/privacy')
+            ->assertOk()
+            ->assertJsonPath('page_id', 'privacy')
+            ->assertJsonPath('components.0.id', 'c1');
+    }
+
+    public function test_public_static_pages_unknown_page_returns_404(): void
+    {
+        $tenant = $this->createTenant();
+
+        $this->getJson('/api/v1/tenant-website/acme/static-pages/not-a-page')
+            ->assertStatus(404);
+
+        TenantStaticPage::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $tenant->id,
+            'page_id' => 'privacy',
+            'components' => [],
+        ]);
+
+        $this->getJson('/api/v1/tenant-website/acme/static-pages/privacy')
+            ->assertStatus(404);
+    }
+
+    public function test_public_static_pages_empty_page_omitted_from_index(): void
+    {
+        $tenant = $this->createTenant();
+        TenantStaticPage::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $tenant->id,
+            'page_id' => 'privacy',
+            'components' => [],
+        ]);
+        TenantStaticPage::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $tenant->id,
+            'page_id' => 'profile',
+            'components' => [
+                ['id' => 'c1', 'type' => 'text', 'name' => 'Text', 'componentName' => 't1', 'data' => [], 'position' => 0],
+            ],
+        ]);
+
+        $this->getJson('/api/v1/tenant-website/acme/static-pages')
+            ->assertOk()
+            ->assertJsonCount(1, 'pages')
+            ->assertJsonPath('pages.0.page_id', 'profile');
+    }
+
+    public function test_public_static_pages_draft_fallback_when_not_published(): void
+    {
+        $tenant = $this->createTenant();
+        $draftComponents = [
+            ['id' => 'draft', 'type' => 'text', 'name' => 'Text', 'componentName' => 't1', 'data' => [], 'position' => 0],
+        ];
+        TenantStaticPage::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $tenant->id,
+            'page_id' => 'privacy',
+            'components' => $draftComponents,
+            'published_data' => null,
+        ]);
+
+        $this->getJson('/api/v1/tenant-website/acme/static-pages/privacy')
+            ->assertOk()
+            ->assertJsonPath('components.0.id', 'draft');
+    }
+
+    public function test_public_static_pages_prefers_published_data_after_publish(): void
+    {
+        $tenant = $this->createTenant();
+        $publishedComponents = [
+            ['id' => 'published', 'type' => 'text', 'name' => 'Text', 'componentName' => 't1', 'data' => [], 'position' => 0],
+        ];
+        $draftComponents = [
+            ['id' => 'draft', 'type' => 'text', 'name' => 'Text', 'componentName' => 't1', 'data' => [], 'position' => 0],
+        ];
+
+        $page = TenantStaticPage::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $tenant->id,
+            'page_id' => 'privacy',
+            'components' => $publishedComponents,
+        ]);
+
+        $this->actingAs($tenant, 'sanctum');
+        $this->postJson('/api/v1/tenant-website/acme/publish')->assertOk();
+
+        $page->refresh();
+        $page->components = $draftComponents;
+        $page->save();
+
+        $this->getJson('/api/v1/tenant-website/acme/static-pages/privacy')
+            ->assertOk()
+            ->assertJsonPath('components.0.id', 'published');
+    }
+
+    public function test_get_tenant_static_pages_use_published_fallback_logic(): void
+    {
+        $tenant = $this->createTenant();
+        TenantPage::create(['id' => (string) \Illuminate\Support\Str::uuid(), 'user_id' => $tenant->id, 'page_id' => 'homepage', 'components' => []]);
+        TenantGlobalComponent::create(['id' => (string) \Illuminate\Support\Str::uuid(), 'user_id' => $tenant->id, 'data' => []]);
+        TenantWebsiteLayout::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $tenant->id,
+            'data' => [],
+        ]);
+
+        $publishedComponents = [
+            ['id' => 'published', 'type' => 'text', 'name' => 'Text', 'componentName' => 't1', 'data' => [], 'position' => 0],
+        ];
+        $draftComponents = [
+            ['id' => 'draft', 'type' => 'text', 'name' => 'Text', 'componentName' => 't1', 'data' => [], 'position' => 0],
+        ];
+
+        $page = TenantStaticPage::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $tenant->id,
+            'page_id' => 'privacy',
+            'components' => $publishedComponents,
+        ]);
+
+        $this->actingAs($tenant, 'sanctum');
+        $this->postJson('/api/v1/tenant-website/acme/publish')->assertOk();
+
+        $page->refresh();
+        $page->components = $draftComponents;
+        $page->save();
+
+        $this->postJson('/api/v1/tenant-website/getTenant', ['websiteName' => 'acme'])
+            ->assertOk()
+            ->assertJsonPath('StaticPages.privacy.components.0.id', 'published');
+    }
+
+    public function test_public_static_pages_cross_tenant_isolation(): void
+    {
+        $tenantA = $this->createTenant('acme');
+        $tenantB = $this->createTenant('other');
+
+        TenantStaticPage::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $tenantA->id,
+            'page_id' => 'privacy',
+            'components' => [
+                ['id' => 'tenant-a', 'type' => 'text', 'name' => 'Text', 'componentName' => 't1', 'data' => [], 'position' => 0],
+            ],
+        ]);
+
+        $this->getJson('/api/v1/tenant-website/other/static-pages/privacy')
+            ->assertStatus(404);
+
+        TenantStaticPage::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $tenantB->id,
+            'page_id' => 'privacy',
+            'components' => [
+                ['id' => 'tenant-b', 'type' => 'text', 'name' => 'Text', 'componentName' => 't1', 'data' => [], 'position' => 0],
+            ],
+        ]);
+
+        $this->getJson('/api/v1/tenant-website/other/static-pages/privacy')
+            ->assertOk()
+            ->assertJsonPath('components.0.id', 'tenant-b');
+
+        $this->getJson('/api/v1/tenant-website/acme/static-pages/privacy')
+            ->assertOk()
+            ->assertJsonPath('components.0.id', 'tenant-a');
+    }
 }
 
 

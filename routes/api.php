@@ -140,6 +140,7 @@ use App\Http\Controllers\Api\V1\TenantWebsite\{
     FormController,
     PixelController as TenantWebsitePixelController,
     StaticPageController,
+    PublicStaticPageController,
 };
 use App\Http\Controllers\Api\V1\Analytics\PageviewController;
 use App\Http\Controllers\Api\V1\Analytics\Ga4AnalyticsController;
@@ -1096,6 +1097,12 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
 
     // Unified search endpoint (public) - must be before more specific routes
     Route::get('{tenantId}', [\App\Http\Controllers\Api\V1\TenantWebsite\SearchController::class, 'index']);
+
+    Route::get('{tenantId}/static-pages', [PublicStaticPageController::class, 'index'])
+        ->middleware('throttle:api_standard_60');
+    Route::get('{tenantId}/static-pages/{pageId}', [PublicStaticPageController::class, 'show'])
+        ->where('pageId', 'privacy|terms|profile')
+        ->middleware('throttle:api_standard_60');
 
     Route::get('{tenantId}/pages', [PageController::class, 'index']);
     Route::get('{tenantId}/pages/{pageId}', [PageController::class, 'show']);
