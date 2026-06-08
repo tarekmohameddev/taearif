@@ -20,6 +20,7 @@ use App\Models\User\UserCity;
 use App\Models\ApiCustomer;
 use App\Models\Api\ApiCustomerInquiry;
 use App\Models\Api\UserPropertyRequest;
+use App\Domain\PropertyRequests\Services\PropertyRequestLocationNormalizer;
 use App\Models\User;
 use App\Models\WhatsappUser;
 use App\Domain\Communication\Contracts\CommunicationService;
@@ -398,6 +399,7 @@ public function handleWhatsappWebhook(Request $request)
                 'region_code' => $regionCode,
             ];
 
+            $propertyRequestData = app(PropertyRequestLocationNormalizer::class)->normalize($propertyRequestData, 'whatsapp');
             UserPropertyRequest::create($propertyRequestData);
 
             // Debug what was actually saved

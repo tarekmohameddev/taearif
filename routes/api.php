@@ -849,6 +849,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('/property-requests/filters', [ApiPropertyRequestController::class, 'filterOptions'])->middleware('can:property_requests.view');
         Route::get('/property-requests/stats', [ApiPropertyRequestController::class, 'stats'])->middleware('can:property_requests.view');
         Route::get('/property-requests', [ApiPropertyRequestController::class, 'index'])->middleware('can:property_requests.view');
+        Route::get('/property-requests/map', [ApiPropertyRequestController::class, 'map']);
         Route::post('/property-requests', [ApiPropertyRequestController::class, 'store'])->middleware('can:property_requests.create');
         // Property IDs on request (must be before {id} so that .../properties is matched)
         Route::post('/property-requests/{id}/properties', [ApiPropertyRequestController::class, 'attachProperties'])->middleware('can:property_requests.update');

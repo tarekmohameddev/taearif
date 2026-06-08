@@ -14,6 +14,9 @@ use App\Models\Api\ApiCustomerInquiry;
 use App\Models\Api\UserPropertyRequest;
 use App\Models\ApiCustomer;
 use App\Domain\CustomersHub\Services\IgnoredCustomersService;
+use App\Domain\PropertyRequests\Services\PropertyRequestLocationNormalizer;
+use App\Domain\PropertyRequests\Support\LocationLookup;
+use App\Models\User\UserCity;
 
 class ProcessConversation implements ShouldQueue
 {
@@ -494,7 +497,18 @@ PROMPT;
                     : $newSummary;
             }
 
-            if (!empty($updates)) {
+            if (! empty($updates)) {
+                $normalizer = app(PropertyRequestLocationNormalizer::class);
+                if ($normalizer->hasLocationFields($updates)) {
+                    $locationFields = ['region', 'city_id', 'districts_id', 'city', 'district', 'latitude', 'longitude'];
+                    $base = $existing->only($locationFields);
+                    $normalized = $normalizer->normalize(array_merge($base, $updates), $existing->source);
+                    foreach ($locationFields as $field) {
+                        if (array_key_exists($field, $normalized)) {
+                            $updates[$field] = $normalized[$field];
+                        }
+                    }
+                }
                 $existing->update($updates);
             }
 
@@ -502,7 +516,7 @@ PROMPT;
         }
 
         // No existing active request — create a fresh one (first-time behaviour)
-        UserPropertyRequest::create([
+        $createPayload = app(PropertyRequestLocationNormalizer::class)->normalize([
             'user_id'             => $conversation->user_id,
             'customer_id'         => $customer->id,
             'phone'               => $conversation->customer_phone,
@@ -530,7 +544,9 @@ PROMPT;
             'contact_on_whatsapp' => true,
             'lang'                => 'ar',
             'detected_entities_json' => json_encode($extraction),
-        ]);
+        ], 'whatsapp');
+
+        UserPropertyRequest::create($createPayload);
     }
 
     /**
@@ -617,25 +633,21 @@ PROMPT;
      */
     private function resolveRegionFromCity(?int $userId, ?string $cityName): ?string
     {
-        if (!$cityName) {
+        if (! $cityName) {
             return null;
         }
 
         try {
-            $row = \Illuminate\Support\Facades\DB::table('user_cities')
-                ->where('user_id', $userId)
-                ->where(function ($q) use ($cityName) {
-                    $q->where('name_ar', $cityName)
-                      ->orWhere('name_en', $cityName);
-                })
-                ->first(['region_name_ar', 'region_name']);
-
-            if ($row) {
-                return $row->region_name_ar ?? $row->region_name ?? null;
+            $cityId = app(LocationLookup::class)->resolveCityIdByName($cityName);
+            if ($cityId === null) {
+                return null;
             }
+
+            $city = UserCity::query()->find($cityId);
+
+            return $city?->name_ar;
         } catch (\Throwable $e) {
-            // Non-critical: log and continue without region
-            \Illuminate\Support\Facades\Log::warning('ProcessConversation: could not resolve region from city', [
+            Log::warning('ProcessConversation: could not resolve region from city', [
                 'city' => $cityName,
                 'error' => $e->getMessage(),
             ]);
