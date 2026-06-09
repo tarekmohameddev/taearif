@@ -7,6 +7,7 @@ use App\Models\Api\UserApiCustomerStage;
 use App\Models\ApiCustomer;
 use App\Models\Property\PropertyCrmRelation;
 use App\Models\User;
+use App\Services\Property\PropertyCrmRelationService;
 use App\Models\User\RealestateManagement\Property;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Schema;
@@ -81,6 +82,45 @@ class PropertyCrmRelationsTest extends TestCase
             ->assertJsonPath('data.ai_matched', 0)
             ->assertJsonPath('data.manually_added', 0)
             ->assertJsonPath('data.sent_to_customer', 0);
+    }
+
+    public function test_ai_match_creates_new_row_on_each_appearance(): void
+    {
+        $user = $this->actingAsTenant();
+        $property = $this->createProperty($user->id);
+        $request = $this->createCrmRequest($user->id);
+        $service = app(PropertyCrmRelationService::class);
+
+        $service->recordAiMatch($property->id, $request->id, $user->id, $request->customer_id);
+        $service->recordAiMatch($property->id, $request->id, $user->id, $request->customer_id);
+
+        $this->assertSame(2, PropertyCrmRelation::query()
+            ->where('property_id', $property->id)
+            ->where('request_id', $request->id)
+            ->where('relation_type', PropertyCrmRelation::TYPE_AI_MATCHED)
+            ->count());
+
+        $this->getJson("/api/properties/{$property->id}/crm-relations/summary")
+            ->assertOk()
+            ->assertJsonPath('data.ai_matched', 2);
+    }
+
+    public function test_ai_match_list_shows_each_appearance(): void
+    {
+        $user = $this->actingAsTenant();
+        $property = $this->createProperty($user->id);
+        $request = $this->createCrmRequest($user->id);
+        $service = app(PropertyCrmRelationService::class);
+
+        $service->recordAiMatch($property->id, $request->id, $user->id, $request->customer_id);
+        $service->recordAiMatch($property->id, $request->id, $user->id, $request->customer_id);
+
+        $this->getJson("/api/properties/{$property->id}/crm-relations?relation_type=ai_matched")
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('meta.total', 2)
+            ->assertJsonPath('data.0.request_id', $request->id)
+            ->assertJsonPath('data.1.request_id', $request->id);
     }
 
     public function test_summary_forbidden_without_view_permission(): void

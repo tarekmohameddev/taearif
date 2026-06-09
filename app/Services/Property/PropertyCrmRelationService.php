@@ -6,25 +6,20 @@ use App\Models\Api\Crm\CrmRequest;
 use App\Models\Property\PropertyCrmRelation;
 use App\Models\User\RealestateManagement\Property;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class PropertyCrmRelationService
 {
     public function recordAiMatch(int $propertyId, int $requestId, int $userId, ?int $customerId = null): void
     {
-        PropertyCrmRelation::query()->updateOrCreate(
-            [
-                'property_id' => $propertyId,
-                'request_id' => $requestId,
-                'relation_type' => PropertyCrmRelation::TYPE_AI_MATCHED,
-            ],
-            [
-                'employee_id' => null,
-                'customer_id' => $customerId,
-                'occurred_at' => now(),
-            ]
-        );
+        PropertyCrmRelation::create([
+            'property_id' => $propertyId,
+            'request_id' => $requestId,
+            'relation_type' => PropertyCrmRelation::TYPE_AI_MATCHED,
+            'employee_id' => null,
+            'customer_id' => $customerId,
+            'occurred_at' => now(),
+        ]);
     }
 
     public function manuallyAdd(
@@ -52,7 +47,13 @@ class PropertyCrmRelationService
             'occurred_at' => now(),
         ]);
 
-        try {
+        $sentExists = PropertyCrmRelation::query()
+            ->where('property_id', $property->id)
+            ->where('request_id', $requestId)
+            ->where('relation_type', PropertyCrmRelation::TYPE_SENT_TO_CUSTOMER)
+            ->exists();
+
+        if (! $sentExists) {
             PropertyCrmRelation::create([
                 'property_id' => $property->id,
                 'request_id' => $requestId,
@@ -60,12 +61,6 @@ class PropertyCrmRelationService
                 'employee_id' => $employeeId,
                 'customer_id' => $customerId,
                 'occurred_at' => now(),
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('Failed to record sent_to_customer relation', [
-                'property_id' => $property->id,
-                'request_id' => $requestId,
-                'error' => $e->getMessage(),
             ]);
         }
 
