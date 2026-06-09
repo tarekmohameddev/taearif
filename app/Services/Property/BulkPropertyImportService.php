@@ -327,14 +327,36 @@ class BulkPropertyImportService
         return PropertyExcelHeaderMapping::normalizeRowData($data);
     }
 
+    public function resolveChunkSize(): int
+    {
+        return max(1, (int) config('bulk_import.chunk_size', 50));
+    }
+
     public function applyBatch(BulkImportBatch $batch): void
     {
+        $chunkSize = $this->resolveChunkSize();
+
         $batch->update(['status' => 'processing']);
-        ProcessBulkPropertyImport::dispatch($batch->id, 0, 500);
+        ProcessBulkPropertyImport::dispatch($batch->id, 0, $chunkSize);
+    }
+
+    public function markBatchFailed(BulkImportBatch $batch, string $message): void
+    {
+        $report = $batch->report ?? [];
+        $report['meta'] = array_merge($report['meta'] ?? [], [
+            'failed_at' => now()->toIso8601String(),
+            'failure_reason' => $message,
+        ]);
+
+        $batch->update([
+            'status' => 'failed',
+            'report' => $report,
+        ]);
     }
 
     public function processChunk(BulkImportBatch $batch, int $offset, int $chunkSize): void
     {
+        $chunkSize = max(1, $chunkSize);
         $rows = collect($batch->preview_data ?? [])->slice($offset, $chunkSize)->values();
         $report = $batch->report ?? ['rows' => []];
         if (! isset($report['rows'])) {
@@ -348,11 +370,6 @@ class BulkPropertyImportService
 
         foreach ($rows as $entry) {
             if (! ($entry['valid'] ?? false)) {
-                $report['rows'][] = [
-                    'row' => $entry['row'] ?? null,
-                    'status' => 'failed',
-                    'errors' => $entry['errors'] ?? ['Invalid row'],
-                ];
                 continue;
             }
 
@@ -377,6 +394,12 @@ class BulkPropertyImportService
         $processed = $offset + $rows->count();
         $total = count($batch->preview_data ?? []);
         $status = $processed >= $total ? 'done' : 'processing';
+
+        $report['meta'] = array_merge($report['meta'] ?? [], [
+            'processed_offset' => $processed,
+            'chunk_size' => $chunkSize,
+            'last_chunk_at' => now()->toIso8601String(),
+        ]);
 
         $batch->update([
             'succeeded' => $succeeded,
