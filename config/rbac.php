@@ -27,6 +27,7 @@ return [
         'projects.create',
         'projects.update',
         'projects.delete',
+        'projects.view_audit_log',
 
 		'properties.view',
         'properties.create',
@@ -50,6 +51,7 @@ return [
         'buildings.create',
         'buildings.update',
         'buildings.delete',
+        'buildings.view_audit_log',
 
 		'property_requests.view',
         'property_requests.create',
@@ -149,6 +151,7 @@ return [
             'projects.create',
             'projects.update',
             'projects.delete',
+            'projects.view_audit_log',
 			'properties.view',
             'properties.create',
             'properties.update',
@@ -176,6 +179,7 @@ return [
             'buildings.create',
             'buildings.update',
             'buildings.delete',
+            'buildings.view_audit_log',
 			'property_requests.view',
             'property_requests.create',
             'property_requests.update',

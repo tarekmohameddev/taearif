@@ -8,6 +8,7 @@ namespace App\Support;
 use App\Models\Logs\CustomerLog;
 use App\Models\Logs\ProjectLog;
 use App\Models\Logs\PropertyLog;
+use App\Services\Audit\EntityAuditLogger;
 
 class Audit
 {
@@ -29,6 +30,8 @@ class Audit
             'note'       => $note,
             'changes'    => $changes,
         ]));
+
+        app(EntityAuditLogger::class)->logAction('project', $projectId, $action, $note ?? null, $tenantId);
     }
 
     public static function property(int $tenantId, int $propertyId, string $action, ?string $note = null, array $changes = null): void {
@@ -39,6 +42,8 @@ class Audit
             'note'        => $note,
             'changes'     => $changes,
         ]));
+
+        app(EntityAuditLogger::class)->logAction('property', $propertyId, $action, $note ?? null, $tenantId);
     }
 
     public static function card(int $tenantId, int $cardId, string $action, ?string $note = null, array $changes = null): void

@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Models\Api\EmployeeActivityLog;
 use App\Models\ApiCustomer;
+use App\Models\Audit\EntityAuditLog;
 use App\Models\Logs\PropertyLog;
 use App\Models\User;
 use App\Models\User\RealestateManagement\Property;
@@ -29,6 +30,10 @@ class PropertyStatusChangeTest extends TestCase
             if (! Schema::hasTable($table)) {
                 $this->markTestSkipped("Missing DB table: {$table}.");
             }
+        }
+
+        if (! Schema::hasTable('entity_audit_logs')) {
+            $this->markTestSkipped('Missing DB table: entity_audit_logs.');
         }
     }
 
@@ -115,6 +120,17 @@ class PropertyStatusChangeTest extends TestCase
         $this->assertNull(
             PropertyLog::where('property_id', $property->id)->where('action', 'updated')->first()
         );
+
+        $entityRow = EntityAuditLog::where('entity_type', 'property')
+            ->where('entity_id', $property->id)
+            ->where('action', 'status_change')
+            ->where('field_name', 'unit_status')
+            ->first();
+
+        $this->assertNotNull($entityRow);
+        $this->assertSame('available', $entityRow->old_value);
+        $this->assertSame('sold', $entityRow->new_value);
+        $this->assertSame('Deal closed', $entityRow->reason);
     }
 
     public function test_status_change_creates_team_activity_log(): void

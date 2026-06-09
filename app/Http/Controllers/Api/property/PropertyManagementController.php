@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\property;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Api\V1\Logs\Concerns\BuildsLogResponses;
 use App\Http\Requests\Api\Property\BulkCreatePropertiesRequest;
 use App\Http\Requests\Api\Property\ImportExcelPropertiesRequest;
 use App\Http\Requests\Api\Property\ChangePropertyStatusRequest;
@@ -12,7 +11,6 @@ use App\Http\Requests\Api\Property\StoreInternalNoteRequest;
 use App\Http\Requests\Api\Property\StorePropertyCrmRelationRequest;
 use App\Http\Resources\Api\PropertyCrmRelationResource;
 use App\Http\Resources\Api\PropertyDocumentResource;
-use App\Models\Logs\PropertyLog;
 use App\Models\Property\BulkImportBatch;
 use App\Models\Property\PropertyCrmRelation;
 use App\Models\User\RealestateManagement\Property;
@@ -28,8 +26,6 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class PropertyManagementController extends Controller
 {
-    use BuildsLogResponses;
-
     public function __construct(
         private readonly PropertyStatusChangeService $statusChangeService,
         private readonly PropertyDocumentService $documentService,
@@ -77,22 +73,6 @@ class PropertyManagementController extends Controller
             'status' => 'success',
             'data' => $data,
         ]);
-    }
-
-    public function auditLogs(Request $request, int $id): JsonResponse
-    {
-        $user = Auth::user();
-        if (! $user->can('properties.view_audit_log') && $user->account_type !== 'tenant') {
-            abort(403, 'Unauthorized to view audit logs.');
-        }
-
-        $this->resolveProperty($id);
-
-        $paginator = PropertyLog::where('property_id', $id)
-            ->orderByDesc('id')
-            ->paginate(max(1, min(100, (int) $request->integer('per_page', 20))));
-
-        return $this->respondWithLogs($paginator);
     }
 
     public function internalNotes(Request $request, int $id): JsonResponse

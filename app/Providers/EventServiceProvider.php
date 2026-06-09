@@ -16,6 +16,8 @@ use App\Models\Logs\ProjectLog;
 use App\Models\Logs\PropertyLog;
 use App\Models\Membership;
 
+use App\Models\Building;
+use App\Observers\BuildingObserver;
 use App\Observers\ProjectObserver;
 use App\Observers\PropertyObserver;
 use App\Observers\UserObserver;
@@ -123,6 +125,7 @@ class EventServiceProvider extends ServiceProvider
         ApiCustomer::observe(ApiCustomerObserver::class);
         Project::observe(ProjectObserver::class);
         Property::observe(PropertyObserver::class);
+        Building::observe(BuildingObserver::class);
         CrmCard::observe(CrmCardObserver::class);
         \App\Models\WhatsappAddon::observe(\App\Observers\WhatsappAddonObserver::class);
         \App\Models\Membership::observe(MembershipObserver::class);

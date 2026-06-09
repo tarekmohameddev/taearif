@@ -359,6 +359,7 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     Route::delete('/projects/{id}',       [ProjectController::class, 'destroy'])->middleware('can:projects.delete');
     Route::patch ('/projects/{id}/toggle-featured', [ProjectController::class, 'toggleFeatured'])->middleware('can:projects.update');
     Route::get   ('/user/projects',       [ProjectController::class, 'userProjects'])->middleware('can:projects.view');
+    Route::get   ('/projects/{id}/audit-logs', [\App\Http\Controllers\Api\Audit\EntityAuditLogController::class, 'forProject'])->middleware('can:projects.view_audit_log');
 });
 
 
@@ -392,7 +393,7 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
 
     Route::get   ('/properties/{id}',                    [PropertyController::class, 'show'])->middleware('can:properties.view');
     Route::patch ('/properties/{id}/status',             [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'changeStatus'])->middleware('can:properties.change_status');
-    Route::get   ('/properties/{id}/audit-logs',         [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'auditLogs'])->middleware('can:properties.view_audit_log');
+    Route::get   ('/properties/{id}/audit-logs',         [\App\Http\Controllers\Api\Audit\EntityAuditLogController::class, 'forProperty'])->middleware('can:properties.view_audit_log');
     Route::get   ('/properties/{id}/internal-notes',     [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'internalNotes'])->middleware('can:properties.view');
     Route::post  ('/properties/{id}/internal-notes',     [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'storeInternalNote'])->middleware('can:properties.update');
     Route::get   ('/properties/{id}/archive',            [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'archive'])->middleware('can:properties.view');
@@ -424,6 +425,7 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     Route::post  ('/buildings/upload-deed-image',       [App\Http\Controllers\Api\BuildingController::class, 'uploadDeedImage'])->middleware('can:buildings.create');
     Route::put   ('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'update'])->middleware('can:buildings.update');
     Route::delete('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'destroy'])->middleware('can:buildings.delete');
+    Route::get   ('/buildings/{id}/audit-logs',        [\App\Http\Controllers\Api\Audit\EntityAuditLogController::class, 'forBuilding'])->middleware('can:buildings.view_audit_log');
 
     Route::post('/advertising-imports/link', [App\Http\Controllers\Api\AdvertisingImportController::class, 'storeFromLink'])->middleware('can:properties.create');
 });

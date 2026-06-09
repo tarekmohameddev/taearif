@@ -4,7 +4,9 @@ namespace App\Observers;
 
 use App\Models\User\RealestateManagement\Property;
 use App\Models\Logs\PropertyLog;
+use App\Services\Audit\EntityAuditLogger;
 use App\Support\AuditContext;
+use App\Support\PropertyAuditFields;
 use App\Support\CacheInvalidationHelper;
 use App\Services\PropertyListCacheVersionService;
 use Illuminate\Support\Facades\Cache;
@@ -12,6 +14,10 @@ use Illuminate\Support\Facades\Log;
 
 class PropertyObserver
 {
+    public function __construct(
+        private readonly EntityAuditLogger $auditLogger,
+    ) {}
+
     /**
      * Clear property-related caches for a given user ID.
      * This ensures statistics and listings remain accurate after property changes.
@@ -71,12 +77,16 @@ class PropertyObserver
 
     public function created(Property $m): void {
         $ctx = AuditContext::data();
+        $tenantId = $ctx['tenant_id'] ?? $m->user_id;
+
         PropertyLog::create(array_merge($ctx, [
             'property_id' => $m->id,
-            'tenant_id'   => $ctx['tenant_id'] ?? $m->user_id,
+            'tenant_id'   => $tenantId,
             'action'      => 'created',
             'changes'     => ['after'=>$m->getAttributes()],
         ]));
+
+        $this->auditLogger->logCreated('property', $m->id, $m->getAttributes(), $tenantId);
         
         // Clear property-related caches when new property is created
         $this->clearPropertyCachesForUser($m->user_id);
@@ -90,6 +100,7 @@ class PropertyObserver
 
         if (! $onlyStatusSync) {
             $ctx = AuditContext::data();
+            $tenantId = $ctx['tenant_id'] ?? $m->user_id;
             $changes = ['before' => $original, 'after' => $m->getAttributes()];
 
             if (array_key_exists('unit_status', $original)
@@ -102,10 +113,21 @@ class PropertyObserver
 
             PropertyLog::create(array_merge($ctx, [
                 'property_id' => $m->id,
-                'tenant_id'   => $ctx['tenant_id'] ?? $m->user_id,
+                'tenant_id'   => $tenantId,
                 'action'      => 'updated',
                 'changes'     => $changes,
             ]));
+
+            $this->auditLogger->logFields(
+                'property',
+                $m->id,
+                $original,
+                $m->getAttributes(),
+                PropertyAuditFields::TRACKED,
+                'updated',
+                null,
+                $tenantId,
+            );
         }
         
         // Clear property cards cache when property is updated
@@ -130,12 +152,16 @@ class PropertyObserver
     
     public function deleted(Property $m): void {
         $ctx = AuditContext::data();
+        $tenantId = $ctx['tenant_id'] ?? $m->user_id;
+
         PropertyLog::create(array_merge($ctx, [
             'property_id' => $m->id,
-            'tenant_id'   => $ctx['tenant_id'] ?? $m->user_id,
+            'tenant_id'   => $tenantId,
             'action'      => 'deleted',
             'changes'     => ['before'=>$m->getOriginal()],
         ]));
+
+        $this->auditLogger->logDeleted('property', $m->id, $m->getOriginal(), $tenantId);
         
         // Clear property-related caches when property is deleted
         $this->clearPropertyCachesForUser($m->user_id);

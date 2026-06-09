@@ -7,7 +7,9 @@ use App\Events\PropertyStatusChanged;
 use App\Models\Logs\PropertyLog;
 use App\Models\User;
 use App\Models\User\RealestateManagement\Property;
+use App\Services\Audit\EntityAuditLogger;
 use App\Support\AuditContext;
+use App\Support\PropertyAuditFields;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
@@ -17,6 +19,7 @@ class PropertyStatusChangeService
         private readonly PropertyStatusSyncService $statusSync,
         private readonly CustomerAssignedPropertyService $assignedPropertyService,
         private readonly PropertyCrmDealCloseService $crmDealCloseService,
+        private readonly EntityAuditLogger $entityAuditLogger,
     ) {}
 
     /**
@@ -30,6 +33,7 @@ class PropertyStatusChangeService
         ?int $actorId = null,
     ): array {
         $oldUnitStatus = $property->unit_status;
+        $beforeStatus = $this->extractStatusFields($property->getAttributes());
 
         if ($unitStatus === 'reserved' && ! $customerId) {
             throw new UnprocessableEntityHttpException('customer_id is required when unit_status is reserved.');
@@ -77,13 +81,53 @@ class PropertyStatusChangeService
         }
 
         $ctx = AuditContext::data();
+        $tenantId = $ctx['tenant_id'] ?? $property->user_id;
+
         PropertyLog::create(array_merge($ctx, [
             'property_id' => $property->id,
-            'tenant_id' => $ctx['tenant_id'] ?? $property->user_id,
+            'tenant_id' => $tenantId,
             'action' => 'status_change',
             'reason' => $reason,
             'changes' => $logChanges,
         ]));
+
+        $afterStatus = $this->extractStatusFields($property->getAttributes());
+        $this->entityAuditLogger->logFields(
+            'property',
+            $property->id,
+            $beforeStatus,
+            $afterStatus,
+            PropertyAuditFields::STATUS,
+            'status_change',
+            $reason,
+            $tenantId,
+        );
+
+        if ($customerId) {
+            $this->entityAuditLogger->logField(
+                'property',
+                $property->id,
+                'customer_id',
+                null,
+                $customerId,
+                'status_change',
+                $reason,
+                $tenantId,
+            );
+        }
+
+        if ($crmResult !== null) {
+            $this->entityAuditLogger->logField(
+                'property',
+                $property->id,
+                'crm_close',
+                null,
+                $logChanges['crm_close'],
+                'status_change',
+                $reason,
+                $tenantId,
+            );
+        }
 
         event(new PropertyStatusChanged(
             $property,
@@ -111,5 +155,14 @@ class PropertyStatusChangeService
             'customer' => $customer,
             'crm' => $crmResult,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @return array<string, mixed>
+     */
+    private function extractStatusFields(array $attributes): array
+    {
+        return array_intersect_key($attributes, array_flip(PropertyAuditFields::STATUS));
     }
 }
