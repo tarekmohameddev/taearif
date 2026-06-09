@@ -13,6 +13,7 @@ use App\Models\User\RealestateManagement\PropertyContent;
 use App\Models\User\RealestateManagement\PropertySliderImg;
 use App\Models\User\UserDistrict;
 use App\Services\MembershipCacheService;
+use App\Services\Property\PropertyProjectLinkGuard;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
@@ -24,6 +25,11 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class ProjectPropertyService
 {
+    public function __construct(
+        private readonly PropertyProjectLinkGuard $projectLinkGuard,
+    ) {
+    }
+
     public function listForProject(int $tenantOwnerId, int $projectId, int $perPage = 25, array $filters = []): LengthAwarePaginator
     {
         $this->resolveProjectForTenant($tenantOwnerId, $projectId);
@@ -216,7 +222,6 @@ class ProjectPropertyService
         DB::transaction(function () use ($property, $payload, $location, $defaultLanguage, $tenantOwnerId): void {
             $propertyData = $this->buildPropertyPayload($payload, (int) $property->project_id, false);
             if ($propertyData !== []) {
-                $propertyData['project_id'] = $property->project_id;
                 $property->updateProperty($propertyData);
             }
 
@@ -277,7 +282,7 @@ class ProjectPropertyService
             return;
         }
 
-        $property->update(['project_id' => null]);
+        $this->projectLinkGuard->assertProjectIdImmutable($property, null);
     }
 
     public function resolveProjectForTenant(int $tenantOwnerId, int $projectId): Project

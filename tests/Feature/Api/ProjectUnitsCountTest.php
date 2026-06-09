@@ -227,7 +227,7 @@ class ProjectUnitsCountTest extends TestCase
             ->assertJsonPath('data.project.units_count', 2);
     }
 
-    public function test_units_count_decreases_on_detach(): void
+    public function test_units_count_unchanged_on_soft_detach(): void
     {
         $this->skipIfMissingSchema();
 
@@ -239,15 +239,16 @@ class ProjectUnitsCountTest extends TestCase
             ->assertJsonPath('data.project.units_count', 1);
 
         $this->deleteJson("/api/projects/{$project->id}/properties/{$property->id}")
-            ->assertOk()
-            ->assertJsonPath('data.detached', true);
+            ->assertStatus(422)
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('message', 'project_id cannot be changed after creation.');
 
         $this->getJson("/api/projects/{$project->id}")
-            ->assertJsonPath('data.project.units_count', 0);
+            ->assertJsonPath('data.project.units_count', 1);
 
         $this->assertDatabaseHas('user_properties', [
             'id' => $property->id,
-            'project_id' => null,
+            'project_id' => $project->id,
         ]);
     }
 

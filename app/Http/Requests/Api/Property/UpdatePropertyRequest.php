@@ -83,6 +83,7 @@ class UpdatePropertyRequest extends BaseApiFormRequest
             'property_type' => PropertyTypeRule::requiredRule(),
             'faqs' => 'nullable|array',
             'building_id' => 'nullable|integer|exists:buildings,id',
+            'project_id' => 'prohibited',
             'water_meter_number' => 'nullable|string',
             'electricity_meter_number' => 'nullable|string',
             'deed_number' => 'nullable|string',

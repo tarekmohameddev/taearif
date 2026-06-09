@@ -577,13 +577,20 @@ class ProjectPropertyTest extends TestCase
             ->assertJsonPath('data.property.advertising_license', 'LIC-999');
 
         $this->deleteJson("/api/projects/{$project->id}/properties/{$property->id}")
-            ->assertOk()
-            ->assertJsonPath('data.detached', true);
+            ->assertStatus(422)
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('message', 'project_id cannot be changed after creation.');
 
         $this->assertDatabaseHas('user_properties', [
             'id' => $property->id,
-            'project_id' => null,
+            'project_id' => $project->id,
         ]);
+
+        $this->deleteJson("/api/projects/{$project->id}/properties/{$property->id}?hard_delete=true")
+            ->assertOk()
+            ->assertJsonPath('data.deleted', true);
+
+        $this->assertDatabaseMissing('user_properties', ['id' => $property->id]);
     }
 
     public function test_update_returns_not_found_when_property_not_on_project(): void

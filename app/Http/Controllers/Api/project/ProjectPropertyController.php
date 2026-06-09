@@ -162,6 +162,11 @@ class ProjectPropertyController extends Controller
                 'status' => 'error',
                 'message' => $e->getMessage(),
             ], 409);
+        } catch (HttpException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], $e->getStatusCode());
         }
     }
 

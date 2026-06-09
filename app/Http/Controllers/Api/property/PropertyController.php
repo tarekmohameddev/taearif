@@ -38,6 +38,7 @@ use App\Services\PropertyFilterOptionsService;
 use Carbon\Carbon;
 use App\Services\AlibabaOssService;
 use App\Services\MembershipCacheService;
+use App\Services\Property\PropertyProjectLinkGuard;
 use App\Services\PropertyListCacheVersionService;
 use App\Http\Resources\Api\PropertyListResource;
 use App\Http\Resources\Api\PropertyResource;
@@ -56,6 +57,7 @@ use App\Http\Requests\Api\Property\UpdatePropertyRequest;
 
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\PropertiesImport;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class PropertyController extends Controller
 {
@@ -596,8 +598,10 @@ class PropertyController extends Controller
 
     private $videoService;
 
-    public function __construct(AlibabaOssService $ossService)
-    {
+    public function __construct(
+        AlibabaOssService $ossService,
+        private readonly PropertyProjectLinkGuard $projectLinkGuard,
+    ) {
         $this->videoService = $ossService;
     }
 
@@ -3896,6 +3900,13 @@ class PropertyController extends Controller
                 ], 404);
             }
 
+            if (array_key_exists('project_id', $validated)) {
+                $this->projectLinkGuard->assertProjectIdImmutable(
+                    $property,
+                    $validated['project_id'] !== null ? (int) $validated['project_id'] : null,
+                );
+            }
+
             $defaultLanguage = Language::where('user_id', $owner->id)
                 ->where('is_default', 1)
                 ->firstOrFail();
@@ -3982,6 +3993,11 @@ class PropertyController extends Controller
                 'message' => 'Draft property updated successfully',
                 'data' => $property,
             ]);
+        } catch (HttpException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], $e->getStatusCode());
         } catch (\Exception $e) {
             Log::error('Error updating draft: ' . $e->getMessage());
             return response()->json([
@@ -4069,6 +4085,13 @@ class PropertyController extends Controller
                 ], 422);
             }
 
+            if (array_key_exists('project_id', $validated)) {
+                $this->projectLinkGuard->assertProjectIdImmutable(
+                    $property,
+                    $validated['project_id'] !== null ? (int) $validated['project_id'] : null,
+                );
+            }
+
             DB::transaction(function () use ($property, $owner, $defaultLanguage, $completeData, $validated) {
                 // Update property with all data
                 $propertyData = [];
@@ -4149,6 +4172,11 @@ class PropertyController extends Controller
                 'message' => 'Property completed successfully',
                 'data' => $property,
             ]);
+        } catch (HttpException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], $e->getStatusCode());
         } catch (\Exception $e) {
             Log::error('Error completing draft: ' . $e->getMessage());
             return response()->json([

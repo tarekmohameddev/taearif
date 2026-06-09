@@ -265,7 +265,6 @@ class Property extends Model
         }
 
         return $this->update([
-            'project_id' => $requestData['project_id'] ?? null,
             'region_id' => $requestData['region_id'] ?? null,
             'featured_image' => $requestData['featured_image'] ?? $this->featured_image,
             'floor_planning_image' => $requestData['floor_planning_image'] ?? null,
