@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\Concerns\EnsuresPropertyStatusColumns;
 use Tests\TestCase;
 
@@ -32,10 +33,14 @@ class PropertyStatusChangeTest extends TestCase
 
     public function test_forbidden_without_change_status_permission(): void
     {
-        $user = User::factory()->create(['account_type' => 'tenant']);
-        Sanctum::actingAs($user);
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $employee = User::factory()->create([
+            'account_type' => 'employee',
+            'tenant_id' => $tenant->id,
+        ]);
+        Sanctum::actingAs($employee);
 
-        $property = $this->createProperty($user->id);
+        $property = $this->createProperty($tenant->id);
 
         $this->patchJson("/api/properties/{$property->id}/status", [
             'unit_status' => 'sold',
@@ -44,7 +49,7 @@ class PropertyStatusChangeTest extends TestCase
 
     public function test_sale_unit_cannot_be_marked_rented(): void
     {
-        $user = $this->actingAsTenantWithPermission('properties.change_status');
+        $user = $this->actingAsTenant();
         $property = $this->createProperty($user->id, 'sale', 'available');
 
         $this->patchJson("/api/properties/{$property->id}/status", [
@@ -55,7 +60,7 @@ class PropertyStatusChangeTest extends TestCase
 
     public function test_rent_unit_cannot_be_marked_sold(): void
     {
-        $user = $this->actingAsTenantWithPermission('properties.change_status');
+        $user = $this->actingAsTenant();
         $property = $this->createProperty($user->id, 'rent', 'available');
 
         $this->patchJson("/api/properties/{$property->id}/status", [
@@ -66,7 +71,7 @@ class PropertyStatusChangeTest extends TestCase
 
     public function test_reserved_status_requires_customer_id(): void
     {
-        $user = $this->actingAsTenantWithPermission('properties.change_status');
+        $user = $this->actingAsTenant();
         $property = $this->createProperty($user->id);
 
         $this->patchJson("/api/properties/{$property->id}/status", [
@@ -77,7 +82,7 @@ class PropertyStatusChangeTest extends TestCase
 
     public function test_status_change_updates_unit_status(): void
     {
-        $user = $this->actingAsTenantWithPermission('properties.change_status');
+        $user = $this->actingAsTenant();
         $property = $this->createProperty($user->id);
 
         $this->patchJson("/api/properties/{$property->id}/status", [
@@ -90,7 +95,7 @@ class PropertyStatusChangeTest extends TestCase
 
     public function test_status_change_writes_audit_log(): void
     {
-        $user = $this->actingAsTenantWithPermission('properties.change_status');
+        $user = $this->actingAsTenant();
         $property = $this->createProperty($user->id);
 
         $this->patchJson("/api/properties/{$property->id}/status", [
@@ -117,12 +122,13 @@ class PropertyStatusChangeTest extends TestCase
             $this->markTestSkipped('api_customers table not available.');
         }
 
-        $user = $this->actingAsTenantWithPermission('properties.change_status');
+        $user = $this->actingAsTenant();
         $property = $this->createProperty($user->id);
         $customer = ApiCustomer::create([
             'user_id' => $user->id,
             'name' => 'Ahmed Ali',
             'phone_number' => '+966500000001',
+            'password' => bcrypt('password'),
         ]);
 
         $this->patchJson("/api/properties/{$property->id}/status", [
@@ -143,14 +149,17 @@ class PropertyStatusChangeTest extends TestCase
 
     public function test_employee_can_change_status_on_employee_owned_property(): void
     {
+        if (! Schema::hasTable('api_permissions')) {
+            $this->markTestSkipped('api_permissions table not available.');
+        }
+
         $tenant = User::factory()->create(['account_type' => 'tenant']);
         $employee = User::factory()->create([
             'account_type' => 'employee',
             'tenant_id' => $tenant->id,
         ]);
 
-        Permission::firstOrCreate(['name' => 'properties.change_status', 'guard_name' => 'sanctum']);
-        $employee->givePermissionTo('properties.change_status');
+        $this->grantPermissions($employee, $tenant, ['properties.change_status']);
         Sanctum::actingAs($employee);
 
         $property = $this->createProperty($employee->id);
@@ -168,7 +177,7 @@ class PropertyStatusChangeTest extends TestCase
             $this->markTestSkipped('user_property_contents table not available.');
         }
 
-        $user = $this->actingAsTenantWithPermission('properties.change_status');
+        $user = $this->actingAsTenant();
         $property = $this->createPropertyWithContent($user);
 
         $this->patchJson("/api/properties/{$property->id}/status", [
@@ -185,14 +194,38 @@ class PropertyStatusChangeTest extends TestCase
         $this->assertSame('published', $item['publish_status'] ?? null);
     }
 
-    private function actingAsTenantWithPermission(string $permission): User
+    private function actingAsTenant(): User
     {
         $user = User::factory()->create(['account_type' => 'tenant']);
-        Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'sanctum']);
-        $user->givePermissionTo($permission);
         Sanctum::actingAs($user);
 
         return $user;
+    }
+
+    /**
+     * @param  list<string>  $permissions
+     */
+    private function grantPermissions(User $user, User $tenant, array $permissions): void
+    {
+        $registrar = app(PermissionRegistrar::class);
+        $registrar->setPermissionsTeamId((int) $tenant->id);
+        $registrar->forgetCachedPermissions();
+
+        foreach ($permissions as $permissionName) {
+            try {
+                $permission = Permission::findByName($permissionName, 'sanctum');
+            } catch (\Throwable $e) {
+                $permission = Permission::create([
+                    'name' => $permissionName,
+                    'guard_name' => 'sanctum',
+                    'team_id' => $tenant->id,
+                ]);
+            }
+
+            $user->givePermissionTo($permission);
+        }
+
+        $registrar->forgetCachedPermissions();
     }
 
     private function createProperty(

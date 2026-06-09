@@ -83,13 +83,13 @@ class PropertyObserver
     }
     
     public function updated(Property $m): void {
-        $dirtyKeys = array_keys($m->getChanges());
+        $dirtyKeys = array_values(array_diff(array_keys($m->getChanges()), ['updated_at', 'created_at']));
         $statusSyncFields = ['unit_status', 'listing_purpose', 'purpose', 'property_status', 'status', 'publish_status'];
         $onlyStatusSync = ! empty($dirtyKeys) && empty(array_diff($dirtyKeys, $statusSyncFields));
+        $original = $m->getOriginal();
 
         if (! $onlyStatusSync) {
             $ctx = AuditContext::data();
-            $original = $m->getOriginal();
             $changes = ['before' => $original, 'after' => $m->getAttributes()];
 
             if (array_key_exists('unit_status', $original)
