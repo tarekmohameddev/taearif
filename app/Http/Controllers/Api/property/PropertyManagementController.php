@@ -244,17 +244,57 @@ class PropertyManagementController extends Controller
     public function bulkCreate(BulkCreatePropertiesRequest $request): JsonResponse
     {
         $user = Auth::user();
-        $batch = $this->bulkImportService->createTableBatch(
-            $user->id,
-            $request->input('units'),
+        $ownerId = $user->tenantOwnerId();
+        $publishStatus = $request->input('publish_status', 'draft');
+        $units = $request->input('units');
+        $autoApply = $request->boolean('auto_apply', true);
+
+        $preview = $this->bulkImportService->buildTablePreview(
+            $ownerId,
+            $units,
             $request->input('project_id'),
             $request->input('building_id'),
-            $request->input('publish_status', 'draft'),
+            $publishStatus,
         );
+
+        $report = $this->bulkImportService->buildInitialReportFromPreview(
+            $preview,
+            $autoApply ? 'pending' : 'pending',
+        );
+
+        if ($report['invalid'] === $report['total']) {
+            return response()->json([
+                'status' => 'error',
+                'data' => $report,
+            ], 422);
+        }
+
+        if ($autoApply && $report['valid'] > 0) {
+            $limitError = $this->bulkImportService->membershipLimitError($ownerId, $report['valid']);
+            if ($limitError !== null) {
+                return response()->json($limitError, 403);
+            }
+        }
+
+        $batch = $this->bulkImportService->createTableBatch(
+            $ownerId,
+            $units,
+            $request->input('project_id'),
+            $request->input('building_id'),
+            $publishStatus,
+            $user->id,
+        );
+
+        $report = $this->bulkImportService->buildInitialReport($batch);
+
+        if ($autoApply && $report['valid'] > 0) {
+            $this->bulkImportService->applyBatch($batch->fresh());
+            $report['status'] = 'processing';
+        }
 
         return response()->json([
             'status' => 'success',
-            'data' => ['batch_id' => $batch->id],
+            'data' => array_merge(['batch_id' => $batch->id], $report),
         ], 201);
     }
 
@@ -354,7 +394,8 @@ class PropertyManagementController extends Controller
     private function resolveBatch(int $batchId): BulkImportBatch
     {
         $user = Auth::user();
+        $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
 
-        return BulkImportBatch::where('id', $batchId)->where('user_id', $user->id)->firstOrFail();
+        return BulkImportBatch::where('id', $batchId)->where('user_id', $owner->id)->firstOrFail();
     }
 }
