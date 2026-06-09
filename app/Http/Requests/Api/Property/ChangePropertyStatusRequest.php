@@ -39,7 +39,10 @@ class ChangePropertyStatusRequest extends BaseApiFormRequest
             }
 
             $listingPurpose = $this->input('listing_purpose', $model->listing_purpose ?? $model->purpose);
-            $rule = new ValidListingPurposeUnitStatusCombination($listingPurpose);
+            $rule = new ValidListingPurposeUnitStatusCombination([
+                'listing_purpose' => $listingPurpose,
+                'unit_status' => $this->input('unit_status'),
+            ]);
             if (! $rule->passes('unit_status', $this->input('unit_status'))) {
                 $validator->errors()->add('unit_status', $rule->message());
             }

@@ -36,8 +36,7 @@ class PropertyManagementController extends Controller
     public function changeStatus(ChangePropertyStatusRequest $request, int $id): JsonResponse
     {
         $user = Auth::user();
-        $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
-        $property = Property::where('id', $id)->where('user_id', $owner->id)->firstOrFail();
+        $property = $this->resolveProperty($id);
 
         $result = $this->statusChangeService->changeStatus(
             $property,
@@ -69,8 +68,7 @@ class PropertyManagementController extends Controller
             abort(403, 'Unauthorized to view audit logs.');
         }
 
-        $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
-        Property::where('id', $id)->where('user_id', $owner->id)->firstOrFail();
+        $this->resolveProperty($id);
 
         $paginator = PropertyLog::where('property_id', $id)
             ->orderByDesc('id')
@@ -282,9 +280,27 @@ class PropertyManagementController extends Controller
     private function resolveProperty(int $id): Property
     {
         $user = Auth::user();
-        $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+        $allowedUserIds = $this->resolveAllowedUserIds($user);
 
-        return Property::where('id', $id)->where('user_id', $owner->id)->firstOrFail();
+        return Property::where('id', $id)->whereIn('user_id', $allowedUserIds)->firstOrFail();
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function resolveAllowedUserIds(\App\Models\User $user): array
+    {
+        $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+        $allowedUserIds = [$owner->id];
+
+        try {
+            $employeeIds = \App\Models\User::where('tenant_id', $owner->id)->pluck('id')->toArray();
+            $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
+        } catch (\Throwable $e) {
+            // fall back to owner-only scoping
+        }
+
+        return array_values($allowedUserIds);
     }
 
     private function resolveBatch(int $batchId): BulkImportBatch
