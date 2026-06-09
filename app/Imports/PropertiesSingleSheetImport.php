@@ -31,6 +31,7 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
 {
     use SkipsFailures, SkipsErrors;
     protected $userId;
+    protected $actorId;
     protected $defaultLanguageId;
     
     // Runtime caches (populated on-demand)
@@ -51,6 +52,7 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
     public function __construct($userId, $limit = 1000)
     {
         $this->userId = $userId;
+        $this->actorId = auth()->id() ?? $userId;
         $this->limit = $limit;
         $this->defaultLanguageId = Language::where('user_id', $userId)
             ->where('is_default', 1)
@@ -483,7 +485,8 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                         $featuredImage,
                         $floorPlans,
                         $videoImage,
-                        $featured
+                        $featured,
+                        $this->actorId
                     );
 
                     // Only create PropertyContent if title and address are provided
@@ -581,7 +584,8 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                         $featuredImage,
                         $floorPlans,
                         $videoImage,
-                        $featured
+                        $featured,
+                        $this->actorId
                     );
 
                     // Create Property Content (Title, Description, Address)

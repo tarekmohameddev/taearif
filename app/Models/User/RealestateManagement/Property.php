@@ -87,6 +87,12 @@ class Property extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (Property $property) {
+            if ($property->created_by === null && auth()->id()) {
+                $property->created_by = auth()->id();
+            }
+        });
+
         static::saving(function (Property $property) {
             app(PropertyStatusSyncService::class)->syncModel($property);
         });

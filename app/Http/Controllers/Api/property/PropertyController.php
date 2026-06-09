@@ -42,6 +42,7 @@ use App\Services\Property\PropertyProjectLinkGuard;
 use App\Services\PropertyListCacheVersionService;
 use App\Http\Resources\Api\PropertyListResource;
 use App\Http\Resources\Api\PropertyResource;
+use App\Http\Resources\Concerns\FormatsPropertyCreator;
 use App\Http\Requests\Api\Property\BulkCompletePropertyDraftsRequest;
 use App\Http\Requests\Api\Property\BulkImportPropertiesRequest;
 use App\Http\Requests\Api\Property\CompletePropertyDraftRequest;
@@ -61,6 +62,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class PropertyController extends Controller
 {
+    use FormatsPropertyCreator;
+
     private static $missingFieldsArMap = [
         'property_type' => 'نوع الوحدة',
         'area' => 'المساحة',
@@ -3848,6 +3851,7 @@ class PropertyController extends Controller
                 'specifications',
                 'UserPropertyCharacteristics',
                 'category',
+                'creator:id,first_name,last_name,username,email,account_type',
             ])
                 ->where('id', $id)
                 ->where('user_id', $owner->id)
@@ -3863,9 +3867,14 @@ class PropertyController extends Controller
 
             $this->addMissingFieldsAr($property);
 
+            $creator = $this->formatCreator($property->creator);
+            $data = $property->toArray();
+            $data['creator'] = $creator;
+            $data['created_by'] = $creator;
+
             return response()->json([
                 'status' => 'success',
-                'data' => $property,
+                'data' => $data,
             ]);
         } catch (\Exception $e) {
             Log::error('Error showing draft: ' . $e->getMessage());

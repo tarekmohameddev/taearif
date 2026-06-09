@@ -3,11 +3,13 @@
 namespace App\Http\Resources\Api;
 
 use App\Http\Resources\Concerns\ExposesPropertyBrokerFields;
+use App\Http\Resources\Concerns\FormatsPropertyCreator;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProjectPropertyResource extends JsonResource
 {
     use ExposesPropertyBrokerFields;
+    use FormatsPropertyCreator;
     public function toArray($request): array
     {
         $property = $this->resource;
@@ -56,10 +58,7 @@ class ProjectPropertyResource extends JsonResource
             'advertising_license' => $property->advertising_license,
             'created_at' => $property->created_at?->toISOString(),
             'updated_at' => $property->updated_at?->toISOString(),
-            'created_by' => $property->creator ? [
-                'id' => $property->creator->id,
-                'name' => trim(($property->creator->first_name ?? '') . ' ' . ($property->creator->last_name ?? '')) ?: ($property->creator->username ?? ''),
-            ] : null,
+            'created_by' => $this->formatCreator($property->creator),
         ], $this->brokerFields($request, $property));
     }
 }

@@ -43,6 +43,7 @@ class PublicPropertyVisibilityTest extends TestCase
         'owner_number',
         'advertising_license',
         'created_by',
+        'creator',
         'import_batch_id',
         'validation_errors',
         'missing_fields',

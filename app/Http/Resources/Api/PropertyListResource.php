@@ -2,11 +2,13 @@
 
 namespace App\Http\Resources\Api;
 
+use App\Http\Resources\Concerns\FormatsPropertyCreator;
 use App\Services\Property\PropertyStatusSyncService;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class PropertyListResource extends JsonResource
 {
+    use FormatsPropertyCreator;
     public function toArray($request): array
     {
         $property = $this->resource;
@@ -80,12 +82,7 @@ class PropertyListResource extends JsonResource
             'building_id' => $property->building_id,
             'project' => $projectData,
             'building' => $buildingData,
-            'creator' => $property->creator ? [
-                'id' => $property->creator->id,
-                'name' => trim(($property->creator->first_name ?? '') . ' ' . ($property->creator->last_name ?? ''))
-                    ?: ($property->creator->username ?? $property->creator->email),
-                'type' => $property->creator->account_type,
-            ] : null,
+            'creator' => $this->formatCreator($property->creator),
         ];
     }
 }

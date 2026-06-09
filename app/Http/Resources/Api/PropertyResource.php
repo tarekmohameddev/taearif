@@ -3,11 +3,13 @@
 namespace App\Http\Resources\Api;
 
 use App\Http\Resources\Concerns\ExposesPropertyBrokerFields;
+use App\Http\Resources\Concerns\FormatsPropertyCreator;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class PropertyResource extends JsonResource
 {
     use ExposesPropertyBrokerFields;
+    use FormatsPropertyCreator;
     /**
      * Transform the resource into an array.
      *
@@ -84,16 +86,8 @@ class PropertyResource extends JsonResource
             'owner_number' => $property->owner_number,
             'created_at' => $property->created_at->toISOString(),
             'updated_at' => $property->updated_at->toISOString(),
-            'created_by' => $property->creator ? [
-                'id'   => $property->creator->id,
-                'name' => trim(($property->creator->first_name ?? '') . ' ' . ($property->creator->last_name ?? '')) ?: ($property->creator->username ?? $property->creator->email),
-                'type' => $property->creator->account_type,
-            ] : null,
-            'creator' => $property->creator ? [
-                'id'   => $property->creator->id,
-                'name' => trim(($property->creator->first_name ?? '') . ' ' . ($property->creator->last_name ?? '')) ?: ($property->creator->username ?? $property->creator->email),
-                'type' => $property->creator->account_type,
-            ] : null,
+            'created_by' => $this->formatCreator($property->creator),
+            'creator' => $this->formatCreator($property->creator),
         ], $characteristics, $this->brokerFields($request, $property));
     }
 }
