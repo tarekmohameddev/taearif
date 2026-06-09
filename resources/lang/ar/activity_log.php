@@ -227,6 +227,8 @@ return [
     'activity.logout.employee' => 'تسجيل الخروج',
     'activity.login.employee' => 'تسجيل الدخول',
     'activity.register.employee' => 'التسجيل',
+
+    'property.status_changed' => 'تغيير حالة الوحدة',
     
     // Unknown/fallback
     'activity.unknown' => 'إجراء غير معروف',

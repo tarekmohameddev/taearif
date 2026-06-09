@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\Api\EmployeeActivityLog;
 use App\Models\ApiCustomer;
 use App\Models\Logs\PropertyLog;
 use App\Models\User;
@@ -114,6 +115,114 @@ class PropertyStatusChangeTest extends TestCase
         $this->assertNull(
             PropertyLog::where('property_id', $property->id)->where('action', 'updated')->first()
         );
+    }
+
+    public function test_status_change_creates_team_activity_log(): void
+    {
+        if (! Schema::hasTable('api_employee_activity_logs')) {
+            $this->markTestSkipped('api_employee_activity_logs table not available.');
+        }
+
+        if (! Schema::hasTable('user_property_contents')) {
+            $this->markTestSkipped('user_property_contents table not available.');
+        }
+
+        $user = $this->actingAsTenant();
+        $property = $this->createPropertyWithContent($user);
+        $propertyTitle = 'Test ' . $property->id;
+
+        $this->patchJson("/api/properties/{$property->id}/status", [
+            'unit_status' => 'sold',
+            'reason' => 'Deal closed',
+        ])->assertOk();
+
+        $activity = EmployeeActivityLog::query()
+            ->where('user_id', $user->id)
+            ->where('action', 'property.status_changed')
+            ->where('target_id', $property->id)
+            ->first();
+
+        $this->assertNotNull($activity);
+        $this->assertSame('user', $activity->actor_type);
+        $this->assertSame($user->id, $activity->actor_id);
+        $this->assertSame('property', $activity->target_type);
+        $this->assertSame('available', $activity->old_values['unit_status'] ?? null);
+        $this->assertSame($propertyTitle, $activity->old_values['property_name'] ?? null);
+        $this->assertSame('sold', $activity->new_values['unit_status'] ?? null);
+        $this->assertSame($propertyTitle, $activity->new_values['property_name'] ?? null);
+        $this->assertSame('Deal closed', $activity->new_values['reason'] ?? null);
+    }
+
+    public function test_employee_status_change_activity_log(): void
+    {
+        if (! Schema::hasTable('api_employee_activity_logs')) {
+            $this->markTestSkipped('api_employee_activity_logs table not available.');
+        }
+
+        if (! Schema::hasTable('api_permissions')) {
+            $this->markTestSkipped('api_permissions table not available.');
+        }
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $employee = User::factory()->create([
+            'account_type' => 'employee',
+            'tenant_id' => $tenant->id,
+        ]);
+
+        $this->grantPermissions($employee, $tenant, ['properties.change_status']);
+        Sanctum::actingAs($employee);
+
+        $property = $this->createProperty($employee->id);
+
+        $this->patchJson("/api/properties/{$property->id}/status", [
+            'unit_status' => 'sold',
+            'reason' => 'Closed by employee',
+        ])->assertOk();
+
+        $activity = EmployeeActivityLog::query()
+            ->where('user_id', $tenant->id)
+            ->where('action', 'property.status_changed')
+            ->where('target_id', $property->id)
+            ->first();
+
+        $this->assertNotNull($activity);
+        $this->assertSame('employee', $activity->actor_type);
+        $this->assertSame($employee->id, $activity->actor_id);
+        $this->assertSame('sold', $activity->new_values['unit_status'] ?? null);
+    }
+
+    public function test_activity_log_visible_via_logs_api(): void
+    {
+        if (! Schema::hasTable('api_employee_activity_logs')) {
+            $this->markTestSkipped('api_employee_activity_logs table not available.');
+        }
+
+        if (! Schema::hasTable('user_property_contents')) {
+            $this->markTestSkipped('user_property_contents table not available.');
+        }
+
+        $user = $this->actingAsTenant();
+        $property = $this->createPropertyWithContent($user);
+
+        $this->patchJson("/api/properties/{$property->id}/status", [
+            'unit_status' => 'sold',
+            'reason' => 'Deal closed',
+        ])->assertOk();
+
+        $this->getJson('/api/v1/logs?action=property.status_changed&with_actor=1')
+            ->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonFragment([
+                'action' => 'property.status_changed',
+                'target_id' => $property->id,
+                'actor_id' => $user->id,
+            ]);
+
+        $logs = collect($this->getJson('/api/v1/logs?action=property.status_changed&with_actor=1')->json('data.logs'));
+        $entry = $logs->firstWhere('target_id', $property->id);
+        $this->assertNotNull($entry);
+        $this->assertArrayHasKey('actor', $entry);
+        $this->assertSame($user->id, $entry['actor']['id'] ?? null);
     }
 
     public function test_reserved_status_stores_customer_and_returns_in_response(): void
