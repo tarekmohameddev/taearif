@@ -171,11 +171,30 @@ class PropertyPublicResource
             'virtual_tour' => $property->virtual_tour ? asset($property->virtual_tour) : null,
             'video_image' => $property->video_image ? asset($property->video_image) : null,
             'faqs' => $property->faqs ?? [],
-            'building' => self::formatBuilding($property->building),
+            'building' => self::formatBuilding(self::resolveBuildingModel($property)),
             'project' => $projectData,
         ];
 
         return array_merge($data, self::publicCharacteristics($property->UserPropertyCharacteristics));
+    }
+
+    /**
+     * Resolve linked Building model. The legacy `building` string column on user_properties
+     * shadows the building() relation when accessed as $property->building.
+     */
+    private static function resolveBuildingModel(Property $property): ?Building
+    {
+        if (! $property->building_id) {
+            return null;
+        }
+
+        if ($property->relationLoaded('building')) {
+            $relation = $property->getRelation('building');
+
+            return $relation instanceof Building ? $relation : null;
+        }
+
+        return $property->building()->first();
     }
 
     public static function formatBuilding(?Building $building): ?array
