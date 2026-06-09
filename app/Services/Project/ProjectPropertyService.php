@@ -45,6 +45,9 @@ class ProjectPropertyService
         if (! empty($filters['listing_purpose'])) {
             $query->where('listing_purpose', $filters['listing_purpose']);
         }
+        if (! empty($filters['publish_status'])) {
+            $query->where('publish_status', $filters['publish_status']);
+        }
         if (! empty($filters['category_id'])) {
             $query->where('category_id', (int) $filters['category_id']);
         }
@@ -67,7 +70,7 @@ class ProjectPropertyService
                     ->orWhere('address', 'like', "%{$search}%");
             });
         }
-        if (! empty($filters['city_id']) || ! empty($filters['state_id']) || ! empty($filters['floor_number'])) {
+        if (! empty($filters['city_id']) || ! empty($filters['state_id'])) {
             $query->whereHas('contents', function ($q) use ($filters) {
                 if (! empty($filters['city_id'])) {
                     $q->where('city_id', (int) $filters['city_id']);
@@ -76,11 +79,11 @@ class ProjectPropertyService
                     $q->where('state_id', (int) $filters['state_id']);
                 }
             });
-            if (! empty($filters['floor_number'])) {
-                $query->whereHas('UserPropertyCharacteristics', function ($q) use ($filters) {
-                    $q->where('floor_number', (int) $filters['floor_number']);
-                });
-            }
+        }
+        if (! empty($filters['floor_number'])) {
+            $query->whereHas('UserPropertyCharacteristics', function ($q) use ($filters) {
+                $q->where('floor_number', (int) $filters['floor_number']);
+            });
         }
 
         return $query->orderByDesc('id')->paginate($perPage);
