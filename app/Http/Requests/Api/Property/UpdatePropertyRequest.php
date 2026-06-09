@@ -4,11 +4,13 @@ namespace App\Http\Requests\Api\Property;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
 use App\Http\Requests\Concerns\ValidatesPropertyListingStatus;
+use App\Http\Requests\Concerns\ValidatesTenantCustomerId;
 use App\Rules\PropertyTypeRule;
 
 class UpdatePropertyRequest extends BaseApiFormRequest
 {
     use ValidatesPropertyListingStatus;
+    use ValidatesTenantCustomerId;
     public function authorize()
     {
         return true;
@@ -24,9 +26,14 @@ class UpdatePropertyRequest extends BaseApiFormRequest
         }
     }
 
+    public function withValidator($validator): void
+    {
+        $this->validateReservedRequiresCustomer($validator);
+    }
+
     public function rules()
     {
-        return array_merge($this->propertyListingStatusRules(), [
+        return array_merge($this->propertyListingStatusRules(), $this->tenantCustomerIdRules(sometimes: true), [
             'payment_method' => 'nullable',
             'title' => 'required|max:255',
             'address' => 'required',

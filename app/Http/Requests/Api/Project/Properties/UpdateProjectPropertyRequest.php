@@ -5,20 +5,27 @@ namespace App\Http\Requests\Api\Project\Properties;
 use App\Http\Requests\Api\BaseApiFormRequest;
 use App\Http\Requests\Api\Project\Properties\Concerns\NormalizesProjectPropertyLocation;
 use App\Http\Requests\Concerns\ValidatesPropertyListingStatus;
+use App\Http\Requests\Concerns\ValidatesTenantCustomerId;
 
 class UpdateProjectPropertyRequest extends BaseApiFormRequest
 {
     use NormalizesProjectPropertyLocation;
     use ValidatesPropertyListingStatus;
+    use ValidatesTenantCustomerId;
 
     public function authorize(): bool
     {
         return true;
     }
 
+    public function withValidator($validator): void
+    {
+        $this->validateReservedRequiresCustomer($validator);
+    }
+
     public function rules(): array
     {
-        return array_merge($this->propertyListingStatusRules(), [
+        return array_merge($this->propertyListingStatusRules(), $this->tenantCustomerIdRules(sometimes: true), [
             'title' => 'sometimes|required|max:255',
             'address' => 'sometimes|required',
             'description' => 'sometimes|required',

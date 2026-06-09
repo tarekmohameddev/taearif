@@ -145,6 +145,36 @@ class PropertyStatusChangeTest extends TestCase
             ->first();
 
         $this->assertSame($customer->id, $log->changes['customer_id'] ?? null);
+
+        if (Schema::hasTable('api_customer_assigned_property')) {
+            $this->assertDatabaseHas('api_customer_assigned_property', [
+                'customer_id' => $customer->id,
+                'property_id' => $property->id,
+            ]);
+        }
+    }
+
+    public function test_reserved_status_rejects_other_tenant_customer_id(): void
+    {
+        if (! Schema::hasTable('api_customers')) {
+            $this->markTestSkipped('api_customers table not available.');
+        }
+
+        $user = $this->actingAsTenant();
+        $otherTenant = User::factory()->create(['account_type' => 'tenant']);
+        $property = $this->createProperty($user->id);
+        $otherCustomer = ApiCustomer::create([
+            'user_id' => $otherTenant->id,
+            'name' => 'Other Tenant Customer',
+            'phone_number' => '+966500000002',
+            'password' => bcrypt('password'),
+        ]);
+
+        $this->patchJson("/api/properties/{$property->id}/status", [
+            'unit_status' => 'reserved',
+            'customer_id' => $otherCustomer->id,
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['customer_id']);
     }
 
     public function test_employee_can_change_status_on_employee_owned_property(): void
