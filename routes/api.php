@@ -397,8 +397,9 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     Route::post  ('/properties/{id}/internal-notes',     [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'storeInternalNote'])->middleware('can:properties.update');
     Route::get   ('/properties/{id}/archive',            [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'archive'])->middleware('can:properties.view');
     Route::post  ('/properties/{id}/archive',            [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'storeArchiveItem'])->middleware('can:properties.update');
-    Route::get   ('/properties/{id}/crm-counters',       [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'crmCounters'])->middleware('can:properties.view');
-    Route::get   ('/properties/{id}/crm-relations',      [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'crmRelations'])->middleware('can:properties.view');
+    Route::get   ('/properties/{id}/crm-relations/summary', [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'crmRelationsSummary'])->middleware('can:properties.view');
+    Route::get   ('/properties/{id}/crm-counters',          [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'crmCounters'])->middleware('can:properties.view');
+    Route::get   ('/properties/{id}/crm-relations',         [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'crmRelations'])->middleware('can:properties.view');
     Route::post  ('/properties/{id}/crm-relations',      [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'storeCrmRelation'])->middleware('can:properties.update');
     Route::post  ('/properties/bulk-import',             [PropertyController::class, 'bulkImport'])->middleware('can:properties.create');
     // Route::get   ('/properties/bulk-import/template',    [PropertyController::class, 'downloadTemplate']); // Moved to public routes

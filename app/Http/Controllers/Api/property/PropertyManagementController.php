@@ -13,6 +13,7 @@ use App\Http\Resources\Api\PropertyCrmRelationResource;
 use App\Http\Resources\Api\PropertyDocumentResource;
 use App\Models\Logs\PropertyLog;
 use App\Models\Property\BulkImportBatch;
+use App\Models\Property\PropertyCrmRelation;
 use App\Models\User\RealestateManagement\Property;
 use App\Services\Property\BulkPropertyImportService;
 use App\Services\Property\PropertyCrmRelationService;
@@ -21,6 +22,8 @@ use App\Services\Property\PropertyStatusChangeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class PropertyManagementController extends Controller
 {
@@ -163,7 +166,7 @@ class PropertyManagementController extends Controller
         ], 201);
     }
 
-    public function crmCounters(int $id): JsonResponse
+    public function crmRelationsSummary(int $id): JsonResponse
     {
         $property = $this->resolveProperty($id);
 
@@ -173,10 +176,34 @@ class PropertyManagementController extends Controller
         ]);
     }
 
+    /** @deprecated Use crmRelationsSummary — route /crm-relations/summary */
+    public function crmCounters(int $id): JsonResponse
+    {
+        return $this->crmRelationsSummary($id);
+    }
+
     public function crmRelations(Request $request, int $id): JsonResponse
     {
         $property = $this->resolveProperty($id);
-        $paginator = $this->crmRelationService->listRelations($property->id, (int) $request->get('per_page', 20));
+
+        $validated = $request->validate([
+            'relation_type' => [
+                'nullable',
+                Rule::in([
+                    PropertyCrmRelation::TYPE_AI_MATCHED,
+                    PropertyCrmRelation::TYPE_MANUALLY_ADDED,
+                    PropertyCrmRelation::TYPE_SENT_TO_CUSTOMER,
+                ]),
+            ],
+            'per_page' => 'nullable|integer|min:1|max:100',
+            'page' => 'nullable|integer|min:1',
+        ]);
+
+        $paginator = $this->crmRelationService->listRelations(
+            $property->id,
+            (int) ($validated['per_page'] ?? 20),
+            $validated['relation_type'] ?? null,
+        );
 
         return response()->json([
             'status' => 'success',
@@ -192,19 +219,26 @@ class PropertyManagementController extends Controller
 
     public function storeCrmRelation(StorePropertyCrmRelationRequest $request, int $id): JsonResponse
     {
-        $property = $this->resolveProperty($id);
+        try {
+            $property = $this->resolveProperty($id);
 
-        $relation = $this->crmRelationService->manuallyAdd(
-            $property,
-            (int) $request->input('request_id'),
-            Auth::id(),
-            $request->input('customer_id'),
-        );
+            $relation = $this->crmRelationService->manuallyAdd(
+                $property,
+                (int) $request->input('request_id'),
+                Auth::id(),
+                $request->input('customer_id'),
+            );
 
-        return response()->json([
-            'status' => 'success',
-            'data' => new PropertyCrmRelationResource($relation->load(['request.customer', 'employee'])),
-        ], 201);
+            return response()->json([
+                'status' => 'success',
+                'data' => new PropertyCrmRelationResource($relation->load(['request.customer', 'employee'])),
+            ], 201);
+        } catch (ConflictHttpException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], 409);
+        }
     }
 
     public function bulkCreate(BulkCreatePropertiesRequest $request): JsonResponse

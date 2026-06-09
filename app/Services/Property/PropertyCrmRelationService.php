@@ -92,14 +92,20 @@ class PropertyCrmRelationService
         ];
     }
 
-    public function listRelations(int $propertyId, int $perPage = 20): LengthAwarePaginator
+    public function listRelations(int $propertyId, int $perPage = 20, ?string $relationType = null): LengthAwarePaginator
     {
-        return PropertyCrmRelation::query()
+        $query = PropertyCrmRelation::query()
             ->where('property_id', $propertyId)
             ->with([
                 'request.customer:id,name,phone_number',
                 'employee:id,username,first_name,last_name',
-            ])
+            ]);
+
+        if ($relationType !== null) {
+            $query->where('relation_type', $relationType);
+        }
+
+        return $query
             ->orderByDesc('occurred_at')
             ->paginate($perPage);
     }
