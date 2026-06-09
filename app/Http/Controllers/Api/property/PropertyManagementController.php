@@ -354,14 +354,7 @@ class PropertyManagementController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => [
-                'batch_id' => $batch->id,
-                'status' => $batch->status,
-                'total' => $batch->total,
-                'succeeded' => $batch->succeeded,
-                'failed' => $batch->failed,
-                'rows' => $batch->report['rows'] ?? [],
-            ],
+            'data' => $this->bulkImportService->buildFinalReport($batch),
         ]);
     }
 

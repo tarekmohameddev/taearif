@@ -140,6 +140,74 @@ class BulkPropertyImportService
     }
 
     /**
+     * @return array{
+     *     batch_id: int,
+     *     source: string,
+     *     status: string,
+     *     total: int,
+     *     succeeded: int,
+     *     failed: int,
+     *     skipped: int,
+     *     rows: list<array{row: int|null, title: string|null, status: string, property_id?: int, errors?: list<string>}>
+     * }
+     */
+    public function buildFinalReport(BulkImportBatch $batch): array
+    {
+        $applyRowsByNumber = collect($batch->report['rows'] ?? [])
+            ->keyBy('row');
+
+        $rows = [];
+        $skipped = 0;
+
+        foreach ($batch->preview_data ?? [] as $entry) {
+            $rowNum = $entry['row'] ?? null;
+            $title = $entry['data']['title'] ?? null;
+
+            if (! ($entry['valid'] ?? false)) {
+                $skipped++;
+                $rows[] = [
+                    'row' => $rowNum,
+                    'title' => $title,
+                    'status' => 'skipped',
+                    'errors' => $entry['errors'] ?? [],
+                ];
+
+                continue;
+            }
+
+            $applied = $applyRowsByNumber->get($rowNum);
+            if ($applied) {
+                $rows[] = array_filter([
+                    'row' => $rowNum,
+                    'title' => $title,
+                    'status' => $applied['status'] ?? 'failed',
+                    'property_id' => $applied['property_id'] ?? null,
+                    'errors' => $applied['errors'] ?? null,
+                ], fn ($v) => $v !== null);
+
+                continue;
+            }
+
+            $rows[] = [
+                'row' => $rowNum,
+                'title' => $title,
+                'status' => 'pending',
+            ];
+        }
+
+        return [
+            'batch_id' => $batch->id,
+            'source' => $batch->source,
+            'status' => $batch->status,
+            'total' => (int) $batch->total,
+            'succeeded' => (int) $batch->succeeded,
+            'failed' => (int) $batch->failed,
+            'skipped' => $skipped,
+            'rows' => $rows,
+        ];
+    }
+
+    /**
      * @return array{status: string, message: string, limit?: int, used?: int}|null
      */
     public function membershipLimitError(int $ownerId, int $unitsToAdd): ?array
@@ -227,7 +295,6 @@ class BulkPropertyImportService
 
         foreach ($rows as $entry) {
             if (! ($entry['valid'] ?? false)) {
-                $failed++;
                 $report['rows'][] = [
                     'row' => $entry['row'] ?? null,
                     'status' => 'failed',

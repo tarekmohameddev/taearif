@@ -229,7 +229,7 @@ class BulkCreatePropertiesTest extends TestCase
         $batch = BulkImportBatch::find($batchId);
 
         $this->assertSame(1, $batch->succeeded);
-        $this->assertSame(1, $batch->failed);
+        $this->assertSame(0, $batch->failed);
         $this->assertCount(1, Property::where('import_batch_id', (string) $batchId)->get());
     }
 
