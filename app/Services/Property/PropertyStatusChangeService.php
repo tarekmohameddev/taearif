@@ -16,10 +16,11 @@ class PropertyStatusChangeService
     public function __construct(
         private readonly PropertyStatusSyncService $statusSync,
         private readonly CustomerAssignedPropertyService $assignedPropertyService,
+        private readonly PropertyCrmDealCloseService $crmDealCloseService,
     ) {}
 
     /**
-     * @return array{property: Property, customer: ?array}
+     * @return array{property: Property, customer: ?array, crm: ?array}
      */
     public function changeStatus(
         Property $property,
@@ -51,18 +52,37 @@ class PropertyStatusChangeService
 
         $property->refresh();
 
+        $crmResult = null;
+        if ($unitStatus === 'sold') {
+            $crmResult = $this->crmDealCloseService->closeDealsForSoldProperty(
+                $property,
+                $customerId,
+                $actorId,
+            );
+        }
+
+        $logChanges = [
+            'old_status' => $oldUnitStatus,
+            'new_status' => $unitStatus,
+            'reason' => $reason,
+            'customer_id' => $customerId,
+        ];
+        if ($crmResult !== null) {
+            $logChanges['crm_close'] = [
+                'closed_requests' => $crmResult['closed_requests'],
+                'closed_customers' => $crmResult['closed_customers'],
+                'success' => $crmResult['success'],
+                'warnings' => $crmResult['warnings'],
+            ];
+        }
+
         $ctx = AuditContext::data();
         PropertyLog::create(array_merge($ctx, [
             'property_id' => $property->id,
             'tenant_id' => $ctx['tenant_id'] ?? $property->user_id,
             'action' => 'status_change',
             'reason' => $reason,
-            'changes' => [
-                'old_status' => $oldUnitStatus,
-                'new_status' => $unitStatus,
-                'reason' => $reason,
-                'customer_id' => $customerId,
-            ],
+            'changes' => $logChanges,
         ]));
 
         event(new PropertyStatusChanged(
@@ -89,6 +109,7 @@ class PropertyStatusChangeService
         return [
             'property' => $property,
             'customer' => $customer,
+            'crm' => $crmResult,
         ];
     }
 }

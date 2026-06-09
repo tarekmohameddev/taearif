@@ -3,50 +3,38 @@
 namespace App\Listeners;
 
 use App\Events\PropertyStatusChanged;
-use App\Models\Api\Crm\CrmRequest;
-use Illuminate\Support\Facades\DB;
+use App\Services\Property\PropertyCrmDealCloseService;
 use Illuminate\Support\Facades\Log;
 
 class CloseCrmDealsOnPropertySold
 {
+    public function __construct(
+        private readonly PropertyCrmDealCloseService $crmDealCloseService,
+    ) {}
+
     public function handle(PropertyStatusChanged $event): void
     {
         if ($event->newUnitStatus !== 'sold') {
             return;
         }
 
-        $property = $event->property;
+        $result = $this->crmDealCloseService->closeDealsForSoldProperty(
+            $event->property,
+            $event->customerId,
+            $event->actorId,
+        );
 
-        try {
-            $updated = CrmRequest::query()
-                ->where('user_id', $property->user_id)
-                ->where('property_id', $property->id)
-                ->update([
-                    'updated_at' => now(),
-                ]);
+        if (! empty($result['warnings'])) {
+            Log::warning('CRM deal close warnings on property sold', [
+                'property_id' => $event->property->id,
+                'warnings' => $result['warnings'],
+            ]);
+        }
 
-            if ($updated > 0) {
-                Log::info('CRM requests linked to sold property updated', [
-                    'property_id' => $property->id,
-                    'count' => $updated,
-                ]);
-            }
-
-            if ($event->customerId) {
-                DB::table('crm_requests')
-                    ->where('user_id', $property->user_id)
-                    ->where('customer_id', $event->customerId)
-                    ->whereNull('property_id')
-                    ->limit(10)
-                    ->update([
-                        'property_id' => $property->id,
-                        'updated_at' => now(),
-                    ]);
-            }
-        } catch (\Throwable $e) {
-            Log::warning('Failed to close CRM deals on property sold', [
-                'property_id' => $property->id,
-                'error' => $e->getMessage(),
+        if (! empty($result['errors'])) {
+            Log::error('CRM deal close errors on property sold', [
+                'property_id' => $event->property->id,
+                'errors' => $result['errors'],
             ]);
         }
     }

@@ -48,16 +48,30 @@ class PropertyManagementController extends Controller
 
         $property = $result['property'];
 
+        $data = [
+            'status' => (int) $property->status,
+            'unit_status' => $property->unit_status,
+            'property_status' => $property->property_status,
+            'listing_purpose' => $property->listing_purpose,
+            'publish_status' => $property->publish_status,
+            'customer' => $result['customer'],
+        ];
+
+        if ($result['crm'] !== null) {
+            $data['crm'] = [
+                'success' => $result['crm']['success'],
+                'closed_requests' => $result['crm']['closed_requests'],
+                'closed_customers' => $result['crm']['closed_customers'],
+                'warnings' => $result['crm']['warnings'],
+            ];
+            if (! empty($result['crm']['errors'])) {
+                $data['crm']['errors'] = $result['crm']['errors'];
+            }
+        }
+
         return response()->json([
             'status' => 'success',
-            'data' => [
-                'status' => (int) $property->status,
-                'unit_status' => $property->unit_status,
-                'property_status' => $property->property_status,
-                'listing_purpose' => $property->listing_purpose,
-                'publish_status' => $property->publish_status,
-                'customer' => $result['customer'],
-            ],
+            'data' => $data,
         ]);
     }
 
