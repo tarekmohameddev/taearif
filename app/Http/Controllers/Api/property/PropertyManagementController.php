@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\property;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Api\V1\Logs\Concerns\BuildsLogResponses;
 use App\Http\Requests\Api\Property\BulkCreatePropertiesRequest;
+use App\Http\Requests\Api\Property\ImportExcelPropertiesRequest;
 use App\Http\Requests\Api\Property\ChangePropertyStatusRequest;
 use App\Http\Requests\Api\Property\StoreArchiveItemRequest;
 use App\Http\Requests\Api\Property\StoreInternalNoteRequest;
@@ -298,27 +299,64 @@ class PropertyManagementController extends Controller
         ], 201);
     }
 
-    public function importExcel(Request $request): JsonResponse
+    public function importExcel(ImportExcelPropertiesRequest $request): JsonResponse
     {
-        $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv',
-            'project_id' => 'nullable|integer',
-            'building_id' => 'nullable|integer',
-            'publish_status' => 'nullable|in:draft,published',
-        ]);
-
         $user = Auth::user();
-        $batch = $this->bulkImportService->createExcelPreviewBatch(
-            $user->id,
+        $ownerId = $user->tenantOwnerId();
+        $publishStatus = $request->input('publish_status', 'draft');
+        $autoApply = $request->boolean('auto_apply', true);
+
+        $preview = $this->bulkImportService->buildExcelPreview(
+            $ownerId,
             $request->file('file'),
             $request->input('project_id'),
             $request->input('building_id'),
-            $request->input('publish_status', 'draft'),
+            $publishStatus,
         );
+
+        $report = $this->bulkImportService->buildInitialReportFromPreview($preview);
+
+        if ($report['total'] === 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No data rows found in file.',
+                'data' => $report,
+            ], 422);
+        }
+
+        if ($report['invalid'] === $report['total']) {
+            return response()->json([
+                'status' => 'error',
+                'data' => $report,
+            ], 422);
+        }
+
+        if ($autoApply && $report['valid'] > 0) {
+            $limitError = $this->bulkImportService->membershipLimitError($ownerId, $report['valid']);
+            if ($limitError !== null) {
+                return response()->json($limitError, 403);
+            }
+        }
+
+        $batch = $this->bulkImportService->createExcelBatch(
+            $ownerId,
+            $preview,
+            $request->input('project_id'),
+            $request->input('building_id'),
+            $publishStatus,
+            $user->id,
+        );
+
+        $report = $this->bulkImportService->buildInitialReport($batch);
+
+        if ($autoApply && $report['valid'] > 0) {
+            $this->bulkImportService->applyBatch($batch->fresh());
+            $report['status'] = 'processing';
+        }
 
         return response()->json([
             'status' => 'success',
-            'data' => ['batch_id' => $batch->id],
+            'data' => array_merge(['batch_id' => $batch->id], $report),
         ], 201);
     }
 

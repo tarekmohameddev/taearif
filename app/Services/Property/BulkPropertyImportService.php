@@ -13,9 +13,12 @@ use App\Models\User\RealestateManagement\Project;
 use App\Rules\PropertyTypeRule;
 use App\Rules\ValidListingPurposeUnitStatusCombination;
 use App\Services\MembershipCacheService;
+use App\Support\PropertyExcelHeaderMapping;
+use App\Support\PropertyExcelMapping;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 
 class BulkPropertyImportService
@@ -243,8 +246,16 @@ class BulkPropertyImportService
         return null;
     }
 
-    public function createExcelPreviewBatch(int $userId, UploadedFile $file, ?int $projectId, ?int $buildingId, string $publishStatus): BulkImportBatch
-    {
+    /**
+     * @return list<array{row: int, data: array<string, mixed>, valid: bool, errors: list<string>}>
+     */
+    public function buildExcelPreview(
+        int $tenantOwnerId,
+        UploadedFile $file,
+        ?int $projectId,
+        ?int $buildingId,
+        string $publishStatus,
+    ): array {
         $rows = Excel::toArray([], $file)[0] ?? [];
         $headers = array_shift($rows) ?? [];
         $preview = [];
@@ -253,17 +264,38 @@ class BulkPropertyImportService
             if ($this->isEmptyRow($row)) {
                 continue;
             }
-            $data = $this->mapExcelRow($headers, $row);
+
+            $data = $this->normalizeExcelRowData($this->mapExcelRow($headers, $row));
             $preview[] = [
                 'row' => $index + 2,
                 'data' => $data,
-                'valid' => $this->validateUnitRow($data, $userId, $projectId, $buildingId, $publishStatus),
-                'errors' => $this->validateUnitRowErrors($data, $userId, $projectId, $buildingId, $publishStatus),
+                'valid' => $this->validateUnitRow($data, $tenantOwnerId, $projectId, $buildingId, $publishStatus),
+                'errors' => $this->validateUnitRowErrors($data, $tenantOwnerId, $projectId, $buildingId, $publishStatus),
             ];
         }
 
+        if (count($preview) > 500) {
+            throw ValidationException::withMessages([
+                'file' => ['The file must not contain more than 500 data rows.'],
+            ]);
+        }
+
+        return $preview;
+    }
+
+    /**
+     * @param  list<array{row: int, data: array<string, mixed>, valid: bool, errors: list<string>}>  $preview
+     */
+    public function createExcelBatch(
+        int $ownerId,
+        array $preview,
+        ?int $projectId,
+        ?int $buildingId,
+        string $publishStatus,
+        ?int $actorId = null,
+    ): BulkImportBatch {
         return BulkImportBatch::create([
-            'user_id' => $userId,
+            'user_id' => $ownerId,
             'project_id' => $projectId,
             'building_id' => $buildingId,
             'source' => 'excel',
@@ -271,7 +303,28 @@ class BulkPropertyImportService
             'publish_status' => $publishStatus,
             'total' => count($preview),
             'preview_data' => $preview,
+            'report' => [
+                'meta' => [
+                    'created_by' => $actorId ?? $ownerId,
+                ],
+            ],
         ]);
+    }
+
+    public function createExcelPreviewBatch(int $userId, UploadedFile $file, ?int $projectId, ?int $buildingId, string $publishStatus): BulkImportBatch
+    {
+        $preview = $this->buildExcelPreview($userId, $file, $projectId, $buildingId, $publishStatus);
+
+        return $this->createExcelBatch($userId, $preview, $projectId, $buildingId, $publishStatus);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function normalizeExcelRowData(array $data): array
+    {
+        return PropertyExcelHeaderMapping::normalizeRowData($data);
     }
 
     public function applyBatch(BulkImportBatch $batch): void
@@ -478,7 +531,7 @@ class BulkPropertyImportService
     {
         $data = [];
         foreach ($headers as $i => $header) {
-            $key = Str::snake(trim((string) $header));
+            $key = PropertyExcelHeaderMapping::headerToKey((string) $header);
             if ($key !== '') {
                 $data[$key] = $row[$i] ?? null;
             }
