@@ -3,9 +3,11 @@
 namespace Tests\Feature\Api\V1\TenantWebsite;
 
 use App\Models\Building;
+use App\Models\Property\PropertyDocument;
 use App\Models\User;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\PropertyContent;
+use App\Services\Property\PropertyDocumentService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Schema;
 use Tests\Concerns\EnsuresPropertyStatusColumns;
@@ -52,6 +54,9 @@ class PublicPropertyVisibilityTest extends TestCase
         'deed_image_url',
         'is_archived',
         'user_id',
+        'internal_notes',
+        'documents',
+        'attachments',
     ];
 
     public function test_draft_properties_are_hidden_from_list(): void
@@ -175,6 +180,58 @@ class PublicPropertyVisibilityTest extends TestCase
 
         $buildingPayload = $response->json('property.building');
         $this->assertSame(['id', 'name', 'slug'], array_keys($buildingPayload));
+    }
+
+    public function test_public_property_responses_do_not_leak_internal_notes(): void
+    {
+        if (! Schema::hasTable('property_documents')) {
+            $this->markTestSkipped('property_documents table not available');
+        }
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $property = $this->createProperty($tenant->id, 'published', 'available');
+
+        $secretContent = 'INTERNAL_NOTE_SECRET_DEV184_' . $property->id;
+        $secretFileName = 'secret-offer-dev184.pdf';
+
+        app(PropertyDocumentService::class)->storeNote(
+            $property,
+            $secretContent,
+            [],
+            $tenant->id,
+        );
+
+        PropertyDocument::query()
+            ->where('property_id', $property->id)
+            ->where('type', 'note')
+            ->latest('id')
+            ->first()
+            ?->update([
+                'attachments' => [[
+                    'path' => 'property-docs/' . $secretFileName,
+                    'name' => $secretFileName,
+                    'size' => 20480,
+                ]],
+            ]);
+
+        $slug = $property->contents->first()->slug;
+
+        $listResponse = $this->getJson("/api/v1/tenant-website/{$tenant->username}/properties");
+        $listResponse->assertOk();
+        $listPayload = json_encode($listResponse->json());
+        $this->assertStringNotContainsString($secretContent, $listPayload);
+        $this->assertStringNotContainsString($secretFileName, $listPayload);
+
+        $showResponse = $this->getJson("/api/v1/tenant-website/{$tenant->username}/properties/{$slug}");
+        $showResponse->assertOk();
+
+        $showPayload = json_encode($showResponse->json('property'));
+        $this->assertStringNotContainsString($secretContent, $showPayload);
+        $this->assertStringNotContainsString($secretFileName, $showPayload);
+
+        foreach (self::SENSITIVE_KEYS as $key) {
+            $this->assertStringNotContainsString('"' . $key . '"', $showPayload, "Sensitive key [{$key}] leaked in show response");
+        }
     }
 
     public function test_reservation_on_draft_property_returns_404(): void

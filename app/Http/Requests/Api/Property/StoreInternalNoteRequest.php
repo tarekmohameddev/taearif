@@ -15,8 +15,8 @@ class StoreInternalNoteRequest extends BaseApiFormRequest
     {
         return [
             'note' => 'required|string',
-            'attachments' => 'nullable|array',
-            'attachments.*' => 'file|max:10240',
+            'attachments' => 'nullable|array|max:5',
+            'attachments.*' => 'file|max:10240|mimes:jpg,jpeg,png,pdf,doc,docx',
         ];
     }
 }
