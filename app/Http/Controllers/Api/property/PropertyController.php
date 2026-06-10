@@ -32,6 +32,7 @@ use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 use App\Models\User\RealestateManagement\ApiUserCategory as Category;
 use App\Models\Analytics\AnalyticsDailySummary;
 use App\Support\Audit;
+use App\Support\SourceBrokerNormalizer;
 use App\Services\GoogleAnalyticsService;
 use App\Services\DatabaseVersionService;
 use App\Services\PropertyFilterOptionsService;
@@ -1082,6 +1083,7 @@ class PropertyController extends Controller
                     'building:id,name,image,deed_number,deed_image',
                     'building.meters',
                     'project.contents',
+                    'sourceBroker:id,username,first_name,last_name,phone',
                 ])->whereIn('user_id', $allowedUserIds)->findOrFail($id);
 
                 $content = $property->contents->first();
@@ -1232,6 +1234,10 @@ class PropertyController extends Controller
                 'advertising_license',
                 'owner_number',
                 'show_reservations',
+                'source_broker_type',
+                'source_broker_id',
+                'source_broker_name',
+                'source_broker_phone',
 
                 "facade_id",
                 "length",
@@ -1280,6 +1286,8 @@ class PropertyController extends Controller
             } else {
                 $propertyData['features'] = [];
             }
+
+            $propertyData = SourceBrokerNormalizer::normalize($propertyData);
 
             $videoUrl = $request->video_url; // Video URL from separate upload
 
@@ -1545,6 +1553,10 @@ class PropertyController extends Controller
                 }
             } else {
                 // If features is not provided, don't override existing value (handled in updateProperty)
+            }
+
+            if (array_key_exists('source_broker_type', $requestData)) {
+                $requestData = SourceBrokerNormalizer::normalize($requestData);
             }
 
             $property->updateProperty($requestData);
@@ -3926,12 +3938,17 @@ class PropertyController extends Controller
                 $allowedFields = ['price', 'pricePerMeter', 'purpose', 'property_type', 'beds', 'bath', 'area',
                     'size', 'video_url', 'virtual_tour', 'features', 'payment_method',
                     'water_meter_number', 'electricity_meter_number', 'deed_number',
-                    'advertising_license', 'latitude', 'longitude', 'category_id', 'project_id', 'building_id'];
+                    'advertising_license', 'latitude', 'longitude', 'category_id', 'project_id', 'building_id',
+                    'source_broker_type', 'source_broker_id', 'source_broker_name', 'source_broker_phone'];
 
                 foreach ($allowedFields as $field) {
                     if (array_key_exists($field, $validated)) {
                         $propertyData[$field] = $validated[$field];
                     }
+                }
+
+                if (array_key_exists('source_broker_type', $propertyData)) {
+                    $propertyData = SourceBrokerNormalizer::normalize($propertyData);
                 }
 
                 if (!empty($propertyData)) {
@@ -4107,12 +4124,17 @@ class PropertyController extends Controller
                 $allowedFields = ['price', 'pricePerMeter', 'purpose', 'property_type', 'beds', 'bath', 'area',
                     'size', 'video_url', 'virtual_tour', 'features', 'payment_method',
                     'water_meter_number', 'electricity_meter_number', 'deed_number',
-                    'advertising_license', 'latitude', 'longitude', 'category_id', 'project_id', 'building_id'];
+                    'advertising_license', 'latitude', 'longitude', 'category_id', 'project_id', 'building_id',
+                    'source_broker_type', 'source_broker_id', 'source_broker_name', 'source_broker_phone'];
 
                 foreach ($allowedFields as $field) {
                     if (array_key_exists($field, $validated)) {
                         $propertyData[$field] = $validated[$field];
                     }
+                }
+
+                if (array_key_exists('source_broker_type', $propertyData)) {
+                    $propertyData = SourceBrokerNormalizer::normalize($propertyData);
                 }
 
                 // Ensure required fields are set
