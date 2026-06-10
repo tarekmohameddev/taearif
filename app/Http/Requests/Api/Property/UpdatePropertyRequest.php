@@ -4,12 +4,14 @@ namespace App\Http\Requests\Api\Property;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
 use App\Http\Requests\Concerns\ValidatesPropertyListingStatus;
+use App\Http\Requests\Concerns\ValidatesSourceBroker;
 use App\Http\Requests\Concerns\ValidatesTenantCustomerId;
 use App\Rules\PropertyTypeRule;
 
 class UpdatePropertyRequest extends BaseApiFormRequest
 {
     use ValidatesPropertyListingStatus;
+    use ValidatesSourceBroker;
     use ValidatesTenantCustomerId;
     public function authorize()
     {
@@ -29,11 +31,16 @@ class UpdatePropertyRequest extends BaseApiFormRequest
     public function withValidator($validator): void
     {
         $this->validateReservedRequiresCustomer($validator);
+        $this->validateSourceBroker($validator);
     }
 
     public function rules()
     {
-        return array_merge($this->propertyListingStatusRules(), $this->tenantCustomerIdRules(sometimes: true), [
+        return array_merge(
+            $this->propertyListingStatusRules(),
+            $this->tenantCustomerIdRules(sometimes: true),
+            $this->sourceBrokerRules(),
+            [
             'payment_method' => 'nullable',
             'title' => 'required|max:255',
             'address' => 'required',
@@ -83,10 +90,6 @@ class UpdatePropertyRequest extends BaseApiFormRequest
             'elevator' => 'nullable|integer',
             'private_parking' => 'nullable|integer',
             'size' => 'nullable|numeric',
-            'source_broker_type' => 'nullable|in:internal,external',
-            'source_broker_id' => 'nullable|integer|exists:users,id',
-            'source_broker_name' => 'nullable|string|max:191',
-            'source_broker_phone' => 'nullable|string|max:32',
             'property_type' => PropertyTypeRule::requiredRule(),
             'faqs' => 'nullable|array',
             'building_id' => 'nullable|integer|exists:buildings,id',
@@ -100,6 +103,7 @@ class UpdatePropertyRequest extends BaseApiFormRequest
             'virtual_tour' => 'nullable|string',
             'video_file' => 'nullable|file',
             'show_reservations' => 'nullable|boolean',
-        ]);
+            ]
+        );
     }
 }

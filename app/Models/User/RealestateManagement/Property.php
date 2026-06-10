@@ -260,6 +260,10 @@ class Property extends Model
             'validation_errors' => $validationErrors,
             'import_batch_id' => $request['import_batch_id'] ?? null,
             'completed_at' => $request['completed_at'] ?? null,
+            'source_broker_type' => $request['source_broker_type'] ?? null,
+            'source_broker_id' => $request['source_broker_id'] ?? null,
+            'source_broker_name' => $request['source_broker_name'] ?? null,
+            'source_broker_phone' => $request['source_broker_phone'] ?? null,
         ]);
     }
 
@@ -305,6 +309,18 @@ class Property extends Model
             'reorder_featured' => $requestData['reorder_featured'] ?? $this->reorder_featured,
             'reorder' => $requestData['reorder'] ?? $this->reorder,
             'show_reservations' => $requestData['show_reservations'] ?? $this->show_reservations,
+            'source_broker_type' => array_key_exists('source_broker_type', $requestData)
+                ? $requestData['source_broker_type']
+                : $this->source_broker_type,
+            'source_broker_id' => array_key_exists('source_broker_id', $requestData)
+                ? $requestData['source_broker_id']
+                : $this->source_broker_id,
+            'source_broker_name' => array_key_exists('source_broker_name', $requestData)
+                ? $requestData['source_broker_name']
+                : $this->source_broker_name,
+            'source_broker_phone' => array_key_exists('source_broker_phone', $requestData)
+                ? $requestData['source_broker_phone']
+                : $this->source_broker_phone,
         ]);
     }
 

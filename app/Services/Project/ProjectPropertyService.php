@@ -14,6 +14,7 @@ use App\Models\User\RealestateManagement\PropertySliderImg;
 use App\Models\User\UserDistrict;
 use App\Services\MembershipCacheService;
 use App\Services\Property\PropertyProjectLinkGuard;
+use App\Support\SourceBrokerNormalizer;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
@@ -468,7 +469,7 @@ class ProjectPropertyService
             $data['project_id'] = $projectId;
         }
 
-        return $data;
+        return SourceBrokerNormalizer::normalize($data);
     }
 
     private function buildContentPayload(array $payload, array $location, int $languageId, ?PropertyContent $content): array
