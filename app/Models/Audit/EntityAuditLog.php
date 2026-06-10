@@ -2,7 +2,9 @@
 
 namespace App\Models\Audit;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EntityAuditLog extends Model
 {
@@ -27,4 +29,9 @@ class EntityAuditLog extends Model
     protected $casts = [
         'changed_at' => 'datetime',
     ];
+
+    public function changedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'changed_by');
+    }
 }

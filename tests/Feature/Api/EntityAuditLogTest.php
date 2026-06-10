@@ -238,6 +238,94 @@ class EntityAuditLogTest extends TestCase
             ]);
     }
 
+    public function test_property_audit_logs_can_filter_by_action(): void
+    {
+        $user = $this->actingAsTenant();
+        $property = $this->createProperty($user->id, ['deed_number' => 'OLD-DEED']);
+
+        $this->patchJson("/api/properties/{$property->id}/status", [
+            'unit_status' => 'sold',
+            'reason' => 'Deal closed',
+        ])->assertOk();
+
+        AuditContext::set($user->id, 'tenant', $user->id, '127.0.0.1', 'test');
+        $property->deed_number = 'NEW-DEED';
+        $property->save();
+
+        $response = $this->getJson("/api/properties/{$property->id}/audit-logs?action=status_change")
+            ->assertOk();
+
+        $logs = collect($response->json('data.logs'));
+        $this->assertTrue($logs->every(fn (array $row) => $row['action'] === 'status_change'));
+        $this->assertTrue($logs->contains('field_name', 'unit_status'));
+        $this->assertFalse($logs->contains('field_name', 'deed_number'));
+    }
+
+    public function test_property_audit_logs_can_filter_by_field_name(): void
+    {
+        $user = $this->actingAsTenant();
+        $property = $this->createProperty($user->id, ['deed_number' => 'OLD-DEED']);
+
+        AuditContext::set($user->id, 'tenant', $user->id, '127.0.0.1', 'test');
+        $property->deed_number = 'NEW-DEED';
+        $property->save();
+
+        $this->getJson("/api/properties/{$property->id}/audit-logs?field_name=deed_number")
+            ->assertOk()
+            ->assertJsonCount(1, 'data.logs')
+            ->assertJsonFragment([
+                'field_name' => 'deed_number',
+                'old_value' => 'OLD-DEED',
+                'new_value' => 'NEW-DEED',
+            ]);
+    }
+
+    public function test_property_audit_logs_with_actor_returns_actor_details(): void
+    {
+        $tenant = User::factory()->create([
+            'account_type' => 'tenant',
+            'first_name' => 'Owner',
+            'last_name' => 'User',
+            'email' => 'owner@example.com',
+        ]);
+        Sanctum::actingAs($tenant);
+
+        $property = $this->createProperty($tenant->id, ['deed_number' => 'OLD-DEED']);
+
+        AuditContext::set($tenant->id, 'tenant', $tenant->id, '127.0.0.1', 'test');
+        $property->deed_number = 'NEW-DEED';
+        $property->save();
+
+        $response = $this->getJson("/api/properties/{$property->id}/audit-logs?field_name=deed_number&with_actor=1")
+            ->assertOk();
+
+        $log = collect($response->json('data.logs'))->firstWhere('field_name', 'deed_number');
+        $this->assertNotNull($log);
+        $this->assertSame($tenant->id, $log['changed_by']['id']);
+        $this->assertSame('Owner User', $log['changed_by']['name']);
+        $this->assertSame('owner@example.com', $log['changed_by']['email']);
+        $this->assertSame('tenant', $log['changed_by']['account_type']);
+    }
+
+    public function test_manager_role_employee_can_view_property_audit_logs(): void
+    {
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $employee = User::factory()->create([
+            'account_type' => 'employee',
+            'tenant_id' => $tenant->id,
+        ]);
+
+        $managerPermissions = config('rbac.role_templates.manager', []);
+        $this->grantPermissions($employee, $tenant, $managerPermissions);
+        Sanctum::actingAs($employee);
+
+        $property = $this->createProperty($tenant->id);
+
+        $this->getJson("/api/properties/{$property->id}/audit-logs")
+            ->assertOk()
+            ->assertJsonPath('status', 'success');
+    }
+
     private function actingAsTenant(): User
     {
         $user = User::factory()->create(['account_type' => 'tenant']);

@@ -7,8 +7,21 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 trait RespondsWithEntityAuditLogs
 {
-    protected function mapEntityAuditLogRow(EntityAuditLog $log): array
+    protected function mapEntityAuditLogRow(EntityAuditLog $log, bool $withActor = false): array
     {
+        $changedBy = [
+            'id' => $log->getAttributes()['changed_by'] ?? null,
+            'type' => $log->changed_by_type,
+        ];
+
+        if ($withActor && $log->relationLoaded('changedByUser') && $log->changedByUser) {
+            $actor = $log->changedByUser;
+            $changedBy['name'] = trim(($actor->first_name ?? '').' '.($actor->last_name ?? ''))
+                ?: ($actor->username ?? $actor->email);
+            $changedBy['email'] = $actor->email;
+            $changedBy['account_type'] = $actor->account_type;
+        }
+
         return [
             'id' => $log->id,
             'entity_type' => $log->entity_type,
@@ -17,18 +30,17 @@ trait RespondsWithEntityAuditLogs
             'field_name' => $log->field_name,
             'old_value' => $log->old_value,
             'new_value' => $log->new_value,
-            'changed_by' => [
-                'id' => $log->changed_by,
-                'type' => $log->changed_by_type,
-            ],
+            'changed_by' => $changedBy,
             'reason' => $log->reason,
             'changed_at' => optional($log->changed_at)->toIso8601String(),
         ];
     }
 
-    protected function respondWithEntityAuditLogs(LengthAwarePaginator $paginator)
+    protected function respondWithEntityAuditLogs(LengthAwarePaginator $paginator, bool $withActor = false)
     {
-        $rows = $paginator->getCollection()->map(fn (EntityAuditLog $log) => $this->mapEntityAuditLogRow($log));
+        $rows = $paginator->getCollection()->map(
+            fn (EntityAuditLog $log) => $this->mapEntityAuditLogRow($log, $withActor)
+        );
 
         return response()->json([
             'status' => 'success',

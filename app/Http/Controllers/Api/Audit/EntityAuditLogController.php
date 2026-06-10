@@ -32,7 +32,7 @@ class EntityAuditLogController extends Controller
 
         $paginator = $this->queryService->paginateForEntity('property', $property->id, $tenantId, $request);
 
-        return $this->respondWithEntityAuditLogs($paginator);
+        return $this->respondWithEntityAuditLogs($paginator, $request->boolean('with_actor'));
     }
 
     public function forProject(Request $request, int $id): JsonResponse
@@ -47,7 +47,7 @@ class EntityAuditLogController extends Controller
 
         $paginator = $this->queryService->paginateForEntity('project', $project->id, $tenantId, $request);
 
-        return $this->respondWithEntityAuditLogs($paginator);
+        return $this->respondWithEntityAuditLogs($paginator, $request->boolean('with_actor'));
     }
 
     public function forBuilding(Request $request, int $id): JsonResponse
@@ -62,7 +62,7 @@ class EntityAuditLogController extends Controller
 
         $paginator = $this->queryService->paginateForEntity('building', $building->id, $tenantId, $request);
 
-        return $this->respondWithEntityAuditLogs($paginator);
+        return $this->respondWithEntityAuditLogs($paginator, $request->boolean('with_actor'));
     }
 
     private function resolveProperty(int $id): Property

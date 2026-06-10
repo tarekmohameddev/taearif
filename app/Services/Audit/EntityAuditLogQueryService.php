@@ -36,6 +36,10 @@ class EntityAuditLogQueryService
             $query->where('changed_at', '<=', $request->input('to'));
         }
 
+        if ($request->boolean('with_actor')) {
+            $query->with('changedByUser');
+        }
+
         $perPage = max(1, min(100, (int) $request->integer('per_page', 20)));
 
         return $query->paginate($perPage);
