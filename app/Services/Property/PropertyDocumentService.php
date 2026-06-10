@@ -20,14 +20,19 @@ class PropertyDocumentService
             ->paginate($perPage);
     }
 
-    public function listArchive(Property $property, int $perPage = 20)
+    public function listArchive(Property $property, int $perPage = 20, ?string $type = null)
     {
-        return PropertyDocument::query()
+        $query = PropertyDocument::query()
             ->where('property_id', $property->id)
             ->whereIn('type', ['deed', 'meter', 'document'])
             ->with('author:id,username,first_name,last_name')
-            ->orderByDesc('id')
-            ->paginate($perPage);
+            ->orderByDesc('id');
+
+        if ($type !== null && in_array($type, ['deed', 'meter', 'document'], true)) {
+            $query->where('type', $type);
+        }
+
+        return $query->paginate($perPage);
     }
 
     public function storeNote(Property $property, string $note, array $attachments = [], ?int $actorId = null): PropertyDocument

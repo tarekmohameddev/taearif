@@ -182,6 +182,88 @@ class PublicPropertyVisibilityTest extends TestCase
         $this->assertSame(['id', 'name', 'slug'], array_keys($buildingPayload));
     }
 
+    public function test_public_property_responses_do_not_leak_archive_items(): void
+    {
+        if (! Schema::hasTable('property_documents')) {
+            $this->markTestSkipped('property_documents table not available');
+        }
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $property = $this->createProperty($tenant->id, 'published', 'available');
+
+        $secretDeedNumber = 'SECRET_DEED_185_' . $property->id;
+        $secretMeterNumber = 'WM-SECRET-185_' . $property->id;
+        $secretDocTitle = 'SECRET_DOC_185_' . $property->id;
+        $secretDeedFile = 'deed-secret-185.jpg';
+
+        $service = app(PropertyDocumentService::class);
+
+        $service->storeArchiveItem(
+            $property,
+            'deed',
+            'Deed archive',
+            null,
+            [],
+            ['deed_number' => $secretDeedNumber],
+            $tenant->id,
+        );
+
+        PropertyDocument::query()
+            ->where('property_id', $property->id)
+            ->where('type', 'deed')
+            ->latest('id')
+            ->first()
+            ?->update([
+                'attachments' => [[
+                    'path' => 'property-docs/' . $secretDeedFile,
+                    'name' => $secretDeedFile,
+                    'size' => 512000,
+                ]],
+            ]);
+
+        $service->storeArchiveItem(
+            $property,
+            'meter',
+            'Water meter',
+            null,
+            [],
+            ['meter_kind' => 'water', 'meter_number' => $secretMeterNumber],
+            $tenant->id,
+        );
+
+        $service->storeArchiveItem(
+            $property,
+            'document',
+            $secretDocTitle,
+            null,
+            [],
+            null,
+            $tenant->id,
+        );
+
+        $slug = $property->contents->first()->slug;
+        $secrets = [$secretDeedNumber, $secretMeterNumber, $secretDocTitle, $secretDeedFile];
+
+        $listResponse = $this->getJson("/api/v1/tenant-website/{$tenant->username}/properties");
+        $listResponse->assertOk();
+        $listPayload = json_encode($listResponse->json());
+        foreach ($secrets as $secret) {
+            $this->assertStringNotContainsString($secret, $listPayload);
+        }
+
+        $showResponse = $this->getJson("/api/v1/tenant-website/{$tenant->username}/properties/{$slug}");
+        $showResponse->assertOk();
+
+        $showPayload = json_encode($showResponse->json('property'));
+        foreach ($secrets as $secret) {
+            $this->assertStringNotContainsString($secret, $showPayload);
+        }
+
+        foreach (self::SENSITIVE_KEYS as $key) {
+            $this->assertStringNotContainsString('"' . $key . '"', $showPayload, "Sensitive key [{$key}] leaked in show response");
+        }
+    }
+
     public function test_public_property_responses_do_not_leak_internal_notes(): void
     {
         if (! Schema::hasTable('property_documents')) {

@@ -113,7 +113,9 @@ class PropertyManagementController extends Controller
     public function archive(Request $request, int $id): JsonResponse
     {
         $property = $this->resolveProperty($id);
-        $paginator = $this->documentService->listArchive($property, (int) $request->get('per_page', 20));
+        $type = $request->query('type');
+        $typeFilter = in_array($type, ['deed', 'meter', 'document'], true) ? $type : null;
+        $paginator = $this->documentService->listArchive($property, (int) $request->get('per_page', 20), $typeFilter);
 
         return response()->json([
             'status' => 'success',
