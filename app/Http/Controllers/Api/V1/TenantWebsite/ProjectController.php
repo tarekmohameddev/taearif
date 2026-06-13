@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Api\V1\TenantWebsite;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use App\Models\User\RealestateManagement\Project;
+use App\Models\User\RealestateManagement\Property;
 use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
 
 class ProjectController extends Controller
@@ -25,7 +28,17 @@ class ProjectController extends Controller
 		$tenant = $this->resolveTenant($request, $tenantId);
 
 		$query = Project::query()
-			->with(['contents', 'galleryImages', 'user', 'properties.contents', 'properties.galleryImages'])
+			->with([
+				'contents',
+				'galleryImages',
+				'user',
+				'properties' => fn ($propertyQuery) => $propertyQuery
+					->publishedForPublic()
+					->with(['contents', 'galleryImages']),
+			])
+			->withCount([
+				'properties as public_units_count' => fn ($propertyQuery) => $propertyQuery->publishedForPublic(),
+			])
 			->where('user_id', $tenant->id);
 
 		// Published filter (optional)
@@ -38,13 +51,10 @@ class ProjectController extends Controller
 			$query->where('featured', 1);
 		}
 
-		// Status filter (0 = قيد الإنشاء, 1 = منتهي, 2 = لم ينشأ بعد)
-		if ($request->filled('status')) {
-			$status = (int) $request->query('status');
-			if (in_array($status, [0, 1, 2])) {
-				$query->where('complete_status', $status);
-			}
-		}
+		$this->applyProjectStatusFilter($query, $request);
+		$this->applyUnitCategoryFilter($query, $request);
+		$this->applyPropertyTypeFilter($query, $request);
+		$this->applyPublicUnitsRangeFilter($query, $request);
 
 		// Sort by created_at DESC
 		$query->orderBy('created_at', 'desc');
@@ -52,6 +62,12 @@ class ProjectController extends Controller
 		// Pagination with limit
         $perPage = min((int) $request->query('limit', 20), 50);
         $projects = $query->paginate($perPage);
+		$projectIds = collect($projects->items())
+			->pluck('id')
+			->map(fn ($id) => (int) $id)
+			->values()
+			->all();
+		$projectUnitBreakdowns = $this->getProjectUnitBreakdowns($projectIds);
 
         // Collect all slugs for GA4 query
         $slugs = collect($projects->items())
@@ -103,7 +119,7 @@ class ProjectController extends Controller
             }
         }
 
-        $items = collect($projects->items())->map(function ($project) use ($viewsBySlug) {
+        $items = collect($projects->items())->map(function ($project) use ($viewsBySlug, $projectUnitBreakdowns) {
             $content = optional($project->contents->first());
             $slug    = $content?->slug;
 
@@ -120,6 +136,8 @@ class ProjectController extends Controller
                 'address' => $content?->address ?? '',
                 'developer' => $project->developer ?? '',
                 'units' => (int) ($project->units ?? 0),
+                'unitsCount' => (int) ($projectUnitBreakdowns[$project->id]['total'] ?? $project->public_units_count ?? 0),
+                'unitBreakdown' => $projectUnitBreakdowns[$project->id]['by_category'] ?? [],
                 'completionDate' => $project->completion_date ?? '',
                 'completeStatus' => $project->complete_status ?? '',
                 'minPrice' => isset($project->min_price) ? (string) $project->min_price : '0',
@@ -152,6 +170,131 @@ class ProjectController extends Controller
                 'to' => $projects->lastItem(),
             ],
         ]);
+	}
+
+	public function filterOptions(Request $request, string $tenantId)
+	{
+		$tenant = $this->resolveTenant($request, $tenantId);
+
+		$projectQuery = Project::query()
+			->where('user_id', $tenant->id)
+			->withCount([
+				'properties as public_units_count' => fn ($propertyQuery) => $propertyQuery->publishedForPublic(),
+			]);
+
+		// Keep the options dynamic for the same subset FE is browsing.
+		if ($request->filled('published')) {
+			$projectQuery->where('published', $request->boolean('published') ? 1 : 0);
+		}
+		if ($request->boolean('featured')) {
+			$projectQuery->where('featured', 1);
+		}
+
+		$this->applyUnitCategoryFilter($projectQuery, $request);
+		$this->applyPropertyTypeFilter($projectQuery, $request);
+		$this->applyPublicUnitsRangeFilter($projectQuery, $request);
+
+		$projectsTotal = (clone $projectQuery)->count();
+		if ($projectsTotal === 0) {
+			return response()->json([
+				'filters' => [
+					'project_statuses' => [
+						['value' => 'finished', 'label' => 'Finished', 'count' => 0],
+						['value' => 'not_finished', 'label' => 'Not Finished', 'count' => 0],
+					],
+					'unit_categories' => [],
+					'property_types' => [],
+					'units_range' => ['min' => 0, 'max' => 0],
+					'projects_total' => 0,
+				],
+			]);
+		}
+
+		$projectIds = (clone $projectQuery)
+			->pluck('id')
+			->map(fn ($id) => (int) $id)
+			->values()
+			->all();
+
+		$finishedCount = (clone $projectQuery)
+			->where('complete_status', 1)
+			->count();
+		$notFinishedCount = (clone $projectQuery)
+			->where(function (Builder $q) {
+				$q->whereNull('complete_status')->orWhere('complete_status', '!=', 1);
+			})
+			->count();
+
+		$basePropertyQuery = Property::query()
+			->publishedForPublic()
+			->where('user_id', $tenant->id)
+			->whereIn('project_id', $projectIds);
+
+		$unitCountsByProject = (clone $basePropertyQuery)
+			->selectRaw('project_id, COUNT(*) as total')
+			->groupBy('project_id')
+			->pluck('total', 'project_id')
+			->map(fn ($count) => (int) $count)
+			->values();
+
+		$minUnits = $unitCountsByProject->isEmpty() ? 0 : (int) $unitCountsByProject->min();
+		$maxUnits = $unitCountsByProject->isEmpty() ? 0 : (int) $unitCountsByProject->max();
+
+		$unitCategories = (clone $basePropertyQuery)
+			->join('api_user_categories', 'api_user_categories.id', '=', 'user_properties.category_id')
+			->selectRaw('
+				api_user_categories.id,
+				api_user_categories.slug,
+				api_user_categories.name,
+				COUNT(*) as units_count,
+				COUNT(DISTINCT user_properties.project_id) as projects_count
+			')
+			->groupBy('api_user_categories.id', 'api_user_categories.slug', 'api_user_categories.name')
+			->orderByDesc('units_count')
+			->get()
+			->map(function ($row) {
+				return [
+					'id' => (int) $row->id,
+					'slug' => (string) $row->slug,
+					'name' => (string) $row->name,
+					'units_count' => (int) $row->units_count,
+					'projects_count' => (int) $row->projects_count,
+				];
+			})
+			->values();
+
+		$propertyTypes = (clone $basePropertyQuery)
+			->whereNotNull('user_properties.property_type')
+			->where('user_properties.property_type', '!=', '')
+			->selectRaw('
+				user_properties.property_type as value,
+				COUNT(*) as units_count,
+				COUNT(DISTINCT user_properties.project_id) as projects_count
+			')
+			->groupBy('user_properties.property_type')
+			->orderBy('user_properties.property_type')
+			->get()
+			->map(function ($row) {
+				return [
+					'value' => (string) $row->value,
+					'units_count' => (int) $row->units_count,
+					'projects_count' => (int) $row->projects_count,
+				];
+			})
+			->values();
+
+		return response()->json([
+			'filters' => [
+				'project_statuses' => [
+					['value' => 'finished', 'label' => 'Finished', 'count' => $finishedCount],
+					['value' => 'not_finished', 'label' => 'Not Finished', 'count' => $notFinishedCount],
+				],
+				'unit_categories' => $unitCategories,
+				'property_types' => $propertyTypes,
+				'units_range' => ['min' => $minUnits, 'max' => $maxUnits],
+				'projects_total' => $projectsTotal,
+			],
+		]);
 	}
 
 	public function show(Request $request, string $tenantId, string $slug)
@@ -344,6 +487,129 @@ class ProjectController extends Controller
 			'created_at' => $property->created_at?->toISOString(),
 			'updated_at' => $property->updated_at?->toISOString(),
 		];
+	}
+
+	private function applyProjectStatusFilter(Builder $query, Request $request): void
+	{
+		$projectStatus = strtolower(trim((string) $request->query('project_status', '')));
+
+		if ($projectStatus === 'finished') {
+			$query->where('complete_status', 1);
+			return;
+		}
+
+		if (in_array($projectStatus, ['not_finished', 'not-finished', 'unfinished'], true)) {
+			$query->where(function (Builder $q) {
+				$q->whereNull('complete_status')->orWhere('complete_status', '!=', 1);
+			});
+			return;
+		}
+
+		// Backward compatibility: existing numeric status filter.
+		if ($request->filled('status')) {
+			$status = (int) $request->query('status');
+			if (in_array($status, [0, 1, 2], true)) {
+				$query->where('complete_status', $status);
+			}
+		}
+	}
+
+	private function applyUnitCategoryFilter(Builder $query, Request $request): void
+	{
+		$categoryId = $request->query('unit_category_id');
+		$categorySlug = strtolower(trim((string) ($request->query('unit_category') ?? $request->query('unit_category_slug') ?? '')));
+
+		if ($categoryId !== null && $categoryId !== '') {
+			$query->whereHas('properties', function (Builder $propertyQuery) use ($categoryId) {
+				$propertyQuery->publishedForPublic()->where('category_id', (int) $categoryId);
+			});
+			return;
+		}
+
+		if ($categorySlug !== '') {
+			$query->whereHas('properties', function (Builder $propertyQuery) use ($categorySlug) {
+				$propertyQuery->publishedForPublic()
+					->where(function (Builder $propertyTypeOrCategoryQuery) use ($categorySlug) {
+						$propertyTypeOrCategoryQuery
+							->where('property_type', $categorySlug)
+							->orWhereHas('category', function (Builder $categoryQuery) use ($categorySlug) {
+								$categoryQuery->where('slug', $categorySlug);
+							});
+					});
+			});
+		}
+	}
+
+	private function applyPropertyTypeFilter(Builder $query, Request $request): void
+	{
+		$propertyType = trim((string) $request->query('property_type', ''));
+		if ($propertyType === '') {
+			return;
+		}
+
+		$query->whereHas('properties', function (Builder $propertyQuery) use ($propertyType) {
+			$propertyQuery->publishedForPublic()->where('property_type', $propertyType);
+		});
+	}
+
+	private function applyPublicUnitsRangeFilter(Builder $query, Request $request): void
+	{
+		$minUnits = $request->query('min_units');
+		if (is_numeric($minUnits)) {
+			$query->whereHas(
+				'properties',
+				fn (Builder $propertyQuery) => $propertyQuery->publishedForPublic(),
+				'>=',
+				max(0, (int) $minUnits)
+			);
+		}
+
+		$maxUnits = $request->query('max_units');
+		if (is_numeric($maxUnits)) {
+			$query->whereHas(
+				'properties',
+				fn (Builder $propertyQuery) => $propertyQuery->publishedForPublic(),
+				'<=',
+				max(0, (int) $maxUnits)
+			);
+		}
+	}
+
+	/**
+	 * @param  array<int, int>  $projectIds
+	 * @return array<int, array{total:int, by_category: array<string, int>}>
+	 */
+	private function getProjectUnitBreakdowns(array $projectIds): array
+	{
+		if ($projectIds === []) {
+			return [];
+		}
+
+		$properties = Property::query()
+			->publishedForPublic()
+			->whereIn('project_id', $projectIds)
+			->with('category:id,slug')
+			->get(['id', 'project_id', 'category_id', 'property_type']);
+
+		$breakdowns = [];
+		foreach ($properties as $property) {
+			$projectId = (int) $property->project_id;
+			$categoryKey = $property->category?->slug
+				?: (filled($property->property_type) ? $property->property_type : 'other');
+
+			if (! isset($breakdowns[$projectId])) {
+				$breakdowns[$projectId] = [
+					'total' => 0,
+					'by_category' => [],
+				];
+			}
+
+			$breakdowns[$projectId]['total']++;
+			$breakdowns[$projectId]['by_category'][$categoryKey] =
+				($breakdowns[$projectId]['by_category'][$categoryKey] ?? 0) + 1;
+		}
+
+		return $breakdowns;
 	}
 }
 

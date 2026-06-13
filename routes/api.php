@@ -1133,6 +1133,7 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
 
     // Tenant Website Projects (public)
     Route::get('{tenantId}/projects', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'index']);
+    Route::get('{tenantId}/projects/filter-options', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'filterOptions']);
     Route::get('{tenantId}/projects/{slug}', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'show']);
 
     Route::get('{tenantId}/buildings', [\App\Http\Controllers\Api\V1\TenantWebsite\BuildingController::class, 'index']);
