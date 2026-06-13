@@ -38,7 +38,7 @@ class PublicProjectFiltersTest extends TestCase
         $this->ensurePropertyStatusColumns();
     }
 
-    public function test_can_filter_projects_by_finished_status(): void
+    public function test_can_filter_projects_by_complete_status(): void
     {
         $tenant = User::factory()->create(['account_type' => 'tenant']);
 
@@ -46,7 +46,7 @@ class PublicProjectFiltersTest extends TestCase
         $this->createProject($tenant->id, 0);
         $this->createProject($tenant->id, 2);
 
-        $response = $this->getJson("/api/v1/tenant-website/{$tenant->username}/projects?project_status=finished");
+        $response = $this->getJson("/api/v1/tenant-website/{$tenant->username}/projects?status=1");
         $response->assertOk();
 
         $ids = collect($response->json('projects'))
@@ -127,14 +127,102 @@ class PublicProjectFiltersTest extends TestCase
         $this->assertSame(1, (int) $response->json('filters.units_range.min'));
         $this->assertSame(2, (int) $response->json('filters.units_range.max'));
 
-        $statuses = collect($response->json('filters.project_statuses'))->keyBy('value');
-        $this->assertSame(1, (int) ($statuses->get('finished')['count'] ?? 0));
-        $this->assertSame(1, (int) ($statuses->get('not_finished')['count'] ?? 0));
+        $statuses = collect($response->json('filters.complete_statuses'))->keyBy('value');
+        $this->assertSame(1, (int) ($statuses->get(1)['count'] ?? 0));
+        $this->assertSame(1, (int) ($statuses->get(0)['count'] ?? 0));
+        $this->assertSame(0, (int) ($statuses->get(2)['count'] ?? 0));
 
         $categories = collect($response->json('filters.unit_categories'))->keyBy('slug');
         $this->assertSame(2, (int) ($categories->get('duplex')['units_count'] ?? 0));
         $this->assertSame(1, (int) ($categories->get('duplex')['projects_count'] ?? 0));
         $this->assertSame(1, (int) ($categories->get('villa')['units_count'] ?? 0));
+
+        $this->assertArrayHasKey('listing_purposes', $response->json('filters'));
+        $this->assertArrayHasKey('unit_statuses', $response->json('filters'));
+        $this->assertArrayHasKey('price_range', $response->json('filters'));
+    }
+
+    public function test_can_filter_projects_by_price_range(): void
+    {
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+
+        $affordable = $this->createProject($tenant->id, 1, ['min_price' => 100000, 'max_price' => 200000]);
+        $this->createProject($tenant->id, 1, ['min_price' => 500000, 'max_price' => 600000]);
+
+        $response = $this->getJson("/api/v1/tenant-website/{$tenant->username}/projects?price_from=150000&price_to=250000");
+        $response->assertOk();
+
+        $ids = collect($response->json('projects'))->pluck('id')->map(fn ($id) => (int) $id);
+        $this->assertTrue($ids->contains($affordable->id));
+        $this->assertCount(1, $ids);
+    }
+
+    public function test_can_filter_projects_by_listing_purpose(): void
+    {
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $category = $this->ensureCategory('apartment', 'Apartment');
+
+        $saleProject = $this->createProject($tenant->id, 1);
+        $rentProject = $this->createProject($tenant->id, 1);
+
+        $this->createProperty($tenant->id, $saleProject->id, $category->id, 'apartment', ['listing_purpose' => 'sale']);
+        $this->createProperty($tenant->id, $rentProject->id, $category->id, 'apartment', ['listing_purpose' => 'rent']);
+
+        $response = $this->getJson("/api/v1/tenant-website/{$tenant->username}/projects?listing_purpose=sale");
+        $response->assertOk();
+
+        $ids = collect($response->json('projects'))->pluck('id')->map(fn ($id) => (int) $id);
+        $this->assertTrue($ids->contains($saleProject->id));
+        $this->assertFalse($ids->contains($rentProject->id));
+    }
+
+    public function test_can_filter_projects_by_unit_status(): void
+    {
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $category = $this->ensureCategory('apartment', 'Apartment');
+
+        $availableProject = $this->createProject($tenant->id, 1);
+        $soldProject = $this->createProject($tenant->id, 1);
+
+        $this->createProperty($tenant->id, $availableProject->id, $category->id, 'apartment', ['unit_status' => 'available']);
+        $this->createProperty($tenant->id, $soldProject->id, $category->id, 'apartment', ['unit_status' => 'sold']);
+
+        $response = $this->getJson("/api/v1/tenant-website/{$tenant->username}/projects?unit_status=available");
+        $response->assertOk();
+
+        $ids = collect($response->json('projects'))->pluck('id')->map(fn ($id) => (int) $id);
+        $this->assertTrue($ids->contains($availableProject->id));
+        $this->assertFalse($ids->contains($soldProject->id));
+    }
+
+    public function test_can_search_projects_by_query(): void
+    {
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+
+        $matching = $this->createProject($tenant->id, 1, ['title' => 'Sunset Towers']);
+        $this->createProject($tenant->id, 1, ['title' => 'Green Valley']);
+
+        $response = $this->getJson("/api/v1/tenant-website/{$tenant->username}/projects?q=Sunset");
+        $response->assertOk();
+
+        $ids = collect($response->json('projects'))->pluck('id')->map(fn ($id) => (int) $id);
+        $this->assertTrue($ids->contains($matching->id));
+        $this->assertCount(1, $ids);
+    }
+
+    public function test_can_sort_projects_by_price_asc(): void
+    {
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+
+        $expensive = $this->createProject($tenant->id, 1, ['min_price' => 500000, 'max_price' => 600000]);
+        $cheap = $this->createProject($tenant->id, 1, ['min_price' => 100000, 'max_price' => 200000]);
+
+        $response = $this->getJson("/api/v1/tenant-website/{$tenant->username}/projects?sort=price_asc");
+        $response->assertOk();
+
+        $ids = collect($response->json('projects'))->pluck('id')->map(fn ($id) => (int) $id)->values();
+        $this->assertSame($cheap->id, $ids->first());
+        $this->assertSame($expensive->id, $ids->last());
     }
 
     private function ensureCategory(string $slug, string $name): ApiUserCategory
@@ -149,7 +237,7 @@ class PublicProjectFiltersTest extends TestCase
         );
     }
 
-    private function createProject(int $userId, int $completeStatus): Project
+    private function createProject(int $userId, int $completeStatus, array $overrides = []): Project
     {
         $payload = [
             'user_id' => $userId,
@@ -166,6 +254,15 @@ class PublicProjectFiltersTest extends TestCase
         if (Schema::hasColumn('user_projects', 'units')) {
             $payload['units'] = 0;
         }
+        if (Schema::hasColumn('user_projects', 'min_price') && array_key_exists('min_price', $overrides)) {
+            $payload['min_price'] = $overrides['min_price'];
+        }
+        if (Schema::hasColumn('user_projects', 'max_price') && array_key_exists('max_price', $overrides)) {
+            $payload['max_price'] = $overrides['max_price'];
+        }
+        if (Schema::hasColumn('user_projects', 'developer') && array_key_exists('developer', $overrides)) {
+            $payload['developer'] = $overrides['developer'];
+        }
 
         $project = Project::create($payload);
 
@@ -173,24 +270,24 @@ class PublicProjectFiltersTest extends TestCase
             'user_id' => $userId,
             'project_id' => $project->id,
             'language_id' => 1,
-            'title' => 'Project ' . $project->id,
-            'slug' => 'project-' . $project->id,
-            'address' => 'Address',
+            'title' => $overrides['title'] ?? ('Project ' . $project->id),
+            'slug' => $overrides['slug'] ?? ('project-' . $project->id),
+            'address' => $overrides['address'] ?? 'Address',
             'description' => 'Description',
         ]);
 
         return $project->fresh(['contents']);
     }
 
-    private function createProperty(int $userId, int $projectId, int $categoryId, string $propertyType): Property
+    private function createProperty(int $userId, int $projectId, int $categoryId, string $propertyType, array $overrides = []): Property
     {
         $payload = [
             'user_id' => $userId,
             'project_id' => $projectId,
             'price' => 100000,
             'purpose' => 'sale',
-            'listing_purpose' => 'sale',
-            'unit_status' => 'available',
+            'listing_purpose' => $overrides['listing_purpose'] ?? 'sale',
+            'unit_status' => $overrides['unit_status'] ?? 'available',
             'publish_status' => 'published',
             'status' => 1,
             'featured_image' => 'test.jpg',
