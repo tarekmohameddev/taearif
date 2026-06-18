@@ -472,8 +472,7 @@ if (!function_exists('getActiveCustomDomain')) {
     function getActiveCustomDomain($user)
     {
         $domain = $user->domains()
-            ->where('status', 'active')
-            ->latest('id')
+            ->preferredActive()
             ->first();
 
         return $domain ? $domain->custom_name : false;

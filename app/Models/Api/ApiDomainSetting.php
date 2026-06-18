@@ -47,6 +47,14 @@ class ApiDomainSetting extends Model
     {
         return $this->belongsTo(CustomDomain::class, 'custom_domain_id');
     }
+
+    public function scopePreferredActive($query)
+    {
+        return $query
+            ->where('status', 'active')
+            ->orderByDesc('primary')
+            ->orderByDesc('id');
+    }
     public function getDnsRecords()
     {
         $user = Auth::user();
