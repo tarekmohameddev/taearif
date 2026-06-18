@@ -786,9 +786,8 @@ class AuthController extends Controller
 
                 // Get active domain with limit(1) - only fetch what we need
                 $domain = ApiDomainSetting::where('user_id', $owner->id)
-                    ->where('status', 'active')
+                    ->preferredActive()
                     ->select(['id', 'user_id', 'custom_name', 'status', 'primary', 'ssl'])
-                    ->limit(1)
                     ->first();
 
                 // Get company name with limit(1)
@@ -813,12 +812,14 @@ class AuthController extends Controller
                     ->orderBy('id', 'desc')
                     ->first();
 
-                $domain = ApiDomainSetting::where('user_id', $owner->id)->where('status', 'active')->first([
-                    "custom_name",
-                    "status",
-                    "primary",
-                    "ssl",
-                ]);
+                $domain = ApiDomainSetting::where('user_id', $owner->id)
+                    ->preferredActive()
+                    ->first([
+                        'custom_name',
+                        'status',
+                        'primary',
+                        'ssl',
+                    ]);
 
                 // Get company_name from BasicSetting (owner)
                 $basicSetting = BasicSetting::where('user_id', $owner->id)->first(['company_name']);
