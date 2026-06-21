@@ -21,6 +21,7 @@ class Project extends Model
         'created_by',
         'featured_image',
         'video_url',
+        'brochure',
         'min_price',
         'max_price',
         'latitude',
@@ -136,6 +137,7 @@ class Project extends Model
             'created_by' => $createdBy ?? auth()->id(),
             'featured_image' => $request['featured_image'],
             'video_url' => !empty($request['video_url']) ? $request['video_url'] : null,
+            'brochure' => !empty($request['brochure']) ? $request['brochure'] : null,
             'min_price' => $request['min_price'] ?? null,
             'max_price' => $request['max_price'] ?? null,
             'featured' => $request['featured'] ?? 0,
@@ -156,6 +158,9 @@ class Project extends Model
         return $this->update([
             'featured_image' => $request['featured_image'],
             'video_url' => !empty($request['video_url']) ? $request['video_url'] : null,
+            'brochure' => array_key_exists('brochure', $request)
+                ? (!empty($request['brochure']) ? $request['brochure'] : null)
+                : $this->brochure,
             'min_price' => $request['min_price'] ?? $this->min_price,
             'max_price' => $request['max_price'] ?? $this->max_price,
             'featured' => $request['featured'] ?? $this->featured,

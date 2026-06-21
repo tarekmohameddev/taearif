@@ -138,7 +138,8 @@ class ProjectController extends Controller
                 "id"              => $project->id,
                 "visits"          => (int)($visitsByProject[$project->id] ?? 0),   // << here
                 "featured_image"  => $project->featured_image ? asset($project->featured_image) : null,
-                "video_url"       => $project->video_url ? asset($project->video_url) : null,
+                "video_url"       => $this->resolveMediaUrl($project->video_url),
+                "brochure"        => $this->resolveMediaUrl($project->brochure),
                 "min_price"       => $project->min_price,
                 "max_price"       => $project->max_price,
                 "min_price_formatted" => $project->min_price !== null ? formatNumberWithoutTrailingZeros($project->min_price) : null,
@@ -272,7 +273,8 @@ class ProjectController extends Controller
             "id" => $project->id,
             "visits" => $visits,
             "featured_image" => asset($project->featured_image),
-            "video_url" => $project->video_url ? asset($project->video_url) : null,
+            "video_url" => $this->resolveMediaUrl($project->video_url),
+            "brochure" => $this->resolveMediaUrl($project->brochure),
             "min_price" => $project->min_price,
             "max_price" => $project->max_price,
             "min_price_formatted" => $project->min_price !== null ? formatNumberWithoutTrailingZeros($project->min_price) : null,
@@ -396,6 +398,7 @@ class ProjectController extends Controller
             $requestData = $request->all();
             $requestData['featured_image'] = asset($request->featured_image);
             $requestData['video_url'] = !empty($request->video_url) ? $request->video_url : null; // Handle empty string
+            $requestData['brochure'] = !empty($request->brochure) ? $request->brochure : null;
             $requestData['amenities'] = $this->normalizeAmenities($request->input('amenities'));
 
             $project = Project::storeProject($ownerId, $requestData, auth()->id());
@@ -481,6 +484,10 @@ class ProjectController extends Controller
             $responseProject->featured_image = asset($responseProject->featured_image);
         }
 
+        if ($responseProject->brochure) {
+            $responseProject->brochure = $this->resolveMediaUrl($responseProject->brochure);
+        }
+
         $responseProject->gallery_images = $responseProject->galleryImages->map(function ($image) {
             $image->image = asset($image->image);
             return $image;
@@ -557,6 +564,17 @@ class ProjectController extends Controller
         return [];
     }
 
+    private function resolveMediaUrl(?string $value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        return str_starts_with($value, 'http://') || str_starts_with($value, 'https://')
+            ? $value
+            : asset($value);
+    }
+
     private function ensureProjectsMenuExistsForUser($userId)
     {
         $exists = ApiMenuItem::where('user_id', $userId)
@@ -622,6 +640,9 @@ class ProjectController extends Controller
             $requestData = $request->all();
             $requestData['featured_image'] = $request->featured_image;
             $requestData['video_url'] = !empty($request->video_url) ? $request->video_url : null; // Handle empty string
+            if ($request->has('brochure')) {
+                $requestData['brochure'] = !empty($request->brochure) ? $request->brochure : null;
+            }
             $requestData['amenities'] = $this->normalizeAmenities($request->input('amenities', $project->amenities));
 
             $project->updateProject($requestData);
@@ -703,6 +724,10 @@ class ProjectController extends Controller
         $responseProject->max_price_formatted = $responseProject->max_price !== null 
             ? formatNumberWithoutTrailingZeros($responseProject->max_price) 
             : null;
+
+        if ($responseProject->brochure) {
+            $responseProject->brochure = $this->resolveMediaUrl($responseProject->brochure);
+        }
 
         TenantActivity::emit($request, 'project.created', 'user_projects', $responseProject->id, null, [
             'id' => $responseProject->id, 'title' => optional($responseProject->contents->first())->title

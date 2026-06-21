@@ -24,6 +24,17 @@ class ProjectController extends Controller
 		return $project->amenities ?? [];
 	}
 
+	private function resolveMediaUrl(?string $value): ?string
+	{
+		if (empty($value)) {
+			return null;
+		}
+
+		return str_starts_with($value, 'http://') || str_starts_with($value, 'https://')
+			? $value
+			: asset($value);
+	}
+
     public function index(Request $request, string $tenantId)
 	{
 		$tenant = $this->resolveTenant($request, $tenantId);
@@ -142,6 +153,7 @@ class ProjectController extends Controller
                 'featured' => (bool) $project->featured,
                 'images' => $images,
                 'videoUrl' => $project->video_url ?? null,
+                'brochure' => $this->resolveMediaUrl($project->brochure),
                 'amenities' => $this->getAmenitiesArray($project),
                 'views' => $viewsBySlug[$slug] ?? 0,
                 'location' => [
@@ -407,6 +419,7 @@ class ProjectController extends Controller
 			'images' => $images,
 			'floorplans' => $floorplans,
 			'videoUrl' => $project->video_url ?? null,
+			'brochure' => $this->resolveMediaUrl($project->brochure),
 			'views' => $views,
 			'amenities' => $this->getAmenitiesArray($project),
 			'featured' => (bool) ($project->featured ?? false),
