@@ -227,6 +227,8 @@ return [
     'activity.logout.employee' => 'Logout',
     'activity.login.employee' => 'Login',
     'activity.register.employee' => 'Register',
+
+    'property.status_changed' => 'Property status changed',
     
     // Unknown/fallback
     'activity.unknown' => 'Unknown Action',

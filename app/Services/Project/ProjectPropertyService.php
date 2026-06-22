@@ -13,6 +13,8 @@ use App\Models\User\RealestateManagement\PropertyContent;
 use App\Models\User\RealestateManagement\PropertySliderImg;
 use App\Models\User\UserDistrict;
 use App\Services\MembershipCacheService;
+use App\Services\Property\PropertyProjectLinkGuard;
+use App\Support\SourceBrokerNormalizer;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
@@ -24,16 +26,68 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class ProjectPropertyService
 {
-    public function listForProject(int $tenantOwnerId, int $projectId, int $perPage = 25): LengthAwarePaginator
+    public function __construct(
+        private readonly PropertyProjectLinkGuard $projectLinkGuard,
+    ) {
+    }
+
+    public function listForProject(int $tenantOwnerId, int $projectId, int $perPage = 25, array $filters = []): LengthAwarePaginator
     {
         $this->resolveProjectForTenant($tenantOwnerId, $projectId);
 
-        return Property::query()
+        $query = Property::query()
             ->where('project_id', $projectId)
             ->whereIn('user_id', $this->allowedUserIds($tenantOwnerId))
-            ->with(['contents', 'galleryImages', 'category'])
-            ->orderByDesc('id')
-            ->paginate($perPage);
+            ->with(['contents', 'galleryImages', 'category', 'creator']);
+
+        if (! empty($filters['unit_status'])) {
+            $query->where('unit_status', $filters['unit_status']);
+        }
+        if (! empty($filters['listing_purpose'])) {
+            $query->where('listing_purpose', $filters['listing_purpose']);
+        }
+        if (! empty($filters['publish_status'])) {
+            $query->where('publish_status', $filters['publish_status']);
+        }
+        if (! empty($filters['category_id'])) {
+            $query->where('category_id', (int) $filters['category_id']);
+        }
+        if (! empty($filters['property_type'])) {
+            $query->where('property_type', $filters['property_type']);
+        }
+        if (! empty($filters['payment_method'])) {
+            $query->where('payment_method', $filters['payment_method']);
+        }
+        if (isset($filters['price_from'])) {
+            $query->where('price', '>=', (float) $filters['price_from']);
+        }
+        if (isset($filters['price_to'])) {
+            $query->where('price', '<=', (float) $filters['price_to']);
+        }
+        if (! empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->whereHas('contents', function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%");
+            });
+        }
+        if (! empty($filters['city_id']) || ! empty($filters['state_id'])) {
+            $query->whereHas('contents', function ($q) use ($filters) {
+                if (! empty($filters['city_id'])) {
+                    $q->where('city_id', (int) $filters['city_id']);
+                }
+                if (! empty($filters['state_id'])) {
+                    $q->where('state_id', (int) $filters['state_id']);
+                }
+            });
+        }
+        if (! empty($filters['floor_number'])) {
+            $query->whereHas('UserPropertyCharacteristics', function ($q) use ($filters) {
+                $q->where('floor_number', (int) $filters['floor_number']);
+            });
+        }
+
+        return $query->orderByDesc('id')->paginate($perPage);
     }
 
     public function createForProject(
@@ -158,6 +212,10 @@ class ProjectPropertyService
         int $propertyId,
         array $payload,
     ): Property {
+        if (array_key_exists('project_id', $payload)) {
+            throw new HttpException(422, 'project_id cannot be changed after creation.');
+        }
+
         $this->resolveProjectForTenant($tenantOwnerId, $projectId);
         $property = $this->resolvePropertyForTenant($tenantOwnerId, $propertyId);
         $this->assertPropertyOnProject($property, $projectId);
@@ -168,7 +226,6 @@ class ProjectPropertyService
         DB::transaction(function () use ($property, $payload, $location, $defaultLanguage, $tenantOwnerId): void {
             $propertyData = $this->buildPropertyPayload($payload, (int) $property->project_id, false);
             if ($propertyData !== []) {
-                $propertyData['project_id'] = $property->project_id;
                 $property->updateProperty($propertyData);
             }
 
@@ -229,7 +286,7 @@ class ProjectPropertyService
             return;
         }
 
-        $property->update(['project_id' => null]);
+        $this->projectLinkGuard->assertProjectIdImmutable($property, null);
     }
 
     public function resolveProjectForTenant(int $tenantOwnerId, int $projectId): Project
@@ -376,6 +433,9 @@ class ProjectPropertyService
             'price',
             'pricePerMeter',
             'purpose',
+            'listing_purpose',
+            'unit_status',
+            'publish_status',
             'area',
             'status',
             'latitude',
@@ -391,6 +451,10 @@ class ProjectPropertyService
             'beds',
             'bath',
             'size',
+            'source_broker_type',
+            'source_broker_id',
+            'source_broker_name',
+            'source_broker_phone',
         ];
 
         $data = [];
@@ -405,7 +469,7 @@ class ProjectPropertyService
             $data['project_id'] = $projectId;
         }
 
-        return $data;
+        return SourceBrokerNormalizer::normalize($data);
     }
 
     private function buildContentPayload(array $payload, array $location, int $languageId, ?PropertyContent $content): array

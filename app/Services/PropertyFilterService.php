@@ -24,6 +24,14 @@ class PropertyFilterService
                 ['user_properties.status', 1],
                 ['user_properties.featured', 1],
             ])
+            ->when(
+                config('properties.backfill_complete'),
+                fn ($q) => $q->where('user_properties.publish_status', 'published'),
+                fn ($q) => $q->where(function ($inner) {
+                    $inner->whereNull('user_properties.publish_status')
+                        ->orWhere('user_properties.publish_status', 'published');
+                })
+            )
             ->join('user_property_contents', 'user_properties.id', '=', 'user_property_contents.property_id')
             ->leftJoin('user_cities', 'user_cities.id', '=', 'user_property_contents.city_id')
             ->leftJoin('user_states', 'user_states.id', '=', 'user_property_contents.state_id')

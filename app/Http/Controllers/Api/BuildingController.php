@@ -24,6 +24,7 @@ class BuildingController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = Auth::user();
+        $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
 
         // Get Arabic language ID for property contents
         $arabicLang = \App\Models\User\Language::where('user_id', $user->id)
@@ -32,7 +33,13 @@ class BuildingController extends Controller
 
         $languageId = $arabicLang ? $arabicLang->id : null;
 
-        $query = Building::where('user_id', $user->id)
+        $archived = $request->query('is_archived', '0');
+        $query = Building::where('user_id', $owner->id)
+            ->when($archived !== null && $archived !== '', function ($q) use ($archived) {
+                $q->where('is_archived', filter_var($archived, FILTER_VALIDATE_BOOLEAN));
+            }, function ($q) {
+                $q->where('is_archived', false);
+            })
             ->with([
                 'user:id,username,email',
                 'meters',
@@ -56,6 +63,14 @@ class BuildingController extends Controller
         // Search by name
         if ($request->has('search') && $request->search) {
             $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('project_id')) {
+            $query->where('project_id', (int) $request->project_id);
+        }
+
+        if (filter_var($request->input('unassigned'), FILTER_VALIDATE_BOOLEAN)) {
+            $query->whereNull('project_id');
         }
 
         $buildings = $query->paginate($request->get('per_page', 15));
@@ -106,8 +121,13 @@ class BuildingController extends Controller
 
         try {
             $user = Auth::user();
-            $data = $request->only(['name', 'deed_number']);
-            $data['user_id'] = $user->id;
+            $data = $request->only([
+                'name', 'slug', 'deed_number', 'description', 'featured_image', 'owner_name',
+                'owner_phone', 'address', 'city_id', 'state_id', 'latitude', 'longitude', 'project_id',
+            ]);
+            $data['user_id'] = method_exists($user, 'tenantOwnerId')
+                ? (int) $user->tenantOwnerId()
+                : (int) $user->id;
 
             // Check if request is JSON (raw) or form-data for image handling logic
             $isJsonRequest = $request->isJson() || $request->header('Content-Type') === 'application/json';
@@ -151,7 +171,15 @@ class BuildingController extends Controller
     public function show($id): JsonResponse
     {
         $user = Auth::user();
-        
+        $building = $this->resolveBuilding((int) $id);
+
+        if (!$building) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Building not found'
+            ], 404);
+        }
+
         // Get Arabic language ID for property contents
         $arabicLang = \App\Models\User\Language::where('user_id', $user->id)
             ->where('code', 'ar')
@@ -159,9 +187,7 @@ class BuildingController extends Controller
         
         $languageId = $arabicLang ? $arabicLang->id : null;
         
-        $building = Building::where('id', $id)
-            ->where('user_id', $user->id)
-            ->with([
+        $building->load([
                 'user:id,username,email',
                 'meters',
                 'properties' => function($q) use ($languageId) {
@@ -178,15 +204,7 @@ class BuildingController extends Controller
                         'contents.country:id,name'
                     ]);
                 }
-            ])
-            ->first();
-
-        if (!$building) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Building not found'
-            ], 404);
-        }
+            ]);
 
         // Transform the properties data
         $building->properties->transform(function ($property) {
@@ -226,8 +244,7 @@ class BuildingController extends Controller
      */
     public function update(UpdateBuildingRequest $request, $id): JsonResponse
     {
-        $user = Auth::user();
-        $building = Building::where('id', $id)->where('user_id', $user->id)->first();
+        $building = $this->resolveBuilding((int) $id);
 
         if (!$building) {
             return response()->json([
@@ -237,7 +254,11 @@ class BuildingController extends Controller
         }
 
         try {
-            $data = $request->only(['name', 'deed_number', 'image', 'deed_image']);
+            $data = $request->only([
+                'name', 'deed_number', 'image', 'deed_image', 'description', 'featured_image',
+                'owner_name', 'owner_phone', 'address', 'city_id', 'state_id', 'latitude', 'longitude',
+                'project_id', 'slug',
+            ]);
             $building->fill($data)->save();
             $this->syncBuildingMeters($building, $request);
 
@@ -283,8 +304,7 @@ class BuildingController extends Controller
      */
     public function destroy($id): JsonResponse
     {
-        $user = Auth::user();
-        $building = Building::where('id', $id)->where('user_id', $user->id)->first();
+        $building = $this->resolveBuilding((int) $id);
 
         if (!$building) {
             return response()->json([
@@ -294,16 +314,10 @@ class BuildingController extends Controller
         }
 
         try {
-            if ($building->image) {
-                $this->deleteImage($building->image);
-            }
-            if ($building->deed_image) {
-                $this->deleteImage($building->deed_image);
-            }
-            $building->delete();
+            $building->update(['is_archived' => true]);
             return response()->json([
                 'status' => 'success',
-                'message' => 'Building deleted successfully'
+                'message' => 'Building archived successfully'
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -338,6 +352,18 @@ class BuildingController extends Controller
         if ($imagePath && file_exists(public_path($imagePath))) {
             unlink(public_path($imagePath));
         }
+    }
+
+    private function resolveBuilding(int $id): ?Building
+    {
+        $user = Auth::user();
+        $ownerId = method_exists($user, 'tenantOwnerId')
+            ? (int) $user->tenantOwnerId()
+            : (int) $user->id;
+
+        return Building::where('id', $id)
+            ->where('user_id', $ownerId)
+            ->first();
     }
 
     /**

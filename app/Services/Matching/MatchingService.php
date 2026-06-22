@@ -3,6 +3,7 @@
 namespace App\Services\Matching;
 
 use App\Models\PropertyMatch;
+use App\Services\Property\PropertyCrmRelationService;
 use App\Repositories\PropertyRepository;
 use App\Repositories\RequestRepository;
 use App\Support\DTO\MatchResult;
@@ -18,6 +19,7 @@ class MatchingService
         private PropertyRepository $properties,
         private PropertySearchService $search,
         private MatchingScorer $aiScorer,
+        private PropertyCrmRelationService $crmRelationService,
     ) {}
 
     /**
@@ -148,6 +150,15 @@ class MatchingService
                     'is_reviewed' => false,
                 ]
             );
+
+            if ($source === 'crm') {
+                $this->crmRelationService->recordAiMatch(
+                    $pid,
+                    $requestId,
+                    $unified->userId,
+                    $unified->customer_id ?? null,
+                );
+            }
         }
 
         Log::info('MatchingService: persisted matches summary', [

@@ -33,6 +33,9 @@ use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
 use App\Rules\PropertyTypeRule;
 use Illuminate\Support\Carbon;
 use App\Domain\CustomersHub\Services\IgnoredCustomersService;
+use App\Domain\PropertyRequests\Services\PropertyRequestLocationNormalizer;
+use App\Domain\PropertyRequests\Services\PropertyRequestMapPinResolver;
+use App\Http\Requests\Api\Property\MapPropertyRequestsRequest;
 
 class ApiPropertyRequestController extends Controller
 {
@@ -90,11 +93,14 @@ class ApiPropertyRequestController extends Controller
             $propertyIds = $validIds;
         }
 
-        // Map region (city_id) → set city_id and Arabic name into region
-        $regionId = (int) ($data['region'] ?? 0);
-        $city = UserCity::find($regionId);
-        $data['city_id'] = $regionId;
-        $data['region'] = $city ? $city->name_ar : null;
+        if (! empty($data['region'])) {
+            $regionId = (int) $data['region'];
+            if ($regionId > 0) {
+                $city = UserCity::find($regionId);
+                $data['city_id'] = $regionId;
+                $data['region'] = $city ? $city->name_ar : null;
+            }
+        }
 
         // category from request should go into property_type (Arabic → English)
         if (isset($data['category']) && $data['category'] !== null && $data['category'] !== '') {
@@ -104,13 +110,20 @@ class ApiPropertyRequestController extends Controller
                 'صناعي' => 'Industrial',
                 'زراعي' => 'Agricultural',
             ];
-            $data['property_type'] = $categoryMap[$data['category']] ?? $data['category'];
+            $data['property_type'] = PropertyTypeRule::normalize(
+                $categoryMap[$data['category']] ?? $data['category']
+            );
             unset($data['category']);
         }
 
         $data['is_read'] = false;
         $data['is_active'] = true;
-        $data['source'] = $request->user() ? 'employee_dashboard' : ($data['source'] ?? 'employee_dashboard');
+        $isPublicRoute = $request->is('api/v1/property-requests/public') || $request->is('v1/property-requests/public');
+        if (! $request->user() && $isPublicRoute) {
+            $data['source'] = $data['source'] ?? 'public_form';
+        } else {
+            $data['source'] = $request->user() ? 'employee_dashboard' : ($data['source'] ?? 'employee_dashboard');
+        }
         $data['referral_source'] = $data['referral_source'] ?? null;
 
         if (isset($data['status_id'])) {
@@ -128,6 +141,9 @@ class ApiPropertyRequestController extends Controller
                 'error_code' => 'CUSTOMER_IGNORED',
             ], 422);
         }
+
+        $data = app(PropertyRequestLocationNormalizer::class)->normalize($data, $data['source'] ?? null);
+        unset($data['initial_property_id']);
 
         $propertyRequest = UserPropertyRequest::create($data);
 
@@ -209,14 +225,17 @@ class ApiPropertyRequestController extends Controller
         $cityId = $content ? $content->city_id : null;
         $city = $cityId ? UserCity::find($cityId) : null;
 
+        $districtsId = $content?->state_id ? (int) $content->state_id : null;
+
         $data = [
             'user_id' => $tenant->id,
             'full_name' => $validated['full_name'],
             'phone' => $validated['phone'],
             'notes' => $validated['notes'] ?? null,
-            'property_type' => \App\Rules\PropertyTypeRule::normalize($property->property_type ?? null),
+            'property_type' => PropertyTypeRule::normalize($property->property_type ?? null),
             'category_id' => $property->category_id ?? null,
             'city_id' => $cityId,
+            'districts_id' => $districtsId,
             'region' => $city ? $city->name_ar : null,
             'purpose' => $property->purpose ?? null,
             'source' => 'property_interest',
@@ -225,7 +244,12 @@ class ApiPropertyRequestController extends Controller
             'is_active' => true,
             'is_archived' => false,
             'property_ids' => [$property->id],
+            'initial_property_id' => $property->id,
+            'latitude' => $property->latitude,
+            'longitude' => $property->longitude,
         ];
+
+        $data = app(PropertyRequestLocationNormalizer::class)->normalize($data, 'property_interest');
 
         // Ignore-list guard: reject creation if this phone/customer is on the tenant's ignore list
         if (app(IgnoredCustomersService::class)->isIgnored($tenant->id, (string) $validated['phone'])) {
@@ -422,6 +446,130 @@ class ApiPropertyRequestController extends Controller
         }
 
         return response()->json(['status' => 'success', 'data' => $data]);
+    }
+
+    /**
+     * GET /api/v1/property-requests/map
+     */
+    public function map(MapPropertyRequestsRequest $request): JsonResponse
+    {
+        $user = $request->user();
+        $ownerId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+        $validated = $request->validated();
+
+        $limit = (int) ($validated['limit'] ?? 1000);
+        $districtId = $validated['districts_id'] ?? ($validated['district_id'] ?? null);
+
+        $query = UserPropertyRequest::query()
+            ->with(['district:id,name_ar'])
+            ->where('user_id', $ownerId);
+
+        if (! $request->boolean('include_inactive')) {
+            $query->where('is_active', true);
+        }
+        if (! $request->boolean('include_archived')) {
+            $query->where('is_archived', false);
+        }
+
+        if (! empty($validated['property_type'])) {
+            $normalizedType = PropertyTypeRule::normalize($validated['property_type']);
+            $query->whereRaw('LOWER(property_type) = ?', [$normalizedType]);
+        }
+        if (! empty($validated['city_id'])) {
+            $query->where('city_id', (int) $validated['city_id']);
+        }
+        if (! empty($districtId)) {
+            $query->where('districts_id', (int) $districtId);
+        }
+        if (! empty($validated['status_id'])) {
+            $query->where('status_id', (int) $validated['status_id']);
+        }
+        if (! empty($validated['created_from'])) {
+            $query->whereDate('created_at', '>=', $validated['created_from']);
+        }
+        if (! empty($validated['created_to'])) {
+            $query->whereDate('created_at', '<=', $validated['created_to']);
+        }
+        if (! empty($validated['responsible_employee_id'])) {
+            $employeeId = (int) $validated['responsible_employee_id'];
+            $query->where(function ($q) use ($employeeId, $ownerId) {
+                $q->where('users_property_requests.responsible_employee_id', $employeeId)
+                    ->orWhereHas('customer', function ($sub) use ($employeeId, $ownerId) {
+                        $sub->where('user_id', $ownerId)
+                            ->where('responsible_employee_id', $employeeId);
+                    });
+            });
+        }
+
+        $totalMatching = (clone $query)->count();
+        $requests = $query->orderByDesc('id')->limit($limit)->get();
+        $truncated = $totalMatching > $limit;
+
+        $initialPropertyIds = $requests->pluck('initial_property_id')
+            ->filter()
+            ->map(static fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $propertiesById = [];
+        if ($initialPropertyIds !== []) {
+            $propertiesById = Property::query()
+                ->where('user_id', $ownerId)
+                ->whereIn('id', $initialPropertyIds)
+                ->get(['id', 'latitude', 'longitude'])
+                ->keyBy('id')
+                ->all();
+        }
+
+        $cityIds = $requests->pluck('city_id')
+            ->filter()
+            ->map(static fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $districtIds = $requests->pluck('districts_id')
+            ->filter()
+            ->map(static fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $districtCityIdsByDistrictId = [];
+        if ($districtIds !== []) {
+            $districtCityIdsByDistrictId = UserDistrict::query()
+                ->whereIn('id', $districtIds)
+                ->pluck('city_id', 'id')
+                ->map(static fn ($cityId) => (int) $cityId)
+                ->all();
+            $cityIds = array_values(array_unique(array_merge(
+                $cityIds,
+                array_values($districtCityIdsByDistrictId)
+            )));
+        }
+
+        $citiesById = [];
+        if ($cityIds !== []) {
+            $citiesById = UserCity::query()
+                ->whereIn('id', $cityIds)
+                ->get(['id', 'latitude', 'longitude'])
+                ->keyBy('id')
+                ->all();
+        }
+
+        $resolver = app(PropertyRequestMapPinResolver::class);
+        $result = $resolver->resolvePins($requests, $propertiesById, $citiesById, $districtCityIdsByDistrictId);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'pins' => $result['pins'],
+                'skipped_count' => $result['skipped_count'],
+                'truncated' => $truncated,
+                'legend' => PropertyRequestMapPinResolver::LEGEND,
+            ],
+        ]);
     }
 
     /**
@@ -878,6 +1026,7 @@ class ApiPropertyRequestController extends Controller
             ->firstOrFail();
 
         $data = $request->validated();
+        unset($data['initial_property_id']);
 
         // Normalize property_type to canonical lowercase value
         if (array_key_exists('property_type', $data) && $data['property_type'] !== null) {
@@ -887,9 +1036,11 @@ class ApiPropertyRequestController extends Controller
         // Map region (city_id) → set city_id and Arabic name into region (mirrors store() behavior)
         if (array_key_exists('region', $data) && $data['region'] !== null) {
             $regionId = (int) $data['region'];
-            $city = UserCity::find($regionId);
-            $data['city_id'] = $regionId;
-            $data['region'] = $city ? $city->name_ar : null;
+            if ($regionId > 0) {
+                $city = UserCity::find($regionId);
+                $data['city_id'] = $regionId;
+                $data['region'] = $city ? $city->name_ar : null;
+            }
         }
 
         // Validate property_ids: ensure they exist and belong to this tenant
@@ -916,6 +1067,18 @@ class ApiPropertyRequestController extends Controller
                 }
             }
             $data['property_ids'] = $requested;
+        }
+
+        $normalizer = app(PropertyRequestLocationNormalizer::class);
+        if ($normalizer->hasLocationFields($data)) {
+            $locationFields = ['region', 'city_id', 'districts_id', 'city', 'district', 'latitude', 'longitude'];
+            $base = $propertyRequest->only($locationFields);
+            $normalized = $normalizer->normalize(array_merge($base, $data), $propertyRequest->source);
+            foreach ($locationFields as $field) {
+                if (array_key_exists($field, $normalized)) {
+                    $data[$field] = $normalized[$field];
+                }
+            }
         }
 
         $propertyRequest->update($data);

@@ -4,10 +4,12 @@ namespace App\Http\Requests\Api\Project\Properties;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
 use App\Http\Requests\Api\Project\Properties\Concerns\NormalizesProjectPropertyLocation;
+use App\Http\Requests\Concerns\ValidatesPropertyListingStatus;
 
 class StoreProjectPropertyRequest extends BaseApiFormRequest
 {
     use NormalizesProjectPropertyLocation;
+    use ValidatesPropertyListingStatus;
 
     public function authorize(): bool
     {
@@ -16,7 +18,7 @@ class StoreProjectPropertyRequest extends BaseApiFormRequest
 
     public function rules(): array
     {
-        return array_merge([
+        return array_merge($this->propertyListingStatusRules(), [
             'title' => 'required|max:255',
             'address' => 'nullable|string|max:255',
             'description' => 'required',
@@ -25,7 +27,7 @@ class StoreProjectPropertyRequest extends BaseApiFormRequest
             'gallery.*' => 'string',
             'price' => 'nullable|numeric',
             'pricePerMeter' => 'nullable|numeric',
-            'purpose' => 'nullable|in:sale,rent,sold,rented',
+            'purpose' => 'nullable|in:sale,rent',
             'area' => 'nullable|numeric',
             'status' => 'nullable',
             'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],

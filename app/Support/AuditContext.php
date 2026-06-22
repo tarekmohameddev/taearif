@@ -12,12 +12,17 @@ class AuditContext
     protected ?string $ua = null;
     protected ?int $tenantId = null;
 
-    public static function instance(): self {
-        return App::singleton(self::class, fn() => new self) ?? App::make(self::class);
+    public static function instance(): self
+    {
+        if (! App::bound(self::class)) {
+            App::singleton(self::class, fn () => new self);
+        }
+
+        return App::make(self::class);
     }
 
     public static function set(?int $actorId, string $actorType, ?int $tenantId, ?string $ip_address = null, ?string $ua = null): void {
-        $ctx = app(self::class);
+        $ctx = self::instance();
         $ctx->actorId   = $actorId;
         $ctx->actorType = $actorType;
         $ctx->tenantId  = $tenantId;
@@ -30,7 +35,7 @@ class AuditContext
     }
 
     public static function data(): array {
-        $ctx = app(self::class);
+        $ctx = self::instance();
         return [
             'actor_id'   => $ctx->actorId,
             'actor_type' => $ctx->actorType,

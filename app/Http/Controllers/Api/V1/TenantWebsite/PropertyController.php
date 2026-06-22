@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\UserDistrict;
+use App\Http\Resources\Api\V1\TenantWebsite\PropertyPublicResource;
 use App\Services\PropertyTranslationService;
 use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
 use Carbon\Carbon;
@@ -69,7 +70,7 @@ class PropertyController extends Controller
 		$propertiesById = Property::query()
 			->with(['contents', 'galleryImages', 'project.contents'])
 			->where('user_id', $tenant->id)
-			->where('status', 1)
+			->publishedForPublic()
 			->whereIn('id', $propertyIds)
 			->get()
 			->keyBy('id');
@@ -91,7 +92,7 @@ class PropertyController extends Controller
 			$p = $propertiesById[$propertyId];
 			$views = (int) ($viewsMap[$slug] ?? 0);
 
-			return $this->mapPropertyToListItem($p, $views, $districtsMap);
+			return PropertyPublicResource::toListArray($p, $views, $districtsMap, $this->translator);
 		})->filter()->values();
 
 		return response()->json([
@@ -109,8 +110,15 @@ class PropertyController extends Controller
 
 		$query = Property::query()
 			->with(['contents', 'galleryImages', 'project.contents'])
-			->where('user_id', $tenant->id)
-			->where('status', 1);
+			->where('user_id', $tenant->id);
+
+		$this->applyPublishedFilter($query, $request);
+
+		if ($unitStatus = $request->query('unit_status')) {
+			$query->where('unit_status', $unitStatus);
+		} elseif ($status = $request->query('status')) {
+			$query->publicAvailability($status);
+		}
 
 		// Filters
 		if ($purpose = $request->query('purpose')) {
@@ -258,7 +266,7 @@ class PropertyController extends Controller
             $slug    = $content?->slug;
             $views = (int) ($viewsBySlug[$slug] ?? 0);
 
-            return $this->mapPropertyToListItem($p, $views, $districtsMap);
+            return PropertyPublicResource::toListArray($p, $views, $districtsMap, $this->translator);
         });
 
         return response()->json([
@@ -280,7 +288,6 @@ class PropertyController extends Controller
 
 		$property = Property::with([
 			'category',
-			'user',
 			'contents',
 			'galleryImages',
 			'proertyAmenities.amenity',
@@ -289,7 +296,7 @@ class PropertyController extends Controller
 			'project.contents',
 		])
 			->where('user_id', $tenant->id)
-			->where('status', 1)
+			->publishedForPublic()
 			->whereHas('contents', function ($q) use ($slug) {
 				$q->where('slug', $slug);
 			})
@@ -304,15 +311,6 @@ class PropertyController extends Controller
                 ->get()
                 ->keyBy('id');
         }
-        $district = $content && $content->state_id && isset($districtsMap[$content->state_id])
-            ? $districtsMap[$content->state_id]
-            : null;
-        $city     = $district?->city;
-        $districtStr = trim(implode(' - ', array_filter([$district?->name_ar ?? null, $city?->name_ar ?? null])));
-
-        $featured = $property->featured_image ? asset($property->featured_image) : null;
-        $gallery  = $property->galleryImages->pluck('image')->map(fn($img) => asset($img))->toArray();
-        $images   = array_values(array_unique(array_filter(array_merge([$featured], $gallery))));
 
         $days = min(365, max(1, (int) $request->query('days', 30)));
         $startDate = Carbon::today()->subDays($days)->toDateString();
@@ -327,82 +325,9 @@ class PropertyController extends Controller
                 ->sum('views_count');
         }
 
-        $normalizedPurpose = match ($property->purpose) {
-            'rented' => 'rent',
-            'sold' => 'sale',
-            default => $property->purpose,
-        };
-        $isUnavailable = in_array($property->purpose, ['rented', 'sold'], true);
-
-		$data = [
-            'id' => (string) $property->id,
-            'slug' => $content?->slug ?? '',
-            'title' => $content?->title ?? '',
-            'district' => $districtStr,
-            'price' => isset($property->price) ? formatNumberWithoutTrailingZeros($property->price) : '0',
-            'views' => $views,
-            'bedrooms' => (int) ($property->beds ?? 0),
-            'bathrooms' => (int) ($property->bath ?? 0),
-            'area' => isset($property->area) ? formatNumberWithoutTrailingZeros($property->area) : '0',
-            'property_type' => $this->translator->translateType($property->property_type),
-            'property_type_en' => $property->property_type ?? '',
-            'transactionType' => $this->translator->translatePurpose($normalizedPurpose),
-            'transactionType_en' => $normalizedPurpose,
-            'image' => $featured,
-            'status' => $isUnavailable ? 'unavailable' : 'available',
-            'createdAt' => $property->created_at?->toISOString(),
-            'description' => $content?->description ?? '',
-            'features' => is_string($property->features) ? [$property->features] : (is_array($property->features) ? $property->features : []),
-            'location' => [
-                'lat' => $property->latitude ? (float) $property->latitude : null,
-                'lng' => $property->longitude ? (float) $property->longitude : null,
-                'address' => $content?->address ? ($content->address . ($city?->name_ar ? '، ' . $city->name_ar : '')) : '',
-            ],
-            'images' => $images,
-        ];
-
-		// Merge in extended fields to mirror admin show response
-		$characteristics = optional($property->UserPropertyCharacteristics)->toArray() ?? [];
-
-		// Add facade name if facade_id exists
-		if (isset($characteristics['facade_id']) && $characteristics['facade_id'] && $property->UserPropertyCharacteristics) {
-			$facade = $property->UserPropertyCharacteristics->UserFacade;
-			if ($facade) {
-				$characteristics['facade_name'] = $facade->name;
-			}
-		}
-
-		// Remove characteristic's id to prevent overwriting property id
-		unset($characteristics['id']);
-
-		// Get project data if relationship is loaded
-		$projectData = null;
-		if ($property->relationLoaded('project') && $property->project) {
-			$projectContent = $property->project->contents->first();
-			$projectData = [
-				'id' => $property->project->id,
-				'title' => optional($projectContent)->title ?? '',
-				'slug' => optional($projectContent)->slug ?? '',
-				'featured_image' => $property->project->featured_image ? asset($property->project->featured_image) : null,
-			];
-		}
-
-		$extra = [
-			'payment_method' => $this->translator->translatePaymentMethod($property->payment_method),
-			'payment_method_en' => $property->payment_method,
-			'pricePerMeter' => isset($property->pricePerMeter) ? formatNumberWithoutTrailingZeros($property->pricePerMeter) : null,
-			'floor_planning_image' => collect($property->floor_planning_image)->map(fn($img) => asset($img))->toArray(),
-			'video_url' => $property->video_url ? asset($property->video_url) : null,
-			'virtual_tour' => $property->virtual_tour ? asset($property->virtual_tour) : null,
-			'video_image' => $property->video_image ? asset($property->video_image) : null,
-			'faqs' => $property->faqs ?? [],
-			'building' => $property->building,
-			'project' => $projectData,
-		];
-
-		$data = array_merge($data, $extra, $characteristics);
-
-		return response()->json(['property' => $data]);
+		return response()->json([
+			'property' => PropertyPublicResource::toDetailArray($property, $views, $districtsMap, $this->translator),
+		]);
 	}
 
 	/**
@@ -422,70 +347,21 @@ class PropertyController extends Controller
 	}
 
 	/**
-	 * Map a property to the public tenant website list item shape (index + mostViewed).
-	 *
-	 * @param  \Illuminate\Support\Collection<int, \App\Models\User\UserDistrict>  $districtsMap
+	 * Published filter: defaults to published-only when omitted (public website safe).
 	 */
-	protected function mapPropertyToListItem(Property $p, int $views, $districtsMap): array
+	protected function applyPublishedFilter(Builder $query, Request $request): void
 	{
-		$content = optional($p->contents->first());
-		$slug = $content?->slug;
+		if ($request->filled('published')) {
+			if ($request->boolean('published')) {
+				$query->publishedForPublic();
+			} else {
+				$query->unpublishedForPublic();
+			}
 
-		$district = $content && $content->state_id && isset($districtsMap[$content->state_id])
-			? $districtsMap[$content->state_id]
-			: null;
-		$city = $district?->city;
-		$districtStr = trim(implode(' - ', array_filter([$district?->name_ar ?? null, $city?->name_ar ?? null])));
-
-		$featured = $p->featured_image ? asset($p->featured_image) : null;
-		$gallery = $p->galleryImages->pluck('image')->map(fn ($img) => asset($img))->toArray();
-		$images = array_values(array_unique(array_filter(array_merge([$featured], $gallery))));
-
-		$normalizedPurpose = match ($p->purpose) {
-			'rented' => 'rent',
-			'sold' => 'sale',
-			default => $p->purpose,
-		};
-		$isUnavailable = in_array($p->purpose, ['rented', 'sold'], true);
-
-		$projectData = null;
-		if ($p->relationLoaded('project') && $p->project) {
-			$projectContent = $p->project->contents->first();
-			$projectData = [
-				'id' => $p->project->id,
-				'title' => optional($projectContent)->title ?? '',
-				'slug' => optional($projectContent)->slug ?? '',
-			];
+			return;
 		}
 
-		return [
-			'id' => (string) $p->id,
-			'slug' => $slug,
-			'title' => $content?->title ?? '',
-			'district' => $districtStr,
-			'price' => isset($p->price) ? formatNumberWithoutTrailingZeros($p->price) : '0',
-			'views' => $views,
-			'bedrooms' => (int) ($p->beds ?? 0),
-			'bathrooms' => (int) ($p->bath ?? 0),
-			'area' => isset($p->area) ? formatNumberWithoutTrailingZeros($p->area) : '0',
-			'property_type' => $this->translator->translateType($p->property_type),
-			'property_type_en' => $p->property_type,
-			'transactionType' => $this->translator->translatePurpose($normalizedPurpose),
-			'transactionType_en' => $normalizedPurpose,
-			'image' => $featured,
-			'featured' => (bool) $p->featured,
-			'status' => $isUnavailable ? 'unavailable' : 'available',
-			'show_reservations' => (bool) $p->show_reservations,
-			'createdAt' => $p->created_at?->toISOString(),
-			'description' => $content?->description ?? '',
-			'features' => is_array($p->features) ? $p->features : [],
-			'location' => [
-				'lat' => $p->latitude ? (float) $p->latitude : null,
-				'lng' => $p->longitude ? (float) $p->longitude : null,
-				'address' => $content?->address ? ($content->address . ($city?->name_ar ? '، ' . $city->name_ar : '')) : '',
-			],
-			'images' => $images,
-			'project' => $projectData,
-		];
+		$query->publishedForPublic();
 	}
+
 }

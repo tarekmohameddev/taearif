@@ -3,10 +3,18 @@
 namespace App\Http\Requests\Api\Property;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
+use App\Http\Requests\Concerns\ValidatesPropertyListingStatus;
+use App\Http\Requests\Concerns\ValidatesSourceBroker;
+use App\Http\Requests\Concerns\ValidatesTenantCustomerId;
+use App\Http\Requests\Concerns\ValidatesTenantProjectId;
 use App\Rules\PropertyTypeRule;
 
 class StorePropertyRequest extends BaseApiFormRequest
 {
+    use ValidatesPropertyListingStatus;
+    use ValidatesSourceBroker;
+    use ValidatesTenantCustomerId;
+    use ValidatesTenantProjectId;
     public function authorize()
     {
         return true;
@@ -14,6 +22,8 @@ class StorePropertyRequest extends BaseApiFormRequest
 
     protected function prepareForValidation(): void
     {
+        $this->normalizeNullableProjectId();
+
         if ($this->has('property_type')) {
             $normalized = PropertyTypeRule::normalize(is_string($this->input('property_type')) ? $this->input('property_type') : null);
             if ($normalized !== null) {
@@ -22,9 +32,20 @@ class StorePropertyRequest extends BaseApiFormRequest
         }
     }
 
+    public function withValidator($validator): void
+    {
+        $this->validateReservedRequiresCustomer($validator);
+        $this->validateSourceBroker($validator);
+    }
+
     public function rules()
     {
-        return [
+        return array_merge(
+            $this->propertyListingStatusRules(),
+            $this->tenantProjectIdRules(),
+            $this->tenantCustomerIdRules(sometimes: true),
+            $this->sourceBrokerRules(),
+            [
             'payment_method' => 'nullable',
             'title' => 'required|max:255',
             'address' => 'required',
@@ -45,7 +66,6 @@ class StorePropertyRequest extends BaseApiFormRequest
             'status' => 'nullable',
             'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
             'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
-            'project_id' => 'nullable',
             'city_id' => 'nullable',
             'state_id' => 'nullable',
             'featured' => 'nullable|boolean',
@@ -87,6 +107,7 @@ class StorePropertyRequest extends BaseApiFormRequest
             'advertising_license' => 'nullable|string',
             'owner_number' => 'nullable|string',
             'video_file' => 'nullable|file',
-        ];
+            ]
+        );
     }
 }

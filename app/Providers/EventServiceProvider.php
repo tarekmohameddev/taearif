@@ -16,6 +16,8 @@ use App\Models\Logs\ProjectLog;
 use App\Models\Logs\PropertyLog;
 use App\Models\Membership;
 
+use App\Models\Building;
+use App\Observers\BuildingObserver;
 use App\Observers\ProjectObserver;
 use App\Observers\PropertyObserver;
 use App\Observers\UserObserver;
@@ -25,9 +27,12 @@ use App\Observers\ApiUserCategoryObserver;
 use App\Observers\UserFacadeObserver;
 use App\Observers\PropertyRequestAutoCustomerSettingObserver;
 use Illuminate\Support\Facades\Event;
+use App\Events\PropertyStatusChanged;
 use App\Events\TenantActivityOccurred;
 use App\Events\UserDowngradedToFree;
 use App\Events\UserUpgradedFromFree;
+use App\Listeners\CloseCrmDealsOnPropertySold;
+use App\Listeners\NotifyTeamOnStatusChange;
 use App\Observers\ApiCustomerObserver;
 use App\Observers\MembershipObserver;
 use Illuminate\Auth\Events\Registered;
@@ -102,6 +107,11 @@ class EventServiceProvider extends ServiceProvider
         \App\Domain\Communication\Events\ConversationOpened::class => [
             \App\Domain\Communication\Listeners\HandleConversationOpened::class,
         ],
+
+        PropertyStatusChanged::class => [
+            NotifyTeamOnStatusChange::class,
+            CloseCrmDealsOnPropertySold::class,
+        ],
     ];
 
 
@@ -115,6 +125,7 @@ class EventServiceProvider extends ServiceProvider
         ApiCustomer::observe(ApiCustomerObserver::class);
         Project::observe(ProjectObserver::class);
         Property::observe(PropertyObserver::class);
+        Building::observe(BuildingObserver::class);
         CrmCard::observe(CrmCardObserver::class);
         \App\Models\WhatsappAddon::observe(\App\Observers\WhatsappAddonObserver::class);
         \App\Models\Membership::observe(MembershipObserver::class);

@@ -65,6 +65,7 @@ class ProjectController extends Controller
         } catch (\Throwable $e) {}
 
         $projects = Project::with(['contents', 'specifications', 'types', 'creator', 'properties.contents', 'properties.galleryImages'])
+            ->withCount('properties')
             ->whereIn('user_id', $allowedUserIds)
             ->orderBy('id', 'desc')
             ->paginate(10);
@@ -137,7 +138,8 @@ class ProjectController extends Controller
                 "id"              => $project->id,
                 "visits"          => (int)($visitsByProject[$project->id] ?? 0),   // << here
                 "featured_image"  => $project->featured_image ? asset($project->featured_image) : null,
-                "video_url"       => $project->video_url ? asset($project->video_url) : null,
+                "video_url"       => $this->resolveMediaUrl($project->video_url),
+                "brochure"        => $this->resolveMediaUrl($project->brochure),
                 "min_price"       => $project->min_price,
                 "max_price"       => $project->max_price,
                 "min_price_formatted" => $project->min_price !== null ? formatNumberWithoutTrailingZeros($project->min_price) : null,
@@ -147,7 +149,8 @@ class ProjectController extends Controller
                 "longitude"       => $project->longitude,
                 "featured"        => (bool) $project->featured,
                 "complete_status" => $project->complete_status,
-                "units"           => $project->units,
+                "units"           => $project->units, // legacy manual field; use units_count for dashboards
+                "units_count"     => (int) $project->properties_count,
                 "completion_date" => $project->completion_date,
                 "developer"       => $project->developer,
                 "published"       => (bool) $project->published,
@@ -216,7 +219,9 @@ class ProjectController extends Controller
             'creator',
             'properties.contents',
             'properties.galleryImages',
-        ])->find($id);
+        ])
+            ->withCount('properties')
+            ->find($id);
 
         if (!$project) {
             return response()->json([
@@ -268,7 +273,8 @@ class ProjectController extends Controller
             "id" => $project->id,
             "visits" => $visits,
             "featured_image" => asset($project->featured_image),
-            "video_url" => $project->video_url ? asset($project->video_url) : null,
+            "video_url" => $this->resolveMediaUrl($project->video_url),
+            "brochure" => $this->resolveMediaUrl($project->brochure),
             "min_price" => $project->min_price,
             "max_price" => $project->max_price,
             "min_price_formatted" => $project->min_price !== null ? formatNumberWithoutTrailingZeros($project->min_price) : null,
@@ -279,6 +285,8 @@ class ProjectController extends Controller
             "featured" => $project->featured,
             "complete_status" => $project->complete_status ?? "Unknown",
             "units" => $project->units ?? 0,
+            "units_count" => (int) $project->properties_count,
+            "units_display_only" => $project->units ?? 0,
             "completion_date" => $project->completion_date ?? "N/A",
             "developer" => $project->developer ?? "Unknown",
             "published" => $project->published,
@@ -390,6 +398,7 @@ class ProjectController extends Controller
             $requestData = $request->all();
             $requestData['featured_image'] = asset($request->featured_image);
             $requestData['video_url'] = !empty($request->video_url) ? $request->video_url : null; // Handle empty string
+            $requestData['brochure'] = !empty($request->brochure) ? $request->brochure : null;
             $requestData['amenities'] = $this->normalizeAmenities($request->input('amenities'));
 
             $project = Project::storeProject($ownerId, $requestData, auth()->id());
@@ -475,6 +484,10 @@ class ProjectController extends Controller
             $responseProject->featured_image = asset($responseProject->featured_image);
         }
 
+        if ($responseProject->brochure) {
+            $responseProject->brochure = $this->resolveMediaUrl($responseProject->brochure);
+        }
+
         $responseProject->gallery_images = $responseProject->galleryImages->map(function ($image) {
             $image->image = asset($image->image);
             return $image;
@@ -551,6 +564,17 @@ class ProjectController extends Controller
         return [];
     }
 
+    private function resolveMediaUrl(?string $value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        return str_starts_with($value, 'http://') || str_starts_with($value, 'https://')
+            ? $value
+            : asset($value);
+    }
+
     private function ensureProjectsMenuExistsForUser($userId)
     {
         $exists = ApiMenuItem::where('user_id', $userId)
@@ -616,6 +640,9 @@ class ProjectController extends Controller
             $requestData = $request->all();
             $requestData['featured_image'] = $request->featured_image;
             $requestData['video_url'] = !empty($request->video_url) ? $request->video_url : null; // Handle empty string
+            if ($request->has('brochure')) {
+                $requestData['brochure'] = !empty($request->brochure) ? $request->brochure : null;
+            }
             $requestData['amenities'] = $this->normalizeAmenities($request->input('amenities', $project->amenities));
 
             $project->updateProject($requestData);
@@ -697,6 +724,10 @@ class ProjectController extends Controller
         $responseProject->max_price_formatted = $responseProject->max_price !== null 
             ? formatNumberWithoutTrailingZeros($responseProject->max_price) 
             : null;
+
+        if ($responseProject->brochure) {
+            $responseProject->brochure = $this->resolveMediaUrl($responseProject->brochure);
+        }
 
         TenantActivity::emit($request, 'project.created', 'user_projects', $responseProject->id, null, [
             'id' => $responseProject->id, 'title' => optional($responseProject->contents->first())->title
@@ -826,6 +857,44 @@ class ProjectController extends Controller
                 "featured" => $project->featured
             ]
         ]);
+    }
+
+    public function propertyCounters(int $id): JsonResponse
+    {
+        $project = Project::query()->find($id);
+        if (! $project) {
+            return response()->json(['status' => 'error', 'message' => 'Project not found'], 404);
+        }
+
+        $base = Property::query()->where('project_id', $id);
+        $counts = [
+            'total' => (clone $base)->count(),
+            'available' => (clone $base)->where('unit_status', 'available')->count(),
+            'reserved' => (clone $base)->where('unit_status', 'reserved')->count(),
+            'sold' => (clone $base)->where('unit_status', 'sold')->count(),
+            'rented' => (clone $base)->where('unit_status', 'rented')->count(),
+            'sale_units' => (clone $base)->where('listing_purpose', 'sale')->count(),
+            'rent_units' => (clone $base)->where('listing_purpose', 'rent')->count(),
+        ];
+
+        $byCategory = (clone $base)
+            ->join('api_user_categories', 'user_properties.category_id', '=', 'api_user_categories.id')
+            ->selectRaw('api_user_categories.name, COUNT(*) as total')
+            ->groupBy('api_user_categories.name')
+            ->pluck('total', 'name')
+            ->all();
+
+        if (! empty($byCategory)) {
+            $counts['by_category'] = $byCategory;
+        }
+
+        foreach (['available', 'reserved', 'sold', 'rented', 'sale_units', 'rent_units'] as $key) {
+            if (($counts[$key] ?? 0) === 0) {
+                unset($counts[$key]);
+            }
+        }
+
+        return response()->json(['status' => 'success', 'data' => $counts]);
     }
 
     public function userProjects(Request $request)

@@ -9,57 +9,30 @@ use App\Models\OtpVerification;
 use App\Models\User;
 use App\Services\WhatsAppService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class OtpController extends Controller
 {
-    private const OTP_MESSAGE_TEMPLATE = 'رمز التحقق الخاص بك هو: %s. صالح لمدة 5 دقائق.';
-
     /**
-     * Send OTP to phone via WhatsApp (public). Never reveals whether the phone exists.
+     * Send OTP to phone via WhatsApp (registration or logged-in phone verification).
      */
     public function sendOtp(SendOtpRequest $request): JsonResponse
     {
         $phone = $request->validated('phone');
-        $user = User::query()->where('phone', $phone)->first();
+        $authUser = auth('sanctum')->user();
+        $phoneOwner = User::query()->where('phone', $phone)->first();
 
-        if (!$user) {
-            $result = OtpVerification::createOrRefreshForPhone($phone);
-
-            if (!$result['success']) {
-                if (($result['error'] ?? '') === 'rate_limit_exceeded') {
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'rate_limit_exceeded',
-                        'message' => __('Too many OTP requests. Try again later.'),
-                    ], 422);
-                }
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'OTP sent.',
-                ], 200);
-            }
-
-            $plainOtp = $result['otp'];
-            app(WhatsAppService::class)->sendRegistrationOtp($phone, $plainOtp);
-
-            if (app()->environment('local')) {
-                \Illuminate\Support\Facades\Log::channel('single')->info('OTP (local only)', [
-                    'phone' => $phone,
-                    'otp' => $plainOtp,
-                    'expires_in_minutes' => 5,
-                ]);
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'OTP sent.',
-            ], 200);
+        if ($phoneOwner && (!$authUser || $authUser->id !== $phoneOwner->id)) {
+            return $this->phoneAlreadyRegisteredResponse();
         }
 
-        $result = OtpVerification::createOrRefreshForUser($user);
+        if ($authUser) {
+            $result = OtpVerification::createOrRefreshForUser($authUser);
+        } else {
+            $result = OtpVerification::createOrRefreshForPhone($phone);
+        }
 
-        if (!$result['success']) {
+        if (!($result['success'] ?? false)) {
             if (($result['error'] ?? '') === 'rate_limit_exceeded') {
                 return response()->json([
                     'success' => false,
@@ -74,25 +47,11 @@ class OtpController extends Controller
             ], 200);
         }
 
-        $plainOtp = $result['otp'];
-        app(WhatsAppService::class)->sendRegistrationOtp($phone, $plainOtp);
-
-        if (app()->environment('local')) {
-            \Illuminate\Support\Facades\Log::channel('single')->info('OTP (local only)', [
-                'phone' => $phone,
-                'otp' => $plainOtp,
-                'expires_in_minutes' => 5,
-            ]);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'OTP sent.',
-        ], 200);
+        return $this->deliverOtp($phone, $result['otp']);
     }
 
     /**
-     * Verify OTP and set phone_verified_at (auth:sanctum).
+     * Verify OTP and set phone_verified_at (auth) or issue verified_token (pre-registration).
      */
     public function verifyOtp(VerifyOtpRequest $request): JsonResponse
     {
@@ -111,6 +70,10 @@ class OtpController extends Controller
                     'success' => false,
                     'message' => 'phone is required when no auth token is provided.',
                 ], 422);
+            }
+
+            if (User::query()->where('phone', $phone)->exists()) {
+                return $this->phoneAlreadyRegisteredResponse();
             }
 
             $result = OtpVerification::verifyForPhone($phone, $code);
@@ -165,5 +128,40 @@ class OtpController extends Controller
             'message' => 'Phone verified.',
             'verified_token' => $result['verified_token'],
         ], 200);
+    }
+
+    private function deliverOtp(string $phone, string $plainOtp): JsonResponse
+    {
+        $sent = app(WhatsAppService::class)->sendRegistrationOtp($phone, $plainOtp);
+
+        if (!$sent) {
+            return response()->json([
+                'success' => false,
+                'error' => 'delivery_failed',
+                'message' => __('Unable to send OTP. Please try again later.'),
+            ], 503);
+        }
+
+        if (app()->environment('local')) {
+            Log::channel('single')->info('OTP (local only)', [
+                'phone' => $phone,
+                'otp' => $plainOtp,
+                'expires_in_minutes' => OtpVerification::OTP_EXPIRY_MINUTES,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'OTP sent.',
+        ], 200);
+    }
+
+    private function phoneAlreadyRegisteredResponse(): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'error' => 'phone_already_registered',
+            'message' => __('This phone number is already registered. Please log in.'),
+        ], 409);
     }
 }

@@ -13,10 +13,13 @@ use App\Models\User\RealestateManagement\Project;
 use App\Models\User\RealestateManagement\ProjectContent;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\PropertyContent;
+use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 use App\Models\User\UserDistrict;
 use App\Services\MembershipCacheService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
@@ -53,6 +56,29 @@ class ProjectPropertyTest extends TestCase
             }
 
             $tenant->givePermissionTo($permission);
+        }
+
+        $registrar->forgetCachedPermissions();
+    }
+
+    private function grantEmployeePermissions(User $tenant, User $employee, array $permissions): void
+    {
+        $registrar = app(PermissionRegistrar::class);
+        $registrar->setPermissionsTeamId((int) $tenant->id);
+        $registrar->forgetCachedPermissions();
+
+        foreach ($permissions as $permissionName) {
+            try {
+                $permission = Permission::findByName($permissionName, 'sanctum');
+            } catch (\Throwable $e) {
+                $permission = Permission::create([
+                    'name' => $permissionName,
+                    'guard_name' => 'sanctum',
+                    'team_id' => $tenant->id,
+                ]);
+            }
+
+            $employee->givePermissionTo($permission);
         }
 
         $registrar->forgetCachedPermissions();
@@ -136,6 +162,62 @@ class ProjectPropertyTest extends TestCase
         ]);
     }
 
+    /**
+     * @return array{0: User, 1: Project}
+     */
+    private function setupTenantWithProject(array $permissions = ['projects.view']): array
+    {
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, $permissions);
+        Sanctum::actingAs($tenant);
+
+        return [$tenant, $this->createProject($tenant)];
+    }
+
+    private function createProjectUnit(
+        User $tenant,
+        Project $project,
+        array $propertyAttributes = [],
+        array $contentAttributes = [],
+    ): Property {
+        $property = Property::query()->create(array_merge([
+            'user_id' => $tenant->id,
+            'project_id' => $project->id,
+            'featured_image' => 'properties/test.jpg',
+            'purpose' => 'sale',
+            'listing_purpose' => 'sale',
+            'unit_status' => 'available',
+            'publish_status' => 'published',
+            'area' => 120,
+            'completion_status' => 'complete',
+            'status' => 1,
+            'price' => 100000,
+        ], $propertyAttributes));
+
+        $languageId = Language::query()
+            ->where('user_id', $tenant->id)
+            ->where('is_default', 1)
+            ->value('id');
+
+        PropertyContent::query()->create(array_merge([
+            'user_id' => $tenant->id,
+            'property_id' => $property->id,
+            'language_id' => $languageId,
+            'title' => 'Unit ' . $property->id,
+            'slug' => 'unit-' . $property->id,
+            'address' => 'Test Address ' . $property->id,
+            'description' => 'Test Description',
+        ], $contentAttributes));
+
+        return $property;
+    }
+
+    private function propertyIdsFromResponse($response): array
+    {
+        return collect($response->json('data.properties'))->pluck('id')->all();
+    }
+
     private function createProperty(User $tenant, ?int $projectId = null): Property
     {
         $property = Property::query()->create([
@@ -176,6 +258,125 @@ class ProjectPropertyTest extends TestCase
             'slug' => 'project-marketing-' . $project->id,
             'address' => $address,
         ]);
+    }
+
+    public function test_index_lists_properties_for_project_with_status_fields(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, ['projects.view']);
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+        $property = $this->createProperty($tenant, $project->id);
+        $property->update([
+            'listing_purpose' => 'sale',
+            'unit_status' => 'available',
+            'publish_status' => 'published',
+        ]);
+
+        $response = $this->getJson("/api/projects/{$project->id}/properties?per_page=10");
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.pagination.total', 1)
+            ->assertJsonPath('data.properties.0.id', $property->id)
+            ->assertJsonPath('data.properties.0.project_id', $project->id)
+            ->assertJsonPath('data.properties.0.listing_purpose', 'sale')
+            ->assertJsonPath('data.properties.0.unit_status', 'available')
+            ->assertJsonPath('data.properties.0.publish_status', 'published');
+    }
+
+    public function test_index_returns_not_found_for_unknown_project(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->grantPermissions($tenant, ['projects.view']);
+        Sanctum::actingAs($tenant);
+
+        $this->getJson('/api/projects/999999999/properties')
+            ->assertNotFound()
+            ->assertJsonPath('status', 'error');
+    }
+
+    public function test_properties_index_unassigned_filter_excludes_linked_units(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, ['properties.view']);
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+        $unassigned = $this->createProperty($tenant, null);
+        $linked = $this->createProperty($tenant, $project->id);
+
+        $unassigned->contents()->update(['title' => 'Unassigned Picker Unit']);
+        $linked->contents()->update(['title' => 'Linked Project Unit']);
+
+        $response = $this->getJson('/api/properties?unassigned=1&per_page=50');
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success');
+
+        $ids = collect($response->json('data.properties'))->pluck('id')->all();
+
+        $this->assertContains($unassigned->id, $ids);
+        $this->assertNotContains($linked->id, $ids);
+    }
+
+    public function test_orchestration_create_new_units_then_attach_existing(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, [
+            'projects.view',
+            'properties.create',
+            'properties.update',
+        ]);
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+        $district = $this->createDistrict();
+        $existing = $this->createProperty($tenant, null);
+
+        $this->postJson("/api/projects/{$project->id}/properties", [
+            'title' => 'Orchestration Unit One',
+            'address' => 'Block A',
+            'description' => 'First new unit after project save',
+            'featured_image' => 'properties/orch-unit-1.jpg',
+            'district_id' => $district->id,
+            'purpose' => 'sale',
+        ])->assertCreated()
+            ->assertJsonPath('data.property.project_id', $project->id);
+
+        $this->postJson("/api/projects/{$project->id}/properties", [
+            'title' => 'Orchestration Unit Two',
+            'address' => 'Block B',
+            'description' => 'Second new unit after project save',
+            'featured_image' => 'properties/orch-unit-2.jpg',
+            'district_id' => $district->id,
+            'purpose' => 'sale',
+        ])->assertCreated();
+
+        $this->postJson("/api/projects/{$project->id}/properties/attach", [
+            'property_ids' => [$existing->id],
+        ])->assertOk()
+            ->assertJsonPath('data.properties.0.project_id', $project->id);
+
+        $list = $this->getJson("/api/projects/{$project->id}/properties?per_page=50");
+
+        $list->assertOk()
+            ->assertJsonPath('data.pagination.total', 3);
+
+        $ids = collect($list->json('data.properties'))->pluck('id')->all();
+        $this->assertContains($existing->id, $ids);
     }
 
     public function test_create_property_under_project_sets_project_id_and_location(): void
@@ -458,13 +659,20 @@ class ProjectPropertyTest extends TestCase
             ->assertJsonPath('data.property.advertising_license', 'LIC-999');
 
         $this->deleteJson("/api/projects/{$project->id}/properties/{$property->id}")
-            ->assertOk()
-            ->assertJsonPath('data.detached', true);
+            ->assertStatus(422)
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('message', 'project_id cannot be changed after creation.');
 
         $this->assertDatabaseHas('user_properties', [
             'id' => $property->id,
-            'project_id' => null,
+            'project_id' => $project->id,
         ]);
+
+        $this->deleteJson("/api/projects/{$project->id}/properties/{$property->id}?hard_delete=true")
+            ->assertOk()
+            ->assertJsonPath('data.deleted', true);
+
+        $this->assertDatabaseMissing('user_properties', ['id' => $property->id]);
     }
 
     public function test_update_returns_not_found_when_property_not_on_project(): void
@@ -483,5 +691,276 @@ class ProjectPropertyTest extends TestCase
         $this->patchJson("/api/projects/{$project->id}/properties/{$property->id}", [
             'title' => 'Should Fail',
         ])->assertNotFound();
+    }
+
+    public function test_index_lists_draft_and_published_units_without_filter(): void
+    {
+        $this->skipIfMissingSchema();
+
+        [$tenant, $project] = $this->setupTenantWithProject();
+
+        $draft = $this->createProjectUnit($tenant, $project, ['publish_status' => 'draft']);
+        $published = $this->createProjectUnit($tenant, $project, ['publish_status' => 'published']);
+
+        $response = $this->getJson("/api/projects/{$project->id}/properties?per_page=50");
+
+        $response->assertOk()
+            ->assertJsonPath('data.pagination.total', 2);
+
+        $ids = $this->propertyIdsFromResponse($response);
+        $this->assertEqualsCanonicalizing([$draft->id, $published->id], $ids);
+    }
+
+    public function test_index_filters_by_publish_status(): void
+    {
+        $this->skipIfMissingSchema();
+
+        [$tenant, $project] = $this->setupTenantWithProject();
+
+        $draft = $this->createProjectUnit($tenant, $project, ['publish_status' => 'draft']);
+        $this->createProjectUnit($tenant, $project, ['publish_status' => 'published']);
+
+        $response = $this->getJson("/api/projects/{$project->id}/properties?publish_status=draft&per_page=50");
+
+        $response->assertOk();
+        $this->assertSame([$draft->id], $this->propertyIdsFromResponse($response));
+    }
+
+    public function test_index_filters_by_unit_status(): void
+    {
+        $this->skipIfMissingSchema();
+
+        [$tenant, $project] = $this->setupTenantWithProject();
+
+        $sold = $this->createProjectUnit($tenant, $project, ['unit_status' => 'sold']);
+        $this->createProjectUnit($tenant, $project, ['unit_status' => 'available']);
+
+        $response = $this->getJson("/api/projects/{$project->id}/properties?unit_status=sold&per_page=50");
+
+        $response->assertOk();
+        $this->assertSame([$sold->id], $this->propertyIdsFromResponse($response));
+    }
+
+    public function test_index_filters_by_listing_purpose(): void
+    {
+        $this->skipIfMissingSchema();
+
+        [$tenant, $project] = $this->setupTenantWithProject();
+
+        $rent = $this->createProjectUnit($tenant, $project, [
+            'listing_purpose' => 'rent',
+            'purpose' => 'rent',
+        ]);
+        $this->createProjectUnit($tenant, $project, [
+            'listing_purpose' => 'sale',
+            'purpose' => 'sale',
+        ]);
+
+        $response = $this->getJson("/api/projects/{$project->id}/properties?listing_purpose=rent&per_page=50");
+
+        $response->assertOk();
+        $this->assertSame([$rent->id], $this->propertyIdsFromResponse($response));
+    }
+
+    public function test_index_filters_by_category_id(): void
+    {
+        $this->skipIfMissingSchema();
+
+        [$tenant, $project] = $this->setupTenantWithProject();
+
+        $categoryA = ApiUserCategory::firstOrCreate(
+            ['slug' => 'filter-cat-a-' . Str::random(4)],
+            ['name' => 'Category A', 'type' => 'property', 'is_active' => 1],
+        );
+        $categoryB = ApiUserCategory::firstOrCreate(
+            ['slug' => 'filter-cat-b-' . Str::random(4)],
+            ['name' => 'Category B', 'type' => 'property', 'is_active' => 1],
+        );
+
+        $match = $this->createProjectUnit($tenant, $project, ['category_id' => $categoryA->id]);
+        $this->createProjectUnit($tenant, $project, ['category_id' => $categoryB->id]);
+
+        $response = $this->getJson("/api/projects/{$project->id}/properties?category_id={$categoryA->id}&per_page=50");
+
+        $response->assertOk();
+        $this->assertSame([$match->id], $this->propertyIdsFromResponse($response));
+    }
+
+    public function test_index_filters_by_price_range(): void
+    {
+        $this->skipIfMissingSchema();
+
+        [$tenant, $project] = $this->setupTenantWithProject();
+
+        $this->createProjectUnit($tenant, $project, ['price' => 50000]);
+        $match = $this->createProjectUnit($tenant, $project, ['price' => 250000]);
+        $this->createProjectUnit($tenant, $project, ['price' => 900000]);
+
+        $response = $this->getJson("/api/projects/{$project->id}/properties?price_from=100000&price_to=500000&per_page=50");
+
+        $response->assertOk();
+        $this->assertSame([$match->id], $this->propertyIdsFromResponse($response));
+    }
+
+    public function test_index_filters_by_city_id_and_state_id(): void
+    {
+        $this->skipIfMissingSchema();
+
+        [$tenant, $project] = $this->setupTenantWithProject();
+
+        $districtA = $this->createDistrict();
+        $districtB = UserDistrict::query()->create([
+            'name_ar' => 'حي آخر',
+            'name_en' => 'Other District',
+            'city_id' => 202,
+            'city_name_ar' => 'جدة',
+            'city_name_en' => 'Jeddah',
+            'country_name_ar' => 'السعودية',
+            'country_name_en' => 'Saudi Arabia',
+        ]);
+
+        $match = $this->createProjectUnit($tenant, $project, [], [
+            'city_id' => $districtA->city_id,
+            'state_id' => $districtA->id,
+        ]);
+        $this->createProjectUnit($tenant, $project, [], [
+            'city_id' => $districtB->city_id,
+            'state_id' => $districtB->id,
+        ]);
+
+        $response = $this->getJson("/api/projects/{$project->id}/properties?city_id={$districtA->city_id}&state_id={$districtA->id}&per_page=50");
+
+        $response->assertOk();
+        $this->assertSame([$match->id], $this->propertyIdsFromResponse($response));
+    }
+
+    public function test_index_accepts_district_id_alias_for_state_id(): void
+    {
+        $this->skipIfMissingSchema();
+
+        [$tenant, $project] = $this->setupTenantWithProject();
+
+        $district = $this->createDistrict();
+        $otherDistrict = UserDistrict::query()->create([
+            'name_ar' => 'حي بديل',
+            'name_en' => 'Alt District',
+            'city_id' => 303,
+            'city_name_ar' => 'الدمام',
+            'city_name_en' => 'Dammam',
+            'country_name_ar' => 'السعودية',
+            'country_name_en' => 'Saudi Arabia',
+        ]);
+
+        $match = $this->createProjectUnit($tenant, $project, [], ['state_id' => $district->id]);
+        $this->createProjectUnit($tenant, $project, [], ['state_id' => $otherDistrict->id]);
+
+        $byState = $this->getJson("/api/projects/{$project->id}/properties?state_id={$district->id}&per_page=50");
+        $byDistrict = $this->getJson("/api/projects/{$project->id}/properties?district_id={$district->id}&per_page=50");
+
+        $byState->assertOk();
+        $byDistrict->assertOk();
+        $this->assertSame([$match->id], $this->propertyIdsFromResponse($byState));
+        $this->assertSame([$match->id], $this->propertyIdsFromResponse($byDistrict));
+    }
+
+    public function test_index_filters_by_payment_method(): void
+    {
+        $this->skipIfMissingSchema();
+
+        [$tenant, $project] = $this->setupTenantWithProject();
+
+        $monthly = $this->createProjectUnit($tenant, $project, ['payment_method' => 'monthly']);
+        $this->createProjectUnit($tenant, $project, ['payment_method' => 'annual']);
+
+        $response = $this->getJson("/api/projects/{$project->id}/properties?payment_method=monthly&per_page=50");
+
+        $response->assertOk();
+        $this->assertSame([$monthly->id], $this->propertyIdsFromResponse($response));
+    }
+
+    public function test_index_filters_by_search_on_title_and_address(): void
+    {
+        $this->skipIfMissingSchema();
+
+        [$tenant, $project] = $this->setupTenantWithProject();
+
+        $match = $this->createProjectUnit($tenant, $project, [], [
+            'title' => 'Penthouse Alpha',
+            'address' => 'Tower A',
+        ]);
+        $this->createProjectUnit($tenant, $project, [], [
+            'title' => 'Ground Floor',
+            'address' => 'Tower B',
+        ]);
+
+        $byTitle = $this->getJson("/api/projects/{$project->id}/properties?search=Penthouse&per_page=50");
+        $byAddress = $this->getJson("/api/projects/{$project->id}/properties?search=Tower%20A&per_page=50");
+
+        $byTitle->assertOk();
+        $byAddress->assertOk();
+        $this->assertSame([$match->id], $this->propertyIdsFromResponse($byTitle));
+        $this->assertSame([$match->id], $this->propertyIdsFromResponse($byAddress));
+    }
+
+    public function test_index_filters_by_floor_number(): void
+    {
+        $this->skipIfMissingSchema();
+
+        if (!Schema::hasTable('user_property_characteristics')) {
+            $this->markTestSkipped('Missing DB table: user_property_characteristics.');
+        }
+
+        [$tenant, $project] = $this->setupTenantWithProject();
+
+        $match = $this->createProjectUnit($tenant, $project);
+        $other = $this->createProjectUnit($tenant, $project);
+
+        UserPropertyCharacteristic::query()->create([
+            'property_id' => $match->id,
+            'floor_number' => 5,
+        ]);
+        UserPropertyCharacteristic::query()->create([
+            'property_id' => $other->id,
+            'floor_number' => 2,
+        ]);
+
+        $response = $this->getJson("/api/projects/{$project->id}/properties?floor_number=5&per_page=50");
+
+        $response->assertOk();
+        $this->assertSame([$match->id], $this->propertyIdsFromResponse($response));
+    }
+
+    public function test_employee_with_projects_view_sees_project_units(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $project = $this->createProject($tenant);
+        $property = $this->createProjectUnit($tenant, $project);
+
+        $employee = User::factory()->create([
+            'account_type' => 'employee',
+            'tenant_id' => $tenant->id,
+            'email' => 'proj-filter-employee-' . Str::random(6) . '@example.com',
+            'password' => Hash::make('password123'),
+            'active' => true,
+            'status' => 1,
+        ]);
+
+        app(PermissionRegistrar::class)->setPermissionsTeamId((int) $tenant->id);
+        Sanctum::actingAs($employee);
+
+        $this->getJson("/api/projects/{$project->id}/properties")
+            ->assertForbidden();
+
+        $this->grantEmployeePermissions($tenant, $employee, ['projects.view']);
+
+        Sanctum::actingAs($employee);
+
+        $this->getJson("/api/projects/{$project->id}/properties?per_page=50")
+            ->assertOk()
+            ->assertJsonPath('data.pagination.total', 1)
+            ->assertJsonPath('data.properties.0.id', $property->id);
     }
 }

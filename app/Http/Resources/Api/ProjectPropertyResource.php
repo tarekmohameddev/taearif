@@ -2,17 +2,21 @@
 
 namespace App\Http\Resources\Api;
 
+use App\Http\Resources\Concerns\ExposesPropertyBrokerFields;
+use App\Http\Resources\Concerns\FormatsPropertyCreator;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProjectPropertyResource extends JsonResource
 {
+    use ExposesPropertyBrokerFields;
+    use FormatsPropertyCreator;
     public function toArray($request): array
     {
         $property = $this->resource;
         $content = $property->contents->first();
         $districtId = optional($content)->state_id;
 
-        return [
+        return array_merge([
             'id' => $property->id,
             'project_id' => $property->project_id,
             'title' => optional($content)->title ?? '',
@@ -22,6 +26,9 @@ class ProjectPropertyResource extends JsonResource
             'price' => $property->price,
             'pricePerMeter' => $property->pricePerMeter,
             'purpose' => $property->purpose,
+            'listing_purpose' => $property->listing_purpose,
+            'unit_status' => $property->unit_status,
+            'publish_status' => $property->publish_status,
             'property_type' => $property->property_type,
             'beds' => $property->beds,
             'bath' => $property->bath,
@@ -51,6 +58,8 @@ class ProjectPropertyResource extends JsonResource
             'advertising_license' => $property->advertising_license,
             'created_at' => $property->created_at?->toISOString(),
             'updated_at' => $property->updated_at?->toISOString(),
-        ];
+            'created_by' => $this->formatCreator($property->creator),
+        ], $this->brokerFields($request, $property));
     }
 }
+

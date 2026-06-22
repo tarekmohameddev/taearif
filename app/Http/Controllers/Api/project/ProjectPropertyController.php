@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\project;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Project\Properties\AttachProjectPropertiesRequest;
+use App\Http\Requests\Api\Project\Properties\ListProjectPropertiesRequest;
 use App\Http\Requests\Api\Project\Properties\StoreProjectPropertyRequest;
 use App\Http\Requests\Api\Project\Properties\UpdateProjectPropertyRequest;
 use App\Http\Resources\Api\ProjectPropertyResource;
@@ -23,12 +24,16 @@ class ProjectPropertyController extends Controller
     ) {
     }
 
-    public function index(Request $request, int $project): JsonResponse
+    public function index(ListProjectPropertiesRequest $request, int $project): JsonResponse
     {
         try {
             $owner = $this->resolveTenantOwner();
             $perPage = max(1, min((int) $request->query('per_page', 25), 100));
-            $properties = $this->projectPropertyService->listForProject($owner->id, $project, $perPage);
+            $properties = $this->projectPropertyService->listForProject($owner->id, $project, $perPage, $request->only([
+                'unit_status', 'listing_purpose', 'publish_status', 'category_id', 'property_type',
+                'price_from', 'price_to', 'floor_number', 'city_id', 'state_id',
+                'payment_method', 'search',
+            ]));
 
             return response()->json([
                 'status' => 'success',
@@ -158,6 +163,11 @@ class ProjectPropertyController extends Controller
                 'status' => 'error',
                 'message' => $e->getMessage(),
             ], 409);
+        } catch (HttpException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], $e->getStatusCode());
         }
     }
 

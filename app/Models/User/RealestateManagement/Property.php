@@ -4,6 +4,8 @@ namespace App\Models\User\RealestateManagement;
 
 use App\Models\User;
 use App\Models\Building;
+use App\Services\Property\PropertyStatusSyncService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User\RealestateManagement\Project;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -45,6 +47,13 @@ class Property extends Model
         'price',
         'pricePerMeter',
         'purpose',
+        'listing_purpose',
+        'unit_status',
+        'publish_status',
+        'source_broker_type',
+        'source_broker_id',
+        'source_broker_name',
+        'source_broker_phone',
         'property_type',
         'beds',
         'bath',
@@ -76,6 +85,19 @@ class Property extends Model
         'completed_at',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (Property $property) {
+            if ($property->created_by === null && auth()->id()) {
+                $property->created_by = auth()->id();
+            }
+        });
+
+        static::saving(function (Property $property) {
+            app(PropertyStatusSyncService::class)->syncModel($property);
+        });
+    }
+
     public function displayFaqs(): array
     {
         return collect($this->faqs ?? [])
@@ -98,9 +120,34 @@ class Property extends Model
         return $this->belongsTo(User::class, 'created_by', 'id');
     }
 
+    public function sourceBroker()
+    {
+        return $this->belongsTo(User::class, 'source_broker_id', 'id');
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(\App\Models\Property\PropertyDocument::class, 'property_id');
+    }
+
+    public function crmRelations(): HasMany
+    {
+        return $this->hasMany(\App\Models\Property\PropertyCrmRelation::class, 'property_id');
+    }
+
     public function category()
     {
         return $this->belongsTo(ApiUserCategory::class, 'category_id', 'id');
+    }
+
+    /**
+     * Owners of this unit with their ownership percentage and type.
+     */
+    public function owners()
+    {
+        return $this->belongsToMany(\App\Models\User::class, 'property_owners', 'property_id', 'owner_id')
+                    ->withPivot('ownership_percentage', 'ownership_type')
+                    ->withTimestamps();
     }
 
     /**
@@ -181,6 +228,9 @@ class Property extends Model
             'price' => $request['price'],
             'pricePerMeter' => $request['pricePerMeter'] ?? null,
             'purpose' => $request['purpose'] ?? null,
+            'listing_purpose' => $request['listing_purpose'] ?? null,
+            'unit_status' => $request['unit_status'] ?? null,
+            'publish_status' => $request['publish_status'] ?? null,
             'property_type' => $request['property_type'] ?? ($request['type'] ?? null),
             'beds' => $request['beds'] ?? null,
             'bath' => $request['bath'] ?? null,
@@ -210,6 +260,10 @@ class Property extends Model
             'validation_errors' => $validationErrors,
             'import_batch_id' => $request['import_batch_id'] ?? null,
             'completed_at' => $request['completed_at'] ?? null,
+            'source_broker_type' => $request['source_broker_type'] ?? null,
+            'source_broker_id' => $request['source_broker_id'] ?? null,
+            'source_broker_name' => $request['source_broker_name'] ?? null,
+            'source_broker_phone' => $request['source_broker_phone'] ?? null,
         ]);
     }
 
@@ -221,7 +275,6 @@ class Property extends Model
         }
 
         return $this->update([
-            'project_id' => $requestData['project_id'] ?? null,
             'region_id' => $requestData['region_id'] ?? null,
             'featured_image' => $requestData['featured_image'] ?? $this->featured_image,
             'floor_planning_image' => $requestData['floor_planning_image'] ?? null,
@@ -229,6 +282,9 @@ class Property extends Model
             'price' => $requestData['price'] ?? null,
             'pricePerMeter' => $requestData['pricePerMeter'] ?? $this->pricePerMeter,
             'purpose' => $requestData['purpose'] ?? null,
+            'listing_purpose' => $requestData['listing_purpose'] ?? $this->listing_purpose,
+            'unit_status' => $requestData['unit_status'] ?? $this->unit_status,
+            'publish_status' => $requestData['publish_status'] ?? $this->publish_status,
             'property_type' => $requestData['property_type'] ?? ($requestData['type'] ?? null),
             'beds' => $requestData['beds'] ?? null,
             'bath' => $requestData['bath'] ?? null,
@@ -253,6 +309,18 @@ class Property extends Model
             'reorder_featured' => $requestData['reorder_featured'] ?? $this->reorder_featured,
             'reorder' => $requestData['reorder'] ?? $this->reorder,
             'show_reservations' => $requestData['show_reservations'] ?? $this->show_reservations,
+            'source_broker_type' => array_key_exists('source_broker_type', $requestData)
+                ? $requestData['source_broker_type']
+                : $this->source_broker_type,
+            'source_broker_id' => array_key_exists('source_broker_id', $requestData)
+                ? $requestData['source_broker_id']
+                : $this->source_broker_id,
+            'source_broker_name' => array_key_exists('source_broker_name', $requestData)
+                ? $requestData['source_broker_name']
+                : $this->source_broker_name,
+            'source_broker_phone' => array_key_exists('source_broker_phone', $requestData)
+                ? $requestData['source_broker_phone']
+                : $this->source_broker_phone,
         ]);
     }
 
@@ -527,6 +595,68 @@ class Property extends Model
     }
 
         return asset(ltrim($path, '/'));
+    }
+
+    /**
+     * Scope for tenant public website: only published listings (with legacy fallback).
+     */
+    public function scopePublishedForPublic(Builder $query): Builder
+    {
+        if (config('properties.backfill_complete')) {
+            return $query->where('publish_status', 'published');
+        }
+
+        return $query->where('status', 1)->where(function ($q) {
+            $q->where('publish_status', 'published')->orWhereNull('publish_status');
+        });
+    }
+
+    /**
+     * Inverse of publishedForPublic — draft/unpublished listings only.
+     */
+    public function scopeUnpublishedForPublic(Builder $query): Builder
+    {
+        if (config('properties.backfill_complete')) {
+            return $query->where('publish_status', '!=', 'published');
+        }
+
+        return $query->where(function ($q) {
+            $q->where('status', '!=', 1)
+                ->orWhere(function ($q2) {
+                    $q2->whereNotNull('publish_status')
+                        ->where('publish_status', '!=', 'published');
+                });
+        });
+    }
+
+    /**
+     * Scope for tenant public website availability filter (status=available|unavailable).
+     */
+    public function scopePublicAvailability(Builder $query, string $status): Builder
+    {
+        $status = strtolower(trim($status));
+
+        if ($status === 'available') {
+            return $query->where(function ($q) {
+                $q->where('unit_status', 'available')
+                    ->orWhere(function ($q2) {
+                        $q2->whereNull('unit_status')
+                            ->whereNotIn('purpose', ['rented', 'sold']);
+                    });
+            });
+        }
+
+        if ($status === 'unavailable') {
+            return $query->where(function ($q) {
+                $q->whereIn('unit_status', ['rented', 'sold'])
+                    ->orWhere(function ($q2) {
+                        $q2->whereNull('unit_status')
+                            ->whereIn('purpose', ['rented', 'sold']);
+                    });
+            });
+        }
+
+        return $query;
     }
 
     /**

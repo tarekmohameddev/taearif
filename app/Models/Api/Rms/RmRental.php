@@ -144,6 +144,11 @@ class RmRental extends Model
         return $this->belongsTo(Property::class, 'unit_id');
     }
 
+    public function unit()
+    {
+        return $this->belongsTo(Property::class, 'unit_id');
+    }
+
     public function project()
     {
         return $this->belongsTo(Project::class, 'project_id');

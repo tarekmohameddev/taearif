@@ -340,8 +340,10 @@ namespace App\Http\Controllers\Api;
  *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"phone"},
  *             @OA\Property(property="phone", type="string"),
  *         )),
- *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
- *         @OA\Response(response=401, description="Unauthenticated")
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="success", type="boolean", example=true), @OA\Property(property="message", type="string", example="OTP sent."))),
+ *         @OA\Response(response=409, description="Phone already registered", @OA\JsonContent(type="object", @OA\Property(property="success", type="boolean", example=false), @OA\Property(property="error", type="string", example="phone_already_registered"), @OA\Property(property="message", type="string"))),
+ *         @OA\Response(response=422, description="Rate limit or validation error"),
+ *         @OA\Response(response=503, description="WhatsApp delivery failed", @OA\JsonContent(type="object", @OA\Property(property="success", type="boolean", example=false), @OA\Property(property="error", type="string", example="delivery_failed"), @OA\Property(property="message", type="string")))
  *     )
  *
  * )
@@ -358,8 +360,9 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="otp", type="string"),
  *             @OA\Property(property="phone", type="string"),
  *         )),
- *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
- *         @OA\Response(response=401, description="Unauthenticated")
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="success", type="boolean", example=true), @OA\Property(property="message", type="string"), @OA\Property(property="verified_token", type="string", format="uuid", nullable=true), @OA\Property(property="data", type="object", nullable=true))),
+ *         @OA\Response(response=409, description="Phone already registered", @OA\JsonContent(type="object", @OA\Property(property="success", type="boolean", example=false), @OA\Property(property="error", type="string", example="phone_already_registered"), @OA\Property(property="message", type="string"))),
+ *         @OA\Response(response=422, description="Invalid or expired OTP")
  *     )
  *
  * )
@@ -2928,12 +2931,80 @@ namespace App\Http\Controllers\Api;
  *
  * @OA\PathItem(
  *
+ *     path="/projects/{project}/properties",
+ *
+ *     @OA\Get(
+ *         operationId="get_projects_project_properties_0",
+ *         tags={"Projects"},
+ *         summary="List properties (units) linked to a project",
+ *         security={{"sanctum":{}}},
+ *         @OA\Parameter(name="project", in="path", required=true, @OA\Schema(type="integer")),
+ *         @OA\Parameter(name="per_page", in="query", required=false, @OA\Schema(type="integer")),
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"))),
+ *         @OA\Response(response=404, description="Project not found"),
+ *         @OA\Response(response=401, description="Unauthenticated")
+ *     ),
+ *     @OA\Post(
+ *         operationId="post_projects_project_properties_1",
+ *         tags={"Projects"},
+ *         summary="Create a new property (unit) under a project",
+ *         description="Orchestration (Option A): call POST /projects or POST /projects/{id} first, then POST here for each new unit (full form). Requires properties.create. project_id is taken from the URL, not the body.",
+ *         security={{"sanctum":{}}},
+ *         @OA\Parameter(name="project", in="path", required=true, @OA\Schema(type="integer")),
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"title","description","featured_image"},
+ *             @OA\Property(property="title", type="string", maxLength=255),
+ *             @OA\Property(property="description", type="string"),
+ *             @OA\Property(property="featured_image", type="string"),
+ *             @OA\Property(property="address", type="string", maxLength=255),
+ *             @OA\Property(property="district_id", type="integer"),
+ *             @OA\Property(property="state_id", type="integer"),
+ *             @OA\Property(property="purpose", type="string", enum={"sale","rent"}),
+ *             @OA\Property(property="listing_purpose", type="string", enum={"sale","rent"}),
+ *             @OA\Property(property="unit_status", type="string"),
+ *             @OA\Property(property="publish_status", type="string", enum={"draft","published"}),
+ *             @OA\Property(property="price", type="number"),
+ *             @OA\Property(property="gallery", type="array", @OA\Items(type="string")),
+ *         )),
+ *         @OA\Response(response=201, description="Created", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object", @OA\Property(property="property", type="object")))),
+ *         @OA\Response(response=422, description="Validation error"),
+ *         @OA\Response(response=403, description="Quota or permission denied"),
+ *         @OA\Response(response=404, description="Project not found"),
+ *         @OA\Response(response=401, description="Unauthenticated")
+ *     )
+ *
+ * )
+ *
+ * @OA\PathItem(
+ *
+ *     path="/projects/{project}/properties/attach",
+ *
+ *     @OA\Post(
+ *         operationId="post_projects_project_properties_attach_0",
+ *         tags={"Projects"},
+ *         summary="Attach existing properties to project (optional frontend step after create/update project)",
+ *         description="Orchestration (Option A): after POST /projects and optional POST /projects/{project}/properties per new unit, call this when the user selected existing units. Skip when property_ids is empty. Requires properties.update.",
+ *         security={{"sanctum":{}}},
+ *         @OA\Parameter(name="project", in="path", required=true, @OA\Schema(type="integer")),
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"property_ids"},
+ *             @OA\Property(property="property_ids", type="array", minLength=1, @OA\Items(type="integer")),
+ *         )),
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object", @OA\Property(property="properties", type="array", @OA\Items(type="object"))))),
+ *         @OA\Response(response=409, description="Property already linked to another project"),
+ *         @OA\Response(response=404, description="Project or property not found"),
+ *         @OA\Response(response=401, description="Unauthenticated")
+ *     )
+ *
+ * )
+ *
+ * @OA\PathItem(
+ *
  *     path="/properties",
  *
  *     @OA\Get(
  *         operationId="get_properties_0",
  *         tags={"Properties"},
  *         summary="Index", security={{"sanctum":{}}},
+ *         @OA\Parameter(name="unassigned", in="query", required=false, description="When true (e.g. 1), return only properties not linked to a project (project_id is null). Use for project unit picker.", @OA\Schema(type="boolean")),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),

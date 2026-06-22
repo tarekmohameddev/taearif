@@ -75,6 +75,7 @@ class UserPropertyRequest extends Model
         'status_id',
         'customers_hub_stage_id',
         'property_ids',
+        'initial_property_id',
         'responsible_employee_id',
         'inquiry_type',
         'currency',
@@ -146,6 +147,11 @@ class UserPropertyRequest extends Model
     public function district()
     {
         return $this->belongsTo(\App\Models\User\UserDistrict::class, 'districts_id');
+    }
+
+    public function initialProperty()
+    {
+        return $this->belongsTo(\App\Models\User\RealestateManagement\Property::class, 'initial_property_id');
     }
 
     /**

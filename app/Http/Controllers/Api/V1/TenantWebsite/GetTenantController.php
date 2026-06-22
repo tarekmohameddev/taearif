@@ -51,12 +51,17 @@ class GetTenantController extends Controller
             }
             $pages = TenantPage::where('user_id', $tenant->id)->get()->keyBy('page_id')->map->components;
             $staticPages = TenantStaticPage::where('user_id', $tenant->id)->get();
-            $staticPagesData = $staticPages->isEmpty()
+            $staticPagesWithContent = $staticPages->filter(
+                static fn (TenantStaticPage $p) => $p->hasPublicContent()
+            );
+            $staticPagesData = $staticPagesWithContent->isEmpty()
                 ? null
-                : $staticPages->keyBy('page_id')->map(static function (TenantStaticPage $p) {
+                : $staticPagesWithContent->keyBy('page_id')->map(static function (TenantStaticPage $p) {
+                    $public = $p->toPublicArray();
+
                     return [
-                        'components' => $p->components ?? [],
-                        'url' => $p->url,
+                        'components' => $public['components'],
+                        'url' => $public['url'],
                     ];
                 });
             $globals = TenantGlobalComponent::where('user_id', $tenant->id)->first();

@@ -16,6 +16,7 @@ use App\Http\Requests\Api\V2\CustomersHub\RequestsBulkRequest;
 use App\Http\Requests\Api\V2\CustomersHub\DismissRequest;
 use App\Http\Requests\Api\V2\CustomersHub\SnoozeRequest;
 use App\Domain\CustomersHub\Services\ActionsAggregatorService;
+use App\Domain\PropertyRequests\Services\PropertyRequestLocationNormalizer;
 use App\Domain\CustomersHub\Services\PropertyRequestDetailBuilder;
 use App\Models\Api\ApiCustomerInquiry;
 use App\Models\Api\UserApiCustomerType;
@@ -1404,6 +1405,15 @@ class RequestsController extends ApiController
 
         $propertyRequest->fill($fields);
         $propertyRequest->save();
+
+        $normalizer = app(PropertyRequestLocationNormalizer::class);
+        if ($normalizer->hasLocationFields($fields)) {
+            $locationFields = ['region', 'city_id', 'districts_id', 'city', 'district', 'latitude', 'longitude'];
+            $base = $propertyRequest->only($locationFields);
+            $normalized = $normalizer->normalize($base, $propertyRequest->source);
+            $propertyRequest->fill(array_intersect_key($normalized, array_flip($locationFields)));
+            $propertyRequest->save();
+        }
 
         $completeness = app(\App\Services\Matching\RequestCompletenessService::class)
             ->validateMinimal('web', $propertyRequest->id);

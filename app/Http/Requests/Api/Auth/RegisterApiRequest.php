@@ -4,6 +4,8 @@ namespace App\Http\Requests\Api\Auth;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
 use App\Rules\Recaptcha;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 
 class RegisterApiRequest extends BaseApiFormRequest
@@ -75,7 +77,22 @@ class RegisterApiRequest extends BaseApiFormRequest
     {
         return [
             'phone.required' => 'رقم الهاتف مطلوب.',
-            'phone.unique' => 'تم استخدام رقم الهاتف، اختر مختلفًا.',
+            'phone.unique' => 'تم استخدام رقم الهاتف، يرجى تسجيل الدخول.',
         ];
+    }
+
+    protected function failedValidation(Validator $validator): void
+    {
+        $failed = $validator->failed();
+
+        if (isset($failed['phone']['Unique'])) {
+            throw new HttpResponseException(response()->json([
+                'status' => 'error',
+                'error' => 'phone_already_registered',
+                'message' => 'تم استخدام رقم الهاتف، يرجى تسجيل الدخول.',
+            ], 422));
+        }
+
+        parent::failedValidation($validator);
     }
 }

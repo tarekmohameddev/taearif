@@ -50,5 +50,29 @@ class TenantStaticPage extends Model
             'url_explicit' => false,
         ];
     }
+
+    public function publicComponents(): array
+    {
+        $published = $this->published_data;
+        if (is_array($published) && $published !== []) {
+            return $published;
+        }
+
+        return $this->components ?? [];
+    }
+
+    public function toPublicArray(): array
+    {
+        return [
+            'page_id' => $this->page_id,
+            'components' => $this->publicComponents(),
+            'url' => $this->url,
+        ];
+    }
+
+    public function hasPublicContent(): bool
+    {
+        return $this->publicComponents() !== [];
+    }
 }
 

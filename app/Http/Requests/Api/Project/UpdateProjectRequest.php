@@ -16,6 +16,7 @@ class UpdateProjectRequest extends BaseApiFormRequest
         return [
             'featured_image' => 'required|string',
             'video_url' => 'nullable|string',
+            'brochure' => 'nullable|string|url',
             'address' => 'nullable',
             'description' => 'nullable|min:15',
             'gallery_images' => 'sometimes|array',

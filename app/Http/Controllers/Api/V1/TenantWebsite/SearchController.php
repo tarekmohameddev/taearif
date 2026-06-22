@@ -33,8 +33,9 @@ class SearchController extends Controller
         // Query properties
         $propertiesQuery = Property::query()
             ->with(['contents', 'galleryImages', 'project.contents'])
-            ->where('user_id', $tenant->id)
-            ->where('status', 1);
+            ->where('user_id', $tenant->id);
+
+        $propertiesQuery->publishedForPublic();
 
         if ($title) {
             $propertiesQuery->whereHas('contents', function ($q) use ($title) {
@@ -157,6 +158,9 @@ class SearchController extends Controller
                 'transactionType' => $this->translator->translatePurpose($normalizedPurpose),
                 'transactionType_en' => $normalizedPurpose,
                 'image' => $featured,
+                'unit_status' => $p->unit_status ?? ($isUnavailable ? 'sold' : 'available'),
+                'listing_purpose' => $p->listing_purpose,
+                'publish_status' => $p->publish_status,
                 'status' => $isUnavailable ? 'unavailable' : 'available',
                 'show_reservations' => (bool) $p->show_reservations,
                 'createdAt' => $p->created_at?->toISOString(),

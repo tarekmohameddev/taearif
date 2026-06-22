@@ -243,6 +243,9 @@ class PropertyFilterOptionsService
 
         return [
             'purposes' => $availablePurposes,
+            'unit_status' => ['available', 'reserved', 'sold', 'rented'],
+            'listing_purpose' => ['sale', 'rent'],
+            'publish_status' => ['draft', 'published'],
             'price_range' => $priceRange,
             'area_range' => $areaRange,
             // Canonical key (matches DB + API naming)
