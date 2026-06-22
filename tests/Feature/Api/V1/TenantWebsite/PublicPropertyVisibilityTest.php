@@ -108,6 +108,111 @@ class PublicPropertyVisibilityTest extends TestCase
         $this->assertSame('rented', $byId[(string) $rented->id]['unit_status']);
     }
 
+    public function test_status_available_returns_only_available_units(): void
+    {
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $available = $this->createProperty($tenant->id, 'published', 'available');
+        $this->createProperty($tenant->id, 'published', 'reserved');
+        $this->createProperty($tenant->id, 'published', 'sold', 'sale');
+        $this->createProperty($tenant->id, 'published', 'rented', 'rent');
+
+        $response = $this->getJson("/api/v1/tenant-website/{$tenant->username}/properties?status=available");
+        $response->assertOk();
+
+        $ids = collect($response->json('properties'))->pluck('id')->map(fn ($id) => (int) $id);
+        $this->assertCount(1, $ids);
+        $this->assertTrue($ids->contains($available->id));
+
+        $item = collect($response->json('properties'))->firstWhere('id', (string) $available->id);
+        $this->assertSame('available', $item['unit_status'] ?? null);
+        $this->assertSame('available', $item['status'] ?? null);
+    }
+
+    public function test_status_unavailable_returns_rented_and_sold_units(): void
+    {
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->createProperty($tenant->id, 'published', 'available');
+        $this->createProperty($tenant->id, 'published', 'reserved');
+        $sold = $this->createProperty($tenant->id, 'published', 'sold', 'sale');
+        $rented = $this->createProperty($tenant->id, 'published', 'rented', 'rent');
+
+        $response = $this->getJson("/api/v1/tenant-website/{$tenant->username}/properties?status=unavailable");
+        $response->assertOk();
+
+        $ids = collect($response->json('properties'))->pluck('id')->map(fn ($id) => (int) $id);
+        $this->assertCount(2, $ids);
+        $this->assertTrue($ids->contains($sold->id));
+        $this->assertTrue($ids->contains($rented->id));
+
+        $byId = collect($response->json('properties'))->keyBy('id');
+        $this->assertSame('unavailable', $byId[(string) $sold->id]['status']);
+        $this->assertSame('unavailable', $byId[(string) $rented->id]['status']);
+    }
+
+    public function test_reserved_units_excluded_from_status_filters_but_visible_without_filter(): void
+    {
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $reserved = $this->createProperty($tenant->id, 'published', 'reserved');
+
+        $availableResponse = $this->getJson("/api/v1/tenant-website/{$tenant->username}/properties?status=available");
+        $availableResponse->assertOk();
+        $availableIds = collect($availableResponse->json('properties'))->pluck('id')->map(fn ($id) => (int) $id);
+        $this->assertFalse($availableIds->contains($reserved->id));
+
+        $unavailableResponse = $this->getJson("/api/v1/tenant-website/{$tenant->username}/properties?status=unavailable");
+        $unavailableResponse->assertOk();
+        $unavailableIds = collect($unavailableResponse->json('properties'))->pluck('id')->map(fn ($id) => (int) $id);
+        $this->assertFalse($unavailableIds->contains($reserved->id));
+
+        $allResponse = $this->getJson("/api/v1/tenant-website/{$tenant->username}/properties");
+        $allResponse->assertOk();
+        $allIds = collect($allResponse->json('properties'))->pluck('id')->map(fn ($id) => (int) $id);
+        $this->assertTrue($allIds->contains($reserved->id));
+    }
+
+    public function test_purpose_rent_and_status_available_returns_only_available_rent_listings(): void
+    {
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $availableRent = $this->createProperty($tenant->id, 'published', 'available', 'rent');
+        $this->createProperty($tenant->id, 'published', 'rented', 'rent');
+        $this->createProperty($tenant->id, 'published', 'available', 'sale');
+
+        $response = $this->getJson("/api/v1/tenant-website/{$tenant->username}/properties?purpose=rent&status=available");
+        $response->assertOk();
+
+        $ids = collect($response->json('properties'))->pluck('id')->map(fn ($id) => (int) $id);
+        $this->assertCount(1, $ids);
+        $this->assertTrue($ids->contains($availableRent->id));
+    }
+
+    public function test_response_status_reflects_unit_status_not_purpose(): void
+    {
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $sold = $this->createProperty($tenant->id, 'published', 'sold', 'sale');
+
+        $response = $this->getJson("/api/v1/tenant-website/{$tenant->username}/properties?status=unavailable");
+        $response->assertOk();
+
+        $item = collect($response->json('properties'))->firstWhere('id', (string) $sold->id);
+        $this->assertNotNull($item);
+        $this->assertSame('sold', $item['unit_status'] ?? null);
+        $this->assertSame('unavailable', $item['status'] ?? null);
+    }
+
+    public function test_unit_status_takes_precedence_over_status_filter(): void
+    {
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $sold = $this->createProperty($tenant->id, 'published', 'sold', 'sale');
+        $this->createProperty($tenant->id, 'published', 'available');
+
+        $response = $this->getJson("/api/v1/tenant-website/{$tenant->username}/properties?status=available&unit_status=sold");
+        $response->assertOk();
+
+        $ids = collect($response->json('properties'))->pluck('id')->map(fn ($id) => (int) $id);
+        $this->assertCount(1, $ids);
+        $this->assertTrue($ids->contains($sold->id));
+    }
+
     public function test_property_show_excludes_sensitive_fields(): void
     {
         if (! Schema::hasTable('buildings')) {

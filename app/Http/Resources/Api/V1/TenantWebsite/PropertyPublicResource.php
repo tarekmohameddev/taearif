@@ -246,7 +246,8 @@ class PropertyPublicResource
             'sold' => 'sale',
             default => $property->purpose,
         };
-        $isUnavailable = in_array($property->purpose, ['rented', 'sold'], true);
+        $isUnavailable = in_array($property->unit_status, ['rented', 'sold'], true)
+            || (is_null($property->unit_status) && in_array($property->purpose, ['rented', 'sold'], true));
 
         return [$normalizedPurpose, $isUnavailable];
     }

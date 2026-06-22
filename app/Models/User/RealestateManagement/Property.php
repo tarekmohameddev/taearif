@@ -612,6 +612,36 @@ class Property extends Model
     }
 
     /**
+     * Scope for tenant public website availability filter (status=available|unavailable).
+     */
+    public function scopePublicAvailability(Builder $query, string $status): Builder
+    {
+        $status = strtolower(trim($status));
+
+        if ($status === 'available') {
+            return $query->where(function ($q) {
+                $q->where('unit_status', 'available')
+                    ->orWhere(function ($q2) {
+                        $q2->whereNull('unit_status')
+                            ->whereNotIn('purpose', ['rented', 'sold']);
+                    });
+            });
+        }
+
+        if ($status === 'unavailable') {
+            return $query->where(function ($q) {
+                $q->whereIn('unit_status', ['rented', 'sold'])
+                    ->orWhere(function ($q2) {
+                        $q2->whereNull('unit_status')
+                            ->whereIn('purpose', ['rented', 'sold']);
+                    });
+            });
+        }
+
+        return $query;
+    }
+
+    /**
      * Scope to exclude incomplete/draft properties from counts
      */
     public function scopeComplete($query)

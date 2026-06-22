@@ -116,6 +116,8 @@ class PropertyController extends Controller
 
 		if ($unitStatus = $request->query('unit_status')) {
 			$query->where('unit_status', $unitStatus);
+		} elseif ($status = $request->query('status')) {
+			$query->publicAvailability($status);
 		}
 
 		// Filters
