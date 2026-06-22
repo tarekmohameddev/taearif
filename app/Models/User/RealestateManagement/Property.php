@@ -612,6 +612,24 @@ class Property extends Model
     }
 
     /**
+     * Inverse of publishedForPublic — draft/unpublished listings only.
+     */
+    public function scopeUnpublishedForPublic(Builder $query): Builder
+    {
+        if (config('properties.backfill_complete')) {
+            return $query->where('publish_status', '!=', 'published');
+        }
+
+        return $query->where(function ($q) {
+            $q->where('status', '!=', 1)
+                ->orWhere(function ($q2) {
+                    $q2->whereNotNull('publish_status')
+                        ->where('publish_status', '!=', 'published');
+                });
+        });
+    }
+
+    /**
      * Scope for tenant public website availability filter (status=available|unavailable).
      */
     public function scopePublicAvailability(Builder $query, string $status): Builder

@@ -77,6 +77,27 @@ class PublicPropertyVisibilityTest extends TestCase
         $this->assertSame('published', $item['publish_status'] ?? null);
     }
 
+    public function test_can_filter_properties_by_published(): void
+    {
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $published = $this->createProperty($tenant->id, 'published', 'available');
+        $draft = $this->createProperty($tenant->id, 'draft', 'available');
+
+        $publishedResponse = $this->getJson("/api/v1/tenant-website/{$tenant->username}/properties?published=1");
+        $publishedResponse->assertOk();
+        $publishedIds = collect($publishedResponse->json('properties'))->pluck('id')->map(fn ($id) => (int) $id);
+        $this->assertCount(1, $publishedIds);
+        $this->assertTrue($publishedIds->contains($published->id));
+        $this->assertFalse($publishedIds->contains($draft->id));
+
+        $draftResponse = $this->getJson("/api/v1/tenant-website/{$tenant->username}/properties?published=0");
+        $draftResponse->assertOk();
+        $draftIds = collect($draftResponse->json('properties'))->pluck('id')->map(fn ($id) => (int) $id);
+        $this->assertCount(1, $draftIds);
+        $this->assertTrue($draftIds->contains($draft->id));
+        $this->assertFalse($draftIds->contains($published->id));
+    }
+
     public function test_draft_property_show_returns_404(): void
     {
         $tenant = User::factory()->create(['account_type' => 'tenant']);

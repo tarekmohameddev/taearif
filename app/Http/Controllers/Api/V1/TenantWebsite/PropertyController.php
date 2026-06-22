@@ -112,7 +112,7 @@ class PropertyController extends Controller
 			->with(['contents', 'galleryImages', 'project.contents'])
 			->where('user_id', $tenant->id);
 
-		$query->publishedForPublic();
+		$this->applyPublishedFilter($query, $request);
 
 		if ($unitStatus = $request->query('unit_status')) {
 			$query->where('unit_status', $unitStatus);
@@ -344,6 +344,24 @@ class PropertyController extends Controller
 		} else {
 			$query->where('purpose', $purpose);
 		}
+	}
+
+	/**
+	 * Published filter: defaults to published-only when omitted (public website safe).
+	 */
+	protected function applyPublishedFilter(Builder $query, Request $request): void
+	{
+		if ($request->filled('published')) {
+			if ($request->boolean('published')) {
+				$query->publishedForPublic();
+			} else {
+				$query->unpublishedForPublic();
+			}
+
+			return;
+		}
+
+		$query->publishedForPublic();
 	}
 
 }
