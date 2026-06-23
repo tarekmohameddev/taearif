@@ -14,7 +14,7 @@ class BulkActionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'action' => ['required', 'string', 'in:read,unread,archive,delete'],
+            'action' => ['required', 'string', 'in:read,unread,archive,unarchive,delete'],
             'ids' => ['required', 'array', 'min:1', 'max:500'],
             'ids.*' => ['required', 'integer'],
         ];

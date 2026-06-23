@@ -203,6 +203,11 @@ class DashboardContactMessagesTest extends TestCase
         $this->assertEquals('archived', $m1->fresh()->status);
         $this->assertArrayHasKey('archived_at', $m1->fresh()->metadata);
 
+        $this->patchJson('/api/v1/contact-messages/' . $m1->id . '/unarchive')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'active');
+        $this->assertArrayHasKey('unarchived_at', $m1->fresh()->metadata);
+
         $delete = $this->postJson('/api/v1/contact-messages/bulk', [
             'action' => 'delete',
             'ids' => [$m2->id, 99999],

@@ -1033,6 +1033,7 @@ Route::prefix('v1')->group(function () {
 			Route::patch('/{id}/read', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'markRead'])->middleware('can:contact_messages.update');
 			Route::patch('/{id}/unread', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'markUnread'])->middleware('can:contact_messages.update');
 			Route::patch('/{id}/archive', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'archive'])->middleware('can:contact_messages.update');
+			Route::patch('/{id}/unarchive', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'unarchive'])->middleware('can:contact_messages.update');
 			Route::delete('/{id}', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'destroy'])->middleware('can:contact_messages.delete');
 			Route::post('/{id}/create-customer', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'createCustomer'])->middleware('can:contact_messages.create_customer');
 			Route::post('/{id}/link-customer', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'linkCustomer'])->middleware('can:contact_messages.update');

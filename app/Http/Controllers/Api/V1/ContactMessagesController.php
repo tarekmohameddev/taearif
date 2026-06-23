@@ -217,6 +217,13 @@ class ContactMessagesController extends Controller
                         'archived_by_user_id' => $userId,
                     ]),
                 ]),
+                'unarchive' => $message->update([
+                    'status' => 'active',
+                    'metadata' => array_merge($message->metadata ?? [], [
+                        'unarchived_at' => $now->toISOString(),
+                        'unarchived_by_user_id' => $userId,
+                    ]),
+                ]),
                 'delete' => $message->delete(),
             };
 
@@ -240,6 +247,24 @@ class ContactMessagesController extends Controller
             'metadata' => array_merge($message->metadata ?? [], [
                 'archived_at' => now()->toISOString(),
                 'archived_by_user_id' => auth()->id(),
+            ]),
+        ]);
+        $message->refresh();
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->formatDetailItem($message),
+        ]);
+    }
+
+    public function unarchive(string $id): JsonResponse
+    {
+        $message = $this->findForTenant($id);
+        $message->update([
+            'status' => 'active',
+            'metadata' => array_merge($message->metadata ?? [], [
+                'unarchived_at' => now()->toISOString(),
+                'unarchived_by_user_id' => auth()->id(),
             ]),
         ]);
         $message->refresh();
