@@ -1,0 +1,6 @@
+@baseUrl = https://your-app.test
+@token = your-bearer-token
+
+### Contact Messages Stats
+GET {{baseUrl}}/api/v1/contact-messages/stats
+Authorization: Bearer {{token}}

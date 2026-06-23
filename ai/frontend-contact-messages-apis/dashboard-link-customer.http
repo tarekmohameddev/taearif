@@ -1,0 +1,21 @@
+@baseUrl = https://your-app.test
+@token = your-bearer-token
+
+### Link Message to Existing Customer
+POST {{baseUrl}}/api/v1/contact-messages/1/link-customer
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": 42
+}
+
+### Link Message to Customer (force overwrite)
+POST {{baseUrl}}/api/v1/contact-messages/1/link-customer
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": 99,
+  "force": true
+}

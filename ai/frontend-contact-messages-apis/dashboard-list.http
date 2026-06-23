@@ -1,0 +1,18 @@
+@baseUrl = https://your-app.test
+@token = your-bearer-token
+
+### List Contact Messages
+GET {{baseUrl}}/api/v1/contact-messages?page=1&per_page=15&status=active
+Authorization: Bearer {{token}}
+
+### Message Detail
+GET {{baseUrl}}/api/v1/contact-messages/1
+Authorization: Bearer {{token}}
+
+### Unread Count (sidebar badge)
+GET {{baseUrl}}/api/v1/contact-messages/unread-count
+Authorization: Bearer {{token}}
+
+### Customer Message History
+GET {{baseUrl}}/api/v1/customers/1/contact-messages
+Authorization: Bearer {{token}}
