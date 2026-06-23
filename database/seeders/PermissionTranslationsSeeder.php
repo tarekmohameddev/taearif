@@ -232,6 +232,24 @@ class PermissionTranslationsSeeder extends Seeder
                 'name_ar' => 'حذف طلب توظيف',
             ],
 
+            // Contact messages
+            'contact_messages.view' => [
+                'name_en' => 'View Contact Messages',
+                'name_ar' => 'عرض رسائل التواصل',
+            ],
+            'contact_messages.update' => [
+                'name_en' => 'Update Contact Messages',
+                'name_ar' => 'تحديث رسائل التواصل',
+            ],
+            'contact_messages.delete' => [
+                'name_en' => 'Delete Contact Messages',
+                'name_ar' => 'حذف رسائل التواصل',
+            ],
+            'contact_messages.create_customer' => [
+                'name_en' => 'Create Customer from Contact Message',
+                'name_ar' => 'إنشاء عميل من رسالة تواصل',
+            ],
+
             // Customers Hub — Analytics
             'customers_hub_analytics.view' => [
                 'name_en' => 'View Customers Hub Analytics',

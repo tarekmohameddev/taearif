@@ -63,6 +63,11 @@ return [
         'job_applications.update',
         'job_applications.delete',
 
+		'contact_messages.view',
+        'contact_messages.update',
+        'contact_messages.delete',
+        'contact_messages.create_customer',
+
 		'customers_hub_analytics.view',
 		'customers_hub_analytics.create',
 		'customers_hub_analytics.update',
@@ -188,6 +193,10 @@ return [
             'job_applications.create',
             'job_applications.update',
             'job_applications.delete',
+			'contact_messages.view',
+            'contact_messages.update',
+            'contact_messages.delete',
+            'contact_messages.create_customer',
 		],
 		'manager' => [
 			'customers.view',
@@ -225,6 +234,10 @@ return [
             'job_applications.create',
             'job_applications.update',
             'job_applications.delete',
+			'contact_messages.view',
+            'contact_messages.update',
+            'contact_messages.delete',
+            'contact_messages.create_customer',
 		],
 		'agent' => [
 			'customers.view',
@@ -242,6 +255,7 @@ return [
             'buildings.view',
             'property_requests.view',
             'job_applications.view',
+            'contact_messages.view',
 		],
 	],
 ];

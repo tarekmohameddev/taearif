@@ -153,6 +153,10 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(100)->by($request->ip());
         }));
 
+        RateLimiter::for('api_tenant_contact_messages', $only(function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        }));
+
         RateLimiter::for('admin_api_login', $only(function (Request $request) {
             [$max] = array_map('intval', explode(',', config('admin-api.rate_limits.login'), 2));
 
