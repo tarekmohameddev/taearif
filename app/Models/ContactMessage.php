@@ -14,6 +14,7 @@ class ContactMessage extends Model
         'contact_form_section',
         'contact_us_home_page',
         'contact_map_section',
+        'hero4_contact_panel',
     ];
 
     public const STATUSES = [
