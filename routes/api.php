@@ -141,6 +141,7 @@ use App\Http\Controllers\Api\V1\TenantWebsite\{
     PixelController as TenantWebsitePixelController,
     StaticPageController,
     PublicStaticPageController,
+    PageSeoController,
 };
 use App\Http\Controllers\Api\V1\Analytics\PageviewController;
 use App\Http\Controllers\Api\V1\Analytics\Ga4AnalyticsController;
@@ -495,6 +496,19 @@ Route::middleware('auth:sanctum')->group(function () {
         ->where('pageId', 'privacy|terms|profile');
     Route::delete('/content/static-pages/{pageId}', [StaticPageController::class, 'destroy'])
         ->where('pageId', 'privacy|terms|profile');
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/content/page-seo', [PageSeoController::class, 'index']);
+    Route::post('/content/page-seo', [PageSeoController::class, 'store']);
+    Route::get('/content/page-seo/{pageKey}', [PageSeoController::class, 'show'])
+        ->where('pageKey', '[A-Za-z0-9_-]+');
+    Route::put('/content/page-seo/{pageKey}', [PageSeoController::class, 'update'])
+        ->where('pageKey', '[A-Za-z0-9_-]+');
+    Route::patch('/content/page-seo/{pageKey}', [PageSeoController::class, 'update'])
+        ->where('pageKey', '[A-Za-z0-9_-]+');
+    Route::delete('/content/page-seo/{pageKey}', [PageSeoController::class, 'destroy'])
+        ->where('pageKey', '[A-Za-z0-9_-]+');
 });
 
 Route::middleware('auth:sanctum')->group(function () {
