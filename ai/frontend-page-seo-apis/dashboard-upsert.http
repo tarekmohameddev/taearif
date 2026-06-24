@@ -1,0 +1,37 @@
+@baseUrl = https://your-app.test
+@token = your-bearer-token
+
+### Upsert homepage SEO (PUT)
+PUT {{baseUrl}}/api/content/page-seo/homepage
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "TitleAr": "تعاريف العقارية | الرئيسية",
+  "TitleEn": "Taearif | Homepage",
+  "DescriptionAr": "أفضل العقارات للبيع والإيجار",
+  "DescriptionEn": "Best properties for sale and rent",
+  "og:image": "https://cdn.example.com/og-home.jpg",
+  "og:type": "website"
+}
+
+### Partial update (PATCH)
+PATCH {{baseUrl}}/api/content/page-seo/for-rent
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "TitleAr": "عقارات للإيجار"
+}
+
+### Upsert via POST (by path)
+POST {{baseUrl}}/api/content/page-seo
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "path": "/my-custom-page",
+  "TitleAr": "صفحة مخصصة",
+  "TitleEn": "Custom Page",
+  "DescriptionAr": "وصف الصفحة"
+}

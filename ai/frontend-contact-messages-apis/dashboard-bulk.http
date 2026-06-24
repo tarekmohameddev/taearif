@@ -1,0 +1,52 @@
+@baseUrl = https://your-app.test
+@token = your-bearer-token
+
+### Bulk Read
+POST {{baseUrl}}/api/v1/contact-messages/bulk
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "action": "read",
+  "ids": [1, 2, 3]
+}
+
+### Bulk Unread
+POST {{baseUrl}}/api/v1/contact-messages/bulk
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "action": "unread",
+  "ids": [1, 2]
+}
+
+### Bulk Archive
+POST {{baseUrl}}/api/v1/contact-messages/bulk
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "action": "archive",
+  "ids": [4, 5]
+}
+
+### Bulk Unarchive
+POST {{baseUrl}}/api/v1/contact-messages/bulk
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "action": "unarchive",
+  "ids": [4, 5]
+}
+
+### Bulk Delete
+POST {{baseUrl}}/api/v1/contact-messages/bulk
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "action": "delete",
+  "ids": [6, 7]
+}

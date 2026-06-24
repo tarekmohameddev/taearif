@@ -141,6 +141,7 @@ use App\Http\Controllers\Api\V1\TenantWebsite\{
     PixelController as TenantWebsitePixelController,
     StaticPageController,
     PublicStaticPageController,
+    PageSeoController,
 };
 use App\Http\Controllers\Api\V1\Analytics\PageviewController;
 use App\Http\Controllers\Api\V1\Analytics\Ga4AnalyticsController;
@@ -495,6 +496,19 @@ Route::middleware('auth:sanctum')->group(function () {
         ->where('pageId', 'privacy|terms|profile');
     Route::delete('/content/static-pages/{pageId}', [StaticPageController::class, 'destroy'])
         ->where('pageId', 'privacy|terms|profile');
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/content/page-seo', [PageSeoController::class, 'index']);
+    Route::post('/content/page-seo', [PageSeoController::class, 'store']);
+    Route::get('/content/page-seo/{pageKey}', [PageSeoController::class, 'show'])
+        ->where('pageKey', '[A-Za-z0-9_-]+');
+    Route::put('/content/page-seo/{pageKey}', [PageSeoController::class, 'update'])
+        ->where('pageKey', '[A-Za-z0-9_-]+');
+    Route::patch('/content/page-seo/{pageKey}', [PageSeoController::class, 'update'])
+        ->where('pageKey', '[A-Za-z0-9_-]+');
+    Route::delete('/content/page-seo/{pageKey}', [PageSeoController::class, 'destroy'])
+        ->where('pageKey', '[A-Za-z0-9_-]+');
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -1023,6 +1037,25 @@ Route::prefix('v1')->group(function () {
 			Route::get('/{id}', [\App\Http\Controllers\Api\V1\JobApplicationController::class, 'show'])->middleware('can:job_applications.view');
 		});
 
+		Route::prefix('contact-messages')->group(function () {
+			Route::get('/unread-count', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'unreadCount'])->middleware('can:contact_messages.view');
+			Route::get('/stats', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'stats'])->middleware('can:contact_messages.view');
+			Route::patch('/read-all', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'readAll'])->middleware('can:contact_messages.update');
+			Route::post('/bulk', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'bulk'])->middleware('can:contact_messages.update');
+			Route::get('/', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'index'])->middleware('can:contact_messages.view');
+			Route::get('/{id}', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'show'])->middleware('can:contact_messages.view');
+			Route::patch('/{id}/read', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'markRead'])->middleware('can:contact_messages.update');
+			Route::patch('/{id}/unread', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'markUnread'])->middleware('can:contact_messages.update');
+			Route::patch('/{id}/archive', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'archive'])->middleware('can:contact_messages.update');
+			Route::patch('/{id}/unarchive', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'unarchive'])->middleware('can:contact_messages.update');
+			Route::delete('/{id}', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'destroy'])->middleware('can:contact_messages.delete');
+			Route::post('/{id}/create-customer', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'createCustomer'])->middleware('can:contact_messages.create_customer');
+			Route::post('/{id}/link-customer', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'linkCustomer'])->middleware('can:contact_messages.update');
+		});
+
+		Route::get('/customers/{customerId}/contact-messages', [\App\Http\Controllers\Api\V1\ContactMessagesController::class, 'customerMessages'])
+			->middleware(['can:contact_messages.view', 'can:customers_hub_customers.view']);
+
         Route::get('/customers/{id}/logs',  [CustomerLogController::class, 'index'])->middleware('can:projects.view');
         Route::get('/projects/{id}/logs',   [ProjectLogController::class, 'index'])->middleware('can:projects.view');
         Route::get('/properties/{id}/logs', [PropertyLogController::class, 'index'])->middleware('can:properties.view');
@@ -1125,6 +1158,8 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
 	Route::post('{tenantId}/reservations', [\App\Http\Controllers\Api\V1\TenantWebsite\ReservationController::class, 'store'])->middleware('throttle:api_tenant_reservations');
 
 	Route::post('{tenantId}/job-applications', [\App\Http\Controllers\Api\V1\TenantWebsite\JobApplicationController::class, 'store'])->middleware('throttle:api_tenant_job_applications');
+
+	Route::post('{tenantId}/contact-messages', [\App\Http\Controllers\Api\V1\TenantWebsite\ContactMessageController::class, 'store'])->middleware('throttle:api_tenant_contact_messages');
 
     // Tenant Website Properties (public)
     Route::get('{tenantId}/properties', [\App\Http\Controllers\Api\V1\TenantWebsite\PropertyController::class, 'index']);

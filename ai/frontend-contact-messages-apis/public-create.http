@@ -1,0 +1,18 @@
+@baseUrl = https://your-app.test
+@tenantId = your-tenant-id
+
+### Create Contact Message (Public - Tenant Website)
+POST {{baseUrl}}/api/v1/tenant-website/{{tenantId}}/contact-messages
+Content-Type: application/json
+
+{
+  "source": "contact_form_section",
+  "customer_name": "أحمد محمد",
+  "customer_email": "ahmed@example.com",
+  "customer_phone": "+966501234567",
+  "message": "أرغب في التواصل بخصوص عقار",
+  "metadata": {
+    "page_slug": "contact",
+    "locale": "ar"
+  }
+}

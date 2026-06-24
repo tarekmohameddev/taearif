@@ -498,6 +498,12 @@ class TenantWebsiteSeeder
         $existingData = $this->applyCompanyInfoToWebsiteLayout($existingData, $companyInfoFromFooter);
         $existingData = $this->applyResolvedEmailToWebsiteLayout($existingData, $resolvedEmail);
 
+        if (empty($existingData['metaTags']['pages'])) {
+            $existingData['metaTags'] = [
+                'pages' => config('tenant_website_default_meta.pages', []),
+            ];
+        }
+
         $layout->data = $existingData;
         $layout->save();
     }
@@ -581,6 +587,12 @@ class TenantWebsiteSeeder
      */
     protected function seedWebsiteLayout(User $tenant, array $layout): void
     {
+        if (empty($layout['metaTags']['pages'])) {
+            $layout['metaTags'] = [
+                'pages' => config('tenant_website_default_meta.pages', []),
+            ];
+        }
+
         TenantWebsiteLayout::updateOrCreate(
             [
                 'user_id' => $tenant->id,

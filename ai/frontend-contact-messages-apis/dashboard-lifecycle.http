@@ -1,0 +1,30 @@
+@baseUrl = https://your-app.test
+@token = your-bearer-token
+
+### Mark Single Message Read
+PATCH {{baseUrl}}/api/v1/contact-messages/1/read
+Authorization: Bearer {{token}}
+
+### Mark Single Message Unread
+PATCH {{baseUrl}}/api/v1/contact-messages/1/unread
+Authorization: Bearer {{token}}
+
+### Mark All Messages Read
+PATCH {{baseUrl}}/api/v1/contact-messages/read-all
+Authorization: Bearer {{token}}
+
+### Mark All Read (filter by source)
+PATCH {{baseUrl}}/api/v1/contact-messages/read-all?source=contact_form_section
+Authorization: Bearer {{token}}
+
+### Archive Single Message
+PATCH {{baseUrl}}/api/v1/contact-messages/1/archive
+Authorization: Bearer {{token}}
+
+### Unarchive Single Message (restore to inbox)
+PATCH {{baseUrl}}/api/v1/contact-messages/1/unarchive
+Authorization: Bearer {{token}}
+
+### Soft Delete Single Message
+DELETE {{baseUrl}}/api/v1/contact-messages/1
+Authorization: Bearer {{token}}

@@ -1,0 +1,6 @@
+@baseUrl = https://your-app.test
+@token = your-bearer-token
+
+### Remove SEO override (reverts to defaults on read)
+DELETE {{baseUrl}}/api/content/page-seo/for-rent
+Authorization: Bearer {{token}}

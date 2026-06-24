@@ -1,0 +1,6 @@
+@baseUrl = https://your-app.test
+@token = your-bearer-token
+
+### Create Customer from Contact Message
+POST {{baseUrl}}/api/v1/contact-messages/1/create-customer
+Authorization: Bearer {{token}}

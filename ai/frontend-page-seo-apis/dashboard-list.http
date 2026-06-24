@@ -1,0 +1,14 @@
+@baseUrl = https://your-app.test
+@token = your-bearer-token
+
+### List all page SEO entries
+GET {{baseUrl}}/api/content/page-seo
+Authorization: Bearer {{token}}
+
+### Show homepage SEO
+GET {{baseUrl}}/api/content/page-seo/homepage
+Authorization: Bearer {{token}}
+
+### Show custom page SEO
+GET {{baseUrl}}/api/content/page-seo/my-custom-page
+Authorization: Bearer {{token}}
