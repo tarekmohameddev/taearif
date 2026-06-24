@@ -12,8 +12,6 @@ trait ValidatesPageSeoMeta
      */
     protected function metaFieldRules(bool $partial = false): array
     {
-        $prefix = $partial ? 'sometimes|' : '';
-
         $identityRules = $partial
             ? [
                 'path' => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -25,31 +23,40 @@ trait ValidatesPageSeoMeta
             ];
 
         return array_merge($identityRules, [
-            'TitleAr' => [$prefix.'nullable', 'string', 'max:255'],
-            'TitleEn' => [$prefix.'nullable', 'string', 'max:255'],
-            'DescriptionAr' => [$prefix.'nullable', 'string', 'max:1000'],
-            'DescriptionEn' => [$prefix.'nullable', 'string', 'max:1000'],
-            'KeywordsAr' => [$prefix.'nullable', 'string', 'max:1000'],
-            'KeywordsEn' => [$prefix.'nullable', 'string', 'max:1000'],
-            'Author' => [$prefix.'nullable', 'string', 'max:255'],
-            'AuthorEn' => [$prefix.'nullable', 'string', 'max:255'],
-            'Robots' => [$prefix.'nullable', 'string', 'max:255'],
-            'RobotsEn' => [$prefix.'nullable', 'string', 'max:255'],
-            'og:title' => [$prefix.'nullable', 'string', 'max:255'],
-            'og:description' => [$prefix.'nullable', 'string', 'max:1000'],
-            'og:keywords' => [$prefix.'nullable', 'string', 'max:1000'],
-            'og:author' => [$prefix.'nullable', 'string', 'max:255'],
-            'og:robots' => [$prefix.'nullable', 'string', 'max:255'],
-            'og:url' => [$prefix.'nullable', 'string', 'max:2048'],
-            'og:image' => [$prefix.'nullable', 'string', 'max:2048'],
-            'og:type' => [$prefix.'nullable', 'string', Rule::in(PageSeoService::OG_TYPES)],
-            'og:locale' => [$prefix.'nullable', 'string', 'max:32'],
-            'og:locale:alternate' => [$prefix.'nullable', 'string', 'max:32'],
-            'og:site_name' => [$prefix.'nullable', 'string', 'max:255'],
-            'og:image:width' => [$prefix.'nullable'],
-            'og:image:height' => [$prefix.'nullable'],
-            'og:image:type' => [$prefix.'nullable', 'string', 'max:64'],
-            'og:image:alt' => [$prefix.'nullable', 'string', 'max:255'],
+            'TitleAr' => $this->fieldRules($partial, ['nullable', 'string', 'max:255']),
+            'TitleEn' => $this->fieldRules($partial, ['nullable', 'string', 'max:255']),
+            'DescriptionAr' => $this->fieldRules($partial, ['nullable', 'string', 'max:1000']),
+            'DescriptionEn' => $this->fieldRules($partial, ['nullable', 'string', 'max:1000']),
+            'KeywordsAr' => $this->fieldRules($partial, ['nullable', 'string', 'max:1000']),
+            'KeywordsEn' => $this->fieldRules($partial, ['nullable', 'string', 'max:1000']),
+            'Author' => $this->fieldRules($partial, ['nullable', 'string', 'max:255']),
+            'AuthorEn' => $this->fieldRules($partial, ['nullable', 'string', 'max:255']),
+            'Robots' => $this->fieldRules($partial, ['nullable', 'string', 'max:255']),
+            'RobotsEn' => $this->fieldRules($partial, ['nullable', 'string', 'max:255']),
+            'og:title' => $this->fieldRules($partial, ['nullable', 'string', 'max:255']),
+            'og:description' => $this->fieldRules($partial, ['nullable', 'string', 'max:1000']),
+            'og:keywords' => $this->fieldRules($partial, ['nullable', 'string', 'max:1000']),
+            'og:author' => $this->fieldRules($partial, ['nullable', 'string', 'max:255']),
+            'og:robots' => $this->fieldRules($partial, ['nullable', 'string', 'max:255']),
+            'og:url' => $this->fieldRules($partial, ['nullable', 'string', 'max:2048']),
+            'og:image' => $this->fieldRules($partial, ['nullable', 'string', 'max:2048']),
+            'og:type' => $this->fieldRules($partial, ['nullable', 'string', Rule::in(PageSeoService::OG_TYPES)]),
+            'og:locale' => $this->fieldRules($partial, ['nullable', 'string', 'max:32']),
+            'og:locale:alternate' => $this->fieldRules($partial, ['nullable', 'string', 'max:32']),
+            'og:site_name' => $this->fieldRules($partial, ['nullable', 'string', 'max:255']),
+            'og:image:width' => $this->fieldRules($partial, ['nullable']),
+            'og:image:height' => $this->fieldRules($partial, ['nullable']),
+            'og:image:type' => $this->fieldRules($partial, ['nullable', 'string', 'max:64']),
+            'og:image:alt' => $this->fieldRules($partial, ['nullable', 'string', 'max:255']),
         ]);
+    }
+
+    /**
+     * @param  list<mixed>  $rules
+     * @return list<mixed>
+     */
+    protected function fieldRules(bool $partial, array $rules): array
+    {
+        return $partial ? array_merge(['sometimes'], $rules) : $rules;
     }
 }
