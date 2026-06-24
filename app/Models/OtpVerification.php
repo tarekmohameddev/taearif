@@ -285,7 +285,7 @@ class OtpVerification extends Model
             return false;
         }
 
-        if (app()->environment('production')) {
+        if (app()->environment('production') && !config('api.otp.registration.test_bypass_allow_production', false)) {
             return false;
         }
 

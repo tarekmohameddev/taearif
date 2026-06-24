@@ -42,10 +42,14 @@ class VerifyOtpRequest extends BaseApiFormRequest
 
     private function allowsTestBypass(): bool
     {
-        if (app()->environment('production')) {
+        if (!(bool) config('api.otp.registration.test_bypass_enabled', false)) {
             return false;
         }
 
-        return (bool) config('api.otp.registration.test_bypass_enabled', false);
+        if (app()->environment('production') && !config('api.otp.registration.test_bypass_allow_production', false)) {
+            return false;
+        }
+
+        return true;
     }
 }
