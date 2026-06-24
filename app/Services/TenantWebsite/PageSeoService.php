@@ -103,8 +103,11 @@ class PageSeoService
 
         $default = $this->defaultForPath($path);
         $existingIndex = $this->findPageIndexByPath($pages, $path);
-        $existing = $existingIndex !== null ? $pages[$existingIndex] : [];
-        $merged = array_merge($default, is_array($existing) ? $existing : [], $this->filterMetaFields($meta));
+        $existing = ($existingIndex !== null && is_array($pages[$existingIndex]))
+            ? $pages[$existingIndex]
+            : $default;
+        $incoming = $this->filterMetaFields(array_merge(['path' => $path], $meta));
+        $merged = array_merge($existing, $incoming);
 
         if ($existingIndex !== null) {
             $pages[$existingIndex] = $merged;

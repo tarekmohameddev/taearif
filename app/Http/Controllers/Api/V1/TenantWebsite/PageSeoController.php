@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\TenantWebsite;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\TenantWebsite\PageSeoStoreRequest;
 use App\Http\Requests\Api\V1\TenantWebsite\PageSeoUpdateRequest;
+use App\Models\User;
 use App\Services\TenantWebsite\PageSeoService;
 use App\Support\TenantWebsite\PageSeoPath;
 use Illuminate\Http\JsonResponse;
@@ -16,11 +17,9 @@ class PageSeoController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $user = $request->user();
-
         return response()->json([
             'success' => true,
-            'data' => $this->pageSeo->listPages($user),
+            'data' => $this->pageSeo->listPages($this->tenantUser($request)),
             'message' => 'Page SEO entries retrieved successfully',
         ]);
     }
@@ -34,7 +33,7 @@ class PageSeoController extends Controller
             ], 404);
         }
 
-        $page = $this->pageSeo->getPage($request->user(), $pageKey);
+        $page = $this->pageSeo->getPage($this->tenantUser($request), $pageKey);
         if ($page === null) {
             return response()->json([
                 'success' => false,
@@ -69,7 +68,7 @@ class PageSeoController extends Controller
             ], 422);
         }
 
-        $page = $this->pageSeo->upsertPage($request->user(), $pageKey, $validated);
+        $page = $this->pageSeo->upsertPage($this->tenantUser($request), $pageKey, $validated);
 
         return response()->json([
             'success' => true,
@@ -87,7 +86,11 @@ class PageSeoController extends Controller
             ], 404);
         }
 
-        $page = $this->pageSeo->upsertPage($request->user(), $pageKey, $request->validated());
+        $page = $this->pageSeo->upsertPage(
+            $this->tenantUser($request),
+            $pageKey,
+            $request->metaChanges()
+        );
 
         return response()->json([
             'success' => true,
@@ -105,13 +108,18 @@ class PageSeoController extends Controller
             ], 404);
         }
 
-        $deleted = $this->pageSeo->deletePage($request->user(), $pageKey);
+        $deleted = $this->pageSeo->deletePage($this->tenantUser($request), $pageKey);
 
         return response()->json([
             'success' => true,
             'data' => ['deleted' => $deleted],
             'message' => $deleted ? 'Page SEO override removed' : 'No override to remove',
         ]);
+    }
+
+    protected function tenantUser(Request $request): User
+    {
+        return $request->user()->tenantOwner();
     }
 
     /**
