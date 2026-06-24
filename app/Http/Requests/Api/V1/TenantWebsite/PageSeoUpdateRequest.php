@@ -24,7 +24,7 @@ class PageSeoUpdateRequest extends BaseApiFormRequest
     /**
      * @return array<string, mixed>
      */
-    protected function validationData(): array
+    public function validationData(): array
     {
         $json = $this->json()->all();
 
