@@ -24,17 +24,23 @@ class PageSeoUpdateRequest extends BaseApiFormRequest
     /**
      * @return array<string, mixed>
      */
-    public function metaChanges(): array
+    protected function validationData(): array
     {
-        $changes = [];
+        $json = $this->json()->all();
 
-        foreach (PageSeoService::META_FIELD_KEYS as $key) {
-            if ($this->exists($key)) {
-                $changes[$key] = $this->input($key);
-            }
+        if (is_array($json) && $json !== []) {
+            return $json;
         }
 
-        return $changes;
+        return parent::validationData();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function metaChanges(): array
+    {
+        return PageSeoService::extractMetaFromPayload($this->validationData());
     }
 
     public function withValidator(Validator $validator): void

@@ -102,22 +102,19 @@ class PageSeoService
         }
 
         $default = $this->defaultForPath($path);
-        $existingIndex = $this->findPageIndexByPath($pages, $path);
-        $existing = ($existingIndex !== null && is_array($pages[$existingIndex]))
-            ? $pages[$existingIndex]
-            : $default;
+        $stored = $this->storedByPath($tenant);
+        $existing = array_merge($default, $stored[$path] ?? []);
         $incoming = $this->filterMetaFields(array_merge(['path' => $path], $meta));
         $merged = array_merge($existing, $incoming);
 
-        if ($existingIndex !== null) {
-            $pages[$existingIndex] = $merged;
-        } else {
-            $pages[] = $merged;
-        }
+        $pages = $this->removePagesByPath($pages, $path);
+        $pages[] = $merged;
 
         $data['metaTags'] = ['pages' => array_values($pages)];
         $layout->data = $data;
         $layout->save();
+
+        $layout->refresh();
 
         return $this->buildPagePayload($tenant, $pageKey);
     }
@@ -139,14 +136,13 @@ class PageSeoService
             return false;
         }
 
-        $index = $this->findPageIndexByPath($pages, $path);
-        if ($index === null) {
+        $remaining = $this->removePagesByPath($pages, $path);
+        if (count($remaining) === count($pages)) {
             return false;
         }
 
-        unset($pages[$index]);
         $data = $layout->data;
-        $data['metaTags'] = ['pages' => array_values($pages)];
+        $data['metaTags'] = ['pages' => array_values($remaining)];
         $layout->data = $data;
         $layout->save();
 
@@ -322,6 +318,39 @@ class PageSeoService
         }
 
         return null;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $pages
+     * @return array<int, array<string, mixed>>
+     */
+    protected function removePagesByPath(array $pages, string $path): array
+    {
+        $path = PageSeoPath::normalizePath($path);
+
+        return array_values(array_filter($pages, function ($page) use ($path) {
+            if (! is_array($page) || empty($page['path'])) {
+                return true;
+            }
+
+            return PageSeoPath::normalizePath((string) $page['path']) !== $path;
+        }));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function extractMetaFromPayload(array $payload): array
+    {
+        $changes = [];
+
+        foreach (self::META_FIELD_KEYS as $key) {
+            if (array_key_exists($key, $payload)) {
+                $changes[$key] = $payload[$key];
+            }
+        }
+
+        return $changes;
     }
 
     /**
