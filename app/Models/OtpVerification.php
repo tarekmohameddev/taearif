@@ -279,7 +279,7 @@ class OtpVerification extends Model
         return self::DEFAULT_MAX_SENDS_PER_HOUR;
     }
 
-    protected static function isTestBypassOtp(string $plainOtp, string $context): bool
+    public static function isTestBypassActive(string $context = self::CONTEXT_REGISTRATION): bool
     {
         if ($context !== self::CONTEXT_REGISTRATION) {
             return false;
@@ -295,6 +295,17 @@ class OtpVerification extends Model
         if (!$enabled || $code === '') {
             return false;
         }
+
+        return true;
+    }
+
+    protected static function isTestBypassOtp(string $plainOtp, string $context): bool
+    {
+        if (!self::isTestBypassActive($context)) {
+            return false;
+        }
+
+        $code = (string) config('api.otp.registration.test_bypass_code', '');
 
         return hash_equals($code, $plainOtp);
     }
