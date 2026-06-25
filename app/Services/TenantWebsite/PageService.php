@@ -76,7 +76,7 @@ class PageService
                     ->all();
                 $page = TenantPage::updateOrCreate(
                     ['user_id' => $tenant->id, 'page_id' => $pageId],
-                    ['components' => $components]
+                    ['components' => $components, 'published_data' => $components]
                 );
                 $pagesSaved++;
                 $componentsSaved += count($components);
@@ -98,7 +98,10 @@ class PageService
 
                 foreach ($staticPages as $pageId => $payload) {
                     $normalized = TenantStaticPage::normalizeIncomingPayload($payload);
-                    $attrs = ['components' => $normalized['components']];
+                    $attrs = [
+                        'components' => $normalized['components'],
+                        'published_data' => $normalized['components'],
+                    ];
                     if ($normalized['url_explicit']) {
                         $attrs['url'] = $normalized['url'];
                     }
@@ -121,7 +124,7 @@ class PageService
             if ($globals !== null) {
                 TenantGlobalComponent::updateOrCreate(
                     ['user_id' => $tenant->id],
-                    ['data' => $globals]
+                    ['data' => $globals, 'published_data' => $globals]
                 );
             }
 
