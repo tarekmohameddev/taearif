@@ -16,8 +16,10 @@ use App\Http\Requests\Api\V2\CustomersHub\RequestsBulkRequest;
 use App\Http\Requests\Api\V2\CustomersHub\DismissRequest;
 use App\Http\Requests\Api\V2\CustomersHub\SnoozeRequest;
 use App\Domain\CustomersHub\Services\ActionsAggregatorService;
-use App\Domain\PropertyRequests\Services\PropertyRequestLocationNormalizer;
+use App\Domain\CustomersHub\Services\CustomersHubNotificationService;
+use App\Domain\CustomersHub\Services\CustomersHubPropertyRequestNotifier;
 use App\Domain\CustomersHub\Services\PropertyRequestDetailBuilder;
+use App\Domain\PropertyRequests\Services\PropertyRequestLocationNormalizer;
 use App\Models\Api\ApiCustomerInquiry;
 use App\Models\Api\UserApiCustomerType;
 use App\Models\Api\UserApiCustomerPriority;
@@ -60,10 +62,16 @@ class RequestsController extends ApiController
 
     private PropertyRequestDetailBuilder $propertyRequestDetailBuilder;
 
-    public function __construct(ActionsAggregatorService $aggregator, PropertyRequestDetailBuilder $propertyRequestDetailBuilder)
-    {
+    private CustomersHubPropertyRequestNotifier $propertyRequestNotifier;
+
+    public function __construct(
+        ActionsAggregatorService $aggregator,
+        PropertyRequestDetailBuilder $propertyRequestDetailBuilder,
+        CustomersHubPropertyRequestNotifier $propertyRequestNotifier
+    ) {
         $this->aggregator = $aggregator;
         $this->propertyRequestDetailBuilder = $propertyRequestDetailBuilder;
+        $this->propertyRequestNotifier = $propertyRequestNotifier;
     }
 
     /**
@@ -670,6 +678,15 @@ class RequestsController extends ApiController
             return $this->error('Failed to complete action', 422);
         }
 
+        $this->dispatchPropertyRequestNotificationFromAction(
+            $userId,
+            $requestId,
+            CustomersHubNotificationService::TYPE_COMPLETED,
+            'Property request completed',
+            'A property request was marked as completed',
+            (int) $request->user()->id
+        );
+
         // Invalidate filter options cache
         $this->invalidateFilterOptionsCache($userId);
 
@@ -697,6 +714,16 @@ class RequestsController extends ApiController
         if (!$success) {
             return $this->error('Failed to dismiss action', 422);
         }
+
+        $this->dispatchPropertyRequestNotificationFromAction(
+            $userId,
+            $requestId,
+            CustomersHubNotificationService::TYPE_DISMISSED,
+            'Property request dismissed',
+            'A property request was dismissed',
+            (int) $request->user()->id,
+            ['reason' => $validated['reason'] ?? null]
+        );
 
         // Invalidate filter options cache
         $this->invalidateFilterOptionsCache($userId);
@@ -728,6 +755,19 @@ class RequestsController extends ApiController
             return $this->error('Failed to snooze action or snooze is not supported for this request type', 422);
         }
 
+        $this->dispatchPropertyRequestNotificationFromAction(
+            $userId,
+            $requestId,
+            CustomersHubNotificationService::TYPE_SNOOZED,
+            'Property request snoozed',
+            'A property request was snoozed',
+            (int) $snoozedBy,
+            [
+                'snoozedUntil' => $validated['snoozedUntil'],
+                'reason' => $validated['reason'] ?? null,
+            ]
+        );
+
         $this->invalidateFilterOptionsCache($userId);
 
         return $this->success([
@@ -751,6 +791,20 @@ class RequestsController extends ApiController
         $action = $this->aggregator->getById($userId, $requestId);
         if (!$action) {
             return $this->error('Action not found', 404);
+        }
+
+        $propertyRequestId = CustomersHubPropertyRequestNotifier::parsePropertyRequestId($requestId);
+        $oldStageId = null;
+        $oldPriority = null;
+        if ($propertyRequestId !== null) {
+            $prRow = DB::table('users_property_requests')
+                ->where('id', $propertyRequestId)
+                ->where('user_id', $userId)
+                ->first(['customers_hub_stage_id', 'seriousness']);
+            if ($prRow) {
+                $oldStageId = $prRow->customers_hub_stage_id;
+                $oldPriority = $prRow->seriousness;
+            }
         }
 
         // Resolve pipeline stage: stage_id (string) or status_id (integer -> lookup customers_hub_stages.id)
@@ -797,6 +851,42 @@ class RequestsController extends ApiController
         $this->invalidateFilterOptionsCache($userId);
 
         $updated = $this->aggregator->getById($userId, $requestId);
+        $actorUserId = (int) $request->user()->id;
+
+        if ($propertyRequestId !== null) {
+            if ($stageIdString !== null && $stageIdString !== $oldStageId) {
+                $this->propertyRequestNotifier->notifyStageChanged(
+                    $userId,
+                    $propertyRequestId,
+                    $oldStageId,
+                    $stageIdString,
+                    $actorUserId
+                );
+            }
+
+            if (array_key_exists('priority', $validated) && ($validated['priority'] ?? null) !== null) {
+                $newPriority = $validated['priority'];
+                if ($newPriority !== $oldPriority) {
+                    $this->propertyRequestNotifier->notifyPriorityChanged(
+                        $userId,
+                        $propertyRequestId,
+                        $oldPriority,
+                        $newPriority,
+                        $actorUserId
+                    );
+                }
+            }
+
+            $otherFields = array_diff(array_keys($validated), ['stage_id', 'status_id', 'priority']);
+            if ($otherFields !== []) {
+                $this->propertyRequestNotifier->notifyUpdated(
+                    $userId,
+                    $propertyRequestId,
+                    array_values($otherFields),
+                    $actorUserId
+                );
+            }
+        }
 
         return $this->success([
             'message' => 'Action updated successfully',
@@ -981,6 +1071,14 @@ class RequestsController extends ApiController
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
+            $this->propertyRequestNotifier->notifyAppointmentCreated(
+                $userId,
+                (int) $resolved['propertyRequestId'],
+                (int) $id,
+                $title,
+                $datetime,
+                (int) $request->user()->id
+            );
         }
 
         $base = $this->propertyRequestDetailBuilder->formatPropertyRequestAppointment($row);
@@ -1084,6 +1182,14 @@ class RequestsController extends ApiController
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
+            $this->propertyRequestNotifier->notifyReminderCreated(
+                $userId,
+                (int) $resolved['propertyRequestId'],
+                (int) $id,
+                $validated['title'],
+                $datetime,
+                (int) $request->user()->id
+            );
         }
 
         $now = Carbon::now();
@@ -1115,6 +1221,14 @@ class RequestsController extends ApiController
         $this->invalidateFilterOptionsCache($userId);
 
         $successIds = $result['success'];
+        $this->dispatchBulkPropertyRequestNotifications(
+            $userId,
+            $action,
+            $successIds,
+            $data,
+            (int) $request->user()->id
+        );
+
         $failedIds = $result['failed'];
         $failures = $result['failures'] ?? [];
         $meta = $result['meta'] ?? [];
@@ -1258,6 +1372,14 @@ class RequestsController extends ApiController
 
         $results = $this->aggregator->bulkComplete($userId, $validated['actionIds']);
 
+        $this->dispatchBulkPropertyRequestNotifications(
+            $userId,
+            'complete',
+            $results['success'],
+            [],
+            (int) $request->user()->id
+        );
+
         // Invalidate filter options cache
         $this->invalidateFilterOptionsCache($userId);
 
@@ -1283,6 +1405,14 @@ class RequestsController extends ApiController
         $userId = $this->getTenantUserId($request);
 
         $results = $this->aggregator->bulkDismiss($userId, $validated['actionIds'], $validated['reason']);
+
+        $this->dispatchBulkPropertyRequestNotifications(
+            $userId,
+            'dismiss',
+            $results['success'],
+            ['reason' => $validated['reason'] ?? null],
+            (int) $request->user()->id
+        );
 
         // Invalidate filter options cache
         $this->invalidateFilterOptionsCache($userId);
@@ -1617,6 +1747,114 @@ class RequestsController extends ApiController
     private function invalidateFilterOptionsCache(int $userId): void
     {
         Cache::forget("ch:reqs:filter-options:{$userId}");
+    }
+
+    private function dispatchPropertyRequestNotificationFromAction(
+        int $tenantUserId,
+        string $actionId,
+        string $type,
+        string $title,
+        string $body,
+        ?int $actorUserId = null,
+        array $payload = []
+    ): void {
+        $propertyRequestId = CustomersHubPropertyRequestNotifier::parsePropertyRequestId($actionId);
+        if ($propertyRequestId === null) {
+            return;
+        }
+
+        $this->propertyRequestNotifier->notifyStatusEvent(
+            $tenantUserId,
+            $propertyRequestId,
+            $type,
+            $title,
+            $body,
+            $payload,
+            $actorUserId
+        );
+    }
+
+    /**
+     * @param  list<string>  $successActionIds
+     */
+    private function dispatchBulkPropertyRequestNotifications(
+        int $tenantUserId,
+        string $action,
+        array $successActionIds,
+        array $data,
+        int $actorUserId
+    ): void {
+        foreach ($successActionIds as $actionId) {
+            if (!is_string($actionId)) {
+                continue;
+            }
+
+            match ($action) {
+                'complete' => $this->dispatchPropertyRequestNotificationFromAction(
+                    $tenantUserId,
+                    $actionId,
+                    CustomersHubNotificationService::TYPE_COMPLETED,
+                    'Property request completed',
+                    'A property request was marked as completed',
+                    $actorUserId
+                ),
+                'dismiss' => $this->dispatchPropertyRequestNotificationFromAction(
+                    $tenantUserId,
+                    $actionId,
+                    CustomersHubNotificationService::TYPE_DISMISSED,
+                    'Property request dismissed',
+                    'A property request was dismissed',
+                    $actorUserId,
+                    ['reason' => $data['reason'] ?? null]
+                ),
+                'snooze' => $this->dispatchPropertyRequestNotificationFromAction(
+                    $tenantUserId,
+                    $actionId,
+                    CustomersHubNotificationService::TYPE_SNOOZED,
+                    'Property request snoozed',
+                    'A property request was snoozed',
+                    $actorUserId,
+                    [
+                        'snoozedUntil' => $data['snoozedUntil'] ?? null,
+                        'reason' => $data['reason'] ?? null,
+                    ]
+                ),
+                'assign' => $this->notifyBulkAssign($tenantUserId, $actionId, $data, $actorUserId),
+                'change_priority' => $this->notifyBulkPriorityChange($tenantUserId, $actionId, $data, $actorUserId),
+                default => null,
+            };
+        }
+    }
+
+    private function notifyBulkAssign(int $tenantUserId, string $actionId, array $data, int $actorUserId): void
+    {
+        $propertyRequestId = CustomersHubPropertyRequestNotifier::parsePropertyRequestId($actionId);
+        if ($propertyRequestId === null) {
+            return;
+        }
+
+        $this->propertyRequestNotifier->notifyAssigned(
+            $tenantUserId,
+            $propertyRequestId,
+            isset($data['assignedTo']) ? (int) $data['assignedTo'] : null,
+            $actorUserId
+        );
+    }
+
+    private function notifyBulkPriorityChange(int $tenantUserId, string $actionId, array $data, int $actorUserId): void
+    {
+        $propertyRequestId = CustomersHubPropertyRequestNotifier::parsePropertyRequestId($actionId);
+        if ($propertyRequestId === null) {
+            return;
+        }
+
+        $this->propertyRequestNotifier->notifyPriorityChanged(
+            $tenantUserId,
+            $propertyRequestId,
+            null,
+            $data['priority'] ?? null,
+            $actorUserId
+        );
     }
 
     /**

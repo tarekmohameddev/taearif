@@ -24,6 +24,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\TestWhatsAppMessage::class,
         \App\Console\Commands\RunAllScheduledTasks::class,
         \App\Console\Commands\SendCrmAppointmentReminders::class,
+        \App\Console\Commands\NotifyCustomersHubDueReminders::class,
         \App\Console\Commands\BackfillInvoiceUuids::class,
         \App\Console\Commands\CleanupOldPageviewsCommand::class,
         \App\Console\Commands\ProcessScheduledSmsCampaigns::class,
@@ -60,6 +61,11 @@ class Kernel extends ConsoleKernel
         // Schedule CRM appointment reminders (send 2 hours before appointment)
         $schedule->command('crm:send-appointment-reminders')
             ->hourly()
+            ->timezone('Asia/Riyadh');
+
+        // Customers Hub in-app reminder notifications (due soon / overdue)
+        $schedule->command('customers-hub:notify-due-reminders')
+            ->everyTenMinutes()
             ->timezone('Asia/Riyadh');
 
         // Sync GA4 analytics data every 6 hours (02:00, 08:00, 14:00, 20:00)
