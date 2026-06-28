@@ -299,4 +299,65 @@ class CustomersHubNotificationsTest extends TestCase
         $this->assertSame(1, $countAfterFirst);
         $this->assertSame(1, $countAfterSecond);
     }
+
+    /** @test */
+    public function list_includes_is_unread_on_property_request_actions(): void
+    {
+        $this->requireNotificationTables();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        $this->grantPermissions($tenant, $tenant, ['customers_hub_requests.view']);
+
+        $prId = $this->createPropertyRequestForUser($tenant->id);
+
+        app(CustomersHubPropertyRequestNotifier::class)->notifyStageChanged(
+            $tenant->id,
+            $prId,
+            'new_lead',
+            'follow_up',
+            $tenant->id
+        );
+
+        Sanctum::actingAs($tenant);
+
+        $res = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'limit' => 25,
+            'offset' => 0,
+            'objectTypes' => ['property_request'],
+        ]);
+
+        $res->assertOk();
+        $actions = collect($res->json('data.actions') ?? []);
+        $match = $actions->first(fn ($a) => ($a['sourceId'] ?? null) === $prId);
+
+        $this->assertNotNull($match);
+        $this->assertTrue($match['isUnread'] ?? false);
+    }
+
+    /** @test */
+    public function show_marks_notifications_read_and_returns_unread_categories(): void
+    {
+        $this->requireNotificationTables();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        $this->grantPermissions($tenant, $tenant, ['customers_hub_requests.view']);
+
+        $prId = $this->createPropertyRequestForUser($tenant->id);
+        $notifier = app(CustomersHubPropertyRequestNotifier::class);
+        $notifier->notifyStageChanged($tenant->id, $prId, 'new_lead', 'follow_up', $tenant->id);
+        $notifier->notifyAppointmentCreated($tenant->id, $prId, 1, 'Site visit', now()->addDay()->toDateTimeString(), $tenant->id);
+
+        Sanctum::actingAs($tenant);
+
+        $res = $this->getJson("/api/v2/customers-hub/requests/property_request_{$prId}");
+        $res->assertOk();
+        $res->assertJsonPath('data.action.isUnread', false);
+        $res->assertJsonPath('data.action.unreadCategories.stageChange', true);
+        $res->assertJsonPath('data.action.unreadCategories.appointment', true);
+
+        $this->assertSame(
+            0,
+            app(CustomersHubNotificationService::class)->unreadCountForViewer($tenant->id, 'property_request')
+        );
+    }
 }

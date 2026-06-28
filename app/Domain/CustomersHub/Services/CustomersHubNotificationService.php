@@ -248,6 +248,154 @@ class CustomersHubNotificationService
     }
 
     /**
+     * Property request source IDs with at least one unread notification for the viewer.
+     *
+     * @return list<int>
+     */
+    public function getUnreadPropertyRequestSourceIds(int $viewerId): array
+    {
+        if (! $this->notificationsTablesExist()) {
+            return [];
+        }
+
+        return DB::table('app_notification_recipients as r')
+            ->join('app_notifications as n', 'n.id', '=', 'r.notification_id')
+            ->where('r.recipient_user_id', $viewerId)
+            ->whereNull('r.read_at')
+            ->where('n.source_type', self::SOURCE_PROPERTY_REQUEST)
+            ->distinct()
+            ->pluck('n.source_id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Default unread category breakdown (all false).
+     *
+     * @return array<string, bool>
+     */
+    public function emptyUnreadCategoriesBreakdown(): array
+    {
+        return [
+            'appointment' => false,
+            'stageChange' => false,
+            'priorityChange' => false,
+            'statusChange' => false,
+            'assigned' => false,
+            'completed' => false,
+            'dismissed' => false,
+            'snoozed' => false,
+            'reminder' => false,
+            'generalUpdate' => false,
+        ];
+    }
+
+    /**
+     * Unread category breakdown for a property request (snapshot before mark-read).
+     *
+     * @return array<string, bool>
+     */
+    public function buildUnreadCategoriesBreakdown(int $viewerId, int $propertyRequestId): array
+    {
+        $breakdown = $this->emptyUnreadCategoriesBreakdown();
+
+        if (! $this->notificationsTablesExist()) {
+            return $breakdown;
+        }
+
+        $types = DB::table('app_notification_recipients as r')
+            ->join('app_notifications as n', 'n.id', '=', 'r.notification_id')
+            ->where('r.recipient_user_id', $viewerId)
+            ->whereNull('r.read_at')
+            ->where('n.source_type', self::SOURCE_PROPERTY_REQUEST)
+            ->where('n.source_id', $propertyRequestId)
+            ->pluck('n.type');
+
+        foreach ($types as $type) {
+            $category = $this->mapNotificationTypeToCategory((string) $type);
+            if ($category !== null) {
+                $breakdown[$category] = true;
+            }
+        }
+
+        return $breakdown;
+    }
+
+    public function hasUnreadForPropertyRequest(int $viewerId, int $propertyRequestId): bool
+    {
+        if (! $this->notificationsTablesExist()) {
+            return false;
+        }
+
+        return DB::table('app_notification_recipients as r')
+            ->join('app_notifications as n', 'n.id', '=', 'r.notification_id')
+            ->where('r.recipient_user_id', $viewerId)
+            ->whereNull('r.read_at')
+            ->where('n.source_type', self::SOURCE_PROPERTY_REQUEST)
+            ->where('n.source_id', $propertyRequestId)
+            ->exists();
+    }
+
+    /**
+     * Mark all unread notifications for a property request as read for one viewer.
+     */
+    public function markPropertyRequestNotificationsRead(int $viewerId, int $propertyRequestId): int
+    {
+        if (! $this->notificationsTablesExist()) {
+            return 0;
+        }
+
+        $now = Carbon::now();
+
+        $recipientRowIds = DB::table('app_notification_recipients as r')
+            ->join('app_notifications as n', 'n.id', '=', 'r.notification_id')
+            ->where('r.recipient_user_id', $viewerId)
+            ->whereNull('r.read_at')
+            ->where('n.source_type', self::SOURCE_PROPERTY_REQUEST)
+            ->where('n.source_id', $propertyRequestId)
+            ->pluck('r.id');
+
+        if ($recipientRowIds->isEmpty()) {
+            return 0;
+        }
+
+        return DB::table('app_notification_recipients')
+            ->whereIn('id', $recipientRowIds)
+            ->update(['read_at' => $now, 'updated_at' => $now]);
+    }
+
+    public function mapNotificationTypeToCategory(string $type): ?string
+    {
+        return match ($type) {
+            self::TYPE_APPOINTMENT_CREATED => 'appointment',
+            self::TYPE_STAGE_CHANGED => 'stageChange',
+            self::TYPE_PRIORITY_CHANGED => 'priorityChange',
+            self::TYPE_STATUS_CHANGED => 'statusChange',
+            self::TYPE_ASSIGNED => 'assigned',
+            self::TYPE_COMPLETED => 'completed',
+            self::TYPE_DISMISSED => 'dismissed',
+            self::TYPE_SNOOZED => 'snoozed',
+            self::TYPE_REMINDER_CREATED,
+            self::TYPE_REMINDER_DUE,
+            self::TYPE_REMINDER_OVERDUE => 'reminder',
+            self::TYPE_UPDATED => 'generalUpdate',
+            default => null,
+        };
+    }
+
+    private function notificationsTablesExist(): bool
+    {
+        static $exists = null;
+        if ($exists === null) {
+            $exists = \Illuminate\Support\Facades\Schema::hasTable('app_notifications')
+                && \Illuminate\Support\Facades\Schema::hasTable('app_notification_recipients');
+        }
+
+        return $exists;
+    }
+
+    /**
      * Load property request context for notification body/titles.
      *
      * @return object{id: int, full_name: ?string, customer_id: ?int}|null

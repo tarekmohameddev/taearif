@@ -64,14 +64,18 @@ class RequestsController extends ApiController
 
     private CustomersHubPropertyRequestNotifier $propertyRequestNotifier;
 
+    private CustomersHubNotificationService $notificationService;
+
     public function __construct(
         ActionsAggregatorService $aggregator,
         PropertyRequestDetailBuilder $propertyRequestDetailBuilder,
-        CustomersHubPropertyRequestNotifier $propertyRequestNotifier
+        CustomersHubPropertyRequestNotifier $propertyRequestNotifier,
+        CustomersHubNotificationService $notificationService
     ) {
         $this->aggregator = $aggregator;
         $this->propertyRequestDetailBuilder = $propertyRequestDetailBuilder;
         $this->propertyRequestNotifier = $propertyRequestNotifier;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -105,17 +109,22 @@ class RequestsController extends ApiController
         });
         $viewedAt = $viewedAtRaw ? Carbon::parse($viewedAtRaw) : null;
 
+        $unreadPropertyRequestSourceIds = $this->notificationService->getUnreadPropertyRequestSourceIds($viewerId);
+        $filters['_unread_property_request_source_ids'] = $unreadPropertyRequestSourceIds;
+        $unreadSourceIdSet = array_flip($unreadPropertyRequestSourceIds);
+
         $cacheKey = 'ch:reqs:list:'
             . $userId . ':'
             . $viewerId . ':'
             . ($viewedAt?->toIso8601String() ?? 'null') . ':'
+            . md5(json_encode(array_values($unreadPropertyRequestSourceIds))) . ':'
             . md5(json_encode([
                 'filters' => $filters,
                 'limit' => $limit,
                 'offset' => $offset,
             ]));
 
-        $payload = Cache::remember($cacheKey, 30, function () use ($userId, $filters, $statsFilters, $limit, $offset, $viewedAt) {
+        $payload = Cache::remember($cacheKey, 30, function () use ($userId, $filters, $statsFilters, $limit, $offset, $viewedAt, $unreadSourceIdSet) {
             // Get list
             $result = $this->aggregator->getList($userId, $filters, $limit, $offset);
 
@@ -310,6 +319,12 @@ class RequestsController extends ApiController
                     && $updatedAt !== null
                     && $createdAt->lte($viewedAt)
                     && $updatedAt->gt($viewedAt);
+            });
+
+            $items->each(function ($item) use ($unreadSourceIdSet) {
+                if (($item->objectType ?? '') === 'property_request' && ! empty($item->sourceId)) {
+                    $item->isUnread = isset($unreadSourceIdSet[(int) $item->sourceId]);
+                }
             });
 
             // Get stats
@@ -612,6 +627,14 @@ class RequestsController extends ApiController
                 return $this->error('Action not found', 404);
             }
             $action = $fullAction;
+
+            $viewerId = (int) $request->user()->id;
+            $propertyRequestId = (int) $action['sourceId'];
+            $unreadCategories = $this->notificationService->buildUnreadCategoriesBreakdown($viewerId, $propertyRequestId);
+            $this->notificationService->markPropertyRequestNotificationsRead($viewerId, $propertyRequestId);
+
+            $action['unreadCategories'] = $unreadCategories;
+            $action['isUnread'] = false;
         } elseif ($isInquiryAction) {
             $fullAction = $this->propertyRequestDetailBuilder->buildFullInquiryAction($userId, $action);
             if ($fullAction === null) {
