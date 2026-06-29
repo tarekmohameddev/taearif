@@ -100,13 +100,17 @@ class CustomersHubNotificationService
                 'updated_at' => $now,
             ]);
 
-            $recipientRows = $recipients->map(fn (int $recipientId) => [
-                'notification_id' => $notificationId,
-                'recipient_user_id' => $recipientId,
-                'read_at' => null,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ])->all();
+            $recipientRows = $recipients->map(function (int $recipientId) use ($notificationId, $actorUserId, $now) {
+                $isActor = $actorUserId !== null && $recipientId === $actorUserId;
+
+                return [
+                    'notification_id' => $notificationId,
+                    'recipient_user_id' => $recipientId,
+                    'read_at' => $isActor ? $now : null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            })->all();
 
             DB::table('app_notification_recipients')->insert($recipientRows);
 

@@ -301,12 +301,19 @@ class CustomersHubNotificationsTest extends TestCase
     }
 
     /** @test */
-    public function list_includes_is_unread_on_property_request_actions(): void
+    public function stage_change_actor_does_not_receive_own_notification_as_unread(): void
     {
         $this->requireNotificationTables();
 
         $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        $employee = User::factory()->create([
+            'account_type' => 'employee',
+            'tenant_id' => $tenant->id,
+            'active' => true,
+        ]);
+
         $this->grantPermissions($tenant, $tenant, ['customers_hub_requests.view']);
+        $this->grantPermissions($employee, $tenant, ['customers_hub_requests.view']);
 
         $prId = $this->createPropertyRequestForUser($tenant->id);
 
@@ -315,10 +322,77 @@ class CustomersHubNotificationsTest extends TestCase
             $prId,
             'new_lead',
             'follow_up',
-            $tenant->id
+            (int) $tenant->id
         );
 
+        $notificationService = app(CustomersHubNotificationService::class);
+
+        $this->assertSame(0, $notificationService->unreadCountForViewer($tenant->id, 'property_request'));
+        $this->assertSame(1, $notificationService->unreadCountForViewer($employee->id, 'property_request'));
+
         Sanctum::actingAs($tenant);
+        $actorUnread = $this->getJson('/api/v2/customers-hub/notifications/unread?sourceType=property_request');
+        $actorUnread->assertOk();
+        $this->assertSame(0, count($actorUnread->json('data.items') ?? []));
+
+        $actorHistory = $this->getJson('/api/v2/customers-hub/notifications?sourceType=property_request');
+        $actorHistory->assertOk();
+        $this->assertGreaterThanOrEqual(1, count($actorHistory->json('data.items') ?? []));
+
+        $actorList = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'limit' => 25,
+            'offset' => 0,
+            'objectTypes' => ['property_request'],
+        ]);
+        $actorList->assertOk();
+        $actorMatch = collect($actorList->json('data.actions') ?? [])
+            ->first(fn ($a) => ($a['sourceId'] ?? null) === $prId);
+        $this->assertNotNull($actorMatch);
+        $this->assertFalse($actorMatch['isUnread'] ?? true);
+
+        Sanctum::actingAs($employee);
+        $employeeUnread = $this->getJson('/api/v2/customers-hub/notifications/unread?sourceType=property_request');
+        $employeeUnread->assertOk();
+        $this->assertGreaterThanOrEqual(1, count($employeeUnread->json('data.items') ?? []));
+
+        $employeeList = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'limit' => 25,
+            'offset' => 0,
+            'objectTypes' => ['property_request'],
+        ]);
+        $employeeList->assertOk();
+        $employeeMatch = collect($employeeList->json('data.actions') ?? [])
+            ->first(fn ($a) => ($a['sourceId'] ?? null) === $prId);
+        $this->assertNotNull($employeeMatch);
+        $this->assertTrue($employeeMatch['isUnread'] ?? false);
+    }
+
+    /** @test */
+    public function list_includes_is_unread_on_property_request_actions(): void
+    {
+        $this->requireNotificationTables();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        $employee = User::factory()->create([
+            'account_type' => 'employee',
+            'tenant_id' => $tenant->id,
+            'active' => true,
+        ]);
+
+        $this->grantPermissions($tenant, $tenant, ['customers_hub_requests.view']);
+        $this->grantPermissions($employee, $tenant, ['customers_hub_requests.view']);
+
+        $prId = $this->createPropertyRequestForUser($tenant->id);
+
+        app(CustomersHubPropertyRequestNotifier::class)->notifyStageChanged(
+            $tenant->id,
+            $prId,
+            'new_lead',
+            'follow_up',
+            (int) $tenant->id
+        );
+
+        Sanctum::actingAs($employee);
 
         $res = $this->postJson('/api/v2/customers-hub/requests/list', [
             'limit' => 25,
@@ -340,12 +414,26 @@ class CustomersHubNotificationsTest extends TestCase
         $this->requireNotificationTables();
 
         $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        $employee = User::factory()->create([
+            'account_type' => 'employee',
+            'tenant_id' => $tenant->id,
+            'active' => true,
+        ]);
+
         $this->grantPermissions($tenant, $tenant, ['customers_hub_requests.view']);
+        $this->grantPermissions($employee, $tenant, ['customers_hub_requests.view']);
 
         $prId = $this->createPropertyRequestForUser($tenant->id);
         $notifier = app(CustomersHubPropertyRequestNotifier::class);
-        $notifier->notifyStageChanged($tenant->id, $prId, 'new_lead', 'follow_up', $tenant->id);
-        $notifier->notifyAppointmentCreated($tenant->id, $prId, 1, 'Site visit', now()->addDay()->toDateTimeString(), $tenant->id);
+        $notifier->notifyStageChanged($tenant->id, $prId, 'new_lead', 'follow_up', (int) $employee->id);
+        $notifier->notifyAppointmentCreated(
+            $tenant->id,
+            $prId,
+            1,
+            'Site visit',
+            now()->addDay()->toDateTimeString(),
+            (int) $employee->id
+        );
 
         Sanctum::actingAs($tenant);
 
