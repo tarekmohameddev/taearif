@@ -63,6 +63,8 @@ class VerifyCsrfToken extends Middleware
         '*/cause-donation/paytm/notify',
         '*/cause-donation/phonepe/notify',
         '*/membership/arb/success',
+        '*/membership/arb/cancel',
+        '*/v1/membership/payment/*',
 
         // Google OAuth routes
         '/api/auth/google/redirect',

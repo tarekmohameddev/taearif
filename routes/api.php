@@ -690,6 +690,14 @@ Route::post('/v1/property-requests/public', [ApiPropertyRequestController::class
 // Property interest (public - no authentication required)
 Route::post('/v1/property-requests/interest', [ApiPropertyRequestController::class, 'storeFromInterest']);
 
+// Membership ARB payment callbacks (public, iframe postMessage compatible)
+Route::prefix('v1/membership')->group(function () {
+    Route::match(['get', 'post'], 'payment/success/{gateway}', [\App\Http\Controllers\Payment\ArbController::class, 'membershipPaymentSuccess'])
+        ->name('api.membership.payment.success');
+    Route::match(['get', 'post'], 'payment/failed/{gateway}', [\App\Http\Controllers\Payment\ArbController::class, 'membershipPaymentFailed'])
+        ->name('api.membership.payment.failed');
+});
+
 // Credits: public packages & payment callbacks
 Route::prefix('v1/credits')->group(function () {
     Route::get('packages', [\App\Http\Controllers\Api\marketing\CreditController::class, 'getPackages']);
