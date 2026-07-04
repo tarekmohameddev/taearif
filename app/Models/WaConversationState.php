@@ -9,6 +9,9 @@ class WaConversationState extends Model
 {
     protected $table = 'wa_conversation_states';
 
+    /** @var list<string> */
+    protected $appends = ['state_id'];
+
     protected $fillable = [
         'conversation_id',
         'user_id',
@@ -42,5 +45,10 @@ class WaConversationState extends Model
     public function waNumber(): BelongsTo
     {
         return $this->belongsTo(WaNumber::class, 'wa_number_id');
+    }
+
+    public function getStateIdAttribute(): int
+    {
+        return (int) $this->getKey();
     }
 }
