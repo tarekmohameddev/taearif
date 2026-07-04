@@ -40,7 +40,7 @@ class ConversationController extends BaseApiController
     public function show(int $id): JsonResponse
     {
         $userId = (int) auth()->user()->tenantOwnerId();
-        $state = $this->conversationService->findForUser($userId, $id);
+        $state = $this->conversationService->findForUserByConversationOrStateId($userId, $id);
 
         if (! $state) {
             return response()->json(['status' => 'error', 'code' => 'WA_CONVERSATION_NOT_FOUND', 'message' => 'Conversation not found.'], 404);
@@ -72,7 +72,7 @@ class ConversationController extends BaseApiController
     public function update(UpdateConversationRequest $request, int $id): JsonResponse
     {
         $userId = (int) auth()->user()->tenantOwnerId();
-        $state = $this->conversationService->findForUser($userId, $id);
+        $state = $this->conversationService->findForUserByConversationOrStateId($userId, $id);
 
         if (! $state) {
             return response()->json(['status' => 'error', 'code' => 'WA_CONVERSATION_NOT_FOUND', 'message' => 'Conversation not found.'], 404);
@@ -89,7 +89,7 @@ class ConversationController extends BaseApiController
     public function read(int $id): JsonResponse
     {
         $userId = (int) auth()->user()->tenantOwnerId();
-        $state = $this->conversationService->findForUser($userId, $id);
+        $state = $this->conversationService->findForUserByConversationOrStateId($userId, $id);
 
         if (! $state) {
             return response()->json(['status' => 'error', 'code' => 'WA_CONVERSATION_NOT_FOUND', 'message' => 'Conversation not found.'], 404);
@@ -103,7 +103,7 @@ class ConversationController extends BaseApiController
     public function star(int $id): JsonResponse
     {
         $userId = (int) auth()->user()->tenantOwnerId();
-        $state = $this->conversationService->findForUser($userId, $id);
+        $state = $this->conversationService->findForUserByConversationOrStateId($userId, $id);
 
         if (! $state) {
             return response()->json(['status' => 'error', 'code' => 'WA_CONVERSATION_NOT_FOUND', 'message' => 'Conversation not found.'], 404);

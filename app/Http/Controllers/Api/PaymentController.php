@@ -187,9 +187,8 @@ class PaymentController extends Controller
             $title = $package->title;
             $description = $package->description;
 
-            // Change success and cancel URLs to API endpoints
-            $success_url = route('membership.arb.success');
-            $cancel_url = route('membership.arb.cancel');
+            $success_url = route('api.membership.payment.success', ['gateway' => 'arb']);
+            $cancel_url = route('api.membership.payment.failed', ['gateway' => 'arb']);
 
             $arbPayment = new ArbController();
             $result = $arbPayment->paymentProcess($request, $amount, $success_url, $cancel_url, $title, $user->id);

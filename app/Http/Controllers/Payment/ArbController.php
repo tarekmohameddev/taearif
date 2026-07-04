@@ -5,26 +5,21 @@ namespace App\Http\Controllers\Payment;
 use App\Http\Controllers\Controller;
 use App\Http\Helpers\UserPermissionHelper;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
 use App\Models\Language;
 use App\Models\Package;
+use App\Models\Membership;
 use App\Models\PaymentGateway;
 use Illuminate\Support\Facades\Http;
-use App\Http\Controllers\Front\CheckoutController;
-use App\Http\Controllers\User\UserCheckoutController;
 use Carbon\Carbon;
-use App\Http\Helpers\MegaMailer;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Models\BasicExtended;
-use App\Models\BasicSetting;
-use App\Models\User\BasicSetting as UserBasicSetting;
 use App\Models\Api\ApiInstallation;
 use App\Models\Api\AppPaymentTransaction;
 use App\Services\InstallationStateMachine;
+use App\Services\MembershipService;
 use App\Enums\InstallStatus;
+use Illuminate\Support\Facades\DB;
 
 class ArbController extends Controller
 {
@@ -198,187 +193,295 @@ class ArbController extends Controller
         );
     }
 
-    // return to success page
-
-    public function failedPayment(Request $request)
+    public function membershipPaymentSuccess(Request $request, string $gateway)
     {
-        return redirect()->route('failed.page');
+        if ($gateway !== 'arb') {
+            return $this->paymentIframeResponse(false, 'Unsupported payment gateway');
+        }
+
+        $paymentData = $this->decryptPaymentDataFromRequest($request);
+        if ($paymentData === null) {
+            Log::warning('ARB membership success callback: could not decrypt trandata', [
+                'request_keys' => array_keys($request->all()),
+            ]);
+
+            return $this->paymentIframeResponse(false, 'Payment verification failed');
+        }
+
+        $context = $paymentData['udf3'] ?? 'MEMBERSHIP';
+        if ($context === 'APP') {
+            return $this->handleAppPayment($request, $paymentData);
+        }
+
+        return $this->handleMembershipPayment($request, $paymentData);
     }
-    public function successPayment(Request $request)
+
+    public function membershipPaymentFailed(Request $request, string $gateway)
     {
+        if ($gateway !== 'arb') {
+            return $this->paymentIframeResponse(false, 'Unsupported payment gateway');
+        }
 
-        $paymentMethod = PaymentGateway::where('keyword', 'arb')->first();
-        $paydata = $paymentMethod->convertAutoData();
-
-        $currentLang = session()->has('lang') ?
-            (Language::where('code', session()->get('lang'))->first())
-            : (Language::where('is_default', 1)->first());
-        $bs = $currentLang->basic_setting;
-        $be = $currentLang->basic_extended;
-
-        $dataArr = json_decode($request, true);
-
-        $decrypted = $this->decryption($request['trandata'], $paydata["resource_key"]);
-
-
-        $raw = urldecode($decrypted);
-        $dataArr = json_decode($raw, true);
-
-        log::info($dataArr);
-        if (!empty($dataArr) && is_array($dataArr)) {
-            $paymentData = $dataArr[0]; // Get the first element
-
-            // Check context from udf3 to route to appropriate handler
+        $paymentData = $this->decryptPaymentDataFromRequest($request);
+        if ($paymentData !== null) {
             $context = $paymentData['udf3'] ?? 'MEMBERSHIP';
-            
-            // Handle APP context payments separately
             if ($context === 'APP') {
                 return $this->handleAppPayment($request, $paymentData);
             }
 
-            if (isset($paymentData['result']) && $paymentData['result'] === 'CAPTURED') {
-                $isSuccessful = true;
-                $resultMessage = 'payment_success';
-                $package_id = $paymentData['udf1'];
-                $user_id = $paymentData['udf2'];
-                $price = $paymentData['amt'];
-                $period = (int) ($paymentData['udf5'] ?? 1); // Get period from UDF5
-
-
-                // You can access transaction details like $paymentData['transId'], $paymentData['amt'], etc.
-            } else if (isset($paymentData['error'])) {
-                $isSuccessful = false;
-                $resultMessage = 'payment_failed';
-            } else {
-                $isSuccessful = false;
-                $resultMessage = 'payment_failed';
+            if ($this->membershipPaymentSucceeded($paymentData)) {
+                return $this->handleMembershipPayment($request, $paymentData);
             }
+
+            Log::info('ARB membership failed callback', [
+                'result' => $paymentData['result'] ?? null,
+                'error' => $paymentData['error'] ?? null,
+                'user_id' => $paymentData['udf2'] ?? null,
+                'package_id' => $paymentData['udf1'] ?? null,
+            ]);
         }
 
-        // Now you can use $isSuccessful and $resultMessage as needed
-        if ($isSuccessful) {
+        return $this->paymentIframeResponse(false, 'Payment was cancelled or failed');
+    }
 
-            $user = User::findOrFail($user_id);
-            log::info($user);
-            $currMembership = UserPermissionHelper::currMembOrPending($user_id);
-            $nextMembership = UserPermissionHelper::nextMembership($user_id);
+    public function failedPayment(Request $request)
+    {
+        return $this->membershipPaymentFailed($request, 'arb');
+    }
 
-            $be = BasicExtended::first();
-            $bs = BasicSetting::select('website_title')->first();
+    public function successPayment(Request $request)
+    {
+        return $this->membershipPaymentSuccess($request, 'arb');
+    }
 
-            $selectedPackage = Package::find($package_id);
+    protected function handleMembershipPayment(Request $request, array $paymentData)
+    {
+        try {
+            if (!$this->membershipPaymentSucceeded($paymentData)) {
+                Log::info('ARB membership payment failed or cancelled', [
+                    'result' => $paymentData['result'] ?? 'unknown',
+                    'error' => $paymentData['error'] ?? null,
+                    'user_id' => $paymentData['udf2'] ?? null,
+                    'package_id' => $paymentData['udf1'] ?? null,
+                ]);
 
-            // if the user has a next package to activate & selected package is 'lifetime' package
-            // if (!empty($nextMembership) && $selectedPackage->term == 'lifetime') {
-            //     Session::flash('membership_warning', 'To add a Lifetime package as Current Package, You have to remove the next package');
-            //     return back();
-            // }
-
-            // expire the current package
-            // log::info('ddd'.$currMembership);
-            $currMembership->expire_date = Carbon::parse(Carbon::now()->subDay()->format('d-m-Y'));
-            $currMembership->modified = 1;
-            if ($currMembership->status == 0) {
-                $currMembership->status = 2;
-            }
-            $currMembership->save();
-
-            // calculate expire date for selected package based on period
-            if ($selectedPackage->term == 'monthly') {
-                $exDate = Carbon::now()->addMonths($period)->format('d-m-Y');
-            } elseif ($selectedPackage->term == 'yearly') {
-                $exDate = Carbon::now()->addYears($period)->format('d-m-Y');
-            } elseif ($selectedPackage->term == 'lifetime') {
-                $exDate = Carbon::maxValue()->format('d-m-Y');
+                return $this->paymentIframeResponse(false, 'Payment was cancelled or failed');
             }
 
-            $requestData = [
-                'user_id' => $user_id,
-                'start_date' => Carbon::parse(Carbon::now()->format('d-m-Y')),
-                'price' => $price,
-                'package_id' => $package_id,
-                'payment_method' => 'Arb',
-                'status' => 1,
-                'receipt_name' => 'Monthly Subscription',
-                'expire_date' => Carbon::parse($exDate),
-            ];
+            $packageId = (int) ($paymentData['udf1'] ?? 0);
+            $userId = (int) ($paymentData['udf2'] ?? 0);
+            $period = max(1, (int) ($paymentData['udf5'] ?? 1));
+            $price = (float) ($paymentData['amt'] ?? 0);
+            $transId = (string) ($paymentData['transId'] ?? '');
 
-            $paymentFor = 'extend';
-            $package = Package::find($package_id);
-            $transaction_id = UserPermissionHelper::uniqidReal(8);
-            $transaction_details = '';
-            // update user subscribed
-            $user->subscribed = true;
-            $user->subscription_amount = $package->price;
-            $user->save();
+            if (!$packageId || !$userId || $transId === '') {
+                Log::error('ARB membership payment missing required data', [
+                    'package_id' => $packageId,
+                    'user_id' => $userId,
+                    'trans_id' => $transId,
+                    'payment_data' => $paymentData,
+                ]);
 
-            if ($user->referred_by) {
-                // if
-                $affiliate = \App\Models\Api\ApiAffiliateUser::where('user_id', $user->referred_by)->first();
+                return $this->paymentIframeResponse(false, 'Missing required payment data');
+            }
 
-                if ($affiliate) {
-                    $validUntilToday = is_null($affiliate->to_date_value) || $affiliate->to_date_value->copy()->endOfDay()->gte(now());
+            $existingMembership = Membership::where('transaction_id', $transId)->first();
+            if ($existingMembership) {
+                Log::info('Duplicate ARB membership payment callback (idempotent)', [
+                    'transaction_id' => $transId,
+                    'membership_id' => $existingMembership->id,
+                ]);
 
-                    if (!$validUntilToday) {
+                return $this->paymentIframeResponse(true, 'Payment already processed');
+            }
 
-                        $commissionRate = $affiliate->commission_percentage ?? 0.15;
-                        $commission = round($package->price * $commissionRate, 2);
+            $user = User::find($userId);
+            $package = Package::find($packageId);
 
-                        // Update affiliate total commission
-                        $affiliate->pending_amount += $commission;
-                        $affiliate->save();
+            if (!$user || !$package) {
+                Log::error('ARB membership payment user or package not found', [
+                    'user_id' => $userId,
+                    'package_id' => $packageId,
+                ]);
 
-                        // create transaction as pending
-                        \App\Models\AffiliateTransaction::create([
-                            'affiliate_id' => $affiliate->id,
-                            'type'         => 'pending', // will require admin approval
-                            'referral_user_id' => $user->id, // Link to the user who made the payment
-                            'image'        => null,
-                            'amount'       => $commission,
-                            'note'         => "commission from username: ({$user->name}) for package: ({$package->title})",
-                        ]);
+                return $this->paymentIframeResponse(false, 'User or package not found');
+            }
 
+            DB::transaction(function () use ($user, $package, $packageId, $userId, $period, $price, $transId, $paymentData) {
+                $be = BasicExtended::first();
+
+                $currMembership = UserPermissionHelper::currMembOrPending($userId);
+                if ($currMembership) {
+                    $currMembership->expire_date = Carbon::parse(Carbon::now()->subDay()->format('d-m-Y'));
+                    $currMembership->modified = 1;
+                    if ($currMembership->status == 0) {
+                        $currMembership->status = 2;
                     }
-
+                    $currMembership->save();
                 }
 
-            }
+                $startDate = Carbon::now();
+                if ($package->term === 'monthly') {
+                    $expireDate = Carbon::now()->addMonths($period);
+                } elseif ($package->term === 'yearly') {
+                    $expireDate = Carbon::now()->addYears($period);
+                } else {
+                    $expireDate = Carbon::maxValue();
+                }
 
-            if ($paymentFor == "membership") {
-                $amount = $price;
-                $password = $requestData['password'];
-                $checkout = new CheckoutController();
-                $user = $checkout->store($requestData, $transaction_id, $transaction_details, $amount, $be, $password);
+                $transactionDetails = json_encode([
+                    'gateway' => 'ARB',
+                    'timestamp' => now()->toDateTimeString(),
+                    'user_id' => $userId,
+                    'package_id' => $packageId,
+                    'period' => $period,
+                    'decrypted_data' => $paymentData,
+                ]);
 
-                $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
-                $activation = Carbon::parse($lastMemb->start_date);
-                $expire = Carbon::parse($lastMemb->expire_date);
-              //  $file_name = $this->makeInvoice($requestData, "membership", $user, $password, $amount, $requestData["payment_method"], $requestData['phone'], $be->base_currency_symbol_position, $be->base_currency_symbol, $be->base_currency_text, $transaction_id, $package->title, $lastMemb);
+                Membership::create([
+                    'package_price' => $package->price,
+                    'discount' => 0,
+                    'coupon_code' => null,
+                    'price' => $price > 0 ? $price : $package->price,
+                    'currency' => $be->base_currency_text ?? 'SAR',
+                    'currency_symbol' => $be->base_currency_symbol ?? 'SAR',
+                    'payment_method' => 'Arb',
+                    'transaction_id' => $transId,
+                    'status' => 1,
+                    'is_trial' => 0,
+                    'trial_days' => 0,
+                    'receipt' => null,
+                    'transaction_details' => $transactionDetails,
+                    'settings' => json_encode($be),
+                    'package_id' => $packageId,
+                    'user_id' => $userId,
+                    'start_date' => $startDate,
+                    'expire_date' => $expireDate,
+                    'conversation_id' => null,
+                ]);
 
-                return redirect(route('customer.dashboard'));
+                $user->subscribed = true;
+                $user->subscription_amount = $package->price;
+                $user->save();
 
-            } elseif ($paymentFor == "extend") {
-                $amount = $price;
-                $password = uniqid('qrcode');
-                $checkout = new UserCheckoutController();
-                $user = $checkout->store($requestData, $transaction_id, $transaction_details, $amount, $be, $password);
+                $this->processAffiliateCommission($user, $package);
 
-                $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
-                $activation = Carbon::parse($lastMemb->start_date);
-                $expire = Carbon::parse($lastMemb->expire_date);
-              // $file_name = $this->makeInvoice($requestData, "extend", $user, $password, $amount, $requestData["payment_method"], $user->phone, $be->base_currency_symbol_position, $be->base_currency_symbol, $be->base_currency_text, $transaction_id, $package->title, $lastMemb);
-            }
+                app(MembershipService::class)->handlePackageUpgrade($user, $packageId, 'arb');
+            });
 
-            return redirect()->route('success.page');
-        } else {
+            Log::info('ARB membership payment completed', [
+                'user_id' => $userId,
+                'package_id' => $packageId,
+                'transaction_id' => $transId,
+                'amount' => $price,
+            ]);
 
-            return redirect()->route('failed.page');
+            return $this->paymentIframeResponse(true, 'Payment processed successfully');
+        } catch (\Exception $e) {
+            Log::error('ARB membership payment handler error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'payment_data' => $paymentData,
+            ]);
+
+            return $this->paymentIframeResponse(false, 'Failed to process membership payment');
+        }
+    }
+
+    protected function processAffiliateCommission(User $user, Package $package): void
+    {
+        if (!$user->referred_by) {
+            return;
         }
 
-       // log::info('data back'.$request);
+        $affiliate = \App\Models\Api\ApiAffiliateUser::where('user_id', $user->referred_by)->first();
+        if (!$affiliate) {
+            return;
+        }
 
+        $validUntilToday = is_null($affiliate->to_date_value)
+            || $affiliate->to_date_value->copy()->endOfDay()->gte(now());
 
+        if (!$validUntilToday) {
+            $commissionRate = $affiliate->commission_percentage ?? 0.15;
+            $commission = round($package->price * $commissionRate, 2);
 
+            $affiliate->pending_amount += $commission;
+            $affiliate->save();
+
+            \App\Models\AffiliateTransaction::create([
+                'affiliate_id' => $affiliate->id,
+                'type' => 'pending',
+                'referral_user_id' => $user->id,
+                'image' => null,
+                'amount' => $commission,
+                'note' => "commission from username: ({$user->name}) for package: ({$package->title})",
+            ]);
+        }
+    }
+
+    protected function membershipPaymentSucceeded(array $paymentData): bool
+    {
+        return isset($paymentData['result'])
+            && $paymentData['result'] === 'CAPTURED'
+            && !isset($paymentData['error']);
+    }
+
+    protected function decryptPaymentDataFromRequest(Request $request): ?array
+    {
+        if (!$request->has('trandata')) {
+            return null;
+        }
+
+        $paymentMethod = PaymentGateway::where('keyword', 'arb')->first();
+        if (!$paymentMethod) {
+            return null;
+        }
+
+        $paydata = $paymentMethod->convertAutoData();
+        $decrypted = $this->decryption($request->input('trandata'), $paydata['resource_key']);
+        if ($decrypted === false) {
+            return null;
+        }
+
+        $dataArr = json_decode(urldecode($decrypted), true);
+        if (empty($dataArr) || !is_array($dataArr)) {
+            return null;
+        }
+
+        return $dataArr[0] ?? null;
+    }
+
+    protected function paymentIframeResponse(bool $success, string $message = '')
+    {
+        $postMessage = $success ? 'payment_success' : 'payment_failed';
+        $safeMessage = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
+
+        $html = <<<HTML
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>Payment Result</title>
+</head>
+<body>
+    <p>{$safeMessage}</p>
+    <script>
+        window.parent.postMessage("{$postMessage}", "*");
+    </script>
+</body>
+</html>
+HTML;
+
+        return response($html, 200)->header('Content-Type', 'text/html; charset=UTF-8');
+    }
+
+    protected function isApiRequest(Request $request): bool
+    {
+        return $request->expectsJson()
+            || $request->wantsJson()
+            || $request->is('api/*')
+            || $request->header('Accept') === 'application/json';
     }
 
     /**
@@ -390,11 +493,7 @@ class ArbController extends Controller
      */
     protected function handleAppPayment(Request $request, array $paymentData)
     {
-        // Detect if this is an API request
-        $isApiRequest = $request->expectsJson() 
-            || $request->wantsJson() 
-            || $request->is('api/*')
-            || $request->header('Accept') === 'application/json';
+        $isApiRequest = $this->isApiRequest($request);
 
         try {
             // Validate payment was successful
@@ -412,7 +511,7 @@ class ArbController extends Controller
                     ], 400);
                 }
 
-                return redirect()->route('failed.page');
+                return $this->paymentIframeResponse(false, 'Payment failed or cancelled');
             }
 
             // Extract payment information
@@ -437,10 +536,8 @@ class ArbController extends Controller
                     ], 422);
                 }
 
-                return redirect()->route('failed.page');
+                return $this->paymentIframeResponse(false, 'Missing required payment data');
             }
-
-            // Check idempotency: if transaction already processed, return success
             $existingTransaction = AppPaymentTransaction::where('payment_transaction_id', $paymentId)
                 ->first();
 
@@ -459,8 +556,7 @@ class ArbController extends Controller
                     ], 200);
                 }
 
-                return redirect()->route('success.page')
-                    ->with('success', 'App installed successfully');
+                return $this->paymentIframeResponse(true, 'App installed successfully');
             }
 
             // Find installation by invoice_id (which stores the PaymentID)
@@ -484,7 +580,7 @@ class ArbController extends Controller
                     ], 404);
                 }
 
-                return redirect()->route('failed.page');
+                return $this->paymentIframeResponse(false, 'Installation not found');
             }
 
             // Verify amount matches app price (prevent tampering)
@@ -507,7 +603,7 @@ class ArbController extends Controller
                     ], 422);
                 }
 
-                return redirect()->route('failed.page');
+                return $this->paymentIframeResponse(false, 'Payment amount mismatch');
             }
 
             // Create or update transaction record
@@ -562,8 +658,7 @@ class ArbController extends Controller
                     ], 200);
                 }
 
-                return redirect()->route('success.page')
-                    ->with('success', 'App installed successfully');
+                return $this->paymentIframeResponse(true, 'App installed successfully');
 
             } catch (\App\Exceptions\Installation\InvalidStatusTransitionException $e) {
                 Log::error('Invalid status transition for app installation', [
@@ -583,7 +678,7 @@ class ArbController extends Controller
                     ], 422);
                 }
 
-                return redirect()->route('failed.page');
+                return $this->paymentIframeResponse(false, 'Invalid installation status transition');
             } catch (\Exception $e) {
                 Log::error('Failed to activate app installation via ARB payment', [
                     'installation_id' => $installation->id,
@@ -602,7 +697,7 @@ class ArbController extends Controller
                     ], 500);
                 }
 
-                return redirect()->route('failed.page');
+                return $this->paymentIframeResponse(false, 'Failed to activate installation');
             }
 
         } catch (\Exception $e) {
@@ -619,7 +714,7 @@ class ArbController extends Controller
                 ], 500);
             }
 
-            return redirect()->route('failed.page');
+            return $this->paymentIframeResponse(false, 'Internal server error');
         }
     }
 
@@ -677,8 +772,8 @@ class ArbController extends Controller
         $encryptedData = [
             'id' => $paydata['tranportal_id'],
             'trandata' => $this->encryption($encoded_data, $paydata['resource_key']),
-            'responseURL' => $responseURL ?? route('membership.arb.success'),
-            'errorURL' => $errorURL ?? route('membership.arb.cancel'),
+            'responseURL' => $responseURL ?? route('api.membership.payment.success', ['gateway' => 'arb']),
+            'errorURL' => $errorURL ?? route('api.membership.payment.failed', ['gateway' => 'arb']),
         ];
 
         return $this->wrapData($encryptedData);
