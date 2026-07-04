@@ -12,11 +12,11 @@ use App\Domain\Communication\Exceptions\UnsupportedChannelException;
 use App\Domain\Communication\Exceptions\WaNumberNotActiveException;
 use App\Domain\Communication\Exceptions\WaNumberNotFoundException;
 use App\Domain\Communication\Support\CommunicationEndpoints;
+use App\Domain\Communication\WhatsApp\Services\WhatsAppConversationService;
 use App\Domain\Communication\WhatsApp\Services\WhatsAppTemplateService;
 use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\Api\V1\WhatsApp\SendWhatsAppMessageRequest;
 use App\Http\Requests\Api\V1\WhatsApp\SendWhatsAppTemplateRequest;
-use App\Models\Conversation;
 use App\Models\Message;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,6 +26,7 @@ class MessageController extends BaseApiController
 {
     public function __construct(
         private readonly CommunicationService $communicationService,
+        private readonly WhatsAppConversationService $conversationService,
         private readonly WhatsAppTemplateService $templateService
     ) {}
 
@@ -33,18 +34,15 @@ class MessageController extends BaseApiController
     {
         $tenantOwnerId = (int) auth()->user()->tenantOwnerId();
 
-        $conversation = Conversation::query()
-            ->where('user_id', $tenantOwnerId)
-            ->where('channel', 'whatsapp')
-            ->find($id);
-        if (! $conversation) {
+        $state = $this->conversationService->findForUserByConversationOrStateId($tenantOwnerId, $id);
+        if (! $state) {
             return response()->json(['status' => 'error', 'code' => 'WA_CONVERSATION_NOT_FOUND', 'message' => 'Conversation not found.'], 404);
         }
 
         $perPage = (int) $request->input('per_page', 20);
         $perPage = min(max($perPage, 1), 100);
 
-        $items = Message::where('conversation_id', $conversation->id)
+        $items = Message::where('conversation_id', $state->conversation_id)
             ->orderByDesc('created_at')
             ->paginate($perPage);
 
@@ -84,9 +82,14 @@ class MessageController extends BaseApiController
         $validated = $request->validated();
         $tenantOwnerId = (int) auth()->user()->tenantOwnerId();
 
+        $state = $this->conversationService->findForUserByConversationOrStateId($tenantOwnerId, $id);
+        if (! $state) {
+            return response()->json(['status' => 'error', 'code' => 'WA_CONVERSATION_NOT_FOUND', 'message' => 'Conversation not found.'], 404);
+        }
+
         $dto = new SendMessageDto(
             userId: $tenantOwnerId,
-            conversationId: $id,
+            conversationId: (int) $state->conversation_id,
             content: (string) $validated['content'],
             channel: 'whatsapp',
             waNumberId: (int) $validated['wa_number_id'],
@@ -135,12 +138,17 @@ class MessageController extends BaseApiController
             return response()->json(['status' => 'error', 'code' => 'WA_TEMPLATE_NOT_FOUND', 'message' => 'Template not found.'], 404);
         }
 
+        $state = $this->conversationService->findForUserByConversationOrStateId($tenantOwnerId, $id);
+        if (! $state) {
+            return response()->json(['status' => 'error', 'code' => 'WA_CONVERSATION_NOT_FOUND', 'message' => 'Conversation not found.'], 404);
+        }
+
         $variables = $validated['variables'] ?? [];
         $content = $this->templateService->renderContent($template, $variables);
 
         $dto = new SendMessageDto(
             userId: $tenantOwnerId,
-            conversationId: $id,
+            conversationId: (int) $state->conversation_id,
             content: $content,
             channel: 'whatsapp',
             waNumberId: (int) $validated['wa_number_id'],

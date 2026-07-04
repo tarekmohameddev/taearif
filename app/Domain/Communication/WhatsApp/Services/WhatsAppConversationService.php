@@ -55,6 +55,21 @@ class WhatsAppConversationService
             ->first();
     }
 
+    public function findForUserByConversationOrStateId(int $userId, int $id): ?WaConversationState
+    {
+        $state = $this->findForUser($userId, $id);
+        if ($state !== null) {
+            return $state;
+        }
+
+        return WaConversationState::query()
+            ->with(['conversation', 'waNumber'])
+            ->where('user_id', $userId)
+            ->where('id', $id)
+            ->whereHas('conversation', fn ($q) => $q->where('channel', 'whatsapp'))
+            ->first();
+    }
+
     public function createOrReturnConversation(int $userId, string $externalPartyIdentifierNormalized, ?int $waNumberId = null): Conversation
     {
         // Full implementation in Gate 5B.2
