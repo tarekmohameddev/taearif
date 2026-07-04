@@ -99,12 +99,28 @@ class ActionsAggregatorService
      */
     public function getList(int $userId, array $filters = [], int $limit = 50, int $offset = 0): array
     {
+        $unreadPropertyRequestSourceIds = $filters['_unread_property_request_source_ids'] ?? null;
+        unset($filters['_unread_property_request_source_ids']);
+
         $query = $this->getUnifiedQuery($userId, $filters);
 
-        // Apply sorting
-        $sortBy = $filters['sort_by'] ?? 'updatedAt';
-        $sortDir = $filters['sort_dir'] ?? 'desc';
-        $query->orderBy($sortBy, $sortDir);
+        // Unread-first sort for property requests (before pagination), then createdAt desc.
+        if ($unreadPropertyRequestSourceIds !== null) {
+            if (! empty($unreadPropertyRequestSourceIds)) {
+                $placeholders = implode(',', array_fill(0, count($unreadPropertyRequestSourceIds), '?'));
+                $query->orderByRaw(
+                    "CASE WHEN actions.objectType = 'property_request' AND actions.sourceId IN ({$placeholders}) THEN 0 ELSE 1 END",
+                    $unreadPropertyRequestSourceIds
+                );
+            }
+            $query->orderBy('createdAt', 'desc');
+            $sortBy = 'createdAt';
+            $sortDir = 'desc';
+        } else {
+            $sortBy = $filters['sort_by'] ?? 'updatedAt';
+            $sortDir = $filters['sort_dir'] ?? 'desc';
+            $query->orderBy($sortBy, $sortDir);
+        }
 
         // Page query: select only the row columns. Previously we used
         // COUNT(*) OVER() AS _totalRows to compute the total in the same

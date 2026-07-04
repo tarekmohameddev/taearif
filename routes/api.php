@@ -1456,6 +1456,15 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
         Route::post('/', [\App\Http\Controllers\Api\V2\CustomersHub\IgnoredCustomersController::class, 'store']);
         Route::delete('/{id}', [\App\Http\Controllers\Api\V2\CustomersHub\IgnoredCustomersController::class, 'destroy']);
     });
+
+    // 9. IN-APP NOTIFICATIONS (polling, per-recipient read state)
+    Route::prefix('notifications')->group(function () {
+        Route::get('/unread', [\App\Http\Controllers\Api\V2\CustomersHub\NotificationsController::class, 'unread']);
+        Route::get('/unread-count', [\App\Http\Controllers\Api\V2\CustomersHub\NotificationsController::class, 'unreadCount']);
+        Route::get('/', [\App\Http\Controllers\Api\V2\CustomersHub\NotificationsController::class, 'index']);
+        Route::patch('/read-all', [\App\Http\Controllers\Api\V2\CustomersHub\NotificationsController::class, 'markAllRead']);
+        Route::patch('/{id}/read', [\App\Http\Controllers\Api\V2\CustomersHub\NotificationsController::class, 'markRead']);
+    });
 });
 
 // Owner Rental Management System Routes (v1)

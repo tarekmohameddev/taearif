@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Api\ApiController;
 use App\Domain\CustomersHub\Services\PipelineService;
+use App\Domain\CustomersHub\Services\CustomersHubPropertyRequestNotifier;
 use App\Http\Requests\Api\V2\CustomersHub\PipelineIndexRequest;
 use App\Http\Requests\Api\V2\CustomersHub\PipelineMoveRequest;
 use App\Http\Requests\Api\V2\CustomersHub\PipelineBulkMoveRequest;
@@ -29,9 +30,14 @@ class PipelineController extends ApiController
 {
     private PipelineService $pipelineService;
 
-    public function __construct(PipelineService $pipelineService)
-    {
+    private CustomersHubPropertyRequestNotifier $propertyRequestNotifier;
+
+    public function __construct(
+        PipelineService $pipelineService,
+        CustomersHubPropertyRequestNotifier $propertyRequestNotifier
+    ) {
         $this->pipelineService = $pipelineService;
+        $this->propertyRequestNotifier = $propertyRequestNotifier;
     }
 
     /**
@@ -133,6 +139,14 @@ class PipelineController extends ApiController
             return $this->error('Failed to move request', 422);
         }
 
+        $this->propertyRequestNotifier->notifyStageChanged(
+            $userId,
+            $requestId,
+            $previousStage?->stage_id ?? null,
+            $stageIdString,
+            (int) $request->user()->id
+        );
+
         $request = UserPropertyRequest::find($requestId);
         $customerId = ($request && $request->customer && $request->customer->user_id === $userId)
             ? $request->customer->id
@@ -218,7 +232,26 @@ class PipelineController extends ApiController
             ]);
         }
 
+        $previousStages = [];
+        foreach ($requestIds as $requestId) {
+            $previousStages[(int) $requestId] = $this->pipelineService->getRequestCurrentStatus($userId, (int) $requestId);
+        }
+
         $updated = $this->pipelineService->bulkMoveToStage($userId, $requestIds, $stageIdString);
+
+        if ($updated > 0) {
+            foreach ($requestIds as $requestId) {
+                $rid = (int) $requestId;
+                $previousStage = $previousStages[$rid] ?? null;
+                $this->propertyRequestNotifier->notifyStageChanged(
+                    $userId,
+                    $rid,
+                    $previousStage?->stage_id ?? null,
+                    $stageIdString,
+                    (int) $request->user()->id
+                );
+            }
+        }
 
         return $this->success([
             'updated' => $updated,
