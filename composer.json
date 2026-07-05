@@ -46,6 +46,7 @@
         "paypal/rest-api-sdk-php": "^1.14.0",
         "php-http/guzzle7-adapter": "^1.0",
         "phpmailer/phpmailer": "^6.1",
+        "posthog/posthog-php": "^4.8",
         "predis/predis": "^3.3",
         "pusher/pusher-php-server": "^5.0",
         "rachidlaasri/laravel-installer": "^4.1",
