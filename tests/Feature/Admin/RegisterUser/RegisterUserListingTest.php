@@ -230,7 +230,7 @@ class RegisterUserListingTest extends AdminApiTestCase
         $response->assertSee(__('NO USER FOUND'), false);
     }
 
-    private function signInWebAdmin(): Admin
+    protected function signInWebAdmin(): Admin
     {
         $admin = Admin::factory()->create([
             'status' => true,
@@ -246,7 +246,7 @@ class RegisterUserListingTest extends AdminApiTestCase
         return $admin;
     }
 
-    private function ensureAdminViewData(): void
+    protected function ensureAdminViewData(): void
     {
         $languageId = DB::table('languages')->insertGetId([
             'name' => 'English',
@@ -290,7 +290,7 @@ class RegisterUserListingTest extends AdminApiTestCase
         ]);
     }
 
-    private function createTenantUser(string $username): User
+    protected function createTenantUser(string $username): User
     {
         return User::factory()->create([
             'account_type' => 'tenant',
@@ -299,7 +299,7 @@ class RegisterUserListingTest extends AdminApiTestCase
         ]);
     }
 
-    private function createPackage(string $term, array $attributes = []): Package
+    protected function createPackage(string $term, array $attributes = []): Package
     {
         $payload = array_merge([
             'title' => Str::title($term) . ' Package',
@@ -322,7 +322,7 @@ class RegisterUserListingTest extends AdminApiTestCase
         return Package::query()->create($payload);
     }
 
-    private function createCurrentMembership(User $user, Package $package, array $overrides = []): Membership
+    protected function createCurrentMembership(User $user, Package $package, array $overrides = []): Membership
     {
         return Membership::query()->create(array_merge([
             'user_id' => $user->id,
