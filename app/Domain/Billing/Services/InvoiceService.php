@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use App\Domain\Billing\Models\Plan;
 use App\Domain\User\Models\User;
+use App\Services\MembershipService;
 
 /**
  * Invoice Service
@@ -169,13 +170,15 @@ class InvoiceService extends BaseService
                 'expire_date' => $dates['expire_date'],
             ]);
 
-            // Handle previous memberships (expire lifetime or trial)
-            $this->handlePreviousMemberships($user->id, $invoice->id);
+            // Expire any other active/pending memberships for this user
+            app(MembershipService::class)->expireActiveMemberships($user->id, $invoice->id);
 
             // Activate user account if first purchase
             if ($userInvoiceCount <= 1) {
                 $user->update(['status' => 1]);
             }
+
+            app(MembershipService::class)->applyPackageTransitionHooks($user, $package->id, 'invoice_approval');
 
             // Queue email notification
             $this->queueApprovalEmail($invoice, $user, $package, $dates, $userInvoiceCount);
@@ -275,26 +278,11 @@ class InvoiceService extends BaseService
     }
 
     /**
-     * Handle previous memberships (expire lifetime/trial memberships)
-     *
-     * @param int $userId
-     * @param int $newInvoiceId
-     * @return void
+     * @deprecated Use MembershipService::expireActiveMemberships()
      */
     protected function handlePreviousMemberships(int $userId, int $newInvoiceId): void
     {
-        // Find active memberships
-        $previousInvoice = $this->invoiceRepository->findPreviousActiveInvoiceForUser($userId);
-
-        if ($previousInvoice && $previousInvoice->id !== $newInvoiceId) {
-            $previousPackage = $previousInvoice->package;
-
-            // Expire if it's a lifetime or trial membership
-            if ($previousPackage && ($previousPackage->term === 'lifetime' || $previousInvoice->is_trial == 1)) {
-                $yesterday = Carbon::yesterday()->format('Y-m-d');
-                $this->invoiceRepository->expireInvoice($previousInvoice->id, $yesterday);
-            }
-        }
+        app(MembershipService::class)->expireActiveMemberships($userId, $newInvoiceId);
     }
 
     /**

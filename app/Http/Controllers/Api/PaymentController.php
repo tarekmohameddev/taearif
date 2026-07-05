@@ -153,8 +153,12 @@ class PaymentController extends Controller
 
             $validated = $request->validated();
 
-            $package = Package::find($validated['package_id']);
-            
+            $package = Package::query()
+                ->where('id', $validated['package_id'])
+                ->where('is_active', true)
+                ->where('status', '1')
+                ->first();
+
             if (!$package) {
                 return response()->json([
                     'status' => 'error',

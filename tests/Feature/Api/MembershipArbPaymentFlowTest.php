@@ -341,4 +341,132 @@ class MembershipArbPaymentFlowTest extends TestCase
             Membership::where('transaction_id', 'ARB-DUP-001')->count()
         );
     }
+
+    /** @test */
+    public function checkout_rejects_inactive_package(): void
+    {
+        $this->requireMembershipPaymentTables();
+        $this->ensureArbGatewayAndLanguage();
+
+        $tenant = User::factory()->create([
+            'account_type' => 'tenant',
+            'tenant_id' => null,
+            'active' => true,
+            'status' => 1,
+        ]);
+        Sanctum::actingAs($tenant);
+
+        $package = $this->createMembershipPackage(['is_active' => false]);
+
+        $this->postJson('/api/make-payment', [
+            'package_id' => $package->id,
+            'period' => 1,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['package_id']);
+    }
+
+    /** @test */
+    public function amount_mismatch_does_not_create_membership(): void
+    {
+        $this->requireMembershipPaymentTables();
+        $this->ensureArbGatewayAndLanguage();
+
+        $tenant = User::factory()->create([
+            'account_type' => 'tenant',
+            'tenant_id' => null,
+            'active' => true,
+            'status' => 1,
+        ]);
+        $package = $this->createMembershipPackage(['price' => 99]);
+        $paymentRecord = $this->buildPaymentRecord($tenant, $package, [
+            'transId' => 'ARB-MISMATCH-001',
+            'amt' => 1.0,
+        ]);
+
+        $response = $this->post(
+            '/api/v1/membership/payment/success/arb',
+            ['trandata' => $this->encryptTrandata($paymentRecord)]
+        );
+
+        $response->assertOk();
+        $this->assertStringContainsString('payment_failed', $response->getContent());
+        $this->assertDatabaseMissing('memberships', [
+            'transaction_id' => 'ARB-MISMATCH-001',
+        ]);
+    }
+
+    /** @test */
+    public function affiliate_commission_is_recorded_only_when_program_is_active(): void
+    {
+        $this->requireMembershipPaymentTables();
+        $this->ensureArbGatewayAndLanguage();
+
+        if (!\Illuminate\Support\Facades\Schema::hasTable('api_affiliate_users')) {
+            $this->markTestSkipped('api_affiliate_users table required.');
+        }
+
+        $affiliateOwner = User::factory()->create(['account_type' => 'tenant']);
+        $affiliate = \App\Models\Api\ApiAffiliateUser::query()->create([
+            'user_id' => $affiliateOwner->id,
+            'fullname' => 'Affiliate User',
+            'bank_name' => 'Test Bank',
+            'bank_account_number' => '123456',
+            'iban' => 'SA123',
+            'commission_percentage' => 0.10,
+            'pending_amount' => 0,
+            'request_status' => 'approved',
+            'to_date_value' => now()->addMonth()->toDateString(),
+        ]);
+
+        $tenant = User::factory()->create([
+            'account_type' => 'tenant',
+            'referred_by' => $affiliateOwner->id,
+            'active' => true,
+            'status' => 1,
+        ]);
+        $package = $this->createMembershipPackage(['price' => 100]);
+        $paymentRecord = $this->buildPaymentRecord($tenant, $package, [
+            'transId' => 'ARB-AFF-ACTIVE-001',
+            'amt' => 100.0,
+        ]);
+
+        $this->post(
+            '/api/v1/membership/payment/success/arb',
+            ['trandata' => $this->encryptTrandata($paymentRecord)]
+        )->assertOk();
+
+        $affiliate->refresh();
+        $this->assertSame(10.0, (float) $affiliate->pending_amount);
+
+        $expiredAffiliate = \App\Models\Api\ApiAffiliateUser::query()->create([
+            'user_id' => User::factory()->create(['account_type' => 'tenant'])->id,
+            'fullname' => 'Expired Affiliate',
+            'bank_name' => 'Test Bank',
+            'bank_account_number' => '654321',
+            'iban' => 'SA654',
+            'commission_percentage' => 0.10,
+            'pending_amount' => 0,
+            'request_status' => 'approved',
+            'to_date_value' => now()->subDay()->toDateString(),
+        ]);
+
+        $tenantTwo = User::factory()->create([
+            'account_type' => 'tenant',
+            'referred_by' => $expiredAffiliate->user_id,
+            'active' => true,
+            'status' => 1,
+        ]);
+        $paymentRecordTwo = $this->buildPaymentRecord($tenantTwo, $package, [
+            'transId' => 'ARB-AFF-EXPIRED-001',
+            'amt' => 100.0,
+        ]);
+
+        $this->post(
+            '/api/v1/membership/payment/success/arb',
+            ['trandata' => $this->encryptTrandata($paymentRecordTwo)]
+        )->assertOk();
+
+        $expiredAffiliate->refresh();
+        $this->assertSame(0.0, (float) $expiredAffiliate->pending_amount);
+    }
 }

@@ -12,6 +12,9 @@ use App\Services\WhatsAppService;
 use App\Services\EmailService;
 use App\Domain\Billing\Models\Plan;
 use App\Domain\Billing\Models\Invoice;
+use App\Models\Package;
+use App\Models\User as TenantUser;
+use App\Services\MembershipService;
 use App\Domain\Shared\Services\BaseService;
 use App\Exceptions\ResourceNotFoundException;
 use App\Exceptions\BusinessLogicException;
@@ -809,36 +812,22 @@ class UserManagementService extends BaseService
 
         return $this->executeInTransaction(function () use ($user, $newPlan, $currentSubscription, $changeType, $adminNotes) {
             $previousPlan = $currentSubscription->package;
-            $termDays = $this->resolvePlanDurationInDays($newPlan->term ?? null);
+            $tenant = TenantUser::findOrFail($user->id);
+            $package = Package::findOrFail($newPlan->id);
+            $membershipService = app(MembershipService::class);
 
             if ($changeType === 'immediate') {
-                $currentSubscription->expire_date = now()->toDateString();
-                $currentSubscription->status = 1;
-                $currentSubscription->save();
-
-                Invoice::create([
-                    'user_id' => $user->id,
-                    'package_id' => $newPlan->id,
-                    'package_price' => $newPlan->price,
-                    'price' => $newPlan->price,
-                    'currency' => $currentSubscription->currency ?? 'SAR',
-                    'currency_symbol' => $currentSubscription->currency_symbol ?? 'ر.س',
+                $membershipService->activateImmediateMembership($tenant, $package, [
                     'payment_method' => 'admin_change',
                     'transaction_id' => 'ADMIN_PLAN_CHANGE_' . now()->timestamp,
-                    'status' => 1,
-                    'is_trial' => false,
-                    'start_date' => now()->toDateString(),
-                    'expire_date' => now()->addDays($termDays)->toDateString(),
+                    'price' => (float) $newPlan->price,
+                    'source' => 'admin_change',
                 ]);
             } else {
-                $currentSubscription->metadata = array_merge($currentSubscription->metadata ?? [], [
-                    'scheduled_plan_change' => [
-                        'new_plan_id' => $newPlan->id,
-                        'scheduled_at' => now()->toIso8601String(),
-                        'admin_notes' => $adminNotes,
-                    ],
+                $membershipService->queueNextMembership($tenant, $package, [
+                    'payment_method' => 'admin_change_scheduled',
+                    'transaction_id' => 'ADMIN_PLAN_SCHEDULED_' . now()->timestamp,
                 ]);
-                $currentSubscription->save();
             }
 
             $this->logUserActivity(

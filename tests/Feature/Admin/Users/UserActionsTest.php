@@ -10,6 +10,7 @@ use App\Domain\User\Models\UserActivityLog;
 use App\Models\Membership;
 use App\Models\User as TenantUser;
 use App\Services\WhatsAppService;
+use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Mockery;
 use Tests\Feature\Admin\AdminApiTestCase;
@@ -372,7 +373,7 @@ class UserActionsTest extends AdminApiTestCase
         $this->assertDatabaseHas('memberships', [
             'user_id' => $tenant->id,
             'transaction_id' => 'TX-ORIGINAL',
-            'expire_date' => now()->toDateString(),
+            'expire_date' => now()->subDay()->toDateString(),
         ]);
 
         $this->assertDatabaseHas('memberships', [
@@ -380,6 +381,176 @@ class UserActionsTest extends AdminApiTestCase
             'package_id' => $newPlan->id,
             'payment_method' => 'admin_change',
         ]);
+    }
+
+    /** @test */
+    public function immediate_plan_change_to_lifetime_uses_max_expire_date(): void
+    {
+        $this->signInAdmin();
+
+        $currentPlan = Plan::factory()->create([
+            'is_active' => true,
+            'term' => 'monthly',
+        ]);
+
+        $tenant = TenantUser::factory()->create([
+            'uuid' => (string) Str::uuid(),
+            'account_type' => 'tenant',
+        ]);
+
+        Membership::create([
+            'user_id' => $tenant->id,
+            'package_id' => $currentPlan->id,
+            'package_price' => 99.00,
+            'price' => 99.00,
+            'currency' => 'SAR',
+            'currency_symbol' => 'ر.س',
+            'payment_method' => 'manual',
+            'transaction_id' => 'TX-BEFORE-LIFETIME',
+            'status' => 1,
+            'is_trial' => 0,
+            'trial_days' => 0,
+            'start_date' => now()->subMonth()->toDateString(),
+            'expire_date' => now()->addMonth()->toDateString(),
+        ]);
+
+        $lifetimePlan = Plan::factory()->create([
+            'is_active' => true,
+            'term' => 'lifetime',
+            'price' => 999.00,
+        ]);
+
+        $response = $this->postJson(
+            route('admin.api.users.change-plan', $tenant->id),
+            [
+                'new_plan_id' => $lifetimePlan->id,
+                'change_type' => 'immediate',
+            ]
+        );
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('memberships', [
+            'user_id' => $tenant->id,
+            'package_id' => $lifetimePlan->id,
+            'payment_method' => 'admin_change',
+            'expire_date' => Carbon::maxValue()->format('Y-m-d'),
+        ]);
+    }
+
+    /** @test */
+    public function admin_can_schedule_next_cycle_plan_change(): void
+    {
+        $this->signInAdmin();
+
+        $currentPlan = Plan::factory()->create([
+            'is_active' => true,
+            'term' => 'monthly',
+        ]);
+
+        $tenant = TenantUser::factory()->create([
+            'uuid' => (string) Str::uuid(),
+            'account_type' => 'tenant',
+        ]);
+
+        Membership::create([
+            'user_id' => $tenant->id,
+            'package_id' => $currentPlan->id,
+            'package_price' => 99.00,
+            'price' => 99.00,
+            'currency' => 'SAR',
+            'currency_symbol' => 'ر.س',
+            'payment_method' => 'manual',
+            'transaction_id' => 'TX-CURRENT',
+            'status' => 1,
+            'is_trial' => 0,
+            'trial_days' => 0,
+            'start_date' => now()->subMonth()->toDateString(),
+            'expire_date' => now()->addMonth()->toDateString(),
+        ]);
+
+        $newPlan = Plan::factory()->create([
+            'is_active' => true,
+            'term' => 'yearly',
+            'price' => 149.00,
+        ]);
+
+        $response = $this->postJson(
+            route('admin.api.users.change-plan', $tenant->id),
+            [
+                'new_plan_id' => $newPlan->id,
+                'change_type' => 'next_cycle',
+            ]
+        );
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('memberships', [
+            'user_id' => $tenant->id,
+            'transaction_id' => 'TX-CURRENT',
+            'expire_date' => now()->addMonth()->toDateString(),
+        ]);
+
+        $this->assertDatabaseHas('memberships', [
+            'user_id' => $tenant->id,
+            'package_id' => $newPlan->id,
+            'payment_method' => 'admin_change_scheduled',
+            'start_date' => now()->addMonth()->addDay()->toDateString(),
+        ]);
+    }
+
+    /** @test */
+    public function next_cycle_change_is_blocked_when_next_package_already_exists(): void
+    {
+        $this->signInAdmin();
+
+        $currentPlan = Plan::factory()->create(['is_active' => true, 'term' => 'monthly']);
+        $queuedPlan = Plan::factory()->create(['is_active' => true, 'term' => 'yearly']);
+        $replacementPlan = Plan::factory()->create(['is_active' => true, 'term' => 'yearly']);
+
+        $tenant = TenantUser::factory()->create([
+            'uuid' => (string) Str::uuid(),
+            'account_type' => 'tenant',
+        ]);
+
+        Membership::create([
+            'user_id' => $tenant->id,
+            'package_id' => $currentPlan->id,
+            'price' => 99.00,
+            'currency' => 'SAR',
+            'currency_symbol' => 'ر.س',
+            'payment_method' => 'manual',
+            'transaction_id' => 'TX-CURRENT-2',
+            'status' => 1,
+            'is_trial' => 0,
+            'trial_days' => 0,
+            'start_date' => now()->subMonth()->toDateString(),
+            'expire_date' => now()->addMonth()->toDateString(),
+        ]);
+
+        Membership::create([
+            'user_id' => $tenant->id,
+            'package_id' => $queuedPlan->id,
+            'price' => 149.00,
+            'currency' => 'SAR',
+            'currency_symbol' => 'ر.س',
+            'payment_method' => 'manual',
+            'transaction_id' => 'TX-QUEUED',
+            'status' => 1,
+            'is_trial' => 0,
+            'trial_days' => 0,
+            'start_date' => now()->addMonth()->addDay()->toDateString(),
+            'expire_date' => now()->addMonths(13)->toDateString(),
+        ]);
+
+        $this->postJson(
+            route('admin.api.users.change-plan', $tenant->id),
+            [
+                'new_plan_id' => $replacementPlan->id,
+                'change_type' => 'next_cycle',
+            ]
+        )->assertStatus(400)
+            ->assertJsonPath('errors.error_code', 'NEXT_PACKAGE_EXISTS');
     }
 
     /** @test */

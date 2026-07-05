@@ -13,7 +13,12 @@ return [
     | a conventional file to locate the various service credentials.
     |
     */
-
+    'posthog' => [
+        'key' => env('POSTHOG_API_KEY'),
+        'host' => env('POSTHOG_HOST', 'https://us.i.posthog.com'),
+        'personal_key' => env('POSTHOG_PERSONAL_API_KEY'),
+        'enabled' => env('POSTHOG_ENABLED', false),
+    ],
     'mailgun' => [
         'domain' => env('MAILGUN_DOMAIN'),
         'secret' => env('MAILGUN_SECRET'),

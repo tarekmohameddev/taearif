@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use App\Http\Helpers\MegaMailer;
 use App\Http\Controllers\Controller;
+use App\Services\MembershipService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
@@ -178,28 +179,7 @@ class PaymentLogController extends Controller
                 $membership->update(['expire_date' =>  Carbon::parse($data['expire_date'])]);
             }
 
-            // if previous membership package is lifetime, then exipre that membership
-            $previousMembership = Membership::query()
-            ->where([
-                ['user_id', $user->id],
-                ['start_date', '<=', Carbon::now()->toDateString()],
-                ['expire_date', '>=', Carbon::now()->toDateString()]
-            ])
-            ->where('status', 1)
-            ->orderBy('created_at', 'DESC')
-            ->first();
-            if(!is_null($previousMembership)){
-                $previousPackage = Package::query()
-                    ->select('term')
-                    ->where('id',$previousMembership->package_id)
-                    ->first();
-                if($previousPackage->term === 'lifetime' || $previousMembership->is_trial == 1)
-                {
-                    $yesterday = Carbon::yesterday()->format('d-m-Y');
-                    $previousMembership->expire_date = Carbon::parse($yesterday);
-                    $previousMembership->save();
-                }
-            }
+            app(MembershipService::class)->expireActiveMemberships($user->id, $membership->id);
 
             if ($count_membership > 1) {
 
@@ -260,6 +240,10 @@ class PaymentLogController extends Controller
 
 
         $membership->update(['status' => $request->status]);
+
+        if ((int) $request->status === 1) {
+            app(MembershipService::class)->applyPackageTransitionHooks($user, $package->id, 'offline_approval');
+        }
 
         session()->flash('success', "Membership status changed successfully!");
         return back();

@@ -118,6 +118,7 @@ abstract class AdminApiTestCase extends TestCase
         if (!Schema::hasTable('users')) {
             Schema::create('users', function (Blueprint $table) {
                 $table->id();
+                $table->uuid('uuid')->nullable()->unique();
                 $table->unsignedBigInteger('tenant_id')->nullable();
                 $table->unsignedBigInteger('referred_by')->nullable();
                 $table->string('first_name')->nullable();
@@ -164,6 +165,7 @@ abstract class AdminApiTestCase extends TestCase
             'subscription_amount' => fn (Blueprint $table) => $table->decimal('subscription_amount', 10, 2)->default(0)->after('subscribed'),
             'trial_ends_at' => fn (Blueprint $table) => $table->timestamp('trial_ends_at')->nullable()->after('subscription_amount'),
             'referral_code' => fn (Blueprint $table) => $table->string('referral_code')->nullable()->after('active'),
+            'uuid' => fn (Blueprint $table) => $table->uuid('uuid')->nullable()->unique()->after('id'),
         ];
 
         foreach ($columns as $column => $callback) {
@@ -264,6 +266,12 @@ abstract class AdminApiTestCase extends TestCase
             $table->string('conversation_id')->nullable();
             $table->timestamps();
         });
+
+        if (Schema::hasTable('memberships') && !Schema::hasColumn('memberships', 'uuid')) {
+            Schema::table('memberships', function (Blueprint $table) {
+                $table->uuid('uuid')->nullable()->unique()->after('id');
+            });
+        }
     }
 
     /**
