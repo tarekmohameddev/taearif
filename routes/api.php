@@ -144,6 +144,7 @@ use App\Http\Controllers\Api\V1\TenantWebsite\{
     PageSeoController,
 };
 use App\Http\Controllers\Api\V1\Analytics\PageviewController;
+use App\Http\Controllers\Api\V1\Analytics\PosthogContextController;
 use App\Http\Controllers\Api\V1\Analytics\Ga4AnalyticsController;
 use App\Http\Controllers\Api\V1\Matching\MatchingController as V1MatchingController;
 use App\Http\Controllers\Api\V1\Matching\CustomerRequestController as V1CustomerRequestController;
@@ -213,6 +214,7 @@ Route::get('/public/support-center/articles/{slug}', [PublicSupportCenterControl
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', [AuthController::class, 'getUserProfile']);
     Route::get('/user/getUserInfo', [AuthController::class, 'getUserProfile']); // Alias for frontend compatibility
+    Route::get('/user/posthog-context', [PosthogContextController::class, 'show']);
     Route::post('/user-read-message', [AuthController::class, 'read_message']);
 });
 
