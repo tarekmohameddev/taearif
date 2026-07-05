@@ -70,6 +70,19 @@
 <!-- misc JS -->
 <script src="{{ asset('assets/admin/js/misc.js') }}"></script>
 
+@include('partials.posthog', [
+    'posthogIdentity' => isset($adminUser) && $adminUser ? [
+        'distinct_id' => 'admin:' . $adminUser->id,
+        'properties' => [
+            'email' => $adminUser->email,
+            'username' => $adminUser->username,
+            'role_id' => $adminUser->role_id,
+            'role_name' => optional($adminUser->role)->name,
+            'surface' => 'platform_admin',
+        ],
+    ] : null,
+])
+
 @yield('scripts')
 
 @yield('vuescripts')
