@@ -243,6 +243,31 @@ class RegisterUserPackageChangeTest extends AdminApiTestCase
         $response->assertRedirect();
     }
 
+    /** @test */
+    public function change_current_package_without_existing_membership_shows_warning(): void
+    {
+        $this->signInWebAdmin();
+
+        $user = $this->createTenantUser('no-membership');
+        $package = $this->createPackage(MembershipService::TERM_MONTHLY, ['id' => 912]);
+        $newPackage = $this->createPackage(MembershipService::TERM_YEARLY, ['id' => 913]);
+
+        $response = $this->from(route('admin.register.user.view', $user->id))
+            ->post(route('admin.user.currPackage.change'), [
+                'user_id' => $user->id,
+                'package_id' => $newPackage->id,
+                'payment_method' => 'manual',
+            ]);
+
+        $response->assertRedirect(route('admin.register.user.view', $user->id));
+        $response->assertSessionHas('membership_warning');
+
+        $this->assertDatabaseMissing('memberships', [
+            'user_id' => $user->id,
+            'package_id' => $newPackage->id,
+        ]);
+    }
+
     private function signInWebAdmin(): Admin
     {
         $admin = Admin::factory()->create([

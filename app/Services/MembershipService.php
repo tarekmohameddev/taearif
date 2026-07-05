@@ -4,8 +4,11 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\Api\GeneralSetting;
+use App\Models\Membership;
+use App\Models\BasicExtended;
 use App\Models\Package;
 use App\Http\Helpers\UserPermissionHelper;
+use App\Exceptions\BusinessLogicException;
 use App\Services\UserPackageService;
 use App\Services\WhatsAppService;
 use App\Events\UserDowngradedToFree;
@@ -364,6 +367,230 @@ class MembershipService
                 Log::info("Created missing language for user {$user->id}");
             }
         }
+    }
+
+    /**
+     * Calculate membership expiry from package term and billing period.
+     */
+    public function calculateExpireDate(Package $package, Carbon $startDate, int $period = 1): Carbon
+    {
+        $period = max(1, $period);
+
+        return match ($package->term) {
+            self::TERM_MONTHLY => $startDate->copy()->addMonths($period),
+            self::TERM_YEARLY => $startDate->copy()->addYears($period),
+            self::TERM_LIFETIME => Carbon::maxValue(),
+            'daily' => $startDate->copy()->addDays($period),
+            'weekly' => $startDate->copy()->addWeeks($period),
+            default => $startDate->copy()->addMonths($period),
+        };
+    }
+
+    /**
+     * Expected charge for a membership checkout (price × period; lifetime ignores period).
+     */
+    public function calculateExpectedMembershipAmount(Package $package, int $period = 1): float
+    {
+        if ($package->term === self::TERM_LIFETIME) {
+            return (float) $package->price;
+        }
+
+        return (float) $package->price * max(1, $period);
+    }
+
+    /**
+     * Expire current and pending memberships so only one plan can be active.
+     */
+    public function expireActiveMemberships(int $userId, ?int $exceptId = null): void
+    {
+        $yesterday = Carbon::now()->subDay()->format('Y-m-d');
+        $today = Carbon::now()->format('Y-m-d');
+
+        $query = Membership::query()->where('user_id', $userId);
+
+        if ($exceptId !== null) {
+            $query->where('id', '!=', $exceptId);
+        }
+
+        $memberships = $query
+            ->whereYear('start_date', '<>', 9999)
+            ->where(function ($q) use ($today) {
+                $q->where(function ($active) use ($today) {
+                    $active->where('status', 1)
+                        ->whereDate('start_date', '<=', $today)
+                        ->whereDate('expire_date', '>=', $today);
+                })->orWhere('status', 0);
+            })
+            ->get();
+
+        foreach ($memberships as $membership) {
+            $membership->expire_date = $yesterday;
+            $membership->modified = 1;
+            if ((int) $membership->status === 0) {
+                $membership->status = 2;
+            }
+            $membership->save();
+        }
+    }
+
+    /**
+     * Activate a package immediately: expire previous memberships and create a new active row.
+     */
+    public function activateImmediateMembership(User $user, Package $package, array $options = []): Membership
+    {
+        $period = max(1, (int) ($options['period'] ?? 1));
+        $paymentMethod = (string) ($options['payment_method'] ?? 'system');
+        $transactionId = (string) ($options['transaction_id'] ?? uniqid());
+        $price = array_key_exists('price', $options)
+            ? (float) $options['price']
+            : $this->calculateExpectedMembershipAmount($package, $period);
+        $source = (string) ($options['source'] ?? 'payment');
+        $exceptId = $options['except_membership_id'] ?? null;
+
+        if ($options['expire_previous'] ?? true) {
+            $this->expireActiveMemberships($user->id, $exceptId);
+        }
+
+        $be = BasicExtended::first();
+        $startDate = Carbon::now();
+        $expireDate = $this->calculateExpireDate($package, $startDate, $period);
+
+        $membership = Membership::create([
+            'package_price' => $package->price,
+            'discount' => $options['discount'] ?? 0,
+            'coupon_code' => $options['coupon_code'] ?? null,
+            'price' => $price,
+            'currency' => $be->base_currency_text ?? 'SAR',
+            'currency_symbol' => $be->base_currency_symbol ?? 'SAR',
+            'payment_method' => $paymentMethod,
+            'transaction_id' => $transactionId,
+            'status' => 1,
+            'is_trial' => 0,
+            'trial_days' => 0,
+            'receipt' => $options['receipt'] ?? null,
+            'transaction_details' => $options['transaction_details'] ?? null,
+            'settings' => json_encode($be),
+            'package_id' => $package->id,
+            'user_id' => $user->id,
+            'start_date' => $startDate->format('Y-m-d'),
+            'expire_date' => $expireDate->format('Y-m-d'),
+            'conversation_id' => $options['conversation_id'] ?? null,
+        ]);
+
+        $user->subscribed = true;
+        $user->subscription_amount = $package->price;
+        $user->save();
+
+        if (!($options['skip_upgrade_hooks'] ?? false)) {
+            $this->handlePackageUpgrade($user, $package->id, $source);
+            $this->handlePackageDowngrade($user, $package->id);
+        }
+
+        return $membership;
+    }
+
+    /**
+     * Queue a package to start after the current membership expires (next cycle).
+     *
+     * @throws BusinessLogicException
+     */
+    public function queueNextMembership(User $user, Package $package, array $options = []): Membership
+    {
+        if (UserPermissionHelper::hasPendingMembership($user->id)) {
+            throw new BusinessLogicException(
+                'User already has a pending package. Resolve it before scheduling a next cycle change.',
+                'PENDING_MEMBERSHIP_EXISTS',
+                400
+            );
+        }
+
+        $currentMembership = UserPermissionHelper::userPackage($user->id);
+        if (!$currentMembership) {
+            throw new BusinessLogicException(
+                'User does not have an active subscription to schedule a next cycle change.',
+                'NO_ACTIVE_SUBSCRIPTION',
+                400
+            );
+        }
+
+        if ((int) $currentMembership->is_trial === 1) {
+            throw new BusinessLogicException(
+                'Cannot schedule next cycle while user is on a trial package.',
+                'TRIAL_PACKAGE_ACTIVE',
+                400
+            );
+        }
+
+        $currentPackage = Package::find($currentMembership->package_id);
+        if (!$currentPackage) {
+            throw new BusinessLogicException('Current package not found.', 'PACKAGE_NOT_FOUND', 404);
+        }
+
+        if ($currentPackage->term === self::TERM_LIFETIME) {
+            throw new BusinessLogicException(
+                'Cannot schedule next cycle while user is on a lifetime package.',
+                'LIFETIME_PACKAGE_ACTIVE',
+                400
+            );
+        }
+
+        if (UserPermissionHelper::nextMembership($user->id)) {
+            throw new BusinessLogicException(
+                'User already has a queued next package.',
+                'NEXT_PACKAGE_EXISTS',
+                400
+            );
+        }
+
+        $be = BasicExtended::first();
+        $startDate = Carbon::parse($currentMembership->expire_date)->addDay();
+        $expireDate = $this->calculateExpireDate($package, $startDate, 1);
+
+        return Membership::create([
+            'package_price' => $package->price,
+            'discount' => 0,
+            'price' => $package->price,
+            'currency' => $be->base_currency_text ?? 'SAR',
+            'currency_symbol' => $be->base_currency_symbol ?? 'SAR',
+            'payment_method' => (string) ($options['payment_method'] ?? 'admin_change_scheduled'),
+            'transaction_id' => (string) ($options['transaction_id'] ?? uniqid()),
+            'status' => 1,
+            'is_trial' => 0,
+            'trial_days' => 0,
+            'settings' => json_encode($be),
+            'package_id' => $package->id,
+            'user_id' => $user->id,
+            'start_date' => $startDate->format('Y-m-d'),
+            'expire_date' => $expireDate->format('Y-m-d'),
+        ]);
+    }
+
+    /**
+     * Apply upgrade/downgrade side effects after a membership is activated or approved.
+     *
+     * @param User|\App\Domain\User\Models\User|int $user
+     */
+    public function applyPackageTransitionHooks($user, int $packageId, string $source = 'payment'): void
+    {
+        $tenant = $this->resolveTenantUser($user);
+        $this->handlePackageUpgrade($tenant, $packageId, $source);
+        $this->handlePackageDowngrade($tenant, $packageId);
+    }
+
+    /**
+     * Normalize tenant user models to App\Models\User.
+     *
+     * @param User|\App\Domain\User\Models\User|int $user
+     */
+    private function resolveTenantUser($user): User
+    {
+        if ($user instanceof User) {
+            return $user;
+        }
+
+        $userId = is_int($user) ? $user : $user->id;
+
+        return User::findOrFail($userId);
     }
 
     /**

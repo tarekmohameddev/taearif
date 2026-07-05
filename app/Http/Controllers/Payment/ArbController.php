@@ -3,17 +3,14 @@
 namespace App\Http\Controllers\Payment;
 
 use App\Http\Controllers\Controller;
-use App\Http\Helpers\UserPermissionHelper;
 use Illuminate\Http\Request;
 use App\Models\Language;
 use App\Models\Package;
 use App\Models\Membership;
 use App\Models\PaymentGateway;
 use Illuminate\Support\Facades\Http;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
-use App\Models\BasicExtended;
 use App\Models\Api\ApiInstallation;
 use App\Models\Api\AppPaymentTransaction;
 use App\Services\InstallationStateMachine;
@@ -307,66 +304,41 @@ class ArbController extends Controller
                 return $this->paymentIframeResponse(false, 'User or package not found');
             }
 
-            DB::transaction(function () use ($user, $package, $packageId, $userId, $period, $price, $transId, $paymentData) {
-                $be = BasicExtended::first();
+            $membershipService = app(MembershipService::class);
+            $expectedAmount = $membershipService->calculateExpectedMembershipAmount($package, $period);
 
-                $currMembership = UserPermissionHelper::currMembOrPending($userId);
-                if ($currMembership) {
-                    $currMembership->expire_date = Carbon::parse(Carbon::now()->subDay()->format('d-m-Y'));
-                    $currMembership->modified = 1;
-                    if ($currMembership->status == 0) {
-                        $currMembership->status = 2;
-                    }
-                    $currMembership->save();
-                }
+            if (abs($price - $expectedAmount) > 0.01) {
+                Log::error('ARB membership payment amount mismatch', [
+                    'expected' => $expectedAmount,
+                    'received' => $price,
+                    'user_id' => $userId,
+                    'package_id' => $packageId,
+                    'period' => $period,
+                ]);
 
-                $startDate = Carbon::now();
-                if ($package->term === 'monthly') {
-                    $expireDate = Carbon::now()->addMonths($period);
-                } elseif ($package->term === 'yearly') {
-                    $expireDate = Carbon::now()->addYears($period);
-                } else {
-                    $expireDate = Carbon::maxValue();
-                }
+                return $this->paymentIframeResponse(false, 'Payment amount mismatch');
+            }
 
+            DB::transaction(function () use ($user, $package, $packageId, $period, $price, $transId, $paymentData, $membershipService) {
                 $transactionDetails = json_encode([
                     'gateway' => 'ARB',
                     'timestamp' => now()->toDateTimeString(),
-                    'user_id' => $userId,
+                    'user_id' => $user->id,
                     'package_id' => $packageId,
                     'period' => $period,
                     'decrypted_data' => $paymentData,
                 ]);
 
-                Membership::create([
-                    'package_price' => $package->price,
-                    'discount' => 0,
-                    'coupon_code' => null,
-                    'price' => $price > 0 ? $price : $package->price,
-                    'currency' => $be->base_currency_text ?? 'SAR',
-                    'currency_symbol' => $be->base_currency_symbol ?? 'SAR',
+                $membershipService->activateImmediateMembership($user, $package, [
+                    'period' => $period,
+                    'price' => $price > 0 ? $price : $membershipService->calculateExpectedMembershipAmount($package, $period),
                     'payment_method' => 'Arb',
                     'transaction_id' => $transId,
-                    'status' => 1,
-                    'is_trial' => 0,
-                    'trial_days' => 0,
-                    'receipt' => null,
                     'transaction_details' => $transactionDetails,
-                    'settings' => json_encode($be),
-                    'package_id' => $packageId,
-                    'user_id' => $userId,
-                    'start_date' => $startDate,
-                    'expire_date' => $expireDate,
-                    'conversation_id' => null,
+                    'source' => 'arb',
                 ]);
 
-                $user->subscribed = true;
-                $user->subscription_amount = $package->price;
-                $user->save();
-
                 $this->processAffiliateCommission($user, $package);
-
-                app(MembershipService::class)->handlePackageUpgrade($user, $packageId, 'arb');
             });
 
             Log::info('ARB membership payment completed', [
@@ -402,7 +374,7 @@ class ArbController extends Controller
         $validUntilToday = is_null($affiliate->to_date_value)
             || $affiliate->to_date_value->copy()->endOfDay()->gte(now());
 
-        if (!$validUntilToday) {
+        if ($validUntilToday) {
             $commissionRate = $affiliate->commission_percentage ?? 0.15;
             $commission = round($package->price * $commissionRate, 2);
 

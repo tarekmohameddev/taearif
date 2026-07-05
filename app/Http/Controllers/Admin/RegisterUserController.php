@@ -1742,7 +1742,7 @@ class RegisterUserController extends Controller
             $data['expire_date'] = Carbon::parse($expire->toFormattedDateString())->format('Y') == '9999' ? 'Lifetime' : $expire->toFormattedDateString();
             $data['membership_invoice'] = $file_name;
         }
-        if ($mailType != 'admin_removed_current_package' || $mailType != 'admin_removed_next_package') {
+        if ($mailType != 'admin_removed_current_package' && $mailType != 'admin_removed_next_package') {
             $data['removed_package_title'] = $removedPackage;
         }
 
@@ -1771,6 +1771,12 @@ class RegisterUserController extends Controller
         $be = BasicExtended::first();
         $bs = BasicSetting::select('website_title')->first();
         $nextMembership = UserPermissionHelper::nextMembership($userId);
+
+        if (!$nextMembership) {
+            Session::flash('warning', 'No next package found for this user.');
+            return back();
+        }
+
         // set the start_date to unlimited
         $nextMembership->start_date = Carbon::parse(Carbon::maxValue()->format('d-m-Y'));
         $nextMembership->modified = 1;
@@ -1792,8 +1798,19 @@ class RegisterUserController extends Controller
         $bs = BasicSetting::select('website_title')->first();
         $be = BasicExtended::first();
         $nextMembership = UserPermissionHelper::nextMembership($userId);
+
+        if (!$nextMembership) {
+            Session::flash('warning', 'No next package found for this user.');
+            return back();
+        }
+
         $nextPackage = Package::find($nextMembership->package_id);
         $selectedPackage = Package::find($request->package_id);
+
+        if (!$selectedPackage) {
+            Session::flash('membership_warning', 'Selected package not found.');
+            return back();
+        }
 
         $prevStartDate = $nextMembership->start_date;
         // set the start_date to unlimited
