@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Building\AttachBuildingPropertyRequest;
 use App\Http\Resources\Api\BuildingPropertyResource;
 use App\Models\User;
 use App\Services\Building\BuildingPropertyService;
@@ -54,6 +55,31 @@ class BuildingPropertyController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage() ?: 'Building not found for this tenant.',
+            ], 404);
+        }
+    }
+
+    public function attach(AttachBuildingPropertyRequest $request, int $id): JsonResponse
+    {
+        try {
+            $owner = $this->resolveTenantOwner();
+            $property = $this->buildingPropertyService->attach(
+                $owner->id,
+                $id,
+                (int) $request->validated('property_id'),
+            );
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Property attached to building successfully',
+                'data' => [
+                    'property' => new BuildingPropertyResource($property),
+                ],
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage() ?: 'Building or property not found for this tenant.',
             ], 404);
         }
     }

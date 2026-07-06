@@ -422,6 +422,7 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     // Building management routes
     Route::get   ('/buildings',                         [App\Http\Controllers\Api\BuildingController::class, 'index'])->middleware('can:buildings.view');
     Route::get   ('/buildings/{id}/properties',         [App\Http\Controllers\Api\BuildingPropertyController::class, 'index'])->middleware('can:buildings.view');
+    Route::post  ('/buildings/{id}/properties/attach', [App\Http\Controllers\Api\BuildingPropertyController::class, 'attach'])->middleware('can:properties.update');
     Route::get   ('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'show'])->middleware('can:buildings.view');
     Route::post  ('/buildings',                         [App\Http\Controllers\Api\BuildingController::class, 'store'])->middleware('can:buildings.create');
     Route::post  ('/buildings/upload-image',            [App\Http\Controllers\Api\BuildingController::class, 'uploadBuildingImage'])->middleware('can:buildings.create');

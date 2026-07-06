@@ -558,6 +558,29 @@ namespace App\Http\Controllers\Api;
  *
  * @OA\PathItem(
  *
+ *     path="/buildings/{id}/properties/attach",
+ *
+ *     @OA\Post(
+ *         operationId="post_buildings_id_properties_attach_0",
+ *         tags={"Buildings"},
+ *         summary="Attach existing property to building",
+ *         description="Link an existing tenant-owned property to a building by setting building_id. Reassignment from another building is allowed. Requires properties.update.",
+ *         security={{"sanctum":{}}},
+ *         @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"property_id"},
+ *             @OA\Property(property="property_id", type="integer"),
+ *         )),
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="message", type="string"), @OA\Property(property="data", type="object", @OA\Property(property="property", type="object")))),
+ *         @OA\Response(response=404, description="Building or property not found for tenant"),
+ *         @OA\Response(response=422, description="Validation error"),
+ *         @OA\Response(response=403, description="Permission denied"),
+ *         @OA\Response(response=401, description="Unauthenticated")
+ *     )
+ *
+ * )
+ *
+ * @OA\PathItem(
+ *
  *     path="/buildings/{id}",
  *
  *     @OA\Get(
