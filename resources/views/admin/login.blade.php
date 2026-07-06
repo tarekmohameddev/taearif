@@ -47,8 +47,6 @@
   <!-- Bootstrap Notify -->
   <script src="{{ asset('assets/admin/js/plugin/bootstrap-notify/bootstrap-notify.min.js') }}"></script>
 
-  @include('partials.posthog')
-
 </body>
 
 </html>
