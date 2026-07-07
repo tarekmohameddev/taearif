@@ -63,7 +63,6 @@ use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Helpers\UserPermissionHelper;
-use App\Services\Rbac\BootstrapTenantRbac;
 use Spatie\Permission\PermissionRegistrar;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Models\User\RealestateManagement\Category;
@@ -519,8 +518,16 @@ class AuthController extends Controller
                 }
             }
 
-            // Create default roles & permissions INSIDE this tenant
-            DB::afterCommit(fn() => app(\App\Services\TenantRbacBootstrapper::class)->run($user->id));
+            // Create default roles & permissions INSIDE this tenant.
+            // afterCommit callbacks can throw outside the controller flow; swallow and report so registration can succeed
+            // and the middleware self-heal path can retry later if needed.
+            DB::afterCommit(function () use ($user) {
+                try {
+                    app(\App\Services\TenantRbacBootstrapper::class)->run($user->id);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            });
 
 
             // Log in tenant

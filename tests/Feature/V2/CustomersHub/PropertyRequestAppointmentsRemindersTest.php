@@ -165,6 +165,70 @@ class PropertyRequestAppointmentsRemindersTest extends TestCase
     }
 
     /** @test */
+    public function create_appointment_with_date_only_datetime_persists_midnight(): void
+    {
+        $this->requirePropertyRequestTables();
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        $prId = $this->createPropertyRequestForUser($tenant->id);
+        Sanctum::actingAs($tenant);
+
+        $res = $this->postJson("/api/v2/customers-hub/requests/property_request_{$prId}/appointments", [
+            'type' => 'office_meeting',
+            'datetime' => '2027-12-11',
+            'duration' => 30,
+            'notes' => 'hey',
+            'title' => 'اجتماع مكتب',
+            'priority' => 'medium',
+        ]);
+
+        $res->assertStatus(201);
+        $res->assertJsonPath('success', true);
+        $datetime = $res->json('data.appointment.datetime');
+        $this->assertNotNull($datetime);
+        $this->assertStringStartsWith('2027-12-11', $datetime);
+
+        $this->assertDatabaseHas('property_request_appointments', [
+            'property_request_id' => $prId,
+            'user_id' => $tenant->id,
+            'type' => 'office_meeting',
+            'datetime' => '2027-12-11 00:00:00',
+            'status' => 'scheduled',
+        ]);
+    }
+
+    /** @test */
+    public function create_appointment_with_date_field_alias_maps_to_datetime(): void
+    {
+        $this->requirePropertyRequestTables();
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        $prId = $this->createPropertyRequestForUser($tenant->id);
+        Sanctum::actingAs($tenant);
+
+        $res = $this->postJson("/api/v2/customers-hub/requests/property_request_{$prId}/appointments", [
+            'type' => 'office_meeting',
+            'date' => '2027-12-11',
+            'duration' => 30,
+            'notes' => 'hey',
+            'title' => 'اجتماع مكتب',
+            'priority' => 'medium',
+        ]);
+
+        $res->assertStatus(201);
+        $res->assertJsonPath('success', true);
+        $datetime = $res->json('data.appointment.datetime');
+        $this->assertNotNull($datetime);
+        $this->assertStringStartsWith('2027-12-11', $datetime);
+
+        $this->assertDatabaseHas('property_request_appointments', [
+            'property_request_id' => $prId,
+            'user_id' => $tenant->id,
+            'type' => 'office_meeting',
+            'datetime' => '2027-12-11 00:00:00',
+            'status' => 'scheduled',
+        ]);
+    }
+
+    /** @test */
     public function create_reminder_for_property_request_returns_201_and_reminder(): void
     {
         $this->requirePropertyRequestTables();
