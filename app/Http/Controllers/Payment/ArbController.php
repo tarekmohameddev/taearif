@@ -332,7 +332,7 @@ class ArbController extends Controller
                 $membershipService->activateImmediateMembership($user, $package, [
                     'period' => $period,
                     'price' => $price > 0 ? $price : $membershipService->calculateExpectedMembershipAmount($package, $period),
-                    'payment_method' => 'Arb',
+                    'payment_method' => 'arb',
                     'transaction_id' => $transId,
                     'transaction_details' => $transactionDetails,
                     'source' => 'arb',

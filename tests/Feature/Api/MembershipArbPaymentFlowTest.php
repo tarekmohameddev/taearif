@@ -211,7 +211,7 @@ class MembershipArbPaymentFlowTest extends TestCase
             'user_id' => $tenant->id,
             'package_id' => $package->id,
             'transaction_id' => 'ARB-CAPTURED-001',
-            'payment_method' => 'Arb',
+            'payment_method' => 'arb',
         ]);
     }
 
