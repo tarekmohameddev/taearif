@@ -144,11 +144,12 @@ $selLang = request()->filled('language')
                             <table class="table table-striped mt-3">
                                 <thead>
                                     <tr>
+                                        <th scope="col">{{__('Username')}}</th>                                    
                                         <th scope="col">{{__('Transaction Id')}}</th>
-                                        <th scope="col">{{__('Date')}}</th>
                                         <th scope="col">{{__('Amount')}}</th>
                                         <th scope="col">{{__('Payment Status')}}</th>
                                         <th scope="col">{{__('Payment Method')}}</th>
+                                        <th scope="col">{{__('Date')}}</th>
                                         <th scope="col">{{__('Receipt')}}</th>
                                         <th scope="col">{{__('Actions')}}</th>
                                     </tr>
@@ -156,18 +157,9 @@ $selLang = request()->filled('language')
                                 <tbody>
                                     @foreach ($memberships as $key => $membership)
                                     <tr>
+                                        <td>{{ !empty($membership->user) ? $membership->user->username : '-' }}</td>
                                         <td>{{strlen($membership->transaction_id) > 30 ? mb_substr($membership->transaction_id, 0, 30, 'UTF-8') . '...' : $membership->transaction_id}}</td>
-                                        <td>
-                                            @if ($membership->created_at)
-                                            <small>
-                                                {{ \Carbon\Carbon::parse($membership->created_at)->format('d M Y') }}
-                                                <br>
-                                                <span class="text-muted">{{ \Carbon\Carbon::parse($membership->created_at)->format('h:i A') }}</span>
-                                            </small>
-                                            @else
-                                            -
-                                            @endif
-                                        </td>
+
                                         @php
                                         $bex = json_decode($membership->settings);
                                         @endphp
@@ -211,6 +203,17 @@ $selLang = request()->filled('language')
                                             @endif
                                         </td>
                                         <td>{{$membership->payment_method}}</td>
+                                        <td>
+                                            @if ($membership->created_at)
+                                            <small>
+                                                {{ \Carbon\Carbon::parse($membership->created_at)->format('d M Y') }}
+                                                <br>
+                                                <span class="text-muted">{{ \Carbon\Carbon::parse($membership->created_at)->format('h:i A') }}</span>
+                                            </small>
+                                            @else
+                                            -
+                                            @endif
+                                        </td>                                        
                                         <td>
                                             @if ($membership->status == 1)
                                             <a class="btn btn-sm btn-info" href="{{route('admin.payment-log.download-invoice', $membership->id)}}" target="_blank">
