@@ -58,12 +58,13 @@ class PaymentLogController extends Controller
                 'expire_date',
                 'modified',
                 'is_trial',
+                'created_at',
             ])
             ->with([
                 'user:id,first_name,last_name,username,company_name,email,phone',
                 'package:id,title,term',
             ])
-            ->where('payment_method', 'arb')
+            ->whereRaw('LOWER(payment_method) = ?', ['arb'])
             ->when($search, function ($query, $search) {
                 return $query->where('transaction_id', 'like', '%' . $search . '%');
             })
