@@ -3,11 +3,11 @@
 namespace App\Services;
 
 use App\Models\User;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use App\Exceptions\Api\BusinessLogicException;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
@@ -24,12 +24,26 @@ class TenantRbacBootstrapper
             if ((int) $tenant->rbac_version >= $targetVersion && $tenant->rbac_seeded_at) return;
 
             $guard = (string) config('rbac.guard', 'sanctum');
-            app(PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
+            $registrar = app(PermissionRegistrar::class);
 
-            DB::transaction(function () use ($tenant, $tenantId, $targetVersion, $guard) {
+            DB::transaction(function () use ($tenant, $tenantId, $targetVersion, $guard, $registrar) {
                 // 1) ensure GLOBAL permissions (see §2 below)
                 $allPermNames = collect(config('rbac.permissions', []))->filter()->unique()->values();
-                $perms = $this->ensurePermissions($guard, $allPermNames);
+                $perms = $this->ensureGlobalPermissions($guard, $allPermNames);
+
+                $existingGlobalNames = Permission::query()
+                    ->where('guard_name', $guard)
+                    ->whereNull('team_id')
+                    ->whereIn('name', $allPermNames)
+                    ->pluck('name');
+
+                $missing = $allPermNames->diff($existingGlobalNames)->values();
+                if ($missing->isNotEmpty()) {
+                    throw BusinessLogicException::make(
+                        message: 'RBAC bootstrap failed: missing permissions after seeding.',
+                        details: ['missing_permissions' => $missing->all()]
+                    );
+                }
 
                 // 2) ensure roles for this tenant — include 'owner' explicitly
                 $templates = collect(config('rbac.role_templates', []));    // e.g. ['manager'=>[...], 'agent'=>[...]]
@@ -40,13 +54,37 @@ class TenantRbacBootstrapper
                 foreach ($templates as $roleName => $permNames) {
                     $role = $roles->get($roleName);
                     if (!$role) continue;
-                    $rolePerms = $perms->only($permNames)->values();
-                    $role->syncPermissions($rolePerms);
+                    $rolePermIds = DB::table('api_permissions')
+                        ->where('guard_name', $guard)
+                        ->whereNull('team_id')
+                        ->whereIn('name', (array) $permNames)
+                        ->pluck('id')
+                        ->all();
+
+                    // Avoid relying on Spatie's internal permission resolution here; we already resolved stable IDs.
+                    DB::table('api_role_has_permissions')
+                        ->where('role_id', $role->id)
+                        ->delete();
+
+                    foreach ($rolePermIds as $pid) {
+                        $row = [
+                            'permission_id' => (int) $pid,
+                            'role_id'       => (int) $role->id,
+                        ];
+
+                        if (Schema::hasColumn('api_role_has_permissions', 'team_id')) {
+                            $row['team_id'] = (int) $tenantId;
+                        }
+
+                        DB::table('api_role_has_permissions')->insertOrIgnore($row);
+                    }
                 }
 
                 // 4) assign owner BY INSTANCE (prevents a create path)
                 $ownerRole = $roles->get('owner');
                 if ($ownerRole && !$tenant->hasRole($ownerRole)) {
+                    // Switch to tenant context for role assignment.
+                    $registrar->setPermissionsTeamId($tenantId);
                     $tenant->assignRole($ownerRole);
                 }
 
@@ -56,30 +94,53 @@ class TenantRbacBootstrapper
                 ])->saveQuietly();
             });
 
-            app(PermissionRegistrar::class)->forgetCachedPermissions();
+            $registrar->forgetCachedPermissions();
         });
     }
 
     /**
-     * Ensure all given permissions exist (prefer global/null team if present),
-     * otherwise create tenant-scoped permissions, and return a Collection<Permission>.
+     * Ensure all given permissions exist as GLOBAL (team_id NULL) permissions.
+     *
+     * Returns a map keyed by permission name.
      */
-    protected function ensurePermissions(string $guard, array|Collection $names): Collection
+    protected function ensureGlobalPermissions(string $guard, array|Collection $names): Collection
     {
         $names = collect($names)->filter()->unique()->values();
         if ($names->isEmpty()) return collect();
-    
+
+        $registrar = app(PermissionRegistrar::class);
+        $registrar->forgetCachedPermissions();
+
+        // Ensure we do not accidentally create tenant-scoped permissions.
+        $registrar->setPermissionsTeamId(null);
+
         $existing = Permission::query()
             ->where('guard_name', $guard)
+            ->whereNull('team_id')
             ->whereIn('name', $names)
             ->get()
             ->keyBy('name');
-    
-        $map = collect();
-        foreach ($names as $n) {
-            $map->put($n, $existing->get($n) ?? Permission::findOrCreate($n, $guard));
+
+        $missing = $names->diff($existing->keys())->values();
+
+        foreach ($missing as $name) {
+            DB::table('api_permissions')->insertOrIgnore([
+                'name'       => (string) $name,
+                'guard_name' => $guard,
+                'team_id'    => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
         }
-        return $map;
+
+        $registrar->forgetCachedPermissions();
+
+        return Permission::query()
+            ->where('guard_name', $guard)
+            ->whereNull('team_id')
+            ->whereIn('name', $names)
+            ->get()
+            ->keyBy('name');
     }
 
 

@@ -31,6 +31,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\ProcessScheduledEmailCampaigns::class,
         \App\Console\Commands\ProcessScheduledWaCampaigns::class,
         \App\Console\Commands\BackfillRbacNewPermissions::class,
+        \App\Console\Commands\RbacHealthCheck::class,
     ];
 
     /**
