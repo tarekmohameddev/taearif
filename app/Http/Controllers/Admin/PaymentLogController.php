@@ -58,6 +58,7 @@ class PaymentLogController extends Controller
                 'expire_date',
                 'modified',
                 'is_trial',
+                'created_at',
             ])
             ->with([
                 'user:id,first_name,last_name,username,company_name,email,phone',
