@@ -582,7 +582,49 @@ class AuthController extends Controller
             }
 
             $user['onboarding_completed'] = false;
-            return response()->json([
+
+            // Build PostHog context for the newly created user so SPA can identify immediately.
+            $posthogPayload = null;
+            try {
+                $posthogService = app(\App\Services\Analytics\PosthogContextService::class);
+                $posthogPayload = $posthogService->forUser($user);
+
+                // Optional: emit a reliable server-side event if a personal API key is configured.
+                // This does not replace the frontend identify (which links anonymous session data).
+                $personalKey = config('services.posthog.personal_key');
+                if (!empty($posthogPayload['enabled']) && !empty($personalKey)) {
+                    try {
+                        // Support both possible client class names from the posthog php package.
+                        $clientClass = null;
+                        if (class_exists(\PostHog\PostHog::class)) {
+                            $clientClass = \PostHog\PostHog::class;
+                        } elseif (class_exists(\PostHog\Posthog::class)) {
+                            $clientClass = \PostHog\Posthog::class;
+                        }
+
+                        if ($clientClass) {
+                            // Host must be trimmed of trailing slash.
+                            $host = rtrim((string) config('services.posthog.host'), '/');
+                            $client = new $clientClass($personalKey, ['host' => $host]);
+                            $client->capture([
+                                'distinctId' => $posthogPayload['distinct_id'] ?? ('user:' . $user->id),
+                                'event' => 'user_registered',
+                                'properties' => [
+                                    'user_id' => $user->id,
+                                    'surface' => $posthogPayload['properties']['surface'] ?? null,
+                                ],
+                            ]);
+                        }
+                    } catch (\Throwable $e) {
+                        \Log::warning('PostHog server capture failed: ' . $e->getMessage());
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Do not fail registration for analytics issues.
+                \Log::warning('Failed to build PostHog payload: ' . $e->getMessage());
+            }
+
+            $response = [
                 'status' => 'success',
                 'user'   => $user,
                 'token'  => $token,
@@ -590,7 +632,13 @@ class AuthController extends Controller
                     'start_date'  => $activation->toDateString(),
                     'expire_date' => $expire->toDateString(),
                 ]
-            ], 201);
+            ];
+
+            if (!empty($posthogPayload)) {
+                $response['posthog'] = $posthogPayload;
+            }
+
+            return response()->json($response, 201);
 
         } catch (\Exception $e) {
             return response()->json([
