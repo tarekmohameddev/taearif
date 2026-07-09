@@ -33,6 +33,7 @@ use App\Models\User\RealestateManagement\ProjectSpecification;
 use Carbon\Carbon;
 use App\Services\GoogleAnalyticsService;
 use App\Services\MembershipCacheService;
+use App\Services\Project\ProjectPropertyService;
 
 class ProjectController extends Controller
 {
@@ -147,6 +148,7 @@ class ProjectController extends Controller
                 "price_range"     => formatNumberWithoutTrailingZeros($project->min_price ?? 0),
                 "latitude"        => $project->latitude,
                 "longitude"       => $project->longitude,
+                ...$this->projectLocationFields($project),
                 "featured"        => (bool) $project->featured,
                 "complete_status" => $project->complete_status,
                 "units"           => $project->units, // legacy manual field; use units_count for dashboards
@@ -282,6 +284,7 @@ class ProjectController extends Controller
             "price_range" => "From $" . formatNumberWithoutTrailingZeros($project->min_price ?? 0) . " to $" . formatNumberWithoutTrailingZeros($project->max_price ?? 0),
             "latitude" => $project->latitude,
             "longitude" => $project->longitude,
+            ...$this->projectLocationFields($project),
             "featured" => $project->featured,
             "complete_status" => $project->complete_status ?? "Unknown",
             "units" => $project->units ?? 0,
@@ -395,7 +398,7 @@ class ProjectController extends Controller
         $project = null;
 
         DB::transaction(function () use ($request, $ownerId, $defaultLang, &$project) {
-            $requestData = $request->all();
+            $requestData = $this->mergeRequestLocation($request->all());
             $requestData['featured_image'] = asset($request->featured_image);
             $requestData['video_url'] = !empty($request->video_url) ? $request->video_url : null; // Handle empty string
             $requestData['brochure'] = !empty($request->brochure) ? $request->brochure : null;
@@ -508,6 +511,8 @@ class ProjectController extends Controller
             ? formatNumberWithoutTrailingZeros($responseProject->max_price) 
             : null;
 
+        $this->appendProjectLocationAlias($responseProject);
+
         // Log the activity
         TenantActivity::emit($request, 'project.created', 'user_projects', $responseProject->id, null, [
             'id' => $responseProject->id, 'title' => optional($responseProject->contents->first())->title
@@ -575,6 +580,30 @@ class ProjectController extends Controller
             : asset($value);
     }
 
+    private function mergeRequestLocation(array $requestData): array
+    {
+        $location = app(ProjectPropertyService::class)
+            ->normalizeLocation($requestData, required: false);
+
+        return array_merge($requestData, $location);
+    }
+
+    private function projectLocationFields(Project $project): array
+    {
+        return [
+            'city_id' => $project->city_id,
+            'state_id' => $project->state_id,
+            'district_id' => $project->state_id,
+        ];
+    }
+
+    private function appendProjectLocationAlias(Project $project): Project
+    {
+        $project->district_id = $project->state_id;
+
+        return $project;
+    }
+
     private function ensureProjectsMenuExistsForUser($userId)
     {
         $exists = ApiMenuItem::where('user_id', $userId)
@@ -637,7 +666,7 @@ class ProjectController extends Controller
         }
 
         DB::transaction(function () use ($request, $ownerId, $defaultLang, &$project) {
-            $requestData = $request->all();
+            $requestData = $this->mergeRequestLocation($request->all());
             $requestData['featured_image'] = $request->featured_image;
             $requestData['video_url'] = !empty($request->video_url) ? $request->video_url : null; // Handle empty string
             if ($request->has('brochure')) {
@@ -728,6 +757,8 @@ class ProjectController extends Controller
         if ($responseProject->brochure) {
             $responseProject->brochure = $this->resolveMediaUrl($responseProject->brochure);
         }
+
+        $this->appendProjectLocationAlias($responseProject);
 
         TenantActivity::emit($request, 'project.created', 'user_projects', $responseProject->id, null, [
             'id' => $responseProject->id, 'title' => optional($responseProject->contents->first())->title

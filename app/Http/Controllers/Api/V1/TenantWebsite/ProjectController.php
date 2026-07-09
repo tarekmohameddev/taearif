@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use App\Models\User\RealestateManagement\Project;
 use App\Models\User\RealestateManagement\Property;
+use App\Models\User\UserDistrict;
 use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
 use Carbon\Carbon;
 
@@ -126,7 +127,17 @@ class ProjectController extends Controller
             }
         }
 
-        $items = collect($projects->items())->map(function ($project) use ($viewsBySlug, $projectUnitBreakdowns) {
+        $districtIds = collect($projects->items())
+            ->pluck('state_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        $districtsMap = ! empty($districtIds)
+            ? UserDistrict::with('city')->whereIn('id', $districtIds)->get()->keyBy('id')
+            : collect();
+
+        $items = collect($projects->items())->map(function ($project) use ($viewsBySlug, $projectUnitBreakdowns, $districtsMap) {
             $content = optional($project->contents->first());
             $slug    = $content?->slug;
 
@@ -156,11 +167,7 @@ class ProjectController extends Controller
                 'brochure' => $this->resolveMediaUrl($project->brochure),
                 'amenities' => $this->getAmenitiesArray($project),
                 'views' => $viewsBySlug[$slug] ?? 0,
-                'location' => [
-                    'lat' => $project->latitude ? (float) $project->latitude : null,
-                    'lng' => $project->longitude ? (float) $project->longitude : null,
-                    'address' => $content?->address ?? '',
-                ],
+                'location' => $this->buildProjectLocation($project, $content?->address ?? '', $districtsMap),
                 'properties' => $project->properties->map(function ($property) {
                     return $this->formatProperty($property);
                 }),
@@ -424,11 +431,7 @@ class ProjectController extends Controller
 			'amenities' => $this->getAmenitiesArray($project),
 			'featured' => (bool) ($project->featured ?? false),
 			'published' => (bool) ($project->published ?? false),
-			'location' => [
-				'lat' => $project->latitude ? (float) $project->latitude : null,
-				'lng' => $project->longitude ? (float) $project->longitude : null,
-				'address' => $content->address ?? '',
-			],
+			'location' => $this->buildProjectLocation($project, $content->address ?? ''),
 			'specifications' => $specifications,
 			'types' => $types,
 			'createdAt' => $project->created_at?->toISOString(),
@@ -441,9 +444,6 @@ class ProjectController extends Controller
 		return response()->json(['project' => $data]);
 	}
 
-	/**
-	 * Format a property with all its details for API response.
-	 */
 	private function formatProperty($property): array
 	{
 		$content = $property->contents->first();
@@ -484,6 +484,29 @@ class ProjectController extends Controller
 			'virtual_tour' => $property->virtual_tour ? asset($property->virtual_tour) : null,
 			'created_at' => $property->created_at?->toISOString(),
 			'updated_at' => $property->updated_at?->toISOString(),
+		];
+	}
+
+	private function buildProjectLocation(Project $project, ?string $address = '', $districtsMap = null): array
+	{
+		$district = null;
+		if ($project->state_id) {
+			if ($districtsMap && isset($districtsMap[$project->state_id])) {
+				$district = $districtsMap[$project->state_id];
+			} else {
+				$district = UserDistrict::with('city')->find($project->state_id);
+			}
+		}
+
+		return [
+			'lat' => $project->latitude ? (float) $project->latitude : null,
+			'lng' => $project->longitude ? (float) $project->longitude : null,
+			'address' => $address ?? '',
+			'city_id' => $project->city_id,
+			'district_id' => $project->state_id,
+			'state_id' => $project->state_id,
+			'city' => $district?->city_name_ar ?? $district?->city?->name_ar ?? null,
+			'district' => $district?->name_ar ?? null,
 		];
 	}
 
@@ -548,6 +571,17 @@ class ProjectController extends Controller
 
 		if (! in_array('search', $except, true)) {
 			$this->applyProjectSearchFilter($query, $request);
+		}
+
+		if (! in_array('city_id', $except, true) && $request->filled('city_id')) {
+			$query->where('city_id', (int) $request->input('city_id'));
+		}
+
+		if (! in_array('district_id', $except, true)) {
+			$districtId = $request->input('state_id') ?? $request->input('district_id');
+			if ($districtId !== null && $districtId !== '') {
+				$query->where('state_id', (int) $districtId);
+			}
 		}
 	}
 

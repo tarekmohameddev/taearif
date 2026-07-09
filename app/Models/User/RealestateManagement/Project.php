@@ -3,6 +3,7 @@
 namespace App\Models\User\RealestateManagement;
 
 use App\Models\User;
+use App\Models\User\UserDistrict;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User\RealestateManagement\Category;
 use App\Models\User\RealestateManagement\Property;
@@ -26,6 +27,8 @@ class Project extends Model
         'max_price',
         'latitude',
         'longitude',
+        'city_id',
+        'state_id',
         'featured',
         'complete_status',
         'units',
@@ -148,12 +151,16 @@ class Project extends Model
             'complete_status' => $request['complete_status'] ?? 0,
             'latitude' => $request['latitude'] ?? null,
             'longitude' => $request['longitude'] ?? null,
+            'city_id' => $request['city_id'] ?? null,
+            'state_id' => $request['state_id'] ?? null,
             'amenities' => $request['amenities'] ?? [],
         ]);
     }
 
     public   function updateProject($request)
     {
+        $locationKeys = ['city_id', 'state_id', 'district_id'];
+        $hasLocationUpdate = ! empty(array_intersect($locationKeys, array_keys($request)));
 
         return $this->update([
             'featured_image' => $request['featured_image'],
@@ -171,8 +178,15 @@ class Project extends Model
             'completion_date' => $request['completion_date'] ?? $this->completion_date,
             'latitude' => $request['latitude'] ?? $this->latitude,
             'longitude' => $request['longitude'] ?? $this->longitude,
+            'city_id' => $hasLocationUpdate ? ($request['city_id'] ?? null) : $this->city_id,
+            'state_id' => $hasLocationUpdate ? ($request['state_id'] ?? null) : $this->state_id,
             'amenities' => $request['amenities'] ?? $this->amenities ?? [],
         ]);
+    }
+
+    public function district()
+    {
+        return $this->belongsTo(UserDistrict::class, 'state_id', 'id');
     }
 
     public  function galleryImages()

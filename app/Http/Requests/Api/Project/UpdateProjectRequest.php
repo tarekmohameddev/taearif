@@ -3,17 +3,26 @@
 namespace App\Http\Requests\Api\Project;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
+use App\Http\Requests\Concerns\NormalizesDistrictLocation;
+use Illuminate\Validation\Validator;
 
 class UpdateProjectRequest extends BaseApiFormRequest
 {
+    use NormalizesDistrictLocation;
+
     public function authorize(): bool
     {
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->prepareDistrictForValidation();
+    }
+
     public function rules(): array
     {
-        return [
+        return array_merge([
             'featured_image' => 'required|string',
             'video_url' => 'nullable|string',
             'brochure' => 'nullable|string|url',
@@ -33,6 +42,11 @@ class UpdateProjectRequest extends BaseApiFormRequest
             'value' => 'nullable|array',
             'complete_status' => 'nullable',
             'units' => 'nullable|integer',
-        ];
+        ], $this->districtLocationRules(false));
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $this->validateDistrictCityMatch($validator);
     }
 }
