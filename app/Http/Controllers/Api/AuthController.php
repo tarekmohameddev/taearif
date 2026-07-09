@@ -15,7 +15,10 @@ use App\Http\Requests\Api\Auth\LoginApiRequest;
 use App\Http\Requests\Api\Auth\LogoutApiRequest;
 use App\Http\Requests\Api\Auth\ReadMessageRequest;
 use App\Http\Requests\Api\Auth\RegisterApiRequest;
+use App\Http\Requests\Api\Auth\UpdateUserProfileRequest;
 use App\Http\Requests\Api\Auth\AuthVerifyResetCodeRequest;
+use App\Models\Api\FooterSetting;
+use App\Support\CacheInvalidationHelper;
 use App\Rules\Recaptcha;
 use App\Models\User\Blog;
 use App\Models\User\Menu;
@@ -1015,7 +1018,7 @@ class AuthController extends Controller
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'email' => $user->email,
-                'phone' => $user->phone_number ?? null,
+                'phone' => $user->phone ?? $user->phone_number ?? null,
                 'address' => $user->address ?? null,
                 'city' => $user->city ?? null,
                 'state' => $user->state ?? null,
@@ -1067,6 +1070,194 @@ class AuthController extends Controller
                 'status' => 'error',
                 'message' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function updateUserProfile(UpdateUserProfileRequest $request)
+    {
+        try {
+            $user = Auth::user();
+
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized access',
+                ], 401);
+            }
+
+            $validated = $request->validated();
+            $owner = $user->tenantOwner();
+            $ownerId = $user->tenantOwnerId();
+
+            if ($this->hasCompanyFieldUpdates($validated)) {
+                $canUpdateCompany = $user->isTenant() || $user->can('settings.update');
+                if (!$canUpdateCompany) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'You do not have permission to update company settings.',
+                        'code' => 'FORBIDDEN',
+                    ], 403);
+                }
+            }
+
+            if (!empty($validated['password'])) {
+                if (!Hash::check($validated['current_password'] ?? '', $user->password)) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Validation failed',
+                        'errors' => [
+                            'current_password' => ['The current password is incorrect.'],
+                        ],
+                    ], 422);
+                }
+            }
+
+            DB::transaction(function () use ($user, $owner, $validated) {
+                $userFields = $this->extractPersonalProfileFields($validated);
+
+                if ($userFields !== []) {
+                    $user->fill($userFields);
+                    $user->save();
+                }
+
+                if (!empty($validated['password'])) {
+                    $user->password = Hash::make($validated['password']);
+                    $user->save();
+                }
+
+                if ($this->hasCompanyFieldUpdates($validated)) {
+                    $this->applyCompanyProfileUpdates($owner, $validated);
+                }
+            });
+
+            CacheInvalidationHelper::clearTenantProfileCachesAuto($ownerId);
+
+            $profileResponse = $this->getUserProfile();
+            $profilePayload = $profileResponse->getData(true);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Profile updated successfully',
+                'data' => $profilePayload['data'] ?? $profilePayload,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function hasCompanyFieldUpdates(array $validated): bool
+    {
+        foreach (['company_name', 'company_email', 'company_phone', 'company_address', 'working_hours', 'district'] as $key) {
+            if (array_key_exists($key, $validated)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function extractPersonalProfileFields(array $validated): array
+    {
+        $userFields = [];
+
+        if (array_key_exists('first_name', $validated)) {
+            $userFields['first_name'] = $validated['first_name'];
+        }
+
+        if (array_key_exists('last_name', $validated)) {
+            $userFields['last_name'] = $validated['last_name'];
+        }
+
+        if (array_key_exists('name', $validated)) {
+            $parts = preg_split('/\s+/', trim((string) $validated['name']), 2);
+            $userFields['first_name'] = $parts[0] ?? '';
+            $userFields['last_name'] = $parts[1] ?? '';
+        }
+
+        foreach (['email', 'phone', 'address', 'city', 'country'] as $field) {
+            if (array_key_exists($field, $validated)) {
+                $userFields[$field] = $validated[$field];
+            }
+        }
+
+        if (array_key_exists('state', $validated)) {
+            $userFields['state'] = $validated['state'];
+        } elseif (array_key_exists('district', $validated) && !$this->hasCompanyFieldUpdates($validated)) {
+            $userFields['state'] = $validated['district'];
+        }
+
+        return $userFields;
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function applyCompanyProfileUpdates(User $owner, array $validated): void
+    {
+        $basicSetting = BasicSetting::firstOrCreate(['user_id' => $owner->id]);
+
+        if (array_key_exists('company_name', $validated)) {
+            $owner->company_name = $validated['company_name'];
+            $owner->save();
+            $basicSetting->company_name = $validated['company_name'];
+        }
+
+        if (array_key_exists('company_email', $validated)) {
+            $basicSetting->email = $validated['company_email'];
+        }
+
+        $basicSetting->save();
+
+        $footerSetting = FooterSetting::firstOrCreate(
+            ['user_id' => $owner->id],
+            [
+                'general' => [],
+                'social' => [],
+                'columns' => [],
+                'newsletter' => [],
+                'style' => [],
+                'status' => true,
+            ]
+        );
+
+        $general = is_array($footerSetting->general) ? $footerSetting->general : [];
+
+        if (array_key_exists('company_name', $validated)) {
+            $general['companyName'] = $validated['company_name'];
+        }
+
+        if (array_key_exists('company_email', $validated)) {
+            $general['email'] = $validated['company_email'];
+        }
+
+        if (array_key_exists('company_phone', $validated)) {
+            $general['phone'] = $validated['company_phone'];
+        }
+
+        if (array_key_exists('company_address', $validated)) {
+            $general['address'] = $validated['company_address'];
+        }
+
+        if (array_key_exists('working_hours', $validated)) {
+            $general['workingHours'] = $validated['working_hours'];
+        }
+
+        $footerSetting->general = $general;
+        $footerSetting->save();
+
+        if (array_key_exists('district', $validated)) {
+            $owner->state = $validated['district'];
+            $owner->save();
         }
     }
 

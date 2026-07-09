@@ -214,6 +214,7 @@ Route::get('/public/support-center/articles/{slug}', [PublicSupportCenterControl
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', [AuthController::class, 'getUserProfile']);
     Route::get('/user/getUserInfo', [AuthController::class, 'getUserProfile']); // Alias for frontend compatibility
+    Route::put('/user/profile', [AuthController::class, 'updateUserProfile']);
     Route::get('/user/posthog-context', [PosthogContextController::class, 'show']);
     Route::post('/user-read-message', [AuthController::class, 'read_message']);
 });
