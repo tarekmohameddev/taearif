@@ -15,7 +15,10 @@ use App\Http\Requests\Api\Auth\LoginApiRequest;
 use App\Http\Requests\Api\Auth\LogoutApiRequest;
 use App\Http\Requests\Api\Auth\ReadMessageRequest;
 use App\Http\Requests\Api\Auth\RegisterApiRequest;
+use App\Http\Requests\Api\Auth\UpdateUserProfileRequest;
 use App\Http\Requests\Api\Auth\AuthVerifyResetCodeRequest;
+use App\Models\Api\FooterSetting;
+use App\Support\CacheInvalidationHelper;
 use App\Rules\Recaptcha;
 use App\Models\User\Blog;
 use App\Models\User\Menu;
@@ -582,7 +585,49 @@ class AuthController extends Controller
             }
 
             $user['onboarding_completed'] = false;
-            return response()->json([
+
+            // Build PostHog context for the newly created user so SPA can identify immediately.
+            $posthogPayload = null;
+            try {
+                $posthogService = app(\App\Services\Analytics\PosthogContextService::class);
+                $posthogPayload = $posthogService->forUser($user);
+
+                // Optional: emit a reliable server-side event if a personal API key is configured.
+                // This does not replace the frontend identify (which links anonymous session data).
+                $personalKey = config('services.posthog.personal_key');
+                if (!empty($posthogPayload['enabled']) && !empty($personalKey)) {
+                    try {
+                        // Support both possible client class names from the posthog php package.
+                        $clientClass = null;
+                        if (class_exists(\PostHog\PostHog::class)) {
+                            $clientClass = \PostHog\PostHog::class;
+                        } elseif (class_exists(\PostHog\Posthog::class)) {
+                            $clientClass = \PostHog\Posthog::class;
+                        }
+
+                        if ($clientClass) {
+                            // Host must be trimmed of trailing slash.
+                            $host = rtrim((string) config('services.posthog.host'), '/');
+                            $client = new $clientClass($personalKey, ['host' => $host]);
+                            $client->capture([
+                                'distinctId' => $posthogPayload['distinct_id'] ?? ('user:' . $user->id),
+                                'event' => 'user_registered',
+                                'properties' => [
+                                    'user_id' => $user->id,
+                                    'surface' => $posthogPayload['properties']['surface'] ?? null,
+                                ],
+                            ]);
+                        }
+                    } catch (\Throwable $e) {
+                        \Log::warning('PostHog server capture failed: ' . $e->getMessage());
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Do not fail registration for analytics issues.
+                \Log::warning('Failed to build PostHog payload: ' . $e->getMessage());
+            }
+
+            $response = [
                 'status' => 'success',
                 'user'   => $user,
                 'token'  => $token,
@@ -590,7 +635,13 @@ class AuthController extends Controller
                     'start_date'  => $activation->toDateString(),
                     'expire_date' => $expire->toDateString(),
                 ]
-            ], 201);
+            ];
+
+            if (!empty($posthogPayload)) {
+                $response['posthog'] = $posthogPayload;
+            }
+
+            return response()->json($response, 201);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -967,7 +1018,7 @@ class AuthController extends Controller
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'email' => $user->email,
-                'phone' => $user->phone_number ?? null,
+                'phone' => $user->phone ?? $user->phone_number ?? null,
                 'address' => $user->address ?? null,
                 'city' => $user->city ?? null,
                 'state' => $user->state ?? null,
@@ -1019,6 +1070,194 @@ class AuthController extends Controller
                 'status' => 'error',
                 'message' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function updateUserProfile(UpdateUserProfileRequest $request)
+    {
+        try {
+            $user = Auth::user();
+
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized access',
+                ], 401);
+            }
+
+            $validated = $request->validated();
+            $owner = $user->tenantOwner();
+            $ownerId = $user->tenantOwnerId();
+
+            if ($this->hasCompanyFieldUpdates($validated)) {
+                $canUpdateCompany = $user->isTenant() || $user->can('settings.update');
+                if (!$canUpdateCompany) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'You do not have permission to update company settings.',
+                        'code' => 'FORBIDDEN',
+                    ], 403);
+                }
+            }
+
+            if (!empty($validated['password'])) {
+                if (!Hash::check($validated['current_password'] ?? '', $user->password)) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Validation failed',
+                        'errors' => [
+                            'current_password' => ['The current password is incorrect.'],
+                        ],
+                    ], 422);
+                }
+            }
+
+            DB::transaction(function () use ($user, $owner, $validated) {
+                $userFields = $this->extractPersonalProfileFields($validated);
+
+                if ($userFields !== []) {
+                    $user->fill($userFields);
+                    $user->save();
+                }
+
+                if (!empty($validated['password'])) {
+                    $user->password = Hash::make($validated['password']);
+                    $user->save();
+                }
+
+                if ($this->hasCompanyFieldUpdates($validated)) {
+                    $this->applyCompanyProfileUpdates($owner, $validated);
+                }
+            });
+
+            CacheInvalidationHelper::clearTenantProfileCachesAuto($ownerId);
+
+            $profileResponse = $this->getUserProfile();
+            $profilePayload = $profileResponse->getData(true);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Profile updated successfully',
+                'data' => $profilePayload['data'] ?? $profilePayload,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function hasCompanyFieldUpdates(array $validated): bool
+    {
+        foreach (['company_name', 'company_email', 'company_phone', 'company_address', 'working_hours', 'district'] as $key) {
+            if (array_key_exists($key, $validated)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function extractPersonalProfileFields(array $validated): array
+    {
+        $userFields = [];
+
+        if (array_key_exists('first_name', $validated)) {
+            $userFields['first_name'] = $validated['first_name'];
+        }
+
+        if (array_key_exists('last_name', $validated)) {
+            $userFields['last_name'] = $validated['last_name'];
+        }
+
+        if (array_key_exists('name', $validated)) {
+            $parts = preg_split('/\s+/', trim((string) $validated['name']), 2);
+            $userFields['first_name'] = $parts[0] ?? '';
+            $userFields['last_name'] = $parts[1] ?? '';
+        }
+
+        foreach (['email', 'phone', 'address', 'city', 'country'] as $field) {
+            if (array_key_exists($field, $validated)) {
+                $userFields[$field] = $validated[$field];
+            }
+        }
+
+        if (array_key_exists('state', $validated)) {
+            $userFields['state'] = $validated['state'];
+        } elseif (array_key_exists('district', $validated) && !$this->hasCompanyFieldUpdates($validated)) {
+            $userFields['state'] = $validated['district'];
+        }
+
+        return $userFields;
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function applyCompanyProfileUpdates(User $owner, array $validated): void
+    {
+        $basicSetting = BasicSetting::firstOrCreate(['user_id' => $owner->id]);
+
+        if (array_key_exists('company_name', $validated)) {
+            $owner->company_name = $validated['company_name'];
+            $owner->save();
+            $basicSetting->company_name = $validated['company_name'];
+        }
+
+        if (array_key_exists('company_email', $validated)) {
+            $basicSetting->email = $validated['company_email'];
+        }
+
+        $basicSetting->save();
+
+        $footerSetting = FooterSetting::firstOrCreate(
+            ['user_id' => $owner->id],
+            [
+                'general' => [],
+                'social' => [],
+                'columns' => [],
+                'newsletter' => [],
+                'style' => [],
+                'status' => true,
+            ]
+        );
+
+        $general = is_array($footerSetting->general) ? $footerSetting->general : [];
+
+        if (array_key_exists('company_name', $validated)) {
+            $general['companyName'] = $validated['company_name'];
+        }
+
+        if (array_key_exists('company_email', $validated)) {
+            $general['email'] = $validated['company_email'];
+        }
+
+        if (array_key_exists('company_phone', $validated)) {
+            $general['phone'] = $validated['company_phone'];
+        }
+
+        if (array_key_exists('company_address', $validated)) {
+            $general['address'] = $validated['company_address'];
+        }
+
+        if (array_key_exists('working_hours', $validated)) {
+            $general['workingHours'] = $validated['working_hours'];
+        }
+
+        $footerSetting->general = $general;
+        $footerSetting->save();
+
+        if (array_key_exists('district', $validated)) {
+            $owner->state = $validated['district'];
+            $owner->save();
         }
     }
 

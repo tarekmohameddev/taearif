@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\Auth;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
+use App\Models\OtpVerification;
 use Illuminate\Validation\Rule;
 
 class VerifyOtpRequest extends BaseApiFormRequest
@@ -42,14 +43,12 @@ class VerifyOtpRequest extends BaseApiFormRequest
 
     private function allowsTestBypass(): bool
     {
-        if (!(bool) config('api.otp.registration.test_bypass_enabled', false)) {
-            return false;
+        $phone = $this->input('phone');
+        if (empty($phone)) {
+            $user = auth('sanctum')->user();
+            $phone = $user?->phone;
         }
 
-        if (app()->environment('production') && !config('api.otp.registration.test_bypass_allow_production', false)) {
-            return false;
-        }
-
-        return true;
+        return OtpVerification::isTestBypassActive($phone);
     }
 }

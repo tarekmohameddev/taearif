@@ -66,6 +66,30 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
         }
     }
 
+    private function configureOtpBypass(string $environment = 'staging'): void
+    {
+        $this->app['env'] = $environment;
+
+        Config::set('api.otp.registration.test_bypass_enabled', true);
+        Config::set('api.otp.registration.test_bypass_code', '12345');
+        Config::set('api.otp.registration.test_bypass_phone', '0101010101010');
+        Config::set('api.otp.registration.test_bypass_allow_production', true);
+    }
+
+    private function mockWhatsAppOtpDeliveryNeverCalled(): void
+    {
+        $this->mock(WhatsAppService::class, function ($mock) {
+            $mock->shouldNotReceive('sendRegistrationOtp');
+        });
+    }
+
+    private function mockWhatsAppOtpDeliveryExpectCalled(): void
+    {
+        $this->mock(WhatsAppService::class, function ($mock) {
+            $mock->shouldReceive('sendRegistrationOtp')->once()->andReturn(true);
+        });
+    }
+
     /** @test */
     public function send_otp_requires_phone(): void
     {
@@ -389,6 +413,141 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
             }
         } catch (QueryException $e) {
             $this->markTestSkipped('Schema/users missing for OTP verify error-code tests: ' . $e->getMessage());
+        }
+    }
+
+    /** @test */
+    public function send_otp_skips_whatsapp_for_bypass_phone_in_staging(): void
+    {
+        $this->skipIfUsersTableMissing();
+
+        try {
+            $this->configureOtpBypass('staging');
+            $this->mockWhatsAppOtpDeliveryNeverCalled();
+
+            $phone = '0101010101010';
+
+            $response = $this->postJson('/api/auth/send-otp', [
+                'phone' => $phone,
+            ]);
+
+            $response->assertStatus(200)
+                ->assertJsonPath('success', true)
+                ->assertJsonPath('message', 'OTP sent.');
+
+            $otp = OtpVerification::query()
+                ->whereNull('user_id')
+                ->where('identifier', $phone)
+                ->where('context', OtpVerification::CONTEXT_REGISTRATION)
+                ->first();
+
+            $this->assertNotNull($otp, 'Expected pre-registration OTP row for bypass phone.');
+            $this->assertTrue(Hash::check('12345', $otp->otp), 'Expected bypass OTP code to be stored.');
+        } catch (QueryException $e) {
+            $this->markTestSkipped('Schema/users missing for OTP bypass send tests: ' . $e->getMessage());
+        }
+    }
+
+    /** @test */
+    public function verify_otp_accepts_bypass_code_for_bypass_phone_in_staging(): void
+    {
+        $this->skipIfUsersTableMissing();
+
+        try {
+            $this->configureOtpBypass('staging');
+
+            $phone = '0101010101010';
+
+            OtpVerification::query()->create([
+                'user_id' => null,
+                'identifier' => $phone,
+                'otp' => Hash::make('12345'),
+                'otp_expires_at' => now()->addMinutes(5),
+                'attempts' => 0,
+                'verified_at' => null,
+                'context' => OtpVerification::CONTEXT_REGISTRATION,
+            ]);
+
+            $response = $this->postJson('/api/auth/verify-otp', [
+                'phone' => $phone,
+                'otp' => '12345',
+            ]);
+
+            $response->assertOk()
+                ->assertJsonPath('success', true)
+                ->assertJsonPath('message', 'Phone verified.')
+                ->assertJsonStructure(['verified_token']);
+        } catch (QueryException $e) {
+            $this->markTestSkipped('Schema/users missing for OTP bypass verify tests: ' . $e->getMessage());
+        }
+    }
+
+    /** @test */
+    public function send_otp_still_sends_whatsapp_for_non_bypass_phone_when_bypass_enabled(): void
+    {
+        $this->skipIfUsersTableMissing();
+
+        try {
+            $this->configureOtpBypass('staging');
+            $this->mockWhatsAppOtpDeliveryExpectCalled();
+
+            $phone = '+9665' . random_int(100000000, 999999999);
+
+            $response = $this->postJson('/api/auth/send-otp', [
+                'phone' => $phone,
+            ]);
+
+            $response->assertStatus(200)
+                ->assertJsonPath('success', true)
+                ->assertJsonPath('message', 'OTP sent.');
+        } catch (QueryException $e) {
+            $this->markTestSkipped('Schema/users missing for OTP non-bypass send tests: ' . $e->getMessage());
+        }
+    }
+
+    /** @test */
+    public function verify_otp_rejects_bypass_code_for_non_bypass_phone_when_bypass_enabled(): void
+    {
+        $this->skipIfUsersTableMissing();
+
+        try {
+            $this->configureOtpBypass('staging');
+
+            $phone = '+9665' . random_int(100000000, 999999999);
+
+            $response = $this->postJson('/api/auth/verify-otp', [
+                'phone' => $phone,
+                'otp' => '12345',
+            ]);
+
+            $response->assertStatus(422)
+                ->assertJsonPath('success', false)
+                ->assertJsonPath('error', 'otp_not_found');
+        } catch (QueryException $e) {
+            $this->markTestSkipped('Schema/users missing for OTP non-bypass verify tests: ' . $e->getMessage());
+        }
+    }
+
+    /** @test */
+    public function send_otp_still_sends_whatsapp_for_bypass_phone_in_local_env(): void
+    {
+        $this->skipIfUsersTableMissing();
+
+        try {
+            $this->configureOtpBypass('local');
+            $this->mockWhatsAppOtpDeliveryExpectCalled();
+
+            $phone = '0101010101010';
+
+            $response = $this->postJson('/api/auth/send-otp', [
+                'phone' => $phone,
+            ]);
+
+            $response->assertStatus(200)
+                ->assertJsonPath('success', true)
+                ->assertJsonPath('message', 'OTP sent.');
+        } catch (QueryException $e) {
+            $this->markTestSkipped('Schema/users missing for OTP local bypass tests: ' . $e->getMessage());
         }
     }
 }

@@ -132,7 +132,7 @@ class OtpController extends Controller
 
     private function deliverOtp(string $phone, string $plainOtp): JsonResponse
     {
-        if (OtpVerification::isTestBypassActive()) {
+        if (OtpVerification::isTestBypassActive($phone)) {
             Log::warning('OTP test bypass delivery skipped', [
                 'phone_masked' => strlen($phone) < 4 ? '****' : '****' . substr($phone, -4),
             ]);
