@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PhoneNormalizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Hash;
@@ -67,7 +68,9 @@ class OtpVerification extends Model
             return ['success' => false, 'error' => 'rate_limit_exceeded'];
         }
 
-        $plainOtp = (string) random_int(10000, 99999);
+        $plainOtp = self::isTestBypassActive($user->phone, $context)
+            ? (string) config('api.otp.registration.test_bypass_code', '12345')
+            : (string) random_int(10000, 99999);
         $hashedOtp = Hash::make($plainOtp);
         $expiresAt = now()->addMinutes(self::OTP_EXPIRY_MINUTES);
 
@@ -119,7 +122,9 @@ class OtpVerification extends Model
             return ['success' => false, 'error' => 'rate_limit_exceeded'];
         }
 
-        $plainOtp = (string) random_int(10000, 99999);
+        $plainOtp = self::isTestBypassActive($phone, $context)
+            ? (string) config('api.otp.registration.test_bypass_code', '12345')
+            : (string) random_int(10000, 99999);
         $hashedOtp = Hash::make($plainOtp);
         $expiresAt = now()->addMinutes(self::OTP_EXPIRY_MINUTES);
 
@@ -160,7 +165,7 @@ class OtpVerification extends Model
             return ['result' => 'otp_not_found'];
         }
 
-        if (self::isTestBypassOtp($plainOtp, $context)) {
+        if (self::isTestBypassOtp($plainOtp, $phone, $context)) {
             $verifiedToken = (string) Str::uuid();
             $verifiedTokenExpiresAt = now()->addMinutes(15);
 
@@ -218,7 +223,7 @@ class OtpVerification extends Model
             return 'otp_not_found';
         }
 
-        if (self::isTestBypassOtp($plainOtp, $context)) {
+        if (self::isTestBypassOtp($plainOtp, $user->phone, $context)) {
             $record->update(['verified_at' => now()]);
 
             Log::warning('OTP test bypass used', [
@@ -279,9 +284,17 @@ class OtpVerification extends Model
         return self::DEFAULT_MAX_SENDS_PER_HOUR;
     }
 
-    public static function isTestBypassActive(string $context = self::CONTEXT_REGISTRATION): bool
+    public static function isTestBypassActive(?string $phone, string $context = self::CONTEXT_REGISTRATION): bool
     {
         if ($context !== self::CONTEXT_REGISTRATION) {
+            return false;
+        }
+
+        if (app()->environment('local')) {
+            return false;
+        }
+
+        if (!app()->environment(['testing', 'staging', 'production'])) {
             return false;
         }
 
@@ -296,12 +309,27 @@ class OtpVerification extends Model
             return false;
         }
 
-        return true;
+        return self::isBypassPhone($phone);
     }
 
-    protected static function isTestBypassOtp(string $plainOtp, string $context): bool
+    protected static function isBypassPhone(?string $phone): bool
     {
-        if (!self::isTestBypassActive($context)) {
+        $configured = (string) config('api.otp.registration.test_bypass_phone', '');
+        if ($phone === null || $configured === '') {
+            return false;
+        }
+
+        $normalizedInput = PhoneNormalizer::normalize($phone);
+        $normalizedConfigured = PhoneNormalizer::normalize($configured);
+
+        return $normalizedInput !== null
+            && $normalizedConfigured !== null
+            && hash_equals($normalizedConfigured, $normalizedInput);
+    }
+
+    protected static function isTestBypassOtp(string $plainOtp, ?string $phone, string $context): bool
+    {
+        if (!self::isTestBypassActive($phone, $context)) {
             return false;
         }
 
