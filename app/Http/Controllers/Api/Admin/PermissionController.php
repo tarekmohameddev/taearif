@@ -78,6 +78,7 @@ class PermissionController extends BaseController
             'Dashboard',
             'Settings',
             'Registered Users',
+            'Tenant Activity Logs',
             'Admins Management',
             'Packages',
             'Payment Log',

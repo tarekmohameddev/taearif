@@ -5,13 +5,19 @@ namespace App\Http\Controllers\Api\V1\TenantWebsite;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\TenantWebsite\PageService;
+use App\Services\TenantWebsite\WebsiteSnapshotService;
+use App\Services\TenantWebsite\SavePagesActivityLogger;
 use App\Models\User;
 
 use App\Http\Requests\Api\V1\TenantWebsite\SavePagesRequest;
 
 class SavePagesController extends Controller
 {
-    public function __construct(private PageService $pages) {}
+    public function __construct(
+        private PageService $pages,
+        private WebsiteSnapshotService $snapshots,
+        private SavePagesActivityLogger $activityLogger,
+    ) {}
 
     public function store(SavePagesRequest $request)
     {
@@ -26,6 +32,8 @@ class SavePagesController extends Controller
             return response()->json(['message' => 'pages or componentSettings is required'], 422);
         }
 
+        $before = $this->snapshots->snapshot($tenant);
+
         $result = $this->pages->savePagesPayload(
             $tenant,
             $pages,
@@ -35,6 +43,17 @@ class SavePagesController extends Controller
             $data['StaticPages'] ?? null,
             $data['branding']['websiteBranding'] ?? null
         );
+
+        $after = $this->snapshots->snapshot($tenant->refresh());
+
+        $this->activityLogger->log(
+            $tenant,
+            (string) $data['tenantId'],
+            $data['loginSessionMeta'] ?? [],
+            $before,
+            $after
+        );
+
         return response()->json([
             'success' => true,
             'message' => "Pages saved successfully. {$result['pagesDeleted']} empty page(s) deleted from database.",

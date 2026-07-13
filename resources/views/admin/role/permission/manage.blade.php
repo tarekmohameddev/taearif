@@ -127,6 +127,10 @@
                 			<span class="selectgroup-button">{{__('Subscribers')}}</span>
                         </label>
                 		<label class="selectgroup-item">
+                			<input type="checkbox" name="permissions[]" value="Tenant Activity Logs" class="selectgroup-input" @if(is_array($permissions) && in_array('Tenant Activity Logs', $permissions)) checked @endif>
+                			<span class="selectgroup-button">{{__('Tenant Activity Logs')}}</span>
+                        </label>
+                		<label class="selectgroup-item">
                 			<input type="checkbox" name="permissions[]" value="Payment Gateways" class="selectgroup-input" @if(is_array($permissions) && in_array('Payment Gateways', $permissions)) checked @endif>
                 			<span class="selectgroup-button">{{__('Payment Gateways')}}</span>
                 		</label>

@@ -335,6 +335,17 @@
                     </li>
                 @endif
 
+                {{-- Tenant Activity Logs --}}
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Tenant Activity Logs', $permissions)))
+                    <li class="nav-item
+                    @if (request()->routeIs('admin.tenant-activity-logs.*')) active @endif">
+                        <a href="{{ route('admin.tenant-activity-logs.index') }}">
+                            <i data-lucide="file-clock"></i>
+                            <p>{{ __('Tenant Activity Logs') }}</p>
+                        </a>
+                    </li>
+                @endif
+
                 {{-- Admin Articles --}}
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Admin Articles', $permissions)))
                     <li class="nav-item
