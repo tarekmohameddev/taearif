@@ -32,8 +32,8 @@
             <div class="card-header">
                 <div class="card-title">
                     {{ __('Save Pages Activity') }} &mdash; {{ __('Tenant') }}: {{ $tenant->username }}
-                    @if ($tenant->company_name)
-                        ({{ $tenant->company_name }})
+                    @if ($tenant->generalSettings?->site_name)
+                        ({{ $tenant->generalSettings->site_name }})
                     @endif
                 </div>
             </div>

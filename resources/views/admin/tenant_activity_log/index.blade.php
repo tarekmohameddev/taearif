@@ -32,7 +32,7 @@
                     </div>
                     <div class="col-lg-6 mt-2 mt-lg-0">
                         <form action="{{ route('admin.tenant-activity-logs.index') }}" method="GET" class="float-lg-right float-none">
-                            <input type="text" name="term" class="form-control min-w-250" value="{{ $term }}" placeholder="{{ __('Search by username / company / email / phone') }}">
+                            <input type="text" name="term" class="form-control min-w-250" value="{{ $term }}" placeholder="{{ __('Search by username / site name / email / phone') }}">
                         </form>
                     </div>
                 </div>
@@ -46,7 +46,7 @@
                             <thead>
                                 <tr>
                                     <th>{{ __('Username') }}</th>
-                                    <th>{{ __('Company') }}</th>
+                                    <th>{{ __('Site Name') }}</th>
                                     <th>{{ __('Email') }}</th>
                                     <th>{{ __('Phone') }}</th>
                                     <th>{{ __('Action') }}</th>
@@ -56,7 +56,7 @@
                                 @foreach ($tenants as $tenant)
                                     <tr>
                                         <td>{{ $tenant->username }}</td>
-                                        <td>{{ $tenant->company_name }}</td>
+                                        <td>{{ $tenant->generalSettings?->site_name ?? '—' }}</td>
                                         <td>{{ $tenant->email }}</td>
                                         <td>{{ $tenant->phone }}</td>
                                         <td>

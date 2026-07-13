@@ -16,12 +16,16 @@ class TenantActivityLogController extends Controller
         $term = $request->input('term');
 
         $tenants = User::where('account_type', 'tenant')
+            ->with('generalSettings')
             ->when($term, function ($query, $term) {
                 $query->where(function ($q) use ($term) {
                     $q->where('username', 'like', "%$term%")
                       ->orWhere('company_name', 'like', "%$term%")
                       ->orWhere('email', 'like', "%$term%")
-                      ->orWhere('phone', 'like', "%$term%");
+                      ->orWhere('phone', 'like', "%$term%")
+                      ->orWhereHas('generalSettings', function ($settings) use ($term) {
+                          $settings->where('site_name', 'like', "%$term%");
+                      });
                 });
             })
             ->orderBy('username')
@@ -36,7 +40,9 @@ class TenantActivityLogController extends Controller
 
     public function show(Request $request, $tenantId)
     {
-        $tenant = User::where('account_type', 'tenant')->findOrFail($tenantId);
+        $tenant = User::where('account_type', 'tenant')
+            ->with('generalSettings')
+            ->findOrFail($tenantId);
 
         $logs = $this->logs->paginateForTenant($tenant->id, $request);
 
