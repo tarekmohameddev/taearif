@@ -72,7 +72,7 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
 
         Config::set('api.otp.registration.test_bypass_enabled', true);
         Config::set('api.otp.registration.test_bypass_code', '12345');
-        Config::set('api.otp.registration.test_bypass_phone', '0101010101010');
+        Config::set('api.otp.registration.test_bypass_phone', '+966101010101');
         Config::set('api.otp.registration.test_bypass_allow_production', true);
     }
 
@@ -425,7 +425,7 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
             $this->configureOtpBypass('staging');
             $this->mockWhatsAppOtpDeliveryNeverCalled();
 
-            $phone = '0101010101010';
+            $phone = '+966101010101';
 
             $response = $this->postJson('/api/auth/send-otp', [
                 'phone' => $phone,
@@ -456,7 +456,7 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
         try {
             $this->configureOtpBypass('staging');
 
-            $phone = '0101010101010';
+            $phone = '+966101010101';
 
             OtpVerification::query()->create([
                 'user_id' => null,
@@ -537,7 +537,7 @@ class AuthOtpEndpointsTest extends ApiE2ETestCase
             $this->configureOtpBypass('local');
             $this->mockWhatsAppOtpDeliveryExpectCalled();
 
-            $phone = '0101010101010';
+            $phone = '+966101010101';
 
             $response = $this->postJson('/api/auth/send-otp', [
                 'phone' => $phone,
