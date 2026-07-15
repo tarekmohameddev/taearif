@@ -6,6 +6,7 @@ use App\Http\Requests\Api\BaseApiFormRequest;
 use App\Http\Requests\Concerns\ValidatesPropertyListingStatus;
 use App\Http\Requests\Concerns\ValidatesSourceBroker;
 use App\Http\Requests\Concerns\ValidatesTenantCustomerId;
+use App\Models\User\RealestateManagement\Property;
 use App\Rules\PropertyTypeRule;
 
 class UpdatePropertyRequest extends BaseApiFormRequest
@@ -24,6 +25,44 @@ class UpdatePropertyRequest extends BaseApiFormRequest
             $normalized = PropertyTypeRule::normalize(is_string($this->input('property_type')) ? $this->input('property_type') : null);
             if ($normalized !== null) {
                 $this->merge(['property_type' => $normalized]);
+            }
+        }
+
+        $this->dropUnchangedProjectId();
+    }
+
+    /**
+     * The frontend commonly echoes back the property's current project_id
+     * when submitting an update. project_id is otherwise prohibited on this
+     * endpoint, so drop it when it matches the existing value to allow the
+     * no-op submission through, while still rejecting real reassignment.
+     */
+    protected function dropUnchangedProjectId(): void
+    {
+        if (!$this->has('project_id')) {
+            return;
+        }
+
+        $propertyId = $this->route('id');
+        if (!$propertyId) {
+            return;
+        }
+
+        $property = Property::find($propertyId);
+        if (!$property) {
+            return;
+        }
+
+        $submitted = $this->input('project_id');
+        $current = $property->project_id;
+
+        $submittedNormalized = ($submitted === '' || $submitted === null) ? null : (int) $submitted;
+        $currentNormalized = $current === null ? null : (int) $current;
+
+        if ($submittedNormalized === $currentNormalized) {
+            $this->request->remove('project_id');
+            if ($this->isJson()) {
+                $this->json()->remove('project_id');
             }
         }
     }

@@ -133,6 +133,11 @@ class StandalonePropertyProjectIdTest extends TestCase
             'featured_image' => 'properties/standalone-unit.jpg',
             'purpose' => 'sale',
             'property_type' => 'residential',
+            'price' => 150000,
+            'area' => 200,
+            'status' => 1,
+            'latitude' => 24.7136,
+            'longitude' => 46.6753,
         ], $overrides);
     }
 
@@ -285,6 +290,151 @@ class StandalonePropertyProjectIdTest extends TestCase
         $this->assertDatabaseHas('user_properties', [
             'id' => $propertyId,
             'project_id' => null,
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function validUpdatePayload(array $overrides = []): array
+    {
+        return array_merge([
+            'title' => 'Standalone Unit Updated',
+            'address' => 'Tower A',
+            'description' => 'Unit description for standalone update',
+            'featured_image' => 'properties/standalone-unit.jpg',
+            'purpose' => 'sale',
+            'property_type' => 'residential',
+        ], $overrides);
+    }
+
+    public function test_update_with_unchanged_project_id_succeeds(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, ['properties.create', 'properties.update']);
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+
+        $created = $this->postJson('/api/properties', $this->validStorePayload([
+            'title' => 'Linked Unit For Update',
+            'project_id' => $project->id,
+        ]));
+        $created->assertCreated();
+        $propertyId = (int) $created->json('user_property.id');
+
+        $response = $this->postJson("/api/properties/{$propertyId}", $this->validUpdatePayload([
+            'project_id' => $project->id,
+        ]));
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success');
+
+        $this->assertDatabaseHas('user_properties', [
+            'id' => $propertyId,
+            'project_id' => $project->id,
+        ]);
+    }
+
+    public function test_update_omitting_project_id_succeeds(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, ['properties.create', 'properties.update']);
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+
+        $created = $this->postJson('/api/properties', $this->validStorePayload([
+            'title' => 'Linked Unit For Update Omit',
+            'project_id' => $project->id,
+        ]));
+        $created->assertCreated();
+        $propertyId = (int) $created->json('user_property.id');
+
+        $response = $this->postJson("/api/properties/{$propertyId}", $this->validUpdatePayload());
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success');
+
+        $this->assertDatabaseHas('user_properties', [
+            'id' => $propertyId,
+            'project_id' => $project->id,
+        ]);
+    }
+
+    public function test_update_rejects_changing_project_id_to_different_project(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, ['properties.create', 'properties.update']);
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+        $otherProject = $this->createProject($tenant);
+
+        $created = $this->postJson('/api/properties', $this->validStorePayload([
+            'title' => 'Linked Unit For Reject',
+            'project_id' => $project->id,
+        ]));
+        $created->assertCreated();
+        $propertyId = (int) $created->json('user_property.id');
+
+        $response = $this->postJson("/api/properties/{$propertyId}", $this->validUpdatePayload([
+            'project_id' => $otherProject->id,
+        ]));
+
+        $response->assertStatus(422)
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('message', 'Validation failed');
+
+        $this->assertArrayHasKey('project_id', $response->json('errors'));
+
+        $this->assertDatabaseHas('user_properties', [
+            'id' => $propertyId,
+            'project_id' => $project->id,
+        ]);
+    }
+
+    public function test_update_with_null_project_id_does_not_change_existing_link(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, ['properties.create', 'properties.update']);
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+
+        $created = $this->postJson('/api/properties', $this->validStorePayload([
+            'title' => 'Linked Unit For Clear',
+            'project_id' => $project->id,
+        ]));
+        $created->assertCreated();
+        $propertyId = (int) $created->json('user_property.id');
+
+        // Laravel's "prohibited" rule treats null as empty, so it passes
+        // validation; the update path never writes project_id, so the
+        // existing link is preserved either way.
+        $response = $this->postJson("/api/properties/{$propertyId}", $this->validUpdatePayload([
+            'project_id' => null,
+        ]));
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success');
+
+        $this->assertDatabaseHas('user_properties', [
+            'id' => $propertyId,
+            'project_id' => $project->id,
         ]);
     }
 }
