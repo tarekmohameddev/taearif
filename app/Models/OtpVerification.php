@@ -302,6 +302,10 @@ class OtpVerification extends Model
             return false;
         }
 
+        if (self::isGlobalBypassActive()) {
+            return true;
+        }
+
         $enabled = (bool) config('api.otp.registration.test_bypass_enabled', false);
         $code = (string) config('api.otp.registration.test_bypass_code', '');
 
@@ -310,6 +314,18 @@ class OtpVerification extends Model
         }
 
         return self::isBypassPhone($phone);
+    }
+
+    /**
+     * Global bypass: when enabled (and environment/production guards already passed),
+     * any phone number is accepted using the fixed global bypass code.
+     */
+    protected static function isGlobalBypassActive(): bool
+    {
+        $enabled = (bool) config('api.otp.registration.global_bypass_enabled', false);
+        $code = (string) config('api.otp.registration.global_bypass_code', '');
+
+        return $enabled && $code !== '';
     }
 
     protected static function isBypassPhone(?string $phone): bool
@@ -331,6 +347,14 @@ class OtpVerification extends Model
     {
         if (!self::isTestBypassActive($phone, $context)) {
             return false;
+        }
+
+        if (self::isGlobalBypassActive()) {
+            $globalCode = (string) config('api.otp.registration.global_bypass_code', '');
+
+            if (hash_equals($globalCode, $plainOtp)) {
+                return true;
+            }
         }
 
         $code = (string) config('api.otp.registration.test_bypass_code', '');
