@@ -83,7 +83,13 @@ class BasicSetting extends Model
         'password_reset_max_sends_per_hour',
         'registration_otp_template',
         'otp_max_sends_per_hour',
-        'email_password_reset_template'
+        'email_password_reset_template',
+        'pipedrive_sync_enabled',
+        'pipedrive_api_token',
+        'pipedrive_base_url',
+        'pipedrive_pipeline_id',
+        'pipedrive_stage_id',
+        'pipedrive_deal_title_prefix',
     ];
 
     public function language()

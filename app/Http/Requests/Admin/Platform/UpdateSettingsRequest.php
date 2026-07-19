@@ -36,6 +36,7 @@ class UpdateSettingsRequest extends FormRequest
             'seo' => $this->seoRules(),
             'maintenance' => $this->maintenanceRules(),
             'appearance' => $this->appearanceRules(),
+            'pipedrive' => $this->pipedriveRules(),
             default => [],
         };
     }
@@ -137,6 +138,21 @@ class UpdateSettingsRequest extends FormRequest
     {
         return [
             'base_color' => ['sometimes', 'string', 'regex:/^#?[0-9A-F]{6}$/i'],
+        ];
+    }
+
+    /**
+     * Pipedrive CRM settings validation rules
+     */
+    protected function pipedriveRules(): array
+    {
+        return [
+            'enabled' => ['sometimes', 'boolean'],
+            'api_token' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'base_url' => ['sometimes', 'nullable', 'url', 'max:255'],
+            'pipeline_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'stage_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'deal_title_prefix' => ['sometimes', 'nullable', 'string', 'max:100'],
         ];
     }
 

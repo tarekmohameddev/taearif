@@ -528,4 +528,71 @@ class BasicController extends Controller
 
         return redirect()->back();
     }
+
+    public function pipedrive()
+    {
+        $settingsService = app(\App\Domain\CRM\Pipedrive\Services\PipedriveSettingsService::class);
+        $data = $settingsService->getSettingsForApi();
+
+        $syncStats = \App\Domain\CRM\Pipedrive\Models\PipedriveSyncLog::query()
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        $syncStats['total'] = array_sum($syncStats);
+
+        return view('admin.basic.pipedrive', compact('data', 'syncStats'));
+    }
+
+    public function updatePipedrive(Request $request)
+    {
+        $request->validate([
+            'enabled'           => 'sometimes|boolean',
+            'api_token'         => 'sometimes|nullable|string|max:255',
+            'base_url'          => 'sometimes|nullable|url|max:255',
+            'pipeline_id'       => 'sometimes|nullable|integer|min:1',
+            'stage_id'          => 'sometimes|nullable|integer|min:1',
+            'deal_title_prefix' => 'sometimes|nullable|string|max:100',
+        ]);
+
+        $settingsService = app(\App\Domain\CRM\Pipedrive\Services\PipedriveSettingsService::class);
+        $settingsService->updateSettings($request->only([
+            'enabled', 'api_token', 'base_url', 'pipeline_id', 'stage_id', 'deal_title_prefix',
+        ]));
+
+        $connectionStatus = null;
+
+        if ($request->input('test_connection')) {
+            try {
+                $credentials = $settingsService->getCredentials();
+                if ($credentials->isConfigured()) {
+                    $client = new \App\Domain\CRM\Pipedrive\Services\PipedriveClient($credentials);
+                    $connectionStatus = $client->testConnection();
+                } else {
+                    $connectionStatus = false;
+                }
+            } catch (\Throwable) {
+                $connectionStatus = false;
+            }
+        }
+
+        if ($connectionStatus === null) {
+            Session::flash('success', 'Pipedrive settings updated successfully!');
+            return redirect()->back();
+        }
+
+        $data = $settingsService->getSettingsForApi();
+
+        $syncStats = \App\Domain\CRM\Pipedrive\Models\PipedriveSyncLog::query()
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+        $syncStats['total'] = array_sum($syncStats);
+
+        Session::flash('success', 'Pipedrive settings updated successfully!');
+
+        return view('admin.basic.pipedrive', compact('data', 'syncStats', 'connectionStatus'));
+    }
 }

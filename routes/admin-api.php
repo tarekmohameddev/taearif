@@ -260,6 +260,15 @@ Route::prefix(config('admin-api.prefix'))
             ->name('featured');
 
         // -------------------------------------------------------------------------
+        // Pipedrive CRM Sync
+        // -------------------------------------------------------------------------
+        Route::post('pipedrive/sync-bulk', [UserController::class, 'bulkSyncToPipedrive'])
+            ->name('pipedrive.sync-bulk');
+
+        Route::post('{user}/pipedrive/sync', [UserController::class, 'syncToPipedrive'])
+            ->name('pipedrive.sync');
+
+        // -------------------------------------------------------------------------
         // User Impersonation Routes (scoped under users)
         // -------------------------------------------------------------------------
         Route::post('{user}/impersonate', [ImpersonationController::class, 'start'])

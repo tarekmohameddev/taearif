@@ -380,6 +380,94 @@
    </div>
 </div>
 
+{{-- ============================================================
+     Pipedrive CRM Sync Card
+     ============================================================ --}}
+<div class="row mt-2">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-chart-bar mr-2" style="color:#e84c3d;"></i>
+                    {{ __('Pipedrive CRM') }}
+                </h4>
+                @if ($user->pipedrive_deal_id)
+                    <span class="badge badge-success px-3 py-2">
+                        <i class="fas fa-check-circle mr-1"></i> {{ __('Synced') }}
+                    </span>
+                @else
+                    <span class="badge badge-secondary px-3 py-2">{{ __('Not synced') }}</span>
+                @endif
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless table-sm mb-0">
+                            <tr>
+                                <td class="text-muted" style="width:40%">{{ __('Person ID') }}</td>
+                                <td>
+                                    @if ($user->pipedrive_person_id)
+                                        <code>{{ $user->pipedrive_person_id }}</code>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">{{ __('Deal ID') }}</td>
+                                <td>
+                                    @if ($user->pipedrive_deal_id)
+                                        <code>{{ $user->pipedrive_deal_id }}</code>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">{{ __('Last Synced') }}</td>
+                                <td>
+                                    @if ($user->pipedrive_synced_at)
+                                        {{ \Carbon\Carbon::parse($user->pipedrive_synced_at)->format('d M Y, h:i A') }}
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-center justify-content-end">
+                        <form action="{{ route('admin.register.user.pipedrive.sync', $user->id) }}" method="POST" class="d-inline">
+                            @csrf
+                            <input type="hidden" name="force" value="1">
+                            <button type="submit" class="btn btn-primary mr-2"
+                                onclick="return confirm('{{ __('Sync this user to Pipedrive? This will create a new person and deal even if already synced.') }}')">
+                                <i class="fas fa-sync-alt mr-1"></i>
+                                {{ $user->pipedrive_deal_id ? __('Re-sync to Pipedrive') : __('Sync to Pipedrive') }}
+                            </button>
+                        </form>
+                        @if ($user->pipedrive_deal_id)
+                            <a href="{{ ($pipedriveBaseUrl ?? '') . '/deal/' . $user->pipedrive_deal_id }}"
+                               target="_blank" class="btn btn-outline-secondary">
+                                <i class="fas fa-external-link-alt mr-1"></i> {{ __('View in Pipedrive') }}
+                            </a>
+                        @endif
+                    </div>
+                </div>
+
+                @if (session('pipedrive_result'))
+                    @php $pr = session('pipedrive_result'); @endphp
+                    <hr>
+                    <div class="alert alert-{{ $pr['success'] ? 'success' : ($pr['status'] === 'skipped' ? 'warning' : 'danger') }} mb-0">
+                        <i class="fas fa-{{ $pr['success'] ? 'check-circle' : 'info-circle' }} mr-1"></i>
+                        <strong>{{ ucfirst($pr['status']) }}:</strong>
+                        {{ $pr['error_message'] ?? ($pr['success'] ? __('User synced successfully.') : __('Sync failed.')) }}
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+
 @includeIf('admin.register_user.edit-current-package')
 @includeIf('admin.register_user.add-current-package')
 @includeIf('admin.register_user.edit-next-package')
