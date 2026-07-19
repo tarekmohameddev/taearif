@@ -228,7 +228,9 @@ class RegisterUserController extends Controller
             ->orderBy('created_at', 'DESC')
             ->get();
 
-        return view('admin.register_user.details', compact('user', 'packages', 'gateways', 'memberships'));
+        $pipedriveBaseUrl = rtrim((string) optional(BasicSetting::first())->pipedrive_base_url, '/');
+
+        return view('admin.register_user.details', compact('user', 'packages', 'gateways', 'memberships', 'pipedriveBaseUrl'));
     }
 
     public function store(Request $request)
@@ -2010,5 +2012,31 @@ class RegisterUserController extends Controller
         $user->save();
         Session::flash('success', 'Status updated successfully!');
         return "success";
+    }
+
+    public function syncToPipedrive(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+        $force = (bool) $request->input('force', false);
+
+        try {
+            $syncService = app(\App\Domain\CRM\Pipedrive\Services\PipedriveTenantSyncService::class);
+            $result = $syncService->sync($user, 'manual', $force);
+            Session::flash('pipedrive_result', $result->toArray());
+        } catch (\App\Domain\CRM\Pipedrive\Exceptions\PipedriveNotConfiguredException $e) {
+            Session::flash('pipedrive_result', [
+                'success' => false,
+                'status' => 'failed',
+                'error_message' => 'Pipedrive is not configured. Please set up your API token and base URL in Pipedrive CRM Settings.',
+            ]);
+        } catch (\Throwable $e) {
+            Session::flash('pipedrive_result', [
+                'success' => false,
+                'status' => 'failed',
+                'error_message' => $e->getMessage(),
+            ]);
+        }
+
+        return redirect()->route('admin.register.user.view', $id);
     }
 }

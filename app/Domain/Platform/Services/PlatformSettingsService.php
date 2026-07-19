@@ -2,6 +2,7 @@
 
 namespace App\Domain\Platform\Services;
 
+use App\Domain\CRM\Pipedrive\Services\PipedriveSettingsService;
 use App\Domain\Shared\Services\BaseService;
 use App\Models\BasicSetting;
 use App\Models\BasicExtended;
@@ -31,6 +32,7 @@ class PlatformSettingsService extends BaseService
             'seo' => $this->getSeoSettings(),
             'maintenance' => $this->getMaintenanceSettings(),
             'appearance' => $this->getAppearanceSettings(),
+            'pipedrive' => $this->getPipedriveSettings(),
             default => throw new BusinessLogicException("Invalid section: {$section}", 'INVALID_SECTION', 404),
         };
     }
@@ -53,6 +55,7 @@ class PlatformSettingsService extends BaseService
                 'seo' => $this->updateSeoSettings($data),
                 'maintenance' => $this->updateMaintenanceSettings($data),
                 'appearance' => $this->updateAppearanceSettings($data),
+                'pipedrive' => $this->updatePipedriveSettings($data),
                 default => throw new BusinessLogicException("Invalid section: {$section}", 'INVALID_SECTION', 404),
             };
         });
@@ -353,7 +356,24 @@ class PlatformSettingsService extends BaseService
             'seo' => $this->getSeoSettings(),
             'maintenance' => $this->getMaintenanceSettings(),
             'appearance' => $this->getAppearanceSettings(),
+            'pipedrive' => $this->getPipedriveSettings(),
         ];
+    }
+
+    /**
+     * Get Pipedrive settings
+     */
+    protected function getPipedriveSettings(): array
+    {
+        return app(PipedriveSettingsService::class)->getSettingsForApi();
+    }
+
+    /**
+     * Update Pipedrive settings
+     */
+    protected function updatePipedriveSettings(array $data): array
+    {
+        return app(PipedriveSettingsService::class)->updateSettings($data);
     }
 
     /**

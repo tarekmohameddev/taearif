@@ -7,6 +7,7 @@ namespace Tests\Traits;
 use App\Domain\Communication\Email\Contracts\EmailDispatcher;
 use App\Domain\Communication\Sms\Contracts\SmsGatewayClient;
 use App\Domain\Communication\Sms\DTOs\SmsGatewaySendResult;
+use App\Domain\CRM\Pipedrive\Contracts\PipedriveClientInterface;
 use App\Services\WhatsAppService;
 use Mockery;
 
@@ -42,6 +43,36 @@ trait MocksExternalServices
     {
         $this->mock(EmailDispatcher::class, function (Mockery\MockInterface $mock): void {
             $mock->shouldReceive('dispatchCampaign')->andReturnNull();
+        });
+    }
+
+    /**
+     * Mock PipedriveClient so tests do not call the real Pipedrive API.
+     * Optionally simulate a failure on the given operation.
+     */
+    protected function mockPipedriveClient(
+        int $personId = 1001,
+        int $orgId = 2001,
+        int $dealId = 3001,
+        bool $failOnCreate = false,
+    ): void {
+        $this->mock(PipedriveClientInterface::class, function (Mockery\MockInterface $mock) use ($personId, $orgId, $dealId, $failOnCreate): void {
+            if ($failOnCreate) {
+                $mock->shouldReceive('createOrganization')->andThrow(
+                    new \App\Domain\CRM\Pipedrive\Exceptions\PipedriveApiException('Simulated failure', 500)
+                );
+                $mock->shouldReceive('createPerson')->andThrow(
+                    new \App\Domain\CRM\Pipedrive\Exceptions\PipedriveApiException('Simulated failure', 500)
+                );
+                $mock->shouldReceive('createDeal')->andThrow(
+                    new \App\Domain\CRM\Pipedrive\Exceptions\PipedriveApiException('Simulated failure', 500)
+                );
+            } else {
+                $mock->shouldReceive('createOrganization')->andReturn(['data' => ['id' => $orgId]]);
+                $mock->shouldReceive('createPerson')->andReturn(['data' => ['id' => $personId]]);
+                $mock->shouldReceive('createDeal')->andReturn(['data' => ['id' => $dealId]]);
+            }
+            $mock->shouldReceive('testConnection')->andReturn(!$failOnCreate);
         });
     }
 }

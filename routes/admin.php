@@ -110,6 +110,10 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::get('js', 'Admin\BasicController@js')->name('js');
         Route::post('js/update', 'Admin\BasicController@updateJs')->name('js.update');
 
+        // Pipedrive CRM Settings
+        Route::get('/pipedrive', 'Admin\BasicController@pipedrive')->name('pipedrive');
+        Route::post('/pipedrive/update', 'Admin\BasicController@updatePipedrive')->name('pipedrive.update');
+
         // Admin Sidebar Items Routes
         Route::get('/sidebar-items', 'Admin\SidebarItemController@index')->name('sidebar-item.index');
         Route::get('/sidebar-item/create', 'Admin\SidebarItemController@create')->name('sidebar-item.create');
@@ -250,6 +254,7 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('register/user/bulk-delete', 'Admin\RegisterUserController@bulkDelete')->name('register.user.bulk.delete');
         Route::get('register/user/{id}/changePassword', 'Admin\RegisterUserController@changePass')->name('register.user.changePass');
         Route::post('register/user/updatePassword', 'Admin\RegisterUserController@updatePassword')->name('register.user.updatePassword');
+        Route::post('register/user/{id}/pipedrive/sync', 'Admin\RegisterUserController@syncToPipedrive')->name('register.user.pipedrive.sync');
         //Register User end
         // users vcards route start
         Route::get('register/user/vcard', 'Admin\UsersVcardsController@index')->name('register.user.vcards');

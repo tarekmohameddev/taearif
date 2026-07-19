@@ -87,6 +87,16 @@
                     </li>
                 @endif
 
+                {{-- Pipedrive CRM --}}
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Settings', $permissions)))
+                    <li class="nav-item @if (request()->is('admin/pipedrive*')) active @endif">
+                        <a href="{{ route('admin.pipedrive') }}">
+                            <i data-lucide="bar-chart-2"></i>
+                            <p>{{ __('Pipedrive CRM') }}</p>
+                        </a>
+                    </li>
+                @endif
+
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Location Management', $permissions)))
                     <li class="nav-item @if (request()->is('admin/location-management*')) active @endif">
                         <a href="{{ route('admin.location.index') }}">

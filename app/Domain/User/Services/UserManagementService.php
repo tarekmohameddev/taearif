@@ -18,6 +18,7 @@ use App\Services\MembershipService;
 use App\Domain\Shared\Services\BaseService;
 use App\Exceptions\ResourceNotFoundException;
 use App\Exceptions\BusinessLogicException;
+use App\Jobs\SyncTenantToPipedriveJob;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -164,6 +165,8 @@ class UserManagementService extends BaseService
             );
 
             PropertyRequestStatus::ensureWorkflowStatusesForTenant((int) $user->id);
+
+            SyncTenantToPipedriveJob::dispatch($user->id, 'registration');
 
             return $user->fresh(['referrer', 'activeMembership.package']);
         });

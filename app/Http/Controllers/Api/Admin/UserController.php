@@ -16,9 +16,14 @@ use App\Http\Requests\Admin\User\SendWhatsAppRequest;
 use App\Http\Requests\Admin\User\PauseUserRequest;
 use App\Http\Requests\Admin\User\ChangePlanRequest;
 use App\Http\Requests\Admin\User\CancelSubscriptionRequest;
+use App\Http\Requests\Admin\User\PipedriveSyncRequest;
+use App\Http\Requests\Admin\User\BulkPipedriveSyncRequest;
+use App\Domain\CRM\Pipedrive\Exceptions\PipedriveNotConfiguredException;
+use App\Domain\CRM\Pipedrive\Services\PipedriveTenantSyncService;
 use App\Domain\User\Services\UserManagementService;
 use App\Exceptions\ResourceNotFoundException;
 use App\Exceptions\BusinessLogicException;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -467,6 +472,75 @@ class UserController extends BaseController
             );
         } catch (Throwable $e) {
             return $this->handleException($e, 'Failed to update user featured status.');
+        }
+    }
+
+    /**
+     * Sync a single tenant user to Pipedrive CRM.
+     * POST /api/v1/admin/users/{user}/pipedrive/sync
+     */
+    public function syncToPipedrive(int $userId, PipedriveSyncRequest $request, PipedriveTenantSyncService $syncService): JsonResponse
+    {
+        try {
+            $user = $this->userManagementService->getUserById($userId);
+            $force = (bool) $request->input('force', false);
+
+            $result = $syncService->sync($user, 'manual', $force);
+
+            return $this->successResponse($result->toArray(), 'Pipedrive sync completed.');
+        } catch (PipedriveNotConfiguredException $e) {
+            return $this->errorResponse($e->getMessage(), Response::HTTP_UNPROCESSABLE_ENTITY, Response::HTTP_UNPROCESSABLE_ENTITY, ['error_code' => 'PIPEDRIVE_NOT_CONFIGURED']);
+        } catch (Throwable $e) {
+            return $this->handleException($e, 'Failed to sync user to Pipedrive.');
+        }
+    }
+
+    /**
+     * Sync multiple tenant users to Pipedrive CRM.
+     * POST /api/v1/admin/users/pipedrive/sync-bulk
+     */
+    public function bulkSyncToPipedrive(BulkPipedriveSyncRequest $request, PipedriveTenantSyncService $syncService): JsonResponse
+    {
+        try {
+            $userIds = $request->input('user_ids', []);
+            $force = (bool) $request->input('force', false);
+
+            $results = [];
+
+            foreach ($userIds as $userId) {
+                $user = User::find($userId);
+
+                if (!$user || ($user->account_type ?? 'tenant') !== 'tenant') {
+                    $results[(string) $userId] = [
+                        'success' => false,
+                        'status' => 'skipped',
+                        'error_message' => 'User not found or not a tenant.',
+                    ];
+                    continue;
+                }
+
+                try {
+                    $result = $syncService->sync($user, 'bulk', $force);
+                    $results[(string) $userId] = $result->toArray();
+                } catch (PipedriveNotConfiguredException $e) {
+                    return $this->errorResponse($e->getMessage(), Response::HTTP_UNPROCESSABLE_ENTITY, Response::HTTP_UNPROCESSABLE_ENTITY, ['error_code' => 'PIPEDRIVE_NOT_CONFIGURED']);
+                } catch (\Throwable $e) {
+                    $results[(string) $userId] = [
+                        'success' => false,
+                        'status' => 'failed',
+                        'error_message' => $e->getMessage(),
+                    ];
+                }
+            }
+
+            $successCount = count(array_filter($results, fn ($r) => $r['success'] ?? false));
+
+            return $this->successResponse(
+                ['results' => $results, 'synced' => $successCount, 'total' => count($userIds)],
+                "Bulk Pipedrive sync completed. {$successCount} of " . count($userIds) . ' users synced.'
+            );
+        } catch (Throwable $e) {
+            return $this->handleException($e, 'Failed to bulk sync users to Pipedrive.');
         }
     }
 

@@ -584,6 +584,9 @@ class AuthController extends Controller
                 ]);
             }
 
+            // Sync new tenant to Pipedrive CRM (queued — never blocks registration)
+            \App\Jobs\SyncTenantToPipedriveJob::dispatch($user->id, 'registration');
+
             $user['onboarding_completed'] = false;
 
             // Build PostHog context for the newly created user so SPA can identify immediately.
