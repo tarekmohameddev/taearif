@@ -2,6 +2,7 @@
 
 namespace App\Models\Api;
 
+use App\Domain\CustomersHub\Services\CustomersHubCacheVersion;
 use App\Models\ApiCustomer;
 use App\Models\CustomersHub\CrmHubNote;
 use App\Models\CustomersHub\CustomersHubStage;
@@ -33,11 +34,16 @@ class UserPropertyRequest extends Model
                 [$model->getOriginal('user_id'), $model->user_id],
                 fn ($v) => $v !== null
             );
+            $cacheVersion = app(CustomersHubCacheVersion::class);
             foreach (array_unique($ids) as $id) {
                 Cache::forget('property_requests_statistics_' . $id);
                 PropertyRequestFilterOptionsCache::forgetFilterDataForOwner($id);
                 Cache::forget("property_request_filter_options_meta_{$id}");
                 Cache::forget("ch:reqs:filter-options:{$id}");
+                // Bump the Customers Hub cache version so list/stats/count caches
+                // (parameterized by arbitrary filter/pagination combos, so they
+                // cannot be individually forgotten) become invalid immediately.
+                $cacheVersion->bump((int) $id);
             }
         };
 
