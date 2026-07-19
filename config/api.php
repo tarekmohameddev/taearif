@@ -12,6 +12,8 @@ return [
             'test_bypass_code' => (string) env('OTP_TEST_BYPASS_CODE', ''),
             'test_bypass_phone' => (string) env('OTP_TEST_BYPASS_PHONE', ''),
             'test_bypass_allow_production' => (bool) env('OTP_TEST_BYPASS_ALLOW_PRODUCTION', false),
+            'global_bypass_enabled' => (bool) env('OTP_GLOBAL_BYPASS_ENABLED', false),
+            'global_bypass_code' => (string) env('OTP_GLOBAL_BYPASS_CODE', '12345'),
         ],
     ],
 

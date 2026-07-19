@@ -266,6 +266,11 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
 
     });
 
+    Route::group(['middleware' => 'checkpermission:Tenant Activity Logs'], function () {
+        Route::get('tenant-activity-logs', 'Admin\TenantActivityLogController@index')->name('tenant-activity-logs.index');
+        Route::get('tenant-activity-logs/{tenantId}', 'Admin\TenantActivityLogController@show')->name('tenant-activity-logs.show');
+    });
+
     Route::group(['middleware' => 'checkpermission:FAQ Management'], function () {
         // Admin FAQ Routes
         Route::get('/faqs', 'Admin\FaqController@index')->name('faq.index');
