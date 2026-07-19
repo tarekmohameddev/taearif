@@ -3,6 +3,7 @@
 namespace App\Domain\CustomersHub\Services;
 
 use App\Models\ApiCustomer;
+use App\Domain\CustomersHub\Services\CustomersHubCacheVersion;
 use App\Support\PhoneNormalizer;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -25,6 +26,13 @@ use Illuminate\Support\Facades\DB;
  */
 class ActionsAggregatorService
 {
+    private CustomersHubCacheVersion $cacheVersion;
+
+    public function __construct(CustomersHubCacheVersion $cacheVersion)
+    {
+        $this->cacheVersion = $cacheVersion;
+    }
+
     /**
      * Action type constants
      */
@@ -166,7 +174,7 @@ class ActionsAggregatorService
         $countFilters = $filters;
         unset($countFilters['limit'], $countFilters['offset'], $countFilters['sort_by'], $countFilters['sort_dir']);
 
-        $cacheKey = 'ch:total:' . $userId . ':' . md5(json_encode($countFilters));
+        $cacheKey = 'ch:total:' . $userId . ':v' . $this->cacheVersion->getVersion($userId) . ':' . md5(json_encode($countFilters));
 
         return Cache::remember($cacheKey, 60, function () use ($userId, $countFilters) {
             return (int) $this->getUnifiedQuery($userId, $countFilters)->count();
@@ -178,7 +186,7 @@ class ActionsAggregatorService
      */
     public function getStats(int $userId, array $filters = []): array
     {
-        $cacheKey = 'ch_stats_' . $userId . '_' . md5(json_encode($filters));
+        $cacheKey = 'ch_stats_' . $userId . '_v' . $this->cacheVersion->getVersion($userId) . '_' . md5(json_encode($filters));
         
         return Cache::remember($cacheKey, 30, function () use ($userId, $filters) {
             $query = $this->getUnifiedQuery($userId, $filters);
@@ -212,7 +220,7 @@ class ActionsAggregatorService
      */
     public function getComparisonStats(int $userId, array $filters = []): array
     {
-        $cacheKey = 'ch_comparison_stats_' . $userId . '_' . md5(json_encode($filters));
+        $cacheKey = 'ch_comparison_stats_' . $userId . '_v' . $this->cacheVersion->getVersion($userId) . '_' . md5(json_encode($filters));
         
         return Cache::remember($cacheKey, 300, function () use ($userId, $filters) {
             $now = Carbon::now();
@@ -252,7 +260,7 @@ class ActionsAggregatorService
      */
     public function getStageStats(int $userId, array $filters = []): array
     {
-        $cacheKey = 'ch_stage_stats_' . $userId . '_' . md5(json_encode($filters));
+        $cacheKey = 'ch_stage_stats_' . $userId . '_v' . $this->cacheVersion->getVersion($userId) . '_' . md5(json_encode($filters));
         
         return Cache::remember($cacheKey, 30, function () use ($userId, $filters) {
             try {
@@ -650,6 +658,10 @@ class ActionsAggregatorService
             return false;
         }
 
+        // These writes use raw DB::table() updates and bypass Eloquent model events,
+        // so bump the tenant's cache version explicitly to invalidate list/stats/count caches.
+        $this->cacheVersion->bump($userId);
+
         $now = Carbon::now();
 
         switch ($parsed['table']) {
@@ -718,7 +730,11 @@ class ActionsAggregatorService
             return false;
         }
 
+        // Raw DB::table() updates bypass Eloquent model events; bump explicitly.
+        $this->cacheVersion->bump($userId);
+
         $now = Carbon::now();
+
 
         switch ($parsed['table']) {
             case 'api_customer_inquiry':
@@ -783,6 +799,9 @@ class ActionsAggregatorService
         if (!$parsed) {
             return false;
         }
+
+        // Raw DB::table() updates bypass Eloquent model events; bump explicitly.
+        $this->cacheVersion->bump($userId);
 
         $now = Carbon::now();
         $payload = ['updated_at' => $now];
@@ -1096,6 +1115,8 @@ class ActionsAggregatorService
                 }
                 break;
             case 'assign':
+                // Raw DB::table() updates bypass Eloquent model events; bump explicitly.
+                $this->cacheVersion->bump($userId);
                 $customerMap = $this->getCustomerIdsForActionIds($userId, $actionIds);
                 $assignedTo = (int) $data['assignedTo'];
                 foreach ($actionIds as $actionId) {
@@ -1275,6 +1296,10 @@ class ActionsAggregatorService
         if (!$parsed) {
             return false;
         }
+
+        // Raw DB::table() updates bypass Eloquent model events; bump explicitly.
+        $this->cacheVersion->bump($userId);
+
         $until = Carbon::parse($snoozedUntil);
         $now = Carbon::now();
 

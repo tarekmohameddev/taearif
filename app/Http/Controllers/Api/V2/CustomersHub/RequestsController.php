@@ -16,6 +16,7 @@ use App\Http\Requests\Api\V2\CustomersHub\RequestsBulkRequest;
 use App\Http\Requests\Api\V2\CustomersHub\DismissRequest;
 use App\Http\Requests\Api\V2\CustomersHub\SnoozeRequest;
 use App\Domain\CustomersHub\Services\ActionsAggregatorService;
+use App\Domain\CustomersHub\Services\CustomersHubCacheVersion;
 use App\Domain\CustomersHub\Services\CustomersHubNotificationService;
 use App\Domain\CustomersHub\Services\CustomersHubPropertyRequestNotifier;
 use App\Domain\CustomersHub\Services\PropertyRequestDetailBuilder;
@@ -66,16 +67,20 @@ class RequestsController extends ApiController
 
     private CustomersHubNotificationService $notificationService;
 
+    private CustomersHubCacheVersion $cacheVersion;
+
     public function __construct(
         ActionsAggregatorService $aggregator,
         PropertyRequestDetailBuilder $propertyRequestDetailBuilder,
         CustomersHubPropertyRequestNotifier $propertyRequestNotifier,
-        CustomersHubNotificationService $notificationService
+        CustomersHubNotificationService $notificationService,
+        CustomersHubCacheVersion $cacheVersion
     ) {
         $this->aggregator = $aggregator;
         $this->propertyRequestDetailBuilder = $propertyRequestDetailBuilder;
         $this->propertyRequestNotifier = $propertyRequestNotifier;
         $this->notificationService = $notificationService;
+        $this->cacheVersion = $cacheVersion;
     }
 
     /**
@@ -114,7 +119,8 @@ class RequestsController extends ApiController
         $unreadSourceIdSet = array_flip($unreadPropertyRequestSourceIds);
 
         $cacheKey = 'ch:reqs:list:'
-            . $userId . ':'
+            . $userId . ':v'
+            . $this->cacheVersion->getVersion($userId) . ':'
             . $viewerId . ':'
             . ($viewedAt?->toIso8601String() ?? 'null') . ':'
             . md5(json_encode(array_values($unreadPropertyRequestSourceIds))) . ':'
@@ -856,11 +862,15 @@ class RequestsController extends ApiController
                     ->where('id', $action->sourceId)
                     ->where('user_id', $userId)
                     ->update(['customers_hub_stage_id' => $stageIdString, 'updated_at' => now()]);
+                // Raw DB::table() update bypasses Eloquent model events; bump explicitly.
+                $this->cacheVersion->bump($userId);
             } elseif (($action->sourceTable ?? '') === 'api_customer_inquiry' && !empty($action->sourceId)) {
                 DB::table('api_customer_inquiry')
                     ->where('id', $action->sourceId)
                     ->where('user_id', $userId)
                     ->update(['stage_id' => $stageIdString, 'updated_at' => now()]);
+                // Raw DB::table() update bypasses Eloquent model events; bump explicitly.
+                $this->cacheVersion->bump($userId);
             }
         }
 

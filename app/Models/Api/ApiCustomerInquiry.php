@@ -2,6 +2,7 @@
 
 namespace App\Models\Api;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Domain\CustomersHub\Services\CustomersHubCacheVersion;
 use App\Models\ApiCustomer;
 use App\Models\CustomersHub\CrmHubNote;
 use App\Models\CustomersHub\CustomersHubStage;
@@ -68,6 +69,25 @@ class ApiCustomerInquiry extends Model
                 $model->stage_id = CustomersHubStage::getDefaultStageId();
             }
         });
+
+        // Inquiries feed the same Customers Hub UNION query as property requests,
+        // so bump the tenant's cache version on every create/update/delete so
+        // list/stats/count caches (which can't be individually forgotten, since
+        // they're parameterized by arbitrary filter/pagination combos) invalidate
+        // immediately instead of waiting for TTL expiry.
+        $bumpCacheVersion = function (ApiCustomerInquiry $model): void {
+            $ids = array_filter(
+                [$model->getOriginal('user_id'), $model->user_id],
+                fn ($v) => $v !== null
+            );
+            $cacheVersion = app(CustomersHubCacheVersion::class);
+            foreach (array_unique($ids) as $id) {
+                $cacheVersion->bump((int) $id);
+            }
+        };
+
+        static::saved($bumpCacheVersion);
+        static::deleted($bumpCacheVersion);
     }
 
     protected $casts = [
