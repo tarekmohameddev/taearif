@@ -335,6 +335,7 @@ class ProcessConversation implements ShouldQueue
   "area_max": number|null,
   "city": "string|null",
   "district": "string|null",
+  "address": "string|null",
   "latitude": number|null,
   "longitude": number|null,
   "urgency": "urgent|soon|flexible|null",
@@ -349,7 +350,9 @@ class ProcessConversation implements ShouldQueue
 - إذا ذكر العميل ميزانية واحدة، ضعها في budget_max
 - area_min و area_max بالمتر المربع كأرقام فقط (مثال: "200 متر" → area_max: 200)
 - إذا ذكر العميل مساحة واحدة، ضعها في area_max
-- city و district بالعربية كما وردت في المحادثة
+- city و district بالعربية بأسماء رسمية واضحة، بدون كلمات مثل "حي" أو "شمال"
+- إذا ذكر العميل معلماً أو حياً أو منطقة معروفة، استنتج اسم المدينة الصحيح وضعه في city (مثال: "النرجس" أو "الأفنيوز" → city: "الرياض")
+- address: أي وصف حر للموقع كما كتبه العميل (شارع، مبنى، قرب معلم) حتى لو لم تتعرف على المدينة
 - إذا وجدت رسالة موقع بالشكل [Location: lat, lng]، استخرج latitude و longitude منها
 - urgency: "urgent" إذا كان يريد بسرعة، "soon" خلال شهر، "flexible" ليس مستعجل
 - furnished: true إذا طلب مفروش، false إذا طلب غير مفروش، null إذا لم يذكر
@@ -373,6 +376,7 @@ PROMPT;
         $location = implode(', ', array_filter([
             $extraction['district'] ?? null,
             $extraction['city'] ?? null,
+            $extraction['address'] ?? null,
         ]));
 
         // Create api_customer_inquiry (always — one per processing session for history)
@@ -516,6 +520,14 @@ PROMPT;
         }
 
         // No existing active request — create a fresh one (first-time behaviour)
+        $hasDetectedLocation = ! empty($extraction['city'])
+            || ! empty($extraction['district'])
+            || $latitude !== null
+            || $longitude !== null;
+        $inherited = $hasDetectedLocation
+            ? null
+            : $this->inheritLocationFromHistory($customer, $conversation->user_id);
+
         $createPayload = app(PropertyRequestLocationNormalizer::class)->normalize([
             'user_id'             => $conversation->user_id,
             'customer_id'         => $customer->id,
@@ -537,9 +549,11 @@ PROMPT;
             'city'                => $extraction['city'] ?? null,
             'district'            => $extraction['district'] ?? null,
             'location'            => $location ?: null,
-            'region'              => $regionName,
-            'latitude'            => $latitude,
-            'longitude'           => $longitude,
+            'city_id'             => $inherited['city_id'] ?? null,
+            'districts_id'        => $inherited['districts_id'] ?? null,
+            'region'              => $inherited['region'] ?? $regionName,
+            'latitude'            => $inherited['latitude'] ?? $latitude,
+            'longitude'           => $inherited['longitude'] ?? $longitude,
             'source'              => 'whatsapp',
             'contact_on_whatsapp' => true,
             'lang'                => 'ar',
@@ -547,6 +561,32 @@ PROMPT;
         ], 'whatsapp');
 
         UserPropertyRequest::create($createPayload);
+    }
+
+    /**
+     * Inherit location from the customer's most recent property request that has a city.
+     *
+     * @return array{city_id:mixed,districts_id:mixed,region:mixed,latitude:mixed,longitude:mixed}|null
+     */
+    private function inheritLocationFromHistory(ApiCustomer $customer, int $userId): ?array
+    {
+        $previous = UserPropertyRequest::where('user_id', $userId)
+            ->where('customer_id', $customer->id)
+            ->whereNotNull('city_id')
+            ->orderByDesc('created_at')
+            ->first(['city_id', 'districts_id', 'region', 'latitude', 'longitude']);
+
+        if (! $previous) {
+            return null;
+        }
+
+        return [
+            'city_id'      => $previous->city_id,
+            'districts_id' => $previous->districts_id,
+            'region'       => $previous->region,
+            'latitude'     => $previous->latitude,
+            'longitude'    => $previous->longitude,
+        ];
     }
 
     /**
