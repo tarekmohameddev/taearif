@@ -88,5 +88,39 @@ class RequestsListStatsExtraTest extends TestCase
             $this->assertSame(1, $stats['dealNotClosed']);
         }
     }
+
+    /** @test */
+    public function today_stat_includes_property_requests_created_today_without_due_date(): void
+    {
+        $this->requirePropertyRequestTable();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        Sanctum::actingAs($tenant);
+
+        $yesterday = now()->subDay();
+
+        // Created today, no appointment/reminder — must count toward "today"
+        $this->createPropertyRequest($tenant->id);
+
+        // Created yesterday — must not count toward "today"
+        $this->createPropertyRequest($tenant->id, [
+            'created_at' => $yesterday,
+            'updated_at' => $yesterday,
+        ]);
+
+        $res = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'tab' => 'all',
+            'objectTypes' => ['property_request'],
+            'limit' => 50,
+            'offset' => 0,
+        ]);
+
+        $res->assertOk()->assertJsonPath('status', 'success');
+
+        $stats = $res->json('data.stats');
+        $this->assertIsArray($stats);
+        $this->assertArrayHasKey('today', $stats);
+        $this->assertSame(1, $stats['today']);
+    }
 }
 

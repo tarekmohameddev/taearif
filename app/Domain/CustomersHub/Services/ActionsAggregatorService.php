@@ -200,7 +200,7 @@ class ActionsAggregatorService
                     ELSE 0 
                 END) as pending,
                 SUM(CASE WHEN dueDate < NOW() AND status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as overdue,
-                SUM(CASE WHEN DATE(dueDate) = CURRENT_DATE AND status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as today,
+                SUM(CASE WHEN (DATE(dueDate) = CURRENT_DATE OR DATE(createdAt) = CURRENT_DATE) AND status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as today,
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
             ")->first();
 
@@ -1961,6 +1961,10 @@ class ActionsAggregatorService
                         ->orWhere(function ($q2) use ($today) {
                             $q2->whereNotNull('dueDate')
                                 ->whereDate('dueDate', $today);
+                        })
+                        // Requests/inquiries created today (even without a dueDate)
+                        ->orWhere(function ($q2) use ($today) {
+                            $q2->whereDate('createdAt', $today);
                         });
                     });
                     break;

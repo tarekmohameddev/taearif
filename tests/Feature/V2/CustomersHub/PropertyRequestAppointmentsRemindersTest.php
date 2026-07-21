@@ -608,8 +608,13 @@ class PropertyRequestAppointmentsRemindersTest extends TestCase
             'updated_at' => $now,
         ]);
 
-        // Property request with appointment TOMORROW — should NOT appear when filtering by today
-        $prIdWithTomorrow = $this->createPropertyRequestForUser($tenant->id);
+        // Property request with appointment TOMORROW, created yesterday — should NOT appear when filtering by today
+        // (created_at must be yesterday so it does not match the created-today branch of the today filter)
+        $yesterday = $now->copy()->subDay();
+        $prIdWithTomorrow = $this->createPropertyRequestForUser($tenant->id, [
+            'created_at' => $yesterday,
+            'updated_at' => $yesterday,
+        ]);
         DB::table('property_request_appointments')->insert([
             'user_id' => $tenant->id,
             'property_request_id' => $prIdWithTomorrow,
@@ -620,9 +625,12 @@ class PropertyRequestAppointmentsRemindersTest extends TestCase
             'duration' => 30,
             'status' => 'scheduled',
             'priority' => 2,
-            'created_at' => $now,
-            'updated_at' => $now,
+            'created_at' => $yesterday,
+            'updated_at' => $yesterday,
         ]);
+
+        // Property request created today with NO appointment — should appear via createdAt
+        $prIdCreatedToday = $this->createPropertyRequestForUser($tenant->id);
 
         $res = $this->postJson('/api/v2/customers-hub/requests/list', [
             'due_date_bucket' => 'today',
@@ -637,6 +645,7 @@ class PropertyRequestAppointmentsRemindersTest extends TestCase
 
         $ids = array_column($actions, 'id');
         $this->assertContains("property_request_{$prIdWithToday}", $ids, 'Property request with appointment today should be in list');
+        $this->assertContains("property_request_{$prIdCreatedToday}", $ids, 'Property request created today (no appointment) should be in list');
         $this->assertNotContains("property_request_{$prIdWithTomorrow}", $ids, 'Property request with appointment tomorrow should not be in list');
 
         // If inquiry_appointments and api_customer_inquiry exist, assert inquiry with appointment today is included

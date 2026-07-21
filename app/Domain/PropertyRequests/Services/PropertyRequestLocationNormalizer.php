@@ -19,6 +19,8 @@ class PropertyRequestLocationNormalizer
         'longitude',
     ];
 
+    private const MAX_SNAP_KM = 150.0;
+
     public function __construct(
         private readonly LocationLookup $locationLookup,
     ) {}
@@ -70,6 +72,17 @@ class PropertyRequestLocationNormalizer
         }
         if (array_key_exists('longitude', $data)) {
             $data['longitude'] = $this->normalizeCoordinate($data['longitude'], -180.0, 180.0);
+        }
+
+        // Reverse geocode: pin with no city -> nearest known city
+        $resolvedCityId = isset($data['city_id']) ? (int) $data['city_id'] : null;
+        $lat = $data['latitude'] ?? null;
+        $lng = $data['longitude'] ?? null;
+        if (($resolvedCityId === null || $resolvedCityId <= 0) && $lat !== null && $lng !== null) {
+            $nearestCityId = $this->nearestCityIdByCoordinates((float) $lat, (float) $lng);
+            if ($nearestCityId !== null) {
+                $data['city_id'] = $nearestCityId;
+            }
         }
 
         $resolvedCityId = isset($data['city_id']) ? (int) $data['city_id'] : null;
@@ -125,5 +138,42 @@ class PropertyRequestLocationNormalizer
     {
         return $this->normalizeCoordinate($lat, -90.0, 90.0) !== null
             && $this->normalizeCoordinate($lng, -180.0, 180.0) !== null;
+    }
+
+    private function nearestCityIdByCoordinates(float $lat, float $lng): ?int
+    {
+        $nearestId = null;
+        $nearestKm = self::MAX_SNAP_KM;
+
+        foreach (UserCity::query()->get(['id', 'latitude', 'longitude']) as $city) {
+            if (! $this->coordinatesAreValid($city->latitude, $city->longitude)) {
+                continue;
+            }
+
+            $cityLat = (float) $city->latitude;
+            $cityLng = (float) $city->longitude;
+            if ($cityLat === 0.0 && $cityLng === 0.0) {
+                continue;
+            }
+
+            $distance = $this->haversineKm($lat, $lng, $cityLat, $cityLng);
+            if ($distance < $nearestKm) {
+                $nearestKm = $distance;
+                $nearestId = (int) $city->id;
+            }
+        }
+
+        return $nearestId;
+    }
+
+    private function haversineKm(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $earthRadiusKm = 6371.0;
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+        $a = sin($dLat / 2) ** 2
+            + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
+
+        return 2 * $earthRadiusKm * asin(min(1.0, sqrt($a)));
     }
 }
