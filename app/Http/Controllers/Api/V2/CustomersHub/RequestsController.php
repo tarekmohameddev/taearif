@@ -339,8 +339,11 @@ class RequestsController extends ApiController
             $stats = array_merge($stats, $comparison);
 
             // All-time property-request stats (broker scoped only; intentionally ignores list filters/date ranges)
-            // Cache these for 120 seconds since they change infrequently
-            $globalCounts = Cache::remember("ch_global_counts_{$userId}", 120, function () use ($userId) {
+            // Cache these for 120 seconds since they change infrequently. Keyed by the
+            // tenant's cache version so pipeline moves (deal_completed/deal_rejected)
+            // invalidate this immediately instead of waiting out the TTL.
+            $globalCountsKey = 'ch_global_counts_' . $userId . '_v' . $this->cacheVersion->getVersion($userId);
+            $globalCounts = Cache::remember($globalCountsKey, 120, function () use ($userId) {
                 $dealClosed = (int) DB::table('users_property_requests as upr')
                     ->where('upr.user_id', $userId)
                     ->where('upr.is_active', 1)

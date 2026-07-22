@@ -150,4 +150,85 @@ class RequestsListCacheInvalidationTest extends TestCase
         $this->assertCount(1, $actions);
         $this->assertEquals('deal_rejected', $actions[0]['customers_hub_stage_id']);
     }
+
+    /** @test */
+    public function moving_a_request_to_deal_completed_updates_stats_immediately(): void
+    {
+        $this->requirePropertyRequestTable();
+
+        $tenant = $this->createTenant();
+        Sanctum::actingAs($tenant);
+
+        $propertyRequest = UserPropertyRequest::create([
+            'full_name' => 'Requester To Close',
+            'phone' => '+966501234570',
+            'user_id' => $tenant->id,
+            'is_active' => 1,
+        ]);
+
+        // Prime the list/stats caches (including the 120s ch_global_counts_* cache)
+        // with the request in its initial (pending) stage.
+        $res = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'limit' => 50,
+            'offset' => 0,
+        ]);
+        $res->assertOk();
+        $this->assertEquals(0, $res->json('data.stats.dealClosed'));
+
+        $moveRes = $this->postJson('/api/v2/customers-hub/pipeline/move', [
+            'requestId' => $propertyRequest->id,
+            'newStageId' => 'deal_completed',
+        ]);
+        $moveRes->assertOk();
+
+        // Well within the old 120s TTL window: dealClosed must reflect the move now.
+        $res2 = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'limit' => 50,
+            'offset' => 0,
+        ]);
+        $res2->assertOk();
+        $this->assertEquals(1, $res2->json('data.stats.dealClosed'));
+    }
+
+    /** @test */
+    public function bulk_moving_requests_to_deal_completed_updates_stats_immediately(): void
+    {
+        $this->requirePropertyRequestTable();
+
+        $tenant = $this->createTenant();
+        Sanctum::actingAs($tenant);
+
+        $requestOne = UserPropertyRequest::create([
+            'full_name' => 'Bulk Requester One',
+            'phone' => '+966501234571',
+            'user_id' => $tenant->id,
+            'is_active' => 1,
+        ]);
+        $requestTwo = UserPropertyRequest::create([
+            'full_name' => 'Bulk Requester Two',
+            'phone' => '+966501234572',
+            'user_id' => $tenant->id,
+            'is_active' => 1,
+        ]);
+
+        $res = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'limit' => 50,
+            'offset' => 0,
+        ]);
+        $res->assertOk();
+        $this->assertEquals(0, $res->json('data.stats.dealClosed'));
+
+        $bulkMoveRes = $this->postJson('/api/v2/customers-hub/pipeline/bulk-move', [
+            'requestIds' => [$requestOne->id, $requestTwo->id],
+            'newStageId' => 'deal_completed',
+        ]);
+        $bulkMoveRes->assertOk();
+
+        $res2 = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'limit' => 50,
+            'offset' => 0,
+        ]);
+        $res2->assertOk();
+        $this->assertEquals(2, $res2->json('data.stats.dealClosed'));
+    }
 }

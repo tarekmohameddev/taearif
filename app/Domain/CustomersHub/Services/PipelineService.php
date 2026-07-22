@@ -23,6 +23,13 @@ class PipelineService
         '#ef4444', // red
     ];
 
+    private CustomersHubCacheVersion $cacheVersion;
+
+    public function __construct(CustomersHubCacheVersion $cacheVersion)
+    {
+        $this->cacheVersion = $cacheVersion;
+    }
+
     /**
      * Resolve newStageId (string or integer) to stage_id string. Returns null if invalid.
      */
@@ -358,7 +365,7 @@ class PipelineService
      */
     public function moveRequestToStage(int $userId, int $requestId, string $stageIdString): bool
     {
-        return DB::table('users_property_requests')
+        $moved = DB::table('users_property_requests')
             ->where('id', $requestId)
             ->where('user_id', $userId)
             ->where('is_active', 1)
@@ -367,6 +374,15 @@ class PipelineService
                 'customers_hub_stage_id' => $stageIdString,
                 'updated_at' => Carbon::now(),
             ]) > 0;
+
+        if ($moved) {
+            // Invalidate the tenant's list/stats/count caches so the next
+            // requests/list call reflects the new stage immediately, instead
+            // of waiting out the 30-60s TTLs.
+            $this->cacheVersion->bump($userId);
+        }
+
+        return $moved;
     }
 
     /**
@@ -374,13 +390,19 @@ class PipelineService
      */
     public function moveInquiryToStage(int $userId, int $inquiryId, string $stageIdString): bool
     {
-        return DB::table('api_customer_inquiry')
+        $moved = DB::table('api_customer_inquiry')
             ->where('id', $inquiryId)
             ->where('user_id', $userId)
             ->update([
                 'stage_id' => $stageIdString,
                 'updated_at' => Carbon::now(),
             ]) > 0;
+
+        if ($moved) {
+            $this->cacheVersion->bump($userId);
+        }
+
+        return $moved;
     }
 
     /**
@@ -455,7 +477,7 @@ class PipelineService
         if (empty($requestIds)) {
             return 0;
         }
-        return DB::table('users_property_requests')
+        $updated = DB::table('users_property_requests')
             ->where('user_id', $userId)
             ->whereIn('id', $requestIds)
             ->where('is_active', 1)
@@ -464,6 +486,12 @@ class PipelineService
                 'customers_hub_stage_id' => $stageIdString,
                 'updated_at' => Carbon::now(),
             ]);
+
+        if ($updated > 0) {
+            $this->cacheVersion->bump($userId);
+        }
+
+        return $updated;
     }
 
     /**
