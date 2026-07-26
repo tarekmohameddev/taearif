@@ -4,8 +4,10 @@ namespace App\Observers;
 
 use App\Models\PropertyRequestStatus;
 use App\Models\User;
+use App\Services\TenantCrmBootstrapService;
 use App\Support\CacheInvalidationHelper;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Observer for User model cache invalidation.
@@ -70,6 +72,15 @@ class UserObserver
 
         if (($user->account_type ?? null) === 'tenant') {
             PropertyRequestStatus::ensureWorkflowStatusesForTenant((int) $user->id);
+
+            try {
+                app(TenantCrmBootstrapService::class)->ensureForTenant((int) $user->id);
+            } catch (\Throwable $e) {
+                Log::error('Tenant CRM bootstrap failed on user create', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
     }
 
