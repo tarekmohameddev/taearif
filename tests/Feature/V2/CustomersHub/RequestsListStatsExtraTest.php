@@ -64,6 +64,12 @@ class RequestsListStatsExtraTest extends TestCase
             $this->createPropertyRequest($tenant->id, ['is_archived' => 1]);
         }
 
+        // Active mid-stage request: should be the only underProcess row.
+        $this->createPropertyRequest($tenant->id, [
+            'customers_hub_stage_id' => 'new_lead',
+            'is_archived' => 0,
+        ]);
+
         $res = $this->postJson('/api/v2/customers-hub/requests/list', [
             'tab' => 'all',
             'objectTypes' => ['property_request'],
@@ -86,6 +92,8 @@ class RequestsListStatsExtraTest extends TestCase
         if (Schema::hasColumn('users_property_requests', 'customers_hub_stage_id')) {
             $this->assertSame(2, $stats['dealClosed']);
             $this->assertSame(1, $stats['dealNotClosed']);
+            // Terminal + archived are excluded; only the new_lead row counts.
+            $this->assertSame(1, $stats['underProcess']);
         }
     }
 

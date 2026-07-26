@@ -187,8 +187,14 @@ class OnboardingController extends Controller
             Cache::forget($cacheKey);
 
                 DB::afterCommit(function () use ($user) {
-                    $user->refresh();
-                    app(\App\Services\TenantWebsiteSeeder::class)->reseedWebsite($user);
+                    try {
+                        \App\Jobs\ReseedTenantWebsiteJob::dispatch($user->id);
+                    } catch (\Throwable $e) {
+                        Log::error('Failed to dispatch ReseedTenantWebsiteJob', [
+                            'user_id' => $user->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
                 });
             });
 

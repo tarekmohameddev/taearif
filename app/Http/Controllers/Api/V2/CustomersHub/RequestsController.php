@@ -30,6 +30,7 @@ use App\Models\User;
 use App\Models\User\BasicSetting;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
 /**
@@ -339,8 +340,11 @@ class RequestsController extends ApiController
             $stats = array_merge($stats, $comparison);
 
             // All-time property-request stats (broker scoped only; intentionally ignores list filters/date ranges)
-            // Cache these for 120 seconds since they change infrequently
-            $globalCounts = Cache::remember("ch_global_counts_{$userId}", 120, function () use ($userId) {
+            // Cache these for 120 seconds since they change infrequently. Keyed by the
+            // tenant's cache version so pipeline moves (deal_completed/deal_rejected)
+            // invalidate this immediately instead of waiting out the TTL.
+            $globalCountsKey = 'ch_global_counts_' . $userId . '_v' . $this->cacheVersion->getVersion($userId);
+            $globalCounts = Cache::remember($globalCountsKey, 120, function () use ($userId) {
                 $dealClosed = (int) DB::table('users_property_requests as upr')
                     ->where('upr.user_id', $userId)
                     ->where('upr.is_active', 1)
@@ -353,20 +357,22 @@ class RequestsController extends ApiController
                     ->where('upr.customers_hub_stage_id', 'deal_rejected')
                     ->count();
 
-                $effectiveStatusSql = "COALESCE(chsm.customers_hub_status,
-                    CASE
-                        WHEN upr.is_archived = 1 THEN 'dismissed'
-                        WHEN upr.is_read = 1 THEN 'in_progress'
-                        ELSE 'pending'
-                    END
-                )";
-                $underProcess = (int) DB::table('users_property_requests as upr')
-                    ->leftJoin('property_request_statuses as prs', 'upr.status_id', '=', 'prs.id')
-                    ->leftJoin('customers_hub_status_mapping as chsm', 'prs.slug', '=', 'chsm.property_request_status_slug')
+                // Align underProcess with dealClosed/dealNotClosed: count by pipeline
+                // stage, not workflow status_id. pipeline/move only updates
+                // customers_hub_stage_id, so status-based counting left this card stale.
+                $underProcessQuery = DB::table('users_property_requests as upr')
                     ->where('upr.user_id', $userId)
                     ->where('upr.is_active', 1)
-                    ->whereNotIn(DB::raw($effectiveStatusSql), ['dismissed', 'completed'])
-                    ->count();
+                    ->where(function ($q) {
+                        $q->whereNull('upr.customers_hub_stage_id')
+                            ->orWhereNotIn('upr.customers_hub_stage_id', ['deal_completed', 'deal_rejected']);
+                    });
+                if (Schema::hasColumn('users_property_requests', 'is_archived')) {
+                    $underProcessQuery->where(function ($w) {
+                        $w->where('upr.is_archived', 0)->orWhereNull('upr.is_archived');
+                    });
+                }
+                $underProcess = (int) $underProcessQuery->count();
 
                 $total = (int) DB::table('users_property_requests as upr')
                     ->where('upr.user_id', $userId)

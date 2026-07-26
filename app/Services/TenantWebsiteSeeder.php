@@ -11,18 +11,24 @@ use App\Models\TenantWebsiteLayout;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 
 class TenantWebsiteSeeder
 {
     /**
      * Maximum number of retry attempts for API calls
      */
-    protected const MAX_RETRIES = 3;
+    protected const MAX_RETRIES = 2;
 
     /**
      * API request timeout in seconds
      */
-    protected const TIMEOUT = 10;
+    protected const TIMEOUT = 5;
+
+    /**
+     * Cache key prefix for the fetched default template, keyed by API URL.
+     */
+    protected const CACHE_KEY_PREFIX = 'tenant_website_default_data:';
 
     /**
      * Placeholder emails in default templates — replaced with tenant/footer email during reseed.
@@ -50,63 +56,86 @@ class TenantWebsiteSeeder
             return config('tenant_website_defaults');
         }
 
-        $attempt = 1;
-        $lastError = null;
+        $cacheKey = self::CACHE_KEY_PREFIX . md5($apiUrl);
+        $ttl = (int) config('app.tenant_website_api_cache_ttl', 3600);
 
-        // Try up to MAX_RETRIES times
-        while ($attempt <= self::MAX_RETRIES) {
-            try {
-                Log::info("Fetching default data from API (attempt {$attempt}/" . self::MAX_RETRIES . ")", [
-                    'url' => $apiUrl,
-                ]);
-
-                $response = Http::timeout(self::TIMEOUT)
-                    ->retry(1, 100) // Internal retry with 100ms delay
-                    ->get($apiUrl);
-
-                if ($response->successful()) {
-                    $data = $response->json();
-
-                    // Validate the response structure
-                    if (isset($data['componentSettings']) && isset($data['globalComponentsData'])) {
-                        Log::info("Successfully fetched default data from API on attempt {$attempt}");
-                        return $data;
-                    } else {
-                        $lastError = 'Invalid API response structure: missing required keys';
-                        Log::warning($lastError, ['response' => $data]);
-                    }
-                } else {
-                    $lastError = "API request failed with status {$response->status()}";
-                    Log::warning($lastError, [
-                        'attempt' => $attempt,
-                        'status' => $response->status(),
-                        'body' => $response->body(),
-                    ]);
-                }
-            } catch (\Exception $e) {
-                $lastError = $e->getMessage();
-                Log::warning("API request failed on attempt {$attempt}", [
-                    'error' => $e->getMessage(),
-                    'url' => $apiUrl,
-                ]);
-            }
-
-            $attempt++;
-
-            // Wait before next retry (exponential backoff)
-            if ($attempt <= self::MAX_RETRIES) {
-                $waitTime = pow(2, $attempt - 1); // 2, 4, 8 seconds
-                sleep($waitTime);
-            }
+        $cached = Cache::get($cacheKey);
+        if (is_array($cached)) {
+            return $cached;
         }
 
-        // All retries failed, fall back to local config
-        Log::error('All API retry attempts failed, falling back to local config', [
-            'last_error' => $lastError,
-            'attempts' => self::MAX_RETRIES,
-        ]);
+        $data = $this->fetchFromApi($apiUrl);
 
+        if ($data !== null) {
+            // Only cache genuinely successful API responses so a failed
+            // fetch can be retried sooner instead of being stuck for the full TTL.
+            Cache::put($cacheKey, $data, $ttl);
+
+            return $data;
+        }
+
+        // All retries failed, fall back to local config (not cached).
         return config('tenant_website_defaults');
+    }
+
+    /**
+     * Bust the cached default template data for a given (or the configured) API URL.
+     *
+     * @param string|null $apiUrl
+     * @return void
+     */
+    public static function clearDefaultDataCache(?string $apiUrl = null): void
+    {
+        $apiUrl = $apiUrl ?? config('app.tenant_website_api_url');
+
+        if (empty($apiUrl)) {
+            return;
+        }
+
+        Cache::forget(self::CACHE_KEY_PREFIX . md5($apiUrl));
+    }
+
+    /**
+     * Fetch the default template from the external API with retry logic.
+     * Uses the HTTP client's built-in retry/backoff instead of blocking sleep()
+     * calls so a worker (queue or web) isn't tied up longer than necessary.
+     *
+     * @param string $apiUrl
+     * @return array|null
+     */
+    protected function fetchFromApi(string $apiUrl): ?array
+    {
+        try {
+            Log::info('Fetching default data from API', ['url' => $apiUrl]);
+
+            $response = Http::timeout(self::TIMEOUT)
+                ->retry(self::MAX_RETRIES, 500)
+                ->get($apiUrl);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                if (isset($data['componentSettings']) && isset($data['globalComponentsData'])) {
+                    Log::info('Successfully fetched default data from API');
+                    return $data;
+                }
+
+                Log::warning('Invalid API response structure: missing required keys', ['response' => $data]);
+                return null;
+            }
+
+            Log::warning("API request failed with status {$response->status()}", [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('API request failed after retries, falling back to local config', [
+                'error' => $e->getMessage(),
+                'url' => $apiUrl,
+            ]);
+        }
+
+        return null;
     }
 
     /**
