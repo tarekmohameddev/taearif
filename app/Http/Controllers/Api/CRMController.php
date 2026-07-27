@@ -23,6 +23,7 @@ use App\Models\Api\UserApiCustomerReminder;
 use App\Models\Api\UserApiCustomerProcedure;
 use App\Models\Api\UserApiCustomerAppointment;
 use App\Services\CrmCustomerStageService;
+use App\Services\TenantCrmBootstrapService;
 
 class CRMController extends Controller
 {
@@ -33,22 +34,7 @@ class CRMController extends Controller
         $tenantId = $request->user()->tenantOwnerId();
 
         // ===== Bootstrap defaults (unchanged) =====
-        $hasStages = UserApiCustomerStage::where('user_id', $tenantId)->exists();
-        if (!$hasStages) {
-            $defaultStages = [
-                ['stage_name' => 'طلب معاينه',        'order' => 1],
-                ['stage_name' => 'صفقة بيع او ايجار', 'order' => 2],
-                ['stage_name' => 'اقفال الصفقة',      'order' => 3],
-            ];
-            foreach ($defaultStages as $stage) {
-                UserApiCustomerStage::create([
-                    'user_id'   => $tenantId,
-                    'stage_name'=> $stage['stage_name'],
-                    'order'     => $stage['order'],
-                    'is_active' => true,
-                ]);
-            }
-        }
+        app(TenantCrmBootstrapService::class)->ensureDefaultStages((int) $tenantId);
 
         $defaultProcedures = [
             ['procedure_name' => 'meeting', 'order' => 1, 'icon' => 'users', 'color' => '#2196f3'],
