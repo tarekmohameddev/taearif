@@ -163,5 +163,101 @@ class RequestsListStatsExtraTest extends TestCase
         $this->assertArrayHasKey('today', $stats);
         $this->assertSame(1, $stats['today']);
     }
+
+    /** @test */
+    public function today_stat_ignores_exclude_statuses_for_dismissed_created_today(): void
+    {
+        $this->requirePropertyRequestTable();
+
+        if (!Schema::hasColumn('users_property_requests', 'is_archived')) {
+            $this->markTestSkipped('is_archived column required to map dismissed status.');
+        }
+
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        Sanctum::actingAs($tenant);
+
+        $this->createPropertyRequest($tenant->id, [
+            'is_archived' => 1,
+        ]);
+
+        $res = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'tab' => 'all',
+            'objectTypes' => ['property_request'],
+            'excludeStatuses' => ['dismissed'],
+            'limit' => 50,
+            'offset' => 0,
+        ]);
+
+        $res->assertOk()->assertJsonPath('status', 'success');
+
+        // List should exclude dismissed, but today count must still include it.
+        $actions = $res->json('data.actions') ?? [];
+        $this->assertSame([], $actions);
+
+        $stats = $res->json('data.stats');
+        $this->assertIsArray($stats);
+        $this->assertArrayHasKey('today', $stats);
+        $this->assertSame(1, $stats['today']);
+    }
+
+    /** @test */
+    public function today_stat_ignores_exclude_stages_for_closed_stage_created_today(): void
+    {
+        $this->requirePropertyRequestTable();
+
+        if (!Schema::hasColumn('users_property_requests', 'customers_hub_stage_id')) {
+            $this->markTestSkipped('customers_hub_stage_id column required.');
+        }
+        if (!Schema::hasTable('customers_hub_stages')) {
+            $this->markTestSkipped('customers_hub_stages table required.');
+        }
+
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        Sanctum::actingAs($tenant);
+
+        $stageSlug = 'deal_completed';
+        $stageNumericId = DB::table('customers_hub_stages')
+            ->where('stage_id', $stageSlug)
+            ->where('is_active', true)
+            ->value('id');
+
+        if ($stageNumericId === null) {
+            $stageNumericId = (int) DB::table('customers_hub_stages')->insertGetId([
+                'user_id' => $tenant->id,
+                'stage_id' => $stageSlug,
+                'stage_name_ar' => 'صفقة مكتملة',
+                'stage_name_en' => 'Deal Completed',
+                'color' => '#000000',
+                'order' => 99,
+                'is_active' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
+            $stageNumericId = (int) $stageNumericId;
+        }
+
+        $this->createPropertyRequest($tenant->id, [
+            'customers_hub_stage_id' => $stageSlug,
+        ]);
+
+        $res = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'tab' => 'all',
+            'objectTypes' => ['property_request'],
+            'excludeStages' => [$stageNumericId],
+            'limit' => 50,
+            'offset' => 0,
+        ]);
+
+        $res->assertOk()->assertJsonPath('status', 'success');
+
+        $actions = $res->json('data.actions') ?? [];
+        $this->assertSame([], $actions);
+
+        $stats = $res->json('data.stats');
+        $this->assertIsArray($stats);
+        $this->assertArrayHasKey('today', $stats);
+        $this->assertSame(1, $stats['today']);
+    }
 }
 
