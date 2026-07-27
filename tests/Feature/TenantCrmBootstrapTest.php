@@ -14,6 +14,9 @@ use App\Services\Matching\RequestCompletenessService;
 use App\Services\TenantCrmBootstrapService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Schema;
+use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class TenantCrmBootstrapTest extends TestCase
@@ -146,5 +149,45 @@ class TenantCrmBootstrapTest extends TestCase
         $this->assertNotNull($settings);
         $this->assertTrue($settings->auto_create_customer);
         $this->assertNotNull($settings->default_stage_id);
+    }
+
+    /** @test */
+    public function property_request_settings_get_reports_auto_create_enabled_when_no_row(): void
+    {
+        $this->requireTables();
+
+        if (!Schema::hasTable('api_permissions')) {
+            $this->markTestSkipped('api_permissions table required for crm.view.');
+        }
+
+        $tenant = $this->createTenant();
+        PropertyRequestAutoCustomerSetting::where('user_id', $tenant->id)->delete();
+
+        $this->grantCrmView($tenant);
+        Sanctum::actingAs($tenant);
+
+        $res = $this->getJson('/api/crm/property-requests/settings');
+
+        $res->assertOk();
+        $res->assertJsonPath('data.settings.auto_create_customer', true);
+        $res->assertJsonPath('data.settings.default_stage_id', null);
+    }
+
+    private function grantCrmView(User $tenant): void
+    {
+        $registrar = app(PermissionRegistrar::class);
+        $registrar->setPermissionsTeamId((int) $tenant->id);
+        $registrar->forgetCachedPermissions();
+
+        try {
+            $permission = Permission::findByName('crm.view', 'sanctum');
+        } catch (\Throwable $e) {
+            $permission = Permission::create([
+                'name' => 'crm.view',
+                'guard_name' => 'sanctum',
+            ]);
+        }
+
+        $tenant->givePermissionTo($permission);
     }
 }
