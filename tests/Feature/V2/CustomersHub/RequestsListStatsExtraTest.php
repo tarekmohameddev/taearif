@@ -130,5 +130,38 @@ class RequestsListStatsExtraTest extends TestCase
         $this->assertArrayHasKey('today', $stats);
         $this->assertSame(1, $stats['today']);
     }
+
+    /** @test */
+    public function today_stat_includes_property_requests_created_today_with_dismissed_status(): void
+    {
+        $this->requirePropertyRequestTable();
+
+        if (!Schema::hasColumn('users_property_requests', 'is_archived')) {
+            $this->markTestSkipped('is_archived column required to map dismissed status.');
+        }
+
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        Sanctum::actingAs($tenant);
+
+        // Created today, dismissed (archived) — must still count toward "today"
+        $this->createPropertyRequest($tenant->id, [
+            'is_archived' => 1,
+        ]);
+
+        $res = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'tab' => 'all',
+            'objectTypes' => ['property_request'],
+            'limit' => 50,
+            'offset' => 0,
+            // intentionally no excludeStatuses — dismissed rows remain in the query
+        ]);
+
+        $res->assertOk()->assertJsonPath('status', 'success');
+
+        $stats = $res->json('data.stats');
+        $this->assertIsArray($stats);
+        $this->assertArrayHasKey('today', $stats);
+        $this->assertSame(1, $stats['today']);
+    }
 }
 
