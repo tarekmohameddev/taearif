@@ -45,6 +45,7 @@ use App\Http\Resources\Api\PropertyListResource;
 use App\Http\Resources\Api\PropertyResource;
 use App\Http\Resources\Concerns\FormatsPropertyCreator;
 use App\Http\Requests\Api\Property\BulkCompletePropertyDraftsRequest;
+use App\Http\Requests\Api\Property\BulkDestroyPropertyDraftsRequest;
 use App\Http\Requests\Api\Property\BulkImportPropertiesRequest;
 use App\Http\Requests\Api\Property\CompletePropertyDraftRequest;
 use App\Http\Requests\Api\Property\DuplicatePropertyRequest;
@@ -1719,15 +1720,13 @@ class PropertyController extends Controller
     }
 
     /**
-     * Delete a property.
-     *
      * DELETE /api/properties/{id}
      * Requires: auth:sanctum, can:properties.delete
      *
      * @param int|string $id Property ID (numeric)
      * @return \Illuminate\Http\JsonResponse 200 on success; 404 if property not found; 400 on other errors
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         if (!is_numeric($id) || (int) $id < 1) {
             return response()->json([
@@ -1741,54 +1740,89 @@ class PropertyController extends Controller
         $id = (int) $id;
 
         try {
+            $user = $request->user();
+            $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+
+            $allowedUserIds = [(int) $owner->id];
+            try {
+                $employeeIds = \App\Models\User::where('tenant_id', $owner->id)->pluck('id')->toArray();
+                $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
+            } catch (\Throwable $e) {
+                // fall back to owner-only scoping
+            }
+
             $property = Property::with([
                 'galleryImages',
                 'proertyAmenities',
                 'contents',
                 'wishlists',
-                // 'specifications'
-            ])->findOrFail($id);
+            ])
+                ->whereIn('user_id', $allowedUserIds)
+                ->where('id', $id)
+                ->first();
 
-            $property->galleryImages()->delete();
-            $property->proertyAmenities()->delete();
-            $property->contents()->delete();
-            $property->wishlists()->delete();
-            // $property->specifications()->delete();
-
-            if ($property->featured_image) {
-                Storage::delete('public/properties/' . $property->featured_image);
+            if (!$property) {
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'RESOURCE_NOT_FOUND',
+                    'message' => 'Property not found',
+                    'timestamp' => now()->toIso8601String(),
+                ], 404);
             }
 
-            // Capture owner ID before delete for cache invalidation
-            $ownerId = $property->user_id;
+            $snapshot = $property->toArray();
+            $propertyOwnerId = (int) $property->user_id;
+            $tenantId = (int) $owner->id;
 
-            $property->delete();
+            $this->deletePropertyAndRelations($property);
+            $this->forgetPropertyApiCache($id, $propertyOwnerId);
+            PropertyListCacheVersionService::incrementVersion($tenantId);
 
-            // Invalidate cache for this property (all days variants)
-            // Clear both legacy keys and owner-scoped keys
-            foreach ([7, 30, 90, 365] as $days) {
-                Cache::forget("property_api_{$id}_v1_days_{$days}");
-                Cache::forget("property_api_{$id}_owner_{$ownerId}_v1_days_{$days}");
-            }
-
-            // TenantActivity::emit($request, 'property.deleted', 'user_properties', $property->id, $property->toArray(), null);
+            Audit::property($tenantId, $id, 'deleted', 'property deleted');
+            TenantActivity::emit($request, 'property.deleted', 'user_properties', $id, $snapshot, null);
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Property deleted successfully'
             ], 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'code' => 'RESOURCE_NOT_FOUND',
-                'message' => 'Property not found',
-                'timestamp' => now()->toIso8601String(),
-            ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage()
             ], 400);
+        }
+    }
+
+    /**
+     * Delete property relations, featured image file, and the property row.
+     * Caller must already authorize ownership / draft scope.
+     */
+    private function deletePropertyAndRelations(Property $property): void
+    {
+        $property->loadMissing([
+            'galleryImages',
+            'proertyAmenities',
+            'contents',
+            'wishlists',
+        ]);
+
+        $property->galleryImages()->delete();
+        $property->proertyAmenities()->delete();
+        $property->contents()->delete();
+        $property->wishlists()->delete();
+
+        if ($property->featured_image) {
+            Storage::delete('public/properties/' . basename($property->featured_image));
+        }
+
+        $property->delete();
+    }
+
+    private function forgetPropertyApiCache(int $propertyId, int $ownerId): void
+    {
+        foreach ([7, 30, 90, 365] as $days) {
+            Cache::forget("property_api_{$propertyId}_v1_days_{$days}");
+            Cache::forget("property_api_{$propertyId}_owner_{$ownerId}_v1_days_{$days}");
         }
     }
 
@@ -4368,6 +4402,152 @@ class PropertyController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to process bulk completion',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete incomplete/draft property
+     * DELETE /api/properties/drafts/{id}
+     */
+    public function destroyDraft(Request $request, $id)
+    {
+        if (!is_numeric($id) || (int) $id < 1) {
+            return response()->json([
+                'status' => 'error',
+                'code' => 'VALIDATION_FAILED',
+                'message' => 'Invalid property ID',
+                'timestamp' => now()->toIso8601String(),
+            ], 422);
+        }
+
+        $id = (int) $id;
+
+        try {
+            $user = $request->user();
+            $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+            $tenantId = (int) $owner->id;
+
+            $property = Property::with([
+                'galleryImages',
+                'proertyAmenities',
+                'contents',
+                'wishlists',
+            ])
+                ->where('id', $id)
+                ->where('user_id', $tenantId)
+                ->where('completion_status', 'incomplete')
+                ->first();
+
+            if (!$property) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Draft property not found',
+                ], 404);
+            }
+
+            $snapshot = $property->toArray();
+            $propertyOwnerId = (int) $property->user_id;
+
+            $this->deletePropertyAndRelations($property);
+            $this->forgetPropertyApiCache($id, $propertyOwnerId);
+            PropertyListCacheVersionService::incrementVersion($tenantId);
+
+            Audit::property($tenantId, $id, 'deleted', 'draft property deleted');
+            TenantActivity::emit($request, 'property.deleted', 'user_properties', $id, $snapshot, null);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Draft property deleted successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error deleting draft: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to delete draft property',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Bulk delete incomplete/draft properties
+     * POST /api/properties/drafts/bulk-delete
+     */
+    public function bulkDestroyDrafts(BulkDestroyPropertyDraftsRequest $request)
+    {
+        try {
+            $validated = $request->validated();
+            $user = $request->user();
+            $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+            $tenantId = (int) $owner->id;
+
+            $deleted = 0;
+            $failed = 0;
+            $errors = [];
+
+            foreach ($validated['property_ids'] as $propertyId) {
+                try {
+                    $property = Property::with([
+                        'galleryImages',
+                        'proertyAmenities',
+                        'contents',
+                        'wishlists',
+                    ])
+                        ->where('id', (int) $propertyId)
+                        ->where('user_id', $tenantId)
+                        ->where('completion_status', 'incomplete')
+                        ->first();
+
+                    if (!$property) {
+                        $failed++;
+                        $errors[] = [
+                            'property_id' => $propertyId,
+                            'error' => 'Draft property not found',
+                        ];
+                        continue;
+                    }
+
+                    $snapshot = $property->toArray();
+                    $id = (int) $property->id;
+                    $propertyOwnerId = (int) $property->user_id;
+
+                    $this->deletePropertyAndRelations($property);
+                    $this->forgetPropertyApiCache($id, $propertyOwnerId);
+
+                    Audit::property($tenantId, $id, 'deleted', 'draft property deleted');
+                    TenantActivity::emit($request, 'property.deleted', 'user_properties', $id, $snapshot, null);
+
+                    $deleted++;
+                } catch (\Exception $e) {
+                    $failed++;
+                    $errors[] = [
+                        'property_id' => $propertyId,
+                        'error' => $e->getMessage(),
+                    ];
+                    Log::error("Error deleting draft property {$propertyId}: " . $e->getMessage());
+                }
+            }
+
+            if ($deleted > 0) {
+                PropertyListCacheVersionService::incrementVersion($tenantId);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Bulk draft deletion processed',
+                'data' => [
+                    'deleted_count' => $deleted,
+                    'failed_count' => $failed,
+                    'errors' => $errors,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in bulk draft delete: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to process bulk draft deletion',
                 'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }

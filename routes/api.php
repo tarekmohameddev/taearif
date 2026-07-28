@@ -388,6 +388,8 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     Route::patch ('/properties/drafts/{id}',              [PropertyController::class, 'updateDraft'])->middleware('can:properties.update');
     Route::post  ('/properties/drafts/{id}/complete',     [PropertyController::class, 'completeDraft'])->middleware('can:properties.create');
     Route::post  ('/properties/drafts/bulk-complete',     [PropertyController::class, 'bulkCompleteDrafts'])->middleware('can:properties.create');
+    Route::delete('/properties/drafts/{id}',              [PropertyController::class, 'destroyDraft'])->middleware('can:properties.delete');
+    Route::post  ('/properties/drafts/bulk-delete',       [PropertyController::class, 'bulkDestroyDrafts'])->middleware('can:properties.delete');
 
     Route::post  ('/properties/bulk',                     [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'bulkCreate'])->middleware('can:properties.create');
     Route::post  ('/properties/import/excel',           [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'importExcel'])->middleware('can:properties.create');
