@@ -36,6 +36,8 @@ class DomainSettingsVercelTest extends TestCase
                 'ns1.vercel-dns.com',
                 'ns2.vercel-dns.com',
             ],
+            'services.vercel.auto_attach_custom_domain' => true,
+            'services.vercel.check_nameservers' => true,
         ]);
     }
 
@@ -136,6 +138,101 @@ class DomainSettingsVercelTest extends TestCase
             'custom_name' => 'ready.example.com',
             'status' => 'active',
         ]);
+    }
+
+    public function test_store_without_auto_attach_skips_vercel_http(): void
+    {
+        $this->skipIfMissingSchema();
+        config([
+            'services.vercel.token' => null,
+            'services.vercel.project_id' => null,
+            'services.vercel.auto_attach_custom_domain' => false,
+            'services.vercel.check_nameservers' => true,
+            'services.vercel.nameservers' => [
+                'ns1.vercel-dns.com',
+                'ns2.vercel-dns.com',
+            ],
+        ]);
+        $this->mockNameservers(false);
+        $tenant = $this->actingTenant();
+
+        Http::fake();
+
+        $response = $this->postJson('/api/settings/domain', [
+            'custom_name' => 'local-only.example.com',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.status', 'pending')
+            ->assertJsonPath('verification.verified', false);
+
+        $this->assertDatabaseHas('api_domains_settings', [
+            'user_id' => $tenant->id,
+            'custom_name' => 'local-only.example.com',
+        ]);
+        Http::assertNothingSent();
+    }
+
+    public function test_store_without_nameserver_check_activates_when_vercel_verified(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        config(['services.vercel.check_nameservers' => false]);
+        $this->mockNameservers(false);
+        $tenant = $this->actingTenant();
+
+        Http::fake(function (\Illuminate\Http\Client\Request $request) {
+            $url = $request->url();
+            if (str_contains($url, '/v10/projects/') && $request->method() === 'POST' && ! str_contains($url, '/verify')) {
+                return Http::response(['name' => 'skip-ns.example.com', 'verified' => true], 200);
+            }
+            if (str_contains($url, '/verify') || (str_contains($url, '/v9/projects/') && str_contains($url, '/domains/'))) {
+                return Http::response(['name' => 'skip-ns.example.com', 'verified' => true], 200);
+            }
+
+            return Http::response(['error' => 'unexpected'], 500);
+        });
+
+        $response = $this->postJson('/api/settings/domain', [
+            'custom_name' => 'skip-ns.example.com',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.status', 'active')
+            ->assertJsonPath('verification.verified', true)
+            ->assertJsonPath('verification.nameservers_ok', true);
+
+        $this->assertDatabaseHas('api_domains_settings', [
+            'user_id' => $tenant->id,
+            'custom_name' => 'skip-ns.example.com',
+            'status' => 'active',
+        ]);
+    }
+
+    public function test_destroy_without_auto_attach_skips_vercel_delete(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        config(['services.vercel.auto_attach_custom_domain' => false]);
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'no-vercel-delete.example.com',
+            'status' => 'pending',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+        ]);
+
+        Http::fake();
+
+        $response = $this->deleteJson('/api/settings/domain/' . $domain->id);
+
+        $response->assertOk()->assertJsonPath('success', true);
+        $this->assertDatabaseMissing('api_domains_settings', ['id' => $domain->id]);
+        Http::assertNothingSent();
     }
 
     public function test_store_without_vercel_config_returns_503_and_does_not_persist(): void

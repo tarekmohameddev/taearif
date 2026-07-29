@@ -17,7 +17,17 @@ class SyncVercelDomainStatusCommand extends Command
 
     public function handle(DomainStatusSyncService $sync, VercelDomainClient $vercel): int
     {
-        if (! $vercel->isConfigured()) {
+        $autoAttach = (bool) config('services.vercel.auto_attach_custom_domain', true);
+        $checkNameservers = (bool) config('services.vercel.check_nameservers', true);
+
+        if (! $autoAttach && ! $checkNameservers) {
+            $this->warn('Domain verification checks are disabled; skipping domains:sync-vercel-status.');
+            Log::warning('domains:sync-vercel-status skipped: both auto_attach and check_nameservers disabled');
+
+            return self::SUCCESS;
+        }
+
+        if ($autoAttach && ! $vercel->isConfigured()) {
             $this->warn('Vercel is not configured; skipping domains:sync-vercel-status.');
             Log::warning('domains:sync-vercel-status skipped: Vercel not configured');
 

@@ -99,6 +99,8 @@ return [
             'ns2.vercel-dns.com',
         ],
         'max_domains_per_tenant' => (int) env('VERCEL_MAX_DOMAINS_PER_TENANT', 5),
+        'check_nameservers' => filter_var(env('VERCEL_CHECK_NAMESERVERS', true), FILTER_VALIDATE_BOOLEAN),
+        'auto_attach_custom_domain' => filter_var(env('VERCEL_AUTO_ATTACH_CUSTOM_DOMAIN', true), FILTER_VALIDATE_BOOLEAN),
     ],
 
 ];

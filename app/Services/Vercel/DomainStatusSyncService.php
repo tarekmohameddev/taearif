@@ -33,6 +33,8 @@ class DomainStatusSyncService
         $oldStatus = $domain->status;
         $apex = $this->vercel->normalizeApex((string) $domain->custom_name);
         $expectedNs = config('services.vercel.nameservers', []);
+        $autoAttach = (bool) config('services.vercel.auto_attach_custom_domain', true);
+        $checkNameservers = (bool) config('services.vercel.check_nameservers', true);
 
         $vercelVerified = false;
         $nameserversOk = false;
@@ -46,6 +48,8 @@ class DomainStatusSyncService
                 'last_check_at' => now()->toIso8601String(),
                 'vercel_verified' => false,
                 'nameservers_ok' => false,
+                'auto_attach_custom_domain' => $autoAttach,
+                'nameserver_check_enabled' => $checkNameservers,
                 'message' => $message,
                 'reason' => 'expired',
             ], $oldStatus, $request);
@@ -53,67 +57,94 @@ class DomainStatusSyncService
             return $this->result($oldStatus, $newStatus, $ssl, $message, false, false);
         }
 
-        if (! $this->vercel->isConfigured()) {
-            $message = 'Vercel domain integration is not configured.';
-            Log::warning('DomainStatusSyncService skipped: Vercel not configured', [
-                'domain_id' => $domain->id,
-            ]);
+        if (! $autoAttach && ! $checkNameservers) {
+            $message = 'Verification checks are disabled (VERCEL_AUTO_ATTACH_CUSTOM_DOMAIN and VERCEL_CHECK_NAMESERVERS are false).';
+            $this->persist($domain, (string) $oldStatus, (bool) $domain->ssl, [
+                'last_check_at' => now()->toIso8601String(),
+                'vercel_verified' => false,
+                'nameservers_ok' => false,
+                'auto_attach_custom_domain' => false,
+                'nameserver_check_enabled' => false,
+                'message' => $message,
+            ], $oldStatus, $request);
 
             return $this->result($oldStatus, (string) $oldStatus, (bool) $domain->ssl, $message, false, false);
         }
 
-        try {
-            $vercelDomain = null;
-            if ($attemptVerify) {
-                try {
-                    $vercelDomain = $this->vercel->verifyDomain($apex);
-                } catch (VercelDomainException $e) {
+        if ($autoAttach) {
+            if (! $this->vercel->isConfigured()) {
+                $message = 'Vercel domain integration is not configured.';
+                Log::warning('DomainStatusSyncService skipped: Vercel not configured', [
+                    'domain_id' => $domain->id,
+                ]);
+
+                return $this->result($oldStatus, (string) $oldStatus, (bool) $domain->ssl, $message, false, false);
+            }
+
+            try {
+                $vercelDomain = null;
+                if ($attemptVerify) {
+                    try {
+                        $vercelDomain = $this->vercel->verifyDomain($apex);
+                    } catch (VercelDomainException $e) {
+                        $vercelDomain = $this->vercel->getDomain($apex);
+                        if ($vercelDomain === null) {
+                            $message = $e->getMessage();
+                        }
+                    }
+                } else {
                     $vercelDomain = $this->vercel->getDomain($apex);
-                    if ($vercelDomain === null) {
-                        $message = $e->getMessage();
+                }
+
+                if ($vercelDomain === null) {
+                    $message = $message !== '' ? $message : 'Domain is not attached to the Vercel project.';
+                } else {
+                    $vercelVerified = ! empty($vercelDomain['verified']);
+                    if (! $vercelVerified) {
+                        $message = 'Domain is on Vercel but not verified yet. Ensure nameservers have propagated.';
                     }
                 }
-            } else {
-                $vercelDomain = $this->vercel->getDomain($apex);
+            } catch (VercelDomainException $e) {
+                Log::warning('DomainStatusSyncService Vercel error', [
+                    'domain_id' => $domain->id,
+                    'error' => $e->getMessage(),
+                ]);
+                $message = $e->getMessage();
+                $vercelVerified = false;
             }
-
-            if ($vercelDomain === null) {
-                $message = $message !== '' ? $message : 'Domain is not attached to the Vercel project.';
-            } else {
-                $vercelVerified = ! empty($vercelDomain['verified']);
-                if (! $vercelVerified) {
-                    $message = 'Domain is on Vercel but not verified yet. Ensure nameservers have propagated.';
-                }
-            }
-        } catch (VercelDomainException $e) {
-            Log::warning('DomainStatusSyncService Vercel error', [
-                'domain_id' => $domain->id,
-                'error' => $e->getMessage(),
-            ]);
-            $message = $e->getMessage();
-            $vercelVerified = false;
+        } else {
+            // Not attaching to Vercel — do not block activation on Vercel status.
+            $vercelVerified = true;
         }
 
-        try {
-            $nameserversOk = $this->nameserverChecker->hasExpectedNameservers($apex, $expectedNs);
-            if (! $nameserversOk && $message === '') {
-                $message = 'Nameservers are not pointing to Vercel yet.';
+        if ($checkNameservers) {
+            try {
+                $nameserversOk = $this->nameserverChecker->hasExpectedNameservers($apex, $expectedNs);
+                if (! $nameserversOk && $message === '') {
+                    $message = 'Nameservers are not pointing to Vercel yet.';
+                }
+            } catch (\Throwable $e) {
+                Log::warning('DomainStatusSyncService NS check failed', [
+                    'domain_id' => $domain->id,
+                    'error' => $e->getMessage(),
+                ]);
+                $nameserversOk = false;
+                if ($message === '') {
+                    $message = 'Unable to resolve domain nameservers.';
+                }
             }
-        } catch (\Throwable $e) {
-            Log::warning('DomainStatusSyncService NS check failed', [
-                'domain_id' => $domain->id,
-                'error' => $e->getMessage(),
-            ]);
-            $nameserversOk = false;
-            if ($message === '') {
-                $message = 'Unable to resolve domain nameservers.';
-            }
+        } else {
+            $nameserversOk = true;
         }
 
         if ($vercelVerified && $nameserversOk) {
             $newStatus = 'active';
-            $ssl = true;
-            $message = 'Domain is verified and nameservers are correct.';
+            $ssl = $autoAttach ? true : (bool) $domain->ssl;
+            $message = $autoAttach && $checkNameservers
+                ? 'Domain is verified and nameservers are correct.'
+                : ($autoAttach
+                    ? 'Domain is verified on Vercel.'
+                    : 'Nameservers are correct.');
         } elseif ($oldStatus === 'active') {
             $newStatus = 'failed';
             $ssl = false;
@@ -132,6 +163,8 @@ class DomainStatusSyncService
             'last_check_at' => now()->toIso8601String(),
             'vercel_verified' => $vercelVerified,
             'nameservers_ok' => $nameserversOk,
+            'auto_attach_custom_domain' => $autoAttach,
+            'nameserver_check_enabled' => $checkNameservers,
             'message' => $message,
         ], $oldStatus, $request);
 

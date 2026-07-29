@@ -88,7 +88,9 @@ class DomainSettingsController extends Controller
             ], 400);
         }
 
-        if (! $this->vercel->isConfigured()) {
+        $autoAttach = (bool) config('services.vercel.auto_attach_custom_domain', true);
+
+        if ($autoAttach && ! $this->vercel->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Domain hosting is not configured. Please contact support.',
@@ -120,20 +122,22 @@ class DomainSettingsController extends Controller
         ]);
         $domain->save();
 
-        try {
-            $this->vercel->addApexWithWwwRedirect($customName);
-        } catch (VercelDomainException $e) {
-            $domain->delete();
-            Log::error('Failed to attach domain to Vercel', [
-                'domain' => $customName,
-                'error' => $e->getMessage(),
-                'status' => $e->statusCode,
-            ]);
+        if ($autoAttach) {
+            try {
+                $this->vercel->addApexWithWwwRedirect($customName);
+            } catch (VercelDomainException $e) {
+                $domain->delete();
+                Log::error('Failed to attach domain to Vercel', [
+                    'domain' => $customName,
+                    'error' => $e->getMessage(),
+                    'status' => $e->statusCode,
+                ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to register domain with hosting provider. Please try again later.',
-            ], 502);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to register domain with hosting provider. Please try again later.',
+                ], 502);
+            }
         }
 
         // Immediate verify + NS check so the dashboard can show success or setup guidance
@@ -243,7 +247,7 @@ class DomainSettingsController extends Controller
             }
         }
 
-        if ($this->vercel->isConfigured()) {
+        if ((bool) config('services.vercel.auto_attach_custom_domain', true) && $this->vercel->isConfigured()) {
             try {
                 $this->vercel->removeApexAndWww((string) $domain->custom_name);
             } catch (VercelDomainException $e) {
@@ -276,10 +280,20 @@ class DomainSettingsController extends Controller
             ->where('user_id', $user->id)
             ->firstOrFail();
 
-        if (! $this->vercel->isConfigured()) {
+        $autoAttach = (bool) config('services.vercel.auto_attach_custom_domain', true);
+        $checkNameservers = (bool) config('services.vercel.check_nameservers', true);
+
+        if ($autoAttach && ! $this->vercel->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Domain hosting is not configured. Please contact support.',
+            ], 503);
+        }
+
+        if (! $autoAttach && ! $checkNameservers) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Verification checks are disabled. Please contact support.',
             ], 503);
         }
 
