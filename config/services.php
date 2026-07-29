@@ -89,4 +89,15 @@ return [
         'redirect_uri' => env('META_REDIRECT_URI'),
     ],
 
+    'vercel' => [
+        'token' => env('VERCEL_TOKEN'),
+        'team_id' => env('VERCEL_TEAM_ID'),
+        'project_id' => env('VERCEL_PROJECT_ID'),
+        'base_url' => env('VERCEL_API_BASE', 'https://api.vercel.com'),
+        'nameservers' => [
+            'ns1.vercel-dns.com',
+            'ns2.vercel-dns.com',
+        ],
+    ],
+
 ];
