@@ -98,6 +98,7 @@ return [
             'ns1.vercel-dns.com',
             'ns2.vercel-dns.com',
         ],
+        'max_domains_per_tenant' => (int) env('VERCEL_MAX_DOMAINS_PER_TENANT', 5),
     ],
 
 ];

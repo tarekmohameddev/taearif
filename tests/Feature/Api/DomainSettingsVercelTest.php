@@ -172,11 +172,98 @@ class DomainSettingsVercelTest extends TestCase
             'custom_name' => 'fail.example.com',
         ]);
 
-        $response->assertStatus(502);
+        $response->assertStatus(502)
+            ->assertJsonPath('message', 'Failed to register domain with hosting provider. Please try again later.')
+            ->assertJsonMissing(['errors']);
+        $body = $response->json();
+        $this->assertStringNotContainsString('boom', json_encode($body));
         $this->assertDatabaseMissing('api_domains_settings', [
             'user_id' => $tenant->id,
             'custom_name' => 'fail.example.com',
         ]);
+    }
+
+    public function test_store_rejects_domain_owned_by_another_tenant(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+
+        $owner = User::factory()->tenant()->create([
+            'email' => 'owner-' . uniqid('', true) . '@example.com',
+        ]);
+        ApiDomainSetting::create([
+            'user_id' => $owner->id,
+            'custom_name' => 'taken.example.com',
+            'status' => 'pending',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+        ]);
+
+        $this->actingTenant();
+        $response = $this->postJson('/api/settings/domain', [
+            'custom_name' => 'taken.example.com',
+        ]);
+
+        $response->assertStatus(400)
+            ->assertJsonPath('message', 'Domain already in use')
+            ->assertJsonPath('errors.0.message', 'This domain is already in use');
+        $this->assertStringNotContainsString((string) $owner->email, $response->getContent());
+        $this->assertStringNotContainsString((string) $owner->id, json_encode($response->json('errors')));
+    }
+
+    public function test_store_rejects_when_domain_limit_reached(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        config(['services.vercel.max_domains_per_tenant' => 1]);
+        $tenant = $this->actingTenant();
+
+        ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'first-limit.example.com',
+            'status' => 'pending',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+        ]);
+
+        $response = $this->postJson('/api/settings/domain', [
+            'custom_name' => 'second-limit.example.com',
+        ]);
+
+        $response->assertStatus(400)
+            ->assertJsonPath('message', 'Domain limit reached');
+        $this->assertDatabaseMissing('api_domains_settings', [
+            'user_id' => $tenant->id,
+            'custom_name' => 'second-limit.example.com',
+        ]);
+    }
+
+    public function test_tenant_ssl_status_route_is_removed(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->actingTenant();
+
+        $hasSslStatusRoute = collect(\Illuminate\Support\Facades\Route::getRoutes())
+            ->contains(function ($route) {
+                return str_contains($route->uri(), 'settings/domain/ssl-status');
+            });
+        $this->assertFalse($hasSslStatusRoute, 'Tenant ssl-status route must not be registered');
+        $this->assertFalse(
+            method_exists(\App\Http\Controllers\Api\DomainSettingsController::class, 'updateSslStatus')
+        );
+
+        $response = $this->patchJson('/api/settings/domain/ssl-status', [
+            'domain_id' => 1,
+            'ssl' => true,
+        ]);
+
+        // App exception handler may map MethodNotAllowed to 500 for unmatched PATCH on {id}.
+        $this->assertNotEquals(200, $response->status());
+        $this->assertNotTrue($response->json('success'));
+        $content = $response->getContent();
+        $this->assertStringNotContainsString('SSL status updated successfully', $content);
     }
 
     public function test_verify_success_sets_active_and_ssl(): void

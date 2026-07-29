@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Domain\RequestDomainSslRequest;
 use App\Http\Requests\Api\Domain\SetPrimaryDomainRequest;
 use App\Http\Requests\Api\Domain\StoreDomainSettingRequest;
-use App\Http\Requests\Api\Domain\UpdateDomainSslStatusRequest;
 use App\Http\Requests\Api\Domain\VerifyDomainRequest;
 use App\Models\Api\ApiDomainSetting;
 use App\Services\Vercel\DomainStatusSyncService;
@@ -62,17 +61,28 @@ class DomainSettingsController extends Controller
         $validated = $request->validated();
         $customName = $this->vercel->normalizeApex($validated['custom_name']);
 
-        $existingDomain = ApiDomainSetting::where('custom_name', $customName)
-            ->where('user_id', $user->id)
-            ->first();
+        $existingDomain = ApiDomainSetting::where('custom_name', $customName)->first();
         if ($existingDomain) {
+            if ((int) $existingDomain->user_id === (int) $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Domain already exists',
+                    'errors' => [
+                        [
+                            'field' => 'custom_name',
+                            'message' => 'This domain is already added to your account',
+                        ],
+                    ],
+                ], 400);
+            }
+
             return response()->json([
                 'success' => false,
-                'message' => 'Domain already exists',
+                'message' => 'Domain already in use',
                 'errors' => [
                     [
                         'field' => 'custom_name',
-                        'message' => 'This domain is already added to your account',
+                        'message' => 'This domain is already in use',
                     ],
                 ],
             ], 400);
@@ -86,6 +96,20 @@ class DomainSettingsController extends Controller
         }
 
         $domainsCount = ApiDomainSetting::where('user_id', $user->id)->count();
+        $maxDomains = max(1, (int) config('services.vercel.max_domains_per_tenant', 5));
+        if ($domainsCount >= $maxDomains) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Domain limit reached',
+                'errors' => [
+                    [
+                        'field' => 'custom_name',
+                        'message' => "You can add up to {$maxDomains} domains.",
+                    ],
+                ],
+            ], 400);
+        }
+
         $domain = new ApiDomainSetting([
             'user_id' => $user->id,
             'custom_name' => $customName,
@@ -109,12 +133,6 @@ class DomainSettingsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to register domain with hosting provider. Please try again later.',
-                'errors' => [
-                    [
-                        'field' => 'custom_name',
-                        'message' => $e->getMessage(),
-                    ],
-                ],
             ], 502);
         }
 
@@ -444,24 +462,5 @@ class DomainSettingsController extends Controller
                 'status' => $domain->status,
             ],
         ], 422);
-    }
-
-    public function updateSslStatus(UpdateDomainSslStatusRequest $request)
-    {
-        $validated = $request->validated();
-
-        $domain = ApiDomainSetting::findOrFail($validated['domain_id']);
-        $domain->ssl = $validated['ssl'];
-        $domain->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'SSL status updated successfully.',
-            'data' => [
-                'id' => $domain->id,
-                'custom_name' => $domain->requested_domain ?? $domain->custom_name,
-                'ssl' => $domain->ssl,
-            ],
-        ]);
     }
 }
