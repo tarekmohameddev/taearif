@@ -321,31 +321,32 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // --- Contracts ---
+// Permission checks are enforced in ApiContractController (crm.* for regular, rentals.* for type=rms).
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/contracts', [ApiContractController::class, 'index']); // Get all contracts
-    Route::get('/contracts/{id}', [ApiContractController::class, 'show']); // Get a single contract
-    Route::post('/contracts', [ApiContractController::class, 'store']); // Create a contract
-    Route::put('/contracts/{id}', [ApiContractController::class, 'update']); // Update a contract
-    Route::delete('/contracts/{id}', [ApiContractController::class, 'destroy']); // Delete a contract
-    Route::get('/contracts/statistics', [ApiContractController::class, 'statistics']); // Get contract statistics
-    Route::get('/contracts/customer/{customerId}', [ApiContractController::class, 'getByCustomer']); // Get contracts by customer
-    Route::get('/contracts/rental/{rentalId}', [ApiContractController::class, 'getByRental']); // Get contracts by rental
+    Route::get('/contracts', [ApiContractController::class, 'index']);
+    Route::get('/contracts/statistics', [ApiContractController::class, 'statistics']);
+    Route::get('/contracts/customer/{customerId}', [ApiContractController::class, 'getByCustomer']);
+    Route::get('/contracts/rental/{rentalId}', [ApiContractController::class, 'getByRental']);
+    Route::post('/contracts', [ApiContractController::class, 'store']);
+    Route::get('/contracts/{id}', [ApiContractController::class, 'show']);
+    Route::put('/contracts/{id}', [ApiContractController::class, 'update']);
+    Route::delete('/contracts/{id}', [ApiContractController::class, 'destroy']);
 });
 
 // --- Rental contracts (RMS) ---
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/rental-contracts', [RentalContractController::class, 'index']); // Get all rental contracts
-    Route::get('/rental-contracts/statistics', [RentalContractController::class, 'statistics']); // Get rental contract statistics
-    Route::get('/rental-contracts/daily-follow-up', [RentalContractController::class, 'dailyFollowUp']); // Daily follow-up for rental contracts
-    Route::get('/rental-contracts/all-contracts', [RentalContractController::class, 'allContracts']); // All contracts with color status
-    Route::get('/rental-contracts/filter', [RentalContractController::class, 'filterContracts']); // Advanced contract filtering
-    Route::get('/rental-contracts/rental/{rentalId}', [RentalContractController::class, 'getByRental']); // Get contracts by rental
-    Route::post('/rental-contracts', [RentalContractController::class, 'store']); // Create a rental contract
-    Route::get('/rental-contracts/{id}', [RentalContractController::class, 'show']); // Get a single rental contract
-    Route::put('/rental-contracts/{id}', [RentalContractController::class, 'update']); // Update a rental contract
-    Route::delete('/rental-contracts/{id}', [RentalContractController::class, 'destroy']); // Delete a rental contract
-    Route::post('/rental-contracts/{id}/terminate', [RentalContractController::class, 'terminate']); // Terminate a rental contract
-    Route::patch('/rental-contracts/{id}/status', [RentalContractController::class, 'changeStatus']); // Change rental contract status
+    Route::get('/rental-contracts', [RentalContractController::class, 'index'])->middleware('can:rentals.view');
+    Route::get('/rental-contracts/statistics', [RentalContractController::class, 'statistics'])->middleware('can:rentals.view');
+    Route::get('/rental-contracts/daily-follow-up', [RentalContractController::class, 'dailyFollowUp'])->middleware('can:rentals.view');
+    Route::get('/rental-contracts/all-contracts', [RentalContractController::class, 'allContracts'])->middleware('can:rentals.view');
+    Route::get('/rental-contracts/filter', [RentalContractController::class, 'filterContracts'])->middleware('can:rentals.view');
+    Route::get('/rental-contracts/rental/{rentalId}', [RentalContractController::class, 'getByRental'])->middleware('can:rentals.view');
+    Route::post('/rental-contracts', [RentalContractController::class, 'store'])->middleware('can:rentals.create');
+    Route::get('/rental-contracts/{id}', [RentalContractController::class, 'show'])->middleware('can:rentals.view');
+    Route::put('/rental-contracts/{id}', [RentalContractController::class, 'update'])->middleware('can:rentals.update');
+    Route::delete('/rental-contracts/{id}', [RentalContractController::class, 'destroy'])->middleware('can:rentals.delete');
+    Route::post('/rental-contracts/{id}/terminate', [RentalContractController::class, 'terminate'])->middleware('can:rentals.update');
+    Route::patch('/rental-contracts/{id}/status', [RentalContractController::class, 'changeStatus'])->middleware('can:rentals.update');
 });
 
 // --- Projects ---
