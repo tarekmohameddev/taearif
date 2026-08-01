@@ -115,6 +115,15 @@ class TenantWebsiteSeeder
             if ($response->successful()) {
                 $data = $response->json();
 
+                if (!is_array($data)) {
+                    Log::warning('Invalid API response structure: not an array', [
+                        'type' => gettype($data),
+                    ]);
+                    return null;
+                }
+
+                $data = $this->normalizeApiPayload($data);
+
                 if (isset($data['componentSettings']) && isset($data['globalComponentsData'])) {
                     Log::info('Successfully fetched default data from API');
                     return $data;
@@ -136,6 +145,26 @@ class TenantWebsiteSeeder
         }
 
         return null;
+    }
+
+    /**
+     * Map Mandhoor (and similar) API key aliases into the shape the seeder expects.
+     * Prefer existing componentSettings / StaticPages when already present.
+     *
+     * @param array $data
+     * @return array
+     */
+    protected function normalizeApiPayload(array $data): array
+    {
+        if (!isset($data['componentSettings']) && isset($data['pages'])) {
+            $data['componentSettings'] = $data['pages'];
+        }
+
+        if (!isset($data['StaticPages']) && isset($data['staticPages'])) {
+            $data['StaticPages'] = $data['staticPages'];
+        }
+
+        return $data;
     }
 
     /**
