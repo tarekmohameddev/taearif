@@ -1531,3 +1531,66 @@ Route::prefix('v1/owner-rental')->group(function () {
         Route::get('/maintenance-requests', [\App\Http\Controllers\OwnerRental\DashboardController::class, 'maintenanceRequests']);
     });
 });
+
+// =============================================================================
+// Calling Module — Tenant API (v1)
+// =============================================================================
+use App\Http\Controllers\Api\V1\Calling\SoftphoneConfigController;
+use App\Http\Controllers\Api\V1\Calling\AgentExtensionController;
+use App\Http\Controllers\Api\V1\Calling\CallController;
+use App\Http\Controllers\Api\V1\Calling\CallHistoryController;
+use App\Http\Controllers\Api\V1\Calling\SimLineController;
+use App\Http\Controllers\Api\V1\Calling\RecordingWebhookController;
+use App\Http\Controllers\Api\V1\Calling\InboundRoutingController;
+
+// Internal PBX webhooks — no Sanctum, only shared secret header
+Route::prefix('v1/calling/internal')->middleware(['pbx.secret'])->group(function () {
+    Route::post('recording-ready', RecordingWebhookController::class)
+        ->name('calling.internal.recording-ready');
+    Route::post('route-inbound', InboundRoutingController::class)
+        ->name('calling.internal.route-inbound');
+});
+
+// Authenticated tenant routes
+Route::prefix('v1/calling')->middleware(['auth:sanctum'])->group(function () {
+    // Softphone credentials for the logged-in user
+    Route::get('softphone-config', SoftphoneConfigController::class)
+        ->name('calling.softphone-config');
+
+    // Agent extensions — manage employees' SIP extensions
+    Route::get('extensions', [AgentExtensionController::class, 'index'])
+        ->name('calling.extensions.index')
+        ->middleware('can:calling.manage_agents');
+    Route::post('extensions/{user}', [AgentExtensionController::class, 'provision'])
+        ->name('calling.extensions.provision')
+        ->middleware('can:calling.manage_agents');
+    Route::delete('extensions/{user}', [AgentExtensionController::class, 'deprovision'])
+        ->name('calling.extensions.deprovision')
+        ->middleware('can:calling.manage_agents');
+
+    // Place / manage calls
+    Route::post('calls', [CallController::class, 'store'])
+        ->name('calling.calls.store')
+        ->middleware('can:calling.place');
+    Route::get('calls/{id}', [CallController::class, 'show'])
+        ->name('calling.calls.show')
+        ->middleware('can:calling.view_history');
+    Route::post('calls/{id}/hangup', [CallController::class, 'hangup'])
+        ->name('calling.calls.hangup')
+        ->middleware('can:calling.place');
+
+    // Call history
+    Route::get('calls', [CallHistoryController::class, 'index'])
+        ->name('calling.calls.index')
+        ->middleware('can:calling.view_history');
+    Route::get('customers/{customer}/calls', [CallHistoryController::class, 'forCustomer'])
+        ->name('calling.customers.calls')
+        ->middleware('can:calling.view_history');
+    Route::get('calls/{id}/recording-url', [CallHistoryController::class, 'recordingUrl'])
+        ->name('calling.calls.recording-url')
+        ->middleware('can:calling.view_history');
+
+    // Assigned SIM lines (read-only for tenant)
+    Route::get('sim-lines', [SimLineController::class, 'index'])
+        ->name('calling.sim-lines.index');
+});

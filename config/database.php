@@ -91,6 +91,19 @@ return [
             'prefix_indexes' => true,
         ],
 
+        'asterisk' => [
+            'driver'    => 'mysql',
+            'host'      => env('ASTERISK_DB_HOST', '169.58.76.27'),
+            'port'      => env('ASTERISK_DB_PORT', '3306'),
+            'database'  => env('ASTERISK_DB_DATABASE', 'asterisk'),
+            'username'  => env('ASTERISK_DB_USERNAME', 'asterisk'),
+            'password'  => env('ASTERISK_DB_PASSWORD', ''),
+            'charset'   => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix'    => '',
+            'strict'    => true,
+        ],
+
     ],
 
     /*

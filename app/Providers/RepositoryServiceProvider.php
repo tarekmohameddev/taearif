@@ -135,6 +135,37 @@ class RepositoryServiceProvider extends ServiceProvider
                 );
             }
         );
+
+        // Calling module — bind AMI client interface to the real client in production.
+        // In tests, swap to FakeAmiClient via $this->app->instance(AmiClientInterface::class, new FakeAmiClient()).
+        $this->app->bind(
+            \App\Domain\Calling\Contracts\AmiClientInterface::class,
+            function ($app) {
+                return new \App\Domain\Calling\Services\AmiClient(
+                    host:     config('calling.ami.host'),
+                    port:     config('calling.ami.port'),
+                    username: config('calling.ami.username'),
+                    secret:   config('calling.ami.secret'),
+                    timeout:  config('calling.ami.timeout', 10),
+                );
+            }
+        );
+
+        $this->app->singleton(
+            \App\Domain\Calling\Repositories\AsteriskRealtimeRepository::class
+        );
+
+        $this->app->singleton(
+            \App\Domain\Calling\Services\SipProvisioningService::class
+        );
+
+        $this->app->singleton(
+            \App\Domain\Calling\Services\PhoneNumberService::class
+        );
+
+        $this->app->singleton(
+            \App\Domain\Calling\Services\CallOriginationService::class
+        );
     }
 
     /**

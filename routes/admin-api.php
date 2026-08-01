@@ -725,3 +725,53 @@ Route::prefix(config('admin-api.prefix'))
     });
 
 });
+
+    // -------------------------------------------------------------------------
+    // Calling Module — Admin API
+    // -------------------------------------------------------------------------
+    use App\Http\Controllers\Api\Admin\Calling\CallingTenantController;
+    use App\Http\Controllers\Api\Admin\Calling\CallingTrunkController;
+    use App\Http\Controllers\Api\Admin\Calling\CallingSimLineController;
+
+    Route::prefix('calling')->name('calling.')
+        ->middleware('checkAdminApiPermission:Calling')
+        ->group(function () {
+
+        // Tenant overview and settings
+        Route::get('tenants', [CallingTenantController::class, 'index'])
+            ->name('tenants.index');
+        Route::get('tenants/{user}/settings', [CallingTenantController::class, 'show'])
+            ->name('tenants.settings.show');
+        Route::put('tenants/{user}/settings', [CallingTenantController::class, 'update'])
+            ->name('tenants.settings.update');
+        Route::get('tenants/{user}/extensions', [CallingTenantController::class, 'extensions'])
+            ->name('tenants.extensions.index');
+        Route::delete('tenants/{user}/extensions/{extension}', [CallingTenantController::class, 'deactivateExtension'])
+            ->name('tenants.extensions.destroy');
+
+        // Trunks
+        Route::get('trunks', [CallingTrunkController::class, 'index'])
+            ->name('trunks.index');
+        Route::post('trunks', [CallingTrunkController::class, 'store'])
+            ->name('trunks.store');
+        Route::get('trunks/{trunk}', [CallingTrunkController::class, 'show'])
+            ->name('trunks.show');
+        Route::put('trunks/{trunk}', [CallingTrunkController::class, 'update'])
+            ->name('trunks.update');
+        Route::delete('trunks/{trunk}', [CallingTrunkController::class, 'destroy'])
+            ->name('trunks.destroy');
+        Route::post('trunks/{trunk}/provision-gsm-port', [CallingTrunkController::class, 'provisionGsmPort'])
+            ->name('trunks.provision-gsm-port');
+        Route::post('trunks/{trunk}/provision-stc', [CallingTrunkController::class, 'provisionStc'])
+            ->name('trunks.provision-stc');
+
+        // SIM lines / numbers
+        Route::get('sim-lines', [CallingSimLineController::class, 'index'])
+            ->name('sim-lines.index');
+        Route::get('sim-lines/{id}', [CallingSimLineController::class, 'show'])
+            ->name('sim-lines.show');
+        Route::put('sim-lines/{id}', [CallingSimLineController::class, 'update'])
+            ->name('sim-lines.update');
+        Route::post('sim-lines/{id}/toggle', [CallingSimLineController::class, 'toggle'])
+            ->name('sim-lines.toggle');
+    });

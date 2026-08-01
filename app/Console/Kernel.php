@@ -120,6 +120,24 @@ class Kernel extends ConsoleKernel
             ->daily()
             ->withoutOverlapping()
             ->onOneServer();
+
+        // ---------------------------------------------------------------
+        // Calling module
+        // ---------------------------------------------------------------
+        $schedule->command('calling:reconcile-calls')
+            ->everyThirtyMinutes()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        $schedule->command('calling:sync-trunks')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        $schedule->command('calling:prune-events')
+            ->daily()
+            ->withoutOverlapping()
+            ->onOneServer();
     }
 
     /**

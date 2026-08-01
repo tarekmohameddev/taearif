@@ -669,6 +669,38 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/isthara/update', 'Admin\AdminIstharaController@markAsRead')->name('isthara.update');
     });
 
+    // Calling module (tenant settings, trunks, phone numbers)
+    Route::group(['middleware' => 'checkpermission:Calling'], function () {
+        Route::get('/calling', function () {
+            return redirect()->route('admin.calling.tenants.index');
+        })->name('calling.index');
+
+        Route::get('/calling/tenants', 'Admin\CallingTenantController@index')
+            ->name('calling.tenants.index');
+        Route::get('/calling/tenants/{id}', 'Admin\CallingTenantController@show')
+            ->name('calling.tenants.show');
+        Route::post('/calling/tenants/{id}/settings', 'Admin\CallingTenantController@updateSettings')
+            ->name('calling.tenants.settings.update');
+        Route::delete('/calling/tenants/{id}/extensions/{extensionId}', 'Admin\CallingTenantController@deactivateExtension')
+            ->name('calling.tenants.extensions.destroy');
+
+        Route::post('/calling/tenants/{tenantId}/trunks', 'Admin\CallingTrunkController@store')
+            ->name('calling.trunks.store');
+        Route::delete('/calling/tenants/{tenantId}/trunks/{trunkId}', 'Admin\CallingTrunkController@destroy')
+            ->name('calling.trunks.destroy');
+        Route::post('/calling/tenants/{tenantId}/trunks/{trunkId}/provision-gsm-port', 'Admin\CallingTrunkController@provisionGsmPort')
+            ->name('calling.trunks.provision-gsm');
+        Route::post('/calling/tenants/{tenantId}/trunks/{trunkId}/provision-stc', 'Admin\CallingTrunkController@provisionStc')
+            ->name('calling.trunks.provision-stc');
+
+        Route::get('/calling/sim-lines', 'Admin\CallingSimLineController@index')
+            ->name('calling.sim-lines.index');
+        Route::put('/calling/sim-lines/{id}', 'Admin\CallingSimLineController@update')
+            ->name('calling.sim-lines.update');
+        Route::post('/calling/sim-lines/{id}/toggle', 'Admin\CallingSimLineController@toggle')
+            ->name('calling.sim-lines.toggle');
+    });
+
     // affiliate
     Route::group(['middleware' => 'checkpermission:Affiliate'], function () {
         Route::get('/affiliates', 'Admin\AffiliateController@index')->name('affiliates.index');
