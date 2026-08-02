@@ -32,6 +32,10 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\ProcessScheduledWaCampaigns::class,
         \App\Console\Commands\BackfillRbacNewPermissions::class,
         \App\Console\Commands\RbacHealthCheck::class,
+        \App\Console\Commands\SyncWhatsappUsersToWaNumbers::class,
+        \App\Console\Commands\ExportBotGoldenCorpus::class,
+        \App\Console\Commands\BackfillWaConversationWaNumber::class,
+        \App\Domain\Ai\Evaluation\EvaluateBotCommand::class,
     ];
 
     /**

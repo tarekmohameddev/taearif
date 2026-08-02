@@ -225,6 +225,7 @@ class Property extends Model
             'featured_image' => $featuredImgName,
             'floor_planning_image' => $floorPlanningImage ?? null,
             'video_image' => $videoImage,
+            // authoritative price — bot must quote this value
             'price' => $request['price'],
             'pricePerMeter' => $request['pricePerMeter'] ?? null,
             'purpose' => $request['purpose'] ?? null,
@@ -665,6 +666,29 @@ class Property extends Model
     public function scopeComplete($query)
     {
         return $query->where('completion_status', 'complete');
+    }
+
+    /**
+     * Bot-safe availability scope: canonical definition used by the AI bot.
+     * Properties matching this scope can be offered to customers.
+     * Authoritative price: user_properties.price (not contents.price).
+     */
+    public function scopeBotAvailable(Builder $query): Builder
+    {
+        return $query
+            ->where('status', 1)
+            ->where(function ($q) {
+                $q->whereNull('publish_status')->orWhere('publish_status', 'published');
+            })
+            ->where(function ($q) {
+                $q->whereNull('property_status')->orWhere('property_status', 'available');
+            })
+            ->where(function ($q) {
+                $q->whereNull('unit_status')->orWhere('unit_status', 'available');
+            })
+            ->where(function ($q) {
+                $q->whereNull('purpose')->orWhereNotIn('purpose', ['rented', 'sold']);
+            });
     }
 
     /**

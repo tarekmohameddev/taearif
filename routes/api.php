@@ -194,13 +194,13 @@ Route::get('/referrals/{code}', [ReferralController::class, 'show']);  // /api/r
 Route::post('/v1/analytics/page-view', [PageviewController::class, 'track'])
     ->middleware('throttle:api_tracking'); // 100 requests per minute for tracking (production only)
 
-// Public admin articles (admin_articles + admin_articles_categories) — unique paths, no auth
+// Public admin articles (admin_articles + admin_articles_categories) ? unique paths, no auth
 Route::get('/public/admin-article-categories', [PublicAdminArticlesController::class, 'categories']);
 Route::get('/public/admin-article-categories/{slug}/articles', [PublicAdminArticlesController::class, 'categoryArticles']);
 Route::get('/public/admin-articles', [PublicAdminArticlesController::class, 'articles']);
 Route::get('/public/admin-articles/{slug}', [PublicAdminArticlesController::class, 'show']);
 
-// Public support center (support_center_categories + support_center_articles) — no auth
+// Public support center (support_center_categories + support_center_articles) ? no auth
 Route::get('/public/support-center/categories', [PublicSupportCenterController::class, 'categories']);
 Route::get('/public/support-center/categories/{slug}/articles', [PublicSupportCenterController::class, 'categoryArticles']);
 Route::get('/public/support-center/articles', [PublicSupportCenterController::class, 'articles']);
@@ -913,9 +913,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('/',        [ApiPropertyRequestSettingsController::class, 'index']);       // ?merged=true|false
         Route::get('/defaults',[ApiPropertyRequestSettingsController::class, 'defaults']); // ?merged=true|false
 
-        Route::post('/bulk',   [ApiPropertyRequestSettingsController::class, 'bulkUpsert']);  // upsert مجموعة
-        Route::put('/{field}', [ApiPropertyRequestSettingsController::class, 'updateOne']);   // تعديل مفتاح واحد
-        Route::post('/reset',  [ApiPropertyRequestSettingsController::class, 'reset']);       // حذف إعدادات (العودة للديفولت)
+        Route::post('/bulk',   [ApiPropertyRequestSettingsController::class, 'bulkUpsert']);  // upsert ??????
+        Route::put('/{field}', [ApiPropertyRequestSettingsController::class, 'updateOne']);   // ????? ????? ????
+        Route::post('/reset',  [ApiPropertyRequestSettingsController::class, 'reset']);       // ??? ??????? (?????? ????????)
     });
 
     // ===== Employee Auth (PUBLIC) =====
@@ -1311,6 +1311,15 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::patch('ai/config/{numberId}/toggle', [WhatsAppAiConfigController::class, 'toggle']);
         Route::get('ai/stats', [WhatsAppAiConfigController::class, 'stats']);
 
+        // Bot analytics + shadow mode + simulator
+        Route::get('ai/bot/dashboard', [\App\Http\Controllers\Api\apps\whatsapp\BotAnalyticsController::class, 'dashboard']);
+        Route::get('ai/bot/shadow-drafts', [\App\Http\Controllers\Api\apps\whatsapp\BotAnalyticsController::class, 'shadowDrafts']);
+        Route::post('ai/bot/shadow-drafts/{id}/act', [\App\Http\Controllers\Api\apps\whatsapp\BotAnalyticsController::class, 'actOnDraft']);
+        Route::post('ai/bot/unanswered/{id}/mark-faq', [\App\Http\Controllers\Api\apps\whatsapp\BotAnalyticsController::class, 'markFaqAdded']);
+        Route::post('ai/bot/simulate', [\App\Http\Controllers\Api\apps\whatsapp\BotAnalyticsController::class, 'simulate']);
+        Route::get('ai/bot/simulate/conversation', [\App\Http\Controllers\Api\apps\whatsapp\BotAnalyticsController::class, 'simulationTranscript']);
+        Route::post('ai/bot/simulate/reset', [\App\Http\Controllers\Api\apps\whatsapp\BotAnalyticsController::class, 'resetSimulation']);
+
         Route::get('stats', [WhatsAppStatsController::class, 'index']);
         Route::get('campaigns', [WaCampaignController::class, 'index']);
         Route::get('campaigns/{id}', [WaCampaignController::class, 'show']);
@@ -1533,7 +1542,7 @@ Route::prefix('v1/owner-rental')->group(function () {
 });
 
 // =============================================================================
-// Calling Module � Tenant API (v1)
+// Calling Module ? Tenant API (v1)
 // =============================================================================
 use App\Http\Controllers\Api\V1\Calling\SoftphoneConfigController;
 use App\Http\Controllers\Api\V1\Calling\AgentExtensionController;
@@ -1543,7 +1552,7 @@ use App\Http\Controllers\Api\V1\Calling\SimLineController;
 use App\Http\Controllers\Api\V1\Calling\RecordingWebhookController;
 use App\Http\Controllers\Api\V1\Calling\InboundRoutingController;
 
-// Internal PBX webhooks � no Sanctum, only shared secret header
+// Internal PBX webhooks ? no Sanctum, only shared secret header
 Route::prefix('v1/calling/internal')->middleware(['pbx.secret'])->group(function () {
     Route::post('recording-ready', RecordingWebhookController::class)
         ->name('calling.internal.recording-ready');
@@ -1557,7 +1566,7 @@ Route::prefix('v1/calling')->middleware(['auth:sanctum'])->group(function () {
     Route::get('softphone-config', SoftphoneConfigController::class)
         ->name('calling.softphone-config');
 
-    // Agent extensions � manage employees' SIP extensions
+    // Agent extensions ? manage employees' SIP extensions
     Route::get('extensions', [AgentExtensionController::class, 'index'])
         ->name('calling.extensions.index')
         ->middleware('can:calling.manage_agents');

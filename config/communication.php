@@ -84,4 +84,6 @@ return [
         'whatsapp_polling_enabled' => env('COMMUNICATION_RELIABILITY_WHATSAPP_POLLING', true),
         'sms_polling_enabled' => env('COMMUNICATION_RELIABILITY_SMS_POLLING', true),
     ],
+
+    'legacy_bot_enabled' => env('WHATSAPP_LEGACY_BOT_ENABLED', false),
 ];

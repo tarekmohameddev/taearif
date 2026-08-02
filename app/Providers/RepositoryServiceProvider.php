@@ -166,6 +166,61 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->singleton(
             \App\Domain\Calling\Services\CallOriginationService::class
         );
+
+        // ── WhatsApp AI Bot ─────────────────────────────────────────────────
+        $this->app->singleton(\App\Domain\Ai\Services\LlmDriverFactory::class);
+        $this->app->singleton(\App\Domain\Ai\Services\UsageRecorder::class);
+        $this->app->singleton(\App\Domain\Ai\Services\CredentialResolver::class);
+
+        $this->app->singleton(\App\Domain\Ai\Knowledge\EmbeddingService::class, function () {
+            return new \App\Domain\Ai\Knowledge\EmbeddingService(
+                openAiApiKey: (string) env('OPENAI_API_KEY', '')
+            );
+        });
+
+        $this->app->singleton(\App\Domain\Ai\Knowledge\RetrievalService::class);
+
+        $this->app->singleton(\App\Domain\Ai\Services\LocationResolver::class);
+
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\Tools\PropertySearchTool::class, function ($app) {
+            return new \App\Domain\Communication\WhatsApp\Bot\Tools\PropertySearchTool(
+                searchService: $app->make(\App\Services\Matching\PropertySearchService::class),
+                locationResolver: $app->make(\App\Domain\Ai\Services\LocationResolver::class),
+            );
+        });
+
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\ContextBuilder::class, function ($app) {
+            return new \App\Domain\Communication\WhatsApp\Bot\ContextBuilder(
+                driverFactory: $app->make(\App\Domain\Ai\Services\LlmDriverFactory::class),
+                retrieval: $app->make(\App\Domain\Ai\Knowledge\RetrievalService::class),
+                propertyTool: $app->make(\App\Domain\Communication\WhatsApp\Bot\Tools\PropertySearchTool::class),
+            );
+        });
+
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\DeliveryService::class, function ($app) {
+            return new \App\Domain\Communication\WhatsApp\Bot\DeliveryService(
+                commService: $app->make(\App\Domain\Communication\Services\CommunicationServiceImpl::class),
+            );
+        });
+
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\BotOrchestrator::class, function ($app) {
+            return new \App\Domain\Communication\WhatsApp\Bot\BotOrchestrator(
+                driverFactory:     $app->make(\App\Domain\Ai\Services\LlmDriverFactory::class),
+                usageRecorder:     $app->make(\App\Domain\Ai\Services\UsageRecorder::class),
+                contextBuilder:    $app->make(\App\Domain\Communication\WhatsApp\Bot\ContextBuilder::class),
+                personaBuilder:    new \App\Domain\Communication\WhatsApp\Bot\PersonaBuilder(),
+                groundingVerifier: new \App\Domain\Communication\WhatsApp\Bot\GroundingVerifier(),
+                complianceService: new \App\Domain\Communication\WhatsApp\Bot\ComplianceService(),
+                handoffService:    new \App\Domain\Communication\WhatsApp\Bot\HandoffService(),
+                deliveryService:   $app->make(\App\Domain\Communication\WhatsApp\Bot\DeliveryService::class),
+            );
+        });
+
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\SandboxService::class, function ($app) {
+            return new \App\Domain\Communication\WhatsApp\Bot\SandboxService(
+                orchestrator: $app->make(\App\Domain\Communication\WhatsApp\Bot\BotOrchestrator::class),
+            );
+        });
     }
 
     /**

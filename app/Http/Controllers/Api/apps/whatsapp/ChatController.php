@@ -536,6 +536,10 @@ public function handleWhatsappWebhook(Request $request)
 
     private function runChatFromPayload(string $message, int $userId, string $recipientWhatsappNumber): ?string
     {
+        if (! config('communication.legacy_bot_enabled', false)) {
+            return null;
+        }
+
         $userMessage = $message;
 
         // Load or init chat history

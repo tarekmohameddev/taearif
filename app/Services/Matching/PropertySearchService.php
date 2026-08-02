@@ -33,7 +33,12 @@ class PropertySearchService
                 $qq->where('city_id', $request->cityId);
             });
         }
-        // District join skipped: no district_id found in characteristics model
+        // District: stored as state_id on property_contents
+        if ($request->districtId) {
+            $q->whereHas('contents', function ($qq) use ($request) {
+                $qq->where('state_id', $request->districtId);
+            });
+        }
 
         // Type/category/purpose
         if ($request->categoryId) {
@@ -301,6 +306,30 @@ class PropertySearchService
         ];
         
         return strtr($text, $replacements);
+    }
+
+    /**
+     * Build a query safe for bot use: applies buildCandidatesQuery plus the canonical
+     * bot availability scope. Always use this method from bot tools, never the raw query.
+     */
+    public function buildBotQuery(UnifiedRequest $request): Builder
+    {
+        $q = $this->buildCandidatesQuery($request);
+        // Apply canonical availability scope
+        $q->where('status', 1)
+            ->where(function ($qq) {
+                $qq->whereNull('publish_status')->orWhere('publish_status', 'published');
+            })
+            ->where(function ($qq) {
+                $qq->whereNull('property_status')->orWhere('property_status', 'available');
+            })
+            ->where(function ($qq) {
+                $qq->whereNull('unit_status')->orWhere('unit_status', 'available');
+            })
+            ->where(function ($qq) {
+                $qq->whereNull('purpose')->orWhereNotIn('purpose', ['rented', 'sold']);
+            });
+        return $q;
     }
 }
 
