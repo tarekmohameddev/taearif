@@ -56,16 +56,38 @@ class WebhookController extends Controller
 
                 foreach ($changes as $change) {
                     $entry = $change['value'] ?? null;
-                    if (! is_array($entry) || empty($entry['messages']) || ! is_array($entry['messages'])) {
+                    if (! is_array($entry)) {
                         continue;
                     }
 
-                    foreach ($entry['messages'] as $message) {
-                        if (! is_array($message)) {
+                    // Handle inbound messages (customer -> business)
+                    if (! empty($entry['messages']) && is_array($entry['messages'])) {
+                        foreach ($entry['messages'] as $message) {
+                            if (! is_array($message)) {
+                                continue;
+                            }
+
+                            $result = $this->storeIncomingMessage($entry, $message, $webhookEntry['id'] ?? null);
+                            if ($result !== null) {
+                                $processed++;
+                                $storedConversationId = $result['conversation_id'];
+                                $storedMessageCount = $result['message_count'];
+                            }
+                        }
+                    }
+
+                    // Handle outbound echoes (business -> customer from app/linked device)
+                    // Both message_echoes and smb_message_echoes use the same structure
+                    $echoes = array_merge(
+                        $entry['message_echoes'] ?? [],
+                        $entry['smb_message_echoes'] ?? []
+                    );
+                    foreach ($echoes as $echo) {
+                        if (! is_array($echo)) {
                             continue;
                         }
 
-                        $result = $this->storeIncomingMessage($entry, $message, $webhookEntry['id'] ?? null);
+                        $result = $this->storeOutboundEcho($entry, $echo, $webhookEntry['id'] ?? null);
                         if ($result !== null) {
                             $processed++;
                             $storedConversationId = $result['conversation_id'];
@@ -178,6 +200,7 @@ class WebhookController extends Controller
                 ['whatsapp_message_id' => (string) $providerMessageId],
                 [
                     'conversation_id' => $conversation->id,
+                    'direction' => 'inbound',
                     'message_type' => $storedMessageType,
                     'content' => $content,
                     'media_url' => $mediaUrl,
@@ -188,6 +211,7 @@ class WebhookController extends Controller
         } else {
             $storedMessage = WhatsappMessage::create([
                 'conversation_id' => $conversation->id,
+                'direction' => 'inbound',
                 'whatsapp_message_id' => null,
                 'message_type' => $storedMessageType,
                 'content' => $content,
@@ -227,6 +251,125 @@ class WebhookController extends Controller
             ProcessConversation::dispatch($conversation->id)
                 ->delay(now()->addMinutes($delayMinutes))
                 ->onQueue(config('whatsappai.queue', 'default'));
+        }
+
+        return [
+            'conversation_id' => (int) $conversation->id,
+            'message_count' => (int) $conversation->message_count,
+        ];
+    }
+
+    /**
+     * Store an outbound echo (message sent from WhatsApp Business App or linked device).
+     *
+     * @return array{conversation_id: int, message_count: int}|null
+     */
+    private function storeOutboundEcho(array $entry, array $echo, mixed $wabaId): ?array
+    {
+        $phoneNumberId = $entry['metadata']['phone_number_id'] ?? null;
+        // For echoes, 'from' is the business phone, 'to' is the customer
+        $customerPhone = $echo['to'] ?? null;
+
+        if (!$phoneNumberId || !$customerPhone) {
+            Log::warning('WhatsApp AI webhook echo missing required fields', [
+                'phone_id' => $phoneNumberId,
+                'waba_id' => $wabaId,
+                'customer_phone' => $customerPhone,
+                'message_id' => $echo['id'] ?? null,
+                'message_type' => $echo['type'] ?? null,
+            ]);
+
+            return null;
+        }
+
+        $whatsappUser = WhatsappUser::where('phone_id', $phoneNumberId)
+            ->where('status', 'active')
+            ->first();
+
+        if (!$whatsappUser) {
+            Log::warning('WhatsApp user not found for echo', [
+                'phone_id' => $phoneNumberId,
+                'waba_id' => $wabaId,
+                'customer_phone' => $customerPhone,
+                'message_id' => $echo['id'] ?? null,
+            ]);
+
+            return null;
+        }
+
+        $conversation = WhatsappConversation::firstOrCreate(
+            [
+                'whatsapp_user_id' => $whatsappUser->id,
+                'customer_phone' => $customerPhone,
+            ],
+            [
+                'user_id' => $whatsappUser->user_id,
+                'status' => 'collecting',
+                'customer_name' => null,
+            ]
+        );
+
+        $echoMessageType = $echo['type'] ?? 'text';
+        $storedMessageType = $this->normalizeMessageTypeForStorage($echoMessageType);
+        $content = $this->extractMessageContent($echo, $echoMessageType);
+
+        $mediaUrl = null;
+        if (in_array($echoMessageType, ['image', 'document', 'audio', 'video'], true) && isset($echo[$echoMessageType]['url'])) {
+            $mediaUrl = $echo[$echoMessageType]['url'];
+        }
+
+        $providerMessageId = $echo['id'] ?? null;
+        $messageWasNew = true;
+
+        // Check if this message was already stored (e.g., when sent via API)
+        if ($providerMessageId !== null && $providerMessageId !== '') {
+            $existing = WhatsappMessage::where('whatsapp_message_id', (string) $providerMessageId)->first();
+            if ($existing) {
+                // Already stored at send time, skip duplicate
+                return null;
+            }
+
+            $storedMessage = WhatsappMessage::create([
+                'conversation_id' => $conversation->id,
+                'direction' => 'outbound',
+                'whatsapp_message_id' => (string) $providerMessageId,
+                'message_type' => $storedMessageType,
+                'content' => $content,
+                'media_url' => $mediaUrl,
+                'raw_payload' => $echo,
+            ]);
+        } else {
+            $storedMessage = WhatsappMessage::create([
+                'conversation_id' => $conversation->id,
+                'direction' => 'outbound',
+                'whatsapp_message_id' => null,
+                'message_type' => $storedMessageType,
+                'content' => $content,
+                'media_url' => $mediaUrl,
+                'raw_payload' => $echo,
+            ]);
+        }
+
+        // Sync to Communication layer as outbound
+        try {
+            $this->communicationSyncService->syncOutbound(
+                $conversation,
+                $storedMessage,
+                is_array($entry['metadata'] ?? null) ? $entry['metadata'] : null,
+            );
+        } catch (\Throwable $syncError) {
+            Log::error('whatsapp_ai.communication_sync_outbound.exception', [
+                'error' => $syncError->getMessage(),
+                'whatsapp_conversation_id' => $conversation->id,
+                'whatsapp_message_id' => $storedMessage->id,
+            ]);
+        }
+
+        if ($messageWasNew) {
+            $conversation->increment('message_count');
+            $conversation->update([
+                'last_message_at' => now(),
+            ]);
         }
 
         return [

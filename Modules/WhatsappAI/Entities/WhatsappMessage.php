@@ -11,6 +11,7 @@ class WhatsappMessage extends Model
 
     protected $fillable = [
         'conversation_id',
+        'direction',
         'whatsapp_message_id',
         'message_type',
         'content',
@@ -44,6 +45,16 @@ class WhatsappMessage extends Model
     public function hasMedia(): bool
     {
         return in_array($this->message_type, ['image', 'document', 'audio', 'video']);
+    }
+
+    public function isInbound(): bool
+    {
+        return $this->direction === 'inbound';
+    }
+
+    public function isOutbound(): bool
+    {
+        return $this->direction === 'outbound';
     }
 }
 

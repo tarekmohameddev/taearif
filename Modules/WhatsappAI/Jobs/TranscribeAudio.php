@@ -2,6 +2,9 @@
 
 namespace Modules\WhatsappAI\Jobs;
 
+use App\Domain\Communication\WhatsApp\Bot\BotOrchestrator;
+use App\Models\Message;
+use App\Models\WaAiConfig;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -139,13 +142,19 @@ class TranscribeAudio implements ShouldQueue
                 return;
             }
 
-            // 4. Persist transcription. Prefix makes it clear the text is from audio.
+            // 4. Persist transcription in the module message. Prefix makes it clear the text is from audio.
             $message->update(['content' => '[صوتي: ' . $text . ']']);
 
             Log::info('TranscribeAudio: transcription saved', [
                 'message_id' => $this->messageId,
                 'length'     => mb_strlen($text),
             ]);
+
+            // 5. Write transcription back to the Communication v1 Message so the bot can read it.
+            $this->writeBackToV1Message($message, $text);
+
+            // 6. Trigger bot turn now that transcription is complete.
+            $this->triggerBotIfEnabled($message, $text);
 
         } catch (\Throwable $e) {
             Log::error('TranscribeAudio: unexpected error', [
@@ -159,6 +168,85 @@ class TranscribeAudio implements ShouldQueue
             if ($tmpPath && file_exists($tmpPath)) {
                 @unlink($tmpPath);
             }
+        }
+    }
+
+    /**
+     * Write the transcribed text back to the Communication v1 Message record
+     * so the bot context builder can see the actual words.
+     */
+    private function writeBackToV1Message(WhatsappMessage $waMessage, string $text): void
+    {
+        try {
+            // The v1 message is linked via conversation sync; look it up by message_id stored in meta
+            $v1Message = Message::whereJsonContains('meta->wa_message_id', $waMessage->id)
+                ->orWhereJsonContains('meta->module_message_id', $waMessage->id)
+                ->first();
+
+            if ($v1Message === null) {
+                // Fallback: find by conversation_id + audio type in meta
+                $v1Message = Message::where('user_id', $waMessage->conversation->user_id ?? 0)
+                    ->whereJsonContains('meta->type', 'audio')
+                    ->whereJsonContains('meta->transcription_status', 'pending')
+                    ->orderByDesc('id')
+                    ->first();
+            }
+
+            if ($v1Message !== null) {
+                $meta = is_array($v1Message->meta) ? $v1Message->meta : [];
+                $meta['transcription_status'] = 'done';
+                $v1Message->update([
+                    'content' => '[صوتي: ' . $text . ']',
+                    'meta'    => $meta,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('TranscribeAudio: failed to write back to v1 message', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * After transcription is done, trigger a bot turn if the number has an active bot config.
+     */
+    private function triggerBotIfEnabled(WhatsappMessage $waMessage, string $text): void
+    {
+        try {
+            $userId = $waMessage->conversation->user_id ?? 0;
+            if ($userId === 0) { return; }
+
+            // Find the v1 message and re-dispatch to bot
+            $v1Message = Message::where('user_id', $userId)
+                ->whereJsonContains('meta->type', 'audio')
+                ->orderByDesc('id')
+                ->first();
+
+            if ($v1Message === null) { return; }
+
+            $meta = is_array($v1Message->meta) ? $v1Message->meta : [];
+            $waNumberId = (int) ($meta['wa_number_id'] ?? 0);
+            if ($waNumberId === 0) { return; }
+
+            $botConfig = WaAiConfig::where('user_id', $userId)
+                ->where('wa_number_id', $waNumberId)
+                ->where('enabled', true)
+                ->first();
+
+            if ($botConfig === null) { return; }
+            if (! in_array($botConfig->autonomy_level, ['shadow', 'autonomous'], true)) { return; }
+
+            // Inject transcription as message content for this turn
+            $v1Message->content = '[صوتي: ' . $text . ']';
+
+            $orchestrator = app(BotOrchestrator::class);
+            $orchestrator->handle(
+                $userId,
+                (int) $v1Message->conversation_id,
+                $waNumberId,
+                (string) ($meta['from'] ?? ''),
+                $v1Message,
+            );
+        } catch (\Throwable $e) {
+            Log::warning('TranscribeAudio: bot trigger failed', ['error' => $e->getMessage()]);
         }
     }
 
