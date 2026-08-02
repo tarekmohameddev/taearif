@@ -54,6 +54,10 @@ class MessageDispatcherImpl implements MessageDispatcher
                 }
                 $result = $this->whatsAppChannelSender->send($waNumber, $phone, $content);
             } else {
+                if (($meta['source'] ?? null) === 'ai') {
+                    $message->update(['status' => 'failed']);
+                    throw new ProviderSendFailedException('AI-sourced message has no wa_number_id: cannot determine sender. Set wa_number_id in message meta before dispatching AI replies.');
+                }
                 $result = $this->whatsAppServiceAdapter->send($phone, $content);
             }
         } catch (ProviderSendFailedException $e) {

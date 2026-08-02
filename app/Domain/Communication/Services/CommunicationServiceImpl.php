@@ -240,6 +240,135 @@ class CommunicationServiceImpl implements CommunicationService
         }
     }
 
+    public function recordOutboundFromEcho(
+        int $userId,
+        string $externalPartyIdentifier,
+        string $content,
+        string $channel = 'whatsapp',
+        ?string $providerMessageId = null,
+        array $meta = [],
+        ?\DateTimeInterface $createdAt = null,
+    ): ?Message {
+        try {
+            if ($userId <= 0 || trim($externalPartyIdentifier) === '' || trim($content) === '') {
+                Log::info('CommunicationService::recordOutboundFromEcho skipped: missing required values', [
+                    'userId' => $userId,
+                    'has_identifier' => trim($externalPartyIdentifier) !== '',
+                    'has_content' => trim($content) !== '',
+                ]);
+                return null;
+            }
+
+            $user = User::find($userId);
+            if (! $user) {
+                Log::info('CommunicationService::recordOutboundFromEcho skipped: tenant owner mapping unresolved', [
+                    'userId' => $userId,
+                ]);
+                return null;
+            }
+
+            $channel = strtolower(trim($channel));
+            $normalizedIdentifier = $this->normalizeExternalPartyIdentifier($externalPartyIdentifier);
+
+            // Check for duplicate
+            if ($providerMessageId !== null && $providerMessageId !== '') {
+                $existing = Message::where('provider_message_id', $providerMessageId)
+                    ->where('user_id', $userId)
+                    ->first();
+                if ($existing) {
+                    Log::info('CommunicationService::recordOutboundFromEcho skipped: duplicate provider_message_id', [
+                        'provider_message_id' => $providerMessageId,
+                        'user_id' => $userId,
+                    ]);
+                    return $existing;
+                }
+            }
+
+            $message = null;
+
+            DB::transaction(function () use (
+                $userId,
+                $channel,
+                $normalizedIdentifier,
+                $content,
+                $providerMessageId,
+                $meta,
+                $createdAt,
+                &$message
+            ) {
+                $conversation = Conversation::firstOrCreate(
+                    [
+                        'user_id' => $userId,
+                        'channel' => $channel,
+                        'external_party_identifier' => $normalizedIdentifier,
+                    ],
+                    ['last_message_at' => now()]
+                );
+
+                $messageAt = $createdAt !== null ? \Illuminate\Support\Carbon::parse($createdAt) : now();
+
+                $message = Message::create([
+                    'conversation_id' => $conversation->id,
+                    'user_id' => $userId,
+                    'content' => $content,
+                    'direction' => 'outbound',
+                    'status' => 'delivered',
+                    'provider_message_id' => $providerMessageId,
+                    'meta' => $meta,
+                    'created_at' => $messageAt,
+                    'updated_at' => $messageAt,
+                ]);
+
+                $conversation->update(['last_message_at' => $messageAt]);
+
+                // Update WaConversationState for WhatsApp (but don't increment unread since we sent it)
+                $waNumberId = isset($meta['wa_number_id']) ? (int) $meta['wa_number_id'] : null;
+                if ($waNumberId !== null && $waNumberId <= 0) {
+                    $waNumberId = null;
+                }
+                if ($channel === 'whatsapp') {
+                    $state = WaConversationState::firstOrNew([
+                        'conversation_id' => $conversation->id,
+                    ]);
+
+                    if (! $state->exists) {
+                        $state->user_id = $userId;
+                        $state->status = 'active';
+                        $state->is_starred = false;
+                        $state->unread_count = 0;
+                    }
+
+                    if ($waNumberId !== null && $state->wa_number_id === null) {
+                        $state->wa_number_id = $waNumberId;
+                    }
+
+                    $state->save();
+
+                    $preview = is_scalar($content) ? (string) $content : (string) json_encode($content ?? '');
+                    $state->update([
+                        'last_message_preview' => \Illuminate\Support\Str::limit($preview, 500),
+                        'last_message_time' => $messageAt,
+                    ]);
+                }
+            });
+
+            Log::info('CommunicationService::recordOutboundFromEcho success', [
+                'message_id' => $message?->id,
+                'conversation_id' => $message?->conversation_id,
+                'user_id' => $userId,
+                'provider_message_id' => $providerMessageId,
+            ]);
+
+            return $message;
+        } catch (\Throwable $e) {
+            Log::error('CommunicationService::recordOutboundFromEcho exception', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return null;
+        }
+    }
+
     public function sendMessage(SendMessageDto $dto, string $idempotencyKey): Message
     {
         $channel = strtolower(trim($dto->channel));
