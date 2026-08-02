@@ -153,17 +153,39 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
             });
         }
 
-        // Apply search filter
+        // Apply search filter (title/description/address, plus numeric property ID)
         if (!empty($this->filters['search'])) {
-            $search = $this->filters['search'];
-            $query->whereHas('contents', function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%")
-                    ->orWhere('address', 'like', "%{$search}%");
+            $search = trim((string) $this->filters['search']);
+            $numericId = $this->parsePositiveIntSearchId($search);
+            $query->where(function ($q) use ($search, $numericId) {
+                $q->whereHas('contents', function ($cq) use ($search) {
+                    $cq->where(function ($inner) use ($search) {
+                        $inner->where('title', 'like', "%{$search}%")
+                              ->orWhere('description', 'like', "%{$search}%")
+                              ->orWhere('address', 'like', "%{$search}%");
+                    });
+                });
+                if ($numericId !== null) {
+                    $q->orWhere('id', $numericId);
+                }
             });
         }
 
         return $query->orderBy('id', 'desc');
+    }
+
+    private function parsePositiveIntSearchId(?string $searchTerm): ?int
+    {
+        $searchTerm = trim((string) $searchTerm);
+        if ($searchTerm === ''
+            || !ctype_digit($searchTerm)
+            || strlen($searchTerm) > 18
+            || (int) $searchTerm <= 0
+        ) {
+            return null;
+        }
+
+        return (int) $searchTerm;
     }
 
     public function headings(): array

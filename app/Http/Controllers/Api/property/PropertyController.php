@@ -2105,12 +2105,13 @@ class PropertyController extends Controller
             $propertiesQuery->where($contentJoinAlias . '.state_id', $request->district_id);
         }
 
-        // Text search functionality (title only)
+        // Text search functionality (title only, plus numeric property ID)
         // OPTIMIZED: Use JOIN instead of whereHas for better performance
         // Use INNER JOIN if city/district filters are present, otherwise LEFT JOIN for search-only
         // OPTIMIZED: Use prefix matching and wildcard LIKE queries for flexible title search
         if ($request->has('search') && !empty($request->search)) {
             $searchTerm = trim($request->search);
+            $numericId = $this->parsePositiveIntSearchId($searchTerm);
             if (!$hasContentJoin) {
                 if ($useInnerJoin) {
                     $propertiesQuery->join('user_property_contents as ' . $contentJoinAlias,
@@ -2125,12 +2126,11 @@ class PropertyController extends Controller
             // OPTIMIZED: Use LIKE queries for title search (no FULLTEXT index needed for single column)
             // PERFORMANCE: Require minimum 3 characters for wildcard searches to prevent slow queries
             $minWildcardLength = 3;
-            $propertiesQuery->where(function($q) use ($searchTerm, $contentJoinAlias, $minWildcardLength) {
+            $propertiesQuery->where(function ($q) use ($searchTerm, $contentJoinAlias, $minWildcardLength, $numericId) {
                 // Use prefix matching (can use indexes) and wildcard search for flexibility
-                $prefixTerm = $searchTerm . '%';
-                $q->where(function($subQ) use ($prefixTerm, $searchTerm, $contentJoinAlias, $minWildcardLength) {
+                $q->where(function ($subQ) use ($searchTerm, $contentJoinAlias, $minWildcardLength) {
                     // Prefix matching can use indexes (term%)
-                    $subQ->where($contentJoinAlias . '.title', 'like', $prefixTerm);
+                    $subQ->where($contentJoinAlias . '.title', 'like', $searchTerm . '%');
 
                     // PERFORMANCE: Only use wildcard search if term is long enough (prevents slow index scans)
                     // Wildcard searches (%term%) cannot use indexes efficiently, so limit to 3+ characters
@@ -2139,6 +2139,10 @@ class PropertyController extends Controller
                         $subQ->orWhere($contentJoinAlias . '.title', 'like', "%{$searchTerm}%");
                     }
                 });
+
+                if ($numericId !== null) {
+                    $q->orWhere('user_properties.id', $numericId);
+                }
             });
         }
 
@@ -3161,10 +3165,15 @@ class PropertyController extends Controller
             }
 
             if ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->whereHas('contents', function ($contentQuery) use ($search) {
-                        $contentQuery->where('title', 'like', "%{$search}%");
+                $searchTerm = trim($search);
+                $numericId = $this->parsePositiveIntSearchId($searchTerm);
+                $query->where(function ($q) use ($searchTerm, $numericId) {
+                    $q->whereHas('contents', function ($contentQuery) use ($searchTerm) {
+                        $contentQuery->where('title', 'like', "%{$searchTerm}%");
                     });
+                    if ($numericId !== null) {
+                        $q->orWhere('id', $numericId);
+                    }
                 });
             }
 
@@ -3643,6 +3652,23 @@ class PropertyController extends Controller
     }
 
     /**
+     * Parse a search term into a safe positive integer property ID, or null.
+     */
+    protected function parsePositiveIntSearchId(?string $searchTerm): ?int
+    {
+        $searchTerm = trim((string) $searchTerm);
+        if ($searchTerm === ''
+            || !ctype_digit($searchTerm)
+            || strlen($searchTerm) > 18
+            || (int) $searchTerm <= 0
+        ) {
+            return null;
+        }
+
+        return (int) $searchTerm;
+    }
+
+    /**
      * Get available property IDs based on filters
      *
      * Returns array of property IDs that are:
@@ -3772,12 +3798,20 @@ class PropertyController extends Controller
             });
         }
 
-        // Apply search filter (title/address)
+        // Apply search filter (title/address, plus numeric property ID)
         if (!empty($filters['search'])) {
-            $search = $filters['search'];
-            $query->whereHas('contents', function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('address', 'like', "%{$search}%");
+            $search = trim((string) $filters['search']);
+            $numericId = $this->parsePositiveIntSearchId($search);
+            $query->where(function ($q) use ($search, $numericId) {
+                $q->whereHas('contents', function ($cq) use ($search) {
+                    $cq->where(function ($inner) use ($search) {
+                        $inner->where('title', 'like', "%{$search}%")
+                              ->orWhere('address', 'like', "%{$search}%");
+                    });
+                });
+                if ($numericId !== null) {
+                    $q->orWhere('id', $numericId);
+                }
             });
         }
 
