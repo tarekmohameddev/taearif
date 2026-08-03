@@ -26,6 +26,33 @@ class ProjectFloorplanImg extends Model
         ]);
     }
 
+    /**
+     * Bulk-insert floorplan images for a project (skips Attribute/Eloquent events).
+     *
+     * @param  list<string>  $imagePaths
+     */
+    public static function insertManyForProject(int $userId, int $projectId, array $imagePaths): void
+    {
+        if ($imagePaths === []) {
+            return;
+        }
+
+        $now = now();
+        $rows = [];
+
+        foreach ($imagePaths as $imagePath) {
+            $rows[] = [
+                'user_id' => $userId,
+                'project_id' => $projectId,
+                'image' => $imagePath,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        self::insert($rows);
+    }
+
     public function project()
     {
         return $this->belongsTo(Project::class, 'project_id');
