@@ -1320,6 +1320,23 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('ai/bot/simulate/conversation', [\App\Http\Controllers\Api\apps\whatsapp\BotAnalyticsController::class, 'simulationTranscript']);
         Route::post('ai/bot/simulate/reset', [\App\Http\Controllers\Api\apps\whatsapp\BotAnalyticsController::class, 'resetSimulation']);
 
+        // Knowledge base ingestion
+        Route::get('ai/knowledge', [\App\Http\Controllers\Api\apps\whatsapp\KnowledgeBaseController::class, 'index']);
+        Route::post('ai/knowledge', [\App\Http\Controllers\Api\apps\whatsapp\KnowledgeBaseController::class, 'store']);
+        Route::get('ai/knowledge/{id}', [\App\Http\Controllers\Api\apps\whatsapp\KnowledgeBaseController::class, 'show']);
+        Route::patch('ai/knowledge/{id}', [\App\Http\Controllers\Api\apps\whatsapp\KnowledgeBaseController::class, 'update']);
+        Route::delete('ai/knowledge/{id}', [\App\Http\Controllers\Api\apps\whatsapp\KnowledgeBaseController::class, 'destroy']);
+
+        // FAQ candidates management (tenant review of LLM-drafted answers)
+        Route::get('ai/faq-candidates', [\App\Http\Controllers\Api\apps\whatsapp\KnowledgeBaseController::class, 'faqCandidates']);
+        Route::patch('ai/faq-candidates/{id}', [\App\Http\Controllers\Api\apps\whatsapp\KnowledgeBaseController::class, 'updateFaqCandidate']);
+
+        // Property external links (listing URL management)
+        Route::get('properties/{propertyId}/external-links', [\App\Http\Controllers\Api\apps\whatsapp\PropertyExternalLinkController::class, 'index']);
+        Route::post('properties/{propertyId}/external-links', [\App\Http\Controllers\Api\apps\whatsapp\PropertyExternalLinkController::class, 'store']);
+        Route::patch('properties/{propertyId}/external-links/{linkId}', [\App\Http\Controllers\Api\apps\whatsapp\PropertyExternalLinkController::class, 'update']);
+        Route::delete('properties/{propertyId}/external-links/{linkId}', [\App\Http\Controllers\Api\apps\whatsapp\PropertyExternalLinkController::class, 'destroy']);
+
         Route::get('stats', [WhatsAppStatsController::class, 'index']);
         Route::get('campaigns', [WaCampaignController::class, 'index']);
         Route::get('campaigns/{id}', [WaCampaignController::class, 'show']);

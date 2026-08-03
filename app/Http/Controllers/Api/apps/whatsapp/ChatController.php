@@ -132,8 +132,10 @@ public function handleEvolutionWebhook(Request $request)
     $data = $payload['data'] ?? null; // This usually contains the message details
 
     if (isset($data['key']['fromMe']) && $data['key']['fromMe'] === true) {
-        Log::info('Ignoring own outgoing message from webhook.');
-        return response()->json(['status' => 'ignored_own_message']);
+        // Persist the agent reply so the echo pipeline can pair it with shadow drafts
+        // and the ContextBuilder can label the turn correctly.
+        $this->persistEvolutionOutbound($data, $payload);
+        return response()->json(['status' => 'agent_reply_stored']);
     }
 
     $senderNumber = $data['key']['remoteJid'] ?? null; // Sender's WhatsApp ID (e.g., 1234567890@s.whatsapp.net)
@@ -532,6 +534,66 @@ public function handleWhatsappWebhook(Request $request)
             $validated['whatsapp_number']
         );
         return response()->json(['reply' => $reply ?? '']);
+    }
+
+    /**
+     * Store an outbound Evolution message in the communication layer so it can be
+     * used for agent-takeover detection, shadow-draft pairing, and context labelling.
+     */
+    private function persistEvolutionOutbound(array $data, array $payload): void
+    {
+        try {
+            $customerPhone = $data['key']['remoteJid'] ?? null;
+            if (! $customerPhone) {
+                return;
+            }
+            $customerPhone = str_replace('@s.whatsapp.net', '', $customerPhone);
+
+            $content = $data['message']['conversation']
+                ?? $data['message']['extendedTextMessage']['text']
+                ?? null;
+
+            $providerMessageId = $data['key']['id'] ?? null;
+
+            $resolvedTenant = $this->whatsAppWebhookService->resolveTenantFromPayload([
+                'provider_account_id' => $payload['instance'] ?? null,
+                'instance' => $payload['instance'] ?? null,
+            ], 'evolution');
+
+            $tenantOwnerId = null;
+            $resolvedWaNumberId = null;
+            if ($resolvedTenant !== null) {
+                $resolvedUser = \App\Models\User::find((int) $resolvedTenant['user_id']);
+                $tenantOwnerId = $resolvedUser && method_exists($resolvedUser, 'tenantOwnerId')
+                    ? (int) $resolvedUser->tenantOwnerId()
+                    : (int) $resolvedTenant['user_id'];
+                $resolvedWaNumberId = (int) $resolvedTenant['wa_number_id'];
+            }
+
+            if ($tenantOwnerId === null || $content === null) {
+                return;
+            }
+
+            $this->communicationService->recordOutboundFromEcho(
+                userId: $tenantOwnerId,
+                externalPartyIdentifier: $customerPhone,
+                content: $content,
+                channel: 'whatsapp',
+                providerMessageId: $providerMessageId,
+                meta: array_filter([
+                    'source' => 'evolution_agent',
+                    'wa_number_id' => $resolvedWaNumberId ?: null,
+                    'context' => ['instance' => $payload['instance'] ?? ''],
+                ], static fn ($v) => $v !== null),
+            );
+
+            Log::info('Evolution outbound stored', [
+                'provider_message_id' => $providerMessageId,
+                'tenant' => $tenantOwnerId,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('persistEvolutionOutbound failed', ['error' => $e->getMessage()]);
+        }
     }
 
     private function runChatFromPayload(string $message, int $userId, string $recipientWhatsappNumber): ?string

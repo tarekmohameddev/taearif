@@ -34,7 +34,12 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\RbacHealthCheck::class,
         \App\Console\Commands\SyncWhatsappUsersToWaNumbers::class,
         \App\Console\Commands\ExportBotGoldenCorpus::class,
+        \App\Console\Commands\ReproduceBotKnownIssues::class,
+        \App\Console\Commands\ScanWhatsappMessagesForBotEnhancements::class,
+        \App\Console\Commands\DebugBotPropertySearch::class,
         \App\Console\Commands\BackfillWaConversationWaNumber::class,
+        \App\Console\Commands\ResubscribeWabaToEchoes::class,
+        \App\Console\Commands\MineBotHistory::class,
         \App\Domain\Ai\Evaluation\EvaluateBotCommand::class,
     ];
 
@@ -141,6 +146,31 @@ class Kernel extends ConsoleKernel
         $schedule->command('calling:prune-events')
             ->daily()
             ->withoutOverlapping()
+            ->onOneServer();
+
+        // ── WhatsApp AI Bot nightly jobs ─────────────────────────────────────
+        // Mine historical conversations for aliases and FAQ candidates (runs nightly at 02:30 KSA).
+        $schedule->command('ai:mine-history --incremental')
+            ->dailyAt('02:30')
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onOneServer();
+
+        // Export + enrich golden corpus (runs weekly on Sunday at 03:00 KSA).
+        $schedule->command('ai:export-golden-corpus --limit=1000 --include-faq-candidates --include-agent-edits')
+            ->weeklyOn(0, '03:00')
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onOneServer();
+
+        // Evaluate bot quality against the latest golden corpus (weekly on Sunday at 04:00 KSA).
+        $schedule->command('ai:evaluate-bot --fail-on-regression')
+            ->weeklyOn(0, '04:00')
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->runInBackground()
             ->onOneServer();
     }
 

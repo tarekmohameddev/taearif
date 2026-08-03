@@ -5,12 +5,24 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api\V1\WhatsApp;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Models\WaNumber;
 
 final class ResetBotSandboxRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $user = auth()->user();
+        if ($user?->is_admin) {
+            return true;
+        }
+
+        $waNumberId = (int) $this->input('wa_number_id');
+        if ($waNumberId <= 0) {
+            return false;
+        }
+
+        $tenantId = $user?->tenantOwnerId() ?? (int) auth()->id();
+        return WaNumber::where('id', $waNumberId)->where('user_id', $tenantId)->exists();
     }
 
     /** @return array<string, mixed> */
@@ -25,7 +37,12 @@ final class ResetBotSandboxRequest extends FormRequest
 
     public function tenantId(): int
     {
-        return (int) ($this->input('tenant_id') ?? auth()->id());
+        $user = auth()->user();
+        if ($user?->is_admin && $this->filled('tenant_id')) {
+            return (int) $this->input('tenant_id');
+        }
+
+        return $user?->tenantOwnerId() ?? (int) auth()->id();
     }
 
     public function customerPhone(): string

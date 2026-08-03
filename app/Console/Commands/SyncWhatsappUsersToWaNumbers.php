@@ -61,6 +61,10 @@ final class SyncWhatsappUsersToWaNumbers extends Command
 
                 $normalized = $this->normalizePhone((string) ($wu->number ?? ''));
 
+                // Count every row that would be created so dry-run output is accurate.
+                // The [DRY-RUN] prefix already clarifies that nothing was written.
+                $created++;
+
                 if (! $this->option('dry-run')) {
                     if ($isMeta) {
                         WaNumber::create([
@@ -87,8 +91,6 @@ final class SyncWhatsappUsersToWaNumbers extends Command
                         ]);
                     }
                 }
-
-                $created++;
             } catch (\Throwable $e) {
                 $failed++;
                 $this->newLine();

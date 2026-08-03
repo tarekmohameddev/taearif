@@ -30,8 +30,10 @@ class BotAnalyticsController extends BaseApiController
         $period = $request->get('period', '30d');
         $since  = $this->periodToDate($period);
 
+        // Exclude simulate and mine pass types from production cost/token counts
         $usageSummary = AiUsageLog::where('user_id', $userId)
             ->where('created_at', '>=', $since)
+            ->whereNotIn('pass_type', ['simulate', 'mine'])
             ->select(
                 DB::raw('SUM(tokens_in + tokens_out) as total_tokens'),
                 DB::raw('SUM(cost_micros) as total_cost_micros'),
@@ -39,6 +41,13 @@ class BotAnalyticsController extends BaseApiController
                 DB::raw('AVG(latency_ms) as avg_latency_ms'),
                 DB::raw('SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed_calls')
             )
+            ->first();
+
+        // Mine pass spend (separate bucket)
+        $mineCost = AiUsageLog::where('user_id', $userId)
+            ->where('created_at', '>=', $since)
+            ->where('pass_type', 'mine')
+            ->selectRaw('SUM(cost_micros) as cost, SUM(tokens_in + tokens_out) as tokens, COUNT(*) as calls')
             ->first();
 
         $shadowSummary = ShadowBotDraft::where('user_id', $userId)
@@ -67,7 +76,30 @@ class BotAnalyticsController extends BaseApiController
             ->limit(20)
             ->get(['question', 'occurrence_count', 'cluster_key', 'id']);
 
-        $lastEval = AiEvalRun::orderByDesc('created_at')->first();
+        // Scope last_eval to this tenant (tenant-0 platform evals excluded)
+        $lastEval = AiEvalRun::where(function ($q) use ($userId) {
+            $q->where('user_id', $userId)->orWhereNull('user_id');
+        })->orderByDesc('created_at')->first();
+
+        // Grounding failure rate
+        $groundingFails = AiUsageLog::where('user_id', $userId)
+            ->where('created_at', '>=', $since)
+            ->where('pass_type', 'generate')
+            ->where('success', false)
+            ->count();
+        $generateTotal = AiUsageLog::where('user_id', $userId)
+            ->where('created_at', '>=', $since)
+            ->where('pass_type', 'generate')
+            ->count();
+
+        // Handoff rate
+        $totalConvs   = WaConversationAiState::where('user_id', $userId)
+            ->where('updated_at', '>=', $since)
+            ->count();
+        $handoffConvs = WaConversationAiState::where('user_id', $userId)
+            ->where('updated_at', '>=', $since)
+            ->whereNotNull('handoff_reason')
+            ->count();
 
         return response()->json([
             'period'        => $period,
@@ -79,6 +111,11 @@ class BotAnalyticsController extends BaseApiController
                 'avg_latency_ms'  => round((float) ($usageSummary->avg_latency_ms ?? 0)),
                 'cost_usd'        => round((float) ($usageSummary->total_cost_micros ?? 0) / 1_000_000, 4),
             ],
+            'mining_spend'  => [
+                'calls'     => (int) ($mineCost->calls ?? 0),
+                'tokens'    => (int) ($mineCost->tokens ?? 0),
+                'cost_usd'  => round((float) ($mineCost->cost ?? 0) / 1_000_000, 4),
+            ],
             'shadow'        => [
                 'total'          => (int) ($shadowSummary->total_drafts ?? 0),
                 'approved'       => (int) ($shadowSummary->approved ?? 0),
@@ -88,6 +125,12 @@ class BotAnalyticsController extends BaseApiController
                 'edit_rate_pct'  => $shadowSummary->total_drafts > 0
                     ? round((($shadowSummary->edited + $shadowSummary->discarded) / $shadowSummary->total_drafts) * 100, 1)
                     : null,
+            ],
+            'quality_rates' => [
+                'grounding_failure_rate_pct' => $generateTotal > 0
+                    ? round(($groundingFails / $generateTotal) * 100, 1) : null,
+                'handoff_rate_pct' => $totalConvs > 0
+                    ? round(($handoffConvs / $totalConvs) * 100, 1) : null,
             ],
             'handoff_reasons' => $handoffSummary,
             'top_unanswered'  => $topUnanswered,
@@ -168,7 +211,8 @@ class BotAnalyticsController extends BaseApiController
     {
         $tenantId = $request->tenantId();
 
-        if ($tenantId !== (int) auth()->id() && ! auth()->user()?->is_admin) {
+        $authTenantId = auth()->user()?->tenantOwnerId() ?? (int) auth()->id();
+        if ($tenantId !== $authTenantId && ! auth()->user()?->is_admin) {
             return response()->json(['error' => 'Unauthorized.'], 403);
         }
 
@@ -205,9 +249,12 @@ class BotAnalyticsController extends BaseApiController
             'tenant_id'      => 'nullable|integer|min:1',
         ]);
 
-        $tenantId = (int) ($request->input('tenant_id') ?? auth()->id());
+        $authTenantId = auth()->user()?->tenantOwnerId() ?? (int) auth()->id();
+        $tenantId = auth()->user()?->is_admin && $request->filled('tenant_id')
+            ? (int) $request->input('tenant_id')
+            : $authTenantId;
 
-        if ($tenantId !== (int) auth()->id() && ! auth()->user()?->is_admin) {
+        if ($tenantId !== $authTenantId && ! auth()->user()?->is_admin) {
             return response()->json(['error' => 'Unauthorized.'], 403);
         }
 
@@ -230,7 +277,8 @@ class BotAnalyticsController extends BaseApiController
     {
         $tenantId = $request->tenantId();
 
-        if ($tenantId !== (int) auth()->id() && ! auth()->user()?->is_admin) {
+        $authTenantId = auth()->user()?->tenantOwnerId() ?? (int) auth()->id();
+        if ($tenantId !== $authTenantId && ! auth()->user()?->is_admin) {
             return response()->json(['error' => 'Unauthorized.'], 403);
         }
 
