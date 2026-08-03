@@ -290,12 +290,14 @@ PROMPT;
         $prompt = str_replace('{CLUSTER_MIN}', (string) self::FAQ_CLUSTER_MIN_SIZE, $prompt);
 
         try {
-            $driver   = $this->driverFactory->makeForTenant($tenantId);
-            $fastModel = (string) config('openai.fast_model', 'gpt-5-nano');
+            $driver = $this->driverFactory->makeForTenant($tenantId);
+            // Prefer chat model: gpt-5-nano often burns max_completion_tokens on
+            // reasoning and returns empty content for this JSON clustering task.
+            $model = (string) config('openai.chat_model', 'gpt-4o-mini');
 
             $response = $driver->complete(new LlmRequest(
                 messages: [LlmMessage::user($prompt)],
-                model: $fastModel,
+                model: $model,
                 maxTokens: 1000,
                 temperature: 0.2,
                 jsonMode: true,
@@ -304,12 +306,28 @@ PROMPT;
 
             $this->usageRecorder->record($tenantId, 'mine', $response, null);
 
+            $contentLen = mb_strlen((string) $response->content);
+            $this->line(sprintf(
+                '    LLM tenant=%d model=%s success=%s tokens=%d/%d content_len=%d',
+                $tenantId,
+                $model,
+                $response->success ? 'yes' : 'no',
+                $response->tokensIn,
+                $response->tokensOut,
+                $contentLen,
+            ));
+            if ($contentLen > 0) {
+                $this->line('    LLM snippet: ' . mb_substr((string) $response->content, 0, 180));
+            } else {
+                $this->warn('    LLM returned empty content');
+            }
+
             if (! $response->success) {
                 return [];
             }
 
             $data     = json_decode($response->content, true);
-            $clusters = $data['clusters'] ?? [];
+            $clusters = is_array($data['clusters'] ?? null) ? $data['clusters'] : [];
 
             return array_map(function (array $c) {
                 $c['cluster_key'] = hash('sha256', ArabicNormalizer::normalizeForSearch($c['question'] ?? ''));
@@ -321,6 +339,7 @@ PROMPT;
             )));
         } catch (\Throwable $e) {
             Log::warning('ai:mine-history.llm_failed', ['error' => $e->getMessage()]);
+            $this->error('    LLM exception: ' . $e->getMessage());
             return [];
         }
     }
