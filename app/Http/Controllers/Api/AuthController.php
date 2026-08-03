@@ -536,8 +536,8 @@ class AuthController extends Controller
             // Log in tenant
             Auth::login($user);
 
-            // Seed default tenant website pages and components (FIRST TIME - before onboarding)
-            app(\App\Services\TenantWebsiteSeeder::class)->seedDefaultWebsite($user);
+            // Seed default tenant website pages and components (async — first time, before onboarding)
+            \App\Jobs\SeedTenantWebsiteJob::dispatch($user->id);
 
             // Onboarding + default categories
             app(\App\Services\OnboardingService::class)->applyDefaultsFor($user);

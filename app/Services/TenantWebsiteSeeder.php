@@ -46,13 +46,18 @@ class TenantWebsiteSeeder
      *
      * @return array|null
      */
-    protected function fetchDefaultData(): ?array
+    protected function fetchDefaultData(?int $userId = null): ?array
     {
+        $startedAt = microtime(true);
         $apiUrl = config('app.tenant_website_api_url');
 
         // If API URL is not configured, use local config
         if (empty($apiUrl)) {
-            Log::info('API URL not configured, using local config');
+            Log::info('API URL not configured, using local config', [
+                'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+                'user_id' => $userId,
+                'path' => 'local_config',
+            ]);
             return config('tenant_website_defaults');
         }
 
@@ -61,6 +66,11 @@ class TenantWebsiteSeeder
 
         $cached = Cache::get($cacheKey);
         if (is_array($cached)) {
+            Log::info('Tenant website default data served from cache', [
+                'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+                'user_id' => $userId,
+                'path' => 'cache',
+            ]);
             return $cached;
         }
 
@@ -71,10 +81,22 @@ class TenantWebsiteSeeder
             // fetch can be retried sooner instead of being stuck for the full TTL.
             Cache::put($cacheKey, $data, $ttl);
 
+            Log::info('Tenant website default data fetched from remote', [
+                'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+                'user_id' => $userId,
+                'path' => 'remote_fetch',
+            ]);
+
             return $data;
         }
 
         // All retries failed, fall back to local config (not cached).
+        Log::info('Tenant website default data falling back to local config', [
+            'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+            'user_id' => $userId,
+            'path' => 'local_fallback',
+        ]);
+
         return config('tenant_website_defaults');
     }
 
@@ -176,16 +198,25 @@ class TenantWebsiteSeeder
     public function seedDefaultWebsite(User $tenant): bool
     {
         try {
-            return DB::transaction(function () use ($tenant) {
-                // Fetch default template from API (with fallback to local config)
-                $template = $this->fetchDefaultData();
+            // Fetch outside the write transaction so a mid-flight re-check can abort before DB writes.
+            $template = $this->fetchDefaultData($tenant->id);
 
-                if (!$template || !isset($template['componentSettings']) || !isset($template['globalComponentsData'])) {
-                    Log::warning('Tenant website default template not found or invalid', [
-                        'tenant_id' => $tenant->id,
-                    ]);
-                    return false;
-                }
+            if (!$template || !isset($template['componentSettings']) || !isset($template['globalComponentsData'])) {
+                Log::warning('Tenant website default template not found or invalid', [
+                    'tenant_id' => $tenant->id,
+                ]);
+                return false;
+            }
+
+            // Write-time re-check: skip if onboarding finished or website rows appeared mid-flight
+            // (e.g. GetTenant sync reseed / ReseedTenantWebsiteJob). Residual Seed↔Reseed interleaving
+            // can still occur if the other writer commits after this check and before our writes.
+            if ($this->shouldAbortSeedWrites($tenant)) {
+                return false;
+            }
+
+            return DB::transaction(function () use ($tenant, $template) {
+                $writeStartedAt = microtime(true);
 
                 // Seed pages
                 $this->seedPages($tenant, $template['componentSettings']);
@@ -219,6 +250,9 @@ class TenantWebsiteSeeder
                 Log::info('Successfully seeded default website for tenant', [
                     'tenant_id' => $tenant->id,
                     'username' => $tenant->username,
+                    'duration_ms' => (int) round((microtime(true) - $writeStartedAt) * 1000),
+                    'user_id' => $tenant->id,
+                    'path' => 'seed_default_writes',
                 ]);
 
                 return true;
@@ -232,6 +266,44 @@ class TenantWebsiteSeeder
 
             return false;
         }
+    }
+
+    /**
+     * Abort first-time seed writes when onboarding already completed or website rows exist.
+     * Matches GetTenant structural pieces (pages / globals / layout) plus onboarding_completed.
+     */
+    protected function shouldAbortSeedWrites(User $tenant): bool
+    {
+        $tenant->refresh();
+
+        if ($tenant->onboarding_completed) {
+            Log::info('Skipping seed writes: onboarding already completed', [
+                'tenant_id' => $tenant->id,
+                'user_id' => $tenant->id,
+                'path' => 'seed_write_recheck',
+            ]);
+
+            return true;
+        }
+
+        $hasPages = TenantPage::where('user_id', $tenant->id)->exists();
+        $hasGlobals = TenantGlobalComponent::where('user_id', $tenant->id)->exists();
+        $hasLayout = TenantWebsiteLayout::where('user_id', $tenant->id)->exists();
+
+        if ($hasPages || $hasGlobals || $hasLayout) {
+            Log::info('Skipping seed writes: website data appeared before write', [
+                'tenant_id' => $tenant->id,
+                'user_id' => $tenant->id,
+                'has_pages' => $hasPages,
+                'has_globals' => $hasGlobals,
+                'has_layout' => $hasLayout,
+                'path' => 'seed_write_recheck',
+            ]);
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -350,8 +422,10 @@ class TenantWebsiteSeeder
     {
         try {
             return DB::transaction(function () use ($tenant) {
+                $writeStartedAt = microtime(true);
+
                 // Fetch default template from API (with fallback to local config)
-                $template = $this->fetchDefaultData();
+                $template = $this->fetchDefaultData($tenant->id);
 
                 if (!$template || !isset($template['componentSettings']) || !isset($template['globalComponentsData'])) {
                     Log::warning('Tenant website default template not found for reseed', [
@@ -423,12 +497,103 @@ class TenantWebsiteSeeder
                     'tenant_id' => $tenant->id,
                     'username' => $tenant->username,
                     'with_onboarding_data' => $basicSetting !== null,
+                    'duration_ms' => (int) round((microtime(true) - $writeStartedAt) * 1000),
+                    'user_id' => $tenant->id,
+                    'path' => 'reseed_writes',
                 ]);
 
                 return true;
             });
         } catch (\Exception $e) {
             Log::error('Failed to re-seed website for tenant', [
+                'tenant_id' => $tenant->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Sync-merge onboarding branding into an existing website (no Mandhoor HTTP).
+     * Returns false when pages/globals/layout are incomplete so the caller can queue a full reseed.
+     */
+    public function applyOnboardingBrandingToExistingWebsite(User $tenant): bool
+    {
+        $hasPages = TenantPage::where('user_id', $tenant->id)->exists();
+        $hasGlobals = TenantGlobalComponent::where('user_id', $tenant->id)->exists();
+        $hasLayout = TenantWebsiteLayout::where('user_id', $tenant->id)->exists();
+
+        if (!$hasPages || !$hasGlobals || !$hasLayout) {
+            return false;
+        }
+
+        try {
+            return DB::transaction(function () use ($tenant) {
+                $writeStartedAt = microtime(true);
+
+                $tenant->refresh();
+
+                $basicSetting = \App\Models\User\BasicSetting::where('user_id', $tenant->id)->first();
+                $brandingColors = $basicSetting
+                    ? $this->extractBrandingColorsFromBasicSetting($basicSetting)
+                    : [];
+
+                $companyInfoFromFooter = $this->extractCompanyInfoForWebsiteLayoutFromFooter($tenant);
+                $resolvedEmail = $this->resolveContactEmailFromFooterAndUser($companyInfoFromFooter, $tenant);
+
+                $this->mergeIntoExistingWebsiteLayout(
+                    $tenant,
+                    $brandingColors,
+                    $companyInfoFromFooter,
+                    $resolvedEmail
+                );
+
+                // Load existing rows into the template shape used by injectOnboardingData.
+                $componentSettings = TenantPage::where('user_id', $tenant->id)
+                    ->get()
+                    ->mapWithKeys(fn (TenantPage $page) => [$page->page_id => $page->components ?? []])
+                    ->all();
+
+                $globals = TenantGlobalComponent::where('user_id', $tenant->id)->first();
+                $layout = TenantWebsiteLayout::where('user_id', $tenant->id)->first();
+
+                $template = [
+                    'componentSettings' => $componentSettings,
+                    'globalComponentsData' => is_array($globals?->data) ? $globals->data : [],
+                    'WebsiteLayout' => is_array($layout?->data) ? $layout->data : [],
+                ];
+
+                if ($basicSetting) {
+                    $template = $this->injectOnboardingData($template, $basicSetting, $tenant);
+                }
+
+                $template['globalComponentsData'] = $this->applyResolvedEmailToGlobalComponentsData(
+                    $template['globalComponentsData'],
+                    $resolvedEmail
+                );
+                $template['WebsiteLayout'] = $this->applyResolvedEmailToWebsiteLayout(
+                    $template['WebsiteLayout'],
+                    $resolvedEmail
+                );
+
+                $this->seedPages($tenant, $template['componentSettings']);
+                $this->seedGlobalComponents($tenant, $template['globalComponentsData']);
+                $this->seedWebsiteLayout($tenant, $template['WebsiteLayout']);
+
+                Log::info('Applied onboarding branding to existing website', [
+                    'tenant_id' => $tenant->id,
+                    'username' => $tenant->username,
+                    'duration_ms' => (int) round((microtime(true) - $writeStartedAt) * 1000),
+                    'user_id' => $tenant->id,
+                    'path' => 'onboarding_hot_path',
+                ]);
+
+                return true;
+            });
+        } catch (\Exception $e) {
+            Log::error('Failed to apply onboarding branding to existing website', [
                 'tenant_id' => $tenant->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
