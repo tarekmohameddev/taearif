@@ -6,12 +6,15 @@ namespace App\Domain\Communication\WhatsApp\Bot;
 
 use App\Domain\Ai\DTOs\LlmMessage;
 use App\Domain\Ai\DTOs\LlmRequest;
+use App\Domain\Ai\Knowledge\RetrievalService;
+use App\Domain\Ai\Knowledge\ArabicNormalizer;
 use App\Domain\Ai\Services\LlmDriverFactory;
 use App\Domain\Ai\Services\UsageRecorder;
 use App\Domain\Communication\WhatsApp\Bot\DTOs\BotContext;
 use App\Domain\Communication\WhatsApp\Bot\DTOs\BotReply;
 use App\Domain\Communication\WhatsApp\Bot\DTOs\BotTurnResult;
 use App\Domain\Communication\WhatsApp\Bot\Jobs\SummarizeConversationJob;
+use App\Domain\Communication\WhatsApp\Bot\MessageFactExtractor;
 use App\Models\AiUsageLog;
 use App\Models\BotUnansweredQuestion;
 use App\Models\Message;
@@ -53,6 +56,9 @@ final class BotOrchestrator
         private readonly ComplianceService $complianceService,
         private readonly HandoffService $handoffService,
         private readonly DeliveryService $deliveryService,
+        private readonly RelevanceGate $relevanceGate,
+        private readonly SlotFillingPolicy $slotFillingPolicy,
+        private readonly RetrievalService $retrievalService,
     ) {}
 
     /**
@@ -171,8 +177,44 @@ final class BotOrchestrator
         }
 
         $inboundText = (string) ($triggerMessage->content ?? '');
+
+        // ─── Image / media message handling ─────────────────────────────────
+        $messageMeta = is_array($triggerMessage->meta) ? $triggerMessage->meta : [];
+        $messageType = $messageMeta['type'] ?? 'text';
+        if (in_array($messageType, ['image', 'video', 'document'], true) && trim($inboundText) === '') {
+            $ackText = 'وصلت الصورة/الملف. موظفنا سيراجعها قريباً.';
+            $trace[] = 'media_message: acknowledged';
+            $this->handoffService->pauseBot($aiState, 'media_message_needs_review');
+            if (! $sandbox) {
+                $this->deliveryService->deliver(
+                    $tenantId, $conversationId, $waNumberId, $customerPhone,
+                    new BotReply(reply: $ackText, usedSources: [], confidence: 100, needsHuman: false,
+                        handoffReason: 'media_message_needs_review', factsUpdate: [], nextQuestion: null),
+                    ['to' => $customerPhone]
+                );
+            }
+            return $this->makeResult(
+                outcome: 'handoff', replyText: $ackText, botReply: null, groundingResult: null,
+                styleResult: null, intent: 'general', difficulty: 'easy', kbChunksUsed: 0,
+                propertiesFound: 0, tokensIn: 0, tokensOut: 0,
+                segments: $sandbox ? $this->deliveryService->prepareSegments($ackText) : [],
+                trace: $trace, factsUpdated: [],
+            );
+        }
+
         if (trim($inboundText) === '') {
             return BotTurnResult::skipped('empty_message', $trace);
+        }
+
+        // ─── Relevance gate ──────────────────────────────────────────────────
+        if (! $sandbox) {
+            $relevance = $this->relevanceGate->check($inboundText);
+            $trace[] = 'relevance: ' . ($relevance['relevant'] ? 'ok' : 'DROPPED (' . $relevance['reason'] . ')');
+            if (! $relevance['relevant']) {
+                return BotTurnResult::skipped('off_topic:' . $relevance['reason'], $trace);
+            }
+        } else {
+            $trace[] = 'relevance: skipped (sandbox)';
         }
 
         // ─── Compliance check ────────────────────────────────────────────────
@@ -278,6 +320,67 @@ final class BotOrchestrator
             );
         }
 
+        // ─── Frustration detection ────────────────────────────────────────────
+        if ($this->handoffService->detectFrustration($inboundText)) {
+            $trace[] = 'frustration: detected';
+            $this->handoffService->pauseBot($aiState, 'customer_frustration');
+            $replyText = 'نأسف على هذه التجربة. سيتواصل معك أحد موظفينا مباشرة.';
+            if (! $sandbox) {
+                $this->deliveryService->deliver(
+                    $tenantId, $conversationId, $waNumberId, $customerPhone,
+                    new BotReply(reply: $replyText, usedSources: [], confidence: 100, needsHuman: false,
+                        handoffReason: 'customer_frustration', factsUpdate: [], nextQuestion: null),
+                    ['to' => $customerPhone]
+                );
+            }
+            return $this->makeResult(
+                outcome: 'handoff', replyText: $replyText, botReply: null, groundingResult: null,
+                styleResult: null, intent: 'general', difficulty: 'easy', kbChunksUsed: 0,
+                propertiesFound: 0, tokensIn: 0, tokensOut: 0,
+                segments: $sandbox ? $this->deliveryService->prepareSegments($replyText) : [],
+                trace: $trace, factsUpdated: [],
+            );
+        }
+
+        // ─── Monthly budget guard ─────────────────────────────────────────────
+        $monthlyTokenLimit = (int) ($config->monthly_token_budget ?? 0);
+        if ($monthlyTokenLimit > 0 && $this->usageRecorder->exceedsBudget($tenantId, $monthlyTokenLimit)) {
+            $trace[] = 'budget: EXCEEDED (limit=' . $monthlyTokenLimit . ')';
+            $replyText = 'نعتذر، تم استنفاد حصة الردود الآلية لهذا الشهر. سيتواصل معك فريقنا قريباً.';
+            if (! $sandbox) {
+                $this->deliveryService->deliver(
+                    $tenantId, $conversationId, $waNumberId, $customerPhone,
+                    new BotReply(reply: $replyText, usedSources: [], confidence: 100, needsHuman: false,
+                        handoffReason: 'monthly_budget_exceeded', factsUpdate: [], nextQuestion: null),
+                    ['to' => $customerPhone]
+                );
+            }
+            return $this->makeResult(
+                outcome: 'handoff', replyText: $replyText, botReply: null, groundingResult: null,
+                styleResult: null, intent: 'general', difficulty: 'easy', kbChunksUsed: 0,
+                propertiesFound: 0, tokensIn: 0, tokensOut: 0,
+                segments: $sandbox ? $this->deliveryService->prepareSegments($replyText) : [],
+                trace: $trace, factsUpdated: [],
+            );
+        }
+
+        // ─── Deterministic fact extraction ───────────────────────────────────
+        // Extract budget / type / location / bedrooms from the inbound text BEFORE
+        // context building so that slot-fill and search see them on this very turn.
+        $extractedFacts = MessageFactExtractor::extract([$inboundText]);
+        if (! empty($extractedFacts)) {
+            $currentFacts = $aiState->facts ?? [];
+            // Merge: extracted facts fill gaps; existing persisted facts take priority
+            $mergedFacts = array_merge($extractedFacts, $currentFacts);
+            if ($mergedFacts !== $currentFacts) {
+                $aiState->update(['facts' => $mergedFacts]);
+                $aiState->refresh();
+            }
+            $trace[] = 'fact_extract: ' . implode(', ', array_keys($extractedFacts));
+        } else {
+            $trace[] = 'fact_extract: none';
+        }
+
         // ─── Build context (Pass 1 inside) ───────────────────────────────────
         $context = $this->contextBuilder->build(
             $tenantId, $conversationId, $waNumberId,
@@ -286,10 +389,128 @@ final class BotOrchestrator
         $trace[] = 'intent: ' . $context->intent . ' | difficulty: ' . $context->difficulty;
         $trace[] = 'kb_chunks: ' . count($context->kbChunks) . ' | properties: ' . count($context->propertySearchResult['results'] ?? []);
 
+        // ─── Focused-property tracking ────────────────────────────────────────
+        // When exactly one property is returned, persist it as the focused property
+        // so subsequent turns can enrich replies with external links and per-property FAQ.
+        // Reload facts from DB after BotOrchestrator may have merged extracted facts above.
+        $facts = $aiState->facts ?? [];
+        $propertyResults = $context->propertySearchResult['results'] ?? [];
+        if (count($propertyResults) === 1) {
+            $focusId = (int) ($propertyResults[0]['id'] ?? 0);
+            if ($focusId > 0 && ($facts['focused_property_id'] ?? 0) !== $focusId) {
+                $facts['focused_property_id'] = $focusId;
+                $aiState->update(['facts' => $facts]);
+                $trace[] = 'focused_property: ' . $focusId;
+            }
+        } elseif (count($propertyResults) > 1) {
+            // Multiple results → clear focus
+            if (isset($facts['focused_property_id'])) {
+                unset($facts['focused_property_id']);
+                $aiState->update(['facts' => $facts]);
+                $trace[] = 'focused_property: cleared (multiple results)';
+            }
+        }
+
+        // ─── Track failed turns without resolution ───────────────────────────
+        $failedTurns = (int) ($facts['_failed_turns'] ?? 0);
+
+        // ─── Exact-reply cache (deterministic shortcut) ──────────────────────
+        // Check if the KB has an exact match for the normalized query before burning tokens.
+        $exactHit = $this->checkExactReplyCache($tenantId, $context->standaloneQuery ?: $inboundText);
+        if ($exactHit !== null) {
+            $trace[] = 'exact_cache: HIT';
+            $exactReply = new BotReply(
+                reply: $exactHit,
+                usedSources: ['exact_cache'],
+                confidence: 95,
+                needsHuman: false,
+                handoffReason: null,
+                factsUpdate: [],
+                nextQuestion: null,
+            );
+            $this->deliverAndClose(
+                $config, $aiState, $context, $exactReply, $triggerMessage,
+                $tenantId, $conversationId, $waNumberId, $customerPhone,
+                $sandbox, $facts, 0, 0, $trace,
+            );
+            return $this->makeResult(
+                outcome: 'replied', replyText: $exactHit, botReply: $exactReply, groundingResult: null,
+                styleResult: null, intent: $context->intent, difficulty: $context->difficulty,
+                kbChunksUsed: 0, propertiesFound: 0, tokensIn: 0, tokensOut: 0,
+                segments: $sandbox ? $this->deliveryService->prepareSegments($exactHit) : [],
+                trace: $trace, factsUpdated: [],
+            );
+        }
+        $trace[] = 'exact_cache: miss';
+
+        // ─── Property search clarification passthrough ────────────────────────
+        // When the location could not be resolved and the search tool returned a
+        // clarification question, deliver it directly without spending tokens on
+        // full generation.
+        $searchClarification = $context->propertySearchResult['clarification_needed'] ?? false;
+        if ($searchClarification && !empty($context->propertySearchResult['clarification_question'])) {
+            $clarifyQ = (string) $context->propertySearchResult['clarification_question'];
+            $trace[] = 'search_clarification: ' . $clarifyQ;
+            $clarifyReply = new BotReply(
+                reply: $clarifyQ,
+                usedSources: [],
+                confidence: 100,
+                needsHuman: false,
+                handoffReason: null,
+                factsUpdate: [],
+                nextQuestion: null,
+            );
+            if (! $sandbox) {
+                $this->deliveryService->deliver(
+                    $tenantId, $conversationId, $waNumberId, $customerPhone,
+                    $clarifyReply, ['to' => $customerPhone]
+                );
+            }
+            $aiState->update(['last_bot_reply_at' => now()]);
+            return $this->makeResult(
+                outcome: 'replied', replyText: $clarifyQ, botReply: $clarifyReply, groundingResult: null,
+                styleResult: null, intent: $context->intent, difficulty: $context->difficulty,
+                kbChunksUsed: 0, propertiesFound: 0, tokensIn: 0, tokensOut: 0,
+                segments: $sandbox ? $this->deliveryService->prepareSegments($clarifyQ) : [],
+                trace: $trace, factsUpdated: [],
+            );
+        }
+
+        // ─── Slot-filling policy ─────────────────────────────────────────────
+        // If we are missing critical search criteria, ask one clarifying question
+        // instead of running a broad (low-quality) search and burning tokens.
+        $nextQuestion = $this->slotFillingPolicy->nextQuestion($facts, $context->intent);
+        if ($nextQuestion !== null && empty($context->propertySearchResult['results'] ?? [])) {
+            $trace[] = 'slot_fill: asking question';
+            $questionsAsked = (int) ($facts['_questions_asked'] ?? 0) + 1;
+            $aiState->update(['facts' => array_merge($facts, ['_questions_asked' => $questionsAsked])]);
+            $slotReply = new BotReply(
+                reply: $nextQuestion,
+                usedSources: [],
+                confidence: 100,
+                needsHuman: false,
+                handoffReason: null,
+                factsUpdate: [],
+                nextQuestion: null,
+            );
+            if (! $sandbox) {
+                $this->deliveryService->deliver(
+                    $tenantId, $conversationId, $waNumberId, $customerPhone,
+                    $slotReply, ['to' => $customerPhone]
+                );
+            }
+            $aiState->update(['last_bot_reply_at' => now()]);
+            return $this->makeResult(
+                outcome: 'replied', replyText: $nextQuestion, botReply: $slotReply, groundingResult: null,
+                styleResult: null, intent: $context->intent, difficulty: $context->difficulty,
+                kbChunksUsed: 0, propertiesFound: 0, tokensIn: 0, tokensOut: 0,
+                segments: $sandbox ? $this->deliveryService->prepareSegments($nextQuestion) : [],
+                trace: $trace, factsUpdated: [],
+            );
+        }
+
         // ─── Generate reply (Pass 2) ─────────────────────────────────────────
-        $draft = $this->generateReply($context, $sandbox);
-        $tokensIn = 0;
-        $tokensOut = 0;
+        [$draft, $tokensIn, $tokensOut] = $this->generateReply($context, $sandbox);
 
         if ($draft === null) {
             $this->handoffService->pauseBot($aiState, 'generation_failed');
@@ -314,12 +535,53 @@ final class BotOrchestrator
 
         $trace[] = 'generation: ok | confidence: ' . $draft->confidence;
 
+        // ─── Empty-results reply guard ────────────────────────────────────────
+        // When search returned 0 properties and no KB chunks, prevent the LLM from
+        // falsely claiming inventory exists ("عندنا خيارات", "متوفر", etc.).
+        $propertiesFoundCount = count($context->propertySearchResult['results'] ?? []);
+        $kbChunksCount        = count($context->kbChunks);
+        if (
+            in_array($context->intent, ['property_search', 'pricing'], true) &&
+            $propertiesFoundCount === 0 &&
+            $kbChunksCount === 0
+        ) {
+            $inventoryPhrases = ['عندنا', 'عندي', 'لدينا', 'لدي', 'متاح', 'متوفر', 'نوفر', 'خيارات', 'خيار'];
+            foreach ($inventoryPhrases as $phrase) {
+                if (mb_strpos($draft->reply, $phrase) !== false) {
+                    $trace[] = 'empty_results_guard: triggered (phrase: ' . $phrase . ')';
+                    Log::info('bot.empty_results_guard.triggered', [
+                        'conversation_id' => $conversationId,
+                        'matched_phrase'  => $phrase,
+                    ]);
+                    // Replace with an honest no-results reply
+                    $draft = new BotReply(
+                        reply: 'ما لقيت نتائج مطابقة لمعاييرك الآن. ممكن نوسّع البحث أو أحوّلك لأحد من فريقنا يساعدك مباشرة.',
+                        usedSources: [],
+                        confidence: 90,
+                        needsHuman: false,
+                        handoffReason: null,
+                        factsUpdate: $draft->factsUpdate,
+                        nextQuestion: null,
+                    );
+                    break;
+                }
+            }
+        }
+
         // ─── Grounding verification (Pass 3) ─────────────────────────────────
         $contextText = $this->buildContextTextForVerification($context);
         $groundingResult = $this->groundingVerifier->verify($draft, $contextText);
         $styleResult = $this->groundingVerifier->applyStyleLint($draft->reply);
         $trace[] = 'grounding: ' . ($groundingResult->passed ? 'passed' : 'FAILED (' . implode(', ', $groundingResult->failedClaims) . ')');
         $trace[] = 'style_lint: ' . ($styleResult->passed ? 'passed' : implode(', ', $styleResult->issues));
+
+        // Log style violations — they do not block delivery but are tracked
+        if (! $styleResult->passed) {
+            Log::info('bot.style_lint.issues', [
+                'conversation_id' => $conversationId,
+                'issues' => $styleResult->issues,
+            ]);
+        }
 
         $groundedReply = $draft;
         if (! $groundingResult->passed) {
@@ -331,16 +593,36 @@ final class BotOrchestrator
                 $this->recordUnanswered($tenantId, $conversationId, $inboundText, 'grounding_failure');
             }
             $groundedReply = BotReply::handoff('grounding_verification_failed');
+            // Count this as a failed turn
+            $failedTurns++;
+        } elseif (
+            in_array($context->intent, ['property_search', 'pricing', 'viewing'], true) &&
+            $kbChunksCount === 0 &&
+            $propertiesFoundCount === 0
+        ) {
+            // Bot tried to search for properties/pricing but came back empty — weak turn
+            $failedTurns++;
+        } else {
+            // Successful grounded turn — reset counter
+            $failedTurns = 0;
         }
 
+        // Persist updated counter in facts (non-customer-facing, prefixed with _)
+        $aiState->update(['facts' => array_merge($facts, ['_failed_turns' => $failedTurns])]);
+
         // ─── Handoff logic ────────────────────────────────────────────────────
+        $confidenceThreshold = (int) ($config->confidence_threshold ?? 40);
+        $escalationRules     = $config->escalation_rules ?? null;
+
         if (
             $groundedReply->needsHuman ||
             $this->handoffService->shouldHandoff(
                 $groundedReply->confidence,
                 ! $groundingResult->passed,
                 $context->intent,
-                0
+                $failedTurns,
+                $confidenceThreshold,
+                $escalationRules,
             )
         ) {
             $handoffReason = $groundedReply->handoffReason ?? 'low_confidence';
@@ -393,7 +675,7 @@ final class BotOrchestrator
         }
 
         if ($autonomy === 'shadow') {
-            $this->postTurn($aiState, $groundedReply, $context);
+            $this->postTurn($aiState, $groundedReply, $context, $tokensIn, $tokensOut);
             if (! $sandbox) {
                 $this->storeShadowDraft($context, $groundedReply, $triggerMessage);
             }
@@ -451,10 +733,18 @@ final class BotOrchestrator
             );
 
             if ($delivered) {
-                $this->postTurn($aiState, $groundedReply, $context);
+                $this->postTurn($aiState, $groundedReply, $context, $tokensIn, $tokensOut);
+                // Cache high-confidence replies for future exact hits
+                if ($groundingResult?->passed && $groundedReply->confidence >= 80) {
+                    $this->retrievalService->cacheExactReply(
+                        $tenantId,
+                        ArabicNormalizer::normalizeForSearch($context->standaloneQuery ?: $inboundText),
+                        $finalReply
+                    );
+                }
             }
         } else {
-            $this->postTurn($aiState, $groundedReply, $context);
+            $this->postTurn($aiState, $groundedReply, $context, $tokensIn, $tokensOut);
         }
 
         $elapsed = (int) round(microtime(true) * 1000) - $startMs;
@@ -521,7 +811,10 @@ final class BotOrchestrator
         );
     }
 
-    private function generateReply(BotContext $context, bool $sandbox = false): ?BotReply
+    /**
+     * @return array{0: ?BotReply, 1: int, 2: int}  [reply, tokensIn, tokensOut]
+     */
+    private function generateReply(BotContext $context, bool $sandbox = false): array
     {
         $systemPrompt = $this->personaBuilder->buildSystemPrompt($context);
         $messages = $this->contextBuilder->buildGenerationMessages($context, $systemPrompt);
@@ -530,10 +823,15 @@ final class BotOrchestrator
             $driver = $this->driverFactory->makeForTenant($context->tenantId);
             $model = $context->config->getAttribute('chat_model') ?? env('OPENAI_CHAT_MODEL', 'gpt-5-mini');
 
+            // Use the tenant-configured reply length target (tokens, not chars)
+            $maxTokens = (int) ($context->config->reply_length_target ?? 600);
+            // reply_length_target is in characters; convert to tokens (roughly 1.5 tokens/word, ~4 chars/word)
+            $maxTokens = max(200, min(1200, (int) round($maxTokens / 4)));
+
             $response = $driver->complete(new LlmRequest(
                 messages: $messages,
                 model: $model,
-                maxTokens: 600,
+                maxTokens: $maxTokens,
                 temperature: 0.4,
                 jsonMode: true,
                 timeoutSeconds: 30,
@@ -544,7 +842,7 @@ final class BotOrchestrator
                 $context->tenantId, $passType, $response, $context->conversationId
             );
 
-            if (! $response->success) { return null; }
+            if (! $response->success) { return [null, $response->tokensIn, $response->tokensOut]; }
 
             $reply = BotReply::fromJson($response->content);
             if ($reply === null) {
@@ -553,13 +851,13 @@ final class BotOrchestrator
                     'raw' => substr($response->content, 0, 200),
                 ]);
             }
-            return $reply;
+            return [$reply, $response->tokensIn, $response->tokensOut];
         } catch (\Throwable $e) {
             Log::error('bot.generate.exception', [
                 'conversation_id' => $context->conversationId,
                 'error' => $e->getMessage(),
             ]);
-            return null;
+            return [null, 0, 0];
         }
     }
 
@@ -567,16 +865,19 @@ final class BotOrchestrator
         WaConversationAiState $aiState,
         BotReply $reply,
         BotContext $context,
+        int $tokensIn = 0,
+        int $tokensOut = 0,
     ): void {
-        // Update facts
+        // Update facts and increment token counters
+        $updateData = ['last_bot_reply_at' => now()];
         if (! empty($reply->factsUpdate)) {
-            $aiState->update([
-                'facts'           => array_merge($aiState->facts ?? [], $reply->factsUpdate),
-                'last_bot_reply_at' => now(),
-            ]);
-        } else {
-            $aiState->update(['last_bot_reply_at' => now()]);
+            $updateData['facts'] = array_merge($aiState->facts ?? [], $reply->factsUpdate);
         }
+        if ($tokensIn > 0 || $tokensOut > 0) {
+            $updateData['tokens_in_total']  = ($aiState->tokens_in_total ?? 0) + $tokensIn;
+            $updateData['tokens_out_total'] = ($aiState->tokens_out_total ?? 0) + $tokensOut;
+        }
+        $aiState->update($updateData);
 
         // Trigger summarization every N new turns
         $newTurns = Message::where('conversation_id', $context->conversationId)
@@ -679,5 +980,57 @@ final class BotOrchestrator
             $parts[] = json_encode($prop, JSON_UNESCAPED_UNICODE);
         }
         return implode("\n", $parts);
+    }
+
+    /**
+     * Exact-reply cache: looks for a KB chunk that is an exact FAQ match
+     * for the normalized query. Returns the cached answer or null.
+     */
+    private function checkExactReplyCache(int $tenantId, string $query): ?string
+    {
+        try {
+            $normalized = ArabicNormalizer::normalizeForSearch(trim($query));
+            if (mb_strlen($normalized) < 5) {
+                return null;
+            }
+            $chunks = $this->retrievalService->retrieveExact($tenantId, $normalized);
+            return $chunks[0]['answer'] ?? null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Deliver and close a bot turn without full generation (for cache hits).
+     */
+    private function deliverAndClose(
+        WaAiConfig $config,
+        WaConversationAiState $aiState,
+        BotContext $context,
+        BotReply $reply,
+        Message $triggerMessage,
+        int $tenantId,
+        int $conversationId,
+        int $waNumberId,
+        string $customerPhone,
+        bool $sandbox,
+        array $facts,
+        int $tokensIn,
+        int $tokensOut,
+        array &$trace,
+    ): void {
+        if (! $sandbox) {
+            $this->deliveryService->deliver(
+                $tenantId, $conversationId, $waNumberId, $customerPhone,
+                $reply, ['to' => $customerPhone]
+            );
+        }
+        $this->postTurn($aiState, $reply, $context, $tokensIn, $tokensOut);
+        // Cache the reply for future exact hits
+        $this->retrievalService->cacheExactReply(
+            $tenantId,
+            \App\Domain\Ai\Knowledge\ArabicNormalizer::normalizeForSearch($context->standaloneQuery ?: ''),
+            $reply->reply
+        );
     }
 }

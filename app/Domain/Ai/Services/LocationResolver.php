@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Ai\Services;
 
 use App\Domain\Ai\Knowledge\ArabicNormalizer;
+use App\Models\AiAlias;
 use App\Models\User\Region;
 use App\Models\User\UserCity;
 use App\Models\User\UserDistrict;
@@ -86,7 +87,9 @@ final class LocationResolver
         $search = (string) preg_replace('/^حي\s*/u', '', $normalized);
         $search = ArabicNormalizer::normalizeForSearch($search);
 
-        $cacheKey = 'ai.districts.' . $tenantId;
+        // Note: UserDistrict is a global table (not tenant-scoped), so the cache is
+        // shared across tenants rather than duplicated per-tenant.
+        $cacheKey = 'ai.districts.global';
         $districts = Cache::remember($cacheKey, self::CACHE_TTL, function () {
             return UserDistrict::all(['id', 'name_ar', 'name_en', 'city_id', 'city_name_ar'])->toArray();
         });
@@ -128,10 +131,28 @@ final class LocationResolver
         ];
     }
 
+    /**
+     * Load city aliases from both the static constant and the seeded ai_aliases table.
+     * The database aliases take precedence (higher occurrence_count wins).
+     */
+    private function loadCityAliases(): array
+    {
+        return Cache::remember('ai.city_aliases.all', self::CACHE_TTL, function () {
+            $static = self::CITY_ALIASES;
+            $db     = AiAlias::where('alias_type', 'city')
+                ->orderByDesc('occurrence_count')
+                ->get(['alias', 'canonical'])
+                ->pluck('canonical', 'alias')
+                ->toArray();
+            return array_merge($static, $db); // db overrides static
+        });
+    }
+
     private function resolveCity(int $tenantId, string $normalized): ?array
     {
-        // Check aliases
-        $canonical = self::CITY_ALIASES[$normalized] ?? null;
+        // Check aliases (static + DB)
+        $aliases   = $this->loadCityAliases();
+        $canonical = $aliases[$normalized] ?? null;
 
         // Cities in `user_cities` are global (not tenant-scoped), so the cache
         // key doesn't need to vary per tenant, but we keep the parameter for

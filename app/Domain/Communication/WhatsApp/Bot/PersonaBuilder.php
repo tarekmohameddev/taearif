@@ -45,11 +45,16 @@ final class PersonaBuilder
 - صك إلكتروني = electronic deed (title deed)
 - إفراغ = deed transfer at notary
 - عمولة السعي = broker commission (typically 2.5%)
-- دفعة أولى = down payment
+- دفعة أولى / دفعة = down payment
 - تمويل عقاري = mortgage / real-estate financing
 - شقة عوائل = family apartment (separate entrance, private floor)
 - وحدة = unit (generic)
 - متر = square meter (م²)
+- شيك / صك = cheque / payment instrument (لا تقدم مشورة قانونية)
+- قسط = instalment payment
+- كفيل = guarantor
+- تفريغ = official deed transfer at the notary
+- سعي = broker fee / commission
 ';
 
     // Hard rules — appended to every prompt regardless of role
@@ -62,6 +67,7 @@ final class PersonaBuilder
 ٥. لا ترد برد واحد فيه أكثر من فقرتين — الواتساب مو بريد إلكتروني.
 ٦. لا تستخدم markdown headings (##) أو قوائم بنقاط طويلة — استخدم أرقام عربية بدل bullets.
 ٧. Bold بنجمة واحدة فقط (*نص*) لو احتجت.
+٨. إذا لم تجد نتائج بحث عقاري (العقارات = صفر)، لا تقل "عندنا" أو "متوفر" أو "خيارات ممتازة" — قل بصراحة "ما لقيت نتائج مطابقة الآن" واقترح توسيع معايير البحث أو التحويل لمختص.
 ';
 
     public function buildSystemPrompt(BotContext $ctx): LlmMessage
@@ -91,6 +97,9 @@ final class PersonaBuilder
             $disclosureNote = "\nإذا سألك العميل: \"هل أنت روبوت؟\" — أجب بصدق: نعم، أنا {$assistantName} المساعد الرقمي، وأقدر أحوّلك لشخص حقيقي أي وقت.\n";
         }
 
+        $glossary   = self::GLOSSARY_SNIPPET;
+        $hardRules  = self::HARD_RULES;
+
         $content = <<<PROMPT
 أنت *{$assistantName}* — {$roleLabel} في شركة عقارية سعودية.
 {$toneInstruction}
@@ -105,9 +114,9 @@ final class PersonaBuilder
 {$disclosureNote}
 {$customInstructions}
 
-{self::GLOSSARY_SNIPPET}
+{$glossary}
 
-{self::HARD_RULES}
+{$hardRules}
 
 مخرجات الرد:
 أرجع JSON فقط بهذا الشكل:
@@ -136,11 +145,11 @@ PROMPT;
     public function buildRewritePrompt(): LlmMessage
     {
         return LlmMessage::system(
-            'أنت محلل استفسارات عقارية. مهمتك فقط:\n' .
-            '١. أعد صياغة سؤال العميل كسؤال مستقل واضح (standalone query) بدون الرجوع للسياق.\n' .
-            '٢. صنّف النية: property_search | pricing | viewing | financing | complaint | general | off_topic\n' .
-            '٣. قدّر الصعوبة: easy | medium | hard\n\n' .
-            'أرجع JSON فقط:\n' .
+            "أنت محلل استفسارات عقارية. مهمتك فقط:\n" .
+            "١. أعد صياغة سؤال العميل كسؤال مستقل واضح (standalone query) بدون الرجوع للسياق.\n" .
+            "٢. صنّف النية: property_search | pricing | viewing | financing | complaint | general | off_topic\n" .
+            "٣. قدّر الصعوبة: easy | medium | hard\n\n" .
+            "أرجع JSON فقط:\n" .
             '{"standalone_query": "...", "intent": "...", "difficulty": "..."}'
         );
     }

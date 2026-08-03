@@ -41,7 +41,10 @@ class PropertySearchService
         }
 
         // Type/category/purpose
-        if ($request->categoryId) {
+        if (!empty($request->categoryIds)) {
+            // Bot searches pass an array of category IDs (e.g., [3, 18, 2] for apartment subtypes)
+            $q->whereIn('category_id', $request->categoryIds);
+        } elseif ($request->categoryId) {
             $q->where('category_id', $request->categoryId);
         }
         if ($request->propertyType) {

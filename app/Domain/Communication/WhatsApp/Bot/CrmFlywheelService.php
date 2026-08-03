@@ -85,14 +85,14 @@ final class CrmFlywheelService
 
         // Check if a recent request already exists for this customer (within 30 days)
         $existing = UserPropertyRequest::where('user_id', $tenantId)
-            ->where('api_customer_id', $customer->id)
+            ->where('customer_id', $customer->id)
             ->where('created_at', '>=', now()->subDays(30))
             ->first();
 
         if ($existing !== null) {
             // Update budget if improved
             if (! empty($facts['budget_max']) && (float) $facts['budget_max'] > 0) {
-                $existing->update(['max_price' => (float) $facts['budget_max']]);
+                $existing->update(['budget_to' => (float) $facts['budget_max']]);
             }
             return;
         }
@@ -104,16 +104,16 @@ final class CrmFlywheelService
         ];
 
         $requestData = [
-            'user_id'         => $tenantId,
-            'api_customer_id' => $customer->id,
-            'source'          => 'whatsapp_bot',
-            'purpose'         => $purposeMap[$intent] ?? 'sell',
-            'note'            => $this->buildNote($facts, $state),
+            'user_id'     => $tenantId,
+            'customer_id' => $customer->id,
+            'source'      => 'whatsapp_bot',
+            'purpose'     => $purposeMap[$intent] ?? 'sell',
+            'notes'       => $this->buildNote($facts, $state),
         ];
 
         if (! empty($facts['type']))     { $requestData['property_type'] = $typeMap[$facts['type']] ?? $facts['type']; }
-        if (! empty($facts['bedrooms'])) { $requestData['rooms'] = (int) $facts['bedrooms']; }
-        if (! empty($facts['budget_max'])) { $requestData['max_price'] = (float) $facts['budget_max']; }
+        if (! empty($facts['bedrooms'])) { $requestData['bedrooms'] = (int) $facts['bedrooms']; }
+        if (! empty($facts['budget_max'])) { $requestData['budget_to'] = (float) $facts['budget_max']; }
 
         try {
             UserPropertyRequest::create($requestData);

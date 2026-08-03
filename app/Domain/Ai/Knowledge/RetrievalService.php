@@ -63,6 +63,42 @@ final class RetrievalService
         );
     }
 
+    /**
+     * Retrieve an exact FAQ match for the query.
+     * First checks the in-memory cache, then looks for an FAQ chunk whose
+     * question text matches closely. Returns an array with 'answer' key or empty.
+     *
+     * @return array{answer: string}[]
+     */
+    public function retrieveExact(int $tenantId, string $normalizedQuery): array
+    {
+        // 1. Fast Redis cache
+        $cached = $this->checkExactCache($tenantId, $normalizedQuery);
+        if ($cached !== null) {
+            return [['answer' => $cached]];
+        }
+
+        // 2. DB-level exact match on FAQ chunks (metadata type = 'faq')
+        $hit = AiKnowledgeChunk::query()
+            ->where('user_id', $tenantId)
+            ->whereJsonContains('metadata->type', 'faq')
+            ->whereRaw('LOWER(content) = ?', [mb_strtolower($normalizedQuery)])
+            ->value('metadata');
+
+        if ($hit !== null) {
+            $answer = data_get(
+                is_array($hit) ? $hit : json_decode((string) $hit, true),
+                'answer'
+            );
+            if (! empty($answer)) {
+                $this->cacheExactReply($tenantId, $normalizedQuery, $answer);
+                return [['answer' => $answer]];
+            }
+        }
+
+        return [];
+    }
+
     private function loadTenantMatrix(int $tenantId): array
     {
         $cacheKey = 'ai.embedding.matrix.' . $tenantId;

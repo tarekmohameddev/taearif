@@ -32,6 +32,10 @@ final class ComplianceService
         'قضية',
         'محكمة',
         'توثيق شرعي',
+        'كفيل',          // guarantor — legal/financial advice territory
+        'تفريغ الصك',   // deed transfer formalities
+        'بنك التمويل',
+        'قسط بنكي',     // bank instalment — implies financing product advice
     ];
 
     // Abuse / profanity triggers — escalate immediately
@@ -118,8 +122,9 @@ final class ComplianceService
     {
         $normalized = ArabicNormalizer::normalizeForSearch($text);
         $humanKeywords = [
-            'تحدث مع موظف', 'تكلم موظف', 'موظف حقيقي', 'شخص', 'بشري',
-            'مدير', 'المسؤول', 'human', 'agent', 'speak to someone',
+            'تحدث مع موظف', 'تكلم موظف', 'موظف حقيقي', 'شخص حقيقي', 'بشري',
+            'تكلم مع شخص', 'تحدث مع شخص', 'أريد موظف', 'ابي موظف',
+            'مدير', 'المسؤول', 'human', 'agent', 'speak to someone', 'real person',
         ];
         foreach ($humanKeywords as $kw) {
             if (str_contains($normalized, ArabicNormalizer::normalizeForSearch($kw))) {

@@ -189,19 +189,28 @@ class RepositoryServiceProvider extends ServiceProvider
             );
         });
 
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\ListingLinkResolver::class);
+
         $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\ContextBuilder::class, function ($app) {
             return new \App\Domain\Communication\WhatsApp\Bot\ContextBuilder(
-                driverFactory: $app->make(\App\Domain\Ai\Services\LlmDriverFactory::class),
-                retrieval: $app->make(\App\Domain\Ai\Knowledge\RetrievalService::class),
-                propertyTool: $app->make(\App\Domain\Communication\WhatsApp\Bot\Tools\PropertySearchTool::class),
+                driverFactory:  $app->make(\App\Domain\Ai\Services\LlmDriverFactory::class),
+                retrieval:      $app->make(\App\Domain\Ai\Knowledge\RetrievalService::class),
+                propertyTool:   $app->make(\App\Domain\Communication\WhatsApp\Bot\Tools\PropertySearchTool::class),
+                usageRecorder:  $app->make(\App\Domain\Ai\Services\UsageRecorder::class),
+                linkResolver:   $app->make(\App\Domain\Communication\WhatsApp\Bot\ListingLinkResolver::class),
             );
         });
+
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\CrmFlywheelService::class);
 
         $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\DeliveryService::class, function ($app) {
             return new \App\Domain\Communication\WhatsApp\Bot\DeliveryService(
                 commService: $app->make(\App\Domain\Communication\Services\CommunicationServiceImpl::class),
             );
         });
+
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\RelevanceGate::class);
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\SlotFillingPolicy::class);
 
         $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\BotOrchestrator::class, function ($app) {
             return new \App\Domain\Communication\WhatsApp\Bot\BotOrchestrator(
@@ -213,6 +222,9 @@ class RepositoryServiceProvider extends ServiceProvider
                 complianceService: new \App\Domain\Communication\WhatsApp\Bot\ComplianceService(),
                 handoffService:    new \App\Domain\Communication\WhatsApp\Bot\HandoffService(),
                 deliveryService:   $app->make(\App\Domain\Communication\WhatsApp\Bot\DeliveryService::class),
+                relevanceGate:     $app->make(\App\Domain\Communication\WhatsApp\Bot\RelevanceGate::class),
+                slotFillingPolicy: $app->make(\App\Domain\Communication\WhatsApp\Bot\SlotFillingPolicy::class),
+                retrievalService:  $app->make(\App\Domain\Ai\Knowledge\RetrievalService::class),
             );
         });
 

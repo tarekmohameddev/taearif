@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domain\Communication\WhatsApp\Bot\Jobs;
 
-use App\Domain\Ai\Contracts\LlmClient;
 use App\Domain\Ai\DTOs\LlmMessage;
 use App\Domain\Ai\DTOs\LlmRequest;
 use App\Domain\Ai\Services\LlmDriverFactory;
 use App\Domain\Ai\Services\UsageRecorder;
+use App\Domain\Communication\WhatsApp\Bot\CrmFlywheelService;
 use App\Models\AiCustomerProfile;
 use App\Models\Message;
 use App\Models\WaConversationAiState;
@@ -34,7 +34,7 @@ final class SummarizeConversationJob implements ShouldQueue
         $this->onQueue('ai');
     }
 
-    public function handle(LlmDriverFactory $factory, UsageRecorder $usage): void
+    public function handle(LlmDriverFactory $factory, UsageRecorder $usage, CrmFlywheelService $crmFlywheel): void
     {
         $state = WaConversationAiState::where('conversation_id', $this->conversationId)->first();
         if ($state === null) { return; }
@@ -122,6 +122,9 @@ PROMPT;
 
             // Update customer profile with durable facts
             $this->updateCustomerProfile($data['facts'] ?? []);
+
+            // Sync newly extracted facts to the CRM
+            $crmFlywheel->sync($this->tenantId, $this->customerPhone, $state);
         } catch (\Throwable $e) {
             Log::error('bot.summarize.failed', [
                 'conversation_id' => $this->conversationId,

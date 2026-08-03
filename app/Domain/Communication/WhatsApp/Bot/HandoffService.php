@@ -70,12 +70,20 @@ final class HandoffService
         int $confidence,
         bool $groundingFailed,
         string $intent,
-        int $failedTurnsWithoutResolution
+        int $failedTurnsWithoutResolution,
+        int $confidenceThreshold = 40,
+        ?array $escalationRules = null,
     ): bool {
-        if ($confidence < 40) { return true; }
+        if ($confidence < $confidenceThreshold) { return true; }
         if ($groundingFailed) { return true; }
         if ($intent === 'complaint') { return true; }
         if ($failedTurnsWithoutResolution >= 3) { return true; }
+
+        // Check tenant-configured escalation rules (e.g. {"on_intent": ["financing"]})
+        if (! empty($escalationRules['on_intent']) && in_array($intent, $escalationRules['on_intent'], true)) {
+            return true;
+        }
+
         return false;
     }
 
