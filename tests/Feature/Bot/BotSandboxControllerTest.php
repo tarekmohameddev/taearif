@@ -143,6 +143,45 @@ final class BotSandboxControllerTest extends TestCase
         $this->assertGreaterThan(0, count($data['transcript']['messages']));
     }
 
+    public function test_known_issues_repro_greeting_does_not_increment_failed_turns_and_building_does_not_ask_bedrooms(): void
+    {
+        $phone = '+966500000099';
+        $waId  = $this->waNumber->id;
+
+        // Ensure a clean sandbox conversation
+        $this->postJson('/api/v1/whatsapp/ai/bot/simulate/reset', [
+            'wa_number_id'   => $waId,
+            'customer_phone' => $phone,
+        ])->assertStatus(200);
+
+        // Turn 1: greeting should not increment failed turns
+        $turn1 = $this->postJson('/api/v1/whatsapp/ai/bot/simulate', [
+            'wa_number_id'       => $waId,
+            'message'            => 'حياك الله',
+            'customer_phone'     => $phone,
+            'include_transcript' => true,
+        ])->assertStatus(200)->json();
+
+        $facts1 = is_array($turn1['facts'] ?? null) ? $turn1['facts'] : [];
+        $this->assertSame(0, (int) ($facts1['_failed_turns'] ?? 0));
+
+        // Turn 2: building + street + budget should not trigger bedrooms slot-fill
+        $turn2 = $this->postJson('/api/v1/whatsapp/ai/bot/simulate', [
+            'wa_number_id'       => $waId,
+            'message'            => 'بدور على عمارة في شارع الملك عبد العزيز بميزانية 7 مليون',
+            'customer_phone'     => $phone,
+            'include_transcript' => true,
+        ])->assertStatus(200)->json();
+
+        $facts2 = is_array($turn2['facts'] ?? null) ? $turn2['facts'] : [];
+        $this->assertSame('عمارة', $facts2['type'] ?? null);
+        $this->assertStringContainsString('شارع الملك عبد العزيز', (string) ($facts2['district'] ?? ''));
+        $this->assertStringNotContainsString('بميزانية', (string) ($facts2['district'] ?? ''));
+        $this->assertSame(0, (int) ($facts2['_failed_turns'] ?? 0));
+
+        $this->assertNull($turn2['next_question'] ?? null);
+    }
+
     public function test_simulation_transcript_endpoint_returns_conversation_history(): void
     {
         $phone = '+966500000003';
