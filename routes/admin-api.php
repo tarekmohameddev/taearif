@@ -37,6 +37,9 @@ use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\PermissionController;
 use App\Http\Controllers\Api\Admin\WhatsappAddonController;
 use App\Http\Controllers\Api\Admin\ThemeController;
+use App\Http\Controllers\Api\Admin\Calling\CallingTenantController;
+use App\Http\Controllers\Api\Admin\Calling\CallingTrunkController;
+use App\Http\Controllers\Api\Admin\Calling\CallingSimLineController;
 
 // =============================================================================
 // PUBLIC ROUTES - No Authentication Required
@@ -88,14 +91,14 @@ Route::prefix(config('admin-api.prefix'))
         ->name('me');
 
     // -------------------------------------------------------------------------
-    // Permissions Module — الأذونات
+    // Permissions Module â Ø§ÙØ£Ø°ÙÙØ§Øª
     // -------------------------------------------------------------------------
 
     Route::get('permissions', [PermissionController::class, 'index'])
         ->name('permissions.index');
 
     // -------------------------------------------------------------------------
-    // Daily Follow-up Module — المتابعة اليومية
+    // Daily Follow-up Module â Ø§ÙÙØªØ§Ø¨Ø¹Ø© Ø§ÙÙÙÙÙØ©
     // Unified daily operations, reminders, appointments, and tasks
     // -------------------------------------------------------------------------
 
@@ -137,7 +140,7 @@ Route::prefix(config('admin-api.prefix'))
 
 
     // -------------------------------------------------------------------------
-    // Impersonation Module — انتحال الشخصية
+    // Impersonation Module â Ø§ÙØªØ­Ø§Ù Ø§ÙØ´Ø®ØµÙØ©
     // -------------------------------------------------------------------------
 
     Route::prefix('impersonate')->name('impersonate.')->group(function () {
@@ -152,7 +155,7 @@ Route::prefix(config('admin-api.prefix'))
     });
 
     // -------------------------------------------------------------------------
-    // Dashboard Module — لوحة التحكم
+    // Dashboard Module â ÙÙØ­Ø© Ø§ÙØªØ­ÙÙ
     // -------------------------------------------------------------------------
 
     Route::middleware('checkAdminApiPermission:Dashboard')->group(function () {
@@ -194,7 +197,7 @@ Route::prefix(config('admin-api.prefix'))
     });
 
     // -------------------------------------------------------------------------
-    // User Management Module — إدارة المستخدمين
+    // User Management Module â Ø¥Ø¯Ø§Ø±Ø© Ø§ÙÙØ³ØªØ®Ø¯ÙÙÙ
     // -------------------------------------------------------------------------
 
     // Lookups for cities and districts
@@ -280,7 +283,7 @@ Route::prefix(config('admin-api.prefix'))
     });
 
     // -------------------------------------------------------------------------
-    // Plans Management Module — إدارة الباقات
+    // Plans Management Module â Ø¥Ø¯Ø§Ø±Ø© Ø§ÙØ¨Ø§ÙØ§Øª
     // -------------------------------------------------------------------------
 
     Route::prefix('plans')->name('plans.')
@@ -309,7 +312,7 @@ Route::prefix(config('admin-api.prefix'))
     });
 
     // -------------------------------------------------------------------------
-    // Themes Management Module — إدارة السمات
+    // Themes Management Module â Ø¥Ø¯Ø§Ø±Ø© Ø§ÙØ³ÙØ§Øª
     // -------------------------------------------------------------------------
 
     Route::prefix('themes')->name('themes.')
@@ -324,7 +327,7 @@ Route::prefix(config('admin-api.prefix'))
         });
 
     // -------------------------------------------------------------------------
-    // Subscriptions Module — الاشتراكات
+    // Subscriptions Module â Ø§ÙØ§Ø´ØªØ±Ø§ÙØ§Øª
     // -------------------------------------------------------------------------
 
     Route::prefix('subscriptions')->name('subscriptions.')
@@ -348,7 +351,7 @@ Route::prefix(config('admin-api.prefix'))
         ->middleware('checkAdminApiPermission:Packages');
 
     // -------------------------------------------------------------------------
-    // Billing & Invoices Module — الفوترة
+    // Billing & Invoices Module â Ø§ÙÙÙØªØ±Ø©
     // -------------------------------------------------------------------------
 
     Route::prefix('billing')->name('billing.')
@@ -379,7 +382,7 @@ Route::prefix(config('admin-api.prefix'))
     });
 
     // -------------------------------------------------------------------------
-    // CRM Module — إدارة علاقات العملاء
+    // CRM Module â Ø¥Ø¯Ø§Ø±Ø© Ø¹ÙØ§ÙØ§Øª Ø§ÙØ¹ÙÙØ§Ø¡
     // -------------------------------------------------------------------------
 
     Route::middleware('checkAdminApiPermission:Registered Users')->group(function () {
@@ -423,7 +426,7 @@ Route::prefix(config('admin-api.prefix'))
     });
 
     // -------------------------------------------------------------------------
-    // Domains Management Module — النطاقات
+    // Domains Management Module â Ø§ÙÙØ·Ø§ÙØ§Øª
     // -------------------------------------------------------------------------
 
     Route::prefix('domains')->name('domains.')
@@ -498,7 +501,7 @@ Route::prefix(config('admin-api.prefix'))
         });
 
     // -------------------------------------------------------------------------
-    // Marketing Module — التسويق
+    // Marketing Module â Ø§ÙØªØ³ÙÙÙ
     // -------------------------------------------------------------------------
 
     Route::middleware('checkAdminApiPermission:Settings')->group(function () {
@@ -545,7 +548,7 @@ Route::prefix(config('admin-api.prefix'))
     });
 
     // -------------------------------------------------------------------------
-    // Affiliates Management Module — برنامج الإحالة
+    // Affiliates Management Module â Ø¨Ø±ÙØ§ÙØ¬ Ø§ÙØ¥Ø­Ø§ÙØ©
     // -------------------------------------------------------------------------
 
     Route::prefix('affiliates')->name('affiliates.')
@@ -582,7 +585,7 @@ Route::prefix(config('admin-api.prefix'))
     });
 
     // -------------------------------------------------------------------------
-    // Employees Management Module — إدارة الموظفين
+    // Employees Management Module â Ø¥Ø¯Ø§Ø±Ø© Ø§ÙÙÙØ¸ÙÙÙ
     // -------------------------------------------------------------------------
 
     Route::prefix('employees')->name('employees.')
@@ -623,7 +626,7 @@ Route::prefix(config('admin-api.prefix'))
     });
 
     // -------------------------------------------------------------------------
-    // Inquiries/Support Module — الاستفسارات والدعم
+    // Inquiries/Support Module â Ø§ÙØ§Ø³ØªÙØ³Ø§Ø±Ø§Øª ÙØ§ÙØ¯Ø¹Ù
     // -------------------------------------------------------------------------
 
     Route::prefix('inquiries')->name('inquiries.')
@@ -661,7 +664,7 @@ Route::prefix(config('admin-api.prefix'))
     });
 
     // -------------------------------------------------------------------------
-    // Platform Settings Module — إعدادات المنصة
+    // Platform Settings Module â Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§ÙÙÙØµØ©
     // -------------------------------------------------------------------------
 
     Route::prefix('platform')->name('platform.')
@@ -678,7 +681,7 @@ Route::prefix(config('admin-api.prefix'))
     });
 
     // -------------------------------------------------------------------------
-    // Analytics Module — التحليلات المتقدمة
+    // Analytics Module â Ø§ÙØªØ­ÙÙÙØ§Øª Ø§ÙÙØªÙØ¯ÙØ©
     // -------------------------------------------------------------------------
 
     Route::prefix('analytics')->name('analytics.')
@@ -723,16 +726,9 @@ Route::prefix(config('admin-api.prefix'))
         Route::post('export', [AnalyticsController::class, 'export'])
             ->name('export');
     });
-
-});
-
     // -------------------------------------------------------------------------
-    // Calling Module � Admin API
+    // Calling Module - Admin API
     // -------------------------------------------------------------------------
-    use App\Http\Controllers\Api\Admin\Calling\CallingTenantController;
-    use App\Http\Controllers\Api\Admin\Calling\CallingTrunkController;
-    use App\Http\Controllers\Api\Admin\Calling\CallingSimLineController;
-
     Route::prefix('calling')->name('calling.')
         ->middleware('checkAdminApiPermission:Calling')
         ->group(function () {
@@ -775,3 +771,5 @@ Route::prefix(config('admin-api.prefix'))
         Route::post('sim-lines/{id}/toggle', [CallingSimLineController::class, 'toggle'])
             ->name('sim-lines.toggle');
     });
+
+});
