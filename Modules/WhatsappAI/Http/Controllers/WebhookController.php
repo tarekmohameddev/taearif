@@ -2,22 +2,26 @@
 
 namespace Modules\WhatsappAI\Http\Controllers;
 
+use App\Domain\Communication\WhatsApp\Bot\HandoffService;
+use App\Domain\Communication\WhatsApp\Services\SyncWhatsappAiConversationToCommunicationService;
+use App\Models\ShadowBotDraft;
+use App\Models\WaConversationAiState;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
-use App\Domain\Communication\WhatsApp\Services\SyncWhatsappAiConversationToCommunicationService;
-use Modules\WhatsappAI\Jobs\ForwardWebhook;
-use App\Models\WhatsappUser;
 use Modules\WhatsappAI\Entities\WhatsappConversation;
 use Modules\WhatsappAI\Entities\WhatsappMessage;
+use Modules\WhatsappAI\Jobs\ForwardWebhook;
 use Modules\WhatsappAI\Jobs\ProcessConversation;
 use Modules\WhatsappAI\Jobs\TranscribeAudio;
+use App\Models\WhatsappUser;
 
 class WebhookController extends Controller
 {
     public function __construct(
         private readonly SyncWhatsappAiConversationToCommunicationService $communicationSyncService,
+        private readonly HandoffService $handoffService,
     ) {}
     /**
      * Handle incoming WhatsApp webhook
@@ -339,6 +343,20 @@ class WebhookController extends Controller
                 'raw_payload' => $echo,
             ]);
         } else {
+            // No provider message ID — deduplicate by content hash within a short window
+            // to protect against webhook retries creating duplicate records.
+            $contentHash = md5((string) $content . $storedMessageType);
+            $recentDuplicate = WhatsappMessage::where('conversation_id', $conversation->id)
+                ->where('direction', 'outbound')
+                ->where('message_type', $storedMessageType)
+                ->where('content', $content)
+                ->where('created_at', '>=', now()->subMinutes(5))
+                ->exists();
+
+            if ($recentDuplicate) {
+                return null;
+            }
+
             $storedMessage = WhatsappMessage::create([
                 'conversation_id' => $conversation->id,
                 'direction' => 'outbound',
@@ -351,8 +369,9 @@ class WebhookController extends Controller
         }
 
         // Sync to Communication layer as outbound
+        $syncedMessage = null;
         try {
-            $this->communicationSyncService->syncOutbound(
+            $syncedMessage = $this->communicationSyncService->syncOutbound(
                 $conversation,
                 $storedMessage,
                 is_array($entry['metadata'] ?? null) ? $entry['metadata'] : null,
@@ -363,6 +382,29 @@ class WebhookController extends Controller
                 'whatsapp_conversation_id' => $conversation->id,
                 'whatsapp_message_id' => $storedMessage->id,
             ]);
+        }
+
+        // Agent takeover detection — only when the message is NOT from the bot itself.
+        // Bot messages are tagged meta.source = 'ai' at delivery time; echoes from the
+        // human agent have source = 'whatsapp_echo'. Skip if already in our system with
+        // source = 'ai' to avoid pausing right after the bot speaks.
+        if ($syncedMessage !== null) {
+            $syncedMeta   = is_array($syncedMessage->meta) ? $syncedMessage->meta : [];
+            $messageSource = $syncedMeta['source'] ?? 'whatsapp_echo';
+
+            if ($messageSource !== 'ai') {
+                // Human agent replied — pause the bot for this conversation
+                $conversationId = $syncedMessage->conversation_id;
+                if ($conversationId !== null) {
+                    $aiState = WaConversationAiState::where('conversation_id', $conversationId)->first();
+                    if ($aiState !== null) {
+                        $this->handoffService->handleAgentReply($aiState);
+
+                        // Pair with any pending shadow draft for the same conversation
+                        $this->pairShadowDraft((int) $conversationId, (string) ($content ?? ''));
+                    }
+                }
+            }
         }
 
         if ($messageWasNew) {
@@ -376,6 +418,38 @@ class WebhookController extends Controller
             'conversation_id' => (int) $conversation->id,
             'message_count' => (int) $conversation->message_count,
         ];
+    }
+
+    /**
+     * If a ShadowBotDraft is pending for this conversation, record the agent's actual
+     * reply in the `agent_reply` field so it can feed into the golden corpus later.
+     */
+    private function pairShadowDraft(int $conversationId, string $agentReplyText): void
+    {
+        try {
+            $draft = ShadowBotDraft::where('conversation_id', $conversationId)
+                ->where('status', 'pending')
+                ->latest()
+                ->first();
+
+            if ($draft !== null) {
+                $draft->update([
+                    'agent_reply' => $agentReplyText,
+                    'status'      => 'agent_replied',
+                    'acted_at'    => now(),
+                ]);
+
+                Log::info('whatsapp_ai.shadow_draft.agent_paired', [
+                    'draft_id'        => $draft->id,
+                    'conversation_id' => $conversationId,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('whatsapp_ai.shadow_draft.pair_failed', [
+                'conversation_id' => $conversationId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function mirrorWebhookToForwardUrl(Request $request): void

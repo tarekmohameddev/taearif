@@ -62,11 +62,14 @@ class ProcessConversation implements ShouldQueue
                 return;
             }
 
-            // Build transcript only from messages that have not been processed yet.
+            // Build transcript only from inbound customer messages that have not been
+            // processed yet. Excluding outbound rows prevents the agent's words from
+            // being mistakenly treated as the customer's inquiry.
             // On the first run (cursor is null) all messages are included.
             // On subsequent runs only messages after the cursor are included so we
             // analyse new content only and avoid creating duplicate records.
             $messageQuery = $conversation->messages()
+                ->where('direction', 'inbound')
                 ->whereIn('message_type', ['text', 'image', 'video', 'document', 'location', 'audio']);
 
             if ($conversation->last_processed_message_id) {
