@@ -382,6 +382,11 @@ class Property extends Model
         return $this->hasMany(PropertyAmenity::class, 'property_id');
     }
 
+    public function externalLinks(): HasMany
+    {
+        return $this->hasMany(\App\Models\PropertyExternalLink::class, 'property_id');
+    }
+
 
     public function UserPropertyCharacteristics()
     {

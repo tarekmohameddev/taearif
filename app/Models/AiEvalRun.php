@@ -11,6 +11,7 @@ final class AiEvalRun extends Model
     protected $table = 'ai_eval_runs';
 
     protected $fillable = [
+        'user_id',
         'run_id',
         'git_commit',
         'scores',
