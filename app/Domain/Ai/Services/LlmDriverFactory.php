@@ -65,11 +65,11 @@ final class LlmDriverFactory
         $cred                    = new AiProviderCredential();
         $cred->provider          = 'openai_compat';
         $cred->base_url          = 'https://api.openai.com/v1';
-        $cred->chat_model        = env('OPENAI_CHAT_MODEL', 'gpt-5-mini');
-        $cred->fast_model        = env('OPENAI_FAST_MODEL', 'gpt-5-nano');
-        $cred->embedding_model   = env('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small');
-        // Mark as env-based so buildDriver uses env key
-        $cred->setAttribute('_env_key', env('OPENAI_API_KEY', ''));
+        // Use config() — env() returns null when config is cached (production).
+        $cred->chat_model        = (string) config('openai.chat_model', 'gpt-5-mini');
+        $cred->fast_model        = (string) config('openai.fast_model', 'gpt-5-nano');
+        $cred->embedding_model   = (string) config('openai.embedding_model', 'text-embedding-3-small');
+        $cred->setAttribute('_env_key', (string) config('openai.api_key', ''));
         return $cred;
     }
 

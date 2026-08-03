@@ -83,15 +83,14 @@ class AIResponderServiceTest extends TestCase
     /** @test */
     public function missing_api_key_returns_null(): void
     {
-        $original = env('OPENAI_API_KEY');
-        putenv('OPENAI_API_KEY=');
-        config(['communication.enabled' => true, 'communication.ai.enabled' => true]);
+        config([
+            'communication.enabled' => true,
+            'communication.ai.enabled' => true,
+            'openai.api_key' => '',
+        ]);
         $message = $this->createMessage('Hello');
         $service = new AIResponderService();
         $this->assertNull($service->suggestReply($message));
-        if ($original !== false) {
-            putenv('OPENAI_API_KEY=' . $original);
-        }
     }
 
     /** @test */

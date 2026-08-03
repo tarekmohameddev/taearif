@@ -95,7 +95,7 @@ PROMPT;
             $driver = $factory->makeForTenant($this->tenantId);
             $response = $driver->complete(new LlmRequest(
                 messages: [LlmMessage::user($prompt)],
-                model: env('OPENAI_CHAT_MODEL', 'gpt-5-mini'),
+                model: (string) config('openai.chat_model', 'gpt-5-mini'),
                 maxTokens: 500,
                 temperature: 0.1,
                 jsonMode: true,

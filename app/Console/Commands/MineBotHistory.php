@@ -291,7 +291,7 @@ PROMPT;
 
         try {
             $driver   = $this->driverFactory->makeForTenant($tenantId);
-            $fastModel = env('OPENAI_FAST_MODEL', 'gpt-5-nano');
+            $fastModel = (string) config('openai.fast_model', 'gpt-5-nano');
 
             $response = $driver->complete(new LlmRequest(
                 messages: [LlmMessage::user($prompt)],

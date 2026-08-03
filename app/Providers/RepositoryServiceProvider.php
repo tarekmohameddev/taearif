@@ -174,7 +174,7 @@ class RepositoryServiceProvider extends ServiceProvider
 
         $this->app->singleton(\App\Domain\Ai\Knowledge\EmbeddingService::class, function () {
             return new \App\Domain\Ai\Knowledge\EmbeddingService(
-                openAiApiKey: (string) env('OPENAI_API_KEY', '')
+                openAiApiKey: (string) config('openai.api_key', '')
             );
         });
 

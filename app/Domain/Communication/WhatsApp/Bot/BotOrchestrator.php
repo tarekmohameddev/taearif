@@ -821,7 +821,7 @@ final class BotOrchestrator
 
         try {
             $driver = $this->driverFactory->makeForTenant($context->tenantId);
-            $model = $context->config->getAttribute('chat_model') ?? env('OPENAI_CHAT_MODEL', 'gpt-5-mini');
+            $model = $context->config->getAttribute('chat_model') ?? (string) config('openai.chat_model', 'gpt-5-mini');
 
             // Use the tenant-configured reply length target (tokens, not chars)
             $maxTokens = (int) ($context->config->reply_length_target ?? 600);

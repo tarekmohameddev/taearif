@@ -275,7 +275,7 @@ final class ContextBuilder
         ?int $conversationId = null,
     ): array {
         try {
-            $fastModel = env('OPENAI_FAST_MODEL', 'gpt-5-nano');
+            $fastModel = (string) config('openai.fast_model', 'gpt-5-nano');
             $driver = $this->driverFactory->makeForTenant($tenantId);
             $persona = new PersonaBuilder();
 

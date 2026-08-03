@@ -52,7 +52,7 @@ class ChatController extends Controller
     {
         $this->communicationService = $communicationService;
         $this->whatsAppWebhookService = $whatsAppWebhookService;
-        $this->openai = OpenAIClient::client(env('OPENAI_API_KEY'));
+        $this->openai = OpenAIClient::client((string) config('openai.api_key', ''));
         $this->systemInstructions = implode("\n", [
             'أنت موظف دعم عملاء في شركة إدارة عقارات في السعودية.',
             '– ردودك ودية ودافئة، مع الجدية والوضوح.',
@@ -663,7 +663,7 @@ public function handleWhatsappWebhook(Request $request)
         $reply = '';
 
         try {
-            $model = env('OPENAI_CHAT_MODEL', 'gpt-4o-mini');
+            $model = (string) config('openai.chat_model', 'gpt-4o-mini');
             Log::info('OpenAI chat request', ['model' => $model, 'message_count' => count($messages)]);
 
             $data = $this->callOpenAI([
@@ -909,7 +909,7 @@ private function mapCategory(string $name): int
     {
         $question = $args['question'];
         $embedRes = $this->openai->embeddings()->create([
-            'model' => env('OPENAI_EMBEDDING_MODEL','text-embedding-3-small'),
+            'model' => (string) config('openai.embedding_model', 'text-embedding-3-small'),
             'input' => $question,
         ]);
         $qVec = $embedRes['data'][0]['embedding'];
@@ -929,7 +929,7 @@ private function mapCategory(string $name): int
 
     private function callOpenAI(array $payload): array
     {
-        $apiKey = env('OPENAI_API_KEY');
+        $apiKey = (string) config('openai.api_key', '');
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $apiKey,
             'Content-Type'  => 'application/json',
@@ -960,7 +960,7 @@ private function mapCategory(string $name): int
 
         try {
             $data = $this->callOpenAI([
-                'model' => env('OPENAI_CHAT_MODEL', 'gpt-4o-mini'),
+                'model' => (string) config('openai.chat_model', 'gpt-4o-mini'),
                 'messages' => [
                     ['role' => 'system', 'content' => 'سّو ملخص بسيط للمحادثة بالتركيز على معايير المستخدم.'],
                     ['role' => 'user',   'content' => $text],
