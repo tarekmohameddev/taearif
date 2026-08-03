@@ -383,7 +383,7 @@ class CommunicationServiceImpl implements CommunicationService
             throw new ConversationNotFoundException($dto->conversationId, $dto->userId);
         }
 
-        $meta = [];
+        $meta = is_array($dto->extraMeta) ? $dto->extraMeta : [];
         if ($dto->waNumberId !== null) {
             $waNumber = \App\Models\WaNumber::where('id', $dto->waNumberId)->where('user_id', $dto->userId)->first();
             if (! $waNumber) {

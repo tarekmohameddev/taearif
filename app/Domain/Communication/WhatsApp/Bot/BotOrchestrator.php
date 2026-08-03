@@ -125,6 +125,15 @@ final class BotOrchestrator
         $startMs = (int) round(microtime(true) * 1000);
         $trace = [];
 
+        if (! $sandbox) {
+            Log::info('bot.orchestrator.start', [
+                'conversation_id' => $conversationId,
+                'tenant' => $tenantId,
+                'wa_number_id' => $waNumberId,
+                'message_id' => $triggerMessage->id,
+            ]);
+        }
+
         // ─── Guard: loop detection ──────────────────────────────────────────
         if (! $sandbox && $this->isLooping($conversationId)) {
             Log::warning('bot.orchestrator.loop_detected', [

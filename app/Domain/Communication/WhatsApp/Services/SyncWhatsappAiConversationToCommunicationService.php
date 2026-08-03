@@ -50,6 +50,8 @@ class SyncWhatsappAiConversationToCommunicationService
 
         $meta = [
             'source' => 'whatsapp_ai_webhook',
+            'from' => $externalParty,
+            'customer_phone' => $externalParty,
             'whatsapp_ai_conversation_id' => (int) $aiConversation->id,
             'whatsapp_ai_message_id' => (int) $aiMessage->id,
             'whatsapp_message_type' => (string) $aiMessage->message_type,

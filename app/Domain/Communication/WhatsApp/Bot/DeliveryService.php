@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\Communication\WhatsApp\Bot;
 
+use App\Domain\Communication\DTOs\SendMessageDto;
 use App\Domain\Communication\Services\CommunicationServiceImpl;
+use App\Domain\Communication\Support\CommunicationEndpoints;
 use App\Domain\Communication\WhatsApp\Bot\DTOs\BotReply;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * Handles human-feeling delivery of bot replies:
@@ -75,16 +78,20 @@ final class DeliveryService
             }
 
             try {
-                $this->commService->sendMessage(
+                $dto = new SendMessageDto(
                     userId: $tenantId,
                     conversationId: $conversationId,
                     content: $this->formatForWhatsApp($segment),
-                    meta: array_merge($messageMeta, [
-                        'wa_number_id' => $waNumberId,
-                        'source'       => 'ai',
-                        'bot_segment'  => $i + 1,
+                    channel: 'whatsapp',
+                    waNumberId: $waNumberId > 0 ? $waNumberId : null,
+                    endpointSignature: CommunicationEndpoints::WHATSAPP_SEND_MESSAGE,
+                    extraMeta: array_merge($messageMeta, [
+                        'source' => 'ai',
+                        'bot_segment' => $i + 1,
                     ]),
                 );
+                $idempotencyKey = 'bot-deliver:' . $conversationId . ':' . $i . ':' . Str::uuid()->toString();
+                $this->commService->sendMessage($dto, $idempotencyKey);
             } catch (\Throwable $e) {
                 Log::error('bot.delivery.send_failed', [
                     'conversation_id' => $conversationId,

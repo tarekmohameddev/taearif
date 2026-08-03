@@ -78,7 +78,14 @@ class AutomationEngine
 
             if ($botConfig !== null && in_array($botConfig->autonomy_level, ['shadow', 'autonomous'], true)) {
                 $orchestrator = app(BotOrchestrator::class);
-                $customerPhone = (string) ($meta['from'] ?? $meta['customer_phone'] ?? '');
+                $rawPayload = is_array($meta['raw_payload'] ?? null) ? $meta['raw_payload'] : [];
+                $customerPhone = (string) (
+                    $meta['from']
+                    ?? $meta['customer_phone']
+                    ?? $rawPayload['from']
+                    ?? $message->conversation?->external_party_identifier
+                    ?? ''
+                );
                 $conversationId = (int) $message->conversation_id;
                 $orchestrator->handle(
                     $tenantId,
