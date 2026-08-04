@@ -131,14 +131,48 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
     }
 
     /**
-     * Normalize row keys: map Arabic headers to English, keep existing English keys.
+     * Arabic + Maatwebsite-slugified Arabic headers → English keys.
+     * With heading_row.formatter = slug, Maatwebsite uses Str::slug($header, '_'),
+     * so "عنوان الإعلان" arrives as "aanoan_alaaalan".
+     *
+     * @return array<string, string>
+     */
+    private static function headerKeyMap(): array
+    {
+        static $map = null;
+        if ($map !== null) {
+            return $map;
+        }
+
+        $map = [];
+        foreach (self::arabicHeaderToKey() as $arabic => $english) {
+            $map[$arabic] = $english;
+
+            $arabicSlug = Str::slug($arabic, '_');
+            if ($arabicSlug !== '') {
+                $map[$arabicSlug] = $english;
+            }
+
+            // English keys that contain Arabic (e.g. amenity_مصعد) are also slugified
+            $englishSlug = Str::slug($english, '_');
+            if ($englishSlug !== '' && $englishSlug !== $english) {
+                $map[$englishSlug] = $english;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * Normalize row keys: map Arabic / slugified Arabic headers to English, keep existing English keys.
      */
     private function normalizeRowKeys(array $row): array
     {
-        $map = self::arabicHeaderToKey();
+        $map = self::headerKeyMap();
         $out = [];
         foreach ($row as $header => $value) {
-            $key = $map[$header] ?? $header;
+            $headerStr = is_string($header) ? $header : (string) $header;
+            $key = $map[$headerStr] ?? $headerStr;
             $out[$key] = $value;
         }
         return $out;
@@ -1042,14 +1076,14 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             'video_url'   => 'nullable|url|max:500',
             'virtual_tour' => 'nullable|url|max:500',
             'gallery_images' => 'nullable|string',
-            'amenity_مصعد' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false',
-            'amenity_أمن' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false',
-            'amenity_كاميرات_مراقبة' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false',
-            'amenity_تكييف_مركزي' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false',
-            'amenity_تدفئة_مركزية' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false',
-            'amenity_صيانة' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false',
-            'amenity_بواب' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false',
-            'amenity_إنترنت' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false',
+            'amenity_مصعد' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false,نعم,لا',
+            'amenity_أمن' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false,نعم,لا',
+            'amenity_كاميرات_مراقبة' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false,نعم,لا',
+            'amenity_تكييف_مركزي' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false,نعم,لا',
+            'amenity_تدفئة_مركزية' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false,نعم,لا',
+            'amenity_صيانة' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false,نعم,لا',
+            'amenity_بواب' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false,نعم,لا',
+            'amenity_إنترنت' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false,نعم,لا',
             'additional_amenities' => 'nullable|string|max:1000',
             'unit_number' => 'nullable|string|max:50',
             'floor_number' => 'nullable|integer|min:0|max:200',
@@ -1083,15 +1117,31 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
     }
 
     /**
-     * Prepare data for validation - skip empty rows before validation runs
+     * Prepare data for validation - remap slug/Arabic headers and map purpose/type
+     * so WithValidation rules see English keys and DB enum values.
      */
     public function prepareForValidation($data, $index)
     {
+        $data = $this->normalizeRowKeys(is_array($data) ? $data : (array) $data);
+
+        if (array_key_exists('purpose', $data)) {
+            $mapped = PropertyExcelMapping::purposeToDb($data['purpose']);
+            if ($mapped !== null) {
+                $data['purpose'] = $mapped;
+            }
+        }
+        if (array_key_exists('type', $data)) {
+            $mapped = PropertyExcelMapping::typeToDb($data['type']);
+            if ($mapped !== null) {
+                $data['type'] = $mapped;
+            }
+        }
+
         // Check if row is completely empty (all values are null or empty)
-        $hasData = !empty(array_filter($data, function($value) {
+        $hasData = !empty(array_filter($data, function ($value) {
             return !is_null($value) && $value !== '';
         }));
-        
+
         // If row is completely empty, add a special marker to skip it
         if (!$hasData) {
             // Add required fields with dummy values to pass validation
@@ -1106,7 +1156,7 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             $data['type'] = 'residential';
             $data['area'] = 0;
         }
-        
+
         return $data;
     }
 
