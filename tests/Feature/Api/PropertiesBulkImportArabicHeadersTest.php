@@ -309,6 +309,60 @@ class PropertiesBulkImportArabicHeadersTest extends TestCase
         $this->assertSame('commercial', $property->property_type);
     }
 
+    public function test_bulk_import_update_via_id_does_not_crash_and_preserves_meta_fields(): void
+    {
+        $this->skipIfMissingSchema();
+        [$tenant] = $this->actingAsTenantWithCreate();
+
+        // Create an initial property via import (mirrors the create path)
+        $file = $this->makeExcelUpload(
+            ['عنوان الإعلان', 'السعر', 'العنوان', 'الوصف', 'الغرض', 'النوع', 'المساحة'],
+            [['شقة أصلية', 500000, 'حي الأصلي الرياض', 'وصف عقار أصلي للاختبار', 'بيع', 'سكني', 100]],
+        );
+        $response = $this->post('/api/properties/bulk-import', ['file' => $file], ['Accept' => 'application/json']);
+        $this->assertSame(0, (int) ($response->json('failed_count') ?? 0), $response->getContent());
+
+        $property = Property::where('user_id', $tenant->id)->latest('id')->first();
+        $this->assertNotNull($property);
+
+        // The import template has no SEO meta fields; simulate a value set some other way
+        // (e.g. via the property edit UI) that a re-import must not silently wipe.
+        PropertyContent::where('property_id', $property->id)->update([
+            'meta_keyword' => 'شقة مميزة, عقار الرياض',
+            'meta_description' => 'وصف ميتا مخصص للسيو',
+        ]);
+
+        // Re-import an update row referencing this property's id, as export-for-import round-trips do
+        $updateFile = $this->makeExcelUpload(
+            ['المعرّف', 'عنوان الإعلان', 'السعر', 'العنوان', 'الوصف', 'الغرض', 'النوع', 'المساحة'],
+            [[$property->id, 'شقة محدثة', 600000, 'حي محدث الرياض', 'وصف عقار محدث للاختبار', 'بيع', 'سكني', 120]],
+        );
+
+        $updateResponse = $this->post('/api/properties/bulk-import', ['file' => $updateFile], [
+            'Accept' => 'application/json',
+        ]);
+
+        $this->assertSame(
+            200,
+            $updateResponse->status(),
+            'Update-via-id import must not crash (e.g. undefined array key): ' . $updateResponse->getContent()
+        );
+        $this->assertSame(0, (int) ($updateResponse->json('failed_count') ?? 0), $updateResponse->getContent());
+        $this->assertGreaterThan(0, (int) ($updateResponse->json('updated_count') ?? 0), $updateResponse->getContent());
+
+        $property->refresh();
+        $this->assertEquals(600000, (float) $property->price);
+
+        $content = PropertyContent::where('property_id', $property->id)->first();
+        $this->assertNotNull($content);
+        $this->assertSame('شقة محدثة', $content->title);
+        // meta_keyword has no column in the import template at all — must be preserved, not wiped to null
+        $this->assertSame('شقة مميزة, عقار الرياض', $content->meta_keyword);
+        // meta_description is intentionally re-derived from the row's (changed) description
+        $this->assertNotNull($content->meta_description);
+        $this->assertStringContainsString('وصف عقار محدث للاختبار', $content->meta_description);
+    }
+
     public function test_raw_export_numeric_zero_cells_do_not_fail_string_validation(): void
     {
         $this->skipIfMissingSchema();

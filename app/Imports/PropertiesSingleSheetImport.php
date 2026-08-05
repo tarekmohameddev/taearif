@@ -505,6 +505,11 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                 $property->updateProperty($propertyData);
 
                 // Update Property Content
+                // Capture the existing content BEFORE it's deleted below, so fields not
+                // present in this import row (e.g. meta_keyword/meta_description, which
+                // the import template never carries) are preserved instead of wiped.
+                $existingContent = PropertyContent::where('property_id', $property->id)->first();
+
                 $contentData = [];
                 if (isset($row['title'])) $contentData['title'] = $row['title'];
                 if (isset($row['address'])) $contentData['address'] = $row['address'];
@@ -520,6 +525,13 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                 if (!empty($contentData) || $cityId || $stateId) {
                     $contentData['language_id'] = $this->defaultLanguageId;
                     $contentData['category_id'] = $property->category_id;
+                    $contentData['title'] ??= $existingContent->title ?? '';
+                    $contentData['address'] ??= $existingContent->address ?? '';
+                    $contentData['description'] ??= $existingContent->description ?? '';
+                    $contentData['meta_keyword'] ??= $existingContent->meta_keyword ?? null;
+                    $contentData['meta_description'] ??= $existingContent->meta_description ?? null;
+                    $contentData['city_id'] ??= $existingContent->city_id ?? null;
+                    $contentData['state_id'] ??= $existingContent->state_id ?? null;
                     PropertyContent::storePropertyContent($this->userId, $property->id, $contentData);
                 }
 
