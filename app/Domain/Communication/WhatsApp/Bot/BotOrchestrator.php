@@ -227,9 +227,18 @@ final class BotOrchestrator
         }
 
         // ─── Compliance check ────────────────────────────────────────────────
-        $isFirstContact = $aiState->tokens_in_total === 0 && $aiState->tokens_out_total === 0;
-        $compliance = $this->complianceService->check($inboundText, $aiState, $isFirstContact);
-        $trace[] = 'compliance: ' . $compliance['action'];
+        // First contact = no prior bot reply. Token counters stay 0 across slot-fill
+        // turns, so using them wrongly injected disclosure mid-conversation.
+        $isFirstContact  = $aiState->last_bot_reply_at === null;
+        $discloseEnabled = (bool) ($config->disclose_as_assistant ?? false);
+        $compliance = $this->complianceService->check(
+            $inboundText,
+            $aiState,
+            $isFirstContact,
+            $discloseEnabled,
+        );
+        $trace[] = 'compliance: ' . $compliance['action']
+            . ($discloseEnabled ? '' : ' (disclosure disabled)');
 
         if ($compliance['action'] === 'opt_out') {
             $aiState->update(['opt_out_status' => 'opted_out']);
@@ -377,17 +386,33 @@ final class BotOrchestrator
         // Extract budget / type / location / bedrooms from the inbound text BEFORE
         // context building so that slot-fill and search see them on this very turn.
         $extractedFacts = MessageFactExtractor::extract([$inboundText]);
-        if (! empty($extractedFacts)) {
-            $currentFacts = $aiState->facts ?? [];
-            // Merge: extracted facts fill gaps; existing persisted facts take priority
-            $mergedFacts = array_merge($extractedFacts, $currentFacts);
-            if ($mergedFacts !== $currentFacts) {
-                $aiState->update(['facts' => $mergedFacts]);
-                $aiState->refresh();
-            }
-            $trace[] = 'fact_extract: ' . implode(', ', array_keys($extractedFacts));
-        } else {
-            $trace[] = 'fact_extract: none';
+        $currentFacts   = $aiState->facts ?? [];
+        // Merge with sticky type/intent: follow-up questions must not overwrite an
+        // active search session unless the customer clearly revises criteria.
+        $mergedFacts = $this->mergeExtractedFacts($currentFacts, $extractedFacts, $inboundText);
+
+        // Clear inherited false-positive type=دور (from older "بدور" substring bugs)
+        if (
+            ($mergedFacts['type'] ?? null) === 'دور'
+            && ($extractedFacts['type'] ?? null) !== 'دور'
+            && ! preg_match('/(?:^|[^\p{Arabic}])دور(?:[^\p{Arabic}]|$)/u', $inboundText)
+        ) {
+            unset($mergedFacts['type']);
+        }
+
+        if (MessageFactExtractor::hasSearchSignals($mergedFacts) || SearchSession::isActive($mergedFacts)) {
+            $mergedFacts = SearchSession::markActive($mergedFacts);
+        }
+
+        if ($mergedFacts !== $currentFacts) {
+            $aiState->update(['facts' => $mergedFacts]);
+            $aiState->refresh();
+        }
+        $trace[] = empty($extractedFacts)
+            ? 'fact_extract: none'
+            : 'fact_extract: ' . implode(', ', array_keys($extractedFacts));
+        if (SearchSession::isActive($aiState->facts ?? [])) {
+            $trace[] = 'search_session: active';
         }
 
         // ─── Build context (Pass 1 inside) ───────────────────────────────────
@@ -455,44 +480,83 @@ final class BotOrchestrator
         // ─── Property search clarification passthrough ────────────────────────
         // When the location could not be resolved and the search tool returned a
         // clarification question, deliver it directly without spending tokens on
-        // full generation.
+        // full generation — but ONLY when the customer actually asked a search-like
+        // question. Greetings must never become "في أي مدينة تبحث؟".
         $searchClarification = $context->propertySearchResult['clarification_needed'] ?? false;
         if ($searchClarification && !empty($context->propertySearchResult['clarification_question'])) {
-            $clarifyQ = (string) $context->propertySearchResult['clarification_question'];
-            $trace[] = 'search_clarification: ' . $clarifyQ;
-            $clarifyReply = new BotReply(
-                reply: $clarifyQ,
-                usedSources: [],
-                confidence: 100,
-                needsHuman: false,
-                handoffReason: null,
-                factsUpdate: [],
-                nextQuestion: null,
-            );
-            if (! $sandbox) {
-                $this->deliveryService->deliver(
-                    $tenantId, $conversationId, $waNumberId, $customerPhone,
-                    $clarifyReply, ['to' => $customerPhone]
+            $extractedNow = MessageFactExtractor::extract([$inboundText]);
+            $hasSearchSignals = MessageFactExtractor::hasSearchSignals($extractedNow)
+                || ! empty($facts['type'])
+                || ! empty($facts['budget_max'])
+                || ! empty($facts['city'])
+                || ! empty($facts['district']);
+
+            if (! $hasSearchSignals) {
+                $trace[] = 'search_clarification: skipped (no search signals)';
+            } else {
+                $clarifyQ = (string) $context->propertySearchResult['clarification_question'];
+                $trace[] = 'search_clarification: ' . $clarifyQ;
+                $clarifyReply = new BotReply(
+                    reply: $clarifyQ,
+                    usedSources: [],
+                    confidence: 100,
+                    needsHuman: false,
+                    handoffReason: null,
+                    factsUpdate: [],
+                    nextQuestion: null,
+                );
+                if (! $sandbox) {
+                    $this->deliveryService->deliver(
+                        $tenantId, $conversationId, $waNumberId, $customerPhone,
+                        $clarifyReply, ['to' => $customerPhone]
+                    );
+                }
+                $aiState->update(['last_bot_reply_at' => now()]);
+                return $this->makeResult(
+                    outcome: 'replied', replyText: $clarifyQ, botReply: $clarifyReply, groundingResult: null,
+                    styleResult: null, intent: $context->intent, difficulty: $context->difficulty,
+                    kbChunksUsed: 0, propertiesFound: 0, tokensIn: 0, tokensOut: 0,
+                    segments: $sandbox ? $this->deliveryService->prepareSegments($clarifyQ) : [],
+                    trace: $trace, factsUpdated: [],
                 );
             }
-            $aiState->update(['last_bot_reply_at' => now()]);
-            return $this->makeResult(
-                outcome: 'replied', replyText: $clarifyQ, botReply: $clarifyReply, groundingResult: null,
-                styleResult: null, intent: $context->intent, difficulty: $context->difficulty,
-                kbChunksUsed: 0, propertiesFound: 0, tokensIn: 0, tokensOut: 0,
-                segments: $sandbox ? $this->deliveryService->prepareSegments($clarifyQ) : [],
-                trace: $trace, factsUpdated: [],
-            );
         }
 
         // ─── Slot-filling policy ─────────────────────────────────────────────
-        // If we are missing critical search criteria, ask one clarifying question
-        // instead of running a broad (low-quality) search and burning tokens.
-        $nextQuestion = $this->slotFillingPolicy->nextQuestion($facts, $context->intent);
-        if ($nextQuestion !== null && empty($context->propertySearchResult['results'] ?? [])) {
-            $trace[] = 'slot_fill: asking question';
+        // Ask critical slots (city / budget) BEFORE presenting inventory — even if a
+        // broad unscoped search already returned rows (otherwise Jeddah leaks in
+        // before the customer said "الرياض").
+        $nextSlot     = $this->slotFillingPolicy->nextSlot($facts, $context->intent);
+        $nextQuestion = $nextSlot['question'] ?? null;
+        $hasResults   = ! empty($context->propertySearchResult['results'] ?? []);
+        $askingCriticalSlot = $nextQuestion !== null && (
+            str_contains($nextQuestion, 'مدينة')
+            || str_contains($nextQuestion, 'ميزاني')
+        );
+        if ($nextQuestion !== null && ($askingCriticalSlot || ! $hasResults)) {
+            $trace[] = 'slot_fill: asking question' . ($nextSlot !== null ? ' (' . $nextSlot['slot'] . ')' : '');
             $questionsAsked = (int) ($facts['_questions_asked'] ?? 0) + 1;
-            $aiState->update(['facts' => array_merge($facts, ['_questions_asked' => $questionsAsked])]);
+            $askedSlots = array_values(array_unique(array_merge(
+                (array) ($facts['_asked_slots'] ?? []),
+                $nextSlot !== null ? [$nextSlot['slot']] : []
+            )));
+            $aiState->update(['facts' => array_merge($facts, [
+                '_questions_asked' => $questionsAsked,
+                '_asked_slots'     => $askedSlots,
+            ])]);
+
+            // If disclosure is enabled, attach it to the FIRST bot reply only
+            // (including slot-fill) — never defer it to a later generated turn.
+            [$nextQuestion, $disclosureInjected] = $this->maybePrefixDisclosure(
+                $nextQuestion,
+                $config,
+                $aiState,
+                $discloseEnabled,
+            );
+            if ($disclosureInjected) {
+                $trace[] = 'disclosure: injected (slot_fill)';
+            }
+
             $slotReply = new BotReply(
                 reply: $nextQuestion,
                 usedSources: [],
@@ -545,36 +609,87 @@ final class BotOrchestrator
         $trace[] = 'generation: ok | confidence: ' . $draft->confidence;
 
         // ─── Empty-results reply guard ────────────────────────────────────────
-        // When search returned 0 properties and no KB chunks, prevent the LLM from
-        // falsely claiming inventory exists ("عندنا خيارات", "متوفر", etc.).
+        // Reliable rule: during an active search, if the tool returned 0 hits and
+        // there is no KB grounding, never deliver invented inventory. Replace any
+        // non-admission reply with an honest no-results message.
         $propertiesFoundCount = count($context->propertySearchResult['results'] ?? []);
         $kbChunksCount        = count($context->kbChunks);
+        $searchLikeIntent     = in_array($context->intent, ['property_search', 'pricing', 'viewing'], true);
         if (
-            in_array($context->intent, ['property_search', 'pricing'], true) &&
-            $propertiesFoundCount === 0 &&
-            $kbChunksCount === 0
+            $searchLikeIntent
+            && $propertiesFoundCount === 0
+            && $kbChunksCount === 0
+            && SearchSession::isActive($facts)
+            && ! $this->replyDeniesPropertyResults($draft->reply)
         ) {
-            $inventoryPhrases = ['عندنا', 'عندي', 'لدينا', 'لدي', 'متاح', 'متوفر', 'نوفر', 'خيارات', 'خيار'];
-            foreach ($inventoryPhrases as $phrase) {
-                if (mb_strpos($draft->reply, $phrase) !== false) {
-                    $trace[] = 'empty_results_guard: triggered (phrase: ' . $phrase . ')';
-                    Log::info('bot.empty_results_guard.triggered', [
-                        'conversation_id' => $conversationId,
-                        'matched_phrase'  => $phrase,
-                    ]);
-                    // Replace with an honest no-results reply
-                    $draft = new BotReply(
-                        reply: 'ما لقيت نتائج مطابقة لمعاييرك الآن. ممكن نوسّع البحث أو أحوّلك لأحد من فريقنا يساعدك مباشرة.',
-                        usedSources: [],
-                        confidence: 90,
-                        needsHuman: false,
-                        handoffReason: null,
-                        factsUpdate: $draft->factsUpdate,
-                        nextQuestion: null,
-                    );
-                    break;
-                }
-            }
+            $trace[] = 'empty_results_guard: triggered (search session, 0 results)';
+            Log::info('bot.empty_results_guard.triggered', [
+                'conversation_id' => $conversationId,
+                'reason'          => 'active_search_empty',
+            ]);
+            $draft = new BotReply(
+                reply: 'ما لقيت شي مطابق لمعاييرك الحين. نقدر نوسّع البحث، أو أحولك لأحد من الفريق يساعدك.',
+                usedSources: [],
+                confidence: 90,
+                needsHuman: false,
+                handoffReason: null,
+                factsUpdate: $draft->factsUpdate,
+                nextQuestion: 'تقدر توضح نوع العقار أو الحي اللي تبيه؟',
+            );
+        }
+
+        // ─── Has-results denial guard ─────────────────────────────────────────
+        // Inverse of empty-results: when search returned inventory, never allow
+        // the LLM to claim "ما لقيت نتائج" (common when titles fail to load).
+        if (
+            in_array($context->intent, ['property_search', 'pricing', 'viewing'], true) &&
+            $propertiesFoundCount > 0 &&
+            $this->replyDeniesPropertyResults($draft->reply)
+        ) {
+            $trace[] = 'has_results_guard: triggered (denied despite ' . $propertiesFoundCount . ' results)';
+            Log::info('bot.has_results_guard.triggered', [
+                'conversation_id' => $conversationId,
+                'properties'      => $propertiesFoundCount,
+            ]);
+            $draft = new BotReply(
+                reply: $this->buildFoundPropertiesReply(
+                    $context->propertySearchResult['results'] ?? [],
+                    $context->propertySearchResult,
+                ),
+                usedSources: array_map(
+                    static fn ($p) => 'property:' . ($p['id'] ?? ''),
+                    $context->propertySearchResult['results'] ?? []
+                ),
+                confidence: max(80, (int) $draft->confidence),
+                needsHuman: false,
+                handoffReason: null,
+                factsUpdate: $draft->factsUpdate,
+                nextQuestion: $draft->nextQuestion,
+            );
+        }
+
+        // ─── Location-relax disclosure guard ─────────────────────────────────
+        // When search dropped city/district and returned elsewhere, force a clear
+        // "ما لقيت في X لكن…" prefix so out-of-city hits (e.g. جدة for الرياض) are honest.
+        if (
+            $propertiesFoundCount > 0
+            && ($context->propertySearchResult['location_relaxed'] ?? false)
+            && ! $this->replyDisclosesLocationRelax($draft->reply)
+        ) {
+            $trace[] = 'location_relax_guard: prefixed disclosure';
+            $labeled = $this->prefixLocationRelaxDisclosure(
+                $draft->reply,
+                $context->propertySearchResult,
+            );
+            $draft = new BotReply(
+                reply: $labeled,
+                usedSources: $draft->usedSources,
+                confidence: $draft->confidence,
+                needsHuman: $draft->needsHuman,
+                handoffReason: $draft->handoffReason,
+                factsUpdate: $draft->factsUpdate,
+                nextQuestion: $draft->nextQuestion,
+            );
         }
 
         // ─── Grounding verification (Pass 3) ─────────────────────────────────
@@ -593,6 +708,11 @@ final class BotOrchestrator
         }
 
         $groundedReply = $draft;
+        $inboundCriteria = MessageFactExtractor::extract([$inboundText]);
+        $addedSearchCriteria = MessageFactExtractor::hasSearchSignals($inboundCriteria)
+            || isset($inboundCriteria['city'])
+            || isset($inboundCriteria['district']);
+
         if (! $groundingResult->passed) {
             Log::warning('bot.grounding.failed', [
                 'conversation_id' => $conversationId,
@@ -602,15 +722,28 @@ final class BotOrchestrator
                 $this->recordUnanswered($tenantId, $conversationId, $inboundText, 'grounding_failure');
             }
             $groundedReply = BotReply::handoff('grounding_verification_failed');
-            // Count this as a failed turn
-            $failedTurns++;
+            // Count this as a failed turn — unless the customer just refined criteria
+            // (empty inventory + new budget/type should not burn toward hard pause).
+            if ($addedSearchCriteria) {
+                $failedTurns = 0;
+            } else {
+                $failedTurns++;
+            }
         } elseif (
-            in_array($context->intent, ['property_search', 'pricing', 'viewing'], true) &&
+            in_array($context->intent, ['property_search', 'pricing'], true) &&
             $kbChunksCount === 0 &&
-            $propertiesFoundCount === 0
+            $propertiesFoundCount === 0 &&
+            ! $this->isInventoryFollowUp($inboundText, $context->intent)
         ) {
-            // Bot tried to search for properties/pricing but came back empty — weak turn
-            $failedTurns++;
+            // Bot tried a fresh search but came back empty — weak turn.
+            // Viewing / detail follow-ups on empty inventory do NOT count.
+            // Newly supplied criteria (budget/type/city/…) reset the counter so a
+            // long refine thread does not hard-pause at 3 empty searches.
+            if ($addedSearchCriteria) {
+                $failedTurns = 0;
+            } else {
+                $failedTurns++;
+            }
         } else {
             // Successful grounded turn — reset counter
             $failedTurns = 0;
@@ -634,14 +767,80 @@ final class BotOrchestrator
                 $escalationRules,
             )
         ) {
-            $handoffReason = $groundedReply->handoffReason ?? 'low_confidence';
+            $handoffReason = $groundedReply->handoffReason
+                ?? (! $groundingResult->passed ? 'grounding_verification_failed' : 'low_confidence');
+
+            // Soft missing-info / grounding: keep the bot alive mid-search.
+            // Hard pause only for complaints, 3 weak turns, or explicit customer/regulated handoff.
+            // LLM needs_human + grounding failures stay soft so follow-ups are not killed.
+            $isGroundingHandoff = $handoffReason === 'grounding_verification_failed'
+                || ! $groundingResult->passed;
+
+            $hardPause = $context->intent === 'complaint'
+                || $failedTurns >= 3
+                || in_array($handoffReason, [
+                    'customer_requested_human',
+                    'customer_frustration',
+                    'regulated_topic',
+                ], true);
+
+            if (! $hardPause && SearchSession::isActive($facts)) {
+                $softMsg = trim((string) $groundedReply->reply);
+                // If grounding failed or LLM requested human without content, use a safe fallback.
+                if ($isGroundingHandoff || $softMsg === '' || $groundedReply->needsHuman) {
+                    $softMsg = 'ما قدرت أتأكد من هالتفاصيل من البيانات اللي عندي. وضّح سؤالك شوي، أو اكتب "تحدث مع موظف" وأحولك.';
+                }
+                $trace[] = $isGroundingHandoff
+                    ? 'handoff_soft: grounding_failed_no_pause'
+                    : 'handoff_soft: missing_info_no_pause';
+                [$softMsg, $disclosureInjected] = $this->maybePrefixDisclosure(
+                    $softMsg, $config, $aiState, $discloseEnabled
+                );
+                if ($disclosureInjected) {
+                    $trace[] = 'disclosure: injected';
+                }
+                $this->postTurn($aiState, $groundedReply, $context, $tokensIn, $tokensOut);
+                if (! $sandbox) {
+                    $this->deliveryService->deliver(
+                        $tenantId, $conversationId, $waNumberId, $customerPhone,
+                        new BotReply(
+                            reply: $softMsg,
+                            usedSources: $groundedReply->usedSources,
+                            confidence: $groundedReply->confidence,
+                            needsHuman: false,
+                            handoffReason: null,
+                            factsUpdate: $groundedReply->factsUpdate,
+                            nextQuestion: $groundedReply->nextQuestion,
+                        ),
+                        ['to' => $customerPhone]
+                    );
+                }
+
+                return $this->makeResult(
+                    outcome: $sandbox ? 'delivered' : 'delivered',
+                    replyText: $softMsg,
+                    botReply: $groundedReply,
+                    groundingResult: $groundingResult,
+                    styleResult: $styleResult,
+                    intent: $context->intent,
+                    difficulty: $context->difficulty,
+                    kbChunksUsed: count($context->kbChunks),
+                    propertiesFound: count($context->propertySearchResult['results'] ?? []),
+                    tokensIn: $tokensIn,
+                    tokensOut: $tokensOut,
+                    segments: $sandbox ? $this->deliveryService->prepareSegments($softMsg) : [],
+                    trace: $trace,
+                    factsUpdated: $groundedReply->factsUpdate,
+                );
+            }
+
             $trace[] = 'handoff: ' . $handoffReason;
             $this->handoffService->pauseBot($aiState, $handoffReason);
 
             $handoffMsg = match ($handoffReason) {
-                'grounding_verification_failed' => 'هذا السؤال يحتاج متخصص. سأحوّلك الآن.',
-                'low_confidence'                => 'ما عندي معلومة كافية الآن، سيتواصل معك شخص من فريقنا.',
-                default                         => 'سيتواصل معك أحد موظفينا قريباً.',
+                'grounding_verification_failed' => 'هالسؤال يحتاج متخصص. أحولك الحين.',
+                'low_confidence'                => 'ما عندي معلومة كافية الحين، بيتواصل معك أحد من الفريق.',
+                default                         => 'بيتواصل معك أحد من فريقنا قريب.',
             };
 
             if (! $sandbox) {
@@ -711,15 +910,24 @@ final class BotOrchestrator
             return BotTurnResult::skipped('autonomy_off', $trace);
         }
 
-        // ─── Disclosure prefix (first contact) ───────────────────────────────
+        // ─── Disclosure prefix (first bot reply only) ─────────────────────────
         $finalReply = $groundedReply->reply;
-        if ($compliance['action'] === 'disclosure' && ! $aiState->disclosed_as_assistant) {
-            $prefix = $this->complianceService->buildDisclosurePrefix(
-                $config->assistant_name ?? 'المساعد العقاري'
-            );
-            $finalReply = $prefix . $finalReply;
-            $aiState->update(['disclosed_as_assistant' => true]);
+        [$finalReply, $disclosureInjected] = $this->maybePrefixDisclosure(
+            $finalReply,
+            $config,
+            $aiState,
+            $discloseEnabled,
+        );
+        if ($disclosureInjected) {
             $trace[] = 'disclosure: injected';
+        } elseif (
+            $discloseEnabled
+            && ! $aiState->disclosed_as_assistant
+            && $aiState->last_bot_reply_at !== null
+        ) {
+            // Bot already spoke earlier without disclosure — do not bolt it on later
+            $aiState->update(['disclosed_as_assistant' => true]);
+            $trace[] = 'disclosure: skipped (not first bot reply)';
         }
 
         $finalBotReply = new BotReply(
@@ -880,7 +1088,47 @@ final class BotOrchestrator
         // Update facts and increment token counters
         $updateData = ['last_bot_reply_at' => now()];
         if (! empty($reply->factsUpdate)) {
-            $updateData['facts'] = array_merge($aiState->facts ?? [], $reply->factsUpdate);
+            $incoming = $reply->factsUpdate;
+            // Normalize LLM aliases
+            if (isset($incoming['budget']) && ! isset($incoming['budget_max'])) {
+                $incoming['budget_max'] = $incoming['budget'];
+            }
+            unset($incoming['budget'], $incoming['rooms']);
+            // Coerce budget fields to numbers — LLMs sometimes emit "3 مليون".
+            foreach (['budget_max', 'budget_min'] as $budgetKey) {
+                if (! array_key_exists($budgetKey, $incoming)) {
+                    continue;
+                }
+                $coerced = $this->coerceBudgetFact($incoming[$budgetKey]);
+                if ($coerced === null) {
+                    unset($incoming[$budgetKey]);
+                } else {
+                    $incoming[$budgetKey] = $coerced;
+                }
+            }
+            // LLMs sometimes emit bedrooms: 0 / empty strings — ignore those.
+            if (array_key_exists('bedrooms', $incoming) && (int) $incoming['bedrooms'] <= 0) {
+                unset($incoming['bedrooms']);
+            }
+            // Never let LLM overwrite an already-known bedroom count (e.g. "دور رابع" → 4).
+            // Customer corrections still flow through MessageFactExtractor on inbound.
+            if (
+                array_key_exists('bedrooms', $incoming)
+                && isset(($aiState->facts ?? [])['bedrooms'])
+            ) {
+                unset($incoming['bedrooms']);
+            }
+            foreach (['type', 'intent', 'city', 'district'] as $k) {
+                if (array_key_exists($k, $incoming) && ($incoming[$k] === null || $incoming[$k] === '')) {
+                    unset($incoming[$k]);
+                }
+            }
+            // Reuse sticky merge so a hallucinated type/intent mid-session cannot wipe criteria.
+            $updateData['facts'] = $this->mergeExtractedFacts(
+                $aiState->facts ?? [],
+                $incoming,
+                '' // no revision signal from LLM facts_update
+            );
         }
         if ($tokensIn > 0 || $tokensOut > 0) {
             $updateData['tokens_in_total']  = ($aiState->tokens_in_total ?? 0) + $tokensIn;
@@ -970,6 +1218,41 @@ final class BotOrchestrator
         return ($meta['type'] ?? null) === 'audio' && ($meta['transcription_status'] ?? null) === 'pending';
     }
 
+    /**
+     * Normalize LLM / mixed budget values to a positive float in SAR.
+     * Accepts numbers and Arabic phrases like "3 مليون".
+     */
+    private function coerceBudgetFact(mixed $value): ?float
+    {
+        if (is_int($value) || is_float($value)) {
+            return $value > 0 ? (float) $value : null;
+        }
+
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            return null;
+        }
+
+        if (is_numeric($trimmed)) {
+            $n = (float) $trimmed;
+
+            return $n > 0 ? $n : null;
+        }
+
+        $parsed = MessageFactExtractor::extract([$trimmed]);
+        foreach (['budget_max', 'budget_min'] as $key) {
+            if (isset($parsed[$key]) && (float) $parsed[$key] > 0) {
+                return (float) $parsed[$key];
+            }
+        }
+
+        return null;
+    }
+
     private function isLooping(int $conversationId): bool
     {
         $key = self::LOOP_GUARD_KEY . $conversationId;
@@ -979,6 +1262,92 @@ final class BotOrchestrator
         return false;
     }
 
+    /**
+     * Merge newly extracted facts into the conversation state.
+     *
+     * Most fields: current-turn extract wins (so corrections stick).
+     * type / intent: sticky while a search session is active, unless the message
+     * clearly revises criteria (بدور على / أبغى / مو فيلا / بدل …).
+     *
+     * @param  array<string, mixed>  $current
+     * @param  array<string, mixed>  $extracted
+     * @return array<string, mixed>
+     */
+    private function mergeExtractedFacts(array $current, array $extracted, string $inboundText): array
+    {
+        $merged = array_merge($current, $extracted);
+
+        $stickyKeys = ['type', 'intent', 'city', 'district'];
+        $sessionActive = SearchSession::isActive($current);
+        $isRevision = (bool) preg_match(
+            '/(?:بدور|أبغى|ابغى|أبحث|ابحث|غيرت|بدل|عندكم|عندك|أو\s+إذا|او\s+اذا|مو\s+(?:شقة|فيلا|عمارة|مكتب|أرض|ارض)|ليس)\b/u',
+            $inboundText
+        );
+
+        // Explicit new city/district in the message counts as a location revision.
+        if (
+            ! $isRevision
+            && (
+                (isset($extracted['city']) && ($extracted['city'] ?? null) !== ($current['city'] ?? null))
+                || (isset($extracted['district']) && ($extracted['district'] ?? null) !== ($current['district'] ?? null))
+            )
+            && preg_match('/(?:في|ب|حي|شمال|جنوب|شرق|غرب)\b/u', $inboundText)
+        ) {
+            $isRevision = true;
+        }
+
+        if ($sessionActive && ! $isRevision) {
+            foreach ($stickyKeys as $key) {
+                if (
+                    isset($current[$key])
+                    && $current[$key] !== ''
+                    && isset($extracted[$key])
+                    && $extracted[$key] !== $current[$key]
+                ) {
+                    $merged[$key] = $current[$key];
+                }
+            }
+        }
+
+        // When type truly revises, drop a focused listing from the previous type.
+        if (
+            isset($extracted['type'], $current['type'])
+            && $extracted['type'] !== $current['type']
+            && ($merged['type'] ?? null) === $extracted['type']
+        ) {
+            unset($merged['focused_property_id']);
+        }
+
+        return $merged;
+    }
+
+    /**
+     * Prefix the AI disclosure on the first bot reply only, and only when enabled.
+     *
+     * @return array{0: string, 1: bool} [reply, injected]
+     */
+    private function maybePrefixDisclosure(
+        string $reply,
+        WaAiConfig $config,
+        WaConversationAiState $aiState,
+        bool $discloseEnabled,
+    ): array {
+        if (
+            ! $discloseEnabled
+            || $aiState->disclosed_as_assistant
+            || $aiState->last_bot_reply_at !== null
+        ) {
+            return [$reply, false];
+        }
+
+        $prefix = $this->complianceService->buildDisclosurePrefix(
+            $config->assistant_name ?? 'المساعد العقاري'
+        );
+        $aiState->update(['disclosed_as_assistant' => true]);
+
+        return [$prefix . $reply, true];
+    }
+
     private function buildContextTextForVerification(BotContext $context): string
     {
         $parts = [];
@@ -986,9 +1355,170 @@ final class BotOrchestrator
             $parts[] = $chunk['content'] ?? '';
         }
         foreach ($context->propertySearchResult['results'] ?? [] as $prop) {
+            // Include both raw JSON and human-readable forms so grounding can
+            // match LLM phrasing like "7,000,000 ريال" / "524 م²".
             $parts[] = json_encode($prop, JSON_UNESCAPED_UNICODE);
+            $price = number_format((float) ($prop['price'] ?? 0));
+            $area  = $prop['area_sqm'] ?? null;
+            $parts[] = sprintf(
+                "عقار #%d %s السعر %s ريال %s SAR %s م² متر %s",
+                (int) ($prop['id'] ?? 0),
+                (string) ($prop['title'] ?? ''),
+                $price,
+                (string) ($prop['price'] ?? ''),
+                $area !== null && $area !== '' ? (string) $area : '',
+                (string) ($prop['address'] ?? '')
+            );
+            if ($area !== null && $area !== '' && preg_match('/^\d+(?:\.\d+)?$/', (string) $area)) {
+                // Also expose integer form (524.00 → 524) for claim matching
+                $parts[] = ((string) (int) $area) . ' م²';
+            }
         }
         return implode("\n", $parts);
+    }
+
+    /**
+     * Viewing / detail follow-ups should not burn `_failed_turns` when inventory is empty.
+     */
+    private function isInventoryFollowUp(string $inboundText, string $intent): bool
+    {
+        if ($intent === 'viewing') {
+            return true;
+        }
+
+        return (bool) preg_match(
+            '/(?:موعد|زيارة|معاينة|وين\s*المكتب|كم\s*شقة|الإيجار\s*السنوي|الدخل\s*السنوي|تفاصيل|رابط|ارسلي|أرسللي|أبي\s*أشوف|ابغى\s*اشوف|زاوية|سعر\s*المتر|كم\s*(?:السعر|سعر)|مطابق|ورني|العروض|فيه\s*درج|جنوب\s*سلمان|شمال\s*سلمان)/u',
+            $inboundText
+        );
+    }
+
+    /**
+     * Detect LLM replies that falsely claim no inventory was found.
+     */
+    private function replyDeniesPropertyResults(string $reply): bool
+    {
+        $denyPhrases = [
+            'ما لقيت نتائج',
+            'ما لقيت نتيجة',
+            'لم أجد نتائج',
+            'لم اجد نتائج',
+            'مافي نتائج',
+            'ما في نتائج',
+            'لا توجد نتائج',
+            'ما لقيت شي',
+            'ما لقيت شيء',
+            'ما عندي نتائج',
+        ];
+
+        foreach ($denyPhrases as $phrase) {
+            if (mb_strpos($reply, $phrase) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether the reply already discloses that the asked location had no hits.
+     */
+    private function replyDisclosesLocationRelax(string $reply): bool
+    {
+        return (bool) preg_match(
+            '/ما\s*لقيت\s*في|لم\s*(?:أجد|اجد)\s*في|ما\s*عندي\s*في|خارج\s*(?:الموقع|المدينة)|في\s*مدن\s*أخرى/u',
+            $reply
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $searchResult
+     */
+    private function prefixLocationRelaxDisclosure(string $reply, array $searchResult): string
+    {
+        $requested = trim((string) (
+            $searchResult['requested_location']
+            ?? $searchResult['requested_city']
+            ?? $searchResult['requested_district']
+            ?? ''
+        ));
+        if ($requested === '') {
+            $requested = 'الموقع اللي طلبته';
+        }
+
+        $prefix = "ما لقيت في {$requested} الحين، لكن عندي خيارات قريبة في مواقع ثانية: ";
+        $reply = trim($reply);
+        if ($reply === '') {
+            return rtrim($prefix, ': ') . '.';
+        }
+
+        return $prefix . $reply;
+    }
+
+    /**
+     * Deterministic Saudi-dialect reply that presents found inventory.
+     *
+     * @param  array<int, array<string, mixed>>  $results
+     * @param  array<string, mixed>|null         $searchMeta  Full propertySearchResult (for location_relaxed)
+     */
+    private function buildFoundPropertiesReply(array $results, ?array $searchMeta = null): string
+    {
+        if ($results === []) {
+            return 'لقيت خيارات مناسبة. تبي التفاصيل؟';
+        }
+
+        $locationRelaxed = (bool) ($searchMeta['location_relaxed'] ?? false);
+        $requested = trim((string) (
+            $searchMeta['requested_location']
+            ?? $searchMeta['requested_city']
+            ?? $searchMeta['requested_district']
+            ?? ''
+        ));
+
+        if (count($results) === 1) {
+            $p     = $results[0];
+            $title = trim((string) ($p['title'] ?? ''));
+            if ($title === '') {
+                $title = 'عقار #' . (int) ($p['id'] ?? 0);
+            }
+            $price = number_format((float) ($p['price'] ?? 0));
+            $area  = $p['area_sqm'] ?? null;
+            $addr  = trim((string) ($p['address'] ?? ''));
+
+            if ($locationRelaxed) {
+                $where = $requested !== '' ? $requested : 'الموقع اللي طلبته';
+                $line = "ما لقيت في {$where} الحين، لكن عندي خيار قريب: *{$title}* بسعر {$price} ريال";
+            } else {
+                $line = "لقيت عقار مناسب: *{$title}* بسعر {$price} ريال";
+            }
+            if ($area !== null && $area !== '') {
+                $line .= " ومساحة {$area} م²";
+            }
+            if ($addr !== '') {
+                $line .= ". الموقع: {$addr}";
+            }
+
+            return $line . '. تبي تفاصيل أكثر ولا نرتب زيارة؟';
+        }
+
+        if ($locationRelaxed) {
+            $where = $requested !== '' ? $requested : 'الموقع اللي طلبته';
+            $lines = ["ما لقيت في {$where} الحين، لكن لقيت " . count($results) . ' خيارات قريبة في مواقع ثانية:'];
+        } else {
+            $lines = ['لقيت ' . count($results) . ' خيارات مناسبة:'];
+        }
+        foreach (array_slice($results, 0, 3) as $i => $p) {
+            $title = trim((string) ($p['title'] ?? '')) ?: ('عقار #' . (int) ($p['id'] ?? 0));
+            $price = number_format((float) ($p['price'] ?? 0));
+            $addr  = trim((string) ($p['address'] ?? ''));
+            $line  = ($i + 1) . ") *{$title}* — {$price} ريال";
+            if ($addr !== '') {
+                $line .= " ({$addr})";
+            }
+            $lines[] = $line;
+        }
+        $lines[] = 'أي واحد تبي نركز عليه؟';
+
+        return implode("\n", $lines);
     }
 
     /**

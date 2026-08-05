@@ -66,6 +66,10 @@ final class ContextBuilder
         // Deterministic intent override: if the LLM returned 'general' but the message
         // contains strong search signals (type/budget/bedrooms), force property_search.
         $inboundRaw = (string) ($triggerMessage->content ?? '');
+        $facts = $aiState?->facts ?? [];
+        $isGreeting = $this->looksLikeGreeting($inboundRaw)
+            && ! MessageFactExtractor::hasSearchSignals(MessageFactExtractor::extract([$inboundRaw]));
+
         if ($intent === 'general') {
             $quickExtract = MessageFactExtractor::extract([$inboundRaw]);
             if (MessageFactExtractor::hasSearchSignals($quickExtract)) {
@@ -73,6 +77,18 @@ final class ContextBuilder
             } elseif ($this->detectIntentHeuristic($inboundRaw) !== 'general') {
                 $intent = $this->detectIntentHeuristic($inboundRaw);
             }
+        }
+
+        // Greetings / small-talk must never become pricing/search (e.g. "كيفكم" contains "كم").
+        if ($isGreeting) {
+            $intent = 'general';
+            $standaloneQuery = $inboundRaw;
+        }
+
+        // Sticky search session: once criteria exist, short follow-ups stay in search
+        // ("الرياض", "ارسلي التفاصيل") instead of drifting to general + invented inventory.
+        if (SearchSession::shouldContinueSearch($facts, $inboundRaw, $isGreeting)) {
+            $intent = 'property_search';
         }
 
         // Load customer profile
@@ -99,8 +115,11 @@ final class ContextBuilder
             }
         }
 
-        // Property search tool if inventory intent (viewing also needs property context)
-        if (in_array($intent, ['property_search', 'pricing', 'viewing'], true)) {
+        // Property search whenever this turn is inventory-related OR an active search session.
+        if (
+            in_array($intent, ['property_search', 'pricing', 'viewing'], true)
+            || SearchSession::shouldContinueSearch($facts, $inboundRaw, $isGreeting)
+        ) {
             try {
                 $toolParams = $this->extractPropertyParams($standaloneQuery, $aiState);
                 $propertyResult = $this->propertyTool->execute($tenantId, $toolParams);
@@ -162,15 +181,36 @@ final class ContextBuilder
 
         // Inject property search results
         if (! empty($ctx->propertySearchResult['results'])) {
-            $propBlock = "نتائج بحث العقارات (الأسعار هنا هي الأسعار الرسمية — لا تعدّل أي رقم):\n\n";
-            foreach ($ctx->propertySearchResult['results'] as $prop) {
+            $results = $ctx->propertySearchResult['results'];
+            $count   = count($results);
+            $locationRelaxed = (bool) ($ctx->propertySearchResult['location_relaxed'] ?? false);
+            $requestedLoc = trim((string) (
+                $ctx->propertySearchResult['requested_location']
+                ?? $ctx->propertySearchResult['requested_city']
+                ?? $ctx->propertySearchResult['requested_district']
+                ?? ''
+            ));
+
+            if ($locationRelaxed) {
+                $where = $requestedLoc !== '' ? $requestedLoc : 'الموقع المطلوب';
+                $propBlock = "تنبيه: البحث في «{$where}» لم يُرجع نتائج. النتائج أدناه من مواقع أخرى بنفس النوع/الميزانية تقريباً.\n"
+                    . "يجب أن تبدأ ردك بـ: «ما لقيت في {$where} الحين، لكن عندي خيارات في مواقع ثانية:» ثم اعرض النتائج بصدق مع ذكر موقع كل عقار. الأسعار هنا رسمية — لا تعدّل أي رقم:\n\n";
+            } else {
+                $propBlock = "نتائج بحث العقارات: وُجدت {$count} نتيجة مطابقة — يجب عرضها للعميل الآن (الأسعار هنا هي الأسعار الرسمية — لا تعدّل أي رقم):\n\n";
+            }
+            foreach ($results as $prop) {
                 $price = number_format((float) ($prop['price'] ?? 0));
+                $beds  = $prop['bedrooms'];
+                $bedsLabel = $beds === null || $beds === ''
+                    ? '—'
+                    : ((int) $beds) . ' غرفة';
                 $propBlock .= sprintf(
-                    "• *%s*\n  السعر: %s ريال | %s | %d غرفة | %s م²\n  العنوان: %s\n\n",
+                    "• [#%d] *%s*\n  السعر: %s ريال | %s | %s | %s م²\n  العنوان: %s\n\n",
+                    (int) ($prop['id'] ?? 0),
                     $prop['title'] ?? '',
                     $price,
-                    $prop['purpose'] === 'rent' ? 'إيجار' : 'بيع',
-                    (int) ($prop['bedrooms'] ?? 0),
+                    ($prop['purpose'] ?? '') === 'rent' ? 'إيجار' : 'بيع',
+                    $bedsLabel,
                     $prop['area_sqm'] ?? '—',
                     $prop['address'] ?? ''
                 );
@@ -178,6 +218,7 @@ final class ContextBuilder
             if ($ctx->propertySearchResult['has_more'] ?? false) {
                 $propBlock .= "(يوجد المزيد من العقارات — اعرض على العميل إمكانية الاطلاع على المزيد)\n";
             }
+            $propBlock .= "مهم: ممنوع تقول \"ما لقيت نتائج\" طالما القائمة أعلاه غير فارغة.\n";
             $messages[] = LlmMessage::system($propBlock);
         } elseif ($ctx->intent === 'property_search' && isset($ctx->propertySearchResult)) {
             $messages[] = LlmMessage::system(
@@ -201,9 +242,10 @@ final class ContextBuilder
                 $messages[] = LlmMessage::system($enrichment['links_text']);
             }
         } elseif (! empty($ctx->propertySearchResult['results'])) {
-            // Auto-focus on the single result when exactly one property returned
             $results = $ctx->propertySearchResult['results'];
-            if (count($results) === 1) {
+            $wantsDetails = (bool) preg_match('/رابط|تفاصيل|الوحدة|هذي|هذه|نفس/u', $ctx->inboundContent);
+            // Single hit always; or top hit when customer asks for the link/details.
+            if (count($results) === 1 || $wantsDetails) {
                 $pid = (int) ($results[0]['id'] ?? 0);
                 if ($pid > 0) {
                     $enrichment = $this->linkResolver->resolve(
@@ -217,7 +259,9 @@ final class ContextBuilder
                         );
                     }
                     if ($enrichment['links_text'] !== '') {
-                        $messages[] = LlmMessage::system($enrichment['links_text']);
+                        $messages[] = LlmMessage::system(
+                            $enrichment['links_text'] . "\nإذا طلب العميل الرابط، أرسل الرابط حرفياً من النص أعلاه."
+                        );
                     }
                 }
             }
@@ -330,7 +374,7 @@ final class ContextBuilder
             // Property types
             'عقار', 'شقة', 'شقه', 'فيلا', 'فله', 'فلة', 'أرض', 'ارض',
             'عمارة', 'دوبلكس', 'استراحة', 'استراحه', 'مزرعة', 'مزرعه',
-            'دور', 'ملحق', 'روف', 'قصر', 'وحدة', 'وحده',
+            'ملحق', 'روف', 'قصر', 'وحدة', 'وحده',
             // Transaction keywords
             'إيجار', 'ايجار', 'للايجار', 'بيع', 'للبيع', 'شراء', 'تمليك',
             // Feature keywords
@@ -340,12 +384,46 @@ final class ContextBuilder
             if (mb_strpos($text, $kw) !== false) { return 'property_search'; }
         }
 
-        $priceKeywords = ['سعر', 'كم', 'ريال', 'تكلفة'];
-        foreach ($priceKeywords as $kw) {
-            if (mb_strpos($text, $kw) !== false) { return 'pricing'; }
+        // "دور" (floor) as a whole token only — avoid matching inside unrelated words
+        if (preg_match('/(?:^|[^\p{Arabic}])دور(?:[^\p{Arabic}]|$)/u', $text)) {
+            return 'property_search';
+        }
+
+        // Pricing: never match bare "كم" (false-positive inside كيفكم / كيفك)
+        if (preg_match('/(?:سعر|تكلفة|ريال|بكم|كم\s+(?:السعر|سعر|تكلف))/u', $text)) {
+            return 'pricing';
         }
 
         return 'general';
+    }
+
+    /**
+     * Detect casual greetings / small-talk that must not trigger inventory search.
+     */
+    private function looksLikeGreeting(string $text): bool
+    {
+        $t = trim($text);
+        if ($t === '' || mb_strlen($t) > 80) {
+            return false;
+        }
+
+        // If the message already has inventory criteria, it is not "just" a greeting
+        if (MessageFactExtractor::hasSearchSignals(MessageFactExtractor::extract([$t]))) {
+            return false;
+        }
+
+        $markers = [
+            'حياك', 'حياكم', 'هلا', 'هلّا', 'السلام', 'مرحبا', 'مرحباً', 'اهلا', 'أهلا',
+            'صباح الخير', 'مساء الخير', 'كيفك', 'كيفكم', 'كيف الحال', 'وش اخبارك',
+            'وش الاخبار', 'وش الأخبار', 'الاخبار', 'الأخبار', 'أخبارك',
+        ];
+        foreach ($markers as $m) {
+            if (mb_strpos($t, $m) !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** @return array<string, mixed> */
@@ -354,9 +432,18 @@ final class ContextBuilder
         $params = [];
         $facts  = $aiState?->facts ?? [];
 
-        // Read structured facts already persisted (or just merged by BotOrchestrator)
-        if (! empty($facts['city']))       { $params['location']   = $facts['city']; }
-        if (! empty($facts['district']))   { $params['location']   = $facts['district']; }
+        // Read structured facts already persisted (or just merged by BotOrchestrator).
+        // Prefer "district + city" together so LocationResolver does not map a bare
+        // district (e.g. حي النخيل) to the wrong city.
+        $city = trim((string) ($facts['city'] ?? ''));
+        $district = trim((string) ($facts['district'] ?? ''));
+        if ($district !== '' && $city !== '') {
+            $params['location'] = $district . ' ' . $city;
+        } elseif ($district !== '') {
+            $params['location'] = $district;
+        } elseif ($city !== '') {
+            $params['location'] = $city;
+        }
         if (! empty($facts['intent']))     { $params['purpose']    = $facts['intent'] === 'rent' ? 'rent' : 'sale'; }
         if (! empty($facts['bedrooms']))   { $params['bedrooms']   = (int) $facts['bedrooms']; }
         if (! empty($facts['budget_max'])) { $params['budget_max'] = (float) $facts['budget_max']; }
@@ -377,14 +464,44 @@ final class ContextBuilder
             elseif (str_contains($query, 'بيع') || str_contains($query, 'للبيع')) { $params['purpose'] = 'sale'; }
         }
 
-        // Location fallback from query
+        // Location fallback from query — only "في X" or word-initial بـ prefix (بجدة),
+        // never a ب letter in the middle of a word (الاخبار).
         if (empty($params['location'])) {
-            if (preg_match('/(?:في|بـ|ب)\s*([\p{Arabic}]+)/u', $query, $m)) {
-                $params['location'] = trim($m[1]);
+            $candidate = null;
+            if (preg_match('/(?:^|[^\p{Arabic}])في\s+([\p{Arabic}]+)/u', $query, $m)) {
+                $candidate = trim($m[1]);
+            } elseif (preg_match('/(?:^|[^\p{Arabic}])ب([\p{Arabic}]{2,})/u', $query, $m)) {
+                $candidate = trim($m[1]);
+            }
+
+            if ($candidate !== null) {
+                $nonLocations = [
+                    'ميزانية', 'ميزانيت', 'سعر', 'حدود', 'اي', 'أي', 'مكان',
+                    'المملكة', 'كل', 'اي مكان', 'أي مكان',
+                ];
+                // بـ-prefix fallback is only safe for known city aliases — never verbs
+                // like "بيستأجر" → "يستأجر" as a fake location.
+                $knownCities = [
+                    'الرياض', 'رياض', 'جدة', 'جده', 'مكة', 'مكه', 'الدمام', 'دمام',
+                    'الخبر', 'المدينة', 'الطائف', 'بريدة', 'عنيزة', 'البكيرية',
+                    'القصيم', 'تبوك', 'حائل', 'أبها', 'ابها', 'نجران', 'جازان', 'ينبع',
+                ];
+                $fromBaPrefix = (bool) preg_match('/(?:^|[^\p{Arabic}])ب' . preg_quote($candidate, '/') . '/u', $query);
+                if (
+                    ! in_array($candidate, $nonLocations, true)
+                    && ! preg_match('/^(ميزانية|ميزانيت|سعر|حدود)/u', $candidate)
+                    && (! $fromBaPrefix || in_array($candidate, $knownCities, true))
+                ) {
+                    $params['location'] = $candidate;
+                }
             }
         }
-        if (preg_match('/حي\s*([\p{Arabic}\s]+)/u', $query, $m)) {
-            $params['location'] = trim($m[1]);
+        // Require whitespace after "حي" so "حياك" never becomes a district
+        if (preg_match('/(?:^|[^\p{Arabic}])حي\s+([\p{Arabic}][\p{Arabic}\s]{0,40}?)(?:\s*(?:و|في|،|,|\.|$))/u', $query, $m)) {
+            $district = trim($m[1]);
+            if ($district !== '' && ! preg_match('/^(ميزانية|ميزانيت|سعر)/u', $district)) {
+                $params['location'] = 'حي ' . $district;
+            }
         }
 
         return $params;

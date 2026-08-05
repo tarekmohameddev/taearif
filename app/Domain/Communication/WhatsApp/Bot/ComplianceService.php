@@ -51,7 +51,8 @@ final class ComplianceService
     public function check(
         string $inboundText,
         WaConversationAiState $aiState,
-        bool $isFirstContact
+        bool $isFirstContact,
+        bool $discloseEnabled = true,
     ): array {
         $normalized = ArabicNormalizer::normalizeForSearch($inboundText);
 
@@ -94,8 +95,13 @@ final class ComplianceService
             }
         }
 
-        // 4. First-contact disclosure (if not yet done)
-        if ($isFirstContact && ! $aiState->disclosed_as_assistant) {
+        // 4. First-contact disclosure — only when enabled in WaAiConfig and this is
+        //    truly the first bot reply (not mid-conversation after slot-fill).
+        if (
+            $discloseEnabled
+            && $isFirstContact
+            && ! $aiState->disclosed_as_assistant
+        ) {
             return ['action' => 'disclosure'];
         }
 
@@ -124,7 +130,9 @@ final class ComplianceService
         $humanKeywords = [
             'تحدث مع موظف', 'تكلم موظف', 'موظف حقيقي', 'شخص حقيقي', 'بشري',
             'تكلم مع شخص', 'تحدث مع شخص', 'أريد موظف', 'ابي موظف',
-            'مدير', 'المسؤول', 'human', 'agent', 'speak to someone', 'real person',
+            'المسؤول', 'human', 'agent', 'speak to someone', 'real person',
+            // "مدير" alone is too broad ("مدير فرع يبغى غرفة" = customer's manager, not handoff)
+            'كلم المدير', 'تحدث مع المدير', 'ابي المدير', 'أريد المدير', 'ابغى المدير',
         ];
         foreach ($humanKeywords as $kw) {
             if (str_contains($normalized, ArabicNormalizer::normalizeForSearch($kw))) {

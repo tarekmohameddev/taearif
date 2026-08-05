@@ -32,9 +32,16 @@ final class SlotFillingPolicyTest extends TestCase
         $this->assertStringContainsString('ميزانيت', $question);
     }
 
-    public function test_it_asks_for_bedrooms_when_city_and_budget_known(): void
+    public function test_it_searches_without_bedrooms_when_type_unknown(): void
     {
         $facts = ['city' => 'الرياض', 'budget_max' => 500000];
+        $question = $this->policy->nextQuestion($facts, 'property_search');
+        $this->assertNull($question);
+    }
+
+    public function test_it_asks_for_bedrooms_for_apartment_type(): void
+    {
+        $facts = ['city' => 'الرياض', 'budget_max' => 500000, 'type' => 'شقة'];
         $question = $this->policy->nextQuestion($facts, 'property_search');
         $this->assertNotNull($question);
         $this->assertStringContainsString('غرف', $question);
@@ -71,5 +78,26 @@ final class SlotFillingPolicyTest extends TestCase
         $facts = ['city' => 'الرياض', 'budget_max' => 7_000_000, 'type' => 'عمارة'];
         $question = $this->policy->nextQuestion($facts, 'property_search');
         $this->assertNull($question);
+    }
+
+    public function test_it_does_not_reask_city_when_already_asked_and_budget_known(): void
+    {
+        $facts = [
+            'budget_max'       => 7_000_000,
+            'type'             => 'عمارة',
+            '_asked_slots'     => ['city'],
+            '_questions_asked' => 1,
+        ];
+        $this->assertNull($this->policy->nextQuestion($facts, 'property_search'));
+        $this->assertNull($this->policy->nextSlot($facts, 'property_search'));
+    }
+
+    public function test_it_records_city_slot_when_budget_only(): void
+    {
+        $facts = ['budget_max' => 500000, 'type' => 'شقة'];
+        $slot = $this->policy->nextSlot($facts, 'property_search');
+        $this->assertNotNull($slot);
+        $this->assertSame('city', $slot['slot']);
+        $this->assertStringContainsString('مدينة', $slot['question']);
     }
 }

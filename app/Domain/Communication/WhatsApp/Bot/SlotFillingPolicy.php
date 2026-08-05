@@ -27,6 +27,22 @@ final class SlotFillingPolicy
      */
     public function nextQuestion(array $facts, string $intent): ?string
     {
+        $next = $this->nextSlot($facts, $intent);
+
+        return $next['question'] ?? null;
+    }
+
+    /**
+     * Next missing slot to ask, or null when we should search / stop asking.
+     *
+     * Never re-asks a slot already recorded in `_asked_slots` (e.g. city after a
+     * budget-only turn where the customer still didn't name a city — search instead).
+     *
+     * @param  array<string, mixed>  $facts
+     * @return array{slot: string, question: string}|null
+     */
+    public function nextSlot(array $facts, string $intent): ?array
+    {
         // Only prompt for more info when there is a property-search or pricing intent
         if (! in_array($intent, ['property_search', 'pricing', 'viewing'], true)) {
             return null;
@@ -38,32 +54,56 @@ final class SlotFillingPolicy
             return null;
         }
 
-        // Priority 1: city
-        if (empty($facts['city']) && empty($facts['district'])) {
-            return 'أي مدينة أو حي تفضل؟';
+        /** @var list<string> $askedSlots */
+        $askedSlots = array_values(array_filter(
+            (array) ($facts['_asked_slots'] ?? []),
+            static fn ($s) => is_string($s) && $s !== ''
+        ));
+
+        // Priority 1: city — skip if already asked once this session
+        if (
+            empty($facts['city'])
+            && empty($facts['district'])
+            && ! in_array('city', $askedSlots, true)
+        ) {
+            return ['slot' => 'city', 'question' => 'تبي في أي مدينة أو حي؟'];
         }
 
         // Priority 2: budget
-        if (empty($facts['budget_max']) && empty($facts['budget_min'])) {
-            return 'ما هي ميزانيتك التقريبية؟';
+        if (
+            empty($facts['budget_max'])
+            && empty($facts['budget_min'])
+            && ! in_array('budget', $askedSlots, true)
+        ) {
+            return ['slot' => 'budget', 'question' => 'وش ميزانيتك تقريباً؟'];
         }
 
-        // Priority 3: bedrooms (skip for non-residential types)
+        // Priority 3: bedrooms — allow-list only (ask solely for apartment/villa-like types).
+        // Investment / building / unknown type → search with city+budget; don't interrogate.
         $type = (string) ($facts['type'] ?? '');
-        $skipBedroomsTypes = [
-            'office', 'land', 'warehouse', 'building',
-            'مكتب', 'أرض', 'ارض', 'مستودع',
-            'عمارة', 'عمارة سكنية', 'عمارة تجارية', 'مبنى',
-            'محل', 'محل تجاري',
+        $bedroomTypes = [
+            'apartment', 'villa', 'townhouse', 'duplex',
+            'شقة', 'شقه', 'شقة في برج', 'شقة في عمارة',
+            'فيلا', 'فله', 'فلة', 'تاون هاوس', 'دوبلكس',
         ];
-
-        if (empty($facts['bedrooms']) && ! in_array($type, $skipBedroomsTypes, true)) {
-            return 'كم عدد غرف النوم المطلوب؟';
+        if (
+            $type !== ''
+            && empty($facts['bedrooms'])
+            && in_array($type, $bedroomTypes, true)
+            && ! in_array('bedrooms', $askedSlots, true)
+        ) {
+            return ['slot' => 'bedrooms', 'question' => 'كم غرفة نوم تبي؟'];
         }
 
-        // Priority 4: property type
-        if (empty($facts['type'])) {
-            return 'هل تبحث عن شقة، فيلا، أو نوع آخر؟';
+        // Priority 4: property type — only when we have almost nothing yet.
+        // If city/budget already known, search broadly rather than interrogating.
+        if (
+            empty($facts['type'])
+            && empty($facts['city']) && empty($facts['district'])
+            && empty($facts['budget_max']) && empty($facts['budget_min'])
+            && ! in_array('type', $askedSlots, true)
+        ) {
+            return ['slot' => 'type', 'question' => 'تدور على شقة ولا فيلا ولا شي ثاني؟'];
         }
 
         return null;

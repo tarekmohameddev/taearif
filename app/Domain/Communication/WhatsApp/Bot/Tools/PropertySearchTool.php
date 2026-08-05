@@ -124,6 +124,10 @@ final class PropertySearchTool
                     'has_more'               => false,
                     'clarification_needed'   => true,
                     'clarification_question' => $locationResolved['clarification_question'],
+                    'location_relaxed'       => false,
+                    'requested_city'         => null,
+                    'requested_district'     => null,
+                    'requested_location'     => null,
                 ];
             }
         }
@@ -134,8 +138,10 @@ final class PropertySearchTool
             $query = $this->searchService->buildBotQuery($request);
             $total = (clone $query)->count();
 
+            // Load all language variants — tenants use per-user language IDs
+            // (not global language_id=1). mapProperties() picks the best row.
             $properties = $query
-                ->with(['contents' => fn ($q) => $q->where('language_id', 1)])
+                ->with('contents')
                 ->orderByDesc('featured')
                 ->orderByDesc('id')
                 ->limit(self::MAX_RESULTS + 1)
@@ -145,6 +151,14 @@ final class PropertySearchTool
             $properties = $properties->take(self::MAX_RESULTS);
 
             $results = $this->mapProperties($properties);
+            $locationRelaxed = false;
+            $requestedCity = $request->cityName ?: null;
+            $requestedDistrict = $request->districtName ?: null;
+            // Prefer the customer's original location text for disclosure labels —
+            // LocationResolver sometimes maps a bare district to the wrong city.
+            $requestedLocation = $locationText !== ''
+                ? $locationText
+                : trim(implode(' ', array_filter([$requestedDistrict, $requestedCity])));
 
             // Fallback: if location constraints produced 0 results, retry once without
             // city/district constraints to tolerate mis-tagged property contents.
@@ -160,7 +174,7 @@ final class PropertySearchTool
                 $relaxedTotal = (clone $relaxedQuery)->count();
 
                 $relaxedProps = $relaxedQuery
-                    ->with(['contents' => fn ($q) => $q->where('language_id', 1)])
+                    ->with('contents')
                     ->orderByDesc('featured')
                     ->orderByDesc('id')
                     ->limit(self::MAX_RESULTS + 1)
@@ -168,8 +182,9 @@ final class PropertySearchTool
 
                 $hasMore    = $relaxedProps->count() > self::MAX_RESULTS;
                 $relaxedProps = $relaxedProps->take(self::MAX_RESULTS);
-                $results = $this->mapProperties($relaxedProps, relaxed: true);
+                $results = $this->mapProperties($relaxedProps, relaxed: true, locationRelaxed: true);
                 $total   = $relaxedTotal;
+                $locationRelaxed = $results !== [];
             }
 
             // If no results, relax bedrooms constraint and retry once
@@ -177,7 +192,7 @@ final class PropertySearchTool
                 $request->bedrooms = null;
                 $relaxedQuery      = $this->searchService->buildBotQuery($request);
                 $relaxedProps      = $relaxedQuery
-                    ->with(['contents' => fn ($q) => $q->where('language_id', 1)])
+                    ->with('contents')
                     ->orderByDesc('featured')
                     ->limit(self::MAX_RESULTS)
                     ->get();
@@ -191,6 +206,10 @@ final class PropertySearchTool
                 'total_available'        => $total,
                 'clarification_needed'   => false,
                 'clarification_question' => null,
+                'location_relaxed'       => $locationRelaxed,
+                'requested_city'         => $requestedCity,
+                'requested_district'     => $requestedDistrict,
+                'requested_location'     => $requestedLocation !== '' ? $requestedLocation : null,
             ];
         } catch (\Throwable $e) {
             Log::error('bot.property_search.error', ['error' => $e->getMessage(), 'tenant' => $tenantId]);
@@ -201,6 +220,10 @@ final class PropertySearchTool
                 'has_more'               => false,
                 'clarification_needed'   => false,
                 'clarification_question' => null,
+                'location_relaxed'       => false,
+                'requested_city'         => null,
+                'requested_district'     => null,
+                'requested_location'     => null,
                 'error'                  => 'search_failed',
             ];
         }
@@ -252,14 +275,16 @@ final class PropertySearchTool
     /**
      * @param \Illuminate\Support\Collection<int, Property> $properties
      */
-    private function mapProperties(mixed $properties, bool $relaxed = false): array
+    private function mapProperties(mixed $properties, bool $relaxed = false, bool $locationRelaxed = false): array
     {
-        return $properties->map(function (Property $p) use ($relaxed) {
-            $content = $p->contents->first();
+        return $properties->map(function (Property $p) use ($relaxed, $locationRelaxed) {
+            $content = $this->pickBestContent($p);
+            $title = trim((string) ($content?->title ?? ''));
+            $address = trim((string) ($content?->address ?? ''));
             $row = [
                 'id'            => $p->id,
-                'title'         => $content?->title ?? ('عقار #' . $p->id),
-                'address'       => $content?->address ?? '',
+                'title'         => $title !== '' ? $title : ('عقار #' . $p->id),
+                'address'       => $address,
                 'price'         => (float) $p->price, // authoritative from user_properties.price
                 'currency'      => 'SAR',
                 'purpose'       => $p->purpose,
@@ -272,7 +297,73 @@ final class PropertySearchTool
             if ($relaxed) {
                 $row['_relaxed'] = true;
             }
+            if ($locationRelaxed) {
+                $row['_location_relaxed'] = true;
+            }
             return $row;
+        })->filter(function (array $row): bool {
+            // Drop junk inventory rows that confuse the LLM / has_results_guard
+            // (e.g. title "ااا", address "بيسبشسب", area 0).
+            return ! $this->isJunkPropertyRow($row);
         })->values()->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private function isJunkPropertyRow(array $row): bool
+    {
+        $title = trim((string) ($row['title'] ?? ''));
+        $address = trim((string) ($row['address'] ?? ''));
+        $price = (float) ($row['price'] ?? 0);
+        $area = (float) ($row['area_sqm'] ?? 0);
+
+        // Fallback "عقار #id" alone with no price/area/address is unusable
+        $isFallbackTitle = (bool) preg_match('/^عقار\s*#\d+$/u', $title);
+
+        // Repeated-character nonsense (ااا، ببب، xxx)
+        $isGibberish = static function (string $s): bool {
+            if ($s === '' || mb_strlen($s) < 2) {
+                return $s !== '';
+            }
+            if (mb_strlen($s) <= 6 && preg_match('/^(.)\1+$/u', $s)) {
+                return true;
+            }
+            // Mostly non-letter noise
+            return (bool) preg_match('/^[^\p{L}\d]{3,}$/u', $s);
+        };
+
+        if ($isGibberish($title) || ($title !== '' && $isGibberish($address) && $area <= 0 && $price <= 0)) {
+            return true;
+        }
+
+        if ($isFallbackTitle && $address === '' && $area <= 0 && $price <= 0) {
+            return true;
+        }
+
+        // Title is gibberish-like short string even if price exists
+        if ($title !== '' && mb_strlen($title) <= 4 && $isGibberish($title)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Prefer a content row with a real title. Never assume language_id=1 —
+     * tenant languages are per-user (e.g. 1983) and hardcoding drops titles.
+     */
+    private function pickBestContent(Property $p): mixed
+    {
+        $contents = $p->contents;
+        if ($contents === null || $contents->isEmpty()) {
+            return null;
+        }
+
+        $withTitle = $contents->first(static function ($c): bool {
+            return trim((string) ($c->title ?? '')) !== '';
+        });
+
+        return $withTitle ?? $contents->first();
     }
 }

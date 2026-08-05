@@ -54,11 +54,25 @@ final class ComplianceServiceTest extends TestCase
         $this->assertSame('proceed', $result['action']);
     }
 
-    public function test_triggers_disclosure_on_first_contact(): void
+    public function test_triggers_disclosure_on_first_contact_when_enabled(): void
     {
         $state = $this->fakeState(['disclosed_as_assistant' => false]);
-        $result = $this->service->check('مرحبا', $state, true);
+        $result = $this->service->check('مرحبا', $state, true, true);
         $this->assertSame('disclosure', $result['action']);
+    }
+
+    public function test_skips_disclosure_when_disabled_in_config(): void
+    {
+        $state = $this->fakeState(['disclosed_as_assistant' => false]);
+        $result = $this->service->check('مرحبا', $state, true, false);
+        $this->assertSame('proceed', $result['action']);
+    }
+
+    public function test_skips_disclosure_when_not_first_contact(): void
+    {
+        $state = $this->fakeState(['disclosed_as_assistant' => false]);
+        $result = $this->service->check('الرياض', $state, false, true);
+        $this->assertSame('proceed', $result['action']);
     }
 
     public function test_human_request_keyword_detected(): void
@@ -66,5 +80,8 @@ final class ComplianceServiceTest extends TestCase
         $this->assertTrue($this->service->isHumanRequestKeyword('تحدث مع موظف'));
         $this->assertTrue($this->service->isHumanRequestKeyword('human'));
         $this->assertFalse($this->service->isHumanRequestKeyword('أريد شقة'));
+        // "مدير فرع" = customer's branch manager, not a handoff request
+        $this->assertFalse($this->service->isHumanRequestKeyword('عندي مدير فرع يبغى غرفه مفروشه لعمال'));
+        $this->assertTrue($this->service->isHumanRequestKeyword('ابي اتحدث مع المدير'));
     }
 }
