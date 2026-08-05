@@ -173,9 +173,50 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         foreach ($row as $header => $value) {
             $headerStr = is_string($header) ? $header : (string) $header;
             $key = $map[$headerStr] ?? $headerStr;
-            $out[$key] = $value;
+            if ($this->valueProvided($value)) {
+                $out[$key] = $value;
+            } elseif (!array_key_exists($key, $out)) {
+                $out[$key] = $value;
+            }
         }
         return $out;
+    }
+
+    /**
+     * Excel often stores 0/1 and numeric unit numbers as integers; Laravel string rules reject them.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function castStringFieldsForValidation(array $data): array
+    {
+        $stringFields = [
+            'amenity_مصعد',
+            'amenity_أمن',
+            'amenity_كاميرات_مراقبة',
+            'amenity_تكييف_مركزي',
+            'amenity_تدفئة_مركزية',
+            'amenity_صيانة',
+            'amenity_بواب',
+            'amenity_إنترنت',
+            'unit_number',
+            'view_type',
+            'furnished',
+            'balcony',
+            'maid_room',
+            'storage_room',
+            'swimming_pool',
+            'gym',
+            'featured',
+        ];
+
+        foreach ($stringFields as $field) {
+            if (array_key_exists($field, $data) && $data[$field] !== null && $data[$field] !== '') {
+                $data[$field] = (string) $data[$field];
+            }
+        }
+
+        return $data;
     }
 
     public function onRow(Row $row)
@@ -1137,9 +1178,7 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             }
         }
 
-        if (array_key_exists('unit_number', $data) && $data['unit_number'] !== null && $data['unit_number'] !== '') {
-            $data['unit_number'] = (string) $data['unit_number'];
-        }
+        $data = $this->castStringFieldsForValidation($data);
 
         // Check if row is completely empty (all values are null or empty)
         $hasData = !empty(array_filter($data, function ($value) {

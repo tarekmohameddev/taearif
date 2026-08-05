@@ -84,6 +84,41 @@ class PropertiesSingleSheetImportHeaderMappingTest extends TestCase
         $this->assertIsString($data['unit_number']);
     }
 
+    public function test_prepare_for_validation_casts_numeric_boolean_like_fields_from_raw_export(): void
+    {
+        $import = $this->newImportWithoutConstructor();
+
+        $data = $import->prepareForValidation([
+            Str::slug('مصعد', '_') => 0,
+            'featured' => 0,
+            'balcony' => 0,
+            'maid_room' => 0,
+            'storage_room' => 0,
+            'swimming_pool' => 0,
+        ], 2);
+
+        $this->assertSame('0', $data['amenity_مصعد']);
+        $this->assertSame('0', $data['featured']);
+        $this->assertSame('0', $data['balcony']);
+        $this->assertSame('0', $data['maid_room']);
+        $this->assertSame('0', $data['storage_room']);
+        $this->assertSame('0', $data['swimming_pool']);
+    }
+
+    public function test_normalize_row_keys_keeps_first_non_empty_when_duplicate_headers_map_to_same_key(): void
+    {
+        $normalize = (new ReflectionClass(PropertiesSingleSheetImport::class))->getMethod('normalizeRowKeys');
+        $normalize->setAccessible(true);
+        $import = $this->newImportWithoutConstructor();
+
+        $normalized = $normalize->invoke($import, [
+            Str::slug('دورات المياه', '_') => 3,
+            'bath' => null,
+        ]);
+
+        $this->assertSame(3, $normalized['bath']);
+    }
+
     public function test_prepare_for_validation_remaps_headers_and_purpose_type(): void
     {
         $import = $this->newImportWithoutConstructor();

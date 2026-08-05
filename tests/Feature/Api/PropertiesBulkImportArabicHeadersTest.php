@@ -308,4 +308,91 @@ class PropertiesBulkImportArabicHeadersTest extends TestCase
         $this->assertSame('rent', $property->purpose);
         $this->assertSame('commercial', $property->property_type);
     }
+
+    public function test_raw_export_numeric_zero_cells_do_not_fail_string_validation(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->actingAsTenantWithCreate();
+
+        $file = $this->makeExcelUpload(
+            [
+                'عنوان الإعلان',
+                'السعر',
+                'العنوان',
+                'الوصف',
+                'الغرض',
+                'النوع',
+                'المساحة',
+                'مميز',
+                'مصعد',
+                'بلكونة',
+                'غرفة خادمة',
+                'غرفة تخزين',
+                'مسبح',
+            ],
+            [
+                [
+                    'عقار من تصدير خام',
+                    100000,
+                    'شارع الاختبار',
+                    'وصف كافي للاستيراد التجريبي',
+                    'بيع',
+                    'سكني',
+                    120,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ],
+            ],
+        );
+
+        $response = $this->post('/api/properties/bulk-import', ['file' => $file], [
+            'Accept' => 'application/json',
+        ]);
+
+        $this->assertSame(0, (int) ($response->json('failed_count') ?? 0), $response->getContent());
+        foreach ($response->json('errors') ?? [] as $error) {
+            $this->assertStringNotContainsString(
+                'must be a string',
+                (string) ($error['error'] ?? ''),
+                'Unexpected string validation failure: ' . json_encode($error, JSON_UNESCAPED_UNICODE)
+            );
+        }
+    }
+
+    public function test_user_raw_export_fixture_has_no_string_validation_errors(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->actingAsTenantWithCreate();
+
+        $fixture = base_path('tests/fixtures/properties-export-2026-08-05.xlsx');
+        if (! is_file($fixture)) {
+            $this->markTestSkipped('Fixture tests/fixtures/properties-export-2026-08-05.xlsx not found.');
+        }
+
+        $file = new UploadedFile(
+            $fixture,
+            'properties-export-2026-08-05.xlsx',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            null,
+            true,
+        );
+
+        $response = $this->post('/api/properties/bulk-import', ['file' => $file], [
+            'Accept' => 'application/json',
+        ]);
+
+        $errors = $response->json('errors') ?? [];
+        $stringErrors = array_filter($errors, function ($error) {
+            return str_contains((string) ($error['error'] ?? ''), 'must be a string');
+        });
+
+        $this->assertEmpty(
+            $stringErrors,
+            'Raw export fixture should not fail string validation: ' . json_encode($stringErrors, JSON_UNESCAPED_UNICODE)
+        );
+    }
 }
