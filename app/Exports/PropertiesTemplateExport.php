@@ -59,7 +59,7 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 'موقف دراجات,غرفة غسيل',
                 'A-101',
                 '5',
-                '2020',
+                '5',
                 'إطلالة مدينة',
                 'مفروش بالكامل',
                 '2',
@@ -101,7 +101,7 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 'سونا، جاكوزي',
                 '1',
                 '0',
-                '2018',
+                '8',
                 'إطلالة حديقة',
                 'مفروش جزئياً',
                 '3',
@@ -143,7 +143,7 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 'غرفة اجتماعات، استقبال',
                 '301',
                 '3',
-                '2019',
+                '12',
                 'إطلالة بحرية',
                 'غير مفروش',
                 '10',
@@ -238,6 +238,12 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
 
                 // Set header row height for better visibility
                 $sheet->getRowDimension(1)->setRowHeight(25);
+
+                // Unit number column (Y) — keep numeric-looking values as text for re-import
+                for ($i = 2; $i <= 4; $i++) {
+                    $cell = $sheet->getCell("Y{$i}");
+                    $cell->setValueExplicit((string) $cell->getValue(), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                }
 
                 // Purpose Column (E) - "sale,rent"
                 $validation = $sheet->getCell('E2')->getDataValidation();

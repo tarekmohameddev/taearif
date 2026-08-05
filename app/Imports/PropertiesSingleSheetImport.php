@@ -1137,6 +1137,10 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             }
         }
 
+        if (array_key_exists('unit_number', $data) && $data['unit_number'] !== null && $data['unit_number'] !== '') {
+            $data['unit_number'] = (string) $data['unit_number'];
+        }
+
         // Check if row is completely empty (all values are null or empty)
         $hasData = !empty(array_filter($data, function ($value) {
             return !is_null($value) && $value !== '';

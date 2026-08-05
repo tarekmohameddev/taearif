@@ -72,6 +72,18 @@ class PropertiesSingleSheetImportHeaderMappingTest extends TestCase
         $this->assertArrayNotHasKey(Str::slug('عنوان الإعلان', '_'), $normalized);
     }
 
+    public function test_prepare_for_validation_casts_numeric_unit_number_to_string(): void
+    {
+        $import = $this->newImportWithoutConstructor();
+
+        $data = $import->prepareForValidation([
+            Str::slug('رقم الوحدة', '_') => 301,
+        ], 3);
+
+        $this->assertSame('301', $data['unit_number']);
+        $this->assertIsString($data['unit_number']);
+    }
+
     public function test_prepare_for_validation_remaps_headers_and_purpose_type(): void
     {
         $import = $this->newImportWithoutConstructor();
