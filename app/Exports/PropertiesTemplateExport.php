@@ -12,6 +12,7 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 
 class PropertiesTemplateExport implements WithMultipleSheets
@@ -214,8 +215,22 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
 
     public function registerEvents(): array
     {
+        $unitNumberColIndex = array_search('رقم الوحدة', $this->headings(), true);
+        $unitNumberCol = $unitNumberColIndex !== false
+            ? Coordinate::stringFromColumnIndex($unitNumberColIndex + 1)
+            : null;
+
+        $cityCount = (int) \App\Models\User\RealestateManagement\City::query()
+            ->distinct()
+            ->count('name_ar');
+        $districtCount = (int) UserDistrict::query()
+            ->distinct()
+            ->count('name_ar');
+        $cityEndRow = max(2, 1 + $cityCount);
+        $districtEndRow = max(2, 1 + $districtCount);
+
         return [
-            AfterSheet::class => function(AfterSheet $event) {
+            AfterSheet::class => function(AfterSheet $event) use ($unitNumberCol, $cityEndRow, $districtEndRow) {
                 $sheet = $event->sheet;
                 $rowCount = 1000; // Apply validation to first 1000 rows
 
@@ -239,10 +254,12 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 // Set header row height for better visibility
                 $sheet->getRowDimension(1)->setRowHeight(25);
 
-                // Unit number column (Y) — keep numeric-looking values as text for re-import
-                for ($i = 2; $i <= 4; $i++) {
-                    $cell = $sheet->getCell("Y{$i}");
-                    $cell->setValueExplicit((string) $cell->getValue(), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                // Unit number column — keep numeric-looking values as text for re-import
+                if ($unitNumberCol !== null) {
+                    for ($i = 2; $i <= 4; $i++) {
+                        $cell = $sheet->getCell("{$unitNumberCol}{$i}");
+                        $cell->setValueExplicit((string) $cell->getValue(), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                    }
                 }
 
                 // Purpose Column (E) - "sale,rent"
@@ -281,7 +298,7 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
-                $validation->setFormula1("'" . PropertyExcelMapping::LOOKUP_SHEET_TITLE . "'!\$A\$2:\$A\$500");
+                $validation->setFormula1("'" . PropertyExcelMapping::LOOKUP_SHEET_TITLE . "'!\$A\$2:\$A\${$cityEndRow}");
 
                 for ($i = 3; $i <= $rowCount; $i++) {
                     $sheet->getCell("J$i")->setDataValidation(clone $validation);
@@ -295,7 +312,7 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
-                $validation->setFormula1("'" . PropertyExcelMapping::LOOKUP_SHEET_TITLE . "'!\$B\$2:\$B\$10000");
+                $validation->setFormula1("'" . PropertyExcelMapping::LOOKUP_SHEET_TITLE . "'!\$B\$2:\$B\${$districtEndRow}");
 
                 for ($i = 3; $i <= $rowCount; $i++) {
                     $sheet->getCell("K$i")->setDataValidation(clone $validation);

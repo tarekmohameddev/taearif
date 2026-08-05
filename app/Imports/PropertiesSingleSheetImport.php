@@ -2,6 +2,7 @@
 
 namespace App\Imports;
 
+use App\Imports\Exceptions\RowValidationException;
 use App\Models\User\RealestateManagement\Amenity;
 use App\Models\User\RealestateManagement\City;
 use App\Models\User\RealestateManagement\Property;
@@ -26,6 +27,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithValidation, SkipsOnFailure, SkipsOnError, WithLimit
 {
@@ -127,6 +129,13 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             'مميز' => 'featured',
             'مميزات' => 'features',
             'المعرّف' => 'id',
+            // Raw PropertiesExport-only headers (mapped so reject logic can detect them)
+            'معرّف المستخدم' => 'user_id',
+            'اسم المستخدم' => 'user_name',
+            'أنشئ بواسطة' => 'created_by',
+            'اسم المنشئ' => 'creator_name',
+            'تاريخ الإنشاء' => 'created_at',
+            'تاريخ التحديث' => 'updated_at',
         ];
     }
 
@@ -163,6 +172,26 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         return $map;
     }
 
+    /**
+     * Detect PropertiesExport (raw) rows that must not be imported.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    private function isRawExportRow(array $row): bool
+    {
+        if (array_key_exists('id', $row) && array_key_exists('created_at', $row) && array_key_exists('user_id', $row)) {
+            return true;
+        }
+
+        $exportOnlyColumns = ['slug', 'user_id', 'user_name', 'created_by', 'creator_name', 'created_at', 'updated_at'];
+        foreach ($exportOnlyColumns as $col) {
+            if (array_key_exists($col, $row) && $this->valueProvided($row[$col])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
     /**
      * Normalize row keys: map Arabic / slugified Arabic headers to English, keep existing English keys.
      */
@@ -346,19 +375,27 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         // Validate featured image URL format
         if (!empty($row['featured_image'])) {
             if (!$this->validateImageUrl($row['featured_image'])) {
-                throw new \Exception("Row {$rowIndex}: Invalid featured_image URL format. URL must be http/https with valid image extension (jpg, jpeg, png, gif, webp).");
+                throw new RowValidationException(
+                    "Row {$rowIndex}: Invalid featured_image URL format. URL must be http/https with valid image extension (jpg, jpeg, png, gif, webp).",
+                    field: 'featured_image',
+                    row: $rowIndex
+                );
             }
         }
 
         // Validate gallery image URLs
         foreach ($galleryImages as $galleryUrl) {
             if (!$this->validateImageUrl($galleryUrl)) {
-                throw new \Exception("Row {$rowIndex}: Invalid gallery image URL: {$galleryUrl}. URL must be http/https with valid image extension (jpg, jpeg, png, gif, webp).");
+                throw new RowValidationException(
+                    "Row {$rowIndex}: Invalid gallery image URL: {$galleryUrl}. URL must be http/https with valid image extension (jpg, jpeg, png, gif, webp).",
+                    field: 'gallery_images',
+                    row: $rowIndex
+                );
             }
         }
 
         // Business rule validation (after determining if it's an update)
-        $this->validateBusinessRules($row, $rowIndex, $isUpdate);
+        $businessViolations = $this->validateBusinessRules($row, $rowIndex, $isUpdate);
 
         // Check for missing required fields (only for new properties, not updates)
         $missingFields = [];
@@ -366,6 +403,22 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         
         // Add location validation errors
         $validationErrors = array_merge($validationErrors, $locationValidationErrors);
+
+        // Soft-fail business rules for creates; hard-fail for updates
+        if ($isUpdate && !empty($businessViolations)) {
+            $first = $businessViolations[0];
+            throw new RowValidationException(
+                "Row {$rowIndex}: {$first['message']}",
+                field: $first['field'],
+                row: $rowIndex
+            );
+        }
+        if (!$isUpdate && !empty($businessViolations)) {
+            $validationErrors = array_merge(
+                $validationErrors,
+                array_column($businessViolations, 'message')
+            );
+        }
         
         if (!$isUpdate) {
             $requiredFields = [
@@ -473,45 +526,21 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                 // Replace gallery images (delete existing, add new)
                 if (isset($row['gallery_images'])) {
                     PropertySliderImg::where('property_id', $property->id)->delete();
-                    if (is_array($galleryImages)) {
-                        foreach ($galleryImages as $galleryUrl) {
-                            try {
-                                PropertySliderImg::storeSliderImage($this->userId, $property->id, $galleryUrl);
-                            } catch (\Exception $e) {
-                                Log::error("Row {$rowIndex}: Failed to store gallery image", [
-                                    'url' => $galleryUrl,
-                                    'error' => $e->getMessage()
-                                ]);
-                                throw new \Exception("Row {$rowIndex}: Invalid gallery image URL: {$galleryUrl}");
-                            }
-                        }
+                    if (is_array($galleryImages) && !empty($galleryImages)) {
+                        $this->bulkInsertGalleryImages($property->id, $galleryImages);
                     }
                 }
 
                 // Replace amenities (delete existing, add new)
                 PropertyAmenity::where('property_id', $property->id)->delete();
                 if (!empty($amenityIds)) {
-                    foreach ($amenityIds as $amenityId) {
-                        PropertyAmenity::sotreAmenity($this->userId, $property->id, $amenityId);
-                    }
+                    $this->bulkInsertAmenities($property->id, $amenityIds);
                 }
 
                 // Replace specifications (delete existing, add new)
                 PropertySpecification::where('property_id', $property->id)->delete();
                 if (is_array($specifications) && !empty($specifications)) {
-                    $specIndex = 0;
-                    foreach ($specifications as $spec) {
-                        if (!is_array($spec)) {
-                            continue; // Skip invalid entries
-                        }
-                        $specData = [
-                            'language_id' => $this->defaultLanguageId,
-                            'key' => $specIndex++,
-                            'label' => $spec['label'] ?? $spec['key'] ?? '',
-                            'value' => $spec['value'] ?? '',
-                        ];
-                        PropertySpecification::storeSpecification($this->userId, $property->id, $specData);
-                    }
+                    $this->bulkInsertSpecifications($property->id, $specifications);
                 }
 
                 // Update characteristics if provided
@@ -582,41 +611,18 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                     }
 
                     // Process gallery images if provided
-                    if (is_array($galleryImages)) {
-                        foreach ($galleryImages as $galleryUrl) {
-                            try {
-                                PropertySliderImg::storeSliderImage($this->userId, $property->id, $galleryUrl);
-                            } catch (\Exception $e) {
-                                Log::warning("Row {$rowIndex}: Failed to store gallery image for incomplete property", [
-                                    'url' => $galleryUrl,
-                                    'error' => $e->getMessage()
-                                ]);
-                            }
-                        }
+                    if (is_array($galleryImages) && !empty($galleryImages)) {
+                        $this->bulkInsertGalleryImages($property->id, $galleryImages);
                     }
 
                     // Process amenities if provided
                     if (!empty($amenityIds) && is_array($amenityIds)) {
-                        foreach ($amenityIds as $amenityId) {
-                            PropertyAmenity::sotreAmenity($this->userId, $property->id, $amenityId);
-                        }
+                        $this->bulkInsertAmenities($property->id, $amenityIds);
                     }
 
                     // Process specifications if provided
                     if (is_array($specifications) && !empty($specifications)) {
-                        $specIndex = 0;
-                        foreach ($specifications as $spec) {
-                            if (!is_array($spec)) {
-                                continue; // Skip invalid spec entries
-                            }
-                            $specData = [
-                                'language_id' => $this->defaultLanguageId,
-                                'key' => $specIndex++,
-                                'label' => $spec['label'] ?? $spec['key'] ?? '',
-                                'value' => $spec['value'] ?? '',
-                            ];
-                            PropertySpecification::storeSpecification($this->userId, $property->id, $specData);
-                        }
+                        $this->bulkInsertSpecifications($property->id, $specifications);
                     }
 
                     // Create characteristics if provided
@@ -680,42 +686,18 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                     PropertyContent::storePropertyContent($this->userId, $property->id, $contentData);
 
                     // Process gallery images
-                    if (is_array($galleryImages)) {
-                        foreach ($galleryImages as $galleryUrl) {
-                            try {
-                                PropertySliderImg::storeSliderImage($this->userId, $property->id, $galleryUrl);
-                            } catch (\Exception $e) {
-                                Log::error("Row {$rowIndex}: Failed to store gallery image", [
-                                    'url' => $galleryUrl,
-                                    'error' => $e->getMessage()
-                                ]);
-                                throw new \Exception("Row {$rowIndex}: Invalid gallery image URL: {$galleryUrl}");
-                            }
-                        }
+                    if (is_array($galleryImages) && !empty($galleryImages)) {
+                        $this->bulkInsertGalleryImages($property->id, $galleryImages);
                     }
 
                     // Process amenities (no validation - same as API store method)
                     if (!empty($amenityIds) && is_array($amenityIds)) {
-                        foreach ($amenityIds as $amenityId) {
-                            PropertyAmenity::sotreAmenity($this->userId, $property->id, $amenityId);
-                        }
+                        $this->bulkInsertAmenities($property->id, $amenityIds);
                     }
 
                     // Process specifications (use integer keys matching API behavior)
                     if (is_array($specifications) && !empty($specifications)) {
-                        $specIndex = 0; // Counter for integer keys (matching API store method)
-                        foreach ($specifications as $spec) {
-                            if (!is_array($spec)) {
-                                continue; // Skip invalid entries
-                            }
-                            $specData = [
-                                'language_id' => $this->defaultLanguageId,
-                                'key' => $specIndex++, // Use integer counter instead of string key (matching API)
-                                'label' => $spec['label'] ?? $spec['key'] ?? '',
-                                'value' => $spec['value'] ?? '',
-                            ];
-                            PropertySpecification::storeSpecification($this->userId, $property->id, $specData);
-                        }
+                        $this->bulkInsertSpecifications($property->id, $specifications);
                     }
 
                     // Create characteristics if provided
@@ -1097,7 +1079,11 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         // Note: Fields are intentionally NOT required here to allow incomplete properties
         // Custom validation in onRow() determines completeness and creates incomplete properties if needed
         return [
-            'id'          => 'nullable|integer|exists:user_properties,id',
+            'id' => [
+                'nullable',
+                'integer',
+                Rule::exists('user_properties', 'id')->where('user_id', $this->userId),
+            ],
             'title'       => 'nullable|string|max:255',
             'price'       => 'nullable|numeric|min:0',
             'price_per_meter' => 'nullable|numeric|min:0',
@@ -1161,6 +1147,33 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
      * Prepare data for validation - remap slug/Arabic headers and map purpose/type
      * so WithValidation rules see English keys and DB enum values.
      */
+        public function customValidationMessages(): array
+    {
+        return [
+            '_raw_export.prohibited' => 'Invalid file format. It appears you are trying to import a raw Export file which is not supported. Please copy your data into the official Import Template.',
+        ];
+    }
+
+    /**
+     * @param  \Illuminate\Validation\Validator  $validator
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            foreach ($validator->getData() as $rowIndex => $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                // Marker set in prepareForValidation for raw PropertiesExport rows
+                if (($row['_raw_export'] ?? null) === '1') {
+                    $validator->errors()->add(
+                        $rowIndex . '._raw_export',
+                        "Row {$rowIndex}: Invalid file format. It appears you are trying to import a raw Export file which is not supported. Please copy your data into the official Import Template."
+                    );
+                }
+            }
+        });
+    }
     public function prepareForValidation($data, $index)
     {
         $data = $this->normalizeRowKeys(is_array($data) ? $data : (array) $data);
@@ -1179,6 +1192,14 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         }
 
         $data = $this->castStringFieldsForValidation($data);
+
+        // Raw-export files map id + export-only columns (user_id, created_at, …).
+        // WithValidation runs before onRow(), and OnEachRow does not swallow exceptions
+        // via SkipsOnError — so reject through validation (see withValidator) instead of throwing.
+        if ($this->isRawExportRow($data)) {
+            unset($data['id']);
+            $data['_raw_export'] = '1';
+        }
 
         // Check if row is completely empty (all values are null or empty)
         $hasData = !empty(array_filter($data, function ($value) {
@@ -1214,19 +1235,31 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         if ($this->valueProvided($cityIdRaw)) {
             $cityId = $this->resolveCityId($cityIdRaw, $rowIndex);
             if (!$cityId) {
-                throw new \Exception("Row {$rowIndex}: Invalid city_id: {$cityIdRaw}. Please use a valid ID or leave it blank and fill city_name.");
+                throw new RowValidationException(
+                    "Row {$rowIndex}: Invalid city_id: {$cityIdRaw}. Please use a valid ID or leave it blank and fill city_name.",
+                    field: 'city_id',
+                    row: $rowIndex
+                );
             }
 
             if ($this->valueProvided($cityNameRaw)) {
                 $cityNameId = $this->resolveCityId($cityNameRaw, $rowIndex);
                 if ($cityNameId && $cityNameId !== $cityId) {
-                    throw new \Exception("Row {$rowIndex}: city_id ({$cityIdRaw}) does not match city_name ({$cityNameRaw}).");
+                    throw new RowValidationException(
+                        "Row {$rowIndex}: city_id ({$cityIdRaw}) does not match city_name ({$cityNameRaw}).",
+                        field: 'city_id',
+                        row: $rowIndex
+                    );
                 }
             }
         } elseif ($this->valueProvided($cityNameRaw)) {
             $cityId = $this->resolveCityId($cityNameRaw, $rowIndex);
             if (!$cityId) {
-                throw new \Exception("Row {$rowIndex}: Unable to find a city named '{$cityNameRaw}'. Please copy a value from the reference sheet.");
+                throw new RowValidationException(
+                    "Row {$rowIndex}: Unable to find a city named '{$cityNameRaw}'. Please copy a value from the reference sheet.",
+                    field: 'city_id',
+                    row: $rowIndex
+                );
             }
         }
 
@@ -1236,13 +1269,21 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         if ($this->valueProvided($stateIdRaw)) {
             $stateId = $this->resolveDistrictId($stateIdRaw, $cityId, $rowIndex);
             if (!$stateId) {
-                throw new \Exception("Row {$rowIndex}: Invalid state_id: {$stateIdRaw}. Please use a valid ID or leave it blank and fill district_name.");
+                throw new RowValidationException(
+                    "Row {$rowIndex}: Invalid state_id: {$stateIdRaw}. Please use a valid ID or leave it blank and fill district_name.",
+                    field: 'state_id',
+                    row: $rowIndex
+                );
             }
 
             if ($this->valueProvided($districtNameRaw)) {
                 $districtNameId = $this->resolveDistrictId($districtNameRaw, $cityId, $rowIndex);
                 if ($districtNameId && $districtNameId !== $stateId) {
-                    throw new \Exception("Row {$rowIndex}: state_id ({$stateIdRaw}) does not match district_name ({$districtNameRaw}).");
+                    throw new RowValidationException(
+                        "Row {$rowIndex}: state_id ({$stateIdRaw}) does not match district_name ({$districtNameRaw}).",
+                        field: 'state_id',
+                        row: $rowIndex
+                    );
                 }
             }
         } elseif ($this->valueProvided($districtNameRaw)) {
@@ -1307,7 +1348,11 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         }
 
         $prefix = $rowIndex ? "Row {$rowIndex}: " : '';
-        throw new \Exception("{$prefix}Multiple cities share the name '{$value}'. Please use city_id to specify the correct city.");
+        throw new RowValidationException(
+            "{$prefix}Multiple cities share the name '{$value}'. Please use city_id to specify the correct city.",
+            field: 'city_id',
+            row: $rowIndex
+        );
     }
 
     protected function resolveDistrictId($value, ?int $cityId = null, ?int $rowIndex = null): ?int
@@ -1330,7 +1375,11 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                 $districtCityId = $this->getDistrictCityMapping($id);
                 if ($districtCityId !== $cityId) {
                     $prefix = $rowIndex ? "Row {$rowIndex}: " : '';
-                    throw new \Exception("{$prefix}District ID {$id} does not belong to the specified city (city_id: {$cityId}). The district belongs to city_id: {$districtCityId}.");
+                    throw new RowValidationException(
+                        "{$prefix}District ID {$id} does not belong to the specified city (city_id: {$cityId}). The district belongs to city_id: {$districtCityId}.",
+                        field: 'state_id',
+                        row: $rowIndex
+                    );
                 }
             }
             
@@ -1373,7 +1422,11 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
 
             if (count($cityMatches) > 1) {
                 $prefix = $rowIndex ? "Row {$rowIndex}: " : '';
-                throw new \Exception("{$prefix}Multiple districts named '{$value}' exist within the selected city. Please use state_id to specify the correct district.");
+                throw new RowValidationException(
+                    "{$prefix}Multiple districts named '{$value}' exist within the selected city. Please use state_id to specify the correct district.",
+                    field: 'state_id',
+                    row: $rowIndex
+                );
             }
 
             // If city is specified but no district found in that city, return null
@@ -1412,7 +1465,11 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         }
 
         $prefix = $rowIndex ? "Row {$rowIndex}: " : '';
-        throw new \Exception("{$prefix}Multiple districts share the name '{$value}'. Please specify city_id/state_id for clarity.");
+        throw new RowValidationException(
+            "{$prefix}Multiple districts share the name '{$value}'. Please specify city_id/state_id for clarity.",
+            field: 'state_id',
+            row: $rowIndex
+        );
     }
 
     /**
@@ -1542,29 +1599,39 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
     }
 
     /**
-     * Validate business rules for property data
-     * 
+     * Validate business rules for property data.
+     * Soft-fail fields return violation entries; hard-fail fields throw RowValidationException.
+     *
      * @param array $row Row data
      * @param int $rowIndex Row index
      * @param bool $isUpdate Whether this is an update operation
-     * @return void
-     * @throws \Exception If business rule validation fails
+     * @return array<int, array{field: string, message: string}>
+     * @throws RowValidationException
      */
-    protected function validateBusinessRules(array $row, int $rowIndex, bool $isUpdate): void
+    protected function validateBusinessRules(array $row, int $rowIndex, bool $isUpdate): array
     {
+        $violations = [];
+
         // Validate price (must be positive if provided)
         if (isset($row['price']) && $this->valueProvided($row['price'])) {
             $price = is_numeric($row['price']) ? (float)$row['price'] : null;
             if ($price === null || $price < 0) {
-                throw new \Exception("Row {$rowIndex}: The price must be a positive number. Provided: {$row['price']}");
+                $violations[] = [
+                    'field' => 'price',
+                    'message' => "The price must be a positive number. Provided: {$row['price']}",
+                ];
             }
         }
 
-        // Validate price_per_meter (must be positive if provided)
+        // Validate price_per_meter (must be positive if provided) — hard-fail
         if (isset($row['price_per_meter']) && $this->valueProvided($row['price_per_meter'])) {
             $pricePerMeter = is_numeric($row['price_per_meter']) ? (float)$row['price_per_meter'] : null;
             if ($pricePerMeter === null || $pricePerMeter < 0) {
-                throw new \Exception("Row {$rowIndex}: The price_per_meter must be a positive number. Provided: {$row['price_per_meter']}");
+                throw new RowValidationException(
+                    "Row {$rowIndex}: The price_per_meter must be a positive number. Provided: {$row['price_per_meter']}",
+                    field: 'price_per_meter',
+                    row: $rowIndex
+                );
             }
         }
 
@@ -1572,15 +1639,22 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         if (isset($row['area']) && $this->valueProvided($row['area'])) {
             $area = is_numeric($row['area']) ? (float)$row['area'] : null;
             if ($area === null || $area <= 0) {
-                throw new \Exception("Row {$rowIndex}: The area must be a positive number greater than 0. Provided: {$row['area']}");
+                $violations[] = [
+                    'field' => 'area',
+                    'message' => "The area must be a positive number greater than 0. Provided: {$row['area']}",
+                ];
             }
         }
 
-        // Validate size (must be positive if provided)
+        // Validate size (must be positive if provided) — hard-fail
         if (isset($row['size']) && $this->valueProvided($row['size'])) {
             $size = is_numeric($row['size']) ? (float)$row['size'] : null;
             if ($size === null || $size < 0) {
-                throw new \Exception("Row {$rowIndex}: The size must be a positive number. Provided: {$row['size']}");
+                throw new RowValidationException(
+                    "Row {$rowIndex}: The size must be a positive number. Provided: {$row['size']}",
+                    field: 'size',
+                    row: $rowIndex
+                );
             }
         }
 
@@ -1588,7 +1662,10 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         if (isset($row['beds']) && $this->valueProvided($row['beds'])) {
             $beds = is_numeric($row['beds']) ? (int)$row['beds'] : null;
             if ($beds === null || $beds < 0 || $beds > 50) {
-                throw new \Exception("Row {$rowIndex}: The beds must be a non-negative integer between 0 and 50. Provided: {$row['beds']}");
+                $violations[] = [
+                    'field' => 'beds',
+                    'message' => "The beds must be a non-negative integer between 0 and 50. Provided: {$row['beds']}",
+                ];
             }
         }
 
@@ -1596,23 +1673,34 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         if (isset($row['bath']) && $this->valueProvided($row['bath'])) {
             $bath = is_numeric($row['bath']) ? (int)$row['bath'] : null;
             if ($bath === null || $bath < 0 || $bath > 50) {
-                throw new \Exception("Row {$rowIndex}: The bath must be a non-negative integer between 0 and 50. Provided: {$row['bath']}");
+                $violations[] = [
+                    'field' => 'bath',
+                    'message' => "The bath must be a non-negative integer between 0 and 50. Provided: {$row['bath']}",
+                ];
             }
         }
 
-        // Validate latitude if provided
+        // Validate latitude if provided — hard-fail
         if (isset($row['latitude']) && $this->valueProvided($row['latitude'])) {
             $latitude = is_numeric($row['latitude']) ? (float)$row['latitude'] : null;
             if ($latitude === null || $latitude < -90 || $latitude > 90) {
-                throw new \Exception("Row {$rowIndex}: The latitude must be a number between -90 and 90. Provided: {$row['latitude']}");
+                throw new RowValidationException(
+                    "Row {$rowIndex}: The latitude must be a number between -90 and 90. Provided: {$row['latitude']}",
+                    field: 'latitude',
+                    row: $rowIndex
+                );
             }
         }
 
-        // Validate longitude if provided
+        // Validate longitude if provided — hard-fail
         if (isset($row['longitude']) && $this->valueProvided($row['longitude'])) {
             $longitude = is_numeric($row['longitude']) ? (float)$row['longitude'] : null;
             if ($longitude === null || $longitude < -180 || $longitude > 180) {
-                throw new \Exception("Row {$rowIndex}: The longitude must be a number between -180 and 180. Provided: {$row['longitude']}");
+                throw new RowValidationException(
+                    "Row {$rowIndex}: The longitude must be a number between -180 and 180. Provided: {$row['longitude']}",
+                    field: 'longitude',
+                    row: $rowIndex
+                );
             }
         }
 
@@ -1620,10 +1708,15 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         if (isset($row['title']) && $this->valueProvided($row['title'])) {
             $titleLength = mb_strlen(trim($row['title']));
             if ($titleLength < 3) {
-                throw new \Exception("Row {$rowIndex}: The title must be at least 3 characters long. Provided length: {$titleLength}");
-            }
-            if ($titleLength > 255) {
-                throw new \Exception("Row {$rowIndex}: The title must not exceed 255 characters. Provided length: {$titleLength}");
+                $violations[] = [
+                    'field' => 'title',
+                    'message' => "The title must be at least 3 characters long. Provided length: {$titleLength}",
+                ];
+            } elseif ($titleLength > 255) {
+                $violations[] = [
+                    'field' => 'title',
+                    'message' => "The title must not exceed 255 characters. Provided length: {$titleLength}",
+                ];
             }
         }
 
@@ -1631,7 +1724,10 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         if (isset($row['description']) && $this->valueProvided($row['description'])) {
             $descriptionLength = mb_strlen(trim($row['description']));
             if ($descriptionLength < 10) {
-                throw new \Exception("Row {$rowIndex}: The description must be at least 10 characters long. Provided length: {$descriptionLength}");
+                $violations[] = [
+                    'field' => 'description',
+                    'message' => "The description must be at least 10 characters long. Provided length: {$descriptionLength}",
+                ];
             }
         }
 
@@ -1639,10 +1735,15 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         if (isset($row['address']) && $this->valueProvided($row['address'])) {
             $addressLength = mb_strlen(trim($row['address']));
             if ($addressLength < 5) {
-                throw new \Exception("Row {$rowIndex}: The address must be at least 5 characters long. Provided length: {$addressLength}");
-            }
-            if ($addressLength > 500) {
-                throw new \Exception("Row {$rowIndex}: The address must not exceed 500 characters. Provided length: {$addressLength}");
+                $violations[] = [
+                    'field' => 'address',
+                    'message' => "The address must be at least 5 characters long. Provided length: {$addressLength}",
+                ];
+            } elseif ($addressLength > 500) {
+                $violations[] = [
+                    'field' => 'address',
+                    'message' => "The address must not exceed 500 characters. Provided length: {$addressLength}",
+                ];
             }
         }
 
@@ -1650,7 +1751,10 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         if (isset($row['purpose']) && $this->valueProvided($row['purpose'])) {
             $purpose = strtolower(trim($row['purpose']));
             if (!in_array($purpose, ['sale', 'rent'])) {
-                throw new \Exception("Row {$rowIndex}: The purpose must be either 'sale' or 'rent'. Provided: {$row['purpose']}");
+                $violations[] = [
+                    'field' => 'purpose',
+                    'message' => "The purpose must be either 'sale' or 'rent'. Provided: {$row['purpose']}",
+                ];
             }
         }
 
@@ -1658,8 +1762,90 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         if (isset($row['type']) && $this->valueProvided($row['type'])) {
             $type = strtolower(trim($row['type']));
             if (!in_array($type, ['residential', 'commercial'])) {
-                throw new \Exception("Row {$rowIndex}: The type must be either 'residential' or 'commercial'. Provided: {$row['type']}");
+                $violations[] = [
+                    'field' => 'type',
+                    'message' => "The type must be either 'residential' or 'commercial'. Provided: {$row['type']}",
+                ];
             }
+        }
+
+        return $violations;
+    }
+
+    /**
+     * Bulk-insert gallery slider images for a property (N+1 fix).
+     */
+    protected function bulkInsertGalleryImages(int $propertyId, array $galleryImages): void
+    {
+        $now = now();
+        $rows = [];
+        foreach ($galleryImages as $galleryUrl) {
+            if ($galleryUrl === null || $galleryUrl === '') {
+                continue;
+            }
+            $rows[] = [
+                'user_id' => $this->userId,
+                'property_id' => $propertyId,
+                'image' => $galleryUrl,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+        if (!empty($rows)) {
+            PropertySliderImg::insert($rows);
+        }
+    }
+
+    /**
+     * Bulk-insert amenity pivots for a property (N+1 fix).
+     * Inlined because PropertyAmenity::sotreAmenity only supports single create().
+     */
+    protected function bulkInsertAmenities(int $propertyId, array $amenityIds): void
+    {
+        $now = now();
+        $rows = [];
+        foreach ($amenityIds as $amenityId) {
+            if ($amenityId === null || $amenityId === '') {
+                continue;
+            }
+            $rows[] = [
+                'user_id' => $this->userId,
+                'property_id' => $propertyId,
+                'amenity_id' => $amenityId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+        if (!empty($rows)) {
+            PropertyAmenity::insert($rows);
+        }
+    }
+
+    /**
+     * Bulk-insert specifications for a property (N+1 fix).
+     */
+    protected function bulkInsertSpecifications(int $propertyId, array $specifications): void
+    {
+        $now = now();
+        $rows = [];
+        $specIndex = 0;
+        foreach ($specifications as $spec) {
+            if (!is_array($spec)) {
+                continue;
+            }
+            $rows[] = [
+                'user_id' => $this->userId,
+                'property_id' => $propertyId,
+                'language_id' => $this->defaultLanguageId,
+                'key' => $specIndex++,
+                'label' => $spec['label'] ?? $spec['key'] ?? '',
+                'value' => $spec['value'] ?? '',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+        if (!empty($rows)) {
+            PropertySpecification::insert($rows);
         }
     }
 

@@ -386,8 +386,22 @@ class PropertiesBulkImportArabicHeadersTest extends TestCase
         ]);
 
         $errors = $response->json('errors') ?? [];
-        $stringErrors = array_filter($errors, function ($error) {
-            return str_contains((string) ($error['error'] ?? ''), 'must be a string');
+        $errorMessages = array_map(
+            static fn ($error) => (string) ($error['error'] ?? ''),
+            $errors
+        );
+        $combined = implode("\n", $errorMessages);
+
+        $this->assertNotEmpty($errors, 'Raw export fixture should be rejected with errors: ' . $response->getContent());
+        $this->assertTrue(
+            str_contains($combined, 'raw Export file')
+                || str_contains($combined, 'raw export file')
+                || str_contains($combined, 'not supported'),
+            'Expected raw-export rejection message, got: ' . json_encode($errorMessages, JSON_UNESCAPED_UNICODE)
+        );
+
+        $stringErrors = array_filter($errorMessages, static function (string $message) {
+            return str_contains($message, 'must be a string');
         });
 
         $this->assertEmpty(

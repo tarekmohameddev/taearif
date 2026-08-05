@@ -4,7 +4,9 @@ namespace App\Exports;
 
 use App\Models\User\RealestateManagement\Property;
 use App\Support\PropertyExcelMapping;
+use App\Support\PropertyFilterQuery;
 use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -14,7 +16,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
-class PropertiesExport implements FromQuery, WithHeadings, WithMapping, WithTitle, WithEvents
+class PropertiesExport implements FromQuery, WithChunkReading, WithHeadings, WithMapping, WithTitle, WithEvents
 {
     protected $userId;
     protected $allowedUserIds;
@@ -52,128 +54,14 @@ class PropertiesExport implements FromQuery, WithHeadings, WithMapping, WithTitl
             ])
             ->whereIn('user_id', $this->allowedUserIds);
 
-        // Apply property IDs filter if provided (for selected properties export)
-        if (!empty($this->filters['ids']) && is_array($this->filters['ids']) && count($this->filters['ids']) > 0) {
-            $query->whereIn('id', $this->filters['ids']);
-        }
-
-        // Apply date range filter (optional if IDs are provided)
-        if (!empty($this->filters['date_from'])) {
-            $query->whereDate('created_at', '>=', $this->filters['date_from']);
-        }
-        if (!empty($this->filters['date_to'])) {
-            $query->whereDate('created_at', '<=', $this->filters['date_to']);
-        }
-
-        // Apply purpose filter
-        if (!empty($this->filters['purposes_filter'])) {
-            $query->where('purpose', $this->filters['purposes_filter']);
-        }
-        if (!empty($this->filters['purpose'])) {
-            $query->where('purpose', $this->filters['purpose']);
-        }
-
-        // Apply type filter
-        if (!empty($this->filters['type'])) {
-            $query->where('property_type', $this->filters['type']);
-        }
-
-        // Apply price filters
-        if (!empty($this->filters['price_from'])) {
-            $query->where('price', '>=', $this->filters['price_from']);
-        }
-        if (!empty($this->filters['price_to'])) {
-            $query->where('price', '<=', $this->filters['price_to']);
-        }
-
-        // Apply area filters
-        if (!empty($this->filters['area_from'])) {
-            $query->where('area', '>=', $this->filters['area_from']);
-        }
-        if (!empty($this->filters['area_to'])) {
-            $query->where('area', '<=', $this->filters['area_to']);
-        }
-
-        // Apply beds filter
-        if (!empty($this->filters['beds'])) {
-            $query->where('beds', $this->filters['beds']);
-        }
-
-        // Apply bath filter
-        if (!empty($this->filters['bath'])) {
-            $query->where('bath', $this->filters['bath']);
-        }
-
-        // Apply category filter
-        if (!empty($this->filters['category_id'])) {
-            $query->where('category_id', $this->filters['category_id']);
-        }
-
-        // Apply status filter
-        if (isset($this->filters['status']) && $this->filters['status'] !== '') {
-            $query->where('status', $this->filters['status']);
-        }
-
-        // Apply featured filter
-        if (isset($this->filters['featured']) && $this->filters['featured'] !== '') {
-            $query->where('featured', $this->filters['featured']);
-        }
-
-        // Apply city filter
-        if (!empty($this->filters['city_id'])) {
-            $query->whereHas('contents', function ($q) {
-                $q->where('city_id', $this->filters['city_id']);
-            });
-        }
-
-        // Apply district filter
-        if (!empty($this->filters['district_id'])) {
-            $query->whereHas('contents', function ($q) {
-                $q->where('state_id', $this->filters['district_id']);
-            });
-        }
-
-        // Apply search filter (title/address, plus numeric property ID)
-        if (!empty($this->filters['search'])) {
-            $search = trim((string) $this->filters['search']);
-            $numericId = $this->parsePositiveIntSearchId($search);
-            $query->where(function ($q) use ($search, $numericId) {
-                $q->whereHas('contents', function ($cq) use ($search) {
-                    $cq->where(function ($inner) use ($search) {
-                        $inner->where('title', 'like', "%{$search}%")
-                              ->orWhere('address', 'like', "%{$search}%");
-                    });
-                });
-                if ($numericId !== null) {
-                    $q->orWhere('id', $numericId);
-                }
-            });
-        }
-
-        // Apply features filter
-        if (!empty($this->filters['features'])) {
-            $featuresArray = explode(',', $this->filters['features']);
-            foreach ($featuresArray as $feature) {
-                $feature = trim($feature);
-                $query->whereJsonContains('features', $feature);
-            }
-        }
+        PropertyFilterQuery::apply($query, $this->filters);
 
         return $query->orderBy('created_at', 'desc');
     }
 
-    private function parsePositiveIntSearchId(?string $searchTerm): ?int
+    public function chunkSize(): int
     {
-        $searchTerm = trim((string) $searchTerm);
-        if ($searchTerm === ''
-            || !ctype_digit($searchTerm)
-            || strlen($searchTerm) > 18
-            || (int) $searchTerm <= 0
-        ) {
-            return null;
-        }
-
-        return (int) $searchTerm;
+        return 500;
     }
 
     public function headings(): array

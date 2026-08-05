@@ -2,15 +2,20 @@
 
 /**
  * Property Import Tester Script
- * 
+ *
  * This script tests the incomplete properties import feature by:
  * 1. Reading CSV test files
  * 2. Converting them to Excel format
  * 3. Calling the import API
  * 4. Validating responses
  * 5. Reporting errors
- * 
- * Usage: php PropertyImportTester.php
+ *
+ * Usage:
+ *   PROPERTY_IMPORT_TEST_TOKEN=your-token php PropertyImportTester.php [base_url]
+ *   php PropertyImportTester.php [base_url] [token]
+ *   php PropertyImportTester.php [base_url] [token] --debug
+ *
+ * Token is required via the second CLI argument or PROPERTY_IMPORT_TEST_TOKEN env var.
  */
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -26,10 +31,21 @@ class PropertyImportTester
     private $testFilesDir;
     private $results = [];
     
-    public function __construct($baseUrl = 'http://localhost', $token = '3047|uahD3zAkkIoIgCayvGoFcrqT6tPGGa1Yz3CGvK1f14a54d22')
+    public function __construct($baseUrl = 'http://localhost', $token = null)
     {
+        $resolvedToken = $token !== null && $token !== ''
+            ? (string) $token
+            : (string) (getenv('PROPERTY_IMPORT_TEST_TOKEN') ?: '');
+
+        if ($resolvedToken === '') {
+            throw new \InvalidArgumentException(
+                'Sanctum token required. Pass it as the second constructor/CLI argument '
+                . 'or set PROPERTY_IMPORT_TEST_TOKEN in the environment.'
+            );
+        }
+
         $this->baseUrl = rtrim($baseUrl, '/');
-        $this->token = $token;
+        $this->token = $resolvedToken;
         $this->testFilesDir = __DIR__ . '/../docs/test-files/';
     }
     
@@ -430,10 +446,15 @@ class PropertyImportTester
 
 // Run tests
 if (php_sapi_name() === 'cli') {
-    // Get base URL from command line or use default
     $baseUrl = $argv[1] ?? 'http://localhost';
-    $token = $argv[2] ?? '3047|uahD3zAkkIoIgCayvGoFcrqT6tPGGa1Yz3CGvK1f14a54d22';
-    
+    $tokenArg = $argv[2] ?? null;
+    if ($tokenArg === '--debug') {
+        $tokenArg = null;
+    }
+    $token = ($tokenArg !== null && $tokenArg !== '')
+        ? $tokenArg
+        : (getenv('PROPERTY_IMPORT_TEST_TOKEN') ?: null);
+
     // Check if vendor/autoload.php exists
     $autoloadPath = __DIR__ . '/../vendor/autoload.php';
     if (!file_exists($autoloadPath)) {
@@ -441,25 +462,35 @@ if (php_sapi_name() === 'cli') {
         echo "Please run 'composer install' first.\n";
         exit(1);
     }
-    
+
     // Check if test files directory exists
     $testFilesDir = __DIR__ . '/../docs/test-files/';
     if (!is_dir($testFilesDir)) {
         echo "ERROR: Test files directory not found: {$testFilesDir}\n";
         exit(1);
     }
-    
+
+    if ($token === null || $token === '') {
+        echo "ERROR: Sanctum token required.\n";
+        echo "Pass it as the second argument or set PROPERTY_IMPORT_TEST_TOKEN.\n";
+        echo "Usage: php PropertyImportTester.php [base_url] [token] [--debug]\n";
+        echo "Example: PROPERTY_IMPORT_TEST_TOKEN=your-token php PropertyImportTester.php http://localhost:8000\n";
+        echo "Example: php PropertyImportTester.php http://localhost:8000 \"your-token\" --debug\n";
+        exit(1);
+    }
+
     echo "Base URL: {$baseUrl}\n";
     echo "Test Files Directory: {$testFilesDir}\n";
     echo "\n";
-    
+
     try {
         $tester = new PropertyImportTester($baseUrl, $token);
         $tester->runAllTests();
     } catch (\Exception $e) {
         echo "\n❌ FATAL ERROR: " . $e->getMessage() . "\n";
         echo "File: " . $e->getFile() . ":" . $e->getLine() . "\n";
-        if (isset($argv[3]) && $argv[3] === '--debug') {
+        $debug = in_array('--debug', $argv, true);
+        if ($debug) {
             echo "\nStack Trace:\n" . $e->getTraceAsString() . "\n";
         }
         exit(1);
@@ -467,6 +498,6 @@ if (php_sapi_name() === 'cli') {
 } else {
     echo "This script must be run from command line.\n";
     echo "Usage: php PropertyImportTester.php [base_url] [token] [--debug]\n";
-    echo "Example: php PropertyImportTester.php http://localhost:8000\n";
+    echo "Example: PROPERTY_IMPORT_TEST_TOKEN=your-token php PropertyImportTester.php http://localhost:8000\n";
     echo "Example: php PropertyImportTester.php http://localhost:8000 \"your-token\" --debug\n";
 }

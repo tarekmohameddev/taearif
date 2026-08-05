@@ -32,6 +32,7 @@ use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 use App\Models\User\RealestateManagement\ApiUserCategory as Category;
 use App\Models\Analytics\AnalyticsDailySummary;
 use App\Support\Audit;
+use App\Support\PropertyFilterQuery;
 use App\Support\SourceBrokerNormalizer;
 use App\Services\GoogleAnalyticsService;
 use App\Services\DatabaseVersionService;
@@ -159,9 +160,6 @@ class PropertyController extends Controller
                     ], 422);
                 }
 
-                // Smart Method: Calculate the exact number of rows with data
-                // This avoids reading thousands of empty rows
-                $filePath = $uploadedFile->getPathname();
                 $fileSize = $uploadedFile->getSize();
 
                 // Check file size (10MB = 10485760 bytes)
@@ -180,15 +178,8 @@ class PropertyController extends Controller
                     ], 422);
                 }
 
-                $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($filePath);
-                $reader->setReadDataOnly(true); // Optimization: Read only data, ignore formatting
-                $spreadsheet = $reader->load($filePath);
-                $worksheet = $spreadsheet->getActiveSheet();
-                $highestRow = $worksheet->getHighestDataRow(); // This gets the last row with actual data
-
-                // Pass the smart limit to the import class
-                // highestRow includes header, so we pass it as the limit
-                $import = new PropertiesImport($user->id, $highestRow);
+                // Fixed generous row limit — avoid a third PhpSpreadsheet pre-read just for getHighestDataRow()
+                $import = new PropertiesImport($user->id, 5000);
 
                 $collection = Excel::toCollection($import, $uploadedFile);
 
@@ -294,8 +285,7 @@ class PropertyController extends Controller
             }
 
             try {
-                // Use the same smart limit for the actual import
-                $import = new PropertiesImport($user->id, $highestRow);
+                $import = new PropertiesImport($user->id, 5000);
                 Excel::import($import, $uploadedFile);
 
                 $failures = $import->sheetImport->failures();
@@ -348,13 +338,18 @@ class PropertyController extends Controller
                     $row = null;
                     $field = null;
 
+                    if ($error instanceof \App\Imports\Exceptions\RowValidationException) {
+                        $field = $error->field;
+                        $row = $error->row;
+                    }
+
                     // Extract row number if present in exception message
-                    if (preg_match('/Row (\d+):/', $message, $matches)) {
+                    if ($row === null && preg_match('/Row (\d+):/', $message, $matches)) {
                         $row = (int)$matches[1];
                     }
 
                     // Try to extract field name from error message
-                    if (preg_match('/Invalid (\w+)/i', $message, $fieldMatches)) {
+                    if ($field === null && preg_match('/Invalid (\w+)/i', $message, $fieldMatches)) {
                         $field = strtolower($fieldMatches[1]);
                     }
 
@@ -596,7 +591,28 @@ class PropertyController extends Controller
 
     public function downloadTemplate()
     {
-        return Excel::download(new \App\Exports\PropertiesTemplateExport, 'properties_import_template.xlsx');
+        try {
+            return Excel::download(new \App\Exports\PropertiesTemplateExport, 'properties_import_template.xlsx');
+        } catch (\Exception $e) {
+            Log::error('Properties import template generation error', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'code' => 'TEMPLATE_GENERATION_FAILED',
+                'message' => 'Failed to generate import template',
+                'details' => [
+                    'user_id' => auth()->id(),
+                    'error' => config('app.debug')
+                        ? $e->getMessage()
+                        : 'An error occurred while generating the import template. Please try again.',
+                ],
+                'timestamp' => now()->toIso8601String(),
+            ], 500);
+        }
     }
 
 
@@ -3717,112 +3733,7 @@ class PropertyController extends Controller
                   ->orWhere('property_status', '!=', 'rented');
             });
 
-        // Apply property IDs filter if provided
-        if (!empty($filters['ids']) && is_array($filters['ids']) && count($filters['ids']) > 0) {
-            $query->whereIn('id', $filters['ids']);
-        }
-
-        // Apply date range filter
-        if (!empty($filters['date_from'])) {
-            $query->whereDate('created_at', '>=', $filters['date_from']);
-        }
-        if (!empty($filters['date_to'])) {
-            $query->whereDate('created_at', '<=', $filters['date_to']);
-        }
-
-        // Apply purpose filter
-        if (!empty($filters['purposes_filter'])) {
-            $query->where('purpose', $filters['purposes_filter']);
-        }
-        if (!empty($filters['purpose'])) {
-            $query->where('purpose', $filters['purpose']);
-        }
-
-        // Apply property_type filter
-        if (!empty($filters['property_type'])) {
-            $query->where('property_type', $filters['property_type']);
-        }
-
-        // Apply price filters
-        if (!empty($filters['price_from'])) {
-            $query->where('price', '>=', $filters['price_from']);
-        }
-        if (!empty($filters['price_to'])) {
-            $query->where('price', '<=', $filters['price_to']);
-        }
-
-        // Apply area filters
-        if (!empty($filters['area_from'])) {
-            $query->where('area', '>=', $filters['area_from']);
-        }
-        if (!empty($filters['area_to'])) {
-            $query->where('area', '<=', $filters['area_to']);
-        }
-
-        // Apply beds filter
-        if (!empty($filters['beds'])) {
-            $query->where('beds', $filters['beds']);
-        }
-
-        // Apply bath filter
-        if (!empty($filters['bath'])) {
-            $query->where('bath', $filters['bath']);
-        }
-
-        // Apply category filter
-        if (!empty($filters['category_id'])) {
-            $query->where('category_id', $filters['category_id']);
-        }
-
-        // Apply status filter
-        if (isset($filters['status']) && $filters['status'] !== '') {
-            $query->where('status', $filters['status']);
-        }
-
-        // Apply featured filter
-        if (isset($filters['featured']) && $filters['featured'] !== '') {
-            $query->where('featured', $filters['featured']);
-        }
-
-        // Apply city filter
-        if (!empty($filters['city_id'])) {
-            $query->whereHas('contents', function ($q) use ($filters) {
-                $q->where('city_id', $filters['city_id']);
-            });
-        }
-
-        // Apply district filter
-        if (!empty($filters['district_id'])) {
-            $query->whereHas('contents', function ($q) use ($filters) {
-                $q->where('state_id', $filters['district_id']);
-            });
-        }
-
-        // Apply search filter (title/address, plus numeric property ID)
-        if (!empty($filters['search'])) {
-            $search = trim((string) $filters['search']);
-            $numericId = $this->parsePositiveIntSearchId($search);
-            $query->where(function ($q) use ($search, $numericId) {
-                $q->whereHas('contents', function ($cq) use ($search) {
-                    $cq->where(function ($inner) use ($search) {
-                        $inner->where('title', 'like', "%{$search}%")
-                              ->orWhere('address', 'like', "%{$search}%");
-                    });
-                });
-                if ($numericId !== null) {
-                    $q->orWhere('id', $numericId);
-                }
-            });
-        }
-
-        // Apply features filter
-        if (!empty($filters['features'])) {
-            $featuresArray = explode(',', $filters['features']);
-            foreach ($featuresArray as $feature) {
-                $feature = trim($feature);
-                $query->whereJsonContains('features', $feature);
-            }
-        }
+        PropertyFilterQuery::apply($query, $filters);
 
         // Optionally filter out properties with active rentals
         if (method_exists(Property::class, 'rentals')) {
