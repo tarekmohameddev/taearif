@@ -1,0 +1,371 @@
+{
+    "type": "real_conversation",
+    "id": "conv_13037",
+    "tenant_id": 1743,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "مساك الله بالنور"
+        },
+        {
+            "role": "customer",
+            "text": "السعي على المشتري"
+        },
+        {
+            "role": "customer",
+            "text": "للبيع فيلا في حي النرجس مساحة 312 م \nبتصاميم فاخرة وحديث \nوتشطيب عالي الجودة \n#_مواصفات الفيلا \n🔹الدور الارضي:\n1. مجلس أساسي\n2. صالة طعام \n3. صالة كبيرة\n4. مطبخ\n5. ⁠حديقة ومساحه خارجية خلفيه \n6. حمام للمجلس مع منطقة مغاسلة\n7. حمام للصالة مع منطقة مغسلة\n🔹الدور الاول:\n1. غرفة نوم ماستر رائيسية + مع غرفة الملابس مطلة على الحوش \n2. 3 غرف نوم ماستر\n4. صالة مطلة على الحوش \n🔹ملحق السطح:\n1. غرفة نوم اضافية ويصبح العدد غرف النوم في الفيلا 5 غرف نوم\n2. صالة كبيرة\n3. سطح\n4. غرفة خادمة وحمام\n5. غرفة غسيل \nمواصفات البناء والتشطيبات :\n* دهانات نوع جوتن داخلية.\n* شبابيك المنيوم دبل جلاس عازل حراري.\n* تكييف مركزي الدور الارضي وغرفة الماستر .\n* شركة Gree.\n* ابواب الخشب قشر جوز طبيعي .\n* أرضيات بورسلان من شركة ابيات .\n* درج المداخل رخام .\n* ساخانات خزف سعودي .\n* خلاطات الماني قروهي اصلي .\n* اكسسوارات مكتملة لجميع الحمامات.\n* كراسي ومغاسل معلقة .\n* الكهرباء شركة الفنار .\n* مصعد راكب شركة سند للمصاعد.\n* السباكة شركة القبلان .\n* تاسيس تمديد كهرباء لشتر ( الشبابيك ) .\n* انتركوم باب كامرا فتح وتخزين وتسجيل فديو.\n* تاسيس كامرات مراقبة خارجية .\n* تركيب عداد الماء والكهرباء .\n* شهادة إتمام بناء على الكود السعودي .\n* جميع الضمانات موجودة .\n* يوجد تامين شركة ملاذ للعيوب الخفية واشراف هندسي عليها."
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 24.829839706421, 46.674755096436]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مساحات مسطح البناء 500 م\nالارتدادات على نظام الاستثناء 1.5 \nو الروف بناء 70٪؜ تعطي مساحه اكبر واشرح للفيلا"
+        },
+        {
+            "role": "customer",
+            "text": "مساحات مسطح البناء 500 م\nالارتدادات على نظام الاستثناء 1.5 \nو الروف بناء 70٪؜ تعطي مساحه اكبر واشرح للفيلا، طبعاً بعدها توقف نظام الاستثناء"
+        },
+        {
+            "role": "customer",
+            "text": "المالك حاد 5 مليون و 300"
+        },
+        {
+            "role": "customer",
+            "text": "على شور ان شالله 5 مليون و 100"
+        },
+        {
+            "role": "customer",
+            "text": "اعتذر منك هذا حد المالك وممكن اضغط عليه للبيع بالشور اللي قلت لك"
+        },
+        {
+            "role": "customer",
+            "text": "بالنسبه للسوم اذا عنده سومه اوصلها للمالك عادي"
+        },
+        {
+            "role": "customer",
+            "text": "المطور بناي العقاريه  \nمشاريعه اغلبها في حي الياسمين"
+        },
+        {
+            "role": "customer",
+            "text": "بالنسبه للسعر مثل ما قلت لك وانا اخوك مالي فيه شور اللي علي بضغط معكم قدر الامكان"
+        },
+        {
+            "role": "customer",
+            "text": "الله يرزقه"
+        },
+        {
+            "role": "customer",
+            "text": "السعر نهائي نفس ماقلت لك"
+        },
+        {
+            "role": "customer",
+            "text": "تبون شمال سلمان"
+        },
+        {
+            "role": "customer",
+            "text": "مساء النور"
+        },
+        {
+            "role": "customer",
+            "text": "موجود الحارس"
+        },
+        {
+            "role": "customer",
+            "text": "الى 11.30 تقريباً"
+        },
+        {
+            "role": "customer",
+            "text": "لا التفاهم عن طريق الجوال"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن يقبل تفاوض بسيط"
+        },
+        {
+            "role": "customer",
+            "text": "5 مليون وبضغط على المالك"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

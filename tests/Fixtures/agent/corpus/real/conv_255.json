@@ -1,0 +1,1331 @@
+{
+    "type": "real_conversation",
+    "id": "conv_255",
+    "tenant_id": 1537,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "alinma-Report.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "سعى و رسوم العقد"
+        },
+        {
+            "role": "customer",
+            "text": "32"
+        },
+        {
+            "role": "customer",
+            "text": "ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "انت بالمكتب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "29"
+        },
+        {
+            "role": "customer",
+            "text": "0500033999\nابو سعد يزيد صاحب محل"
+        },
+        {
+            "role": "customer",
+            "text": "نفاذ شغال معك"
+        },
+        {
+            "role": "customer",
+            "text": "36"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هذا هو"
+        },
+        {
+            "role": "customer",
+            "text": "0544747955"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "50"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "28"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هو كلمك"
+        },
+        {
+            "role": "customer",
+            "text": "ولا لسه"
+        },
+        {
+            "role": "customer",
+            "text": "تمام ما مشكله \n1000 ونتوكل ع الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "المستاجر ال كلمتك عليه امي"
+        },
+        {
+            "role": "customer",
+            "text": "امس"
+        },
+        {
+            "role": "customer",
+            "text": "شقه العصيمى جارك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "91"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "65"
+        },
+        {
+            "role": "customer",
+            "text": "ايجار غرفه السايق حقك"
+        },
+        {
+            "role": "customer",
+            "text": "transfer-receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "اللهم امين يارب"
+        },
+        {
+            "role": "customer",
+            "text": "كيفك اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "لانك تعبان"
+        },
+        {
+            "role": "customer",
+            "text": "ياربى \nربى يشفيك ويعافيك يارب"
+        },
+        {
+            "role": "customer",
+            "text": "ويعجل شفاك ع خير يارب"
+        },
+        {
+            "role": "customer",
+            "text": "40"
+        },
+        {
+            "role": "customer",
+            "text": "58"
+        },
+        {
+            "role": "customer",
+            "text": "93"
+        },
+        {
+            "role": "customer",
+            "text": "صك البيت الجديد.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ع اعمل عقد وساطه"
+        },
+        {
+            "role": "customer",
+            "text": "اى"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلى رقم ابو سلطان"
+        },
+        {
+            "role": "customer",
+            "text": "الموقع الجديد القريب"
+        },
+        {
+            "role": "customer",
+            "text": "ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "ع اساله ع الحارس موجود"
+        },
+        {
+            "role": "customer",
+            "text": "ابو تركى \nالرجال مستعجل ع البيع لو امامك احد"
+        },
+        {
+            "role": "customer",
+            "text": "ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "450"
+        },
+        {
+            "role": "customer",
+            "text": "2 مليون 800 قابل للتفاوض"
+        },
+        {
+            "role": "customer",
+            "text": "بينزل كتير"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلى موقع فيلل ابو سلطان"
+        },
+        {
+            "role": "customer",
+            "text": "41"
+        },
+        {
+            "role": "customer",
+            "text": "21"
+        },
+        {
+            "role": "customer",
+            "text": "70"
+        },
+        {
+            "role": "customer",
+            "text": "56"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "سعى للشقه"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "حبيت اطمن عليك"
+        },
+        {
+            "role": "customer",
+            "text": "عامل ايه"
+        },
+        {
+            "role": "customer",
+            "text": "يارب بخير"
+        },
+        {
+            "role": "customer",
+            "text": "يارب دايما بخير"
+        },
+        {
+            "role": "customer",
+            "text": "ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "iban_certificate.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "اابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله"
+        },
+        {
+            "role": "customer",
+            "text": "حول سعى امس للحساب ده"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "اه"
+        },
+        {
+            "role": "customer",
+            "text": "بخليه"
+        },
+        {
+            "role": "customer",
+            "text": "يرسل الىاجحى"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله"
+        },
+        {
+            "role": "customer",
+            "text": "حول المبلغ"
+        },
+        {
+            "role": "customer",
+            "text": "تركى"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام هو مشى"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عربون شقه"
+        },
+        {
+            "role": "customer",
+            "text": "78"
+        },
+        {
+            "role": "customer",
+            "text": "44"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "67"
+        },
+        {
+            "role": "customer",
+            "text": "30"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اى تفاصيل"
+        },
+        {
+            "role": "customer",
+            "text": "هو عاوز حد يشوفها بكره معه ويعطيه تفاصيلها"
+        },
+        {
+            "role": "customer",
+            "text": "وعاوز مكتب يطلع له اتمام بناء"
+        },
+        {
+            "role": "customer",
+            "text": "من ف مكتب نمار"
+        },
+        {
+            "role": "customer",
+            "text": "78"
+        },
+        {
+            "role": "customer",
+            "text": "ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "اتصلت ما رد عليا"
+        },
+        {
+            "role": "customer",
+            "text": "ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "42"
+        },
+        {
+            "role": "customer",
+            "text": "+966 55 011 9119"
+        },
+        {
+            "role": "customer",
+            "text": "ابو على"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "ايجار السياره"
+        },
+        {
+            "role": "customer",
+            "text": "كلمونى اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "موعدها"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "باقى السعى"
+        },
+        {
+            "role": "customer",
+            "text": "68"
+        },
+        {
+            "role": "customer",
+            "text": "68"
+        },
+        {
+            "role": "customer",
+            "text": "53"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "اتصلت عليه ما رد عليا"
+        },
+        {
+            "role": "customer",
+            "text": "كنت بكلمك اليوم تتصل بيه"
+        },
+        {
+            "role": "customer",
+            "text": "ع تشوفه"
+        },
+        {
+            "role": "customer",
+            "text": "وارسلت له رسايل"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "بتيجى المكتب"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "شركه التاجير كلمونى"
+        },
+        {
+            "role": "customer",
+            "text": "تحولهم الايجار"
+        },
+        {
+            "role": "customer",
+            "text": "شركه عبور"
+        },
+        {
+            "role": "customer",
+            "text": "1500"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "0569905521"
+        },
+        {
+            "role": "customer",
+            "text": "رائد"
+        },
+        {
+            "role": "customer",
+            "text": "كلمه ابو تركي"
+        },
+        {
+            "role": "customer",
+            "text": "كيف"
+        },
+        {
+            "role": "customer",
+            "text": "هل افرغ"
+        },
+        {
+            "role": "customer",
+            "text": "63"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "77"
+        },
+        {
+            "role": "customer",
+            "text": "انا موجود عند الفيلا"
+        },
+        {
+            "role": "customer",
+            "text": "وين الحارس"
+        },
+        {
+            "role": "customer",
+            "text": "ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "92"
+        },
+        {
+            "role": "customer",
+            "text": "الرمز"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "مباشر من المالك \nارض بنمار \nمساحه 598 متر \nسعر المتر 1900 ريال"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هذه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "15"
+        },
+        {
+            "role": "customer",
+            "text": "الرمز"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "87"
+        },
+        {
+            "role": "customer",
+            "text": "50"
+        },
+        {
+            "role": "customer",
+            "text": "شقه رقم 1"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "68"
+        },
+        {
+            "role": "customer",
+            "text": "22"
+        },
+        {
+            "role": "customer",
+            "text": "32"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "85"
+        },
+        {
+            "role": "customer",
+            "text": "58"
+        },
+        {
+            "role": "customer",
+            "text": "الوو"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عربون شقه للبيع خالد رقم 1"
+        },
+        {
+            "role": "customer",
+            "text": "صورة من الصك\nالرخصة\nشهادة الاشغال\nالتيار الكهربائي\nمحضر فرز\nهويه المالك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "77"
+        },
+        {
+            "role": "customer",
+            "text": "73"
+        },
+        {
+            "role": "customer",
+            "text": "ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "22"
+        },
+        {
+            "role": "customer",
+            "text": "22"
+        },
+        {
+            "role": "customer",
+            "text": "17"
+        },
+        {
+            "role": "customer",
+            "text": "حول العربون لنفس الحساب ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "document_1771085741067.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "صك وكالة.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "360681009879.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "56"
+        },
+        {
+            "role": "customer",
+            "text": "61"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "67"
+        },
+        {
+            "role": "customer",
+            "text": "55"
+        },
+        {
+            "role": "customer",
+            "text": "47"
+        },
+        {
+            "role": "customer",
+            "text": "16"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "هل القرار ده صحيح"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "عربون بيع شقه"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "ارسله التحويل هذا"
+        },
+        {
+            "role": "customer",
+            "text": "الحين وبعدين الايصال"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "جاهز"
+        },
+        {
+            "role": "customer",
+            "text": "ادخل ع ايجار"
+        },
+        {
+            "role": "customer",
+            "text": "40"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "21"
+        },
+        {
+            "role": "customer",
+            "text": "38"
+        },
+        {
+            "role": "customer",
+            "text": "27"
+        },
+        {
+            "role": "customer",
+            "text": "اهلين ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "89"
+        },
+        {
+            "role": "customer",
+            "text": "14"
+        },
+        {
+            "role": "customer",
+            "text": "14"
+        },
+        {
+            "role": "customer",
+            "text": "21"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "بذكرك ايجار السياره"
+        },
+        {
+            "role": "customer",
+            "text": "عبور"
+        },
+        {
+            "role": "customer",
+            "text": "20"
+        },
+        {
+            "role": "customer",
+            "text": "84"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "28"
+        },
+        {
+            "role": "customer",
+            "text": "31"
+        },
+        {
+            "role": "customer",
+            "text": "56"
+        },
+        {
+            "role": "customer",
+            "text": "28"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "94"
+        },
+        {
+            "role": "customer",
+            "text": "82"
+        },
+        {
+            "role": "customer",
+            "text": "33"
+        },
+        {
+            "role": "customer",
+            "text": "53"
+        },
+        {
+            "role": "customer",
+            "text": "95"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هذه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عربون سعى محل"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 24.6545749, 46.4955886]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "فهد الشهرانى"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله ابو تركى ابقى كلم\nرائد تبع شقه للبيع"
+        },
+        {
+            "role": "customer",
+            "text": "‏‪+966 55 449 9204‬‏\nابو عبد الله بكر صاحب الشقق تبع ماجد"
+        },
+        {
+            "role": "customer",
+            "text": "+966531343036\nابو شبيب وكيل عنه ال متواصل معه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هذا"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ان شاء الله خير ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "مشكور"
+        },
+        {
+            "role": "customer",
+            "text": "transfer-receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "سعى فيلا بالمهديه"
+        },
+        {
+            "role": "customer",
+            "text": "17"
+        },
+        {
+            "role": "customer",
+            "text": "60"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم \nدخلت من عند ابو سعود"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "بس انا رايح اعمل عمره"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "منا ومنكم صالح الاعمال"
+        },
+        {
+            "role": "customer",
+            "text": "ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "سعى محلات شاى وسمسم"
+        },
+        {
+            "role": "customer",
+            "text": "العقد خلص"
+        },
+        {
+            "role": "customer",
+            "text": "ان شاء الله \nحاليا انا بمكه لسه ما وصلت"
+        },
+        {
+            "role": "customer",
+            "text": "ع خير ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "ابو تركى \nربى يوفقك ويسعدك يارب"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "54"
+        },
+        {
+            "role": "customer",
+            "text": "15"
+        },
+        {
+            "role": "customer",
+            "text": "88"
+        },
+        {
+            "role": "customer",
+            "text": "65"
+        },
+        {
+            "role": "customer",
+            "text": "الرمز"
+        },
+        {
+            "role": "customer",
+            "text": "الرمز"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "74"
+        },
+        {
+            "role": "customer",
+            "text": "65"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "هل كلمت ابو عبد الله تانى"
+        },
+        {
+            "role": "customer",
+            "text": "ولا رائد المشترى"
+        },
+        {
+            "role": "customer",
+            "text": "ان شاء الله خير"
+        },
+        {
+            "role": "customer",
+            "text": "13"
+        },
+        {
+            "role": "customer",
+            "text": "نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "شركه تاجير كلمونى ع الايجار"
+        },
+        {
+            "role": "customer",
+            "text": "اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "ما ينفع اليوم لان التاريخ \nاخر اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "بلغنى"
+        },
+        {
+            "role": "customer",
+            "text": "المكتب"
+        },
+        {
+            "role": "customer",
+            "text": "عبور لتاجير السيارات"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم يارب"
+        },
+        {
+            "role": "customer",
+            "text": "13"
+        },
+        {
+            "role": "customer",
+            "text": "نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "48"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم\nفتحت من عند ابو سعود"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "بكلمه بكره ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "سعى شقه بالرمال"
+        },
+        {
+            "role": "customer",
+            "text": "transfer-receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله"
+        },
+        {
+            "role": "customer",
+            "text": "ابو تركى"
+        },
+        {
+            "role": "customer",
+            "text": "بتيجى المكتب"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله"
+        },
+        {
+            "role": "customer",
+            "text": "77"
+        },
+        {
+            "role": "customer",
+            "text": "file_30_3_2026_23_42.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "سعى شقه للبيع الجمعيه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "وين الحارس"
+        },
+        {
+            "role": "customer",
+            "text": "+966 53 770 3040\nممدوح العتيبى"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

@@ -1,0 +1,559 @@
+{
+    "type": "real_conversation",
+    "id": "conv_942",
+    "tenant_id": 1557,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "سجل شركة كوز.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "الهوية الوطنية_29-10-2025.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "سم"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "DOC-20260113-WA0020."
+        },
+        {
+            "role": "customer",
+            "text": "1418\/12\/23"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/hUU9jsFjVategwAu7?g_st=ic"
+        },
+        {
+            "role": "customer",
+            "text": "كم"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "اكلم"
+        },
+        {
+            "role": "customer",
+            "text": "document_1768407942090.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "لالا بسم سليمان"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt7489274006008211377.pdf"
+        },
+        {
+            "role": "customer",
+            "text": ".صوره بطاقت الاحوال"
+        },
+        {
+            "role": "customer",
+            "text": "عبدالرحمن القنيبط 👆🏻"
+        },
+        {
+            "role": "customer",
+            "text": "فائز ارض المصفاة 👆🏻"
+        },
+        {
+            "role": "customer",
+            "text": "هوية تركي الشمري.pdf.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "فاتورة ام سليم"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الخراشي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عقار ابو عبدالعزيز البشري · 13"
+        },
+        {
+            "role": "customer",
+            "text": "عقد تجاري #20918871425"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/mJG1tM3cJH9yo1Gm7?g_st=aw"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/6utt5EBhjdALmtAf6?g_st=ic\nموقع العقار"
+        },
+        {
+            "role": "customer",
+            "text": "+966 59 030 3800‬\nهذا رقمه"
+        },
+        {
+            "role": "customer",
+            "text": "DOC-20260127-WA0130..pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "+966 56 133 1190"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "خلن اشوف عنه"
+        },
+        {
+            "role": "customer",
+            "text": "ادق عليه"
+        },
+        {
+            "role": "customer",
+            "text": "مايرد علي"
+        },
+        {
+            "role": "customer",
+            "text": "سم ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "050 561 7017"
+        },
+        {
+            "role": "customer",
+            "text": "فناننننننن"
+        },
+        {
+            "role": "customer",
+            "text": "ارحب"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "تكفى ابو جودي صوره فيديو"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "رقم 4"
+        },
+        {
+            "role": "customer",
+            "text": "تتم"
+        },
+        {
+            "role": "customer",
+            "text": "لما كان المستأجر قد أبرم عقد إيجار آخر مع المؤجر برقم (20090078883) وتاريخ 25\/04\/2025م، يتعلق باستئجار المستأجر في هذا العقد استئجار المبنى الخارجي من المؤجر وفق ما هو مبين في العقد ذاك، وحيث إن المؤجر استعمل المبنى الخارجي كفي تقديم المشروبات والمأكولات ووضع جلسات داخلية وخارجية على الأرصفة، وحيث اتفق الطرفان على وضع ضوابط لحفظ مكانة المجمع ومالكيه ورواده ومستأجريه، لذا التزم المستأجر بما يلي:\n1.\tالتزام المستأجر بإيقاف الكاشير في أوقات الصلوات مدة لا تقل عن خمسة عشر دقيقة من الآذان.\n2.\tالتزم المستأجر بمنع التدخين ومنتجات التبغ في المجمع وحرمه كاملا، ومن ضمنه المساحات المستأجرة له.\n3.\tالتزم المستأجر بفصل جلسات الأفراد عن العوائل، وضبط الجلسات بمظهر لائق وفق ضوابط الدين."
+        },
+        {
+            "role": "customer",
+            "text": "نووو"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "ارحب"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/v3D97dVdtoQXMmEL9?g_st=ic"
+        },
+        {
+            "role": "customer",
+            "text": "2188306100 الرقم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "سداد الغماس"
+        },
+        {
+            "role": "customer",
+            "text": "سداد فواتير  الخدمات  Bills Payment.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "21012026_1768996317083.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ابو جودي"
+        },
+        {
+            "role": "customer",
+            "text": "تعال انت وبسيوني"
+        },
+        {
+            "role": "customer",
+            "text": "تك"
+        },
+        {
+            "role": "customer",
+            "text": "خطة.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/drive.google.com\/drive\/folders\/1K_VVRy3eqIzwzHfvb2ow-gMxOfyVp3YW?usp=drive_link"
+        },
+        {
+            "role": "customer",
+            "text": "التصوير"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/S7WT4sfTPYDk9NfG6"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "7500"
+        },
+        {
+            "role": "customer",
+            "text": "سنه"
+        },
+        {
+            "role": "customer",
+            "text": "حقت الشايع رقم 5"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/docs.google.com\/spreadsheets\/d\/1H2QWrNslBmDgNx4zyI79lxEOwUhpj510J13RWqy1Y7c\/edit?usp=sharing"
+        },
+        {
+            "role": "customer",
+            "text": "دليل أعمال وكيل البيع.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "دليل المستخدم – خدمة متابعة طلبات التنفيذ عبر الموقع الإلكتروني.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ضوابط الإسناد لوكلاء البيع العقاري الاصدار الثالث أكتوبر 2023م (1).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "كٌتيب مزودي الخدمة.3.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "دليل التسويق والهوية البصرية للمزادات 2.zip"
+        },
+        {
+            "role": "customer",
+            "text": "ميثاق المستفيدين.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "1"
+        },
+        {
+            "role": "customer",
+            "text": "2"
+        },
+        {
+            "role": "customer",
+            "text": "3"
+        },
+        {
+            "role": "customer",
+            "text": "كذا تمام اكمل ؟"
+        },
+        {
+            "role": "customer",
+            "text": "1 مساكن"
+        },
+        {
+            "role": "customer",
+            "text": "2"
+        },
+        {
+            "role": "customer",
+            "text": "3"
+        },
+        {
+            "role": "customer",
+            "text": "4"
+        },
+        {
+            "role": "customer",
+            "text": "5"
+        },
+        {
+            "role": "customer",
+            "text": "6"
+        },
+        {
+            "role": "customer",
+            "text": "7"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هذي هي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "تم ياقلبي"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "عقارات بريدة ( الرشيدي )  \nhttps:\/\/maps.app.goo.gl\/Heoy7pzs9pmyuWDPA?g_st=i"
+        },
+        {
+            "role": "customer",
+            "text": "سم"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "ممتاز ياقلبي 👍🏻"
+        },
+        {
+            "role": "customer",
+            "text": "yanieahrealestate@gmail.com"
+        },
+        {
+            "role": "customer",
+            "text": "asdal7.sa@gmail.com"
+        },
+        {
+            "role": "customer",
+            "text": "sakf36@gmail.com"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "receipt_voucher_38101968.pdf"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

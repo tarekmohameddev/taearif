@@ -1,0 +1,631 @@
+{
+    "type": "real_conversation",
+    "id": "conv_11082",
+    "tenant_id": 1732,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "حوالة محلية واردة\nعبر:SAUDI ARABIAN MONETARY AUTHORITY\nمبلغ:SAR 7638.38\nالى:7830\nمن:القوات البرية الملكية السعودية\nمن:\n26\/1\/27 00:42"
+        },
+        {
+            "role": "customer",
+            "text": "حوالة محلية واردة\nعبر:SAUDI ARABIAN MONETARY AUTHORITY\nمبلغ:SAR 7506.43\nالى:7830\nمن:القوات البرية الملكية السعودية\nمن:\nفي:25-12-28 00:50"
+        },
+        {
+            "role": "customer",
+            "text": "حوالة محلية واردة\nعبر:SAUDI ARABIAN MONETARY AUTHORITY\nمبلغ:SAR 7491.43\nالى:7830\nمن:القوات البرية الملكية السعودية\nمن:\nفي:25-11-27 00:43"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "بس ذا قديم شوي"
+        },
+        {
+            "role": "customer",
+            "text": "راتبي تعدل"
+        },
+        {
+            "role": "customer",
+            "text": "CreditReport_48524130_ar.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "الشبكه ضعيفه"
+        },
+        {
+            "role": "customer",
+            "text": "كمل ودق علي"
+        },
+        {
+            "role": "customer",
+            "text": "معد ارسلت لي"
+        },
+        {
+            "role": "customer",
+            "text": "ذي كم غرفه وكم مساحتها"
+        },
+        {
+            "role": "customer",
+            "text": "بس الغرف"
+        },
+        {
+            "role": "customer",
+            "text": "صغار ياخي"
+        },
+        {
+            "role": "customer",
+            "text": "مرا مع الاثاث تظيع المساحه"
+        },
+        {
+            "role": "customer",
+            "text": "عطني مساحه اكبر عشان اشوف اذا عجبتني"
+        },
+        {
+            "role": "customer",
+            "text": "نتوكل على الله"
+        },
+        {
+            "role": "customer",
+            "text": "ما نتاخر وندور"
+        },
+        {
+            "role": "customer",
+            "text": "ما نتاخر وندور"
+        },
+        {
+            "role": "customer",
+            "text": "دق عليه"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المستفيد،\nيمكنك شراء مسكن يتماشى مع رغبتك في الحصول على وحدتك السكنية على أن يتم تسليمها خلال الفترة الزمنية المحددة بمواصفات تمنحك أسلوب حياة تطمح لها، وجودة تحقق لك تطلعاتك.\n\nيمكنك الاطلاع على خطوات الحجز على المشاريع عبر منصة وتطبيق سكني من خلال الرابط: sakani.sa\/l\/UMwc-g2b"
+        },
+        {
+            "role": "customer",
+            "text": "دق علي"
+        },
+        {
+            "role": "customer",
+            "text": "الان"
+        },
+        {
+            "role": "customer",
+            "text": "عطني موقع الشقه"
+        },
+        {
+            "role": "customer",
+            "text": "طالع"
+        },
+        {
+            "role": "customer",
+            "text": "الان"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "الدور الثاني"
+        },
+        {
+            "role": "customer",
+            "text": "الغرفه رقم7"
+        },
+        {
+            "role": "customer",
+            "text": "صح"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المستفيد،\nنأسف لإبلاغك أنت غير مؤهل لاستحقاق الدعم السكني لتملك منزلك الأول، يمكنك معرفة السبب عبر حسابكم في منصة سكني \nsakani.sa\/l\/3F-5l84G  \nنسعد بخدمتك"
+        },
+        {
+            "role": "customer",
+            "text": "جاتني ذي"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المستفيد،\nيمكنك شراء مسكن يتماشى مع رغبتك في الحصول على وحدتك السكنية على أن يتم تسليمها خلال الفترة الزمنية المحددة بمواصفات تمنحك أسلوب حياة تطمح لها، وجودة تحقق لك تطلعاتك.\n\nيمكنك الاطلاع على خطوات الحجز على المشاريع عبر منصة وتطبيق سكني من خلال الرابط: sakani.sa\/l\/UMwc-g2b"
+        },
+        {
+            "role": "customer",
+            "text": "CamScanner 24‏-02‏-2026 12.37.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "شكراً لاختيارك التمويل العقاري من البنك الأهلي،\nالخطوة التالية هي تثمين العقار.\nرقم: 202680790909 \nمبلغ: ‬‪ SAR ‬‪ 515411.72 \nفي: ‬‪ 26\/02\/2026 ‬‪ 12:18:26"
+        },
+        {
+            "role": "customer",
+            "text": "تم انشاء طلبكم رقم ( 202680790909 ) للتمويل العقاري، ومتوقع الرد على طلبكم هو 3 أيام عمل. لمزيد من التفاصيل يرجى التواصل على 8002441005"
+        },
+        {
+            "role": "customer",
+            "text": "تمام دق علي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "سددت المخالفات من الراتب"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "شكراً لاختيارك التمويل العقاري من البنك الأهلي،\nالخطوة التالية هي تثمين العقار.\nرقم: 202680790909 \nمبلغ: ‬‪ SAR ‬‪ 515411.72 \nفي: ‬‪ 26\/02\/2026 ‬‪ 22:32:22"
+        },
+        {
+            "role": "customer",
+            "text": "جاتني ذي"
+        },
+        {
+            "role": "customer",
+            "text": "وسحبو حق التقييم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "transfer-receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "باقي شي؟"
+        },
+        {
+            "role": "customer",
+            "text": "وبعد كمل ودق علي"
+        },
+        {
+            "role": "customer",
+            "text": "جزاك الله خير"
+        },
+        {
+            "role": "customer",
+            "text": "ولد عمتي توفى"
+        },
+        {
+            "role": "customer",
+            "text": "دق علي"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "دق عليه ضروري"
+        },
+        {
+            "role": "customer",
+            "text": "اليوم باقي ماقد جات الموافقه"
+        },
+        {
+            "role": "customer",
+            "text": "المقيم"
+        },
+        {
+            "role": "customer",
+            "text": "متى بيجي"
+        },
+        {
+            "role": "customer",
+            "text": "قد سحبو الرسوم"
+        },
+        {
+            "role": "customer",
+            "text": "وما جا المقيم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "للحين ماجات اي رساله"
+        },
+        {
+            "role": "customer",
+            "text": "وويش صار عن المقيم"
+        },
+        {
+            "role": "customer",
+            "text": "بكم قيمها"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "للحينً مافي اي رساله"
+        },
+        {
+            "role": "customer",
+            "text": "طولتً والله"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "كم قيمها"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "تغيرت ماهي نفس قبل"
+        },
+        {
+            "role": "customer",
+            "text": "شصار ع المقييم"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "بس رقم المقيم عندك"
+        },
+        {
+            "role": "customer",
+            "text": "جاء المقيم ولا لسى"
+        },
+        {
+            "role": "customer",
+            "text": "باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "والله ودي اننا قد كملنا"
+        },
+        {
+            "role": "customer",
+            "text": "قبل لداوم"
+        },
+        {
+            "role": "customer",
+            "text": "وقبل العيد اهم شي"
+        },
+        {
+            "role": "customer",
+            "text": "المقيم ذا ماعلمك كم قيم"
+        },
+        {
+            "role": "customer",
+            "text": "شصار ع المقيم؟"
+        },
+        {
+            "role": "customer",
+            "text": "لسى"
+        },
+        {
+            "role": "customer",
+            "text": "للحين"
+        },
+        {
+            "role": "customer",
+            "text": "ماجاني شي"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "باقي معلق ع كذا"
+        },
+        {
+            "role": "customer",
+            "text": "تم الانتهاء من تثمين العقار بنجاح، وسيتم التواصل معكم لتأكيد المبلغ النهائي للتمويل\nرقم: 202680790909 \nمبلغ: ‬‪ SAR ‬‪ 515411.72 \nفي: ‬‪ 09\/03\/2026 ‬‪ 23:15:19"
+        },
+        {
+            "role": "customer",
+            "text": "بالله يفيصل حاول حاول ضروري قبل العيد"
+        },
+        {
+            "role": "customer",
+            "text": "واهم شي الفايض لايقل ع 130"
+        },
+        {
+            "role": "customer",
+            "text": "الفيزا وامكان لازم تسدد"
+        },
+        {
+            "role": "customer",
+            "text": "كلمني حسن الان يقول لازم تسددها"
+        },
+        {
+            "role": "customer",
+            "text": "اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "وشوف وش صار مع المقيم وعلمني"
+        },
+        {
+            "role": "customer",
+            "text": "تم الانتهاء من تثمين العقار بنجاح، وسيتم التواصل معكم لتأكيد المبلغ النهائي للتمويل\nرقم: 202680790909 \nمبلغ: ‬‪ SAR ‬‪ 515411.72 \nفي: ‬‪ 11\/03\/2026 ‬‪ 20:48:17"
+        },
+        {
+            "role": "customer",
+            "text": "ذي جاتني الحين"
+        },
+        {
+            "role": "customer",
+            "text": "وش الوضع"
+        },
+        {
+            "role": "customer",
+            "text": "يعني ذحين"
+        },
+        {
+            "role": "customer",
+            "text": "يفيصل"
+        },
+        {
+            "role": "customer",
+            "text": "الفايض مع ال5 يصير 91"
+        },
+        {
+            "role": "customer",
+            "text": "الف"
+        },
+        {
+            "role": "customer",
+            "text": "صح"
+        },
+        {
+            "role": "customer",
+            "text": "حلو"
+        },
+        {
+            "role": "customer",
+            "text": "للحين ماجتني الموافقه"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا مشتري العقار\n\nنفيدك بأنه تم تسجيل طلب التصرف العقاري بواسطة البائع بنجاح، ولم يتم احتساب أي مبلغ مستحق لضريبة التصرفات العقارية بناءً على البيانات المقدمة.\nرقم الطلب: 610260115911\nرقم الصك: 360001531400 \n\nلتفاصيل أكثر، يرجى الدخول على حسابك الالكتروني من خلال بوابة الهيئة\nولخدمتك على مدار الساعة، نسعد بتواصلك على الرقم الموحد: 19993\nهيئة الزكاة والضريبة والجمارك"
+        },
+        {
+            "role": "customer",
+            "text": "جاتني ذي"
+        },
+        {
+            "role": "customer",
+            "text": "وش ذي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "توها جات"
+        },
+        {
+            "role": "customer",
+            "text": "تم الانتهاء من تثمين العقار بنجاح، وسيتم التواصل معكم لتأكيد المبلغ النهائي للتمويل\nرقم: 202680790909 \nمبلغ: ‬‪ SAR ‬‪ 515411.72 \nفي: ‬‪ 12\/03\/2026 ‬‪ 10:00:51"
+        },
+        {
+            "role": "customer",
+            "text": "تمت الموافقة على تمويلك العقاري،\nالرجاء التوجه إلى الفرع لتوقيع المستندات.\nرقم: 202680790909 \nمبلغ: ‬‪ SAR ‬‪ 257641.45 \nفي: ‬‪ 12\/03\/2026 ‬‪ 10:13:42"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "خله يحول لي الان الفايض"
+        },
+        {
+            "role": "customer",
+            "text": "كامل"
+        },
+        {
+            "role": "customer",
+            "text": "وانا بجي عندك بكره ونصفر العداد"
+        },
+        {
+            "role": "customer",
+            "text": "ونروح المكتبه"
+        },
+        {
+            "role": "customer",
+            "text": "يافيصل"
+        },
+        {
+            "role": "customer",
+            "text": "دقايق وادق عليك اتصال"
+        },
+        {
+            "role": "customer",
+            "text": "ارسله انا طالع"
+        },
+        {
+            "role": "customer",
+            "text": "مقفل"
+        },
+        {
+            "role": "customer",
+            "text": "جواله"
+        },
+        {
+            "role": "customer",
+            "text": "ذا هو المالك؟"
+        },
+        {
+            "role": "customer",
+            "text": "ولا الوكيل"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "كلم الرجال يحول"
+        },
+        {
+            "role": "customer",
+            "text": "وانا اوصل المكتبه وادق عليك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "موقع العدادات معلق"
+        },
+        {
+            "role": "customer",
+            "text": "لازم بعد24 ساعه"
+        },
+        {
+            "role": "customer",
+            "text": "باقي عداد المياه"
+        },
+        {
+            "role": "customer",
+            "text": "بنشوفه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طول مرا"
+        },
+        {
+            "role": "customer",
+            "text": "والله"
+        },
+        {
+            "role": "customer",
+            "text": "انا معي ناس يبون فلوسهم مني"
+        },
+        {
+            "role": "customer",
+            "text": "منتظره من اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "طول علينا مرا"
+        },
+        {
+            "role": "customer",
+            "text": "من الظهر ننتظر"
+        },
+        {
+            "role": "customer",
+            "text": "كمل ودق علي"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل"
+        },
+        {
+            "role": "customer",
+            "text": "تفطر ودق علي"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

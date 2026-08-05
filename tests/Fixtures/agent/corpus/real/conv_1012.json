@@ -1,0 +1,191 @@
+{
+    "type": "real_conversation",
+    "id": "conv_1012",
+    "tenant_id": 1589,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "شارع السلامه"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/nJ4v6KowD8i7NtQF9?g_st=ipc"
+        },
+        {
+            "role": "customer",
+            "text": "الواجهة"
+        },
+        {
+            "role": "customer",
+            "text": "شقه رقم 2"
+        },
+        {
+            "role": "customer",
+            "text": "تبي تأجرها 80 الف"
+        },
+        {
+            "role": "customer",
+            "text": "المستأجر سلم الشقه اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "الاسم : أمل ناصر فهد البكر"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الهوية : 1041688779"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الميلاد : 1981\/09\/21"
+        },
+        {
+            "role": "customer",
+            "text": "سو لها عقد وساطه"
+        },
+        {
+            "role": "customer",
+            "text": "باقي شي ؟!"
+        },
+        {
+            "role": "customer",
+            "text": "يعني مانصلح نعلنها قصدك ؟!"
+        },
+        {
+            "role": "customer",
+            "text": "لازم رقم المالك نفسه ؟!"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "0555030460"
+        },
+        {
+            "role": "customer",
+            "text": "هذا الرقم"
+        },
+        {
+            "role": "customer",
+            "text": "نعم اعلنو"
+        },
+        {
+            "role": "customer",
+            "text": "تبي نكمل ولا نوقف ؟!"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "ابو بسام \nمايجيني اتصال ، قليله مره"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "شغل نظيف"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "اح اح وش غير متوفر ؟ هل فيه اعلان ماحذفناه ؟!"
+        },
+        {
+            "role": "customer",
+            "text": "فيلا للبيع في شارع رقم 293, حي الياسمين, مدينة الرياض, منطقة الرياض \n #تطبيق_عقار https:\/\/sa.aqar.fm\/r\/224b6c04"
+        },
+        {
+            "role": "customer",
+            "text": "هل هذا فيه احد فيه وحده تبي تجي تشوفه  ؟"
+        },
+        {
+            "role": "customer",
+            "text": "مشتراهم بنك"
+        },
+        {
+            "role": "customer",
+            "text": "رد عليك ابو غيث ؟"
+        },
+        {
+            "role": "customer",
+            "text": "انا اضفت شخص امس بقوسي والى الان ماطلع لي بمنشئات"
+        },
+        {
+            "role": "customer",
+            "text": "انا مستاجر الاستراحة ب 25 الف \nلو بعيد تاجيرها وش الحلول اني ارفع السعر ؟ هل فيه طريقه؟!"
+        },
+        {
+            "role": "customer",
+            "text": "ايه"
+        },
+        {
+            "role": "customer",
+            "text": "واذا ماحول ؟"
+        },
+        {
+            "role": "customer",
+            "text": "اول مره بيحول ويستلم الاستراحه السنه الثانيه بيلتزم بالي في المنصه"
+        },
+        {
+            "role": "customer",
+            "text": "انت مستاجرها ب 25 الف \nوهي تسوي 60 وفيها"
+        },
+        {
+            "role": "customer",
+            "text": "صعب"
+        },
+        {
+            "role": "customer",
+            "text": "طيب لو الغي العقد وهي تاجرها تقدر ؟!"
+        },
+        {
+            "role": "customer",
+            "text": "يعني نفس المشكله مافيه حل"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "ابو بسام"
+        },
+        {
+            "role": "customer",
+            "text": "فيه واحد بيزور الموقع بعد المغرب فيه احد \nفيلا للبيع في شارع رقم 293, حي الياسمين, مدينة الرياض, منطقة الرياض \n #تطبيق_عقار https:\/\/sa.aqar.fm\/r\/debb7147"
+        },
+        {
+            "role": "customer",
+            "text": "كيف بتكون"
+        },
+        {
+            "role": "customer",
+            "text": "الظاهر انه كلمك هو سعود"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

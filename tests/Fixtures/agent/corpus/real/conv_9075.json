@@ -1,0 +1,611 @@
+{
+    "type": "real_conversation",
+    "id": "conv_9075",
+    "tenant_id": 1507,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "نجيبه له"
+        },
+        {
+            "role": "customer",
+            "text": "جزم ياخذه هو ؟"
+        },
+        {
+            "role": "customer",
+            "text": "بكم اجرته"
+        },
+        {
+            "role": "customer",
+            "text": "متى يبي يسكن"
+        },
+        {
+            "role": "customer",
+            "text": "كم يبون مدة"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "هلا بك"
+        },
+        {
+            "role": "customer",
+            "text": "ان شاء الله اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "معليش بعيد عن جوالي"
+        },
+        {
+            "role": "customer",
+            "text": "الليلة عندهم"
+        },
+        {
+            "role": "customer",
+            "text": "👍🏼👍🏼"
+        },
+        {
+            "role": "customer",
+            "text": "انت قايله فيه شاشه ؟"
+        },
+        {
+            "role": "customer",
+            "text": "لا مابه"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "يعني ناقص حاليا بتوقاز"
+        },
+        {
+            "role": "customer",
+            "text": "سم"
+        },
+        {
+            "role": "customer",
+            "text": "الحين يكلمك ابوياسر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اي حساب"
+        },
+        {
+            "role": "customer",
+            "text": "تمام\nانا بس مادري وش تبي به"
+        },
+        {
+            "role": "customer",
+            "text": "الحين عرفت"
+        },
+        {
+            "role": "customer",
+            "text": "192608010017786\nعبدالله فهد عبدالله العمار"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "وصل"
+        },
+        {
+            "role": "customer",
+            "text": "حاضر انتظر حسابهم يوصل"
+        },
+        {
+            "role": "customer",
+            "text": "للحين ما ارسلوا"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "حولت لهم"
+        },
+        {
+            "role": "customer",
+            "text": "السلطان"
+        },
+        {
+            "role": "customer",
+            "text": "الفصول الأربعة"
+        },
+        {
+            "role": "customer",
+            "text": "عادي اذا يبي يروح يستلمه هو"
+        },
+        {
+            "role": "customer",
+            "text": "بكرا يبي يجيبه هو المحل يوصله يقول ابوياسر"
+        },
+        {
+            "role": "customer",
+            "text": "انتظره"
+        },
+        {
+            "role": "customer",
+            "text": "اتصل بك السواق ؟"
+        },
+        {
+            "role": "customer",
+            "text": "حق المحل"
+        },
+        {
+            "role": "customer",
+            "text": "050 843 8070"
+        },
+        {
+            "role": "customer",
+            "text": "ناصر"
+        },
+        {
+            "role": "customer",
+            "text": "يعرفه اللي بالفايزية ثلاجه وحدة"
+        },
+        {
+            "role": "customer",
+            "text": "هذا منهو"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اي شقه"
+        },
+        {
+            "role": "customer",
+            "text": "ماوصلته للحين ؟"
+        },
+        {
+            "role": "customer",
+            "text": "+966 50 915 5429"
+        },
+        {
+            "role": "customer",
+            "text": "+966 53 890 3280"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "ايه تواصلت وللحين م رد علي"
+        },
+        {
+            "role": "customer",
+            "text": "الزبون اللي يبي ثلاث شقق يقول ارسلك ومارديت"
+        },
+        {
+            "role": "customer",
+            "text": "+966 54 234 0384"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "من كلامه يبدو كويس وفرصة انه يبي ياخذ الثلاث كلهن"
+        },
+        {
+            "role": "customer",
+            "text": "تبشر بالخير"
+        },
+        {
+            "role": "customer",
+            "text": "هذولا اللي يبون الشقتين"
+        },
+        {
+            "role": "customer",
+            "text": "البنات"
+        },
+        {
+            "role": "customer",
+            "text": "بس ثلاجة"
+        },
+        {
+            "role": "customer",
+            "text": "ويمكن شاشه"
+        },
+        {
+            "role": "customer",
+            "text": "كم يبي يجلسون به"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "يعني مافي غرفة وحمام ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ابوياسر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "البنات ؟"
+        },
+        {
+            "role": "customer",
+            "text": "اشوفه جازم"
+        },
+        {
+            "role": "customer",
+            "text": "تواصل مع ابوياسر"
+        },
+        {
+            "role": "customer",
+            "text": "يرسل للمحل"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "لا اجل قليل"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "مافهمت"
+        },
+        {
+            "role": "customer",
+            "text": "للحين ماوصلت لهم الشاشه والثلاجة"
+        },
+        {
+            "role": "customer",
+            "text": "عندي زبون يبي الاستديو"
+        },
+        {
+            "role": "customer",
+            "text": "متوفر"
+        },
+        {
+            "role": "customer",
+            "text": "او انحجز"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "اللي 1300 موجوده ؟"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "+966 55 685 4230"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلك هذا يبي شقه"
+        },
+        {
+            "role": "customer",
+            "text": "اذا عندك احد يبي ثنتين فهو اولى"
+        },
+        {
+            "role": "customer",
+            "text": "قلت له ممكن نراعيك 1600"
+        },
+        {
+            "role": "customer",
+            "text": "جزم عليه زبونك"
+        },
+        {
+            "role": "customer",
+            "text": "👍🏼"
+        },
+        {
+            "role": "customer",
+            "text": "25 الف ؟"
+        },
+        {
+            "role": "customer",
+            "text": "وش الفايدة حنا موقعين معه اجل !"
+        },
+        {
+            "role": "customer",
+            "text": "بس عشان ورقة 1500 ريال !"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "أعجبني هذا العرض في حراج\nhttps:\/\/haraj.com.sa\/shared-post\/019cc10e-9b8d-761f-a150-b0a1f36b9ffb\/\n\nإعلانات أخرى للبائع: بوابة الـصفوة العقاري\nhttps:\/\/haraj.com.sa\/@sfwa?src=ios"
+        },
+        {
+            "role": "customer",
+            "text": "الصور 😐😐"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "نزل ذولي"
+        },
+        {
+            "role": "customer",
+            "text": "واحذف الاولات"
+        },
+        {
+            "role": "customer",
+            "text": "تبشر بالخير"
+        },
+        {
+            "role": "customer",
+            "text": "👍🏼"
+        },
+        {
+            "role": "customer",
+            "text": "فيه عقد اكتروني وفاتوره كهرب بااسمي؟"
+        },
+        {
+            "role": "customer",
+            "text": "قصدي ابي فاتوره تكون بااسمي عشان حساب المواطن"
+        },
+        {
+            "role": "customer",
+            "text": "سائل يسأل\n\nوش رايك"
+        },
+        {
+            "role": "customer",
+            "text": "مافهمتك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "👍🏼"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "+966 53 844 6205"
+        },
+        {
+            "role": "customer",
+            "text": "يبي يرسلك هذا يبي يشوف الغرفة والحمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "الله يبارك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "وش رايك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "وصل"
+        },
+        {
+            "role": "customer",
+            "text": "👍🏼"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "575\n369"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "بكرى"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "هلا والله"
+        },
+        {
+            "role": "customer",
+            "text": "متى اقرب واحد يطلع من الشقه الغرفة والحمام"
+        },
+        {
+            "role": "customer",
+            "text": "متى يطلع اقرب واحد"
+        },
+        {
+            "role": "customer",
+            "text": "ماوصلتهم الاغراض ؟"
+        },
+        {
+            "role": "customer",
+            "text": "يقولون ماوصلهن"
+        },
+        {
+            "role": "customer",
+            "text": "يقولون ماوصلهم"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "ايه مواعدهم العصر"
+        },
+        {
+            "role": "customer",
+            "text": "سم"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

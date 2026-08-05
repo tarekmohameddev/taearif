@@ -1,0 +1,807 @@
+{
+    "type": "real_conversation",
+    "id": "conv_11140",
+    "tenant_id": 1732,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "روحت حليمة وانا باقي"
+        },
+        {
+            "role": "customer",
+            "text": "تبغى شي افتح بتجي باقي عند المغسله"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "تحت عنايتك انا بداوم المكتب العصر مابطلع 👍"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل ارسلت له مارد علي"
+        },
+        {
+            "role": "customer",
+            "text": "الحقيقه تأخرنا بشكل كبير"
+        },
+        {
+            "role": "customer",
+            "text": "قبل يومين جاء من السفر"
+        },
+        {
+            "role": "customer",
+            "text": "لعله خير"
+        },
+        {
+            "role": "customer",
+            "text": "تأخيره خيره"
+        },
+        {
+            "role": "customer",
+            "text": "خير ما قلت"
+        },
+        {
+            "role": "customer",
+            "text": "تمام يعطيك العافيه"
+        },
+        {
+            "role": "customer",
+            "text": "استحيت أقله  ماعندي حق البنزين الله يعينك تطلع تصور يامدير ههههه 😂"
+        },
+        {
+            "role": "customer",
+            "text": "حلوه عن بعد منصه هاه ههههه"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مع طلابي"
+        },
+        {
+            "role": "customer",
+            "text": "اصلي بعد الصلاه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "فيه شي"
+        },
+        {
+            "role": "customer",
+            "text": "اجازه هههه 😂"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 16.852785110474, 42.606079101562]"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبًا سلطان،\nتم حجز موعد رقم 11867194620025\nفي عيادة طب أسنان عامة بالمراكز الصحية - الشاطئ\nالأربعاء, 26-فبراير -2026\n12:12 م\nللوصول إلى الموقع: http:\/\/www.google.com\/maps\/place\/16.89827,42.54344 \n \nللتعديل أو الإلغاء: \nSehhaty.sa\n \nيرجى الالتزام بالتعليمات التالية:\n1- الحضور قبل الموعد بـ 10 دقائق\n2- التأخر 10 دقائق يتيح تقديم الخدمة لمستفيد آخر \n3- التغيب 3 مرات دون إلغاء يؤدي لتعليق خدمة الحجز\n\nشكرًا لتفهمك"
+        },
+        {
+            "role": "customer",
+            "text": "استأذنك ياحلو عندي موعد لسلطان اسنان منتظره من اول ان خلصت بدري رجعت تم 👍"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل لي هذا الرابط انشره عندي بالواتس"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم \nكيفك فيصل بشر الرجال حولك شي علشان الراتب ياحلو ابي اقضي لنواف والبنات للعيد قبل الزحمة منها بانتظارك ياغالي ♥️"
+        },
+        {
+            "role": "customer",
+            "text": "ترا هذا راتب شهر 8 المفروض استلمه في 1 مو رمضان \nرمضان استلمه يمك في العيد هههههه 😂 جد والله"
+        },
+        {
+            "role": "customer",
+            "text": "كيفك الحين طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ماشاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "تجي بالسلامة"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسهل يارب"
+        },
+        {
+            "role": "customer",
+            "text": "عند النصار"
+        },
+        {
+            "role": "customer",
+            "text": "اسمع مع المكيفات 120"
+        },
+        {
+            "role": "customer",
+            "text": "150"
+        },
+        {
+            "role": "customer",
+            "text": "بدون اعتقد 80"
+        },
+        {
+            "role": "customer",
+            "text": "خليني ارسل رقم البنت كلمها تمام"
+        },
+        {
+            "role": "customer",
+            "text": "كبيره وانا اخوك"
+        },
+        {
+            "role": "customer",
+            "text": "كلمها"
+        },
+        {
+            "role": "customer",
+            "text": "شوي بدخل الاجتماع تمام"
+        },
+        {
+            "role": "customer",
+            "text": "عند المحل خلصنا تو الصلاه 👍"
+        },
+        {
+            "role": "customer",
+            "text": "اجيب لك معي"
+        },
+        {
+            "role": "customer",
+            "text": "رقم كم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اي دور واي شقه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عندنا مشكله مع اخويه بتاخر شويه مسوي مشاكل مع الوالدين بشوفهم"
+        },
+        {
+            "role": "customer",
+            "text": "بكره بيأخذونه المخدرات"
+        },
+        {
+            "role": "customer",
+            "text": "حسبي الله عليه اتعبنا"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الان بنوديه النفسيه"
+        },
+        {
+            "role": "customer",
+            "text": "حول حق البنزين السياره فاضيه يبوك هههههه"
+        },
+        {
+            "role": "customer",
+            "text": "ومره واحده اجيب شقق 👍 ايجار"
+        },
+        {
+            "role": "customer",
+            "text": "عندي جلسة اليوم مع الدكتور حق اخينا اكرم بعد العشاء مستشفى إرادة محمد بن ناصر حدود الساعتين بخلص منه واستجوابه مع ادارة المستشفى والنفسيه ويجي ان شاء الله تمام استأذنك ياحلو دعواتك 🌹"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسهل ويرفع عنه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "وصلت 👍"
+        },
+        {
+            "role": "customer",
+            "text": "ماخبر الراتب تاخر وانا اخوك وانا بحاجه والله"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "نووووووم 😂"
+        },
+        {
+            "role": "customer",
+            "text": "وكيف"
+        },
+        {
+            "role": "customer",
+            "text": "بنرجع نفس الحكايه"
+        },
+        {
+            "role": "customer",
+            "text": "مشكله"
+        },
+        {
+            "role": "customer",
+            "text": "والله ماعاد ابي اداوم من اليوم عاد صفي لي 15 يوم حق رمضان واعطني باقي الالف حق شهر 8 وانا بتابعك إذا افرغوا و الوجه بالوجه ابيض ياعسل واحنا اخوان مازلنا ماتفرقنا الفلوس وانا معك على طول بس \nايضا حق سويد باقي عندك من طرفي الشهر الجاي باذن الله إذا اموره مشت حقي يوصلني ومانختلف ياعسل ❤️🌹"
+        },
+        {
+            "role": "customer",
+            "text": "رمضان 1500 وشهر ثمانيه 1000 كلها 2500"
+        },
+        {
+            "role": "customer",
+            "text": "اخ فيصل كيفك ياغالي الاسبوع الجاي ان شاء الله يتم الإفراغ وانا اخوك لاتنساني ترا منتظر علشان العيد اقضي لاولادي وكما قلت لك باذن الله مايصير إلا طيب تمام وانا قريب ومنك حيثما  كنت ولايهمك مانستغني وربك يفرجها 🌹👍"
+        },
+        {
+            "role": "customer",
+            "text": "ماعاد كلمتني وكاني شفتك الان مريح بالمكتب نووووم"
+        },
+        {
+            "role": "customer",
+            "text": "صديقي أعرفك عوافي ارتاح موعدنا المساء"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "احتاج الفلوس ضروري"
+        },
+        {
+            "role": "customer",
+            "text": "بيتي فاضي وعندي التزامات"
+        },
+        {
+            "role": "customer",
+            "text": "تاخرت عليه"
+        },
+        {
+            "role": "customer",
+            "text": "امس اخوي أعطاني 100 مشيت فيها استعجل عليه فيصل يعطيك العافيه"
+        },
+        {
+            "role": "customer",
+            "text": "الإفراغ بيتاخر وعارفه ورمضان على وشك الانتهاء ماتضمن البنك"
+        },
+        {
+            "role": "customer",
+            "text": "لاتخليني اجيك يوميا مو حلوه اعطني خبر احنا اخوان ترا نعم بانتظارك أنا من بعد الساعة تسعة منتظرك علشان حقي فيصل بحاجة ماسه لها منتظر ردك"
+        },
+        {
+            "role": "customer",
+            "text": "دور كامل للإيجار مكون من 6غرف4دورات مياه غرفة غسيل صاله الدور كبير وشرح دور ثاني الايجار شهري2500"
+        },
+        {
+            "role": "customer",
+            "text": "ست هذه"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.google.com\/?q=16.951418,42.551048"
+        },
+        {
+            "role": "customer",
+            "text": "عماره3\nشقه3"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "جديد\n5غرف"
+        },
+        {
+            "role": "customer",
+            "text": "2500 الاجار"
+        },
+        {
+            "role": "customer",
+            "text": "هذي شقه جديده"
+        },
+        {
+            "role": "customer",
+            "text": "هذه خمس"
+        },
+        {
+            "role": "customer",
+            "text": "الموسى"
+        },
+        {
+            "role": "customer",
+            "text": "هذه حق  متعب اللي قلت لك عليه شوفها اعطاني بعد ماطلعت اعطي المستأجر يشوفها مافي مشكله تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مافي عندنا من العروض السابقه خمس هذه توه حصلتها ياحلو 😘👍"
+        },
+        {
+            "role": "customer",
+            "text": "لاتنساني فيصل بكره إذا افرغت تمام باقي الراتب نقصت اغراض ياحلو الله يسهل 🌹"
+        },
+        {
+            "role": "customer",
+            "text": "شقة1دور ارضي"
+        },
+        {
+            "role": "customer",
+            "text": "Building number one, flat number 10"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "حصلت لك هذه من خوي الان"
+        },
+        {
+            "role": "customer",
+            "text": "مكيفات ومطبخ راكب"
+        },
+        {
+            "role": "customer",
+            "text": "فيه في الجوال حق المكتب اللي عند فارما براند شوفها موجوده من عروضنا  القديمه 2800 الايجار ممتازه خلي حليمه تدور عليه 👍"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل بيتاخر الإفراغ وانا عارف حول من عندك بحاجة للفلوس ضروري لأغراض مهمه احتاجها لأسرتي يعطيك العافية 👍🌹"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "المفتاح عنده لما رفض الرجال يبغى الشقه الثاني تذكرت عند المصري اللي عنده النظاره"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "بشر رحت البنك"
+        },
+        {
+            "role": "customer",
+            "text": "لاتقلق كلامك صحيح"
+        },
+        {
+            "role": "customer",
+            "text": "كلها موجوده يعلم الله"
+        },
+        {
+            "role": "customer",
+            "text": "وانا الحين خارج من بيتي الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "055 610 4669‬\nعلي البقمي"
+        },
+        {
+            "role": "customer",
+            "text": "جارنا الله الله لا أوصيك ❤️🌹"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "مقطعي حلو لاني احبك 💕 بعيدا عن خضم ومعارك الحياة نسأل الله التوفيق والسداد وان يعطينا حتى يرضينا 🌹تطمن وطمن قلبك ابونواف فيه خير لك الحمدلله  👍"
+        },
+        {
+            "role": "customer",
+            "text": "رد على البقمي"
+        },
+        {
+            "role": "customer",
+            "text": "من امس يبغى"
+        },
+        {
+            "role": "customer",
+            "text": "تم ياعسل"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا فيصل كيفك باقي فلوس عندك ياحلو \n\n\n\n\n\n\n\nحق سويد مانسيت أنا من طرفي الله الله إن شاء الله هذا الراتب بعد يومين كذا ياحلو بمر عليك لما ينزله الراتب تم 😂😂🌹🌹"
+        },
+        {
+            "role": "customer",
+            "text": "نعيد عليكم ماتردون المعايده وكانك من الجماعه هههههه 😂 شوشو"
+        },
+        {
+            "role": "customer",
+            "text": "هههههه"
+        },
+        {
+            "role": "customer",
+            "text": "كيفك"
+        },
+        {
+            "role": "customer",
+            "text": "دوام والا باقي"
+        },
+        {
+            "role": "customer",
+            "text": "عادي اجيب لك عملاء يبغون تمليك عادي"
+        },
+        {
+            "role": "customer",
+            "text": "تستفيد وانا اخوك انت 👍"
+        },
+        {
+            "role": "customer",
+            "text": "مطلوب فيلا في ابو عريش على ارض مستقلة وسعرها لايتجاوز مليون"
+        },
+        {
+            "role": "customer",
+            "text": "فيه عندكم"
+        },
+        {
+            "role": "customer",
+            "text": "ايش اخبارك"
+        },
+        {
+            "role": "customer",
+            "text": "حلو"
+        },
+        {
+            "role": "customer",
+            "text": "ممتاز"
+        },
+        {
+            "role": "customer",
+            "text": "موجوده"
+        },
+        {
+            "role": "customer",
+            "text": "جميل خليني اكلمه تم"
+        },
+        {
+            "role": "customer",
+            "text": "بتاكد منه كاش والابنك معي هوه الان لحظات"
+        },
+        {
+            "role": "customer",
+            "text": "شكله عملي معك برا برا"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل تفاصيلها\nوافق"
+        },
+        {
+            "role": "customer",
+            "text": "تمام اها اوك 👍"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "بشر عن الإفراغ تم والا باقي وابو إسماعيل ضبط وضعه على الراتب الجديد والا نفس مشكلته السابقة"
+        },
+        {
+            "role": "customer",
+            "text": "والله يقول مشكلته مع سما والبدل حق عمله مااشعروه انه بيبعدون البدل يقلعهم نقص منه الراتب الله يعينه ان شاء الله تزين اموره و الله يسهل امره"
+        },
+        {
+            "role": "customer",
+            "text": "انت ابوها فيصل ماشاء الله عليك ماتقصر معه الغبنة اسماعيل متفاءل"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "فيه حل لهذا فيصل طلب زبون اسمعه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: contacts]"
+        },
+        {
+            "role": "customer",
+            "text": "هذا الرجل اسمه عبدالله"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "لاني أنا ابغى احد يعطيني يبغى جميع السندات ويبقى جهة وحدة بس اسدده"
+        },
+        {
+            "role": "customer",
+            "text": "يعني قولي 55 او 50 الف"
+        },
+        {
+            "role": "customer",
+            "text": "العقاري بإذن الله في شهر محرم باخذ"
+        },
+        {
+            "role": "customer",
+            "text": "يعني لو الرجال بيعطيني علشان اسدد السندات يبقى هو الوحيد اللي اسدده خارج البنك"
+        },
+        {
+            "role": "customer",
+            "text": "بس ان شاء الله يعطيني لاني والله  العظيم في كرب وهم\nبالله شوفيه إذا بيتيطين كان بها واذا رفض اروح ادور واحد لاني لازم الأحد أدفع"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هذه الي تبغا خمسين وترجعها ميه وتاخد عقاري بمحرم او صفر"
+        },
+        {
+            "role": "customer",
+            "text": "احتاج اسدد الايقاف اللي عندي وتطلعوا لي مبلغ فائض أكمل فيه بيتي"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اًك حبيبي تجي بالسلامة يارب موفق 🌹"
+        },
+        {
+            "role": "customer",
+            "text": "عندي عميلين ايضا سداد واحد منه عليه نايفات وراجحي كلها 190"
+        },
+        {
+            "role": "customer",
+            "text": "كيف وضع اللي قبلهم منتظرين مني خبر ياحلو شكلك باقي بنجران 😂 جد"
+        },
+        {
+            "role": "customer",
+            "text": "اوك حبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "لاني أنا ابغى احد يعطيني يبغى جميع السندات ويبقى جهة وحدة بس اسدده"
+        },
+        {
+            "role": "customer",
+            "text": "يعني قولي 55 او 50 الف"
+        },
+        {
+            "role": "customer",
+            "text": "العقاري بإذن الله في شهر محرم باخذ"
+        },
+        {
+            "role": "customer",
+            "text": "يعني لو الرجال بيعطيني علشان اسدد السندات يبقى هو الوحيد اللي اسدده خارج البنك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هذه الي تبغا خمسين وترجعها ميه وتاخد عقاري بمحرم او صفر"
+        },
+        {
+            "role": "customer",
+            "text": "هذه تقول إذا تم معها ويضبط لي لاني تعاملت مع ثلاث مكاتب ماضبطت وبعدها بعطيه الرقم من خويتها اعطتني الموضوع شوف امرها ومتواصلين \n—————————————————-\nوبشر كيف ابو إسماعيل سويد حصلت له حل هاه بشر"
+        },
+        {
+            "role": "customer",
+            "text": "الطلب الثاني \nفيه ارض تجاريه معك على شارع المدينة يبغاها واحد زميل لي من المدرسه \n\n———————————————"
+        },
+        {
+            "role": "customer",
+            "text": "واحده ثانيه عندها من شركة نايفات والراجحي مايقارب عليها 190 الف ريال تبغى تسددها معلمه هيه وراتبها 17 اف ريال وتبغى فايض"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تعرف احد يسدد ؟"
+        },
+        {
+            "role": "customer",
+            "text": "30 الف"
+        },
+        {
+            "role": "customer",
+            "text": "بكفيل وكل شيي"
+        },
+        {
+            "role": "customer",
+            "text": "بيتزوج ويبغاها 30 الف والرجال عنده شقه وجاهز الضمانات كفيل والمبلغ يرجعها وشيك السعي مابينك وبين مكتب الظبي تمام 👍"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هذه اللي قلت لك تبغى 190 الف ريال تقفل موضوعها إذا بيضبط"
+        },
+        {
+            "role": "customer",
+            "text": "PrintPage.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "نووووم"
+        },
+        {
+            "role": "customer",
+            "text": "شفت سيارتك برا"
+        },
+        {
+            "role": "customer",
+            "text": "ايش سويت في الطلبات بشر"
+        },
+        {
+            "role": "customer",
+            "text": "البنت حق الراجحي والتليفات سداد"
+        },
+        {
+            "role": "customer",
+            "text": "النايفات"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

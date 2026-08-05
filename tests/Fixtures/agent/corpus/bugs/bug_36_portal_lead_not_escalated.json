@@ -1,0 +1,15 @@
+{
+    "type": "bug_regression",
+    "id": "bug_36_portal_lead_not_escalated",
+    "description": "Portal lead template from aqar.fm must be treated as a buyer inquiry, NOT a human escalation request",
+    "turns": [
+        {
+            "role": "customer",
+            "text": "السلام عليكم أرغب في التواصل مع المعلن على تطبيق عقار بخصوص الإعلان: شقة للإيجار في شارع الموازيني, حي الواحة, مدينة جدة, منطقة مكة المكرمة بسعر 32000.00 ريال https://sa.aqar.fm/ad/6633737/ar?a_id=7e8"
+        }
+    ],
+    "invariants": [
+        "portal_lead_resolved",
+        "no_unevidenced_escalation"
+    ]
+}

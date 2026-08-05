@@ -3,7 +3,7 @@
 namespace App\Domain\Communication\Automation;
 
 use App\Domain\Communication\Services\AIResponderService;
-use App\Domain\Communication\WhatsApp\Bot\BotOrchestrator;
+use App\Domain\RealEstateAgent\Brain\Employee;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\WaAiConfig;
@@ -77,7 +77,6 @@ class AutomationEngine
                 : null;
 
             if ($botConfig !== null && in_array($botConfig->autonomy_level, ['shadow', 'autonomous'], true)) {
-                $orchestrator = app(BotOrchestrator::class);
                 $rawPayload = is_array($meta['raw_payload'] ?? null) ? $meta['raw_payload'] : [];
                 $customerPhone = (string) (
                     $meta['from']
@@ -87,7 +86,7 @@ class AutomationEngine
                     ?? ''
                 );
                 $conversationId = (int) $message->conversation_id;
-                $orchestrator->handle(
+                app(Employee::class)->runTurn(
                     $tenantId,
                     $conversationId,
                     $waNumberId,

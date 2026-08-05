@@ -1,0 +1,711 @@
+{
+    "type": "real_conversation",
+    "id": "conv_1315",
+    "tenant_id": 1557,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "فيه غيره"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "كيفك"
+        },
+        {
+            "role": "customer",
+            "text": "عطني ترقيم الشقق كل شقه ومن مستاجره"
+        },
+        {
+            "role": "customer",
+            "text": "فيه عقود تبي تجديد صحيح"
+        },
+        {
+            "role": "customer",
+            "text": "وعطني برنت العقود بحوالاتهم و متى ينتهي كل عقد اجار"
+        },
+        {
+            "role": "customer",
+            "text": "وحقت اخوي حفير كم عليه"
+        },
+        {
+            "role": "customer",
+            "text": "وكم كل شقه مستاجره"
+        },
+        {
+            "role": "customer",
+            "text": "وكم تتوقع لو نرفع السعر او رايك"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر ارجع بريده اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ايهم لك جاد"
+        },
+        {
+            "role": "customer",
+            "text": "وين احصل تجديد تلقائي"
+        },
+        {
+            "role": "customer",
+            "text": "كيف احصل وين الي بينتهي"
+        },
+        {
+            "role": "customer",
+            "text": "شف اي وقت تدخل تزينهم افضل"
+        },
+        {
+            "role": "customer",
+            "text": "مودي احوس شي"
+        },
+        {
+            "role": "customer",
+            "text": "يكون عكس علينا"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "خل طاه يسدد الرسوم"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا عبدالله\n\nنفيدك بتوثيق العقد رقم #10989534549 بنجاح، وسيكون العقد مع المستأجر طه وفقى غالب طه نشطًا بتاريخ  2026-02-01. ويمكنك الاطلاع عليه عبر حسابك في إيجار https:\/\/eservices.ejar.sa\/r\/MHRT2CHU\n\nنسعد بخدمتك\nللاتصال :199011"
+        },
+        {
+            "role": "customer",
+            "text": "ماجددت"
+        },
+        {
+            "role": "customer",
+            "text": "قايلك رفضته قبل امس ههه"
+        },
+        {
+            "role": "customer",
+            "text": "لا مافيه فلوس"
+        },
+        {
+            "role": "customer",
+            "text": "طيب العقد من يسدده"
+        },
+        {
+            "role": "customer",
+            "text": "اسدده انا واخذه من الجمعيه"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المؤجر:\nنفيدك بأن عقد الإيجار رقم #10844662073 للمستأجر (MUHAMMAD SHAKEEL MUHAMMAD JAMIL) سينتهي بتاريخ 2026-04-04، ويمكنك تجديد العقد عبر الرابط السريع: (https:\/\/eservices.ejar.sa\/r\/UENTVMUS) أو عبر حسابك في إيجار.\nوفي حال عدم رغبتك في تجديد العقد تأكد من تعبئة نموذج التسليم عند انتهاء العقد.\nنسعد بخدمتك\nمركز الاتصال الموحّد: 199011"
+        },
+        {
+            "role": "customer",
+            "text": "جاد حفير اخر عقد سداد له متى"
+        },
+        {
+            "role": "customer",
+            "text": "كم مسداد وكم باقي له ابي برنت له نرسله يسدد"
+        },
+        {
+            "role": "customer",
+            "text": "وعمر كذالك"
+        },
+        {
+            "role": "customer",
+            "text": "اذكره مسدد قبل"
+        },
+        {
+            "role": "customer",
+            "text": "حفير حق سنه"
+        },
+        {
+            "role": "customer",
+            "text": "رقم السقه"
+        },
+        {
+            "role": "customer",
+            "text": "الشقه"
+        },
+        {
+            "role": "customer",
+            "text": "رقمه"
+        },
+        {
+            "role": "customer",
+            "text": "نقدر نحمله المسئوليه فيه نظام او اي شي"
+        },
+        {
+            "role": "customer",
+            "text": "نبي نرفع به"
+        },
+        {
+            "role": "customer",
+            "text": "يرد عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "الشقه هذي يطلع منها وناجرها"
+        },
+        {
+            "role": "customer",
+            "text": "مانبي احد فيها"
+        },
+        {
+            "role": "customer",
+            "text": "مافيها عقد وش نظامه"
+        },
+        {
+            "role": "customer",
+            "text": "رمضان طالع من زمان يقوله"
+        },
+        {
+            "role": "customer",
+            "text": "اخوي عمر مستلم المبنى"
+        },
+        {
+            "role": "customer",
+            "text": "يحط له عقد ونشوف كم عليه من سنه بضبط"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "هذا ويه"
+        },
+        {
+            "role": "customer",
+            "text": "وينه"
+        },
+        {
+            "role": "customer",
+            "text": "كم سعره الشقه تسوى"
+        },
+        {
+            "role": "customer",
+            "text": "عطنا التجديدات"
+        },
+        {
+            "role": "customer",
+            "text": "انت ادخل عدله الان"
+        },
+        {
+            "role": "customer",
+            "text": "من اجل نخلص"
+        },
+        {
+            "role": "customer",
+            "text": "او علمني كيف الطريقه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام لو تبي اجيك"
+        },
+        {
+            "role": "customer",
+            "text": "انتم متى بالمكتب"
+        },
+        {
+            "role": "customer",
+            "text": "بحاول امر عليك بكرا"
+        },
+        {
+            "role": "customer",
+            "text": "نفس موقعكم"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "هلابك"
+        },
+        {
+            "role": "customer",
+            "text": "بكشت ارجع الاحد او الاثنين"
+        },
+        {
+            "role": "customer",
+            "text": "نشوف كيف بيدفعون"
+        },
+        {
+            "role": "customer",
+            "text": "الشقه كم تسوىً حقت عمر"
+        },
+        {
+            "role": "customer",
+            "text": "على شان مانضلم الوقف"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "مرحباً عبدالله\nنفيدك بإنشاء مديونية بقيمة 125.0 SAR\nللفاتورة رقم 2511195825884\nللعقد المتجدد تلقائيًا رقم 10447614265\nويمكنك الدفع مباشرة من خلال الرابط https:\/\/eservices.ejar.sa\/r\/EPCHFGHN"
+        },
+        {
+            "role": "customer",
+            "text": "هلابك"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "شكرا"
+        },
+        {
+            "role": "customer",
+            "text": "تدخل تقفلهم"
+        },
+        {
+            "role": "customer",
+            "text": "document_1771439713523.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "هلابك"
+        },
+        {
+            "role": "customer",
+            "text": "فيه نبسه طالعه من اجار لم يتم تحصيله"
+        },
+        {
+            "role": "customer",
+            "text": "كم حطين النسبه"
+        },
+        {
+            "role": "customer",
+            "text": "مو 5 هي"
+        },
+        {
+            "role": "customer",
+            "text": "ماتزودنا كد اناقشنا بموضوع النسبه وقلت لزم مع الشركاء اول"
+        },
+        {
+            "role": "customer",
+            "text": "ناقشنا"
+        },
+        {
+            "role": "customer",
+            "text": "لا وين يالغالي 5 بالميه محصل ب 5 8 صعبه"
+        },
+        {
+            "role": "customer",
+            "text": "ماعتمدنا طريقة 7 قلتو 7 قلت لكم لا"
+        },
+        {
+            "role": "customer",
+            "text": "توني فاتحه لانه تبي جلسه ومانسيته"
+        },
+        {
+            "role": "customer",
+            "text": "شكرا الله يغنيك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "شكرا"
+        },
+        {
+            "role": "customer",
+            "text": "خله تزبط الشيكات وسجل شيك"
+        },
+        {
+            "role": "customer",
+            "text": "جاد كم غرفه عزاب عندنا بضبط وكل غرفه كم اجاره"
+        },
+        {
+            "role": "customer",
+            "text": "تمام شكرا"
+        },
+        {
+            "role": "customer",
+            "text": "ويسددون الكهرباء"
+        },
+        {
+            "role": "customer",
+            "text": "كل شهر"
+        },
+        {
+            "role": "customer",
+            "text": "تمام شكرا"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "كم مستاجر حق الادويه"
+        },
+        {
+            "role": "customer",
+            "text": "القديم والجديد"
+        },
+        {
+            "role": "customer",
+            "text": "بيطلع او موجود بيستمر"
+        },
+        {
+            "role": "customer",
+            "text": "يعني عماله موجودين او طالعين"
+        },
+        {
+            "role": "customer",
+            "text": "شف عنه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "+966 53 754 7638"
+        },
+        {
+            "role": "customer",
+            "text": "هذا كم باقي على عقده"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.google.com?q=%D9%8A%D9%88%D8%B1%D8%AA%D9%8A%D8%B3%D8%AA%D8%8C%207380%20%D8%B7%D8%B1%D9%8A%D9%82%20%D8%A7%D9%84%D8%B3%D9%84%D8%A7%D9%85%D8%8C%20%D8%AD%D9%8A%20%D8%A7%D9%84%D9%86%D8%AE%D9%8A%D9%84%D8%8C%20QBUE2973%D8%8C%202973%D8%8C%20%D8%A8%D8%B1%D9%8A%D8%AF%D8%A9%2052374&ftid=0x157f57e97cb48637:0xcea122ffb2ec3dd9&entry=gps&shh=CAE&lucs=,94297699,100804504,94284460,94231188,94280568,47071704,94218641,94282134,94286869&g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "هذاني جاي بطريق"
+        },
+        {
+            "role": "customer",
+            "text": "خميس دقايق"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "كيفك جاد"
+        },
+        {
+            "role": "customer",
+            "text": "المستاجر يبي صيانه فيه تهريب شف له سباك"
+        },
+        {
+            "role": "customer",
+            "text": "اتوقع جاه سباك قبل كذا مره ولسى يهرب عنده"
+        },
+        {
+            "role": "customer",
+            "text": "اتوقع اشتغلنا فيه قبل"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام خله يشوفه السباك"
+        },
+        {
+            "role": "customer",
+            "text": "بكم يكلف"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هذا كم مستاجر سنوي"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "شكرا"
+        },
+        {
+            "role": "customer",
+            "text": "جاد وشلونك"
+        },
+        {
+            "role": "customer",
+            "text": "علم من يبي يستمر ارتفع الاجار"
+        },
+        {
+            "role": "customer",
+            "text": "سبق لهم قبل العقد بثلاث شهور"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 3810\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #3810"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 8203\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #8203"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 9401\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #9401"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 0729\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #0729"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 5521\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #5521"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 6890\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #6890"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 9315\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #9315"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 2587\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #2587"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 7244\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #7244"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 8153\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #8153"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 1832\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #1832"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 5953\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #5953"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 0645\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #0645"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 8793\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #8793"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 1550\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #1550"
+        },
+        {
+            "role": "customer",
+            "text": "شف لي الي عليهم مستحقات 115 حقت التجديد"
+        },
+        {
+            "role": "customer",
+            "text": "يشحنونه ويتسدد"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 7390\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #7390"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 2510\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #2510"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 5995\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #5995"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "حلو"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب بنشوف كم المدفوع عليه العقود"
+        },
+        {
+            "role": "customer",
+            "text": "8 صعبه جد بكلمهم ب 6 بالميه"
+        },
+        {
+            "role": "customer",
+            "text": "ماوفقت قبل اذا 6 تمام انا محصل الصدق عندي اداره بشمال بمكتب"
+        },
+        {
+            "role": "customer",
+            "text": "تخذون رسوم العقود صح"
+        },
+        {
+            "role": "customer",
+            "text": "تجديد العقد كم عندكم"
+        },
+        {
+            "role": "customer",
+            "text": "شوف اذا ب 6 كويس اذا مودكم الي يريحكم فيه مكتب جاهز ب 6 ننقلهم ماودي اطلع بس السعر عالي جدا"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

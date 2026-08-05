@@ -1,0 +1,519 @@
+{
+    "type": "real_conversation",
+    "id": "conv_2212",
+    "tenant_id": 1168,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "حوالة واردة محلية\nمن: تنفيذ قضائى : 401014703628918\nحساب:*\nإلى:029906*\nمبلغ:SAR 120\nعبر:AL RAJHI BANK\nفي:2026-01-13 11:35"
+        },
+        {
+            "role": "customer",
+            "text": "CamScanner 14‏-01‏-2026 19.00.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "CamScanner 14‏-01‏-2026 19.03.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "1079518898"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "CamScanner 15‏-01‏-2026 16.47.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "77777777-10012026124541.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "119608010107140"
+        },
+        {
+            "role": "customer",
+            "text": "CamScanner 21‏-01‏-2026 09.47.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ابعت لامو الرسايل دي يا محمود ما يحرجنا مع احد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ابعت لامو الرسايل دي يا محمود ما يحرجنا مع احد"
+        },
+        {
+            "role": "customer",
+            "text": "ه"
+        },
+        {
+            "role": "customer",
+            "text": "شراء إنترنت\nبطاقة:7086*;مدى \nمبلغ:85.00 SAR\nحساب:899940*\nمن:ROZAN INT\nفي:2026-01-25 10:09"
+        },
+        {
+            "role": "customer",
+            "text": "bill.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/call.whatsapp.com\/video\/jcpql7szRSzfKbED7f1bSD"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ه"
+        },
+        {
+            "role": "customer",
+            "text": "حوالة واردة راتب\nإلى:899940*\nمبلغ: 9,617.65 SAR\nفي:2026-02-01 00:36خصم قسط تمويل\nالنوع:تمويل عقاري\nالقسط: 1,913.36 SAR\nالمبلغ المتبقي: 589,541.95 SAR\nمن:899940*\nفي:2026\/02\/01 03:43خصم قسط تمويل\nالنوع:تمويل شخصي\nالقسط: 2,404.00 SAR\nالمبلغ المتبقي: 11,852.25 SAR\nمن:899940*\nفي:2026\/02\/01 03:43"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "بطاقة إئتمانية تسديد\nبطاقة:5548*;إئتمانية\nمبلغ:SAR 1,141.66\nمن:899940*\nفي:2026-02-02 06:03بطاقة إئتمانية تسديد\nبطاقة:9158*;إئتمانية\nمبلغ:SAR 320.25\nمن:899940*\nفي:2026-02-02 06:32"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبًا،\r\nتم إعادة الخدمة الكهربائية لحسابك رقم 30147930539 طلب رقم 28080873.\r\nوبخدمتك في أي وقت من خلال تطبيق الكهرباء باستخدام الرابط التالي:\r\nhttps:\/\/www.se.com.sa\/app\r\n\r\nيومك سعيد."
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عقود ايجار - قوي - نقل كفالة- تجديد اقامة - تامين طبي - تامين سيارات ونقل ملكية سيارت - السجل التجاري - اصدار رخصه تجاريه - شركة الكهرباء - شركة المياه- حجز طيران- ناجز رفع دعوي وطلبات تنفيذ- عمل زيارة شخصية وعائلية وتجديدها-  ملاحظه حماية الاجور - انشاء حساب الاهلي والراجحي - اصدار بطاقة نقل وبطاقه تشغيل-  خدمات اليكترونيه اخري"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "شكرا لتواصلك. لتقديم شكوى نأمل زيارة الرابط أدناه    \n https:\/\/www.gosi.gov.sa\/GOSIOnline\/File_a_Complaint"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "NAWAL MAKAAWI CV (2).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ه"
+        },
+        {
+            "role": "customer",
+            "text": "شراء إنترنت\nبطاقة:7086*;مدى \nمبلغ:290.00 SAR\nحساب:899940*\nمن:Nuzul App\nفي:2026-02-10 10:39"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "20605729134.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "الصك"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/hwYmYahi7Ey1KmbS8?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/hwYmYahi7Ey1KmbS8?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الصك"
+        },
+        {
+            "role": "customer",
+            "text": "مقاول معماري الرياض \/\/عماير\/ فلل\/ تشطيب\/ ترميم\/ادوار متكررة\/ ملاحق\/ محطات \/مشاريع تجارية\/مساجد\/ استراحات\/ هناجر \/تسوير اراضي البيضاء \/\/ اتواصل 0556862087"
+        },
+        {
+            "role": "customer",
+            "text": "حوالة واردة محلية\nمن: مديرية الشئون الصحية \/ وزارة\nحساب:*\nإلى:899940*\nمبلغ:SAR 1,200\nعبر:SAUDI NATIONAL BANK\nفي:2026-03-01 10:22"
+        },
+        {
+            "role": "customer",
+            "text": "بطاقة إئتمانية تسديد\nبطاقة:5548*;إئتمانية\nمبلغ:SAR 1,168.43\nمن:899940*\nفي:2026-03-02 06:05\nبطاقة إئتمانية تسديد\nبطاقة:9158*;إئتمانية\nمبلغ:SAR 311.89\nمن:899940*\nفي:2026-03-02 06:04"
+        },
+        {
+            "role": "customer",
+            "text": "د"
+        },
+        {
+            "role": "customer",
+            "text": "خصم قسط تمويل\nالنوع:تمويل شخصي\nالقسط: 2,404.00 SAR\nالمبلغ المتبقي: 9,616.00 SAR\nمن:899940*\nفي:2026\/03\/01 04:19\nخصم قسط تمويل\nالنوع:تمويل عقاري\nالقسط: 1,913.36 SAR\nالمبلغ المتبقي: 589,189.83 SAR\nمن:899940*\nفي:2026\/03\/01 04:19"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/hwYmYahi7Ey1KmbS8?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "0501012993"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "حوالة واردة محلية\nمن: تنفيذ قضائى : 401014703628918\nحساب:*\nإلى:029906*\nمبلغ:SAR 2,971\nعبر:AL RAJHI BANK\nفي:2026-03-05 13:03\nحوالة واردة محلية\nمن: تنفيذ قضائى : 401014703993436\nحساب:*\nإلى:029906*\nمبلغ:SAR 2,500\nعبر:AL RAJHI BANK\nفي:2026-03-05 13:03\nحوالة واردة محلية\nمن: تنفيذ قضائى : 401014703978994\nحساب:*\nإلى:029906*\nمبلغ:SAR 132\nعبر:AL RAJHI BANK\nفي:2026-03-05 13:03"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزي\/تي منجيه أبوزية،\nلحجز موعد زيارة الباحث الاجتماعي واختيار الوقت المناسب يرجى زيارة الرابط:\n https:\/\/hrsd-scs.sa\/scs\/?id=4bd3f62c\nسيتم تأكيد الموعد برسالة قبل 24–48 ساعة من وقت الزيارة. \nتنفيذ الزيارة شرط لاستمرار أهلية الضمان الاجتماعي. \nتحياتنا، وزارة الموارد البشرية والتنمية الاجتماعية"
+        },
+        {
+            "role": "customer",
+            "text": "ك"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا محمد،\r\nصدرت فاتورة حسابك رقم 30150225846 بمبلغ 2249.50 ريال. (تشمل مستحقات سابقة)\r\n\r\nونأسف لإبلاغك بأنه سيتم إيقاف الخدمة الكهربائية بتاريخ 08\/03\/2026 وذلك لعدم سداد الفاتورة المستحقة\r\n\r\nيمكنك الاطلاع على تفاصيل الفاتورة وسدادها عبر تطبيق السعودية للطاقة عبر الرابط التالي:\r\nhttps:\/\/www.se.com.sa\/app\r\n\r\nنسعد بخدمتك."
+        },
+        {
+            "role": "customer",
+            "text": "ه"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير محمد\n\nنشكرك على سدادك مبلغ 300 ريال   \nعلى الحساب رقم: 5242728906\nلرقم باقة الواي فاي:\n0182342723\nبتاريخ: 2026-03-08 09:51:05\n\nللاطلاع على افضل عروض وخصومات الأجهزة من خلال تطبيقmystc  :\nhttps:\/\/my.stc\/store\n\n\nسوف يتم إعادة الخدمة خلال الساعات القادمة.\n\nمتمنين أن تحوز خدماتنا دومًا على رضاك."
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عقد ايجار كفايه 2.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "صورة.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عقد تهاني 2.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "CamScanner 09‏-03‏-2026 00.07.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد ايجار حصه .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "CamScanner 09‏-03‏-2026 00.18.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد ايجار هدي .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Screenshot 09‏-03‏-2026 00.42.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المستفيد\nنأمل منكم الدخول على الرابط التالي و استكمال البيانات اللازمة للتذكرة رقم ( 262220558 )\nعزيزنا المستفيد\nنأمل منكم الدخول على الرابط التالي و استكمال البيانات اللازمة للتذكرة رقم ( 262220576 )\nعزيزنا المستفيد\nتم معالجة تذكرتكم رقم 262213054 \nنأمل منكم الدخول على الرابط التالي لتأكيد المعالجة، علماً بأن التذكرة يتم تأكيدها تلقائياً بعد 3 ايام. https:\/\/s.moj.gov.sa\/7507306kd7 \n\n\nوزارة العدل"
+        },
+        {
+            "role": "customer",
+            "text": "0552587443"
+        },
+        {
+            "role": "customer",
+            "text": "0507500468"
+        },
+        {
+            "role": "customer",
+            "text": "1015710641\nاحمد علي هادي حربي\nالزوج"
+        },
+        {
+            "role": "customer",
+            "text": "الزوجة \n1071357725\nكاذيه محمد هادي حربي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "0531907739"
+        },
+        {
+            "role": "customer",
+            "text": "عدنان من طرف حليم"
+        },
+        {
+            "role": "customer",
+            "text": "0579475276"
+        },
+        {
+            "role": "customer",
+            "text": "عقود ايجار - قوي - نقل كفالة- تجديد اقامة - تامين طبي - تامين سيارات ونقل ملكية سيارت - السجل التجاري - اصدار رخصه تجاريه - شركة الكهرباء - شركة المياه- حجز طيران- ناجز رفع دعوي وطلبات تنفيذ- عمل زيارة شخصية وعائلية وتجديدها-  ملاحظه حماية الاجور - انشاء حساب الاهلي والراجحي - اصدار بطاقة نقل وبطاقه تشغيل-  خدمات اليكترونيه اخري"
+        },
+        {
+            "role": "customer",
+            "text": "ه"
+        },
+        {
+            "role": "customer",
+            "text": "أخي المراجع,\r\nقيدت معاملتك برقم: 508219 وتاريخ: 23\/09\/1447 \r\nوزارة الداخلية\nأخي المراجع,\r\nقيدت معاملتك برقم: 510535 وتاريخ: 23\/09\/1447 \r\nوزارة الداخلية"
+        },
+        {
+            "role": "customer",
+            "text": "3600 ريال منصه ايجار ربوعه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "د،\r\n.ورlهو 30159028884"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "‏واتساب للأعمال.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "تم تأكيد رقم الحجز I7GF2Z\r\nF3 32 - جازان إلى الرياض 11\/04\/2026 07:40\r\nF3 43 - الرياض إلى جازان 14\/04\/2026 20:00"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "02042026_your_flight_information(1).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عميلنا العزيز: \nتفادياً لفصل الخدمة نأمل سداد المبالغ المرتبة على حسابك رقم 2318144444 بمبلغ 1188.95 ريال قبل تاريخ 2026-03-22 ، ولمزيد من التفاصيل حول فاتورتك الرجاء زيارة القنوات الرقمية."
+        },
+        {
+            "role": "customer",
+            "text": "0557590250"
+        },
+        {
+            "role": "customer",
+            "text": "حسن بنغالي بقاله تأجير محل"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا محمد،\n\nتم اكتمال الطلب رقم 1018520701 لخدمة إضافة الحساب.ورقم الحساب الجديد هو 30157491129 بدلًا من الرقم 10049306141\nعلمًا انه نقل المبلغ 0.00  ريال من الحساب القديم الى الحساب الجديد.\n\nوبخدمتك في أي وقت من خلال تطبيق الكهرباء باستخدام الرابط التالي:\nhttps:\/\/www.se.com.sa\/app\n\nيومك سعيد."
+        },
+        {
+            "role": "customer",
+            "text": "الاسم:\nمحمود محمد مفتاح خليفه \r\n\nالبنك:: \nالبنك الأهلي السعودي \r\n\nالآيبان: \nSA4010000011100025538503 \r\n\nرقم الحساب: \n11100025538503 \r\n\nرمز تعريف المصرف سويفت: \nNCBKSAJE"
+        },
+        {
+            "role": "customer",
+            "text": "DOC-20260306-WA0004.(6).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "CamScanner 25-03-2026 19.10.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/uSh98dtkZfiSrkUv5?g_st=iwb"
+        },
+        {
+            "role": "customer",
+            "text": "خصم قسط تمويل\nالنوع:تمويل شخصي\nالقسط: 2,404.00 SAR\nالمبلغ المتبقي: 7,212.00 SAR\nمن:899940*\nفي:2026\/04\/01 03:07\nحوالة واردة راتب\nإلى:899940*\nمبلغ: 9,617.65 SAR\nفي:2026-04-01 00:31\nخصم قسط تمويل\nالنوع:تمويل عقاري\nالقسط: 1,913.36 SAR\nالمبلغ المتبقي: 589,004.44 SAR\nمن:899940*\nفي:2026\/04\/01 03:07"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

@@ -1,0 +1,14 @@
+{
+    "type": "bug_regression",
+    "id": "bug_40_sakk_in_ad_not_regulated",
+    "description": "The word صك appearing inside a seller ad text (e.g. عدد 24 صك) must NOT trigger a regulated_topic escalation — it requires an advice-question context first",
+    "turns": [
+        {
+            "role": "customer",
+            "text": "عندكم عمارة للبيع في حي الواحة عدد 24 صك مساحة 600 متر"
+        }
+    ],
+    "invariants": [
+        "no_unevidenced_escalation"
+    ]
+}

@@ -1,0 +1,647 @@
+{
+    "type": "real_conversation",
+    "id": "conv_2830",
+    "tenant_id": 1587,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "الآن فاضيه"
+        },
+        {
+            "role": "customer",
+            "text": "كم الرقم"
+        },
+        {
+            "role": "customer",
+            "text": "الآن تمام"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن نبدا"
+        },
+        {
+            "role": "customer",
+            "text": "بشرك اله بالجنه"
+        },
+        {
+            "role": "customer",
+            "text": "دخلت"
+        },
+        {
+            "role": "customer",
+            "text": "dafterdara@gmail.com"
+        },
+        {
+            "role": "customer",
+            "text": "ما جات رسالة"
+        },
+        {
+            "role": "customer",
+            "text": "8323"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام وعليكم السلام ورحمة الله وبركاته احنا قبلنا عرض البيع في البورصه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "1008256"
+        },
+        {
+            "role": "customer",
+            "text": "فين الاقي حساب البورصه العقاري❓"
+        },
+        {
+            "role": "customer",
+            "text": "قصدك هذا؟"
+        },
+        {
+            "role": "customer",
+            "text": "هل لازم اروح البنك ولا اقدر احول راسا"
+        },
+        {
+            "role": "customer",
+            "text": "طبعا لا ما اقدر"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص بكره اروح البنك ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "تصبح على خير"
+        },
+        {
+            "role": "customer",
+            "text": "السلام وعليكم  ورحمة الله وبركاته  خلاص حولت المبلغ علي"
+        },
+        {
+            "role": "customer",
+            "text": "حوالة صادرة محلية\nمبلغ 480025 SAR\nرسوم 25.00 SAR\nمن 0106*\nمستفيد عملية الافراغ العقاري لوزارة ا\nإلى *1015\nبنك AL RAJHI BANK\nفي 12\/01\/26 10:24"
+        },
+        {
+            "role": "customer",
+            "text": "الله يبارك فيك"
+        },
+        {
+            "role": "customer",
+            "text": "الزر هنا غير فعال ما نقدر نغير طريقة الدفع"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير عمر هذا ايصال الايداع"
+        },
+        {
+            "role": "customer",
+            "text": "ايش بعدكده"
+        },
+        {
+            "role": "customer",
+            "text": "ياخذ وقت هذا الإجراء"
+        },
+        {
+            "role": "customer",
+            "text": "جربنا ولا يمكن الغاء الطلب"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته كيف حالك يا عمر ما في خبر عن تسجيل الشقه"
+        },
+        {
+            "role": "customer",
+            "text": "بس هاذا مو نفس حجم المطبخ عندي وكمان المطبخ مفتوح على الصاله"
+        },
+        {
+            "role": "customer",
+            "text": "مره جميل الذوق حقه"
+        },
+        {
+            "role": "customer",
+            "text": "علي البركه رب يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "بس خليني استلم وبعدين اكلمهم يا ريت ترسل لي رقمهم وانا اذا اعتمدتهم اعطيك خبر"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم ما تقصر"
+        },
+        {
+            "role": "customer",
+            "text": "ولا تنساني من الاستديهات اللي قلت لي عليها"
+        },
+        {
+            "role": "customer",
+            "text": "والموقع كمان"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن ترسل لي فين الموقع"
+        },
+        {
+            "role": "customer",
+            "text": "قلت لي السعر كم"
+        },
+        {
+            "role": "customer",
+            "text": "يا عمر ممكن ترسل لي موقع شقتي في املاك 10"
+        },
+        {
+            "role": "customer",
+            "text": "اذا جهز البروفايل ارسلي"
+        },
+        {
+            "role": "customer",
+            "text": "ما عليك امر"
+        },
+        {
+            "role": "customer",
+            "text": "طيب اول ما يطلع الصك ابغي فتح الباب على الصاله"
+        },
+        {
+            "role": "customer",
+            "text": "ما يأمر عليك ظالم"
+        },
+        {
+            "role": "customer",
+            "text": "بكره اربعاء ان شاءالله يطلع الصك"
+        },
+        {
+            "role": "customer",
+            "text": "جائتني هادي الرساله ايش اسوي"
+        },
+        {
+            "role": "customer",
+            "text": "جزاك الله خير"
+        },
+        {
+            "role": "customer",
+            "text": "وصبحك الله يالعافيه"
+        },
+        {
+            "role": "customer",
+            "text": "يا عمر انت متأكد انه ما عليّ ضريبه لانه يقول حسب البيانات المقدمه"
+        },
+        {
+            "role": "customer",
+            "text": "انا عمري ما خذت قرض من الحمومه"
+        },
+        {
+            "role": "customer",
+            "text": "تمام لان اختي قالت انت عندك مسكن ولازم تدفعي ضريبه"
+        },
+        {
+            "role": "customer",
+            "text": "الحمد لله"
+        },
+        {
+            "role": "customer",
+            "text": "عمر الشركه عندها مندوب مبيعات غيرك ولا انت بس"
+        },
+        {
+            "role": "customer",
+            "text": "ممتاز عشان اعطي رقمك لاي احد يبغى يشتري"
+        },
+        {
+            "role": "customer",
+            "text": "ايش عندكم باقي شقق في رقم 10"
+        },
+        {
+            "role": "customer",
+            "text": "عشان اذا تناسبهم اعطيهم رقمك"
+        },
+        {
+            "role": "customer",
+            "text": "الباقي كبير ولا زي شقتي"
+        },
+        {
+            "role": "customer",
+            "text": "بكم هادي يا عمر"
+        },
+        {
+            "role": "customer",
+            "text": "وهل في نفس الدور شقه ثاني ولا لا"
+        },
+        {
+            "role": "customer",
+            "text": "وهل هي في نفس العماره B"
+        },
+        {
+            "role": "customer",
+            "text": "ح اقول لهم اذا بغوها اعطيهم رقمك"
+        },
+        {
+            "role": "customer",
+            "text": "جمعه مباركه يا عمر"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته مافي خبر عن تسجيل الصك"
+        },
+        {
+            "role": "customer",
+            "text": "مو واضح"
+        },
+        {
+            "role": "customer",
+            "text": "هل الفتحه ع المطبخ موروبه زي الرسمه"
+        },
+        {
+            "role": "customer",
+            "text": "باذن الله صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "السلام وعليكم السلام ورحمة الله وبركاته انا الآن فاضيه"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "الهوية الوطنية_26-01-2026.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/mwathiq.sa\/RequesterOfflineServices\/Check?Id=DFnpH5BUjZuSRqsATU3llqr5fJX4TuklRDdv8eBHIIDTqhthYZSH9oE0habXWzBz"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/mwathiq.sa\/RequesterOfflineServices\/Check?Id=_ovBjg57CMmDD6RlqeCw2qlD2AvxPjeqe5kk8oDP-Qt5qxe6FyIQJ4rvyg-O7WYy"
+        },
+        {
+            "role": "customer",
+            "text": "لتنفيذ خدمة التحقق المقدمة من نظام التوثيق الإلكتروني الرجاء إدخال رمز التحقق 499219"
+        },
+        {
+            "role": "customer",
+            "text": "هل هو نفس مقس مطبخنا"
+        },
+        {
+            "role": "customer",
+            "text": "بعدين ما ارسلت لي الآي با حق عبد الرحمن ولا ارسل المبلغ لك"
+        },
+        {
+            "role": "customer",
+            "text": "اذا تبغى ارسل المبلغ عليك"
+        },
+        {
+            "role": "customer",
+            "text": "يا السلام عليكم ورحمة الله وبركاته عليك شكرا"
+        },
+        {
+            "role": "customer",
+            "text": "دحين كيف الكهرباء والماء"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسعدك وكيف اعرف الارقام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن بس اسم المستفيد عشان اضيفه"
+        },
+        {
+            "role": "customer",
+            "text": "البنك يبغى الاسم الرباعي"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "transaction-receipt-2.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "transaction-receipt-2.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "تم التحويل"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير يا عمر متى راح تسوي لي عتبات الابواب"
+        },
+        {
+            "role": "customer",
+            "text": "هدا المطبخ ايش نوعه"
+        },
+        {
+            "role": "customer",
+            "text": "ما ادري لش ما رديت عليّ"
+        },
+        {
+            "role": "customer",
+            "text": "انتظرتك كما وعتني امس"
+        },
+        {
+            "role": "customer",
+            "text": "متي يستلم ابراهيم"
+        },
+        {
+            "role": "customer",
+            "text": "بس لو تقدر تكمل جميلك وانا ارسل لك مبلغ الباب وتبدا فيه قبل رمضان عشان انزل بعد ما يكمل الباب"
+        },
+        {
+            "role": "customer",
+            "text": "احسن قبل رمضان والباب ينفتح لجوه الغرفه جهة جدار المطبخ"
+        },
+        {
+            "role": "customer",
+            "text": "اعطيني خبر احول لك المبلغ"
+        },
+        {
+            "role": "customer",
+            "text": "رب يعطيك العافيه"
+        },
+        {
+            "role": "customer",
+            "text": "فات بكره وجا بعده وما رديت عليّ"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "تمام ما تقصر يا ولدي"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "قال لك كم يبغى❓"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته  ما في خبر عن الباب و الكهرباء والماء"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير اليوم ح يجي المهندس من اجل فتح الباب"
+        },
+        {
+            "role": "customer",
+            "text": "طيب عشان اكون في انتظار مكالمتك"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "متى يخلصوا"
+        },
+        {
+            "role": "customer",
+            "text": "حينقلوا الفيش حنب الباب"
+        },
+        {
+            "role": "customer",
+            "text": "هل وراء الفيش في الغرفه فيش ثاني"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير يا عمر"
+        },
+        {
+            "role": "customer",
+            "text": "هل بدأ العمل في فتحة الباب"
+        },
+        {
+            "role": "customer",
+            "text": "ابغي التسعير"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير يا عمر ايش الخطوه التاليه"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "السلام وعليكم  ورحمة الله وبركاته  يا عمر ممكن ترسل لي مخطط الشقه والعقد"
+        },
+        {
+            "role": "customer",
+            "text": "احتاجه"
+        },
+        {
+            "role": "customer",
+            "text": "transaction-receipt-2.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "حينقلوا الفيش جنب الباب"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير يا عمر"
+        },
+        {
+            "role": "customer",
+            "text": "ابغى مخطط الشقه والعقد"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته يا عمر ما دخلت الكهربا"
+        },
+        {
+            "role": "customer",
+            "text": "مباين شي"
+        },
+        {
+            "role": "customer",
+            "text": "مو باين شي"
+        },
+        {
+            "role": "customer",
+            "text": "فين الشغل في الشقه"
+        },
+        {
+            "role": "customer",
+            "text": "هلا يا عمر انا اخويا محمد  في المدينه واحب انه يجي يشوف الشغل في الشقه"
+        },
+        {
+            "role": "customer",
+            "text": "هلا يا عمر انا اخويا محمد ساكن   في المدينه واحب انه يجي يشوف الشغل في الشقه"
+        },
+        {
+            "role": "customer",
+            "text": "ويستلم عقد البيع"
+        },
+        {
+            "role": "customer",
+            "text": "متى تكون فاضي"
+        },
+        {
+            "role": "customer",
+            "text": "مبارك عليك الشهر رنيت عليك وانا متأكده انك ما ح ترد"
+        },
+        {
+            "role": "customer",
+            "text": "قول لي كيف اوقاتك في رمضان"
+        },
+        {
+            "role": "customer",
+            "text": "اذا الرجل ما يبغى يفتح الباب رجع لي المبلغ وانا اجيب احد يسويه او اخليه زي ما هو مو مشكله بس انا ابغى استلم الشقه هذه الايام"
+        },
+        {
+            "role": "customer",
+            "text": "اذا الرجل ما يبغى يفتح الباب رجع لي المبلغ وانا اجيب احد يسويه او اخليه زي ما هو مو مشكله بس انا ابغى استلم الشقه هذه الايام واخلص من هذا الموضوع"
+        },
+        {
+            "role": "customer",
+            "text": "بنسبه للعتبات طلبتها لك خلاص بس اول ما توصل يركبوها و ارسلها لك"
+        },
+        {
+            "role": "customer",
+            "text": "عمر لا تزعلني انا ابغاك ترد علي عشان العفش مكوم بس مستنيه ترد"
+        },
+        {
+            "role": "customer",
+            "text": "ما الغى افقد ثقتي فيك"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/hVzpd58dcNktnqun6?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/hVzpd58dcNktnqun6?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "السلام ورحمة الله وبركاته يا عمر لا تنسى غدا موعد العمل في الباب كذلك العتبات التي اتفقنا عليها"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "ما ح يسوي لياسه قبل ما يركب"
+        },
+        {
+            "role": "customer",
+            "text": "اهلا يا عمر ترى حاولت اشيل التليق بس مو لاقيه الموقع ما اعرف ليش مو موجود"
+        },
+        {
+            "role": "customer",
+            "text": "اهلا يا عمر ترى حاولت اشيل التعليق بس مو لاقيه الموقع ما اعرف ليش مو موجود"
+        },
+        {
+            "role": "customer",
+            "text": "يا ترى يا عمر ح تسلمني الشقه ولا ح تخليني معلقه كده والى متى"
+        },
+        {
+            "role": "customer",
+            "text": "الحمد لله انك رديت هو انت خلصت كل شي"
+        },
+        {
+            "role": "customer",
+            "text": "اتركب الباب"
+        },
+        {
+            "role": "customer",
+            "text": "ومتى العتبات"
+        },
+        {
+            "role": "customer",
+            "text": "طيب لما تركب العتبات احجز واجي استلم"
+        },
+        {
+            "role": "customer",
+            "text": "رب يسر ولا تعسر رب تمم بالخير"
+        },
+        {
+            "role": "customer",
+            "text": "ما صار شي"
+        },
+        {
+            "role": "customer",
+            "text": "من يوم الاثنين"
+        },
+        {
+            "role": "customer",
+            "text": "الله يفرجها من عنده"
+        },
+        {
+            "role": "customer",
+            "text": "وعليك السلام ورحمة الله وبركاته طيب ما صورت لي حتى العتبات جاهزه وهل خلصت الصباغه"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم يا عمر تعبتك معايا بس ما صورت لي بعد تركيب الباب"
+        },
+        {
+            "role": "customer",
+            "text": "والعتبات"
+        },
+        {
+            "role": "customer",
+            "text": "ولا مستني ابراهيم يوقع العقد"
+        },
+        {
+            "role": "customer",
+            "text": "جزاك الله خير يا عمر يا ريت تخليهم ينظفوا المكان ماعليك امر"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم يا ابني"
+        },
+        {
+            "role": "customer",
+            "text": "ما عليك قصور اعرف انك مشغول اعانك الله"
+        },
+        {
+            "role": "customer",
+            "text": "ح اشوف وارتب متى اجي عشان تعرف هذه العشر الاواخر وما نبغى فقد ساعه من الايام الطيبه لنا جميعا الاجر والله يتقبل من الجميع"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن بس اعرف ملابسات الصيانه واستعمال المرافق"
+        },
+        {
+            "role": "customer",
+            "text": "ابغى اعرف كيف صبغتوا قبل ما ينظفوا المكان"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

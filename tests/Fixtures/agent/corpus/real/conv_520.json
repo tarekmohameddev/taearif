@@ -1,0 +1,519 @@
+{
+    "type": "real_conversation",
+    "id": "conv_520",
+    "tenant_id": 1507,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "أكلمك دقايق"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل لي رقم إسماعيل"
+        },
+        {
+            "role": "customer",
+            "text": "الله يحفظك"
+        },
+        {
+            "role": "customer",
+            "text": "احسنت"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر ابشيك عليه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الأفضل نضيف فواتير الكهرباء علشان تتعدل الشريحه وتقل الفاتوره"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي الفواتير نشوف واسطه بالشركة"
+        },
+        {
+            "role": "customer",
+            "text": "فواتير الكهرباء"
+        },
+        {
+            "role": "customer",
+            "text": "بعد العقد الإلكتروني تحولت لأبو سلمان"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام ورحمة الله"
+        },
+        {
+            "role": "customer",
+            "text": "لا بالبيت"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اببحث ممكن احصل واحد يخلصنا"
+        },
+        {
+            "role": "customer",
+            "text": "الوايت ماهو حل"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "بالنسبه للكنب انا سويت عرض لك خاص قطم الكرسي 9 افراد 80 ريال"
+        },
+        {
+            "role": "customer",
+            "text": "اقل سعر علشان عرض خاص لك ياابو يوسف"
+        },
+        {
+            "role": "customer",
+            "text": "سعر طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله"
+        },
+        {
+            "role": "customer",
+            "text": "هذا رقم حساب حق التلفزيونات"
+        },
+        {
+            "role": "customer",
+            "text": "140"
+        },
+        {
+            "role": "customer",
+            "text": "ريال"
+        },
+        {
+            "role": "customer",
+            "text": "للأسف ماعنده"
+        },
+        {
+            "role": "customer",
+            "text": "خل إسماعيل ينتظره إذا نزل كلمه من جوال إسماعيل"
+        },
+        {
+            "role": "customer",
+            "text": "سبق وأنه كسر شقه 6 وصلحتها أنا"
+        },
+        {
+            "role": "customer",
+            "text": "واتفقت معه أي شئ تكسره بالمستقبل أنت تحمله"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "مخرب السفنج الكبير حق غرفة النوم"
+        },
+        {
+            "role": "customer",
+            "text": "وتصليح الباب مع صبغه مع قفل نفس الأول حق كرت"
+        },
+        {
+            "role": "customer",
+            "text": "نفرين"
+        },
+        {
+            "role": "customer",
+            "text": "القفل ب 350"
+        },
+        {
+            "role": "customer",
+            "text": "تصليح الباب مع الصبغ 150"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "بالنسبه لشقه 8"
+        },
+        {
+            "role": "customer",
+            "text": "الراتب باقي له عشر أيام الأفضل ننتظر ونضغط عليها تسدد وبعدها تكتب عقد"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله كتب لشقة رقم 1"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر ابمره"
+        },
+        {
+            "role": "customer",
+            "text": "بشر وش صار على الشراشف والديباجات والمخاد"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "تثبيت الكرسي الإفرنجي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله"
+        },
+        {
+            "role": "customer",
+            "text": "أبشرك تلبيس كتب الاستقبال وجزء من الشقق"
+        },
+        {
+            "role": "customer",
+            "text": "على حسابي"
+        },
+        {
+            "role": "customer",
+            "text": "بشر وش صار على الشراشف والديباجات والمخاد"
+        },
+        {
+            "role": "customer",
+            "text": "هذا ممتاز"
+        },
+        {
+            "role": "customer",
+            "text": "مجرب"
+        },
+        {
+            "role": "customer",
+            "text": "معطر للمدخل الاستقبال"
+        },
+        {
+            "role": "customer",
+            "text": "شقه 10 فيه اثنين يبونها ب 1700 شهري"
+        },
+        {
+            "role": "customer",
+            "text": "غرفتين وصاله"
+        },
+        {
+            "role": "customer",
+            "text": "👍"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "136608010233267"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ايطالي"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص حول ابو سلمان"
+        },
+        {
+            "role": "customer",
+            "text": "كراسي الاستقبال"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "عميلنا العزيز\nتم البدء بدراسة اعتراضك رقم 9479179858 على مبلغ فاتورة للحساب رقم 9480985816، علماً أن نتيجة الدراسة ستصدر خلال 10 أيام عمل."
+        },
+        {
+            "role": "customer",
+            "text": "سويت شكوى على فاتورة الماء لان اعرف واحد اشتكى وخفضو له بالفاتوره"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح الجديد افضل قيمته بحدود 400"
+        },
+        {
+            "role": "customer",
+            "text": "اليوم يخلص كنب الاستقبال كامل ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام ورحمة الله"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وصلت اول دفعه"
+        },
+        {
+            "role": "customer",
+            "text": "أنا بالفندق بخصوص الممرضه"
+        },
+        {
+            "role": "customer",
+            "text": "اللي ماسدد"
+        },
+        {
+            "role": "customer",
+            "text": "ت"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "أنا عند إسماعيل شاشة الكاميرات تحتاج صيانه"
+        },
+        {
+            "role": "customer",
+            "text": "الشاشه حقة الكاميرات اول مره تتعطل"
+        },
+        {
+            "role": "customer",
+            "text": "المشكله اول باالاسلاك"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "مااتفقت معه على الماء شامل"
+        },
+        {
+            "role": "customer",
+            "text": "خزان الماء الحلو حق المطعم لحال"
+        },
+        {
+            "role": "customer",
+            "text": "لكن ماء الغسيل مشترك"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة"
+        },
+        {
+            "role": "customer",
+            "text": "الله"
+        },
+        {
+            "role": "customer",
+            "text": "صاحب المطعم مأخذ شقتين 3500 شهري"
+        },
+        {
+            "role": "customer",
+            "text": "نتفاهم معه ولا يطلع بسبب موضوع الماء"
+        },
+        {
+            "role": "customer",
+            "text": "والقديم مطالبينه ب 600"
+        },
+        {
+            "role": "customer",
+            "text": "هو زعلان على 600"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "عندكم حساب بالإنماء"
+        },
+        {
+            "role": "customer",
+            "text": "أوك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "العفووووو"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله"
+        },
+        {
+            "role": "customer",
+            "text": "صبغ شقه 10"
+        },
+        {
+            "role": "customer",
+            "text": "تيبديل لمبات ليد"
+        },
+        {
+            "role": "customer",
+            "text": "آمين 🙏"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "أنا عند إسماعيل عنده شاشه شقه رقم 2 ابوديها وفيه شاشة الاستقبال اخذها معها"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "120"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "نزل إلى 180"
+        },
+        {
+            "role": "customer",
+            "text": "الاثنين"
+        },
+        {
+            "role": "customer",
+            "text": "ثلاجه عليها عرض"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "سددت الممرضه اليوم 1500 وأول وصلت 3000"
+        },
+        {
+            "role": "customer",
+            "text": "تقول كنسلو السند التنفيذي 4500"
+        },
+        {
+            "role": "customer",
+            "text": "هي قالت تسدد 4\/14"
+        },
+        {
+            "role": "customer",
+            "text": "القديم انتهت منه"
+        },
+        {
+            "role": "customer",
+            "text": "الشهر الرابع متى يحل"
+        },
+        {
+            "role": "customer",
+            "text": "طيب ماحل الشهر الرابع"
+        },
+        {
+            "role": "customer",
+            "text": "هي وصلت لك 4500 حق السند ألغه"
+        },
+        {
+            "role": "customer",
+            "text": "كلمتها تقول متأخرات عليها ثلاث شهور فقط"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

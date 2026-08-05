@@ -191,16 +191,6 @@ class RepositoryServiceProvider extends ServiceProvider
 
         $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\ListingLinkResolver::class);
 
-        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\ContextBuilder::class, function ($app) {
-            return new \App\Domain\Communication\WhatsApp\Bot\ContextBuilder(
-                driverFactory:  $app->make(\App\Domain\Ai\Services\LlmDriverFactory::class),
-                retrieval:      $app->make(\App\Domain\Ai\Knowledge\RetrievalService::class),
-                propertyTool:   $app->make(\App\Domain\Communication\WhatsApp\Bot\Tools\PropertySearchTool::class),
-                usageRecorder:  $app->make(\App\Domain\Ai\Services\UsageRecorder::class),
-                linkResolver:   $app->make(\App\Domain\Communication\WhatsApp\Bot\ListingLinkResolver::class),
-            );
-        });
-
         $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\CrmFlywheelService::class);
 
         $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\DeliveryService::class, function ($app) {
@@ -209,28 +199,45 @@ class RepositoryServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\RelevanceGate::class);
-        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\SlotFillingPolicy::class);
+        // ── AI Employee v2 ──────────────────────────────────────────────────
+        $this->app->singleton(\App\Domain\RealEstateAgent\Safety\PolicyGate::class, function () {
+            return new \App\Domain\RealEstateAgent\Safety\PolicyGate(
+                compliance: new \App\Domain\Communication\WhatsApp\Bot\ComplianceService(),
+                handoff:    new \App\Domain\Communication\WhatsApp\Bot\HandoffService(),
+            );
+        });
 
-        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\BotOrchestrator::class, function ($app) {
-            return new \App\Domain\Communication\WhatsApp\Bot\BotOrchestrator(
-                driverFactory:     $app->make(\App\Domain\Ai\Services\LlmDriverFactory::class),
-                usageRecorder:     $app->make(\App\Domain\Ai\Services\UsageRecorder::class),
-                contextBuilder:    $app->make(\App\Domain\Communication\WhatsApp\Bot\ContextBuilder::class),
-                personaBuilder:    new \App\Domain\Communication\WhatsApp\Bot\PersonaBuilder(),
-                groundingVerifier: new \App\Domain\Communication\WhatsApp\Bot\GroundingVerifier(),
-                complianceService: new \App\Domain\Communication\WhatsApp\Bot\ComplianceService(),
-                handoffService:    new \App\Domain\Communication\WhatsApp\Bot\HandoffService(),
-                deliveryService:   $app->make(\App\Domain\Communication\WhatsApp\Bot\DeliveryService::class),
-                relevanceGate:     $app->make(\App\Domain\Communication\WhatsApp\Bot\RelevanceGate::class),
-                slotFillingPolicy: $app->make(\App\Domain\Communication\WhatsApp\Bot\SlotFillingPolicy::class),
-                retrievalService:  $app->make(\App\Domain\Ai\Knowledge\RetrievalService::class),
+        $this->app->singleton(\App\Domain\RealEstateAgent\Delivery\HumanCadence::class, function ($app) {
+            return new \App\Domain\RealEstateAgent\Delivery\HumanCadence(
+                commService: $app->make(\App\Domain\Communication\Services\CommunicationServiceImpl::class),
+            );
+        });
+
+        $this->app->singleton(\App\Domain\Ai\Agent\Telemetry\TraceRecorder::class);
+
+        $this->app->singleton(\App\Domain\RealEstateAgent\Brain\Employee::class, function ($app) {
+            return new \App\Domain\RealEstateAgent\Brain\Employee(
+                driverFactory:       $app->make(\App\Domain\Ai\Services\LlmDriverFactory::class),
+                usageRecorder:       $app->make(\App\Domain\Ai\Services\UsageRecorder::class),
+                propertySearchTool:  $app->make(\App\Domain\Communication\WhatsApp\Bot\Tools\PropertySearchTool::class),
+                embeddingService:    $app->make(\App\Domain\Ai\Knowledge\EmbeddingService::class),
+                retrievalService:    $app->make(\App\Domain\Ai\Knowledge\RetrievalService::class),
+                humanCadence:        $app->make(\App\Domain\RealEstateAgent\Delivery\HumanCadence::class),
+                handoffService:      new \App\Domain\Communication\WhatsApp\Bot\HandoffService(),
+                complianceService:   new \App\Domain\Communication\WhatsApp\Bot\ComplianceService(),
+                policyGate:          $app->make(\App\Domain\RealEstateAgent\Safety\PolicyGate::class),
+                citationGuard:       new \App\Domain\RealEstateAgent\Safety\CitationGuard(),
+                replyRenderer:       new \App\Domain\RealEstateAgent\Safety\ReplyRenderer(),
+                briefMerger:         new \App\Domain\RealEstateAgent\State\BriefMerger(),
+                personaComposer:     new \App\Domain\RealEstateAgent\Brain\PersonaComposer(),
+                traceRecorder:       $app->make(\App\Domain\Ai\Agent\Telemetry\TraceRecorder::class),
+                crmFlywheel:         $app->make(\App\Domain\Communication\WhatsApp\Bot\CrmFlywheelService::class),
             );
         });
 
         $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\SandboxService::class, function ($app) {
             return new \App\Domain\Communication\WhatsApp\Bot\SandboxService(
-                orchestrator: $app->make(\App\Domain\Communication\WhatsApp\Bot\BotOrchestrator::class),
+                employee: $app->make(\App\Domain\RealEstateAgent\Brain\Employee::class),
             );
         });
     }

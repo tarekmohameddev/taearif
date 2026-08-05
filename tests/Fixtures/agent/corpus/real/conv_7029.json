@@ -1,0 +1,567 @@
+{
+    "type": "real_conversation",
+    "id": "conv_7029",
+    "tenant_id": 1686,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عسيري \t541751825\nالأحوذي\t533711137\nالشيخي \t966566282173\nAlsolme\t557772480\nHe\t966564991697"
+        },
+        {
+            "role": "customer",
+            "text": "الثقفي\t966557184962\nAlzbaji\t557760117\nعبدالله \t564729177\nMohammed\t966555577789\nAlwan\t966542020598"
+        },
+        {
+            "role": "customer",
+            "text": "Sirhan\t501117086\nAbdullah\t966541414677\nاحمد \t966540989692\nمرزوق\t966504225248\nالعصيمي\t966554099849\nال عبود\t966557572723"
+        },
+        {
+            "role": "customer",
+            "text": "عربون حجز روف F2 حي النزهة\n\nاسم المشروع : رحيب 5 بحي النزهة.\n\nالمشتري : أحمد ابراهيم الجوني \n\nرقم الوحده : 18\nنموذج : F2\nروف 5  غرف امامي\nالجهة : الشمالية الغربية\n\nالسعر الاجمالي \n العربون = 5000﷼\nالسعر المتفق عليه = 769,000﷼"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "مواقع شركة بن نازح:\n\nموقع الشركة :\nhttps:\/\/maps.app.goo.gl\/7ZMTKq8moRP3xi1w7?g_st=com.google.maps.preview.copy \n\n1. مشروع Sky 1 – واجهتين\nبالقرب من مسجد 🕌 وبندة 🛒\nhttps:\/\/maps.app.goo.gl\/vNQPCNnksXKNiJ5N6\n\n2. مشروع Sky 2 – واجهتين\nمقابل مسجد 🕌 وميني ماركت 🏪\nhttps:\/\/maps.app.goo.gl\/a5hJVRZUbcJpaKrM7\n\n3. مشروع مراسي 3\nمقابل مسجد 🕌 وواجهات مفتوحة 🪟https:\/\/maps.app.goo.gl\/oddE4yymMuscQfWW9\n\n4. مشروع مراسي 4 – واجهتين\nمقابل مسجد 🕌 وحديقة 🌳، وواجهتين وحرف T\nhttps:\/\/maps.app.goo.gl\/EvbKu4QqppnzHTEQA\n\n5. مشروع رحيب 5\nبجانب مسجد 🕌 وعلى شارع بعرض 30م ↔️\nhttps:\/\/maps.app.goo.gl\/2emTAGABRVzprSSW9\n\n6  . مشروع رحيب 6\nامام مسجد 🕌 وعلى حرف T وبالقرب من ممشى اليمامة 🌳\nhttps:\/\/maps.app.goo.gl\/CdyFZMhC2aodEEpo9\n\n7 مشروع رحيب 7  \nمقابل حديقه ، نافذ على صقر قريش  وبالقرب من ممشى اليمامة 🌳\nhttps:\/\/maps.app.goo.gl\/JwFqvSEbDtcETv7D6?g_st=iw\n\n\t8 مشروع مرافيء 8 \nواجهتين بجوار جامع المهاجرين 🕌\nhttps:\/\/maps.app.goo.gl\/LPjWK1aKCDCmGUGs8?g_st=iw\n\nمشروع Sky9 \nواجهتين بالقرب من مشروع Sky1 ومسجد 🕌 وبندة 🛒  \nhttps:\/\/maps.app.goo.gl\/hGgKCR7WXL8X8s5V8?\ng_st=ipc\n\n\nمشروع Sky10 \nواجهتين بالقرب من مشروع Sky1 ومسجد 🕌 وبندة 🛒  \nhttps:\/\/maps.app.goo.gl\/UrLs5dAdAHFFfBs97?g_st=ipc"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "نموذج التقرير\n\nتقرير اليوم – (الخميس)\nالاسم:محمد ال مرعي\nعدد الأرقام المستلمة: 83\nتم الاتصال: 83\nمهتم:19 \nغير مهتم:64\nملاحظات : بعض الارقام مكرره ، اكثر الارقام مافيها تجاوب كبير، اغلب المهتمين طلباتهم غير متوفره وبعضها للاستطلاع فقط"
+        },
+        {
+            "role": "customer",
+            "text": "المشروع نافذ على شارع صقر قريش ومقابل حديقة"
+        },
+        {
+            "role": "customer",
+            "text": "7 مشروع رحيب 7  \nمقابل حديقه ، نافذ على صقر قريش  وبالقرب من ممشى اليمامة 🌳\nhttps:\/\/maps.app.goo.gl\/JwFqvSEbDtcETv7D6?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "رحيب 7 .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عبير بنت طايع بالغصون C1مرافئ8.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد غانم جبريل حكمي A1مرافئ8.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "رحيب6(B1) شامة الجيزاني.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "رحيب 5 (F1) أحمد مقبول أزيبي.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "رحيب6 (A1) مشاعل العسيري.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مراسي4(B4) عبدالله شليل.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "رحيب 6(c1) شامة الجيزاني.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "سكاي 9 (c3) خالد بن نمشه.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عبير بنت طايع بالغصون C1مرافئ8.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد غانم جبريل حكمي A1مرافئ8.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "سكاي9 (c4) خالد بن نمشه.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مساهمة محفظة 9 منال الاحمدي.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مساهمة محفظة9 محمد دحمان الشهري.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مساهمة محفظة9 احمد العصيمي.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مساهمة محفظة9 حنان العمودي.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مساهمة محفظة 9 مكيه نمنقاني .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "4mohammedalzahrani@gmail.com"
+        },
+        {
+            "role": "customer",
+            "text": "خط آصال العناوين الرئيسية"
+        },
+        {
+            "role": "customer",
+            "text": "AsalArabicitf-ExtraBold.otf"
+        },
+        {
+            "role": "customer",
+            "text": "AsalArabicitf-Black.otf"
+        },
+        {
+            "role": "customer",
+            "text": "AsalArabicitf-Bold.otf"
+        },
+        {
+            "role": "customer",
+            "text": "AsalArabicitf-light.otf"
+        },
+        {
+            "role": "customer",
+            "text": "AsalArabicitf-Medium.otf"
+        },
+        {
+            "role": "customer",
+            "text": "خط قمرة للنصوص الثانوية"
+        },
+        {
+            "role": "customer",
+            "text": "AsalArabicitf-Regular.otf"
+        },
+        {
+            "role": "customer",
+            "text": "QomraArabicitf-Black.otf"
+        },
+        {
+            "role": "customer",
+            "text": "QomraArabicitf-Bold.otf"
+        },
+        {
+            "role": "customer",
+            "text": "QomraArabicitf-Light.otf"
+        },
+        {
+            "role": "customer",
+            "text": "QomraArabicitf-Medium.otf"
+        },
+        {
+            "role": "customer",
+            "text": "QomraArabicitf-Regular.otf"
+        },
+        {
+            "role": "customer",
+            "text": "سكاي 9 (C1) محمد  علي الزهراني.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "صك ملحق 1 شمالي مراسي 4.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "محمد احمد خواجي ملحق F1 مراسي 4 760 الف.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "+966 56 065 4445"
+        },
+        {
+            "role": "customer",
+            "text": "نموذج تسليم وحدة سكنية (محمد احمد خواجي).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "رحيب 5.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/chat.whatsapp.com\/\nCIWkJS7jEBr5mqPBV48Xe0"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/chat.whatsapp.com\/CIWkJS7jEBr5mqPBV48Xe0"
+        },
+        {
+            "role": "customer",
+            "text": "مشروع *رحيب* 5 🔥\nمن شركة بن نازح العقارية \nمن افضل المواقع بحي النزهة🥇\n*المشروع قيد الانشاء*\n\nموقع مميز على شارع 30 - بالقرب من جامع الإحسان - بالقرب من المطار .\n\nللحجز والاستفسار :\n\nادارة المبيعات\n0500084407\n\nموقع المشروع : \nhttps:\/\/maps.app.goo.gl\/2emTAGABRVzprSSW9\n\nhttps:\/\/chat.whatsapp.com\/CIWkJS7jEBr5mqPBV48Xe0"
+        },
+        {
+            "role": "customer",
+            "text": "مشروع رحيب7 🔥\nفي موقع مميز بحي السلامة 🥇\nمقابل حديقة نافذ على صقر قريش وعلى بعد خطوات من ممشى اليمامة \nالمشروع قيد الإنشاء\n\n💰 الأسعار:\n▫️ 3 غرف: 470,000 ريال\n▫️ 4 غرف: 570,000 ريال\n▫️ ملحق مع سطح خاص: 910,000 ريال\n\nللحجز والاستفسار:\n\n إدارة الحجوزات \/ أحمد شاهين\n0500084407\n\n📍 موقع المشروع:\nhttps:\/\/maps.app.goo.gl\/JwFqvSEbDtcETv7D6?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "‎⁨رحيب 7⁩.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مشروع رحيب7 🔥\nفي موقع مميز بحي السلامة 🥇\nمقابل حديقة نافذ على صقر قريش وعلى بعد خطوات من ممشى اليمامة \nالمشروع قيد الإنشاء\n\n💰 الأسعار:\n▫️ 3 غرف: 470,000 ريال\n▫️ 4 غرف: 570,000 ريال\n▫️ ملحق مع سطح خاص: 910,000 ريال\n\nللحجز والاستفسار:\n\n إدارة الحجوزات \/ أحمد شاهين\n0500084407\n\n📍 موقع المشروع:\nhttps:\/\/maps.app.goo.gl\/JwFqvSEbDtcETv7D6?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "‎⁨رحيب 7⁩.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مشروع رحيب7 🔥\nفي موقع مميز بحي السلامة 🥇\nمقابل حديقة نافذ على صقر قريش وعلى بعد خطوات من ممشى اليمامة \nالمشروع قيد الإنشاء\n\n💰 الأسعار:\n▫️ 3 غرف: 470,000 ريال\n▫️ 4 غرف: 570,000 ريال\n▫️ ملحق مع سطح خاص: 910,000 ريال\n\nللحجز والاستفسار:\n\nإدارة المبيعات\n0500084407\n\n📍 موقع المشروع:\nhttps:\/\/maps.app.goo.gl\/JwFqvSEbDtcETv7D6?g_st=iw\n\nرابط القروب\nhttps:\/\/chat.whatsapp.com\/CIWkJS7jEBr5mqPBV48Xe0"
+        },
+        {
+            "role": "customer",
+            "text": "+966 53 728 1317"
+        },
+        {
+            "role": "customer",
+            "text": "‎عقد الاء حمدان المالكي (E3) مرافئ8.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "4_5782718824595858920.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "‎⁨رحيب 7⁩.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "‎تحديثات المشاريع.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مرافئ 8.mp4"
+        },
+        {
+            "role": "customer",
+            "text": "حمله سناب 18-19-2-2026.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "سند قبض عادل بن شريم.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد مرام الطويرقي (B4) رحيب5 .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد مروة التكروني (B2) سكاي9.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد مرافئ8 (E4) جلال الدين.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد مرافئ8 (C3) عبدالله طحان السوري.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد بن جاليه(A4)سكاي10.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد بن جالية(A3) سكاي10.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد ماجد الشهري(B1) سكاي10.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد ماجد الشهري(A1) سكاي10.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد ماجد الشهري (A2) سكاي10 .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد ماجد الشهري(B2) سكاي10.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "‎عقد مشاركة اسهم محمد العصيمي200الف.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "‎عقد مشاركة سعد حمدان الصبحي.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد سميرة الجهني(B4)مرافئ8.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد منيرة الجهني(B2) مرافئ8 .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "المبلغ : 475,000"
+        },
+        {
+            "role": "customer",
+            "text": "مراسي 3 شقة رقم  C3 فيصل عبدالله.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TransferReceipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد مشاركة محمد عزام الجرجاوي.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Sky2.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "اقرار استلام وحدة سكنية  (بن نازح).docx"
+        },
+        {
+            "role": "customer",
+            "text": "عربون حجز شقة B4حي الروضة\n\nاسم المشروع: سكاي10 حي الروضة\n\nالمشتري: زين العابدين\n\nرقم الوحدة: 11\nنموذج: B4\n- شقة 3 غرف على شارعين\nالجهة : جنوبية غربية\n   \n\nالسعر الاجمالي \nالعربون=10,000﷼\nالسعر المتفق عليه:\n559,000﷼\n\nالوسيط: محمد باصهيب"
+        },
+        {
+            "role": "customer",
+            "text": "عربون 10 \nدفعة اولى اليوم 290 \nدفعة بعد 3 اشهر 259"
+        },
+        {
+            "role": "customer",
+            "text": "حوالة (الدفعة الاولى) شراء شقة A2 حي السلامة\n\nاسم المشروع: رحيب7\n\nالمشتري: رمزي صولان\n\nرقم الوحدة: 5\nنموذج A2\nشقه ثلاث غرف خلفية\nالجهة: شمالية شرقية\n\nالسعر الاجمالي \nالدفعة الاولى: 100,000﷼\n\nالاجمالي= 355,000﷼"
+        },
+        {
+            "role": "customer",
+            "text": "عربون حجز شقة B4حي الروضة\n\nاسم المشروع: سكاي10 حي الروضة\n\nالمشتري: زين العابدين\n\nرقم الوحدة: 11\nنموذج: B4\n- شقة 3 غرف على شارعين\nالجهة : جنوبية غربية\n   \n\nالسعر الاجمالي \nالعربون=10,000﷼\nدفعة اولى= 290,000﷼ 2026\/3\/5\nدفعة ثانية= 259,000﷼ 2026\/6\/5\nالسعر المتفق عليه:\n559,000﷼\n\nالوسيط: محمد باصهيب"
+        },
+        {
+            "role": "customer",
+            "text": "حوالة (الدفعة الاولى) شراء شقة A2 حي السلامة\n\nاسم المشروع: رحيب7\n\nالمشتري: رمزي صولان\n\nرقم الوحدة: 5\nنموذج A2\nشقه ثلاث غرف خلفية\nالجهة: شمالية شرقية\n\nالسعر الاجمالي \nالدفعة الاولى: 100,000﷼ 2026\/3\/5\nالدفعة الثانية:100,000﷼ 2026\/4\/5\nالدفعة الثالثة:57,500﷼ 2026\/5\/5\nالدفعة الرابعة:57,500﷼2026\/6\/5\nالدفعة الخامسة:57,500﷼2026\/7\/5\nالدفعة السادسة: 57,500﷼2026\/8\/5\n\nالاجمالي 430,000﷼"
+        },
+        {
+            "role": "customer",
+            "text": "ضريبة التصرفات العقارية - مراسي 3 - شقة.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد زين العابدين الشنقيطي B4 سكاي10.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "‎عقد رمزي صولان A2 رحيب7.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "الهوية الوطنية_09-03-2026.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "عقد(A4) سكاي 9 مريم بايحيى.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد هدى حموض (B2) رحيب5.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "1.jpg"
+        },
+        {
+            "role": "customer",
+            "text": "السكيني (اقرار استلام شقة B3 مراسي3).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "IDI-POLICY-2686CAF75C8B4047A21AFDA8AC6CFA99DF56E421A6C67CB69BD2D0EF3EDF861366E517761C31E677C73A258913D39C4B.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "IDI-POLICY-2686CAF75C8B4047A21AFDA8AC6CFA99DF56E421A6C67CB69BD2D0EF3EDF861366E517761C31E677C73A258913D39C4B.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عربون حجز شقة (A3,A4,D4) حي السلامة\n\nاسم المشروع: رحيب7\n\nالمشتري: \nD4(نوره الراجحي)\n(تركي الشيخ)A4\n(نوره الراجحي50٪؜ | تركي الشيخ50٪؜)A3\n\n\nرقم الوحدة: 9,13,16\n نموذج : A3,A4,D4\nشقق ثلاث غرف داخلية\nالجهة: A3,A4 شمالي\nD3 جنوبي \n\nالسعر الاجمالي \nالعربون =15,000﷼\nالدفعة الاولى بعد اصدار الرخصة=\n1,305,000﷼\n\nالاجمالي : 1,320,000\n\nالوسيط: ابو خليل"
+        },
+        {
+            "role": "customer",
+            "text": "عربون حجز شقة (A3,A4,D4) حي السلامة\n\nاسم المشروع: رحيب7\n\nالمشتري: \nD4(نوره الراجحي)\n(تركي الشيخ)A4\n(نوره الراجحي50٪؜ | تركي الشيخ50٪؜)A3\n\n\nرقم الوحدة: 9,13,16\n نموذج : A3,A4,D4\nشقق ثلاث غرف داخلية\nالجهة: A3,A4 شمالي\nD3 جنوبي \n\nالسعر الاجمالي \nالعربون =15,000﷼\nالدفعة الاولى بعد اصدار الرخصة=\n1,305,000﷼\nالسعر المتفق عليه لكل شقة= 440,000﷼\nالاجمالي : 1,320,000\n\nالوسيط: ابو خليل"
+        },
+        {
+            "role": "customer",
+            "text": "شهادة تحمل اعفاء ضريبي.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "-شقة ثلاث غرف على شارع جنوبي الدور الرابع A4 بإسم عبدالعزيز مصطفى العسيري\n\n-شقة ثلاث غرف على شارعين الدور الثالث B3 بإسم راويه الاحمدي ام احمد منظور"
+        },
+        {
+            "role": "customer",
+            "text": "transfer-receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "transfer-receipt-3_260314_192255.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "394106001507"
+        },
+        {
+            "role": "customer",
+            "text": "394106001548.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "794106001547.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "اقرار استلام راوية الاحمدي B3.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "‎اقرار استلام وحدة سكنية  عبدالعزيز مصطفى  (بن نازح).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: contacts]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "مراسي4 (F1) صك محمد خواجي.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مساهمة محفظة 9 سعد الكناني.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "صك  عبدالله السكيني مراسي3 (C3).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مسودة عقد بيع .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد أنس قاروت رحيب7 D1 تم التوقيع.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد هود سندي مرافئ8 E2.pdf"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

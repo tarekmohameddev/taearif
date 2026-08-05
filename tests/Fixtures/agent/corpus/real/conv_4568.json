@@ -1,0 +1,3755 @@
+{
+    "type": "real_conversation",
+    "id": "conv_4568",
+    "tenant_id": 1243,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "جاهز"
+        },
+        {
+            "role": "customer",
+            "text": "من اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "شيك ع الخزان"
+        },
+        {
+            "role": "customer",
+            "text": "فيه مويه ؟"
+        },
+        {
+            "role": "customer",
+            "text": "انا ماني ف البيت"
+        },
+        {
+            "role": "customer",
+            "text": "دحين اشوف العيال"
+        },
+        {
+            "role": "customer",
+            "text": "ود ع الواتس التاني"
+        },
+        {
+            "role": "customer",
+            "text": "انت اسغلتني شوي ترسل بهد الرقم وشوي بالرقم التاني"
+        },
+        {
+            "role": "customer",
+            "text": "حول"
+        },
+        {
+            "role": "customer",
+            "text": "ترا الفيزا مافيه ف المخلات"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "شوف السعر زين"
+        },
+        {
+            "role": "customer",
+            "text": "بس سوينا عرض سعر"
+        },
+        {
+            "role": "customer",
+            "text": "الان ف مخل العطاس 80 ريال سعر المكنسة"
+        },
+        {
+            "role": "customer",
+            "text": "وكمان بشتري سمسبوسه لرحاب 30"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "هدا بورسلان"
+        },
+        {
+            "role": "customer",
+            "text": "الحمام ومكان المغسله"
+        },
+        {
+            "role": "customer",
+            "text": "انا اخدت عرض يعر عشان نشوف الي بناسب"
+        },
+        {
+            "role": "customer",
+            "text": "ترا انا اخدت الوطني \nالالماني المتر 109"
+        },
+        {
+            "role": "customer",
+            "text": "الوطني 30 ريال سعودي"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 😍]"
+        },
+        {
+            "role": "customer",
+            "text": "انا ماشتريت"
+        },
+        {
+            "role": "customer",
+            "text": "انا بس سويت عرض سعر"
+        },
+        {
+            "role": "customer",
+            "text": "قلت بكره نروح انا وانت احسن"
+        },
+        {
+            "role": "customer",
+            "text": "وانت طيب ياحبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "هدا الوطني"
+        },
+        {
+            "role": "customer",
+            "text": "ماشاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "ايش نوع الحجر ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/snapchat.com\/t\/KkJdbz9Z"
+        },
+        {
+            "role": "customer",
+            "text": "وعليك السلام"
+        },
+        {
+            "role": "customer",
+            "text": "نايمه"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/snapchat.com\/t\/MCUisJRR"
+        },
+        {
+            "role": "customer",
+            "text": "كان مريض سكر وتعافى بالنظام الصحي https:\/\/snapchat.com\/t\/QCBR8Rbj"
+        },
+        {
+            "role": "customer",
+            "text": "22 متر حمام"
+        },
+        {
+            "role": "customer",
+            "text": "ارضي 5 متر"
+        },
+        {
+            "role": "customer",
+            "text": "25 متر جدران"
+        },
+        {
+            "role": "customer",
+            "text": "6 متر ارضي"
+        },
+        {
+            "role": "customer",
+            "text": "هدا اتوقع يقصد حق المغسله وانا مايغي اسوي لها بلاط"
+        },
+        {
+            "role": "customer",
+            "text": "خلصت"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "تبغي شاهي"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير حبييي"
+        },
+        {
+            "role": "customer",
+            "text": "مافيه الاحبه وحده"
+        },
+        {
+            "role": "customer",
+            "text": "جيب معك خبز \nبسوي حمص وطعميه وعدس \nواجبان"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "يالحبيب"
+        },
+        {
+            "role": "customer",
+            "text": "كيف وضع تحفيظ اسامه"
+        },
+        {
+            "role": "customer",
+            "text": "طيب راح للمسحد"
+        },
+        {
+            "role": "customer",
+            "text": "حبي نجتاج وايت المويه قليله ف الخزان"
+        },
+        {
+            "role": "customer",
+            "text": "7"
+        },
+        {
+            "role": "customer",
+            "text": "طلعهم مع بعض جيب عزام وبعدها صل عن اسامه وجيبه عشان لاتروح وتجي"
+        },
+        {
+            "role": "customer",
+            "text": "حبي"
+        },
+        {
+            "role": "customer",
+            "text": "بالله كلم الجهني نبغي حليب ناقه"
+        },
+        {
+            "role": "customer",
+            "text": "الرجال جاي"
+        },
+        {
+            "role": "customer",
+            "text": "حق الفرش"
+        },
+        {
+            "role": "customer",
+            "text": "جاب الفرش وبياخد الفرشه التانيه"
+        },
+        {
+            "role": "customer",
+            "text": "فلوسه 50"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "حبي"
+        },
+        {
+            "role": "customer",
+            "text": "العشا 60"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هدا رساله الرجال"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "50"
+        },
+        {
+            "role": "customer",
+            "text": "حول الان"
+        },
+        {
+            "role": "customer",
+            "text": "اشغلني"
+        },
+        {
+            "role": "customer",
+            "text": "انت مره \nانس مايبغي يروح"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبي ممكن تحول لي"
+        },
+        {
+            "role": "customer",
+            "text": "بطلب فوط"
+        },
+        {
+            "role": "customer",
+            "text": "بروح للحمام والبس"
+        },
+        {
+            "role": "customer",
+            "text": "انت برا ؟"
+        },
+        {
+            "role": "customer",
+            "text": "صباحو"
+        },
+        {
+            "role": "customer",
+            "text": "لاتنسي تطلب وايت"
+        },
+        {
+            "role": "customer",
+            "text": "ادا جو العمال يستخدمون المويه كثير"
+        },
+        {
+            "role": "customer",
+            "text": "عشان لانتورط"
+        },
+        {
+            "role": "customer",
+            "text": "صباحك رضا حبيبي 🌺"
+        },
+        {
+            "role": "customer",
+            "text": "ادا جيت  جيب معك بيض ودجاج \nوفيليه \nوايش تحب تاكل ع العدا"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "انا فهمت نعيم كل شي"
+        },
+        {
+            "role": "customer",
+            "text": "عزام لاينام"
+        },
+        {
+            "role": "customer",
+            "text": "الله يرضي عليك"
+        },
+        {
+            "role": "customer",
+            "text": "30"
+        },
+        {
+            "role": "customer",
+            "text": "حول عشان الرجال برا يبغي فلوسه"
+        },
+        {
+            "role": "customer",
+            "text": "هدا المركز مسويه افتتاحيه 😂😂"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🧐]"
+        },
+        {
+            "role": "customer",
+            "text": "كيف العشا ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "ايش بغيت او بتجيب ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "😎"
+        },
+        {
+            "role": "customer",
+            "text": "عيالك يبغون معصوب وعريكه \nوكمان جيب قلابه وتميس ومطبق \nعشان امي كمان معنا"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير 💕"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "اي باب"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "كدا اوضح"
+        },
+        {
+            "role": "customer",
+            "text": "خضار \nطماطم 3ك \nخيار2ك\nجزر1ك\nفلفل رومي ك\nكوسه ك \nباذنجان ك \nبامية 2ك\nملوخيه ك \n————ورقيات ———-\n2خس \n2جرجير \n2بقدونس \n1كزبره \nليمون \nبرتقال -موز -تفاح -كيوي -عنب -كمثرى-افوكادو -فرواله -اناناس \n\nبصل وثوم وبطاط حلوه ك"
+        },
+        {
+            "role": "customer",
+            "text": "ايش تحب تتعشي 🥰"
+        },
+        {
+            "role": "customer",
+            "text": "ايش بغيت عشا"
+        },
+        {
+            "role": "customer",
+            "text": "عشان اعرف النواقص"
+        },
+        {
+            "role": "customer",
+            "text": "ونبغي اجهزه للناموس \nوكمان دواء لانه فيه جهاز واحد بالييت"
+        },
+        {
+            "role": "customer",
+            "text": "الناموس اكلنا"
+        },
+        {
+            "role": "customer",
+            "text": "طيب \nمحد قال اشتري \nانا اسالك"
+        },
+        {
+            "role": "customer",
+            "text": "😏"
+        },
+        {
+            "role": "customer",
+            "text": "انت مرسلها ليه"
+        },
+        {
+            "role": "customer",
+            "text": "المفروض ترسلها لنعيم😂"
+        },
+        {
+            "role": "customer",
+            "text": "خبز واجبان"
+        },
+        {
+            "role": "customer",
+            "text": "طحنيه مافيه"
+        },
+        {
+            "role": "customer",
+            "text": "عزام واسامه طفشانين"
+        },
+        {
+            "role": "customer",
+            "text": "يبغون البقاله"
+        },
+        {
+            "role": "customer",
+            "text": "حبي"
+        },
+        {
+            "role": "customer",
+            "text": "ودي اروح لسوسو"
+        },
+        {
+            "role": "customer",
+            "text": "تقدر توديني"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "ف مستشفي ايه"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "اصبر"
+        },
+        {
+            "role": "customer",
+            "text": "بس اجهز شي معي واصلي"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/snapchat.com\/t\/V1jXRdRX"
+        },
+        {
+            "role": "customer",
+            "text": "جايه"
+        },
+        {
+            "role": "customer",
+            "text": "ليه تعال انت"
+        },
+        {
+            "role": "customer",
+            "text": "كلام كبير يعجبك https:\/\/vt.tiktok.com\/ZSaDU8xMw\/"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "جيب لبنه بوك \nوايش تحب تاكل ع الفطائر ؟؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "صباحو 😘"
+        },
+        {
+            "role": "customer",
+            "text": "لاتنسي عزام"
+        },
+        {
+            "role": "customer",
+            "text": "اتصل ع ريلام"
+        },
+        {
+            "role": "customer",
+            "text": "انا ف مسشتفي عبدالله"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/snapchat.com\/t\/tmOjcBCl"
+        },
+        {
+            "role": "customer",
+            "text": "جرب تحجز معه جلسه وتشوف ايش النمط الصحيح للتعامل مع السكر وكيف تتفادى ارتفاعه"
+        },
+        {
+            "role": "customer",
+            "text": "يالحبيب"
+        },
+        {
+            "role": "customer",
+            "text": "عزام لاتنساه"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 😍]"
+        },
+        {
+            "role": "customer",
+            "text": "يارب يبلغني هدا اليوم الي اشوفك امام"
+        },
+        {
+            "role": "customer",
+            "text": "صحيت انس يجيب عزام لسا ماتعود ع قومه الصبح واخاف يتعب الاسبوع لازم يرجع بدري"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "ايش تحب تاكل"
+        },
+        {
+            "role": "customer",
+            "text": "ع الغدا"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "قلت لك يبدلون الباب وتاخد من عندهم ابواب"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "ياحبي الجوال كلن بعيد"
+        },
+        {
+            "role": "customer",
+            "text": "اسامه يبعي مصروف"
+        },
+        {
+            "role": "customer",
+            "text": "وصل ياحبي"
+        },
+        {
+            "role": "customer",
+            "text": "ترا المرايه حقت المغسله ماهو الي طلبتها"
+        },
+        {
+            "role": "customer",
+            "text": "انا طلبت الي اصغر منها"
+        },
+        {
+            "role": "customer",
+            "text": "كلم الرجال وخليه يبدلها"
+        },
+        {
+            "role": "customer",
+            "text": "ويصوره قلل لايجيبها عشان نتاكد"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "لاتتسي عزام"
+        },
+        {
+            "role": "customer",
+            "text": "خبز \nطحينه سائله \nجبنه فيتا او قريش \nتونه \nلبنه بيستو \nزيتون \nمخلل مره شوي جيب \nوبيض \nوعصير تفاح"
+        },
+        {
+            "role": "customer",
+            "text": "دلع عزام عشان ماينام"
+        },
+        {
+            "role": "customer",
+            "text": "حمص"
+        },
+        {
+            "role": "customer",
+            "text": "جيب من نفس افران الخطب"
+        },
+        {
+            "role": "customer",
+            "text": "عندهم بيض"
+        },
+        {
+            "role": "customer",
+            "text": "لازم ياكلون بيض عيالي"
+        },
+        {
+            "role": "customer",
+            "text": "احب تكون انت موجود🥰"
+        },
+        {
+            "role": "customer",
+            "text": "كوكيز"
+        },
+        {
+            "role": "customer",
+            "text": "عيالك موجودين"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/share.google\/4VJ3A673zfTg6lfPP \nالخمره"
+        },
+        {
+            "role": "customer",
+            "text": "اثاث ومره رخيص بس ماع ف ادا جوده ؟"
+        },
+        {
+            "role": "customer",
+            "text": "حبي \nانا احتاج السوق بشتري اغراض\nمتي يناسبك 🥰\nلانه بكره بروح المشغل ؟"
+        },
+        {
+            "role": "customer",
+            "text": "ترا دخولك للغرفه ترا ماله داعي"
+        },
+        {
+            "role": "customer",
+            "text": "حتي لو زعلت انت تزيد الزعله بطريفتك"
+        },
+        {
+            "role": "customer",
+            "text": "ابسط حقوقي اعير عن الي زعلني \nزي مانت لك حق تزعل"
+        },
+        {
+            "role": "customer",
+            "text": "خل قلبك خضر وخد الامر حبي وعادي زوجتي زعللانه وانا لازم ارضيها"
+        },
+        {
+            "role": "customer",
+            "text": "الا لي حق ازعل \nلو واحد اتصل عليك وقال دبر لي 20الف رحت ودقيت ع خلق الله عشان تفزع له"
+        },
+        {
+            "role": "customer",
+            "text": "انا ماطلبتك عطيه قلت لك سلف وترجع لك شهرياً"
+        },
+        {
+            "role": "customer",
+            "text": "الي وين ؟"
+        },
+        {
+            "role": "customer",
+            "text": "عادي ادا تبغي تشيله لانه اصلا مامنه فايده"
+        },
+        {
+            "role": "customer",
+            "text": "انا ارجع مع انس ياحبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "بغيت شي ؟"
+        },
+        {
+            "role": "customer",
+            "text": "بروح اشتري اغراض لي وارجع بادن الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "حبيي انا اليوم بطلع لاهلي فوق عندهم ضيوف"
+        },
+        {
+            "role": "customer",
+            "text": "انا لسا ماوصلت الييت"
+        },
+        {
+            "role": "customer",
+            "text": "المغسله ركبها العامل ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "ليه"
+        },
+        {
+            "role": "customer",
+            "text": "كيف نغسل ؟"
+        },
+        {
+            "role": "customer",
+            "text": "طيب ادا وصلت اشوف"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "هدا اتوقع مرش حمام الرجال"
+        },
+        {
+            "role": "customer",
+            "text": "هدا الي شفته من امس كرتونين صغيره وكرتون المغسله والمروش الطويل"
+        },
+        {
+            "role": "customer",
+            "text": "حبي متي جاي ؟"
+        },
+        {
+            "role": "customer",
+            "text": "ادا جيت ومريت البقاله \nجيب خبز بر ب5 ريال لاهلي"
+        },
+        {
+            "role": "customer",
+            "text": "كيفك يالحبيب وين العمال"
+        },
+        {
+            "role": "customer",
+            "text": "ابغي انظف الحمام عشان ابغي اتدلك واغسل نحتاج المغسله تابعهم بالله"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "جيب المويه"
+        },
+        {
+            "role": "customer",
+            "text": "قدام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "كانت من اجمل الذكريات"
+        },
+        {
+            "role": "customer",
+            "text": "حبي"
+        },
+        {
+            "role": "customer",
+            "text": "سدد جوالي احتاج اتصل ومفصول"
+        },
+        {
+            "role": "customer",
+            "text": "حبي"
+        },
+        {
+            "role": "customer",
+            "text": "اصرف فلوس الشغاله 1000 وخلها فيها عشرات ومائه وخمسين عشان اقسمها ع الشغالتين نعيمه وحمديه"
+        },
+        {
+            "role": "customer",
+            "text": "زبادي وجبنه فيتا او قريش \nوخيار وخبز"
+        },
+        {
+            "role": "customer",
+            "text": "وضح المقطع"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تمام"
+        },
+        {
+            "role": "customer",
+            "text": "احس مترين. احسن ؟؟الي جدار المغسله"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "هدا اي باب"
+        },
+        {
+            "role": "customer",
+            "text": "هدا باب مدخل الدرج حق خواتي ؟"
+        },
+        {
+            "role": "customer",
+            "text": "كيف كدا احسه اكبر من مدخل بيتنا"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه وفيه لد عند الشباك"
+        },
+        {
+            "role": "customer",
+            "text": "وفيه ابجاورات"
+        },
+        {
+            "role": "customer",
+            "text": "شوف المنتج اللي لاقيته على نمشي! استخدم رمزي الخاص RF132595PR على أي شي يعجبك واحصل على استرداد نقدي حتى %20 على طلبيتك الجاية! 😍 https:\/\/www.namshi.com\/saudi-ar\/buy-asics-men-s-gel-kayano-32-running-shoes\/ZBFA46FB3887534C454E3Z\/p\/?utm_campaign=o563_all_ios_both_organic_share_share-elements_open_whatsapp_na_na%26utm_source%3Dnamfam_RF132595PR"
+        },
+        {
+            "role": "customer",
+            "text": "شوف المنتج اللي لاقيته على نمشي! استخدم رمزي الخاص RF132595PR على أي شي يعجبك واحصل على استرداد نقدي حتى %20 على طلبيتك الجاية! 😍 https:\/\/www.namshi.com\/saudi-ar\/buy-asics-men-s-gel-kayano-31-running-shoes\/ZC19B65D68C2544B68D1CZ\/p\/?utm_campaign=o563_all_ios_both_organic_share_share-elements_open_whatsapp_na_na%26utm_source%3Dnamfam_RF132595PR"
+        },
+        {
+            "role": "customer",
+            "text": "شوي بيمشي ع 9"
+        },
+        {
+            "role": "customer",
+            "text": "عند استشاره"
+        },
+        {
+            "role": "customer",
+            "text": "بيطلعوه لك"
+        },
+        {
+            "role": "customer",
+            "text": "فتحت الباب"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "جهزت كل شي"
+        },
+        {
+            "role": "customer",
+            "text": "فتحت الباب"
+        },
+        {
+            "role": "customer",
+            "text": "انا كنت اسمع قران"
+        },
+        {
+            "role": "customer",
+            "text": "كيفك طيب"
+        },
+        {
+            "role": "customer",
+            "text": "جا ؟"
+        },
+        {
+            "role": "customer",
+            "text": "عشان انس يطلع له"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه خلها نازله"
+        },
+        {
+            "role": "customer",
+            "text": "النجفه ماينفع لاصق ف السقف"
+        },
+        {
+            "role": "customer",
+            "text": "صور"
+        },
+        {
+            "role": "customer",
+            "text": "عشان اشوفه قبل لايثبتها"
+        },
+        {
+            "role": "customer",
+            "text": "صوره وهي فوق"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "سفيان وين"
+        },
+        {
+            "role": "customer",
+            "text": "ايش بغيت غدا ؟"
+        },
+        {
+            "role": "customer",
+            "text": "بيروح دخين"
+        },
+        {
+            "role": "customer",
+            "text": "عشان كان ف الحمام"
+        },
+        {
+            "role": "customer",
+            "text": "راح"
+        },
+        {
+            "role": "customer",
+            "text": "ماعندي احد"
+        },
+        {
+            "role": "customer",
+            "text": "فتح ع ام الباب"
+        },
+        {
+            "role": "customer",
+            "text": "ياحبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "الله يكتب له فيه  الخير"
+        },
+        {
+            "role": "customer",
+            "text": "ويكتب اجرك ياحبيبي ويطول بعمرك ولايحرمهم منك"
+        },
+        {
+            "role": "customer",
+            "text": "ودعااً للسكر التراكمي https:\/\/snapchat.com\/t\/pEg5eoNT"
+        },
+        {
+            "role": "customer",
+            "text": "الرياضه لعلاج السكر https:\/\/snapchat.com\/t\/mLPFlOIc"
+        },
+        {
+            "role": "customer",
+            "text": "حبي"
+        },
+        {
+            "role": "customer",
+            "text": "نحتاج بيض واجبان"
+        },
+        {
+            "role": "customer",
+            "text": "المرايه كبيره يعني بعرض المغسله"
+        },
+        {
+            "role": "customer",
+            "text": "والمغسله بورسلان \nوالي تحت خشب ضد المويه"
+        },
+        {
+            "role": "customer",
+            "text": "الالوان انا بختاره لما اروح للمحل"
+        },
+        {
+            "role": "customer",
+            "text": "لكن اسال ع السعر"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "اسامه عنده تحفيظ المغرب"
+        },
+        {
+            "role": "customer",
+            "text": "انس بيتاخر ف الجامعه"
+        },
+        {
+            "role": "customer",
+            "text": "اسامه ينتظرك"
+        },
+        {
+            "role": "customer",
+            "text": "3طماطم \n2خيار \n2جزر \n1كوسه \n1باذنجان \n1فلفل رومي \nبصل \n2خس \n2جرجير \n2بقدونس \n1كزبره \n1شبت \nتفاح وموز وعنب وكيوي وحبخب \nفرواله اناناس \n2باميه \n \n\nدجاج وفيليه دجاج"
+        },
+        {
+            "role": "customer",
+            "text": "كيف بهده السرعه 1\nوكانت اخر جلسه مازال المشكله موجوده"
+        },
+        {
+            "role": "customer",
+            "text": "الاختبار نسويه مع بعض زي كل مره"
+        },
+        {
+            "role": "customer",
+            "text": "بتجيب عشا ؟"
+        },
+        {
+            "role": "customer",
+            "text": "ماعرف \nبس لو تحب تجيب دجاج \nوانا اسوي برغل وسلطه"
+        },
+        {
+            "role": "customer",
+            "text": "مضبي او ع الفحم"
+        },
+        {
+            "role": "customer",
+            "text": "2"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم \nانا واولادي خارجين نفطر"
+        },
+        {
+            "role": "customer",
+            "text": "تميس"
+        },
+        {
+            "role": "customer",
+            "text": "ابحر"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن تحول لي 70"
+        },
+        {
+            "role": "customer",
+            "text": "احنا ف البيت وانس نايم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "اسامه متي يخرج ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "موفق"
+        },
+        {
+            "role": "customer",
+            "text": "يعني الان زوجتك من امس تقول انا زعلانه ولازم نجلس وانت من مشوار الي مشوار"
+        },
+        {
+            "role": "customer",
+            "text": "هو ماهو هم \nهو تقدير وحشيمه واحترام لا اكثر"
+        },
+        {
+            "role": "customer",
+            "text": "نبغي دجاج وفيليه"
+        },
+        {
+            "role": "customer",
+            "text": "😎😂"
+        },
+        {
+            "role": "customer",
+            "text": "طول عمري مستعجله ولا مره انت استعجلت 😂"
+        },
+        {
+            "role": "customer",
+            "text": "🧐"
+        },
+        {
+            "role": "customer",
+            "text": "عزام بينام"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "عشان مابغاه يتاخر ف النوم"
+        },
+        {
+            "role": "customer",
+            "text": "نحتاج صامولي وعصير تفاح"
+        },
+        {
+            "role": "customer",
+            "text": "اطلع وين"
+        },
+        {
+            "role": "customer",
+            "text": "عزام من اول جاهز ينتظرك"
+        },
+        {
+            "role": "customer",
+            "text": "حرام ونعسان مره"
+        },
+        {
+            "role": "customer",
+            "text": "شيل عزام الان واشتري اغراضه وبعدين اطلع انا"
+        },
+        {
+            "role": "customer",
+            "text": "عيالك لايشترون خرابيط جيب خبز صامولي وعصير تفاح \nوعزام يبغي شبشب"
+        },
+        {
+            "role": "customer",
+            "text": "هدا حب البنات 🙈https:\/\/snapchat.com\/t\/zuxsrZ2J"
+        },
+        {
+            "role": "customer",
+            "text": "انت مطول"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "😂"
+        },
+        {
+            "role": "customer",
+            "text": "مهمه التفاصيل الصغيره تبني ذكريات للاولاد ماتنسي https:\/\/snapchat.com\/t\/Rs10A09X"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "ادارة مدرسه عزام اتصل ا يسالو"
+        },
+        {
+            "role": "customer",
+            "text": "عن سداد الرسوم وكم دفع الترم الماضي"
+        },
+        {
+            "role": "customer",
+            "text": "ويبغون الايصال حق السداد"
+        },
+        {
+            "role": "customer",
+            "text": "لانه انت مسوي اخفاء للوسائل"
+        },
+        {
+            "role": "customer",
+            "text": "الان ارسل لي الايصال"
+        },
+        {
+            "role": "customer",
+            "text": "وكم سددت"
+        },
+        {
+            "role": "customer",
+            "text": "اتوقع هو هدا"
+        },
+        {
+            "role": "customer",
+            "text": "جرب هدا"
+        },
+        {
+            "role": "customer",
+            "text": "يعني سددت قسط بس 1000 قسط واحد ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "يعني الان بتسددهم المتبقي لانهم يبغون المبلغ حق الترم الماضي وهدا الترم"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "عندك ياحبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "انت سدد الان لهم المتبقي وارسل الايصال"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه متاح بالفيزا"
+        },
+        {
+            "role": "customer",
+            "text": "صايمه ياحبي"
+        },
+        {
+            "role": "customer",
+            "text": "لازم اليوم تقفل رسوم الترم الاول"
+        },
+        {
+            "role": "customer",
+            "text": "1150"
+        },
+        {
+            "role": "customer",
+            "text": "واللسبوع الجاي تبدا ف رسوم الترم التاني"
+        },
+        {
+            "role": "customer",
+            "text": "بشوف دحين"
+        },
+        {
+            "role": "customer",
+            "text": "جيب عزام"
+        },
+        {
+            "role": "customer",
+            "text": "سويت بيض وفول"
+        },
+        {
+            "role": "customer",
+            "text": "مافيه قشطه"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/snapchat.com\/t\/88J6lpBc\n\nكلام مهم احتاج تعليقك وانطباعك عنه 😇"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "انت برا ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "نتظر ف السياره احسن عشان افطر"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 21.78017616272, 39.174690246582]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم \nكيفك حبيبي \nطماني وصلت\nهل ينفع تكلم سفيان ينزلني عند سوسو ؟؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "او اروح مع اوبر"
+        },
+        {
+            "role": "customer",
+            "text": "كيفك طيب\nعساك بخير لاحس ولاخير \nوين وصلتوا"
+        },
+        {
+            "role": "customer",
+            "text": "ترا مايمعن الخروج مع الاصحاب التواصل مع الاهل والاطمنان عليهم"
+        },
+        {
+            "role": "customer",
+            "text": "معماري الارضي.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "الرجاء سداد الرسوم على رقم حساب المدرسة التالي :\nمدرسة واحة المبدعين الاهلية\nالبنك الأهلي\nرقم الحساب\n01400019672105\nرقم الايبان\n‏SA3110000001400019672105\n\nمع ضرورة اشعارنا فاتورة السداد بعد صدورها على الواتس .\n\n\n\n     [ قسم المحاسبة ]\nمدارس واحة المبدعين الأهلية"
+        },
+        {
+            "role": "customer",
+            "text": "!!"
+        },
+        {
+            "role": "customer",
+            "text": "!!"
+        },
+        {
+            "role": "customer",
+            "text": "سلامتك ياروحي"
+        },
+        {
+            "role": "customer",
+            "text": "ماتشوف شر"
+        },
+        {
+            "role": "customer",
+            "text": "ايش تحب اسوي لك غدا"
+        },
+        {
+            "role": "customer",
+            "text": "فيه لحم \nوادا تبغي اجبان نحتاج تشتري اغراض"
+        },
+        {
+            "role": "customer",
+            "text": "عندي استشاره"
+        },
+        {
+            "role": "customer",
+            "text": "طيل"
+        },
+        {
+            "role": "customer",
+            "text": "ب"
+        },
+        {
+            "role": "customer",
+            "text": "هدا سويت بيت صاحبتي نوره"
+        },
+        {
+            "role": "customer",
+            "text": "ومشاعل قالت ارسلت لكم رقم سامح هو الي يسري الابواب"
+        },
+        {
+            "role": "customer",
+            "text": "شوف اللانش بوكس خق عزام ف السباره لانه مالقيته ف شنطته"
+        },
+        {
+            "role": "customer",
+            "text": "كلم انس"
+        },
+        {
+            "role": "customer",
+            "text": "ادا تحب تفطر جيب بيض وجبنه وطحنيه\nوايش تحب اسوي لك"
+        },
+        {
+            "role": "customer",
+            "text": "وجيب كمان بيض ودجاج وفيليه"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "لاتنسي اسامه"
+        },
+        {
+            "role": "customer",
+            "text": "ف المسجد"
+        },
+        {
+            "role": "customer",
+            "text": "انت ايش رايك"
+        },
+        {
+            "role": "customer",
+            "text": "انت رد عليهم"
+        },
+        {
+            "role": "customer",
+            "text": "شوف الفيزا كم فيها"
+        },
+        {
+            "role": "customer",
+            "text": "وحول لي منها 3000 الاف"
+        },
+        {
+            "role": "customer",
+            "text": "محمد عبدالحميد \n0541051107"
+        },
+        {
+            "role": "customer",
+            "text": "صابر \n0597752329"
+        },
+        {
+            "role": "customer",
+            "text": "شركة نمار \n050524144\n0504107831\n0536422204"
+        },
+        {
+            "role": "customer",
+            "text": "واصف خان \n0590825764"
+        },
+        {
+            "role": "customer",
+            "text": "منجره نورا\n0547853620"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم بابا ابغى صامولجي كبدة جبنة 🤣"
+        },
+        {
+            "role": "customer",
+            "text": "هدا"
+        },
+        {
+            "role": "customer",
+            "text": "اسامه يبغي شورما"
+        },
+        {
+            "role": "customer",
+            "text": "تكفى"
+        },
+        {
+            "role": "customer",
+            "text": "انت وينك"
+        },
+        {
+            "role": "customer",
+            "text": "الوقت راح"
+        },
+        {
+            "role": "customer",
+            "text": "واسامه من الصبح صاحي"
+        },
+        {
+            "role": "customer",
+            "text": "عزام ملابسه ف الصاله وفطوره جاهز في شنطته \nادا لبس خليه يقرا ادكاره حتي اسامه \nواسامه لايروح مشي شيله معك وانا رايح"
+        },
+        {
+            "role": "customer",
+            "text": "وابغي اكلم عزام لانه رحت وهو مايعرف"
+        },
+        {
+            "role": "customer",
+            "text": "لا خلاص تطفي من نفسها"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "ريلام خلصت اختبار"
+        },
+        {
+            "role": "customer",
+            "text": "جيب شورما لعيالي من مكلن نظيف"
+        },
+        {
+            "role": "customer",
+            "text": "احسب ريلام معهم"
+        },
+        {
+            "role": "customer",
+            "text": "شورما الافضل جنب الدكان"
+        },
+        {
+            "role": "customer",
+            "text": "واسامه يبغي صحن شورما الي فيه بطاط"
+        },
+        {
+            "role": "customer",
+            "text": "اسامه لاتنساه"
+        },
+        {
+            "role": "customer",
+            "text": "هلابك"
+        },
+        {
+            "role": "customer",
+            "text": "ايش تحب تاكل 🥰"
+        },
+        {
+            "role": "customer",
+            "text": "موفق ياحبيبي \nانا رايحه لاختي بغطر عندها انا واولادي"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن تمرني عند سمونه تاخدني"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "جيبو معكم زبيب"
+        },
+        {
+            "role": "customer",
+            "text": "ولبن اكتفيا كامل الدسم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "لاتنسي اسامه"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه بس اذكرك خفت تكون تنشغل وتنساه"
+        },
+        {
+            "role": "customer",
+            "text": "دلع الشيخ"
+        },
+        {
+            "role": "customer",
+            "text": "عشان حفظ قران وسمع وترك النادي لاجل القران"
+        },
+        {
+            "role": "customer",
+            "text": "وعليك السلام"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "عندي استشاره"
+        },
+        {
+            "role": "customer",
+            "text": "فتحت"
+        },
+        {
+            "role": "customer",
+            "text": "فتحت"
+        },
+        {
+            "role": "customer",
+            "text": "ابغي اروح اشتري منه 🥰"
+        },
+        {
+            "role": "customer",
+            "text": "كيف تكسب زوجتك 😎https:\/\/vt.tiktok.com\/ZSmhQyPgn\/"
+        },
+        {
+            "role": "customer",
+            "text": "بلاعة الطبخ رجعت نفس المشكله"
+        },
+        {
+            "role": "customer",
+            "text": "جيب سباك يسوي مغسله الصاله والمطبخ"
+        },
+        {
+            "role": "customer",
+            "text": "لاتنسي اسامه"
+        },
+        {
+            "role": "customer",
+            "text": "تجربه الاكل بدون خبز https:\/\/snapchat.com\/t\/C4Lgs5XC"
+        },
+        {
+            "role": "customer",
+            "text": "عزام"
+        },
+        {
+            "role": "customer",
+            "text": "ايش وضعه"
+        },
+        {
+            "role": "customer",
+            "text": "بطنه تعبان"
+        },
+        {
+            "role": "customer",
+            "text": "قول له ماينفع امس انس اشترى له"
+        },
+        {
+            "role": "customer",
+            "text": "عندي"
+        },
+        {
+            "role": "customer",
+            "text": "مانبي رز 😎"
+        },
+        {
+            "role": "customer",
+            "text": "شكلي بسوي ف البيت 🙈"
+        },
+        {
+            "role": "customer",
+            "text": "مانبغي رز ودجاج"
+        },
+        {
+            "role": "customer",
+            "text": "انا ابغي افتح"
+        },
+        {
+            "role": "customer",
+            "text": "لا ماينفع ويجيب التكاك"
+        },
+        {
+            "role": "customer",
+            "text": "عزام وينه"
+        },
+        {
+            "role": "customer",
+            "text": "السباك متي جاي"
+        },
+        {
+            "role": "customer",
+            "text": "لازم يتصلح المطبخ والمغسله"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "هدا عند المدخل"
+        },
+        {
+            "role": "customer",
+            "text": "هدا ف المجلس الترك لايت الي جنب المكيف"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "خطابه والا ايش"
+        },
+        {
+            "role": "customer",
+            "text": "انا اروح اشوف البنت وبعدها ياخدو اخبار انس"
+        },
+        {
+            "role": "customer",
+            "text": "اسامه"
+        },
+        {
+            "role": "customer",
+            "text": "مين يجيبه ؟"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبي احتاج فوط"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "عادي"
+        },
+        {
+            "role": "customer",
+            "text": "اسامه برست"
+        },
+        {
+            "role": "customer",
+            "text": "ريلام تبغي كباب"
+        },
+        {
+            "role": "customer",
+            "text": "1"
+        },
+        {
+            "role": "customer",
+            "text": "بسبوسه"
+        },
+        {
+            "role": "customer",
+            "text": "صح"
+        },
+        {
+            "role": "customer",
+            "text": "تصلي والا اقدر اكلمك !؟"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "انت وينك الله يهديك"
+        },
+        {
+            "role": "customer",
+            "text": "ترا احنا نعسانين"
+        },
+        {
+            "role": "customer",
+            "text": "3ك طماطم \n2ك خيار \n2ك جزر \nكرتون بطاط حلوه حمراء\n4حبات قرع امريكي \nفلفل رومي ملون احمر واصفر \n2ك باميه \n2كيلو فاصوليا \n2خس \nجرجير \n2بقدونس \nبصل اخضر \nكزبره وشيت \nباذنجان وكوسه وفلفل حار \nبنجر 3حبات \nبوركلي ابيض واخضر \nملفوف ابيض وبنفسجي صغير مره \nليمون \n كيلو ورق بقل \nنعناع وحبق \n3بصل ابيض واصفر\nثوم \nتفاح وكيوي وفرواله وعنب وموز وكمثرى \nورمان وفوجادو واناناس"
+        },
+        {
+            "role": "customer",
+            "text": "تبغي نرسل لك القطايف الان والا بعد الفطور ؟؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "احس مع القهوه احسن لانه العيال بيخلصوها عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "ليه ماتخلي اسامه يجلس مع الرجال"
+        },
+        {
+            "role": "customer",
+            "text": "جالس ع السوني"
+        },
+        {
+            "role": "customer",
+            "text": "تفاهم معه"
+        },
+        {
+            "role": "customer",
+            "text": "شوي"
+        },
+        {
+            "role": "customer",
+            "text": "صلي وتعالي احسن"
+        },
+        {
+            "role": "customer",
+            "text": "شيل اسامه"
+        },
+        {
+            "role": "customer",
+            "text": "وينك يالحبيب"
+        },
+        {
+            "role": "customer",
+            "text": "يالله"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير حبيبي \nوانت جاي جيب معك دجاج الناصيريه وكمان فيليه \nوكمان نحتاج جبنه كرفت سائله وبيض"
+        },
+        {
+            "role": "customer",
+            "text": "12ونص"
+        },
+        {
+            "role": "customer",
+            "text": "أولياء الأمور الأعزاء .\nتحية طيبة وبعد،\nنود إبلاغكم بسداد مبلغ الرسوم المتأخرة بقيمة (3105) ريال \n\nعلى رقم حساب المدرسة التالي :\nمدرسة واحة المبدعين الاهلية\nالبنك الأهلي\nرقم الحساب\n01400019672105\nرقم الايبان\n‏SA3110000001400019672105\n\nمع ضرورة اشعارنا فاتورة السداد بعد صدورها على الواتس .\n     \nدمتم بخير،\n     [ قسم المحاسبة ]\nمدارس واحة المبدعين الأهلية"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "سدد نص الان والشهر الي بعده ادفع الباقي"
+        },
+        {
+            "role": "customer",
+            "text": "حبي شوف العثبم \nادا عندهم عرض ع شوربه هنا \nوجلنه سائله كرفت \nكرتون حليب طويل الاجل"
+        },
+        {
+            "role": "customer",
+            "text": "وعليك السلتم"
+        },
+        {
+            "role": "customer",
+            "text": "وعليك السلام"
+        },
+        {
+            "role": "customer",
+            "text": "شيك"
+        },
+        {
+            "role": "customer",
+            "text": "ع ريلام"
+        },
+        {
+            "role": "customer",
+            "text": "يالل"
+        },
+        {
+            "role": "customer",
+            "text": "اسامه دخل"
+        },
+        {
+            "role": "customer",
+            "text": "رامي"
+        },
+        {
+            "role": "customer",
+            "text": "ترا اتوقع هو مدير المركز"
+        },
+        {
+            "role": "customer",
+            "text": "وعنده صلاحيه فضغط عليه"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "جيب تميس بالجبن بر"
+        },
+        {
+            "role": "customer",
+            "text": "2"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "كيفك حالك"
+        },
+        {
+            "role": "customer",
+            "text": "عساك بخير"
+        },
+        {
+            "role": "customer",
+            "text": "بتتسحر برا ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "لانه جوعانين وبتسحرنا بدري"
+        },
+        {
+            "role": "customer",
+            "text": "ماعرف \nبس فيه سلطه وبنسخن الفته والمعصوب \nلعيالي وبسوي بيض \nوخلاص"
+        },
+        {
+            "role": "customer",
+            "text": "كم قدامك ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "لاضغط ولاسكر \nوجبه وحده ف اليوم والمشي يومياً  وعمره 95https:\/\/snapchat.com\/t\/nwObBQoN"
+        },
+        {
+            "role": "customer",
+            "text": "هدا كلام الدكتور يعني الحبوب الكولسترول ضحكه https:\/\/snapchat.com\/t\/dgZ0WrZF"
+        },
+        {
+            "role": "customer",
+            "text": "يالله ياهدا النجار الي كل يوم بكره"
+        },
+        {
+            "role": "customer",
+            "text": "جيب جلي توت \nوقشطه"
+        },
+        {
+            "role": "customer",
+            "text": "هدا مين فين جبته"
+        },
+        {
+            "role": "customer",
+            "text": "افتح الباب لاسامه"
+        },
+        {
+            "role": "customer",
+            "text": "ع السرير منبطحه 🥰"
+        },
+        {
+            "role": "customer",
+            "text": "🥰"
+        },
+        {
+            "role": "customer",
+            "text": "ياحلوك"
+        },
+        {
+            "role": "customer",
+            "text": "بوابه الزهايمر حبوب الكلوسترولhttps:\/\/snapchat.com\/t\/jI9SxMkT"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "الله يحفظكم"
+        },
+        {
+            "role": "customer",
+            "text": "اخر زمن الحرمه تجيب اغراض لزوجها 🤣"
+        },
+        {
+            "role": "customer",
+            "text": "ياحبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "الله لابخليتي"
+        },
+        {
+            "role": "customer",
+            "text": "انا احس  اني ملكه معك"
+        },
+        {
+            "role": "customer",
+            "text": "التصوير مايوضح زين"
+        },
+        {
+            "role": "customer",
+            "text": "يارب يكون افتح"
+        },
+        {
+            "role": "customer",
+            "text": "انت حاول فيه"
+        },
+        {
+            "role": "customer",
+            "text": "ترا يد الباب"
+        },
+        {
+            "role": "customer",
+            "text": "بس لازم اشوف لون الصبغه ع اساسها اشتري"
+        },
+        {
+            "role": "customer",
+            "text": "مافهمت"
+        },
+        {
+            "role": "customer",
+            "text": "انا مصدعه تعال سوي مساج لراسي 🥰"
+        },
+        {
+            "role": "customer",
+            "text": "طماطم \nخيار \nجزر \nفلفل رومي ملون اصفر واخضر واحمر \nبقدونس 2حزمه \nكزبره 1حزمه \nشبا 1حزمه \nخس 2كيس \nجرجير 2حزمه صغير \nبصل 1احمر و2 كيس  ابيض \nثوم \nفجل احمر \nكرتون بطاطا حلوه  حمراء\n\nموز واناناس وفرواله وكيوي وافوجادو"
+        },
+        {
+            "role": "customer",
+            "text": "طماطم \nخيار \nجزر \nفلفل رومي ملون اصفر واخضر واحمر \nبقدونس 2حزمه \nكزبره 1حزمه \nشبا 1حزمه \nخس 2كيس \nجرجير 2حزمه صغير \nبصل 1احمر و2 كيس  ابيض \nثوم \nفجل احمر \nكرتون بطاطا حلوه  حمراء\n\nموز واناناس وفرواله وكيوي وافوجادو\nرومان 4حبات او 5"
+        },
+        {
+            "role": "customer",
+            "text": "طماطم \nخيار \nجزر \nفلفل رومي ملون اصفر واخضر واحمر \nبقدونس 2حزمه \nكزبره 1حزمه \nشبا 1حزمه \nخس 2كيس \nجرجير 2حزمه صغير \nبصل اخضر  وبقله \nبصل 1احمر و2 كيس  ابيض \nثوم \nفجل احمر \nكرتون بطاطا حلوه  حمراء\n\nموز واناناس وفرواله وكيوي وافوجادو\nرومان 4حبات او 5"
+        },
+        {
+            "role": "customer",
+            "text": "طماطم \nخيار \nجزر \nفلفل رومي ملون اصفر واخضر واحمر \nبقدونس 2حزمه \nكزبره 1حزمه \nشبا 1حزمه \nخس 2كيس \nجرجير 2حزمه صغير \nبصل اخضر  وحزمه رجله \nبصل 1احمر و2 كيس  ابيض \nثوم \nفجل احمر \nكرتون بطاطا حلوه  حمراء\n\nموز واناناس وفرواله وكيوي وافوجادو\nرومان 4حبات او 5"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هدا شكل الرجله"
+        },
+        {
+            "role": "customer",
+            "text": "او البقله"
+        },
+        {
+            "role": "customer",
+            "text": "من البقاله \nدجاج 4حبات \nفيليه \nزبادي كبير \nلبن اكتفيا"
+        },
+        {
+            "role": "customer",
+            "text": "كمان جيب خبز صامولي 📌📌"
+        },
+        {
+            "role": "customer",
+            "text": "بامبه عادي جيب\nفلفل حار موجود"
+        },
+        {
+            "role": "customer",
+            "text": "اهم شي فلفل رومي ملون وجيب كيلو او 2"
+        },
+        {
+            "role": "customer",
+            "text": "تلقاه ف الثلاجه"
+        },
+        {
+            "role": "customer",
+            "text": "جنب الاناناس اتوقع"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "ع راحتك"
+        },
+        {
+            "role": "customer",
+            "text": "ياحبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "كيف مناسب يعني ماتبيغي تجي"
+        },
+        {
+            "role": "customer",
+            "text": "تنور بيتك"
+        },
+        {
+            "role": "customer",
+            "text": "يعني بتتسحر برا والاكيف"
+        },
+        {
+            "role": "customer",
+            "text": "بالله لاتتاخر"
+        },
+        {
+            "role": "customer",
+            "text": "لان مايغي نتاخر ف الحور وننام وبطوننا مليانه"
+        },
+        {
+            "role": "customer",
+            "text": "س"
+        },
+        {
+            "role": "customer",
+            "text": "وانت عارف انا من الصباح صاحيه \nخليك حنون عليه وعشان الحق انام ف حضنك"
+        },
+        {
+            "role": "customer",
+            "text": "هلابك ياروحي"
+        },
+        {
+            "role": "customer",
+            "text": "تنور بيتك وسفرتك🥰"
+        },
+        {
+            "role": "customer",
+            "text": "الريحه طيب"
+        },
+        {
+            "role": "customer",
+            "text": "خليه لبكره تكون خفت الربحه صدورنا"
+        },
+        {
+            "role": "customer",
+            "text": "تعبت"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "كلام كليم"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/snapchat.com\/t\/RJFSoPUU"
+        },
+        {
+            "role": "customer",
+            "text": "😂😂"
+        },
+        {
+            "role": "customer",
+            "text": "هلابك"
+        },
+        {
+            "role": "customer",
+            "text": "الاكل جهزناه"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص انا بنام طافيه"
+        },
+        {
+            "role": "customer",
+            "text": "قلبك"
+        },
+        {
+            "role": "customer",
+            "text": "سبعين مره كلمته مايفهم"
+        },
+        {
+            "role": "customer",
+            "text": "يقول ابغي السخان وحمامهم مافيه"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "اعطيه فلوس"
+        },
+        {
+            "role": "customer",
+            "text": "واعطيه زياده ع المبلغ عشان لو احتاج مايطلب احد"
+        },
+        {
+            "role": "customer",
+            "text": "كرتون منديل \nكرتون كلينكس \nزبادي كبير \nسكر ناعم \nدجاج \nفيليه"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "أولياء الأمور الأعزاء .\nتحية طيبة وبعد،\nنود إبلاغكم بسداد مبلغ الرسوم المتأخرة بقيمة (3105) ريال \n\nعلى رقم حساب المدرسة التالي :\nمدرسة واحة المبدعين الاهلية\nالبنك الأهلي\nرقم الحساب\n01400019672105\nرقم الايبان\n‏SA3110000001400019672105\n\nمع ضرورة اشعارنا فاتورة السداد بعد صدورها على الواتس .\n     \nدمتم بخير،\n     [ قسم المحاسبة ]\nمدارس واحة المبدعين الأهلية"
+        },
+        {
+            "role": "customer",
+            "text": "ادا حولت بالله ارسل الايصال ضروري"
+        },
+        {
+            "role": "customer",
+            "text": "ادا ممكن تجيب شراب دومبي"
+        },
+        {
+            "role": "customer",
+            "text": "عشان اسامه تعبان"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "ضروري لها كم يوم ترسل"
+        },
+        {
+            "role": "customer",
+            "text": "بالله لاتحرجني"
+        },
+        {
+            "role": "customer",
+            "text": "مقدره ذلك ياحبيبي بس انا من شهر بلغتك وقلت يوم الراتب"
+        },
+        {
+            "role": "customer",
+            "text": "ارقص مصري ياحبيي الدنيا حلوه"
+        },
+        {
+            "role": "customer",
+            "text": "🤣"
+        },
+        {
+            "role": "customer",
+            "text": "الله يحفظك ياحبيب"
+        },
+        {
+            "role": "customer",
+            "text": "ي"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "+مبلغ الشغاله 1000 كاش"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير حبيبي \nادا ممكن تجيب معك فيفادول حبوب"
+        },
+        {
+            "role": "customer",
+            "text": "طيبه بس انس مسخن والظاهر من الصباح ولاخبرني الله يهديه"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "جيب فلوس الشغاله كلش"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "العمال وسخوا المكان ونزلو"
+        },
+        {
+            "role": "customer",
+            "text": "لازم ينظفوه"
+        },
+        {
+            "role": "customer",
+            "text": "شوف الي يناسبك"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "انس خرج من 12ونص"
+        },
+        {
+            "role": "customer",
+            "text": "العمال كانوا فوق"
+        },
+        {
+            "role": "customer",
+            "text": "انا فهمتك الف مره  وين تعلقها"
+        },
+        {
+            "role": "customer",
+            "text": "لون البويه لايمستون مخفف"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبي \nادا تقدر تمر وتجيب من افران الحظب خبز ساوردور \nوكمان جيب بيض ودجاج وفيليه من الناصيريه"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبي \nادا تقدر  وتحب تجيب من افران الحظب خبز ساوردور \nوكمان جيب بيض ودجاج وفيليه من الناصيريه"
+        },
+        {
+            "role": "customer",
+            "text": "وجيب كمان خبز صامولي"
+        },
+        {
+            "role": "customer",
+            "text": "وجيب كمان خبز صامولي\nوكمان مخلل خيار"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "انا ف المطبخ اسوي الفطور"
+        },
+        {
+            "role": "customer",
+            "text": "2"
+        },
+        {
+            "role": "customer",
+            "text": "عادي ادا مافيه خيار جيب مشكل"
+        },
+        {
+            "role": "customer",
+            "text": "بنخرج الان وماعرف متي نرحع"
+        },
+        {
+            "role": "customer",
+            "text": "شايلين الافياش ماقدر اسغل الانوار"
+        },
+        {
+            "role": "customer",
+            "text": "هو سوو للبلاط جلي ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "هدا شعر الديكور والاسلاك طالعه"
+        },
+        {
+            "role": "customer",
+            "text": "لاتنسي حق الابواب"
+        },
+        {
+            "role": "customer",
+            "text": "وهدا المفروض الي يسير 🤣🤣🤣 ايش رايك ف كلامه https:\/\/snapchat.com\/t\/OFBlP6bO"
+        },
+        {
+            "role": "customer",
+            "text": "اي فنادق ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "ليه نزلت اسامه"
+        },
+        {
+            "role": "customer",
+            "text": "المفروض يكون معك"
+        },
+        {
+            "role": "customer",
+            "text": "رامي جتي لو مشاغلك كثيره"
+        },
+        {
+            "role": "customer",
+            "text": "جلوسه ع الاجهزه مع البزران ماينغع"
+        },
+        {
+            "role": "customer",
+            "text": "خليه يتعلم منك ويشوف شغلك ويترجل ماهو اجهزه وكلام فارغ"
+        },
+        {
+            "role": "customer",
+            "text": "كيف وضع الفطور تبغي تفطر بالبيت لان عيالك معزومين ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "طيب حدد ايش تبغي"
+        },
+        {
+            "role": "customer",
+            "text": "دروش خناقي درزين"
+        },
+        {
+            "role": "customer",
+            "text": "رامي والله مالي خلق ف الطبخ \nولو افطرتو فوق لازم احهز سفره واواني وخرابيط"
+        },
+        {
+            "role": "customer",
+            "text": "انا احس ماقدر اقوم"
+        },
+        {
+            "role": "customer",
+            "text": "يعني انا لما اسوي لكم ماتكلف"
+        },
+        {
+            "role": "customer",
+            "text": "ادخل المطبخ الظهر ماطلع الا المغرب وهدا ايش"
+        },
+        {
+            "role": "customer",
+            "text": "احتاج قشطه \nوكرتون مويه صغير \nخبز تميس \nسمبسوسه لحم من كبابيبو"
+        },
+        {
+            "role": "customer",
+            "text": "يالله قاعده البس"
+        },
+        {
+            "role": "customer",
+            "text": "لاتنسي اسامه"
+        },
+        {
+            "role": "customer",
+            "text": "تلقاه في علبه الشمعه في مكتبه الصاله حقتك"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/share.google\/sNiHN9o01STjy3waFعيادات القحطاني"
+        },
+        {
+            "role": "customer",
+            "text": "سويت السحور"
+        },
+        {
+            "role": "customer",
+            "text": "بشوف ادا تسحرنا وفينا حيل رحنا"
+        },
+        {
+            "role": "customer",
+            "text": "خد دم الغزال عليك يجي حلو"
+        },
+        {
+            "role": "customer",
+            "text": "والبسه اشوفه عليك"
+        },
+        {
+            "role": "customer",
+            "text": "اتوقع فيه شماغ اسمه الصقر"
+        },
+        {
+            "role": "customer",
+            "text": "وكمان اكسفورد"
+        },
+        {
+            "role": "customer",
+            "text": "وشوف سيار جنبه"
+        },
+        {
+            "role": "customer",
+            "text": "اشمغتهم مره فخمه"
+        },
+        {
+            "role": "customer",
+            "text": "شوف سجنتشر او"
+        },
+        {
+            "role": "customer",
+            "text": "وكمان بيور شوفه"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "وصلت"
+        },
+        {
+            "role": "customer",
+            "text": "الرابط"
+        },
+        {
+            "role": "customer",
+            "text": "كم الرقم"
+        },
+        {
+            "role": "customer",
+            "text": "4"
+        },
+        {
+            "role": "customer",
+            "text": "ارقام"
+        },
+        {
+            "role": "customer",
+            "text": "وبعدين يجيك رابط السداد"
+        },
+        {
+            "role": "customer",
+            "text": "وصلتك الرساله"
+        },
+        {
+            "role": "customer",
+            "text": "???"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل تاكيد ادا سددت"
+        },
+        {
+            "role": "customer",
+            "text": "انا ماقدر اوقف كثير"
+        },
+        {
+            "role": "customer",
+            "text": "تعبت"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل ايش"
+        },
+        {
+            "role": "customer",
+            "text": "عندك الرابط"
+        },
+        {
+            "role": "customer",
+            "text": "تمار"
+        },
+        {
+            "role": "customer",
+            "text": "جاتك رساله"
+        },
+        {
+            "role": "customer",
+            "text": "شوفه"
+        },
+        {
+            "role": "customer",
+            "text": "???"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص طلعت وسددت"
+        },
+        {
+            "role": "customer",
+            "text": "ماعاد اقدر انتظر"
+        },
+        {
+            "role": "customer",
+            "text": "اسامه وصل"
+        },
+        {
+            "role": "customer",
+            "text": "كم الرقم ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "كم رقم"
+        },
+        {
+            "role": "customer",
+            "text": "تمار"
+        },
+        {
+            "role": "customer",
+            "text": "قبل لايقفل"
+        },
+        {
+            "role": "customer",
+            "text": "انت وينك ماترد"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "نوم العافيه"
+        },
+        {
+            "role": "customer",
+            "text": "كم رقم رمز اللمان"
+        },
+        {
+            "role": "customer",
+            "text": "رد عليهم"
+        },
+        {
+            "role": "customer",
+            "text": "كم رمز الامان للبطاقه"
+        },
+        {
+            "role": "customer",
+            "text": "93"
+        },
+        {
+            "role": "customer",
+            "text": "ادا مانت نايم نروح بدري عشان نلحق نخلص قبل الصلاه عشان الحق اجهز الفطور \nالامر الاخر اليوم بنروح نحجم انا ولوله"
+        },
+        {
+            "role": "customer",
+            "text": "بعد التروايح بادن الله"
+        },
+        {
+            "role": "customer",
+            "text": "وينك ياحبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "ترا عادي مايمنع ترد ع الجوال ادا تعتكف"
+        },
+        {
+            "role": "customer",
+            "text": "ياحبيبي ترا كد ا بنتاخر"
+        },
+        {
+            "role": "customer",
+            "text": "ادا دخلت الصلاه وبتروح للمسجد يروح لانه قبلي 2او 3"
+        },
+        {
+            "role": "customer",
+            "text": "فاخاف نتاخر اقلها تكون صليت كم ركعه ع بال مانخلص"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن نص ساعه واخلص"
+        },
+        {
+            "role": "customer",
+            "text": "تحت انت"
+        },
+        {
+            "role": "customer",
+            "text": "خلصت"
+        },
+        {
+            "role": "customer",
+            "text": "ادا كنت عند اسامه بيكلموها اخونه"
+        },
+        {
+            "role": "customer",
+            "text": "وعليك السلام"
+        },
+        {
+            "role": "customer",
+            "text": "صحيتني من النوم"
+        },
+        {
+            "role": "customer",
+            "text": "وين اسامه ماكلمناه"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 😍]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "جيب قشطه"
+        },
+        {
+            "role": "customer",
+            "text": "وهدا البطاطا"
+        },
+        {
+            "role": "customer",
+            "text": "ضحكني معك😎"
+        },
+        {
+            "role": "customer",
+            "text": "وكمان خس"
+        },
+        {
+            "role": "customer",
+            "text": "قشطه وعواد بطاطا \nخس ونعناع"
+        },
+        {
+            "role": "customer",
+            "text": "جيب. بلح السام"
+        },
+        {
+            "role": "customer",
+            "text": "علبه وحده"
+        },
+        {
+            "role": "customer",
+            "text": "عادي ماهو حراق"
+        },
+        {
+            "role": "customer",
+            "text": "جيب"
+        },
+        {
+            "role": "customer",
+            "text": "حبتين"
+        },
+        {
+            "role": "customer",
+            "text": "يارب"
+        },
+        {
+            "role": "customer",
+            "text": "صبرك"
+        },
+        {
+            "role": "customer",
+            "text": "مابغي هبز"
+        },
+        {
+            "role": "customer",
+            "text": "ه"
+        },
+        {
+            "role": "customer",
+            "text": "خ"
+        },
+        {
+            "role": "customer",
+            "text": "لاتأكله انت"
+        },
+        {
+            "role": "customer",
+            "text": "جيبه لي"
+        },
+        {
+            "role": "customer",
+            "text": "عافيه لاتخلصها بس"
+        },
+        {
+            "role": "customer",
+            "text": "حطه"
+        },
+        {
+            "role": "customer",
+            "text": "عند الزرع"
+        },
+        {
+            "role": "customer",
+            "text": "كدا خطا"
+        },
+        {
+            "role": "customer",
+            "text": "اي احد يشوفه"
+        },
+        {
+            "role": "customer",
+            "text": "وصلت"
+        },
+        {
+            "role": "customer",
+            "text": "الساعه كم تجي"
+        },
+        {
+            "role": "customer",
+            "text": "عشان نجهز الاكل مايبرد"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "العمال بيجون ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "عشان نروح نخلص مشوراينا"
+        },
+        {
+            "role": "customer",
+            "text": "انت كل تقول بكره والوقت يمشي"
+        },
+        {
+            "role": "customer",
+            "text": "اتصل عليهم"
+        },
+        {
+            "role": "customer",
+            "text": "الان"
+        },
+        {
+            "role": "customer",
+            "text": "وخليهم يجون ف الليل احسن"
+        },
+        {
+            "role": "customer",
+            "text": "حبي \n5ونص خليك قريب"
+        },
+        {
+            "role": "customer",
+            "text": "عشان مانتاخر"
+        },
+        {
+            "role": "customer",
+            "text": "ادا جيت افتح الباب لسا باقي وقت ع 10"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 💜]"
+        },
+        {
+            "role": "customer",
+            "text": "الضحكه من قبل 🥰😘"
+        },
+        {
+            "role": "customer",
+            "text": "🤣😎😎😎"
+        },
+        {
+            "role": "customer",
+            "text": "هدا من افضل انواع الدراجات الهجين وعليها ضمان وعليها تخفيض وعندهم تابي وتمارا"
+        },
+        {
+            "role": "customer",
+            "text": "ايش رايك ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "وفيه ف امازون بحدود 600 و500 ولكن ماعرف جودتها"
+        },
+        {
+            "role": "customer",
+            "text": "تعبانه"
+        },
+        {
+            "role": "customer",
+            "text": "بنام"
+        },
+        {
+            "role": "customer",
+            "text": "مافيني اخرج بصراحه"
+        },
+        {
+            "role": "customer",
+            "text": "جالكسي ساده 4حبات \nرومان"
+        },
+        {
+            "role": "customer",
+            "text": "جالكسي ساده 4حبات \nرومان\nبقدونس وكزبره وشبت \nقشطه 2\nجبنه سائله كرافت \nخبز تميس"
+        },
+        {
+            "role": "customer",
+            "text": "جيب حبه"
+        },
+        {
+            "role": "customer",
+            "text": "جيب كمان سكر بني"
+        },
+        {
+            "role": "customer",
+            "text": "سعده"
+        },
+        {
+            "role": "customer",
+            "text": "ساده"
+        },
+        {
+            "role": "customer",
+            "text": "الزوجه هي السكن وهي الكنز الحقيقي https:\/\/snapchat.com\/t\/2UzcLMzL"
+        },
+        {
+            "role": "customer",
+            "text": "يارب يبارك لي فيكم ويحميكم 💕"
+        },
+        {
+            "role": "customer",
+            "text": "كم قدامك ؟"
+        },
+        {
+            "role": "customer",
+            "text": "الاغراض"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "هو الي يبغاه"
+        },
+        {
+            "role": "customer",
+            "text": "انت اكدت للعمال انه مايحطون ورق ع جدار الشيبورد"
+        },
+        {
+            "role": "customer",
+            "text": "دقيقه"
+        },
+        {
+            "role": "customer",
+            "text": "الموظفات ماهم عارفين ليه مقفل"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص هم جايين ادا بتروح"
+        },
+        {
+            "role": "customer",
+            "text": "الحريم خايفات من الغبار مايعرفون يسوقون"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص دخلت"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن 3ونص او ربع"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "اميين يارب \nوان يحفظك ويطيل بعمرك ع طاعته 💕"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "جيب سحور ادا جيت"
+        },
+        {
+            "role": "customer",
+            "text": "لانه منسدحه ف سريره ي من التروايح واحس بتعب"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "برقر ساين"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "دراجة رامبو فري ستايل 20 بوصة، دراجة مع مقعد إضافي ومقعد قابل للتعديل، دراجة رامبو موديل اندونيسي مع رفرف نيكل وعاكسات، دراجة رامبو بتصميم اندونيسي هدية مناسبة للأولاد من البدر \n https:\/\/amzn.eu\/d\/09tf2ujF"
+        },
+        {
+            "role": "customer",
+            "text": "ايش رايك نطلبها لاسامه وسعرها بلاش"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "رامي ترا هدا الاسلوب مره يضايقني \nوخلاص ماني رايحه بصلي ف بيتي \nواسامه بخليه يروح يصلي ف مسحد الحاره ومره جيبه بعدين"
+        },
+        {
+            "role": "customer",
+            "text": "وترا انا بعباتي ف الصاله انتظرك وحتي ماتعبت نفسك توضح انه ماتقدر يعني لو ماتصلت كان انتظرك  ع الفاضي"
+        },
+        {
+            "role": "customer",
+            "text": "عيالك يحتاجون بعد التروايح يشترون اغراض من ابو 5 وكمان محل اصل العنايه"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "الحرمه ماهي جايه لعله خيريه \nبسخن الاكل وبسوي بيض \nوجيب معك خبز وطحنيه وجبنه قريش"
+        },
+        {
+            "role": "customer",
+            "text": "جيب خبز كيتو او نخاله"
+        },
+        {
+            "role": "customer",
+            "text": "صاحي؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "سددت؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ادا اسامه وقل بلغني"
+        },
+        {
+            "role": "customer",
+            "text": "ادا اسامه وصل بلغني"
+        },
+        {
+            "role": "customer",
+            "text": "كيف السحور"
+        },
+        {
+            "role": "customer",
+            "text": "مافيه دجاج"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "ياحبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "الله لابخلينا منك"
+        },
+        {
+            "role": "customer",
+            "text": "والله انك ماتقصر وتدلعنا لاخلا ولاعدم \n❤️"
+        },
+        {
+            "role": "customer",
+            "text": "ابغى حضنك يكفيني عن تميس وغيره"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🥰]"
+        },
+        {
+            "role": "customer",
+            "text": "اتوقع هدا بس خد تركيز 4"
+        },
+        {
+            "role": "customer",
+            "text": "ريفريش ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "ماعندي رقمه"
+        },
+        {
+            "role": "customer",
+            "text": "انت من فين صرفته واسال الصيدلي اكيد يعرف"
+        },
+        {
+            "role": "customer",
+            "text": "جيب"
+        },
+        {
+            "role": "customer",
+            "text": "نص بن فيفا \nنص بن هريري وسط \nقهوه شعير ارض الطبيعه"
+        },
+        {
+            "role": "customer",
+            "text": "ادا مانت عند الكاشير جيب معك مكسرات صينيه بارده"
+        },
+        {
+            "role": "customer",
+            "text": "ادا بتروح لخالي لاتنسي تمر  تاخد اغراضها"
+        },
+        {
+            "role": "customer",
+            "text": "وادا تقدر بعد التروايح تمر سمونه تجيب لي حلا من عندها خل اسامه ينزل لها"
+        },
+        {
+            "role": "customer",
+            "text": "بتروح جهة ابوك"
+        },
+        {
+            "role": "customer",
+            "text": "عشان اطلع الهديه مع اسامه ادا جا"
+        },
+        {
+            "role": "customer",
+            "text": "ماعندي رقمه"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/share.google\/nvEdDdzfG5CB4mEb8 \nتواصل معهم واتس او اتصل ع السنترال"
+        },
+        {
+            "role": "customer",
+            "text": "او خد صوره القطره من عند ابوك وخد الي تركيزها اعلى لانها اتوقع زي حقتك ابوك الي اخدته منه"
+        },
+        {
+            "role": "customer",
+            "text": "بالله وين وصلت ف التحدي ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "امهم"
+        },
+        {
+            "role": "customer",
+            "text": "برا"
+        },
+        {
+            "role": "customer",
+            "text": "بسكويت دايجستيف ساده \nنعناع وحبق \nطحينه سائله \nنستله \nخيار \nفيمتو \n\n\nفوط وسط وكبيره برايفت"
+        },
+        {
+            "role": "customer",
+            "text": "طحينه"
+        },
+        {
+            "role": "customer",
+            "text": "وليس طحّنيه"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "معلم لغه عربيه"
+        },
+        {
+            "role": "customer",
+            "text": "رقائق سمبوسه  من قمحتي تلقاه ف منطقه الاسره"
+        },
+        {
+            "role": "customer",
+            "text": "وسط"
+        },
+        {
+            "role": "customer",
+            "text": "نبغاه🥰"
+        },
+        {
+            "role": "customer",
+            "text": "بسوي لك كركديه"
+        },
+        {
+            "role": "customer",
+            "text": "طيب خلاص جيب فوط بس"
+        },
+        {
+            "role": "customer",
+            "text": "وخلاص لاتجيب شي تاني"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعوض عليك بخير \nويعقبها فرج بادن الله"
+        },
+        {
+            "role": "customer",
+            "text": "انا قلت لك خلاص"
+        },
+        {
+            "role": "customer",
+            "text": "جيب فوط ولاتجيب اي شي تاني"
+        },
+        {
+            "role": "customer",
+            "text": "وبسوي الموجود"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "كل سنه وانت حبيبي \nوكل سنه وانت بصحه وعافيه وكل سنه وانت بقربي 🤍\n\nكلمه في خاطري  اعرف تماما انه ماقصرتي عليه بشي واشتريت كل احتياجات انا والاولاد وخيرك سابق علينا وترا مابغي شي ولا تقول لي استعجلتي ع نفسك وانا مرتب لك شي \nبصراحه حزة بخاطري انه اشتريت لكم عيديات وللاسف ماشفت منك اي اعتذار ولا مبادره ولو شي بسيط بتقول انا دفعت لك كل شي صحيح بس العيديه لها طعم خاص  واثر ف النفس انه انا جيت ع بالك\nانا من شهر مشتريت هداياكم ومرتبه كل شي \n\nيعني بالله تخيل ام تعطي الجميع هدايا وكل شي يحبوه وهي حتي ورده او كلمه حلوه ماسمعته \nانا كلام ف خاطري ومابغاه يبقي ف نفسي \nوعيدك سعيد 💔"
+        },
+        {
+            "role": "customer",
+            "text": "متي ماشي"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "انا عند المصعد"
+        },
+        {
+            "role": "customer",
+            "text": "نزلو كراتين المويه الي ف سياره ابوك"
+        },
+        {
+            "role": "customer",
+            "text": "اكد لانس موضوع العصير والسلطات"
+        },
+        {
+            "role": "customer",
+            "text": "ذبيحه تكفي ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "بقي"
+        },
+        {
+            "role": "customer",
+            "text": "لحم"
+        },
+        {
+            "role": "customer",
+            "text": "انا ماتعشيت ترا"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص بقيت شوي"
+        },
+        {
+            "role": "customer",
+            "text": "كارفر 🤣"
+        },
+        {
+            "role": "customer",
+            "text": "ابفي الريموت"
+        },
+        {
+            "role": "customer",
+            "text": "جاي والا ننام"
+        },
+        {
+            "role": "customer",
+            "text": "ماصار عيد"
+        },
+        {
+            "role": "customer",
+            "text": "بتخرج ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "وع وين ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "ترا عزام نايم ما اول مارحتو طفشان"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 😘]"
+        },
+        {
+            "role": "customer",
+            "text": "ادا ممكن تجيب معك حجر ريموت عشان المكيفات مالها ريموت \nوكمان جيب فوط  مقاس وسط لونها سماوي ووردي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "زي هده"
+        },
+        {
+            "role": "customer",
+            "text": "من الصيدليه"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "احتاج مقاس وسط"
+        },
+        {
+            "role": "customer",
+            "text": "هدا دوا بنتك"
+        },
+        {
+            "role": "customer",
+            "text": "خلص وتحتاج دواء"
+        },
+        {
+            "role": "customer",
+            "text": "اسال الصيدلي"
+        },
+        {
+            "role": "customer",
+            "text": "ابوه"
+        },
+        {
+            "role": "customer",
+            "text": "جيب لعيالي من صومالجي"
+        },
+        {
+            "role": "customer",
+            "text": "سندوتشات وجك عصير"
+        },
+        {
+            "role": "customer",
+            "text": "كبده \n2حلوم \nطعميه \nسجنتشر \nواحد عريكه"
+        },
+        {
+            "role": "customer",
+            "text": "ادا بتمر البقاله جيب حجر ريموت"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "المراعي حجمه اكبر جيبه"
+        },
+        {
+            "role": "customer",
+            "text": "ف الاخير كميه سكر فيه وشوي تفاح"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه زيه بس يجي مجموعه كثيره عشان عندي اكثر من ربموت"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن تحول لي فلوس 🥰"
+        },
+        {
+            "role": "customer",
+            "text": "عزام يبغي الجزمه الكفرات ف السياره ضروري بالله"
+        },
+        {
+            "role": "customer",
+            "text": "😎"
+        },
+        {
+            "role": "customer",
+            "text": "طلبت وايت"
+        },
+        {
+            "role": "customer",
+            "text": "؟"
+        },
+        {
+            "role": "customer",
+            "text": "الخزان مافيه مويه"
+        },
+        {
+            "role": "customer",
+            "text": "يالله وين وصلت ف التحدي"
+        },
+        {
+            "role": "customer",
+            "text": "😂"
+        },
+        {
+            "role": "customer",
+            "text": "خلك قد التحدي"
+        },
+        {
+            "role": "customer",
+            "text": "مدري ادا خلصت نزلت"
+        },
+        {
+            "role": "customer",
+            "text": "يالحبيب"
+        },
+        {
+            "role": "customer",
+            "text": "متي تحب نتقضي للبيت"
+        },
+        {
+            "role": "customer",
+            "text": "ترا فاضي"
+        },
+        {
+            "role": "customer",
+            "text": "حتي منظفات مخلصه الشغاله لها يومين تنظف الطاولات بمويه"
+        },
+        {
+            "role": "customer",
+            "text": "هلابك"
+        },
+        {
+            "role": "customer",
+            "text": "وعليك السلام"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "مين الي عازمك ع العشاء"
+        },
+        {
+            "role": "customer",
+            "text": "انت قريب ؟"
+        },
+        {
+            "role": "customer",
+            "text": "ادا ممكن تحول فلوس عشان بشوف انس يوديني الوسام اشتري النواقص ويمكن نتعشي انا وعيالي مع بعض ☺️"
+        },
+        {
+            "role": "customer",
+            "text": "انوس تعبان \nبينزلنا ف دا فيلج \nوانت تاخدنا"
+        },
+        {
+            "role": "customer",
+            "text": "؟"
+        },
+        {
+            "role": "customer",
+            "text": "وبعدها نمر الوسام"
+        },
+        {
+            "role": "customer",
+            "text": "يعني 12 ماتقدر تجي"
+        },
+        {
+            "role": "customer",
+            "text": "انت مقصدك تتعشي ماهو تنام عندهم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "حول فلوس الان بنطلب"
+        },
+        {
+            "role": "customer",
+            "text": "انت رديت اصلاً عشان اروح"
+        },
+        {
+            "role": "customer",
+            "text": "في البيت ماخرجنا لان حضرتك ماتقدر ترجعنا بسبب انه تتاخر"
+        },
+        {
+            "role": "customer",
+            "text": "وعليك السلام \nهلابك حبيبي \nسلامتك 💕"
+        },
+        {
+            "role": "customer",
+            "text": "بعني حب المراءه للمال ليس مستحدث وهو فطري  اسمع المقطع واعطني رايكhttps:\/\/snapchat.com\/t\/8or2Oosm"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "حبي"
+        },
+        {
+            "role": "customer",
+            "text": "كم قدامك"
+        },
+        {
+            "role": "customer",
+            "text": "شوف افضل نوع عملي وحلو واكثر الناس تشتريه وصوره"
+        },
+        {
+            "role": "customer",
+            "text": "حبي"
+        },
+        {
+            "role": "customer",
+            "text": "احتاج تشتري خضار"
+        },
+        {
+            "role": "customer",
+            "text": "طماطم وخيار وجزر \n3كيس بصل ابيض واحمر وثوم \nبطاطا حلو كرتون حمراء \nباذنجان وكوسه وفلفل رومي احمر واصفر \nباميه وفاصوليا \nقرع \nليمون\n2خس وجرجير 2وبقدونس 1وكزبره 1وشبت  وبصل اخضر وكراث \n1-رجله\n \nتفاح وبرتقال وموز \nفرواله وكيوي وعنب \nكمثرى وافكادو \n————————\nبيض ودجاج  ادا ماتيسر لك الان لو بعد العشاا تجيبه"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه جيب ابيض واالاحمر"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "حق المويه برا"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن تحول الفلوس"
+        },
+        {
+            "role": "customer",
+            "text": "ولاتنسي تجيب فلوس"
+        },
+        {
+            "role": "customer",
+            "text": "الشغاله"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 21.768894195557, 39.215435028076]"
+        },
+        {
+            "role": "customer",
+            "text": "هدا ف المجلس شطب"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "شوف نعيم يحل المشكله قبل لاتكبر"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته \nأمهاتنا العزيزات : \nيسرنا عودة صغارنا بعد إجازة مليئة بالسعادة والفرح وكل عام وانتم بخير 🎊🎉\n\nسنعود مع صغارنا خلال هذا الأسبوع بنفس المنهج ابتداءً من يوم الأحد مراجعات ثم  دراسة عامة ماعدا يوم الخميس سيكون هناك احتفال بيوم العيد وتبادل التوزيعات والهدايا مع الأصدقاء 🎁🎈\n\nمواعيد الحضور والإنصراف :\nالحضور : 7:00 \nالإنصراف : 12:00 \n\nشاكرين ومقدرين تعاونكم معنا 🌹"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "المدرسه فيها احد بالله تاكد"
+        },
+        {
+            "role": "customer",
+            "text": "متبقي 2105ريال  وباذن الله الاشهر القادمه يتم تحويلها"
+        },
+        {
+            "role": "customer",
+            "text": "يبغون الفلوس المدرسه"
+        },
+        {
+            "role": "customer",
+            "text": "مدرسه عزام"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "مافيه طلابب\nبس قالت لي الدادات موجودين"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "فتحت الباب وانس قريب"
+        },
+        {
+            "role": "customer",
+            "text": "عندي استشاره"
+        },
+        {
+            "role": "customer",
+            "text": "شوف ايش تحب تاكل عشان مافيه بيض ولا دجاج ولا اجبان"
+        },
+        {
+            "role": "customer",
+            "text": "ياحبيبي انت وهو"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه صايمه"
+        },
+        {
+            "role": "customer",
+            "text": "الي ف النص الابيض ايش"
+        },
+        {
+            "role": "customer",
+            "text": "انا ابغي قطعه وحده ف النص"
+        },
+        {
+            "role": "customer",
+            "text": "لاتنسي"
+        },
+        {
+            "role": "customer",
+            "text": "اسامه"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير حبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "اداره المدرسه ارسلوا يبغون فلوسهم"
+        },
+        {
+            "role": "customer",
+            "text": "بالله ادا حولت ارسل الايصال عشان ارسله لهن"
+        },
+        {
+            "role": "customer",
+            "text": "بالله ادا حولت ارسل الايصال عشان ارسله لهم"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "عليك السلام"
+        },
+        {
+            "role": "customer",
+            "text": "سلامتك \nايش تحب تاكل ع الفطور لانه ماعرف ادا فيه شي ناقص"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير احلام\n\nنعتذر منك سيتم فصل خاصية الإرسال والإنترنت خلال الـ 24 ساعة القادمة للرقم 0555338093 وذلك لعدم سداد الفاتورة الصادرة بتاريخ 03-03-2026.\n\nعلمْا بأن آخر موعد للسداد قبل فصل الارسال هو 30-03-2026 \n\nالمبلغ الإجمالي 137.17 ريال.\n(رقم الحساب: 5067906766)\n\nفي حال تم الفصل سوف تستغرق إعادة الخدمة بعد السداد 24 ساعة\n\nيمكنك السداد مباشرة عبر الرابط التالي:\nhttps:\/\/lp.stc.com.sa\/#\/sms-bill-payment?data=stcGGErgUP0aS\n\nيمكنك الاطلاع على تفاصيل الفاتورة وسدادها عبر mystc:\nhttps:\/\/my.stc\/all-bills?data=cD0wNTU1MzM4MDkz\nأو بالرد على هذه الرسالة بـ \"1112\"\n\nنقدّر تفهمك\nstc"
+        },
+        {
+            "role": "customer",
+            "text": "حبي جوال مفصول واحتاج اتصل 🥰"
+        },
+        {
+            "role": "customer",
+            "text": "وجيب معك مجموعه من خواتم التسبيح زي حقي"
+        },
+        {
+            "role": "customer",
+            "text": "وعليك السلام"
+        },
+        {
+            "role": "customer",
+            "text": "والله ودي اسجله عند ام مالك \nادا تحب لانه افضل لي"
+        },
+        {
+            "role": "customer",
+            "text": "لو كل شهر 1000 خلصت الاقساط"
+        },
+        {
+            "role": "customer",
+            "text": "لا مدارس الحمدانيه خايسه"
+        },
+        {
+            "role": "customer",
+            "text": "ولدي مودب وذكي يستحق مدرسه تناسب مستواه"
+        },
+        {
+            "role": "customer",
+            "text": "وانت امورك طيبه وع شهر 1الرواتب تزيد"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير احلام \n\nنعتذر منك، تم فصل خاصية الارسال والإنترنت لرقمك 0555338093بسبب عدم سداد الفاتورة الصادرة بتاريخ 03-03-2026.\n\nالمبلغ الإجمالي 137.17 ريال.\n(رقم الحساب: 5067906766)\n\nيمكنك السداد مباشرة عبر الرابط ادناه :\nhttps:\/\/lp.stc.com.sa\/#\/sms-bill-payment?data=stcg8IPY8LwIS\n\nيمكنك الاطلاع على تفاصيل الفاتورة وسدادها عبر mystc:\nhttps:\/\/my.stc\/all-bills?data=cD0wNTU1MzM4MDkz\n\nأو بالرد على هذه الرسالة بـ \"1112\"\n\nنقدّر تفهمك\nstc"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن تسدد جوالي انفصل وانا عندي شغل واحتاج اتصل \nلو تلاحظ من امس ارسل لك وماترد"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم حبيبي لاخلا ولاعدم 💕"
+        },
+        {
+            "role": "customer",
+            "text": "حبي"
+        },
+        {
+            "role": "customer",
+            "text": "الشغاله تبغي فلوسها"
+        },
+        {
+            "role": "customer",
+            "text": "ترا مره تاخرنا عليها"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبي احنا اتفقنا نودي عيالي"
+        },
+        {
+            "role": "customer",
+            "text": "المشفي والمركز العلاج الطبيعي"
+        },
+        {
+            "role": "customer",
+            "text": "شوف ولدك خرج بعد العصر والي الان نارجع"
+        },
+        {
+            "role": "customer",
+            "text": "ف الشارع"
+        },
+        {
+            "role": "customer",
+            "text": "خد لفه عليه وشوف وضعه"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص وصل اسامه"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "وصلتك رساله"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "ادا سددت بلغني"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "الرساله وصلتك ؟"
+        },
+        {
+            "role": "customer",
+            "text": "😂😂😂"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

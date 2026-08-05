@@ -64,6 +64,56 @@ final class UsageRecorder
         return $this->monthlyTokensUsed($tenantId) >= $monthlyTokenLimit;
     }
 
+    /** Alias of exceedsBudget — used by the agent Employee. */
+    public function isBudgetExceeded(int $tenantId, int $monthlyTokenLimit): bool
+    {
+        return $this->exceedsBudget($tenantId, $monthlyTokenLimit);
+    }
+
+    /**
+     * Record raw token usage without an LlmResponse object.
+     * Used by the agent loop which accumulates tokens across multiple steps.
+     */
+    public function recordRaw(
+        int     $tenantId,
+        string  $passType,
+        int     $tokensIn,
+        int     $tokensOut,
+        int     $latencyMs,
+        string  $model,
+        ?int    $conversationId = null,
+    ): void {
+        try {
+            $fakeResponse = new \App\Domain\Ai\DTOs\LlmResponse(
+                content:    '',
+                tokensIn:   $tokensIn,
+                tokensOut:  $tokensOut,
+                latencyMs:  $latencyMs,
+                model:      $model,
+                provider:   'agent',
+                success:    true,
+            );
+            $costMicros = $this->estimateCostMicros($fakeResponse);
+
+            AiUsageLog::create([
+                'user_id'         => $tenantId,
+                'conversation_id' => $conversationId,
+                'pass_type'       => $passType,
+                'model'           => $model,
+                'provider'        => 'agent',
+                'tokens_in'       => $tokensIn,
+                'tokens_out'      => $tokensOut,
+                'latency_ms'      => $latencyMs,
+                'cost_micros'     => $costMicros,
+                'success'         => true,
+            ]);
+
+            Cache::forget(self::MONTHLY_BUDGET_CACHE_PREFIX . $tenantId . '.' . now()->format('Y-m'));
+        } catch (\Throwable $e) {
+            Log::warning('ai.usage_recorder.recordRaw.failed', ['error' => $e->getMessage(), 'tenant' => $tenantId]);
+        }
+    }
+
     private function estimateCostMicros(LlmResponse $response): int
     {
         // Rough cost per million tokens in micros (millionths of USD)

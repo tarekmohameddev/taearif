@@ -1,0 +1,483 @@
+{
+    "type": "real_conversation",
+    "id": "conv_12435",
+    "tenant_id": 1686,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمه الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "فدبو مافي"
+        },
+        {
+            "role": "customer",
+            "text": "لا شقه"
+        },
+        {
+            "role": "customer",
+            "text": "تبشر بلخير"
+        },
+        {
+            "role": "customer",
+            "text": "نفس الاول"
+        },
+        {
+            "role": "customer",
+            "text": "كم شقه في دور"
+        },
+        {
+            "role": "customer",
+            "text": "كم مساحه الي على شارعين والسعر"
+        },
+        {
+            "role": "customer",
+            "text": "والي جنبها"
+        },
+        {
+            "role": "customer",
+            "text": "شقه ثاتيه"
+        },
+        {
+            "role": "customer",
+            "text": "على شارع"
+        },
+        {
+            "role": "customer",
+            "text": "كمان 117"
+        },
+        {
+            "role": "customer",
+            "text": "مساحه"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "يوم اجي ببلغك"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "دور الاول"
+        },
+        {
+            "role": "customer",
+            "text": "صح"
+        },
+        {
+            "role": "customer",
+            "text": "في غرفه حارس"
+        },
+        {
+            "role": "customer",
+            "text": "مافي  نفس دور"
+        },
+        {
+            "role": "customer",
+            "text": "شقتين"
+        },
+        {
+            "role": "customer",
+            "text": "دور الاول"
+        },
+        {
+            "role": "customer",
+            "text": "اها"
+        },
+        {
+            "role": "customer",
+            "text": "ابغى كنت فكرتي شقتين"
+        },
+        {
+            "role": "customer",
+            "text": "لانه صغيره شقه علي"
+        },
+        {
+            "role": "customer",
+            "text": "على شارعين"
+        },
+        {
+            "role": "customer",
+            "text": "دور ثاني"
+        },
+        {
+            "role": "customer",
+            "text": "3 غرف"
+        },
+        {
+            "role": "customer",
+            "text": "تمام خلي اجي اول واشوفها واشوف الحي"
+        },
+        {
+            "role": "customer",
+            "text": "بعدها اتفق معك على سعر"
+        },
+        {
+            "role": "customer",
+            "text": "دور ثاتي متاح"
+        },
+        {
+            "role": "customer",
+            "text": "اللهم امين"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "اكيد راح ارسلك"
+        },
+        {
+            "role": "customer",
+            "text": "معلش اي وقت"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسعدك شكرا"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "كده افضل"
+        },
+        {
+            "role": "customer",
+            "text": "على شان نا ازعجك"
+        },
+        {
+            "role": "customer",
+            "text": "باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام"
+        },
+        {
+            "role": "customer",
+            "text": "اي"
+        },
+        {
+            "role": "customer",
+            "text": "بس ماناسبني مكان"
+        },
+        {
+            "role": "customer",
+            "text": "حلوه هناك بي نفس  شارع ضيق"
+        },
+        {
+            "role": "customer",
+            "text": "ماطلعت"
+        },
+        {
+            "role": "customer",
+            "text": "تبشر بلجنه"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "بس ارسله"
+        },
+        {
+            "role": "customer",
+            "text": "بكره بروح"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "اشوف شقه"
+        },
+        {
+            "role": "customer",
+            "text": "عندك"
+        },
+        {
+            "role": "customer",
+            "text": "كم مساحه"
+        },
+        {
+            "role": "customer",
+            "text": "كم سعر"
+        },
+        {
+            "role": "customer",
+            "text": "في فديو"
+        },
+        {
+            "role": "customer",
+            "text": "كاش"
+        },
+        {
+            "role": "customer",
+            "text": "كم شهر"
+        },
+        {
+            "role": "customer",
+            "text": "12 كثير"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "حي النزهة"
+        },
+        {
+            "role": "customer",
+            "text": "مساحه كم"
+        },
+        {
+            "role": "customer",
+            "text": "سعر"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي موقع"
+        },
+        {
+            "role": "customer",
+            "text": "اشوف"
+        },
+        {
+            "role": "customer",
+            "text": "وين مشروع"
+        },
+        {
+            "role": "customer",
+            "text": "بكره اروح"
+        },
+        {
+            "role": "customer",
+            "text": "اشزف"
+        },
+        {
+            "role": "customer",
+            "text": "اشوفها"
+        },
+        {
+            "role": "customer",
+            "text": "باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام"
+        },
+        {
+            "role": "customer",
+            "text": "لا واللله"
+        },
+        {
+            "role": "customer",
+            "text": "انشغلت"
+        },
+        {
+            "role": "customer",
+            "text": "بكره"
+        },
+        {
+            "role": "customer",
+            "text": "اذ مستعجل"
+        },
+        {
+            "role": "customer",
+            "text": "خلي يروح العميل"
+        },
+        {
+            "role": "customer",
+            "text": "مابعرف عن وضعي كيف"
+        },
+        {
+            "role": "customer",
+            "text": "الله يبارك له"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام"
+        },
+        {
+            "role": "customer",
+            "text": "مساء نور"
+        },
+        {
+            "role": "customer",
+            "text": "الان اروح"
+        },
+        {
+            "role": "customer",
+            "text": "ارسله"
+        },
+        {
+            "role": "customer",
+            "text": "كم مساحه"
+        },
+        {
+            "role": "customer",
+            "text": "كانت شقه"
+        },
+        {
+            "role": "customer",
+            "text": "غالي والله"
+        },
+        {
+            "role": "customer",
+            "text": "تحت انساء"
+        },
+        {
+            "role": "customer",
+            "text": "659"
+        },
+        {
+            "role": "customer",
+            "text": "4 غرف"
+        },
+        {
+            "role": "customer",
+            "text": "ماقهمت عليك"
+        },
+        {
+            "role": "customer",
+            "text": "روبه ايش يعني"
+        },
+        {
+            "role": "customer",
+            "text": "معلش مافهمت"
+        },
+        {
+            "role": "customer",
+            "text": "اها"
+        },
+        {
+            "role": "customer",
+            "text": "هيه على شارع"
+        },
+        {
+            "role": "customer",
+            "text": "صح"
+        },
+        {
+            "role": "customer",
+            "text": "ماعليك الي شي يستاهل"
+        },
+        {
+            "role": "customer",
+            "text": "شقق"
+        },
+        {
+            "role": "customer",
+            "text": "الي تستاهل فهمت"
+        },
+        {
+            "role": "customer",
+            "text": "اشوف يناسبني ولا"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسعدك ويحفظك"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "دور خامس"
+        },
+        {
+            "role": "customer",
+            "text": "على شارعين"
+        },
+        {
+            "role": "customer",
+            "text": "المبنى"
+        },
+        {
+            "role": "customer",
+            "text": "شفت 760"
+        },
+        {
+            "role": "customer",
+            "text": "ملحق"
+        },
+        {
+            "role": "customer",
+            "text": "بل الصفا"
+        },
+        {
+            "role": "customer",
+            "text": "نفسه بي باقي علي 6 شهور"
+        },
+        {
+            "role": "customer",
+            "text": "لا كثير والله"
+        },
+        {
+            "role": "customer",
+            "text": "نازل العقار"
+        },
+        {
+            "role": "customer",
+            "text": "ويقول راح ينزل"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "باخد الي في الصفا"
+        },
+        {
+            "role": "customer",
+            "text": "جاهز"
+        },
+        {
+            "role": "customer",
+            "text": "نفس سعر"
+        },
+        {
+            "role": "customer",
+            "text": "وانا في الصفا"
+        },
+        {
+            "role": "customer",
+            "text": "غير روف"
+        },
+        {
+            "role": "customer",
+            "text": "شوف لي على شارعين"
+        },
+        {
+            "role": "customer",
+            "text": "شقه"
+        },
+        {
+            "role": "customer",
+            "text": "لا 5"
+        },
+        {
+            "role": "customer",
+            "text": "شكرا"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

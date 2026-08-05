@@ -1,0 +1,103 @@
+{
+    "type": "real_conversation",
+    "id": "conv_1224",
+    "tenant_id": 1021,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "[Location: 24.683435440063, 46.781085968018]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السفلي\/\nمجلس خارجي، 3 غرف نوم ، صالة، مدخل سيارة ، 3 حمامات\nالعلوي\/ \n3 غرف نوم ، مجلس، 2 حمام ، السطح وفيه غرفة وحمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السوم مليون و400 الف\nالبيع مليون و500 الف على الشور"
+        },
+        {
+            "role": "customer",
+            "text": "2022.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "👍"
+        },
+        {
+            "role": "customer",
+            "text": "وين الناس"
+        },
+        {
+            "role": "customer",
+            "text": "اخبارك"
+        },
+        {
+            "role": "customer",
+            "text": "ما شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "ترجع بالسلامه"
+        },
+        {
+            "role": "customer",
+            "text": "عشان كدا مرسل لك يازعيم"
+        },
+        {
+            "role": "customer",
+            "text": "كم تاَمر فيه؟"
+        },
+        {
+            "role": "customer",
+            "text": "ابغا اقول لك داك اليوم عشان انك واصل من سفر ومعك البزوره ونت ماجلست قلت خاها مرة ثانيه"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص باقول له يحول لك"
+        },
+        {
+            "role": "customer",
+            "text": "بنذر مسافر بس يرجع وابشر"
+        },
+        {
+            "role": "customer",
+            "text": "مافي إلا رضاك عما ياغالي"
+        },
+        {
+            "role": "customer",
+            "text": "ههه يصير الحساب ثقيل"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير حبيبنا"
+        },
+        {
+            "role": "customer",
+            "text": "ترا اجارك 30 الف وانت ضحكت علينا وغشيتنا ووثقت العقد ب23 الف  هههههه"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

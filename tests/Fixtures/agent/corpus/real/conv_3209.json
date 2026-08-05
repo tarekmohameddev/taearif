@@ -1,0 +1,331 @@
+{
+    "type": "real_conversation",
+    "id": "conv_3209",
+    "tenant_id": 1507,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن العامل يستنا لعشرة ونص اروح ادفعله"
+        },
+        {
+            "role": "customer",
+            "text": "من 10 يناير"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "انا بالعمارة"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عنده"
+        },
+        {
+            "role": "customer",
+            "text": "مفيش شقق فاضية في الأدوار اللي فوق"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تمام"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي العقد الحين ولا متى يا غالي"
+        },
+        {
+            "role": "customer",
+            "text": "تمام يا استاذنا"
+        },
+        {
+            "role": "customer",
+            "text": "بعطية 2200﷼ الان ان شاء الله لسه ما جاش يا غالي"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تمام يا غالي"
+        },
+        {
+            "role": "customer",
+            "text": "بكرا ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "المدة شهرين ونص ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي حسابكم استاذنا احولكم المبلغ"
+        },
+        {
+            "role": "customer",
+            "text": "استاذ انا ولادي جايين بكرا"
+        },
+        {
+            "role": "customer",
+            "text": "كيف اتاجرت"
+        },
+        {
+            "role": "customer",
+            "text": "مكلمك"
+        },
+        {
+            "role": "customer",
+            "text": "ورحت ادفع امس وقولت خليها بكرا"
+        },
+        {
+            "role": "customer",
+            "text": "كيف كدا"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تمام اجي ادفع بعد العصر واشيل المفتاح"
+        },
+        {
+            "role": "customer",
+            "text": "حاضر حاضر"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي رقم الحساب أحول الآن"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ما رضيش يحول"
+        },
+        {
+            "role": "customer",
+            "text": "انا في العمارة كلم العامل يجي يشيل المبلغ 2200"
+        },
+        {
+            "role": "customer",
+            "text": "ويعطيني المفتاح"
+        },
+        {
+            "role": "customer",
+            "text": "يعطيني وصل سداد او شي ولا لا يا غالي"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام جه"
+        },
+        {
+            "role": "customer",
+            "text": "تم دفع الفلوس"
+        },
+        {
+            "role": "customer",
+            "text": "2200 ريال"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "؛ الجوال هادا"
+        },
+        {
+            "role": "customer",
+            "text": "يا استاذنا ما سويتلي عقد ولا دوامكم خلص"
+        },
+        {
+            "role": "customer",
+            "text": "اعملها من يوم 11 يناير انا بكرا بروح انقل اغراضي ان شا الله"
+        },
+        {
+            "role": "customer",
+            "text": "شكراااا جزيلا استاذنا الغالي"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "خلي العامل يمر غدا الساعة 1 ظهرا"
+        },
+        {
+            "role": "customer",
+            "text": "ياخد الإيجار شكرا استاذنا"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي كدا احاول استاذنا"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله"
+        },
+        {
+            "role": "customer",
+            "text": "امس اتصلت بالعامل ما ردش"
+        },
+        {
+            "role": "customer",
+            "text": "لو موجود في العمارة انا موجود"
+        },
+        {
+            "role": "customer",
+            "text": "اشوف وادفع له الحين"
+        },
+        {
+            "role": "customer",
+            "text": "تمام يا غالي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام يا غالي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل العامل ياخد المفتاح يا شيخنا"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ما رديت علينا يا حبيبنا واحنا ماجرين سيارة تنقل الفرن الة"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "شكرا"
+        },
+        {
+            "role": "customer",
+            "text": "ولا يهمك"
+        },
+        {
+            "role": "customer",
+            "text": "استاذنا التأمين باخده من العامل ولا اشلون"
+        },
+        {
+            "role": "customer",
+            "text": "تمام يا حبيبنا"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مفيش مشكله"
+        },
+        {
+            "role": "customer",
+            "text": "مع كل اللي تعاملت معاهم كانو بيدونا مهله الي اربع ايام"
+        },
+        {
+            "role": "customer",
+            "text": "على الله إن شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم يا حبيبنا"
+        },
+        {
+            "role": "customer",
+            "text": "شكرايا غالي"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

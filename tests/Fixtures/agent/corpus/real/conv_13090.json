@@ -1,0 +1,387 @@
+{
+    "type": "real_conversation",
+    "id": "conv_13090",
+    "tenant_id": 1719,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "يعطيك العافية يا غالي، بخصوص هامش الربح (أو النسبة) في عرض التمويل العقاري، هل هي نسبة ثابتة طول فترة الـ 25 سنة وما تتغير؟ ولا هي نسبة متغيرة ويتم إعادة تقييمها كل 5 سنوات مثلاً؟"
+        },
+        {
+            "role": "customer",
+            "text": "مساك الله بالخير اخوي اسامه"
+        },
+        {
+            "role": "customer",
+            "text": "باذن الله نتوكل على الله ونبدا بالبروسس وقلي ايش الاوراق المطلوبه"
+        },
+        {
+            "role": "customer",
+            "text": "والان العقار بيرسل لي جميع الضمانات"
+        },
+        {
+            "role": "customer",
+            "text": "والله يكتب الي فيه الخير"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "محضر فرز - L21.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "صك - L21.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "أوراق الوحدات مدموجة.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "اذا الوقت مناسب ودي اتصل عندي كم استفسار"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمة الله \nصباح النور \nابد معذور وانا اخوك"
+        },
+        {
+            "role": "customer",
+            "text": "رفعت الخطاب للHR ومنتظر ردهم"
+        },
+        {
+            "role": "customer",
+            "text": "تحتاج معلوماتي؟"
+        },
+        {
+            "role": "customer",
+            "text": "تمام اجل بحاول اعجل عليهم انشاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "هل ياثر لو الخطاب ماوصلني اليوم؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "OpenLetterPdf_2026-Mar-11-142611..pdf"
+        },
+        {
+            "role": "customer",
+            "text": "توقيع من الhr ولا مني؟"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر بكلمهم"
+        },
+        {
+            "role": "customer",
+            "text": "وياك يارب"
+        },
+        {
+            "role": "customer",
+            "text": "توي ارسلت لهم بس تجيني الورقه برسلك هي"
+        },
+        {
+            "role": "customer",
+            "text": "غالبا بكرا لان خلص دوامهم الان"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "محمد الصائغ.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ياهلاوغلا\nممتاز \nابد انشاءالله بمرك الفرع اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Certificate26250.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "وصلتني هذا الرساله"
+        },
+        {
+            "role": "customer",
+            "text": "محمد الصائغ_001.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير \nكيفك ياحبيبنا؟\nكلمني تو شخص من الجنسيه المصريه قالي ان مقيم من البنك الاهلي ويبي يروح يقيم الشقه…"
+        },
+        {
+            "role": "customer",
+            "text": "طبيعي يجون ثاني؟ لان الخميس جا واحد"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "اي اليوم وصلتني… تم باذن الله \nنشوفك بكرا على خير"
+        },
+        {
+            "role": "customer",
+            "text": "Unknown.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هذي الي سويناها اخر مره ، ممكن توضحلي وش الحسبة اللي سويناها هنا اذا ماعليك امر"
+        },
+        {
+            "role": "customer",
+            "text": "اوكي\nطيب لو زي ماقلنا من عندي 150 والشخصي 100 وابي القسط ثابت طول الفترتين ، تذكر كم كان القسط ؟"
+        },
+        {
+            "role": "customer",
+            "text": "اتوقع قريبه من فكرة القسط الثابت على فترتين صح؟"
+        },
+        {
+            "role": "customer",
+            "text": "تنصح فيها؟ بحيث مايكون فيه الارتفاع الي بعد 5 سنوات"
+        },
+        {
+            "role": "customer",
+            "text": "فهمت عليك"
+        },
+        {
+            "role": "customer",
+            "text": "اجل براجع الحسبه لين موعدنا بعد العيد والله يكتب الي فيه الخير🙏🏽"
+        },
+        {
+            "role": "customer",
+            "text": "الف شكر لك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ممتاز"
+        },
+        {
+            "role": "customer",
+            "text": "اجل ممكن يكون اختلاف بسيط اقل من حسبت اليوم دام فيها الزياده البسيطه"
+        },
+        {
+            "role": "customer",
+            "text": "اي 7400 اتوقع انها انسب بحكم اني ما اشيل هم بعدين واكون عارف وش الي علي من الان"
+        },
+        {
+            "role": "customer",
+            "text": "واني بدفع حولها اصلن على ايجار بالفترا الحاليه ازيد الف على ملك"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "اللهم امين وياك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مساك الله بالخير"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير \nكيف حالك انشاءالله بخير \nمتى تداومون يالغالي عشان ارتب  واجيك الفرع"
+        },
+        {
+            "role": "customer",
+            "text": "ابد على خير وانت طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الله يبقيك"
+        },
+        {
+            "role": "customer",
+            "text": "هذا فين، مو بالفرع؟"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير \nامس بالليل تم ارسال المبلغ من الانماء الى الاهلي بس باقي ماوصل حسابي ،، فا غالبا يوم الاحد الصبح يكون فالحساب"
+        },
+        {
+            "role": "customer",
+            "text": "بس يوصل بعطيك الاكيد"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير \nكيف حالك انشاءالله بخير\nالمبلغ جاهز بالحساب يالغالي للدفعه الاولى"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "نموذج عقد بيع مباشر - السليمان العقارية -محمد بن منير يوسف الصائغ.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير اخوي اسامه \nالمعذرة على الرساله بالوقت هذا… \nولكن حاب اتاكد من خبرتك الشركة ارسلو هذا العقد وفيه بنود كثير وبعضها يتكلم عن فسخ العقد والخ.. كيف فسخ عقد وانا شاري؟ هل الموضوع طبيعي ولا غريب"
+        },
+        {
+            "role": "customer",
+            "text": "والله يعطيك العافيه"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير اخوي اسامه \nالمعذرة على الرساله بالوقت هذا… \nولكن حاب اسالك من خبرتك ، الشركة ارسلو هذا العقد وفيه بنود كثير وبعضها يتكلم عن فسخ العقد والخ.. كيف فسخ عقد وانا شاري؟ هل الموضوع طبيعي ولا غريب"
+        },
+        {
+            "role": "customer",
+            "text": "ممتاز لان قال بستلم نسخه منه بعد الافراغ فا توقعت ان البنود والاشتراطات حتى وانا المالك"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعطيك العافية 🙏🏽"
+        },
+        {
+            "role": "customer",
+            "text": "شلت همه قلت لا يكون البنود ذي ضدي حتى بعد الافراغ😅"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "المطور  ارسلي هذي"
+        },
+        {
+            "role": "customer",
+            "text": "مادريت عنها ومين الي يتكفل فيها"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير \nابشرك الحمدلله امس استلمت الصك وارسلته للمطور وقالو بيجهزو الشقه للاستلام…"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعطيك العافيه وماقصرت يا اسامة"
+        },
+        {
+            "role": "customer",
+            "text": "اللهم امين والله يبارك فيك يارب 🙏🏽"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

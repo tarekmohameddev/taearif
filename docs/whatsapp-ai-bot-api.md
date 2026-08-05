@@ -1,0 +1,1089 @@
+# WhatsApp AI Bot — API Reference
+
+> Base URL: `/api/v1/whatsapp/`  
+> Authentication: Laravel Sanctum Bearer token (`Authorization: Bearer {token}`)  
+> All responses: `Content-Type: application/json`  
+> All timestamps: ISO 8601, UTC
+
+---
+
+## Table of Contents
+
+1. [Bot Configuration](#1-bot-configuration)
+   - [GET ai/config/{numberId}](#11-get-aiconfignumberid)
+   - [PUT ai/config/{numberId}](#12-put-aiconfignumberid)
+   - [PATCH ai/config/{numberId}/toggle](#13-patch-aiconfignumberidtoggle)
+   - [GET ai/stats](#14-get-aistats)
+2. [Quality Dashboard](#2-quality-dashboard)
+   - [GET ai/bot/dashboard](#21-get-aibotdashboard)
+3. [Shadow Mode Inbox](#3-shadow-mode-inbox)
+   - [GET ai/bot/shadow-drafts](#31-get-aibotshallow-drafts)
+   - [POST ai/bot/shadow-drafts/{id}/act](#32-post-aibotshadow-draftsidact)
+4. [Unanswered Questions](#4-unanswered-questions)
+   - [POST ai/bot/unanswered/{id}/mark-faq](#41-post-aibotunanswereditmark-faq)
+5. [Sandbox Simulator](#5-sandbox-simulator)
+   - [POST ai/bot/simulate](#51-post-aibotimulate)
+   - [GET ai/bot/simulate/conversation](#52-get-aibotsimulateconversation)
+   - [POST ai/bot/simulate/reset](#53-post-aibotimulatereset)
+6. [Flow Diagrams](#6-flow-diagrams)
+   - [Complete Bot Turn](#61-complete-bot-turn)
+   - [Shadow Mode Lifecycle](#62-shadow-mode-lifecycle)
+   - [Simulator Flow](#63-simulator-flow)
+7. [Error Reference](#7-error-reference)
+
+---
+
+## 1. Bot Configuration
+
+### 1.1 GET ai/config/{numberId}
+
+Fetch the AI bot configuration for a specific WhatsApp number.
+
+**Path params**
+
+| Param | Type | Description |
+|---|---|---|
+| `numberId` | integer | ID from `wa_numbers` table |
+
+**Request**
+```http
+GET /api/v1/whatsapp/ai/config/45
+Authorization: Bearer {token}
+```
+
+**Response 200**
+```json
+{
+  "status": "success",
+  "data": {
+    "id": 12,
+    "user_id": 123,
+    "wa_number_id": 45,
+    "enabled": true,
+    "autonomy_level": "shadow",
+    "goal": "salesman",
+    "tone": "friendly",
+    "language": "ar",
+    "assistant_name": "نورة",
+    "disclose_as_assistant": true,
+    "reply_length_target": 200,
+    "confidence_threshold": 70,
+    "groundedness_threshold": 80,
+    "fallback_to_human": true,
+    "monthly_token_budget": 500000,
+    "max_tokens_per_turn": 800,
+    "custom_instructions": "لا تقبل عمولة أقل من 2.5%",
+    "playbook": {
+      "few_shot_examples": [
+        {
+          "customer": "كم سعر الشقة؟",
+          "bot": "سعر الشقة {{p:1301|price}} ريال. هل تودّ معرفة المزيد؟"
+        }
+      ]
+    },
+    "business_hours": {
+      "sunday":    { "open": true,  "from": "09:00", "to": "21:00" },
+      "monday":    { "open": true,  "from": "09:00", "to": "21:00" },
+      "tuesday":   { "open": true,  "from": "09:00", "to": "21:00" },
+      "wednesday": { "open": true,  "from": "09:00", "to": "21:00" },
+      "thursday":  { "open": true,  "from": "09:00", "to": "21:00" },
+      "friday":    { "open": false },
+      "saturday":  { "open": true,  "from": "10:00", "to": "18:00" }
+    },
+    "timezone": "Asia/Riyadh",
+    "scenarios": null,
+    "escalation_rules": null,
+    "created_at": "2026-08-02T09:00:00+03:00",
+    "updated_at": "2026-08-02T10:00:00+03:00"
+  }
+}
+```
+
+**Response 404**
+```json
+{
+  "status": "error",
+  "code": "WA_AI_CONFIG_NOT_FOUND",
+  "message": "AI config for this number not found."
+}
+```
+
+---
+
+### 1.2 PUT ai/config/{numberId}
+
+Create or update the bot configuration for a number. Partial updates are supported — only sent fields are changed.
+
+**Path params**
+
+| Param | Type | Description |
+|---|---|---|
+| `numberId` | integer | ID from `wa_numbers` table |
+
+**Request body** (all fields optional)
+
+| Field | Type | Values | Description |
+|---|---|---|---|
+| `enabled` | boolean | `true\|false` | Master on/off switch |
+| `autonomy_level` | string | `off\|shadow\|autonomous` | Bot behavior mode |
+| `goal` | string | `salesman\|support\|booking` | Bot role / persona |
+| `tone` | string | `friendly\|formal\|enthusiastic` | Conversational tone |
+| `language` | string | `ar\|en` | Primary reply language |
+| `assistant_name` | string | — | Display name shown in the system prompt (e.g. `نورة`) |
+| `disclose_as_assistant` | boolean | — | Honest AI disclosure on first contact |
+| `reply_length_target` | integer | 50–500 | Target chars per reply |
+| `confidence_threshold` | integer | 0–100 | Below this → handoff (legacy; agent loop uses its own escalation tool) |
+| `groundedness_threshold` | integer | 0–100 | Reserved for future use |
+| `fallback_to_human` | boolean | — | Enable human escalation |
+| `monthly_token_budget` | integer | — | Maximum tokens allowed per month for this number. `0` = unlimited |
+| `max_tokens_per_turn` | integer | 200–4000 | Per-turn LLM token ceiling. Defaults to 800 |
+| `custom_instructions` | string | — | Free-text instructions appended to every system prompt |
+| `playbook` | object | — | Advanced persona overrides (see below) |
+| `business_hours` | object | — | Day-keyed schedule (see shape below) |
+| `timezone` | string | — | Timezone for business hours (e.g. `Asia/Riyadh`) |
+| `escalation_rules` | array | — | Custom escalation conditions |
+
+**`playbook` shape**
+
+The `playbook` object can override or extend any of the top-level persona fields and add few-shot examples:
+
+```json
+{
+  "few_shot_examples": [
+    {
+      "customer": "كم سعر الشقة؟",
+      "bot": "سعر الشقة {{p:1301|price}} ريال وتقع في {{p:1301|address}}."
+    }
+  ]
+}
+```
+
+**`business_hours` shape**
+```json
+{
+  "sunday":  { "open": true,  "from": "09:00", "to": "21:00" },
+  "friday":  { "open": false }
+}
+```
+
+**Request example — enable bot in shadow mode**
+```http
+PUT /api/v1/whatsapp/ai/config/45
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "enabled": true,
+  "autonomy_level": "shadow",
+  "goal": "salesman",
+  "assistant_name": "نورة",
+  "tone": "friendly",
+  "disclose_as_assistant": true,
+  "monthly_token_budget": 500000,
+  "max_tokens_per_turn": 800,
+  "custom_instructions": "نركز على مشاريع الرياض فقط. لا تقبل عمولة أقل من 2.5%.",
+  "timezone": "Asia/Riyadh",
+  "business_hours": {
+    "sunday":    { "open": true, "from": "09:00", "to": "21:00" },
+    "monday":    { "open": true, "from": "09:00", "to": "21:00" },
+    "tuesday":   { "open": true, "from": "09:00", "to": "21:00" },
+    "wednesday": { "open": true, "from": "09:00", "to": "21:00" },
+    "thursday":  { "open": true, "from": "09:00", "to": "21:00" },
+    "friday":    { "open": false },
+    "saturday":  { "open": true, "from": "10:00", "to": "18:00" }
+  }
+}
+```
+
+**Request example — graduate to autonomous**
+```http
+PUT /api/v1/whatsapp/ai/config/45
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "autonomy_level": "autonomous"
+}
+```
+
+**Response 200**
+```json
+{
+  "status": "success",
+  "data": {
+    "id": 12,
+    "wa_number_id": 45,
+    "enabled": true,
+    "autonomy_level": "shadow",
+    "goal": "salesman",
+    "assistant_name": "نورة",
+    "max_tokens_per_turn": 800,
+    "updated_at": "2026-08-02T10:15:00+03:00"
+  }
+}
+```
+
+**Response 404**
+```json
+{
+  "status": "error",
+  "code": "WA_NUMBER_NOT_FOUND",
+  "message": "WhatsApp number not found."
+}
+```
+
+---
+
+### 1.3 PATCH ai/config/{numberId}/toggle
+
+Toggle `enabled` between `true` and `false` without sending a full body.
+
+**Request**
+```http
+PATCH /api/v1/whatsapp/ai/config/45/toggle
+Authorization: Bearer {token}
+```
+
+**Response 200**
+```json
+{
+  "status": "success",
+  "data": {
+    "id": 12,
+    "wa_number_id": 45,
+    "enabled": false,
+    "updated_at": "2026-08-02T10:20:00+03:00"
+  }
+}
+```
+
+---
+
+### 1.4 GET ai/stats
+
+Overall AI usage statistics for the authenticated tenant.
+
+**Request**
+```http
+GET /api/v1/whatsapp/ai/stats
+Authorization: Bearer {token}
+```
+
+**Response 200**
+```json
+{
+  "status": "success",
+  "data": {
+    "total_suggestions": 1240,
+    "suggestions_today": 38,
+    "conversations_with_ai": 312,
+    "avg_confidence": 82.4
+  }
+}
+```
+
+---
+
+## 2. Quality Dashboard
+
+### 2.1 GET ai/bot/dashboard
+
+Returns the quality loop metrics for the bot: token usage, shadow draft edit-rate, handoff reasons, unanswered question gaps, and last evaluation run scores.
+
+**Query params**
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `period` | string | `30d` | `7d`, `30d`, or `90d` |
+
+**Request**
+```http
+GET /api/v1/whatsapp/ai/bot/dashboard?period=30d
+Authorization: Bearer {token}
+```
+
+**Response 200**
+```json
+{
+  "period": "30d",
+  "since": "2026-07-03T07:48:00+00:00",
+  "usage": {
+    "total_tokens": 2847300,
+    "total_calls": 4120,
+    "failed_calls": 3,
+    "avg_latency_ms": 1840,
+    "cost_usd": 0.7118
+  },
+  "shadow": {
+    "total": 210,
+    "approved": 168,
+    "edited": 28,
+    "discarded": 14,
+    "avg_confidence": 81,
+    "edit_rate_pct": 20.0
+  },
+  "handoff_reasons": [
+    { "handoff_reason": "customer_requested_human",  "count": 22 },
+    { "handoff_reason": "model_needs_human",          "count": 18 },
+    { "handoff_reason": "citation_violation",         "count": 9  },
+    { "handoff_reason": "budget_exhausted",           "count": 4  }
+  ],
+  "top_unanswered": [
+    { "id": 14, "question": "كم رسوم التسجيل في الصكوك؟", "occurrence_count": 7,  "cluster_key": "a3f9..." },
+    { "id": 22, "question": "هل يقبلون دفع مقدم 10%؟",    "occurrence_count": 5,  "cluster_key": "b8c1..." },
+    { "id": 31, "question": "ما هي شروط التمويل؟",          "occurrence_count": 3,  "cluster_key": "d2e4..." }
+  ],
+  "last_eval": {
+    "run_id": "2026-08-01-a3f9b2",
+    "passed": true,
+    "scores": {
+      "groundedness": 88.5,
+      "dialect":      91.0,
+      "task_success": 79.5,
+      "handoff":      95.0,
+      "length":       87.0
+    },
+    "passed_turns": 142,
+    "total_turns":  156,
+    "created_at": "2026-08-01T03:00:00+00:00"
+  }
+}
+```
+
+**Field glossary**
+
+| Field | Description |
+|---|---|
+| `usage.cost_usd` | Estimated LLM cost in USD (from `ai_usage_logs.cost_micros / 1,000,000`) |
+| `shadow.edit_rate_pct` | `(edited + discarded) / total × 100`. Graduate to autonomous when < 15% |
+| `handoff_reasons` | Top 10 reasons bot handed off, sorted by frequency |
+| `top_unanswered` | Questions bot failed to answer (not yet added to FAQ). Use to grow knowledge base |
+| `last_eval.passed` | `true` when `groundedness ≥ 75`, `task_success ≥ 70`, `dialect ≥ 70` |
+
+---
+
+## 3. Shadow Mode Inbox
+
+### 3.1 GET ai/bot/shadow-drafts
+
+Returns paginated list of pending bot drafts awaiting agent decision.
+
+**Request**
+```http
+GET /api/v1/whatsapp/ai/bot/shadow-drafts
+Authorization: Bearer {token}
+```
+
+**Response 200** (Laravel paginator envelope)
+```json
+{
+  "current_page": 1,
+  "data": [
+    {
+      "id": 88,
+      "conversation_id": 4201,
+      "user_id": 123,
+      "trigger_message_id": 9832,
+      "draft_reply": "يسعدنا! لدينا شقة 3 غرف في حي النزهة. المساحة 145 م². متى يناسبك الزيارة؟",
+      "used_sources": [1301, 1302],
+      "confidence": 87,
+      "status": "pending",
+      "agent_reply": null,
+      "agent_id": null,
+      "acted_at": null,
+      "created_at": "2026-08-02T10:30:00+03:00",
+      "updated_at": "2026-08-02T10:30:00+03:00"
+    },
+    {
+      "id": 87,
+      "conversation_id": 4198,
+      "trigger_message_id": 9820,
+      "draft_reply": "الإيجار السنوي يبدأ من ثمانية وعشرين ألف ريال للشقق الاستوديو. هل تريد تفاصيل أكثر؟",
+      "used_sources": [],
+      "confidence": 74,
+      "status": "pending",
+      "created_at": "2026-08-02T10:25:00+03:00"
+    }
+  ],
+  "first_page_url": "https://app.taearif.com/api/v1/whatsapp/ai/bot/shadow-drafts?page=1",
+  "from": 1,
+  "last_page": 3,
+  "last_page_url": "https://app.taearif.com/api/v1/whatsapp/ai/bot/shadow-drafts?page=3",
+  "next_page_url": "https://app.taearif.com/api/v1/whatsapp/ai/bot/shadow-drafts?page=2",
+  "per_page": 20,
+  "total": 42
+}
+```
+
+> **Note:** `used_sources` is now an array of property IDs (integers), not knowledge-chunk keys.
+
+---
+
+### 3.2 POST ai/bot/shadow-drafts/{id}/act
+
+Agent approves, edits, or discards a pending shadow draft.
+
+**Path params**
+
+| Param | Type | Description |
+|---|---|---|
+| `id` | integer | Shadow draft ID |
+
+**Request body**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `action` | string | yes | `approved` \| `edited` \| `discarded` |
+| `agent_reply` | string | if `edited` | The text the agent actually sent (for edit-rate tracking) |
+
+**Example — approve as-is**
+```http
+POST /api/v1/whatsapp/ai/bot/shadow-drafts/88/act
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "action": "approved"
+}
+```
+
+**Example — edit and record what was sent**
+```http
+POST /api/v1/whatsapp/ai/bot/shadow-drafts/88/act
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "action": "edited",
+  "agent_reply": "لدينا شقة 3 غرف في النزهة، المساحة 145 م². أرسل لك الصور الآن."
+}
+```
+
+**Example — discard**
+```http
+POST /api/v1/whatsapp/ai/bot/shadow-drafts/88/act
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "action": "discarded"
+}
+```
+
+**Response 200**
+```json
+{
+  "success": true,
+  "status": "approved"
+}
+```
+
+**Response 409** — draft already acted on
+```json
+{
+  "error": "Draft is no longer pending."
+}
+```
+
+**Response 422** — validation error
+```json
+{
+  "message": "The action field is required.",
+  "errors": {
+    "action": ["The action field is required."]
+  }
+}
+```
+
+---
+
+## 4. Unanswered Questions
+
+### 4.1 POST ai/bot/unanswered/{id}/mark-faq
+
+Mark an unanswered question as resolved (added to FAQ / knowledge base). Removes it from the gap report.
+
+**Path params**
+
+| Param | Type | Description |
+|---|---|---|
+| `id` | integer | `bot_unanswered_questions.id` |
+
+**Request**
+```http
+POST /api/v1/whatsapp/ai/bot/unanswered/14/mark-faq
+Authorization: Bearer {token}
+```
+
+**Response 200**
+```json
+{
+  "success": true
+}
+```
+
+**Response 404** — question not found for this tenant
+```json
+{
+  "message": "No query results for model [App\\Models\\BotUnansweredQuestion] 14"
+}
+```
+
+---
+
+## 5. Sandbox Simulator
+
+The sandbox runs the **full** `Employee` pipeline (compliance → AgentLoop with tool-calling → CitationGuard → ReplyRenderer → PolicyGate) but never sends anything to WhatsApp and does not deduct credits. Every turn is persisted in an isolated `whatsapp_sandbox` conversation so multi-turn context, AI state (facts, paused status, disclosure) and rolling summarisation work exactly as in production.
+
+> **Note:** Only the authenticated tenant can simulate their own numbers. Platform admins can simulate any tenant by passing a different `tenant_id`.
+
+### 5.1 POST ai/bot/simulate
+
+Run one bot turn.
+
+**Request body**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `wa_number_id` | integer | yes | WhatsApp number ID with an existing `wa_ai_config` |
+| `message` | string | yes | The customer message to simulate (max 1,000 chars) |
+| `customer_phone` | string | no | Simulated customer phone. Defaults to `+966500000001`. Use a consistent value across turns to continue the same conversation. |
+| `tenant_id` | integer | no | Defaults to authenticated user. Admins can override. |
+
+**Request example — first turn**
+```http
+POST /api/v1/whatsapp/ai/bot/simulate
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "wa_number_id": 45,
+  "message": "أبحث عن شقة 3 غرف في حي النزهة بالرياض ميزانيتي 650 ألف",
+  "customer_phone": "+966501234567"
+}
+```
+
+**Request example — second turn (same `customer_phone` → same conversation)**
+```http
+POST /api/v1/whatsapp/ai/bot/simulate
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "wa_number_id": 45,
+  "message": "وش الأرخص عندكم؟",
+  "customer_phone": "+966501234567"
+}
+```
+
+**Response 200 — successful delivery**
+```json
+{
+  "reply": "وجدت لك شقة مناسبة في حي النزهة. السعر مناسب لميزانيتك ومساحتها جيدة. هل تودّ معرفة التفاصيل أو تحديد موعد معاينة؟",
+  "outcome": "delivered",
+  "reason": "delivered",
+  "needs_human": false,
+  "handoff_reason": null,
+  "conversation_id": 1001,
+  "turn_index": 1,
+  "bot_messages": [
+    "وجدت لك شقة مناسبة في حي النزهة. السعر مناسب لميزانيتك ومساحتها جيدة. هل تودّ معرفة التفاصيل أو تحديد موعد معاينة؟"
+  ],
+  "bot_paused_until": null,
+  "handoff_reason_state": null,
+  "facts": {
+    "city": "الرياض",
+    "district": "النزهة",
+    "bedrooms": 3,
+    "budget_max": 650000,
+    "intent": "search",
+    "is_first_contact": false,
+    "disclosed_as_assistant": true
+  },
+  "opt_out_status": "active"
+}
+```
+
+**Response 200 — handoff triggered**
+```json
+{
+  "reply": "عذراً على الإزعاج. سأحوّلك لأحد موظفينا للمساعدة.",
+  "outcome": "handoff",
+  "reason": "citation_violation",
+  "needs_human": true,
+  "handoff_reason": "citation_violation",
+  "conversation_id": 1001,
+  "turn_index": 3,
+  "bot_messages": ["عذراً على الإزعاج. سأحوّلك لأحد موظفينا للمساعدة."],
+  "bot_paused_until": "2026-08-06T12:00:00+03:00",
+  "handoff_reason_state": "citation_violation",
+  "facts": { "city": "جدة", "property_type": "عمارة" },
+  "opt_out_status": "active"
+}
+```
+
+**Response 200 — `autonomy_level = 'shadow'`**
+
+Draft is generated but not delivered. `outcome = "shadow"`.
+
+```json
+{
+  "reply": "أهلاً وسهلاً...",
+  "outcome": "shadow",
+  "reason": null,
+  "needs_human": false,
+  "handoff_reason": null,
+  "conversation_id": 1001,
+  "turn_index": 1,
+  "bot_messages": ["أهلاً وسهلاً..."],
+  "bot_paused_until": null,
+  "handoff_reason_state": null,
+  "facts": {},
+  "opt_out_status": "active"
+}
+```
+
+**Response 200 — skipped (e.g. outside business hours)**
+```json
+{
+  "reply": null,
+  "outcome": "skipped",
+  "reason": "outside_business_hours",
+  "needs_human": false,
+  "handoff_reason": null,
+  "conversation_id": 1001,
+  "turn_index": 1,
+  "bot_messages": [],
+  "bot_paused_until": null,
+  "handoff_reason_state": null,
+  "facts": {},
+  "opt_out_status": "active"
+}
+```
+
+**`outcome` values**
+
+| Value | Meaning |
+|---|---|
+| `delivered` | Reply sent (or would be sent in production) |
+| `shadow` | Draft generated but not delivered — awaits agent review |
+| `handoff` | Escalated to human agent |
+| `skipped` | Turn not processed (see `reason` for why) |
+| `failed` | Agent loop exhausted or technical error; fallback message returned |
+
+**`reason` values for `skipped`**
+
+| Value | Meaning |
+|---|---|
+| `no_config_or_off` | No active `wa_ai_config` found |
+| `outside_business_hours` | Current time is outside configured hours |
+| `loop_detected` | Too many bot replies in a short window |
+| `lock_contention` | Concurrent message being processed |
+| `opted_out` | Customer has opted out |
+| `bot_paused` | Human agent took over; bot is paused |
+| `duplicate_message` | Turn already processed (idempotency) |
+| `pending_transcription` | Audio message awaiting transcription |
+| `empty_message` | Message text was empty |
+| `greeting_shortcut` | Pure greeting — fast template reply used (counts as `delivered`) |
+
+**`reason` values for `handoff`**
+
+| Value | Meaning |
+|---|---|
+| `customer_requested_human` | Customer explicitly asked for a human |
+| `model_needs_human` | LLM called the `escalate_to_human` tool |
+| `citation_violation` | Reply contained bare numbers after one retry |
+| `compliance` | Compliance check blocked the turn |
+| `media_message` | Non-text media (image/video/document) received |
+
+**`reason` values for `failed`**
+
+| Value | Meaning |
+|---|---|
+| `budget_exhausted` | Agent loop ran out of steps — graceful fallback returned |
+| `provider_error` | LLM API returned an error |
+| `loop_failed` | Generic agent loop failure |
+
+**Response 403** — simulating another tenant without admin
+```json
+{ "error": "Unauthorized." }
+```
+
+**Response 422** — missing required field
+```json
+{ "message": "The wa number id field is required." }
+```
+
+**Response 500** — unexpected exception
+```json
+{ "error": "cURL error 28: Operation timed out after 30000 milliseconds" }
+```
+
+---
+
+### 5.2 GET ai/bot/simulate/conversation
+
+Fetch the full transcript of the current sandbox conversation for a given number + phone.
+
+**Query parameters**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `wa_number_id` | integer | yes | WhatsApp number ID |
+| `customer_phone` | string | no | Defaults to `+966500000001` |
+| `tenant_id` | integer | no | Defaults to authenticated user |
+
+**Response 200**
+```json
+{
+  "conversation_id": 1001,
+  "turn_count": 2,
+  "messages": [
+    { "id": 5001, "direction": "inbound",  "content": "أبحث عن شقة", "status": "received", "segment": null, "outcome": null, "created_at": "2026-08-02T10:00:00+03:00" },
+    { "id": 5002, "direction": "outbound", "content": "أهلاً...", "status": "delivered", "segment": null, "outcome": "delivered", "created_at": "2026-08-02T10:00:02+03:00" },
+    { "id": 5003, "direction": "inbound",  "content": "وش الأرخص؟", "status": "received", "segment": null, "outcome": null, "created_at": "2026-08-02T10:01:00+03:00" },
+    { "id": 5004, "direction": "outbound", "content": "الأرخص هي...", "status": "delivered", "segment": null, "outcome": "delivered", "created_at": "2026-08-02T10:01:03+03:00" }
+  ],
+  "ai_state": {
+    "facts": { "city": "الرياض", "bedrooms": 3 },
+    "situation": "عميل يبحث عن شقة في الرياض",
+    "requirements": "3 غرف، ميزانية 650 ألف",
+    "commitments": null,
+    "objections": null,
+    "tone": null,
+    "opt_out_status": "active",
+    "bot_paused_until": null,
+    "handoff_reason": null,
+    "disclosed_as_assistant": true
+  }
+}
+```
+
+---
+
+### 5.3 POST ai/bot/simulate/reset
+
+Clear the sandbox conversation so a fresh test can begin. Deletes messages, AI state, customer profile, unanswered questions, shadow drafts, and the `Conversation` row. Also clears the loop-guard cache key.
+
+**Request body**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `wa_number_id` | integer | yes | WhatsApp number ID |
+| `customer_phone` | string | no | Defaults to `+966500000001` |
+| `tenant_id` | integer | no | Defaults to authenticated user |
+
+**Request example**
+```http
+POST /api/v1/whatsapp/ai/bot/simulate/reset
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "wa_number_id": 45,
+  "customer_phone": "+966501234567"
+}
+```
+
+**Response 200 — reset successful**
+```json
+{
+  "success": true,
+  "cleared": true,
+  "message": "Sandbox conversation reset. You can start a fresh simulation."
+}
+```
+
+**Response 200 — nothing to reset**
+```json
+{
+  "success": true,
+  "cleared": false,
+  "message": "No sandbox conversation found — nothing to reset."
+}
+```
+
+---
+
+## 6. Flow Diagrams
+
+### 6.1 Complete Bot Turn
+
+```
+Customer sends WhatsApp message
+            │
+            ▼
+    [WhatsappAI Module Webhook]
+    SyncWhatsappAiConversationToCommunicationService
+            │ creates v1 Message + fires MessageReceived event
+            ▼
+    AutomationEngine::handleMessageReceived()
+            │
+            ├─ SKIP if: channel ≠ whatsapp
+            ├─ SKIP if: source === 'ai'  (loop guard)
+            ├─ SKIP if: message already processed (dedup cache 24h)
+            ├─ SKIP if: rate limited (5 msgs/60s per conversation)
+            │
+            │ Check WaAiConfig.autonomy_level ∈ {shadow, autonomous}
+            ▼
+    Employee::runTurn()
+            │
+            ├─ GUARD: loop detection (max 3 bot replies/min/conversation)
+            ├─ GUARD: WaAiConfig.enabled = true
+            ├─ GUARD: within business_hours
+            ├─ GUARD: distributed lock (prevents concurrent turn for same conversation)
+            ├─ GUARD: WaConversationAiState.opt_out_status ≠ opted_out
+            ├─ GUARD: WaConversationAiState.bot_paused = false
+            ├─ GUARD: idempotency check (ai_turn_traces)
+            ├─ GUARD: message type ≠ audio with pending transcription
+            ├─ GUARD: monthly_token_budget not exhausted
+            │
+            ▼
+    ComplianceService::check()
+            │
+            ├─ opt_out keyword   → send ack, set opted_out, STOP
+            ├─ abuse keyword     → send escalation msg, pause bot, STOP
+            ├─ regulated topic   → send escalation msg, pause bot, STOP
+            ├─ human request     → send "transferring" msg, pause bot, STOP
+            └─ pure greeting (returning user) → template reply, STOP (greeting_shortcut)
+            │
+            ▼
+    PersonaComposer::compose()
+            │  Builds system prompt: persona + citation rules + brief context
+            │  + property context (from FactLedger, initially empty)
+            │
+            ▼
+    AgentLoop::run()    [up to 6 steps, 50s wall-clock]
+            │
+            │  Each step: LLM decides → structured reply OR tool call
+            │
+            ├─ Tool: search_inventory(location, property_type, budget, purpose)
+            │       → PropertySearchTool → scopeBotAvailable() → max 5 listings
+            │       → FactLedger.addProperties()
+            │
+            ├─ Tool: get_property_details(property_id)
+            │       → Fetch full property record
+            │       → FactLedger.addProperties()
+            │
+            ├─ Tool: search_knowledge(query)
+            │       → EmbeddingService → RetrievalService (cosine sim over KB)
+            │       → FactLedger.addKnowledgeChunks()
+            │
+            ├─ Tool: propose_viewing(property_id, notes)
+            │       → Records viewing interest
+            │
+            ├─ Tool: record_customer_fact(field, value)
+            │       → Updates brief directly from conversation
+            │
+            └─ Tool: escalate_to_human(reason)
+                    → FactLedger.recordEscalation()
+                    → LLM terminates tool loop and outputs final reply
+            │
+            ▼ (LLM outputs final structured reply)
+            │
+    CitationGuard::check()
+            │
+            ├─ Verify all {{p:ID|field}} placeholders exist in FactLedger
+            ├─ Detect bare 4+ digit numbers in 'say' field
+            ├─ Detect comma-formatted large numbers (e.g. 7,000,000)
+            ├─ Detect availability claims when search returned 0 results
+            │
+            ├─ VIOLATION → retry once with:
+            │       Rebuilt system prompt (now includes FactLedger properties)
+            │       + correction instruction (use {{p:ID|field}}, not bare numbers)
+            │       + maxSteps = 1
+            │
+            └─ Still violated after retry → handoff('citation_violation')
+            │
+            ▼ (guard passed)
+            │
+    ReplyRenderer::render()
+            │  Substitute {{p:ID|field}} → actual property values from FactLedger
+            │
+            ▼
+    BriefMerger::merge()
+            │  Merge LLM's brief_updates + tool-recorded facts into CustomerBrief
+            │
+            ▼
+    PolicyGate::evaluate()
+            │
+            ├─ escalation tool called   → handoff
+            ├─ opt_out detected         → opt_out
+            ├─ weak search × 3 turns   → low_confidence_soft (deliver + track)
+            └─ normal                   → deliver
+            │
+            ▼
+    Route by decision:
+            │
+            ├─ handoff / opt_out
+            │       → HumanCadence::send() (escalation message)
+            │       → HandoffService::pauseBot()
+            │
+            ├─ shadow (autonomy_level = 'shadow')
+            │       → ShadowBotDraft::create()
+            │       → no message sent to customer
+            │
+            └─ deliver (autonomy_level = 'autonomous')
+                    → HumanCadence::send()
+                            ├─ Human-like typing delay
+                            └─ WhatsAppChannelSender (Meta Cloud API)
+            │
+            ▼ (post-turn)
+            │
+            ├─ Update WaConversationAiState.facts + last_bot_reply_at
+            ├─ Record ai_turn_traces (telemetry + idempotency key)
+            ├─ Record ai_usage_logs (token counts)
+            ├─ If ≥ 8 new turns since last summary:
+            │       → SummarizeConversationJob (queue: ai)
+            └─ CrmFlywheelService::sync()
+                    → upsert api_customers (by phone)
+                    → create users_property_requests (if intent + location known)
+```
+
+---
+
+### 6.2 Shadow Mode Lifecycle
+
+```
+                                    BOT TURN COMPLETES
+                                           │
+                              autonomy_level = 'shadow'
+                                           │
+                                           ▼
+                              ShadowBotDraft created
+                              status = 'pending'
+                              confidence = 87
+                              draft_reply = "لدينا شقة..."
+                              used_sources = [1301, 1302]   ← property IDs
+                                           │
+                         ┌─────────────────┼─────────────────┐
+                         ▼                 ▼                 ▼
+                    APPROVE           EDIT + SEND        DISCARD
+                         │                 │                 │
+               status='approved'    status='edited'   status='discarded'
+                                    agent_reply=<text>
+                                           │
+                                     ┌─────┘
+                                     ▼
+                              Agent sends reply
+                              manually from inbox
+                                     │
+                              HandoffService
+                              pauses bot 48h
+                              (agent takeover)
+
+Edit-rate = (edited + discarded) / total × 100%
+Target: < 15% before graduating to autonomous
+```
+
+---
+
+### 6.3 Simulator Flow
+
+```
+POST /api/v1/whatsapp/ai/bot/simulate
+{
+  "wa_number_id": 45,
+  "message": "أبحث عن شقة في النزهة",
+  "customer_phone": "+966501234567"
+}
+        │
+        ▼
+SandboxService::conversationFor()
+  └─ Conversation.firstOrCreate(channel='whatsapp_sandbox')
+        │
+        ▼
+Message::create(direction='inbound')  ← no MessageReceived event fired
+        │
+        ▼
+Employee::runTurn(..., dryRun=true)
+   ├─ Loop guard: SKIPPED (dryRun)
+   ├─ Distributed lock: SKIPPED (dryRun)
+   ├─ Idempotency write: SKIPPED (dryRun)
+   ├─ Business hours: ENFORCED (returns skipped if outside hours)
+   ├─ WaConversationAiState::firstOrCreate()
+   ├─ ComplianceService::check()        ← real
+   ├─ AgentLoop (tool-calling)          ← real LLM calls
+   │    ├─ search_inventory             ← real DB queries
+   │    ├─ search_knowledge             ← real vector search
+   │    └─ other tools as needed
+   ├─ CitationGuard::check()            ← real (retry on violation)
+   ├─ ReplyRenderer::render()           ← real (substitutes placeholders)
+   ├─ PolicyGate::evaluate()            ← real
+   └─ Returns EmployeeTurnResult (no HumanCadence call)
+        │
+        ▼
+Message::create(direction='outbound')  ← no provider send
+        │
+        ▼
+Response JSON ← NOTHING SENT TO WHATSAPP
+{
+  reply, outcome, reason, needs_human, handoff_reason,
+  conversation_id, turn_index, bot_messages[],
+  bot_paused_until, handoff_reason_state,
+  facts, opt_out_status
+}
+
+POST /api/v1/whatsapp/ai/bot/simulate/reset
+        │
+        ▼
+DB::transaction {
+  DELETE messages WHERE conversation_id = $id
+  DELETE wa_conversation_ai_states WHERE conversation_id = $id
+  DELETE shadow_bot_drafts WHERE conversation_id = $id
+  DELETE bot_unanswered_questions WHERE conversation_id = $id
+  DELETE ai_customer_profiles WHERE user_id = $tenantId AND phone = $sandboxPhone
+  DELETE conversations WHERE id = $id
+}
+Cache::forget('bot.loop.conv.' . $id)
+```
+
+> The simulator uses **real tenant data** (KB, properties, conversation history persisted across turns). Token usage is logged in `ai_usage_logs` but no monthly budget is deducted in dry-run mode.
+
+---
+
+## 7. Error Reference
+
+| HTTP | Code | When |
+|---|---|---|
+| 400 | — | Malformed JSON body |
+| 401 | — | Missing or invalid Bearer token |
+| 403 | `Unauthorized.` | Simulating a different tenant without admin |
+| 404 | `WA_NUMBER_NOT_FOUND` | `numberId` not owned by this tenant |
+| 404 | `WA_AI_CONFIG_NOT_FOUND` | No config exists for this number yet |
+| 404 | `No bot config found...` | Simulate: no `wa_ai_configs` row for this number |
+| 409 | `Draft is no longer pending.` | Act on a draft that was already approved/discarded |
+| 422 | (Laravel validation) | Required field missing or invalid value |
+| 500 | (exception message) | LLM timeout, network failure, or unexpected error |
+
+### Handoff reasons (appear in `reason` / `handoff_reason` fields)
+
+| Reason | Trigger |
+|---|---|
+| `customer_requested_human` | Customer sent a human-request keyword |
+| `model_needs_human` | LLM called the `escalate_to_human` tool |
+| `citation_violation` | Reply still contained bare numbers after one LLM retry |
+| `compliance` | Regulated topic or abuse keyword detected |
+| `media_message` | Non-text media received (image/video/document) |
+| `loop_failed:budget_exhausted` | Agent exhausted step limit (6 steps); graceful fallback delivered |
+| `loop_failed:provider_error` | LLM API returned an error |
+
+### Skipped reasons (appear in `reason` when `outcome = "skipped"`)
+
+| Reason | Trigger |
+|---|---|
+| `no_config_or_off` | No enabled `wa_ai_config` for this number |
+| `outside_business_hours` | Current time outside configured hours |
+| `loop_detected` | More than 3 bot replies in 1 minute for this conversation |
+| `lock_contention` | Another turn is being processed concurrently |
+| `opted_out` | Customer opted out |
+| `bot_paused` | Human agent took over |
+| `duplicate_message` | Turn already processed (idempotency key match) |
+| `pending_transcription` | Audio message is still being transcribed |
+| `empty_message` | Message body was blank |
+
+### Rate limiting (AutomationEngine internal)
+The bot will not fire more than **5 times per 60 seconds** per conversation. If a customer sends a burst, subsequent messages within the window are silently skipped. This is enforced in `AutomationEngine`, not at the HTTP layer.
+
+### Loop guard
+The bot will not send more than **3 auto-replies per minute** per conversation. Excess turns are logged as `agent.employee.loop_detected` and skipped.

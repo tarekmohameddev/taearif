@@ -1,0 +1,15 @@
+{
+    "type": "bug_regression",
+    "id": "bug_37_no_unevidenced_handoff",
+    "description": "A simple inventory question must not trigger an escalation to human (unevidenced escalation)",
+    "turns": [
+        {
+            "role": "customer",
+            "text": "هل عندكم شقق في حي النرجس في الرياض؟"
+        }
+    ],
+    "invariants": [
+        "no_unevidenced_escalation",
+        "search_tool_was_called"
+    ]
+}

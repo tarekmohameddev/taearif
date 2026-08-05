@@ -1,0 +1,363 @@
+{
+    "type": "real_conversation",
+    "id": "conv_12654",
+    "tenant_id": 1021,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "مرحبا"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعافيك"
+        },
+        {
+            "role": "customer",
+            "text": "هلا ابو سعد"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعافيك ترسلي الاعلان الموضوع على عقار ستي"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 24.659439086914, 46.015060424805]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا ابو ناصر"
+        },
+        {
+            "role": "customer",
+            "text": "اعتذر الوقت تاخر"
+        },
+        {
+            "role": "customer",
+            "text": "ولا كلمتك اذا وقتك يسمح عادي اكلمك او بكرا الي يريحك"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 😂]"
+        },
+        {
+            "role": "customer",
+            "text": "على بركة الله"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير ابو ناصر"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعافيك لاتنسى الرجال"
+        },
+        {
+            "role": "customer",
+            "text": "واذا ممكن تعطيني اسم المنطقه"
+        },
+        {
+            "role": "customer",
+            "text": "ايه"
+        },
+        {
+            "role": "customer",
+            "text": "امانه يابو ناصر اذا مهب كويسه قولي ابعد عنها"
+        },
+        {
+            "role": "customer",
+            "text": "الاسم المتعارف عليه"
+        },
+        {
+            "role": "customer",
+            "text": "ابي اسال"
+        },
+        {
+            "role": "customer",
+            "text": "صامل يارجال"
+        },
+        {
+            "role": "customer",
+            "text": "كلمه"
+        },
+        {
+            "role": "customer",
+            "text": "وبيض الله وجهك"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص مابعد الامانه شي"
+        },
+        {
+            "role": "customer",
+            "text": "بس اهم شي يابو ناصر يكون فيها مويه"
+        },
+        {
+            "role": "customer",
+            "text": "وقلتلك جبلي السعر الي اتفقنا عليه"
+        },
+        {
+            "role": "customer",
+            "text": "واحولك العربون الان وبنزل واحد يشيك المويه"
+        },
+        {
+            "role": "customer",
+            "text": "وابي اشيك المويه يابو ناصر اذا اتمينا ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "بعد العربون"
+        },
+        {
+            "role": "customer",
+            "text": "يالبى قلبك"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "بس خلنا نشوف السعر"
+        },
+        {
+            "role": "customer",
+            "text": "حاول يابو ناصر تنزل اكثر شي ممكن"
+        },
+        {
+            "role": "customer",
+            "text": "مع الرجال"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "تمام تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي يابو ناصر بس ادخل اجتماع"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ايه سفته"
+        },
+        {
+            "role": "customer",
+            "text": "يقول العربون 35 الف"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح؟"
+        },
+        {
+            "role": "customer",
+            "text": "كفو"
+        },
+        {
+            "role": "customer",
+            "text": "مانزلت"
+        },
+        {
+            "role": "customer",
+            "text": "لو خمسين"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "حاول موب اجبار بس ماتدري يمكن منك يطلع الموضوع"
+        },
+        {
+            "role": "customer",
+            "text": "متفهم والله وماقصرت الشراكات يتخللها اتفاقيات مسموحه يابو ناصر حاول معه مليون وثلثميه وخمسين مع الضريبه بتطلع علي تقريبا مليون واربعميه وعشره"
+        },
+        {
+            "role": "customer",
+            "text": "يصير في الرينج"
+        },
+        {
+            "role": "customer",
+            "text": "وانت اخبر يابو ناصر البيع والشراء فيه مرونه وانت ماقصرت مسبقا ولا انك مقصر الان"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "والله يابو ناصر مصدقك مليون مره"
+        },
+        {
+            "role": "customer",
+            "text": "ومايحتاج كلمتك مصدقه"
+        },
+        {
+            "role": "customer",
+            "text": "هذا خل الموضوع علي"
+        },
+        {
+            "role": "customer",
+            "text": "اللغي العقد ونسويه من جديد"
+        },
+        {
+            "role": "customer",
+            "text": "تراها خميسن الف تحفرلي بير"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "وخاطري فيها وانت بكيفك"
+        },
+        {
+            "role": "customer",
+            "text": "صعب يابو ناصر"
+        },
+        {
+            "role": "customer",
+            "text": "في المليون 350  اعيد واقولك متفق صحيح على مليون 400 واذا جات بطييب خاطر تنزل على الخمسين انت كريم وحنا نستاهل"
+        },
+        {
+            "role": "customer",
+            "text": "ماتغير كلامي الله يعافيك"
+        },
+        {
+            "role": "customer",
+            "text": "يالبى قلبك"
+        },
+        {
+            "role": "customer",
+            "text": "باذن الله بحول العربون وبرسلك الرساله"
+        },
+        {
+            "role": "customer",
+            "text": "واعتبر الخميسن هديه لاخوك اضافيه على الي قدمته مسبقا"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا وسهلا ابو ناصر"
+        },
+        {
+            "role": "customer",
+            "text": "احولك 5000 ؟"
+        },
+        {
+            "role": "customer",
+            "text": "ودي اخذ مهندس ولا احد له في الابار يشيك على المويه"
+        },
+        {
+            "role": "customer",
+            "text": "كم بوصه وكم ساعه يشتغل لان محد يدري عن باطنها"
+        },
+        {
+            "role": "customer",
+            "text": "لا انت ولا انا"
+        },
+        {
+            "role": "customer",
+            "text": "ابو ناصر عندك تقرير الجيلوجي؟"
+        },
+        {
+            "role": "customer",
+            "text": "اوك باخذ واحد يشيك بكرا ويشيك كم انزل"
+        },
+        {
+            "role": "customer",
+            "text": "احولك العربون وين؟"
+        },
+        {
+            "role": "customer",
+            "text": "يمديني احط اي رقم؟"
+        },
+        {
+            "role": "customer",
+            "text": "يقولي الحد الادنى 35"
+        },
+        {
+            "role": "customer",
+            "text": "تبيني احولك 5000 الان على حسابك الى ماشوف اقدر انزل على الارض واجيب احد يشيك واذا عندك بعد مهندس خير وبركه يصير نروح ونشيك"
+        },
+        {
+            "role": "customer",
+            "text": "ولا على اتفاقنا الى ما انزل واخلص معه براحتك"
+        },
+        {
+            "role": "customer",
+            "text": "ايه ماعندك مشكله"
+        },
+        {
+            "role": "customer",
+            "text": "عادي بحول"
+        },
+        {
+            "role": "customer",
+            "text": "العربون"
+        },
+        {
+            "role": "customer",
+            "text": "بس كاتبين مايرجع يروح للمالك"
+        },
+        {
+            "role": "customer",
+            "text": "دون عيب في العقار المياه؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ابو ناصر هل يمدينا نطلع ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

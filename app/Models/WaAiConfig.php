@@ -33,6 +33,8 @@ class WaAiConfig extends Model
         'fallback_to_human',
         'fallback_delay',
         'monthly_token_budget',
+        'playbook',
+        'max_tokens_per_turn',
     ];
 
     /** @var array<string, string> */
@@ -48,6 +50,8 @@ class WaAiConfig extends Model
         'reply_length_target'    => 'integer',
         'fallback_to_human'      => 'boolean',
         'monthly_token_budget'   => 'integer',
+        'playbook'               => 'array',
+        'max_tokens_per_turn'    => 'integer',
         'created_at'             => 'datetime',
         'updated_at'             => 'datetime',
     ];

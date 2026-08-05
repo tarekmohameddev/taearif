@@ -2,7 +2,7 @@
 
 namespace Modules\WhatsappAI\Jobs;
 
-use App\Domain\Communication\WhatsApp\Bot\BotOrchestrator;
+use App\Domain\RealEstateAgent\Brain\Employee;
 use App\Models\Message;
 use App\Models\WaAiConfig;
 use Illuminate\Bus\Queueable;
@@ -303,8 +303,7 @@ class TranscribeAudio implements ShouldQueue
                 ]);
             }
 
-            $orchestrator = app(BotOrchestrator::class);
-            $orchestrator->handle(
+            app(Employee::class)->runTurn(
                 $userId,
                 (int) $v1Message->conversation_id,
                 $waNumberId,

@@ -1,0 +1,499 @@
+{
+    "type": "real_conversation",
+    "id": "conv_2090",
+    "tenant_id": 1558,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "بيض الله وجهك يا ابوصالح"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "سم وابشر"
+        },
+        {
+            "role": "customer",
+            "text": "هلا ابوصالح صباح الفل ياحلو"
+        },
+        {
+            "role": "customer",
+            "text": "باذن الله وعدنا يوم الثلاثاء الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "وغلا"
+        },
+        {
+            "role": "customer",
+            "text": "مساء النور"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "ايه"
+        },
+        {
+            "role": "customer",
+            "text": "بعد الصلاة"
+        },
+        {
+            "role": "customer",
+            "text": "ممتاز"
+        },
+        {
+            "role": "customer",
+            "text": "ارسال"
+        },
+        {
+            "role": "customer",
+            "text": "موقع الارض"
+        },
+        {
+            "role": "customer",
+            "text": "اكلم يا الامير"
+        },
+        {
+            "role": "customer",
+            "text": "الارض هذي موقعها"
+        },
+        {
+            "role": "customer",
+            "text": "اسمع كلم ابوعوض"
+        },
+        {
+            "role": "customer",
+            "text": "الحربي"
+        },
+        {
+            "role": "customer",
+            "text": "شف كم البيع"
+        },
+        {
+            "role": "customer",
+            "text": "عشان نتفاهم"
+        },
+        {
+            "role": "customer",
+            "text": "كم حدهم"
+        },
+        {
+            "role": "customer",
+            "text": "ابوصالح"
+        },
+        {
+            "role": "customer",
+            "text": "شف"
+        },
+        {
+            "role": "customer",
+            "text": "مدام انه وكيل"
+        },
+        {
+            "role": "customer",
+            "text": "هو"
+        },
+        {
+            "role": "customer",
+            "text": "ابو عوض"
+        },
+        {
+            "role": "customer",
+            "text": "وكيلهم"
+        },
+        {
+            "role": "customer",
+            "text": "ولا وش وضعهم"
+        },
+        {
+            "role": "customer",
+            "text": "خله يشوف كم حدهم"
+        },
+        {
+            "role": "customer",
+            "text": "معي مكالمه يا الامير"
+        },
+        {
+            "role": "customer",
+            "text": "المشترى"
+        },
+        {
+            "role": "customer",
+            "text": "ودي تعلمن"
+        },
+        {
+            "role": "customer",
+            "text": "عشان اعلمه"
+        },
+        {
+            "role": "customer",
+            "text": "نخلصها"
+        },
+        {
+            "role": "customer",
+            "text": "ماب سيم هو"
+        },
+        {
+            "role": "customer",
+            "text": "اعرفه"
+        },
+        {
+            "role": "customer",
+            "text": "مشكله"
+        },
+        {
+            "role": "customer",
+            "text": "شف وعلمن"
+        },
+        {
+            "role": "customer",
+            "text": "نبي سعر"
+        },
+        {
+            "role": "customer",
+            "text": "مغيري"
+        },
+        {
+            "role": "customer",
+            "text": "ايه"
+        },
+        {
+            "role": "customer",
+            "text": "سم"
+        },
+        {
+            "role": "customer",
+            "text": "وابشر"
+        },
+        {
+            "role": "customer",
+            "text": "ها الوجه"
+        },
+        {
+            "role": "customer",
+            "text": "ذيبان سمه 1300 عشان نشوف حدهم"
+        },
+        {
+            "role": "customer",
+            "text": "ان شاء الله يكون قريبنا"
+        },
+        {
+            "role": "customer",
+            "text": "لا خله 1300"
+        },
+        {
+            "role": "customer",
+            "text": "ماعليك"
+        },
+        {
+            "role": "customer",
+            "text": "زين"
+        },
+        {
+            "role": "customer",
+            "text": "هي حقت الريس"
+        },
+        {
+            "role": "customer",
+            "text": "كلمهم"
+        },
+        {
+            "role": "customer",
+            "text": "علمن"
+        },
+        {
+            "role": "customer",
+            "text": "ترى انتظرك"
+        },
+        {
+            "role": "customer",
+            "text": "كلم ابوباسل"
+        },
+        {
+            "role": "customer",
+            "text": "الريس"
+        },
+        {
+            "role": "customer",
+            "text": "والله"
+        },
+        {
+            "role": "customer",
+            "text": "لاحين"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "شلونك"
+        },
+        {
+            "role": "customer",
+            "text": "انت"
+        },
+        {
+            "role": "customer",
+            "text": "لاحد لان"
+        },
+        {
+            "role": "customer",
+            "text": "مشوارات"
+        },
+        {
+            "role": "customer",
+            "text": "لاحد"
+        },
+        {
+            "role": "customer",
+            "text": "لان"
+        },
+        {
+            "role": "customer",
+            "text": "امين"
+        },
+        {
+            "role": "customer",
+            "text": "يارب"
+        },
+        {
+            "role": "customer",
+            "text": "السلام"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "هلا ابوصالح كلمت ابوباسل الريس"
+        },
+        {
+            "role": "customer",
+            "text": "عنده علم ولا نصرف النظر موقع اخر"
+        },
+        {
+            "role": "customer",
+            "text": "زين"
+        },
+        {
+            "role": "customer",
+            "text": "لاياحبيلك"
+        },
+        {
+            "role": "customer",
+            "text": "معذور"
+        },
+        {
+            "role": "customer",
+            "text": "النايم عذره معه الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "فرصه نادره باقل من سعر السوق  ب 45% \nارض تجاريه بحي العارض \n( على شارع ثلاثين تجاري )\nشارع 30شمالي \nالمساحة : 4350 متر"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/goo.gl\/maps\/VaBYgHfHTkMT4HxA9"
+        },
+        {
+            "role": "customer",
+            "text": "اساله"
+        },
+        {
+            "role": "customer",
+            "text": "اللي وراه"
+        },
+        {
+            "role": "customer",
+            "text": "تفتح شارع تجاري 30 شمالي"
+        },
+        {
+            "role": "customer",
+            "text": "ظهيره اللي مسوره"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح"
+        },
+        {
+            "role": "customer",
+            "text": "هلا وغلاً"
+        },
+        {
+            "role": "customer",
+            "text": "ابوصالح"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "سم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "اذا خلصة اكلمك"
+        },
+        {
+            "role": "customer",
+            "text": "با المسجد"
+        },
+        {
+            "role": "customer",
+            "text": "سم"
+        },
+        {
+            "role": "customer",
+            "text": "ياحلو"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "عن هذي"
+        },
+        {
+            "role": "customer",
+            "text": "اكتب التفاصيل"
+        },
+        {
+            "role": "customer",
+            "text": "لي خن ارسالهن له"
+        },
+        {
+            "role": "customer",
+            "text": "الشوارع"
+        },
+        {
+            "role": "customer",
+            "text": "كم"
+        },
+        {
+            "role": "customer",
+            "text": "زين"
+        },
+        {
+            "role": "customer",
+            "text": "اقول له"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "وغلا"
+        },
+        {
+            "role": "customer",
+            "text": "ابوصالح"
+        },
+        {
+            "role": "customer",
+            "text": "عرضت عليهم"
+        },
+        {
+            "role": "customer",
+            "text": "انتظر الرد منهم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "بسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "يا ابوصالح"
+        },
+        {
+            "role": "customer",
+            "text": "🔥 فرصة تجارية مميزة – قطعتين للبيع شمال شرق بريدة 🔥\n\nموقع استراتيجي في مخطط البيارق شمال شرق مدينة بريدة، على شارع ام المومنين عائشة رضي الله عنها الحيوي 👌\n\n📍 الموقع: مخطط البيارق – شمال بريده\n\n🟢 القطعة الأولى:\n📐 المساحة: 1027 م²\n📍 زاوية – واجهتين تجارية (ميزة حركة ورؤية أعلى)\n\n🔵 القطعة الثانية:\n📐 المساحة: 1293 م²\n📍 على شارع واحد – واجهة تجارية مميزة\n\nمناسبة لـ: معارض – أسواق – مراكز تجارية – استثمار طويل المدى 💼\nموقع يخدم أحياء سكنية قائمة ونمو عمراني مستمر.\n\n\n\nعقارات بريدة مخطط البيارق شمال شرق بريدة شارع عائشة أرض تجارية للبيع بريدة فرصة استثمارية القصيم أرض زاوية واجهة تجارية معارض أسواق مراكز تجارية استثمار طويل المدى حي البيارق أراضي شمال بريدة  صك إلكتروني موقع استراتيجي بناء مجمع تجاري كافيهات صيدليات نمو عمراني عقار القصيم أراضي خام مخطط معتمد بريدة #عقارات_بريدة #بريدة #القصيم #مخطط_البيارق #أراضي_للبيع #استثمار_عقاري #القصيم#فرصة_تجارية #شمال_بريدة #عقار_بريدة #أرض_تجارية #تطوير_عقاري #مستثمرون #\nالموقع \nhttps:\/\/maps.app.goo.gl\/UvjyGKVsbS4MgWdQ6?g_st=ic"
+        },
+        {
+            "role": "customer",
+            "text": "مع المالك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

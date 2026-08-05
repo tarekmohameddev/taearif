@@ -1,0 +1,395 @@
+{
+    "type": "real_conversation",
+    "id": "conv_9933",
+    "tenant_id": 1507,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "معاك م.محمد خفاجى \nالمستأجر ف برج البساطه \nشقة 307"
+        },
+        {
+            "role": "customer",
+            "text": "طيب برسلك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "دا آخر سداد"
+        },
+        {
+            "role": "customer",
+            "text": "كنتا محتاجين غسالة عشان الى موجوده فيها عطل"
+        },
+        {
+            "role": "customer",
+            "text": "كانت شغاله بس الحين فيها مشكله ف الغسل والعصر"
+        },
+        {
+            "role": "customer",
+            "text": "والتأمين بيكون مع العقد الجديد \nالعقد الحالى مستمر الى شهر 4 .. مظبوط ؟"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "كيف الحال"
+        },
+        {
+            "role": "customer",
+            "text": "كنت طلبت انى اغير الغساله لكن الى الان ما تواصل معي احد ."
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🌹]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "كيف الحال"
+        },
+        {
+            "role": "customer",
+            "text": "بخير والله الحمد لله"
+        },
+        {
+            "role": "customer",
+            "text": "ف مشكلة ف السكن بقالها كام يوم خاصة بالصرف."
+        },
+        {
+            "role": "customer",
+            "text": "إذا ف شئ اقدر اساعد فيه عرفنى ."
+        },
+        {
+            "role": "customer",
+            "text": "مش قصدى الشقه اقصد العقار كله"
+        },
+        {
+            "role": "customer",
+            "text": "تمام... إذا بحتاج اى مساعده انا موجود ."
+        },
+        {
+            "role": "customer",
+            "text": "ابشر تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🌹]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "كيف الحال"
+        },
+        {
+            "role": "customer",
+            "text": "وصلنى طلب مم طرفكم بإنهاء التعاقد \nوانا عاوز امدد التعاقد"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "طيب حابين نجدد التعاقد معاكم \n\nالعقد هذا بينتهى تقريبا 5 أبريل"
+        },
+        {
+            "role": "customer",
+            "text": "انا دفعت اليوم اخر دفعه من العقد القديم"
+        },
+        {
+            "role": "customer",
+            "text": "receipt_voucher_37367144.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ودفعت اليوم اخر دفعه من العقد"
+        },
+        {
+            "role": "customer",
+            "text": "وحابين نجدد عقد جديد بس امتى بيكون وبنجدد."
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "لا ولا شهر متأخرين الحمد لله"
+        },
+        {
+            "role": "customer",
+            "text": "اه كله خالص كدا ."
+        },
+        {
+            "role": "customer",
+            "text": "هو طبيعى العقد ينتهى لوحده مش محتاج انهاء \n\nمحتاجين نسوى عقد الجديد بس"
+        },
+        {
+            "role": "customer",
+            "text": "لا من 10 2025 ال 4 2026"
+        },
+        {
+            "role": "customer",
+            "text": "بشفهولك حاضر"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "وبشوفلك العقد وبرسلهلولك عشان مش راضى يتحمل الحين"
+        },
+        {
+            "role": "customer",
+            "text": "مظبوط"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "كيف الحال"
+        },
+        {
+            "role": "customer",
+            "text": "جمعة مباركة عليك"
+        },
+        {
+            "role": "customer",
+            "text": "عساك بخير"
+        },
+        {
+            "role": "customer",
+            "text": "الحمد لله"
+        },
+        {
+            "role": "customer",
+            "text": "المصعد الثانى ف مشكله بقالها تقريبا 5 ايام \n\nهل ف عندك معلومه بيها"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تمام"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "كيف الحال"
+        },
+        {
+            "role": "customer",
+            "text": "هلا بيك"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير عليك"
+        },
+        {
+            "role": "customer",
+            "text": "كنا عاوزين نسوى عقد جديد ان شاءالله \nشقه 307"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "انا هحتاج 3 شهور او 6 شهور فقط"
+        },
+        {
+            "role": "customer",
+            "text": "واذا تم سنه وقعدت 3 او 4 شهور فقط ايه بيصير ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص حدد عقد 6 شهور وانا بدفعها"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص سووى عقد الجديد ب 6 شهور"
+        },
+        {
+            "role": "customer",
+            "text": "واكد معايا بس قيمة الايجار"
+        },
+        {
+            "role": "customer",
+            "text": "العقد مش ع منصة إيجار؟"
+        },
+        {
+            "role": "customer",
+            "text": "مظبوط"
+        },
+        {
+            "role": "customer",
+            "text": "بس هحتاج ترسلى فاتورة بيها بس \nولو موجودين ممكن احاسب كاش"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "ايوة"
+        },
+        {
+            "role": "customer",
+            "text": "300 ريال"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "انتوا موجودين ف المبنى ؟"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص برسلك تحويل مافى مشكله"
+        },
+        {
+            "role": "customer",
+            "text": "اليوم يوصلك التحويل ان شاء البه الله"
+        },
+        {
+            "role": "customer",
+            "text": "اليوم يوصلك التحويل ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "document_1774828406370.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "كيف الحال"
+        },
+        {
+            "role": "customer",
+            "text": "سويت العقد الجديد ؟"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "مظبوط"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ليه من 1\/3\/2026"
+        },
+        {
+            "role": "customer",
+            "text": "مفروض البداية 1\/4\/2026"
+        },
+        {
+            "role": "customer",
+            "text": "انا كنت قبلته"
+        },
+        {
+            "role": "customer",
+            "text": "لا كيف اسوي"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "سوى رفض من عندك"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "لا بسيطه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام ابشر ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🌹]"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

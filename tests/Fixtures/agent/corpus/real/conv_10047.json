@@ -1,0 +1,623 @@
+{
+    "type": "real_conversation",
+    "id": "conv_10047",
+    "tenant_id": 1507,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اعطيهم رقمك علشان توصيل الثلاجه ؟"
+        },
+        {
+            "role": "customer",
+            "text": "بكرى الصباح التوصيل"
+        },
+        {
+            "role": "customer",
+            "text": "اذا فتحوا بحدود 9-10"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام\nانتظره واعلمك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "050 843 8070"
+        },
+        {
+            "role": "customer",
+            "text": "ناصر"
+        },
+        {
+            "role": "customer",
+            "text": "الفصول الأربعه"
+        },
+        {
+            "role": "customer",
+            "text": "جيتهم انت قبل شوي ؟"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعين"
+        },
+        {
+            "role": "customer",
+            "text": "وش قالك المحل ؟"
+        },
+        {
+            "role": "customer",
+            "text": "الان اتصل السواق ورايح للشقه"
+        },
+        {
+            "role": "customer",
+            "text": "الزبون موجود ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "مرحباً"
+        },
+        {
+            "role": "customer",
+            "text": "متى دوامكم برمضان؟"
+        },
+        {
+            "role": "customer",
+            "text": "طيب عندي واحد يبي يشوفه الغرفه والصاله؟"
+        },
+        {
+            "role": "customer",
+            "text": "طيب عندي واحد يبي يشوف الغرفه والصاله؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "0504440312"
+        },
+        {
+            "role": "customer",
+            "text": "هذا رقمه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "ودي تشوف فواتير الكهرباء والماء"
+        },
+        {
+            "role": "customer",
+            "text": "عند ابولدن مرسلهن"
+        },
+        {
+            "role": "customer",
+            "text": "العدادات مشتركه مع الشقق كامله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "والله السعر شوي\nثانيا الشقق كاملة الان عليها مفاوضه مع شركة يبي يشوفونه"
+        },
+        {
+            "role": "customer",
+            "text": "والله السعر شوي\nثانيا الشقق كاملة الان عليها مفاوضه مع شركة يبي يشوفونه مع ابوفهد"
+        },
+        {
+            "role": "customer",
+            "text": "حياك \nسم آمر ؟"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم \nبالنسبة للي يبي الشقق الثلاثة عطه السعر الايجار المحدد صلح له والا يجي غيره\nوخلاص نعتمد ثلاجة وشاشة للشقتين"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "التوصيل يوم الأحد"
+        },
+        {
+            "role": "customer",
+            "text": "اليوم اجازة وبكرى فل"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "1150"
+        },
+        {
+            "role": "customer",
+            "text": "حولهن لابوفهد"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "بالطريق"
+        },
+        {
+            "role": "customer",
+            "text": "المفتاح موجود ؟"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "عرض سعر عقد صيانةمحمد ابراهيم .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "حول المبلغ للشركة وابوفهد يحول النصف الباقي"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل الحساب"
+        },
+        {
+            "role": "customer",
+            "text": "بعد التحويل ارسل الايصال لو سمحت"
+        },
+        {
+            "role": "customer",
+            "text": "ايه"
+        },
+        {
+            "role": "customer",
+            "text": "1500"
+        },
+        {
+            "role": "customer",
+            "text": "باسم من الحساب ؟"
+        },
+        {
+            "role": "customer",
+            "text": "TransferReceipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ايه"
+        },
+        {
+            "role": "customer",
+            "text": "عقد صيانةمحمد ابراهيم .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم \nوش باقي من الشقق عندي موظفة تبي غرفه وصالة ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "+966 50 612 5343"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "فيه واحد يبي يشوف الغرفه والصاله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "موجود الرجال ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ايه"
+        },
+        {
+            "role": "customer",
+            "text": "على الطلب"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "295\n575"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "ابشوف عنهم واعلمك"
+        },
+        {
+            "role": "customer",
+            "text": "على كلامه الليله ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "انتظرهم"
+        },
+        {
+            "role": "customer",
+            "text": "هذاهم طالعين للموقع"
+        },
+        {
+            "role": "customer",
+            "text": "موجود بالشقة؟"
+        },
+        {
+            "role": "customer",
+            "text": "عند الباب"
+        },
+        {
+            "role": "customer",
+            "text": "عند الباب هم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الله يقبل منا ومنكم صالح الأعمال"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "369"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "موجود الزبون ؟"
+        },
+        {
+            "role": "customer",
+            "text": "موجود الان ؟"
+        },
+        {
+            "role": "customer",
+            "text": "بالطريق"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "شقة رقم 3 موجود المستأجر علشان توصيل الثلاجه والغساله؟!"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "شقة رقم 3 موجود المستأجر علشان توصيل الثلاجه والغساله؟!"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "امس مصلحين الغطاس"
+        },
+        {
+            "role": "customer",
+            "text": "شغال كل شي تمام والخزان مليان"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "عندك كهربائي؟"
+        },
+        {
+            "role": "customer",
+            "text": "هذا"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "جاء الكهربائي؟!!"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

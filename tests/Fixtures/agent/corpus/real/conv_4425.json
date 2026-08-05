@@ -1,0 +1,819 @@
+{
+    "type": "real_conversation",
+    "id": "conv_4425",
+    "tenant_id": 1243,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "متى يجي المستئجر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ط"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "‏‪‪050 775 1388‬‬‏"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم مصروفات شهر يناير\n450 مكريوف مع مكوء \n160 وايت ماء\n130 مراوح\nالمجموع 740 ريال"
+        },
+        {
+            "role": "customer",
+            "text": "اجار الغرف 900\n600راتب\n15مغسله لحافات\n50شطاف مع المحبس\nالباقي 235"
+        },
+        {
+            "role": "customer",
+            "text": "الان احول لك باقي المبلغ"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل لي حساب الاهلي"
+        },
+        {
+            "role": "customer",
+            "text": "ما طلع اسم رامي مش عارف ليش"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم\nارسل الاهلي احول لك"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل الاهلي"
+        },
+        {
+            "role": "customer",
+            "text": "ظفته لكن عندما اخل على البنك ما يطلع الاسم"
+        },
+        {
+            "role": "customer",
+            "text": "لكن انا احاول"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "سداد الفرغات حق الابواب القزاز\nمكنسه كهرباء\nمكنسه للمسبح مع الي المسبح \nمروحه فوق الباب\nمساحه كبيره للحوش\nاصلاح الماصوره المكسوره حق المسبح\nهذا الملاحظه لي عندي"
+        },
+        {
+            "role": "customer",
+            "text": "سداد الفرغات حق الابواب القزاز\nمكنسه كهرباء\nمكنسه للمسبح مع الي المسبح \nمروحه فوق الباب\nمساحه كبيره للحوش\nاصلاح الماصوره المكسوره حق المسبح\nاصلاح باب غرفة النوم\nهذا الملاحظه لي عندي"
+        },
+        {
+            "role": "customer",
+            "text": "طيب اخلي واحد يزبط لي البنك واحول لك ابشر ياغالي"
+        },
+        {
+            "role": "customer",
+            "text": "transfer-receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "حولت لك الباقي لي عندي"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "طيب ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر بعزك"
+        },
+        {
+            "role": "customer",
+            "text": "لاتقلق الاستراحه جاهزه في اي وقت"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "0555553233"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "اطلب لنا وايت"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "🌙نهنئكم بحلول شهر رمضان المبارك، نسأل الله أن يعيننا وإياكم على صيامه وقيامه، وأن يتقبل منا ومنكم صالح الأعمال.\n\nكل عام وأنتم بخير"
+        },
+        {
+            "role": "customer",
+            "text": "ولله ما عندي فلوس اطلب"
+        },
+        {
+            "role": "customer",
+            "text": "155"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طلبيات الاستراحه\n1مكنسه كهربائيه \n2 مكنسه مسبح مع الي\n3 اصلاح الشاشه\n4 غسيل الستائر \n5 اصلاح الفتحات حق الابواب الزجاج \n6 مساحة حوش"
+        },
+        {
+            "role": "customer",
+            "text": "‏‪050 968 5635‬‏"
+        },
+        {
+            "role": "customer",
+            "text": "transfer-receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "900 الاجار\n600الراتب\n155 وايت ماء\n145 الباقي حولتها لحسابك\nالباقي 0"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "خواتم مباركه ان شاء الله تقبل الله منا ومنكم صالح الاعمال"
+        },
+        {
+            "role": "customer",
+            "text": "1مكنسه كهربائيه نظافه الاستراحه\n2 مكنسه زائد لي للمسبح \n3 مناديل"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "حدد لي السعر لو تكرمت"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل الفديوهات"
+        },
+        {
+            "role": "customer",
+            "text": "الراجل منظر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "الزبون جاء لي يستئجر"
+        },
+        {
+            "role": "customer",
+            "text": "قال لمدة يومين"
+        },
+        {
+            "role": "customer",
+            "text": "طبعٱ الزبو من طرفكم"
+        },
+        {
+            "role": "customer",
+            "text": "لو تكرمت ياغالي اطلب لنا وايت ماء"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الاسم:\nعلي ناصر يحيى العطافي \r\n\nالبنك:: \nالبنك الأهلي السعودي \r\n\nالآيبان: \nSA2710000011100146004201 \r\n\nرقم الحساب: \n11100146004201 \r\n\nرمز تعريف المصرف سويفت: \nNCBKSAJE"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب ياغالي"
+        },
+        {
+            "role": "customer",
+            "text": "مكنسه كهربائيه \nواحد كلوركس بلاط \nواحد ديتول \nمساحه حوش كبير"
+        },
+        {
+            "role": "customer",
+            "text": "حبه ريحه نفس الاول اللي جبتها في المطبخ ابو عيدان"
+        },
+        {
+            "role": "customer",
+            "text": "حبتين ريحه نفس الاول اللي جبتها اللي فيها عيدان صغير جيب حبتين واحده المجلس في احد غرفه النوم كويس"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "متي تجي"
+        },
+        {
+            "role": "customer",
+            "text": "انا خرجت مشوار"
+        },
+        {
+            "role": "customer",
+            "text": "خلي الاغراض بعد العيد\nالامور تحت السيطره"
+        },
+        {
+            "role": "customer",
+            "text": "الاستراحه تلق"
+        },
+        {
+            "role": "customer",
+            "text": "لا تشيل هم ياغالي"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "دخل المتسئجر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الله يحفظك ياغالي ربنا يحفظك"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر يا غالي اي شي امر"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم ياغالي"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "المويه وضعها طيب"
+        },
+        {
+            "role": "customer",
+            "text": "طيب ابشر ياغالي"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب ياغالي حلو ياغالي يكون قسين"
+        },
+        {
+            "role": "customer",
+            "text": "طيب عندما تجي انت تخطط كويس"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اليوم جبت لسباك 50 ريال الصلاح التهريب غير محبس في نفس الدينمو"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "جاهزه"
+        },
+        {
+            "role": "customer",
+            "text": "فيه شي"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "ياهلا وغلا"
+        },
+        {
+            "role": "customer",
+            "text": "ارحب"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "‏‪056 733 9132‬‏"
+        },
+        {
+            "role": "customer",
+            "text": "ريان با نافع"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

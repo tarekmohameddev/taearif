@@ -9,6 +9,8 @@ use App\Domain\Ai\DTOs\LlmRequest;
 use App\Domain\Ai\Services\LlmDriverFactory;
 use App\Domain\Ai\Services\UsageRecorder;
 use App\Domain\Communication\WhatsApp\Bot\CrmFlywheelService;
+use App\Domain\RealEstateAgent\State\BriefMerger;
+use App\Domain\RealEstateAgent\State\CustomerBrief;
 use App\Models\AiCustomerProfile;
 use App\Models\Message;
 use App\Models\WaConversationAiState;
@@ -110,6 +112,19 @@ PROMPT;
                 return;
             }
 
+            // Route fact updates through BriefMerger to avoid blind array_merge
+            // that could overwrite active search criteria with stale summary data.
+            $summaryFacts = $data['facts'] ?? [];
+            $currentBrief = CustomerBrief::fromArray((array) ($state->facts ?? []));
+            $merger       = new BriefMerger();
+            // Only merge narrative facts (name, tone, urgency) — not search criteria
+            // that the customer may have updated since the summary window.
+            $narrativeFacts = array_filter([
+                'customer_name' => $summaryFacts['name'] ?? null,
+                'urgency'       => $summaryFacts['urgency'] ?? null,
+            ], fn ($v) => $v !== null && $v !== '');
+            $mergedBrief = $merger->merge($currentBrief, $narrativeFacts);
+
             $state->update([
                 'summary_through_message_id' => $lastMessageId,
                 'situation'    => $data['situation'] ?? $state->situation,
@@ -117,7 +132,7 @@ PROMPT;
                 'commitments'  => $data['commitments'] ?? $state->commitments,
                 'objections'   => $data['objections'] ?? $state->objections,
                 'tone'         => $data['tone'] ?? $state->tone,
-                'facts'        => array_merge($state->facts ?? [], $data['facts'] ?? []),
+                'facts'        => $mergedBrief->toArray(),
             ]);
 
             // Update customer profile with durable facts

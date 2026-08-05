@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Communication\WhatsApp\Bot;
 
-use App\Domain\Communication\WhatsApp\Bot\DTOs\BotTurnResult;
+use App\Domain\RealEstateAgent\Brain\Employee;
+use App\Domain\RealEstateAgent\Brain\EmployeeTurnResult;
 use App\Models\AiCustomerProfile;
 use App\Models\BotUnansweredQuestion;
 use App\Models\Conversation;
@@ -33,7 +34,7 @@ final class SandboxService
     private const SANDBOX_PHONE_DEFAULT = '+966500000001';
 
     public function __construct(
-        private readonly BotOrchestrator $orchestrator,
+        private readonly Employee $employee,
     ) {}
 
     /**
@@ -85,17 +86,18 @@ final class SandboxService
 
         $conversation->update(['last_message_at' => now()]);
 
-        // Run the full orchestrator pipeline in sandbox/dry-run mode
+        // Run the full employee pipeline in sandbox/dry-run mode
         try {
-            $result = $this->orchestrator->handleSandbox(
-                tenantId: $tenantId,
+            $result = $this->employee->runTurn(
+                tenantId:       $tenantId,
                 conversationId: $conversationId,
-                waNumberId: $waNumberId,
-                customerPhone: $phone,
+                waNumberId:     $waNumberId,
+                customerPhone:  $phone,
                 triggerMessage: $inbound,
+                dryRun:         true,
             );
         } catch (\Throwable $e) {
-            Log::error('sandbox.run_turn.orchestrator_error', [
+            Log::error('sandbox.run_turn.employee_error', [
                 'conversation_id' => $conversationId,
                 'error'           => $e->getMessage(),
             ]);
@@ -105,36 +107,32 @@ final class SandboxService
             ];
         }
 
-        // Persist each outbound segment as a Message (no provider send)
-        $outboundIds = [];
-        foreach ($result->botSegments as $i => $segment) {
-            $outbound = Message::create([
+        // Persist the outbound reply as a Message (no provider send)
+        $replyText = $result->reply ?? '';
+        if ($replyText !== '') {
+            Message::create([
                 'conversation_id' => $conversationId,
                 'user_id'         => $tenantId,
-                'content'         => $segment,
+                'content'         => $replyText,
                 'direction'       => 'outbound',
                 'status'          => 'delivered',
                 'meta'            => [
                     'source'       => 'sandbox',
                     'wa_number_id' => $waNumberId,
-                    'bot_segment'  => $i + 1,
                     'outcome'      => $result->outcome,
                 ],
             ]);
-            $outboundIds[] = $outbound->id;
         }
 
         $conversation->update(['last_message_at' => now()]);
 
-        // Count messages for turn index
         $turnIndex = (int) Message::where('conversation_id', $conversationId)
             ->where('direction', 'inbound')
             ->count();
 
-        // Load fresh AI state for metadata
         $aiState = WaConversationAiState::where('conversation_id', $conversationId)->first();
 
-        return $this->buildTurnResponse($result, $conversation, $turnIndex, $aiState);
+        return $this->buildEmployeeTurnResponse($result, $conversation, $turnIndex, $aiState);
     }
 
     /**
@@ -248,45 +246,25 @@ final class SandboxService
     // ─────────────────────────────────────────────────────────────────────────
 
     /** @return array<string, mixed> */
-    private function buildTurnResponse(
-        BotTurnResult $result,
+    private function buildEmployeeTurnResponse(
+        EmployeeTurnResult $result,
         Conversation $conversation,
         int $turnIndex,
         ?WaConversationAiState $aiState,
     ): array {
         return [
-            // Backwards-compatible keys
-            'reply'           => $result->replyText,
-            'confidence'      => $result->botReply?->confidence,
-            'needs_human'     => $result->botReply?->needsHuman,
-            'handoff_reason'  => $result->botReply?->handoffReason,
-            'facts_update'    => $result->botReply?->factsUpdate,
-            'next_question'   => $result->botReply?->nextQuestion,
-            'grounding'       => [
-                'passed'       => $result->groundingResult?->passed,
-                'failed_claims'=> $result->groundingResult?->failedClaims ?? [],
-            ],
-            'style'           => [
-                'passed' => $result->styleResult?->passed,
-                'issues' => $result->styleResult?->issues ?? [],
-            ],
-            'intent'          => $result->intent,
-            'difficulty'      => $result->difficulty,
-            'kb_chunks_used'  => $result->kbChunksUsed,
-            'properties_found'=> $result->propertiesFound,
-            'tokens'          => ['in' => $result->tokensIn, 'out' => $result->tokensOut],
-
-            // New sandbox-specific keys
-            'conversation_id' => $conversation->id,
-            'turn_index'      => $turnIndex,
-            'outcome'         => $result->outcome,
-            'skip_reason'     => $result->skipReason,
-            'bot_messages'    => $result->botSegments,
-            'trace'           => $result->trace,
-            'bot_paused_until'=> $aiState?->bot_paused_until?->toIso8601String(),
+            'reply'                => $result->reply,
+            'outcome'              => $result->outcome,
+            'reason'               => $result->reason,
+            'needs_human'          => $result->outcome === 'handoff',
+            'handoff_reason'       => $result->outcome === 'handoff' ? $result->reason : null,
+            'conversation_id'      => $conversation->id,
+            'turn_index'           => $turnIndex,
+            'bot_messages'         => $result->reply ? [$result->reply] : [],
+            'bot_paused_until'     => $aiState?->bot_paused_until?->toIso8601String(),
             'handoff_reason_state' => $aiState?->handoff_reason,
-            'facts'           => $aiState?->facts,
-            'opt_out_status'  => $aiState?->opt_out_status,
+            'facts'                => $aiState?->facts,
+            'opt_out_status'       => $aiState?->opt_out_status,
         ];
     }
 }

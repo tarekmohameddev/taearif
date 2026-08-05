@@ -1,0 +1,14 @@
+{
+    "type": "bug_regression",
+    "id": "bug_01_greeting_fails",
+    "description": "Greeting should not increment _failed_turns",
+    "turns": [
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        }
+    ],
+    "invariants": [
+        "no_availability_claim_without_search"
+    ]
+}

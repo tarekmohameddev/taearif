@@ -19,7 +19,10 @@ final class ComplianceService
         'لا أريد', 'ما أبي', 'اوقف', 'أوقف',
     ];
 
-    // Regulated topics that must be escalated — no LLM answer
+    // Regulated topics that must be escalated — no LLM answer.
+    // Multi-word phrases are matched as substrings; single-word tokens marked
+    // with /* advice_only */ require an adjacent question or advice verb before
+    // triggering (RC5 fix: prevents false positives from seller ad text like "24 صك").
     private const REGULATED_PHRASES = [
         'تمويل عقاري',  // mortgage
         'قرض عقاري',
@@ -27,15 +30,28 @@ final class ComplianceService
         'نسبة الفائدة',
         'الفائدة البنكية',
         'اشتراط البنك',
-        'صك',            // legal deed only if asking for advice
         'نزاع',
         'قضية',
         'محكمة',
         'توثيق شرعي',
-        'كفيل',          // guarantor — legal/financial advice territory
         'تفريغ الصك',   // deed transfer formalities
         'بنك التمويل',
         'قسط بنكي',     // bank instalment — implies financing product advice
+    ];
+
+    // Short tokens that are regulated ONLY when paired with an advice/question context.
+    // "كفيل" in a question context IS regulated; standalone "صك" in property
+    // listings is NOT — "مساحه بالصك 123م" simply means the deed-registered area,
+    // which is standard listing language. Deed-transfer formalities are handled by
+    // the phrase "تفريغ الصك" in REGULATED_PHRASES above.
+    private const REGULATED_ADVICE_ONLY = [
+        'كفيل',  // guarantor (financing/guarantee contract advice)
+        'نزاع',  // legal dispute (also in REGULATED_PHRASES; kept here for advice-only logic)
+    ];
+
+    // Payment-plan / instalment keywords — route to search_knowledge before escalating
+    private const PAYMENT_PLAN_KEYWORDS = [
+        'دفعات', 'دفع شهري', 'تقسيط', 'قسط', 'أقساط', 'بالتقسيط', 'خطة دفع',
     ];
 
     // Abuse / profanity triggers — escalate immediately
@@ -81,7 +97,7 @@ final class ComplianceService
         // 3. Regulated topics — check both with and without definite article prefix
         $normalizedStripped = ArabicNormalizer::stripDefiniteArticle($normalized);
         foreach (self::REGULATED_PHRASES as $phrase) {
-            $normPhrase = ArabicNormalizer::normalizeForSearch($phrase);
+            $normPhrase        = ArabicNormalizer::normalizeForSearch($phrase);
             $normPhraseStripped = ArabicNormalizer::stripDefiniteArticle($normPhrase);
             if (
                 str_contains($normalized, $normPhrase) ||
@@ -92,6 +108,30 @@ final class ComplianceService
                     'reason' => 'regulated_topic:' . $phrase,
                     'message'=> 'هذا الموضوع يحتاج متخصص. سأحوّلك لأحد فريقنا الآن.',
                 ];
+            }
+        }
+
+        // 3b. Short regulated tokens — only trigger when paired with advice/question context (RC5).
+        // Seller ad text like "عدد 24 صك" must NOT trigger; "كيف أحوّل الصك؟" MUST.
+        $advicePattern = '/[؟?]|ينفع|يصير|أقدر|كيف|هل |استفسار|نصيحة|ممكن |يجوز|ما\s+هو|ماهو|طريقة|خطوات/u';
+        if (preg_match($advicePattern, $inboundText)) {
+            foreach (self::REGULATED_ADVICE_ONLY as $token) {
+                $normToken = ArabicNormalizer::normalizeForSearch($token);
+                if (str_contains($normalized, $normToken)) {
+                    return [
+                        'action' => 'handoff',
+                        'reason' => 'regulated_topic:' . $token,
+                        'message'=> 'هذا الموضوع يحتاج متخصص. سأحوّلك لأحد فريقنا الآن.',
+                    ];
+                }
+            }
+        }
+
+        // 3c. Payment-plan questions — signal to search_knowledge first, not escalate.
+        // Return a special 'proceed_with_kb' action so Employee routes to knowledge search.
+        foreach (self::PAYMENT_PLAN_KEYWORDS as $kw) {
+            if (str_contains($normalized, ArabicNormalizer::normalizeForSearch($kw))) {
+                return ['action' => 'proceed_with_kb', 'reason' => 'payment_plan'];
             }
         }
 

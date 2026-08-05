@@ -1,0 +1,23 @@
+{
+    "type": "bug_regression",
+    "id": "bug_22_brief_preserved",
+    "description": "Brief must not lose city after second turn",
+    "turns": [
+        {
+            "role": "customer",
+            "text": "ابي شقة في الرياض"
+        },
+        {
+            "role": "bot",
+            "text": "ممتاز! ما هو الحد الأقصى لميزانيتك؟"
+        },
+        {
+            "role": "customer",
+            "text": "500 ألف"
+        }
+    ],
+    "invariants": [
+        "brief_city_preserved",
+        "no_bare_number_in_reply"
+    ]
+}

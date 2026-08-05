@@ -41,6 +41,11 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\ResubscribeWabaToEchoes::class,
         \App\Console\Commands\MineBotHistory::class,
         \App\Domain\Ai\Evaluation\EvaluateBotCommand::class,
+        \App\Console\Commands\EvaluateAgentCommand::class,
+        \App\Console\Commands\RecordAgentCassettes::class,
+        \App\Console\Commands\ExportAgentCorpus::class,
+        \App\Console\Commands\ReconcileAgentDeliveries::class,
+        \App\Console\Commands\EvaluateConversationsCommand::class,
     ];
 
     /**
@@ -168,6 +173,29 @@ class Kernel extends ConsoleKernel
         // Evaluate bot quality against the latest golden corpus (weekly on Sunday at 04:00 KSA).
         $schedule->command('ai:evaluate-bot --fail-on-regression')
             ->weeklyOn(0, '04:00')
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onOneServer();
+
+        // ── AI Employee v2 jobs ──────────────────────────────────────────────
+        // Nightly live judge: runs real conversations against live LLMs.
+        $schedule->command('ai:agent:evaluate --live')
+            ->dailyAt('03:30')
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onOneServer();
+
+        // Reconcile stuck delivery records every minute.
+        $schedule->command('ai:agent:reconcile-deliveries')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        // Export corpus weekly (Sunday 02:00) — keeps fixtures fresh.
+        $schedule->command('ai:agent:export-corpus')
+            ->weeklyOn(0, '02:00')
             ->timezone('Asia/Riyadh')
             ->withoutOverlapping()
             ->runInBackground()

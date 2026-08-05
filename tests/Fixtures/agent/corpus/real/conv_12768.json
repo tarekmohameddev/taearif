@@ -1,0 +1,827 @@
+{
+    "type": "real_conversation",
+    "id": "conv_12768",
+    "tenant_id": 1686,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/vt.tiktok.com\/ZSuLn6HYb\/"
+        },
+        {
+            "role": "customer",
+            "text": "ابغا الكاتلوج حق التصاميم للشقق"
+        },
+        {
+            "role": "customer",
+            "text": "وكم اسعاركم"
+        },
+        {
+            "role": "customer",
+            "text": "حدي 600"
+        },
+        {
+            "role": "customer",
+            "text": "ان شاء الله امر اشوفهم"
+        },
+        {
+            "role": "customer",
+            "text": "وارد لك"
+        },
+        {
+            "role": "customer",
+            "text": "لا بنك"
+        },
+        {
+            "role": "customer",
+            "text": "عدادات الكهرب مستقلة؟!"
+        },
+        {
+            "role": "customer",
+            "text": "اوراقه جاهزة؟"
+        },
+        {
+            "role": "customer",
+            "text": "امتثال و انهاء البناء؟"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "عليه تأمين؟"
+        },
+        {
+            "role": "customer",
+            "text": "كم تقريبا ع بال تطلع"
+        },
+        {
+            "role": "customer",
+            "text": "ع المبنى كامل ولا مقسم ع الشقق"
+        },
+        {
+            "role": "customer",
+            "text": "؟!"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "حلو"
+        },
+        {
+            "role": "customer",
+            "text": "باشوف مع البنك و اردلك"
+        },
+        {
+            "role": "customer",
+            "text": "ولسا بمر اشوف الشقق"
+        },
+        {
+            "role": "customer",
+            "text": "امين يارب وياك"
+        },
+        {
+            "role": "customer",
+            "text": "الراجحي"
+        },
+        {
+            "role": "customer",
+            "text": "يعطيك العافية"
+        },
+        {
+            "role": "customer",
+            "text": "سماح الزهراني"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🙏]"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "قاعدة اقدم ع البنك"
+        },
+        {
+            "role": "customer",
+            "text": "واحتاج منك الله يعافيك كذا ورقة بخصوص الشقة"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هذي"
+        },
+        {
+            "role": "customer",
+            "text": "نموذج A"
+        },
+        {
+            "role": "customer",
+            "text": "اذا ما عليك امر ترسلهم لي"
+        },
+        {
+            "role": "customer",
+            "text": "عشان اكمل البروسيس حق القرض العقاري"
+        },
+        {
+            "role": "customer",
+            "text": "مع البنك"
+        },
+        {
+            "role": "customer",
+            "text": "كم دور العمارة"
+        },
+        {
+            "role": "customer",
+            "text": "ما ابغا اعدي اكثر من 660"
+        },
+        {
+            "role": "customer",
+            "text": "لان حسبتي 600 بالضبط"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🙏]"
+        },
+        {
+            "role": "customer",
+            "text": "معلق معاي الابلكيشن"
+        },
+        {
+            "role": "customer",
+            "text": "بتواصل معاهم وارجع اقولك ايش الاوراق اللي يحتاجونها"
+        },
+        {
+            "role": "customer",
+            "text": "لعله خير"
+        },
+        {
+            "role": "customer",
+            "text": "الراجحي"
+        },
+        {
+            "role": "customer",
+            "text": "يحتاجون هوية المالك + الصك + رخصة البناء"
+        },
+        {
+            "role": "customer",
+            "text": "تبشر بالجنة"
+        },
+        {
+            "role": "customer",
+            "text": "شهادة اشغال ايضا"
+        },
+        {
+            "role": "customer",
+            "text": "هل العقار بيع عالخارطه او شراء وحده سكنيه؟"
+        },
+        {
+            "role": "customer",
+            "text": "وهذي"
+        },
+        {
+            "role": "customer",
+            "text": "وثيقة التأمين ضد العيوب الخفية"
+        },
+        {
+            "role": "customer",
+            "text": "الحين سؤال"
+        },
+        {
+            "role": "customer",
+            "text": "بما انه اول عقار بشتريه ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "لو لا سمح الله ان شاء الله م يصير بس نفرض صار شيء ع المبنى"
+        },
+        {
+            "role": "customer",
+            "text": "وانا مشتريه هذي الشقة بس الارض تعتبر ملك لمالك العمارة"
+        },
+        {
+            "role": "customer",
+            "text": "ما في تعويض او تأمين شيء مني مناك؟!"
+        },
+        {
+            "role": "customer",
+            "text": "اهاا"
+        },
+        {
+            "role": "customer",
+            "text": "طيب بيجي فاحص بكرة ان شاء الله ع 10 الليل"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح"
+        },
+        {
+            "role": "customer",
+            "text": "الاول"
+        },
+        {
+            "role": "customer",
+            "text": "مو مشكلة"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "يعطيك العافية أ. محمد"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "العمارة كم دور معليه؟"
+        },
+        {
+            "role": "customer",
+            "text": "3 ولا 4"
+        },
+        {
+            "role": "customer",
+            "text": "؟"
+        },
+        {
+            "role": "customer",
+            "text": "وكل دور فيه 3 شقق"
+        },
+        {
+            "role": "customer",
+            "text": "و الخامس فيه ملحقين"
+        },
+        {
+            "role": "customer",
+            "text": "الرابع لسا متاحة الشقة؟"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص يصير الرابع بدل الثاني اذا ما عليك امر"
+        },
+        {
+            "role": "customer",
+            "text": "ما تقصر"
+        },
+        {
+            "role": "customer",
+            "text": "الله يكتب اللي فيه الخير للجميع"
+        },
+        {
+            "role": "customer",
+            "text": "ماشاء الله اتاجرت"
+        },
+        {
+            "role": "customer",
+            "text": "طيب الثالث"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص بلغت الفاحص"
+        },
+        {
+            "role": "customer",
+            "text": "والله اني نمت"
+        },
+        {
+            "role": "customer",
+            "text": "بس خلاص كلمني وقال خلص"
+        },
+        {
+            "role": "customer",
+            "text": "الاثنين لو تكرمت"
+        },
+        {
+            "role": "customer",
+            "text": "هذولا شقتين مختلفة"
+        },
+        {
+            "role": "customer",
+            "text": "ولا الشقة اللي اخترتها؟"
+        },
+        {
+            "role": "customer",
+            "text": "هنا مكتوب الدور الثاني"
+        },
+        {
+            "role": "customer",
+            "text": "اوكيي"
+        },
+        {
+            "role": "customer",
+            "text": "فهمتك"
+        },
+        {
+            "role": "customer",
+            "text": "سماح الزهراني.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "هذا الفحص"
+        },
+        {
+            "role": "customer",
+            "text": "نسبة الرطوبة يقول ممكن تزيد مع الوقت"
+        },
+        {
+            "role": "customer",
+            "text": "ايش السبب"
+        },
+        {
+            "role": "customer",
+            "text": "طيب مو هو فحص الدور الثالث زي المتفق اعلاه؟!"
+        },
+        {
+            "role": "customer",
+            "text": "اوكيي \nخلاص توكلنا على الله"
+        },
+        {
+            "role": "customer",
+            "text": "بكمل الاجراءات مع البنك"
+        },
+        {
+            "role": "customer",
+            "text": "و يصير اول ما ارجع من ابها اجي اوقع العقد باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🙏]"
+        },
+        {
+            "role": "customer",
+            "text": "امين ومن قال"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "."
+        },
+        {
+            "role": "customer",
+            "text": "بيجيك اتصال"
+        },
+        {
+            "role": "customer",
+            "text": "ابغاها PDF"
+        },
+        {
+            "role": "customer",
+            "text": "وهذي بعد"
+        },
+        {
+            "role": "customer",
+            "text": "الشهاده الضريبيه الاعفاء ايضا احتاج"
+        },
+        {
+            "role": "customer",
+            "text": "الاوراق الي باقي احتاجها \nاقرار الرسوم المرفق لك . \nشهادة المسكن الاول \nشهاده الاعفاء الضريبي \nشهادة اتمام البناء"
+        },
+        {
+            "role": "customer",
+            "text": "الطلب فتحت وكامل جاهز بس المتبقي الاوراق هذي"
+        },
+        {
+            "role": "customer",
+            "text": "و وثيقة التأمين"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "."
+        },
+        {
+            "role": "customer",
+            "text": "ما ودكم تراعونا"
+        },
+        {
+            "role": "customer",
+            "text": "طيب بالله لا تنسى"
+        },
+        {
+            "role": "customer",
+            "text": "استاذ محمد"
+        },
+        {
+            "role": "customer",
+            "text": "العربون باذن الله بيوصل خلال 24 ساعة"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "رحت المكتب؟"
+        },
+        {
+            "role": "customer",
+            "text": "يعطيك العافية"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "قول لي من الاخر كم بتراعوني في الشقة ؟!"
+        },
+        {
+            "role": "customer",
+            "text": "لان 66 دفعة اولى مرررة كثير عليّ"
+        },
+        {
+            "role": "customer",
+            "text": "معي حول 40 الف بس"
+        },
+        {
+            "role": "customer",
+            "text": "وانا ناوية صراحة استثمر في الشقة"
+        },
+        {
+            "role": "customer",
+            "text": "دفعة اولى عن طريق البنك"
+        },
+        {
+            "role": "customer",
+            "text": "هي 5٪"
+        },
+        {
+            "role": "customer",
+            "text": "يعني لو تفاوضنا ع السعر"
+        },
+        {
+            "role": "customer",
+            "text": "بينزل عليّ شوي من الدفعة الاولى"
+        },
+        {
+            "role": "customer",
+            "text": "ع قد اللي بتنزله لي"
+        },
+        {
+            "role": "customer",
+            "text": "هي الشقة ب 660 ناخذ ال5٪؜ منها"
+        },
+        {
+            "role": "customer",
+            "text": "يطلع 66 الف"
+        },
+        {
+            "role": "customer",
+            "text": "هذي اول دفعة لازم تندفع كاملة"
+        },
+        {
+            "role": "customer",
+            "text": "فهمت عليّ؟!"
+        },
+        {
+            "role": "customer",
+            "text": "مع فوائدهم وتعرف البنوك"
+        },
+        {
+            "role": "customer",
+            "text": "."
+        },
+        {
+            "role": "customer",
+            "text": "شيل ال60 😂"
+        },
+        {
+            "role": "customer",
+            "text": "😭😭"
+        },
+        {
+            "role": "customer",
+            "text": "ها تكفى راعيني"
+        },
+        {
+            "role": "customer",
+            "text": "20؟ 30؟!"
+        },
+        {
+            "role": "customer",
+            "text": "اسأل بن نازح"
+        },
+        {
+            "role": "customer",
+            "text": "هيا نفداك"
+        },
+        {
+            "role": "customer",
+            "text": "لسا بصلحها"
+        },
+        {
+            "role": "customer",
+            "text": "قول لي كم من الاخر"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "ها نزل خمسة بعد"
+        },
+        {
+            "role": "customer",
+            "text": "لسا بعرضها عندك و تاخذ نسبة من الايجار"
+        },
+        {
+            "role": "customer",
+            "text": "هيا قول تم"
+        },
+        {
+            "role": "customer",
+            "text": "كفو"
+        },
+        {
+            "role": "customer",
+            "text": "كم يصير دامك فنان بالحساب"
+        },
+        {
+            "role": "customer",
+            "text": "الصدق مافيني من حسب"
+        },
+        {
+            "role": "customer",
+            "text": "645"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🙏]"
+        },
+        {
+            "role": "customer",
+            "text": "امين ومن قال"
+        },
+        {
+            "role": "customer",
+            "text": "اسمع ترا والله حوالة العربون ما وصلت حسابي للآن"
+        },
+        {
+            "role": "customer",
+            "text": "اول كلمة لهم قالو خلال 24 ساعة و زدت اتصلت عليهم قالو خلال 72 ساعة"
+        },
+        {
+            "role": "customer",
+            "text": "قلت اقول لك عشان تكون في الصورة بس"
+        },
+        {
+            "role": "customer",
+            "text": "وما تحسب اني العب"
+        },
+        {
+            "role": "customer",
+            "text": "ايي والله اني خايفة تفلح"
+        },
+        {
+            "role": "customer",
+            "text": "🥲"
+        },
+        {
+            "role": "customer",
+            "text": "."
+        },
+        {
+            "role": "customer",
+            "text": "اقول لك اذا تقدر حطها انت و ان جاتني حولتها عليك"
+        },
+        {
+            "role": "customer",
+            "text": "ان ما فيه كلافة"
+        },
+        {
+            "role": "customer",
+            "text": "او ننتظر الين يحولونها عليّ"
+        },
+        {
+            "role": "customer",
+            "text": "لكن والله اني خايفة"
+        },
+        {
+            "role": "customer",
+            "text": "تروح"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🙏]"
+        },
+        {
+            "role": "customer",
+            "text": "ما تقصر"
+        },
+        {
+            "role": "customer",
+            "text": "ان شاء الله خير"
+        },
+        {
+            "role": "customer",
+            "text": "اي باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "TransferReceipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "هذا العربون الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "و بيجي مقيم عقاري من بنك الراجحي باذن الله اول ما يتحدد متى بقول لك"
+        },
+        {
+            "role": "customer",
+            "text": "اعطيتهم رقمك في حال انا ما رديت"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "كيفك أ.محمد"
+        },
+        {
+            "role": "customer",
+            "text": "احد تواصل معاك بخصوص تقييم العقار؟!"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "صباح النور"
+        },
+        {
+            "role": "customer",
+            "text": "لا مو مشكلة"
+        },
+        {
+            "role": "customer",
+            "text": "انا مع وحدة اوريدي"
+        },
+        {
+            "role": "customer",
+            "text": "امين"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "بيتواصل معاك المقيم"
+        },
+        {
+            "role": "customer",
+            "text": "قال لي بعد العيد"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "لا والله"
+        },
+        {
+            "role": "customer",
+            "text": "بس تواصلت معي حقت البنك تقول لسا تحت الاجراء ينتظرون الموافقة"
+        },
+        {
+            "role": "customer",
+            "text": "عمومًا هو مرّ ولا لسا؟!"
+        },
+        {
+            "role": "customer",
+            "text": "اوه"
+        },
+        {
+            "role": "customer",
+            "text": "طيب كويس حمدلله"
+        },
+        {
+            "role": "customer",
+            "text": "اجل لسا الموافقه ع الدفعة الاولى"
+        },
+        {
+            "role": "customer",
+            "text": "ان شاء الله خير"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🙏]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا ايوه كلمتني"
+        },
+        {
+            "role": "customer",
+            "text": "بس تقول بكرة هي راجعه للدوام و بتشوف التفاصيل اكثر"
+        },
+        {
+            "role": "customer",
+            "text": "لان حاطين المبلغ قبل التفاوض"
+        },
+        {
+            "role": "customer",
+            "text": "اي حمدالله"
+        },
+        {
+            "role": "customer",
+            "text": "بس بعدل السعر"
+        },
+        {
+            "role": "customer",
+            "text": "و يصير باذن الله يتم الموضوع"
+        },
+        {
+            "role": "customer",
+            "text": "اللهم امين ومن قال"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "عملت hold للموضوع ع بال اجمع للدفعة الاولى"
+        },
+        {
+            "role": "customer",
+            "text": "طلعت اكثر من المتوقع"
+        },
+        {
+            "role": "customer",
+            "text": "والله م اعرف"
+        },
+        {
+            "role": "customer",
+            "text": "لكن خير ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "ببلغك باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🙏]"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

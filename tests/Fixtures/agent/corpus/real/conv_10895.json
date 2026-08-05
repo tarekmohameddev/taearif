@@ -1,0 +1,923 @@
+{
+    "type": "real_conversation",
+    "id": "conv_10895",
+    "tenant_id": 1732,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "احتاج شقة في مخطط8"
+        },
+        {
+            "role": "customer",
+            "text": "احتاج شقه مخطط8 \nالمساحه 200\nالسعر 400"
+        },
+        {
+            "role": "customer",
+            "text": "مطلوب شقة  للايجار فى حى النرجس مساحة 140 متر مكونة من 3 غرف نوم وملقط ومجلس ومطبخ بسعر 2000 ريال"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "كويس وبسوي وشوف"
+        },
+        {
+            "role": "customer",
+            "text": "وشوف"
+        },
+        {
+            "role": "customer",
+            "text": "حلو"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "بس عدله"
+        },
+        {
+            "role": "customer",
+            "text": "فيه غلط"
+        },
+        {
+            "role": "customer",
+            "text": "اها"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "لا ماستخدمته"
+        },
+        {
+            "role": "customer",
+            "text": "انا اصمم بنفسي"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام 👍🏻🫡"
+        },
+        {
+            "role": "customer",
+            "text": "ايه والله"
+        },
+        {
+            "role": "customer",
+            "text": "لونه كويس 🫡"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "كم رمز الشبكه"
+        },
+        {
+            "role": "customer",
+            "text": "ورسلي حسابك والباسورد"
+        },
+        {
+            "role": "customer",
+            "text": "احطه بالجهاز"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "كم رمز الشبكه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "رسلي ايميل جهازك والباسورد"
+        },
+        {
+            "role": "customer",
+            "text": "بدخله بجهازي"
+        },
+        {
+            "role": "customer",
+            "text": "اللي اخذته"
+        },
+        {
+            "role": "customer",
+            "text": "ايه كم"
+        },
+        {
+            "role": "customer",
+            "text": "مو عندي"
+        },
+        {
+            "role": "customer",
+            "text": "والايميل"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الرمز اللي جاك"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "العميل \nعلي \n‪+966 59 722 6440"
+        },
+        {
+            "role": "customer",
+            "text": "انا بروح تحتاج شي"
+        },
+        {
+            "role": "customer",
+            "text": "الجهاز تمام شغلته وكويس"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "والله طلعت من المكتب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل بالله جيب معك جوال العمل حطه عند مكتبي"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "لو الجوال جاهزه امره"
+        },
+        {
+            "role": "customer",
+            "text": "اضيفني في قروب العروض"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل عروض الايجار اللي عندي"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل تروح عند اضافة الاعضاء"
+        },
+        {
+            "role": "customer",
+            "text": "او رسلي رابط  القروب انضم فيه"
+        },
+        {
+            "role": "customer",
+            "text": "🫡"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل عندي عقد ايجار"
+        },
+        {
+            "role": "customer",
+            "text": "رسلي السجل اللي ادخل فيه المنصه"
+        },
+        {
+            "role": "customer",
+            "text": "هو سجل ام سعود"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "انت جاي فيصل"
+        },
+        {
+            "role": "customer",
+            "text": "عشان نشوف الموقع ومنصات عقار"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل اذا مو جاي بروح والله تعبانه ومسخنه"
+        },
+        {
+            "role": "customer",
+            "text": "وبشان العقد العميل انتظر منه الرد ارسلت له اكثر من شقه ولسه يشاور اهله"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل اذا بداوم 7:30  \nبروح 11:30"
+        },
+        {
+            "role": "customer",
+            "text": "مثل ماقلت لك بداوم 8 وروح الساعه 12:30"
+        },
+        {
+            "role": "customer",
+            "text": "كذا العملاء يكون اصلن وقت جيتهم"
+        },
+        {
+            "role": "customer",
+            "text": "مطلوب شقة  للايجار فى حى النرجس مساحة 140 متر مكونة من 3 غرف نوم وملقط ومجلس ومطبخ بسعر 2000 ريال"
+        },
+        {
+            "role": "customer",
+            "text": "ابو زياد \n+966 53 115 7710"
+        },
+        {
+            "role": "customer",
+            "text": "محدث الارقام والمواقع --.xlsx"
+        },
+        {
+            "role": "customer",
+            "text": "تركي\n+966 50 015 0081"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 16.949981689453, 42.560520172119]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "انشرها"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/www.al-tamayz.com\/ar\n\nلتسجيل طلبك، \nقم بزيارة موقعنا العقاري \nلشركة أصحاب التميز العقارية \n\nالخطوات \n👇🏻\nاضغط الثلاث شرطات على الجهة اليسار \nومن ثم اضغط - اطلب عقارك \n\nوبعدها سجل كامل طلبك وابشر\n\n بتوفير طلبك باسرع وقت ممكن . \n\nوفالك التوفيق عميلانا العزيز"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "حلو"
+        },
+        {
+            "role": "customer",
+            "text": "👍🏻"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل اتواصل مع العملاء اللي موحودين من اول اشوف لو حابين يستكملون الطلبات"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل لا تنسى جيب معك الجوال لو بترحع المكتب"
+        },
+        {
+            "role": "customer",
+            "text": "رسل لك مراد من جوال الدوام برقم ابو كنان"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "ضبط او تحتاج اعدل عليه"
+        },
+        {
+            "role": "customer",
+            "text": "عشان تنزله في تبك توك"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 16.949920654297, 42.558361053467]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ام اصيل \n‪+966 53 438 7186"
+        },
+        {
+            "role": "customer",
+            "text": "هذي صاحبة العماره"
+        },
+        {
+            "role": "customer",
+            "text": "هي ساكنه بنفس العماره"
+        },
+        {
+            "role": "customer",
+            "text": "اي احد بيشوفها بتفتح له"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "وشو"
+        },
+        {
+            "role": "customer",
+            "text": "تم ايشر"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "🫡"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "الساعه كم يجيك ابو كنان يوم السبت"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل هذي"
+        },
+        {
+            "role": "customer",
+            "text": "اقوله وشو"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل رسلي الباسورد تبع التطبيق"
+        },
+        {
+            "role": "customer",
+            "text": "نظيف فيه الايجارات"
+        },
+        {
+            "role": "customer",
+            "text": "والاستثمارات"
+        },
+        {
+            "role": "customer",
+            "text": "وبشوف محلات للايجار كمان"
+        },
+        {
+            "role": "customer",
+            "text": "TransferReceipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد ايجار بسويه الحين"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "حصلت لك مكالمه"
+        },
+        {
+            "role": "customer",
+            "text": "تم عمل العقد بنجاح وحطيت توثيق على العقد على المالك"
+        },
+        {
+            "role": "customer",
+            "text": "🫡"
+        },
+        {
+            "role": "customer",
+            "text": "يعني هو اللي يسدد المنصة من عنده"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل احتاج الجوال والله ضروري عشان اتابع العملاء تبع التمليك"
+        },
+        {
+            "role": "customer",
+            "text": "عادي بروح له لو تبغى ماعندك مشكله"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ذا"
+        },
+        {
+            "role": "customer",
+            "text": "رسلي موقعه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "+966 53 387 4333"
+        },
+        {
+            "role": "customer",
+            "text": "هذا"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل اجى ولا باقي"
+        },
+        {
+            "role": "customer",
+            "text": "ابي الشقه اللي في العماره عندكم"
+        },
+        {
+            "role": "customer",
+            "text": "هذا"
+        },
+        {
+            "role": "customer",
+            "text": "ايش اقوله"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل بمشي او تحتاج شي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ماعليك بجيب رقمهم ان شااءالله"
+        },
+        {
+            "role": "customer",
+            "text": "ليه"
+        },
+        {
+            "role": "customer",
+            "text": "اوك ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ايش قصده بالعروض اللي من عندي"
+        },
+        {
+            "role": "customer",
+            "text": "العروض اللي عندي من المالك مباشر"
+        },
+        {
+            "role": "customer",
+            "text": "مااخذها من مسوق ابد"
+        },
+        {
+            "role": "customer",
+            "text": "انا ريهام علي موسى هزازي هوية وطنية رقم 1102969654 باني قد تنازلت عن السجل التجاري رقم 5901012661 و رقم الموحد 7006740083 والاسم التجاري شركة تموينات الامل الراقي للمواد الغذائية الكائنة في طريق الملك فهد حي الزهور في ابوعريش بما له وعليه من التزامات وحقوق واصول ومستحقات ماليه وإدارية وفنية الى ابراهيم احمد قاري بصلي هوية وطنية رقم\n106591444 ولها الحق في مراجعة جميع الدوائر الحكومية ذات العلاقة وانهاء كافة الإجراءات مطلوبة لاستكمال نقل السجل التجاري المذكور وكل ما يتعلق به من حسابات بنكية وغيرها."
+        },
+        {
+            "role": "customer",
+            "text": "فيصل بروح الحين الانصالات شريحة البيت ماتستغل بروح اشوف اغيرها وارجع نص ساعه مابتاخر"
+        },
+        {
+            "role": "customer",
+            "text": "قبل يطلع مراد يصور"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل بروح الحين الانصالات شريحة البيت ماتشتغل بروح اشوف اغيرها وارجع نص ساعه مابتاخر"
+        },
+        {
+            "role": "customer",
+            "text": "تمام فيصل"
+        },
+        {
+            "role": "customer",
+            "text": "🫡"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل عادي اخذ جهاز ابو نواف وياخذ حهازي عشان صور عروض للعقارات انزلها في للموقع ورتبها اللي كويس منها"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل بروح اجيب اكل عشر دقايق"
+        },
+        {
+            "role": "customer",
+            "text": "ابو نواف موجود"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "عنندنا عزايم وللحين ماشريت شي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل تكفى طلبتك \nعلى تخليني اداوم لنهاية رمضان وبدون راتب والله العظيم اني باشد الحاجه للراتب وعندي التزامات لازم ادفعها قسم بالله حول 80 الف"
+        },
+        {
+            "role": "customer",
+            "text": "وانا بالشغل ولله مابقصر وانا شفت بعينك من يديك اليمين ليدك اليسار ابشر بعزك"
+        },
+        {
+            "role": "customer",
+            "text": "وانا بالشغل ولله مابقصر وانت شفت بعينك من يديك اليمين ليدك اليسار ابشر بعزك"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "انت فقط مستخدم ماعندك اي صلاحيه"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل متى بتكون الاجازه"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل \nبالله خل الاجازه من اليوم عشان اطلع السوق كمل اغراضي لانه ينطلع الديره \nقبل ليلة العيد \nواصلن مافيه احد يجي \nوجوال العمل مفتوح لو احد يسال ارد عليه على طول ماعليك"
+        },
+        {
+            "role": "customer",
+            "text": "لو احد يبغى ايجار عادي بروح له المكتب ماعليك بضبط الوضع \nبس اصلن كلهم والله قال بعد العيد يشوفون الايجارات"
+        },
+        {
+            "role": "customer",
+            "text": "لو احد يبغى ايجار عادي بروح له المكتب ماعليك بضبط الوضع \nبس اصلن كلهم والله قالو بعد العيد يشوفون الايجارات"
+        },
+        {
+            "role": "customer",
+            "text": "شكرا"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "اللي مناسبها نزلها"
+        },
+        {
+            "role": "customer",
+            "text": "او تحتاج تعديل"
+        },
+        {
+            "role": "customer",
+            "text": "🫡"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل كل عام وانت بخير وعيدك سعيد\nالله يسعدك بداوم من ثالث العيد\nلان عقيقة ولد بنت اختي رابع العيد\nعادي"
+        },
+        {
+            "role": "customer",
+            "text": "يعني رابع العيد بحضر العزومه"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير \nفيصل اداوم اليوم العصر"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل بطلع على 9:30"
+        },
+        {
+            "role": "customer",
+            "text": "مافيه احد"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير \nكيف حالك \nفيصل مع اذان المغرب بروح اخذ ليا قهوه هو قريب 5 دقائق بالكثير وانا بالمكتب ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "🫡"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل \nبدخل عقار بجوالك"
+        },
+        {
+            "role": "customer",
+            "text": "الرقم اللي جاك"
+        },
+        {
+            "role": "customer",
+            "text": "🫡"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل الله يسعدك تقدر تحول لي الراتب اليوم 25 في الشهر"
+        },
+        {
+            "role": "customer",
+            "text": "عطيتني اول 1500"
+        },
+        {
+            "role": "customer",
+            "text": "اللي كاش"
+        },
+        {
+            "role": "customer",
+            "text": "مو قلت هذي اللي كانت اول عندك"
+        },
+        {
+            "role": "customer",
+            "text": "مو من راتب قلت"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير\nفيصل \nجاني مدري هو تسميم او وشو\nمن ااصباح وانا استغرغ ومغص\nالحين تو اكلت بتاخر نصف ساعه بشوف الوضع اذا تمام ومااستفرغت بداوم"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير\nفيصل \nجاني مدري هو تسمم او وشو\nمن ااصباح وانا استغرغ ومغص\nالحين تو اكلت بتاخر نصف ساعه بشوف الوضع اذا تمام ومااستفرغت بداوم"
+        },
+        {
+            "role": "customer",
+            "text": "داومت فيصل"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل على 9:30 \nبروح والله مغص مدري شكله تسمم"
+        },
+        {
+            "role": "customer",
+            "text": "0563702151\nحسن الشهراني \nيحتاج تطوير عقاري"
+        },
+        {
+            "role": "customer",
+            "text": "السموحه فيصل \nجتنتي نزله معوية وتو طلعت من المستشفى"
+        },
+        {
+            "role": "customer",
+            "text": "بداوم بعد المغرب ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "قبل المغرب مداومه"
+        },
+        {
+            "role": "customer",
+            "text": "خذ راحتك"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته \nفيصل \nماقدرت اداوم والله \nتعبانه"
+        },
+        {
+            "role": "customer",
+            "text": "السموحه منك"
+        },
+        {
+            "role": "customer",
+            "text": "الشر مايجيك والله من ثلاث ايام اداوم وعندي نزله معويه واليوم من الصباح مانمت الا ساعه من التعب"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "بحاول ادوم فيصل باكل وخذ حبوب وداوم"
+        },
+        {
+            "role": "customer",
+            "text": "الله ييسر"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسعدك تمام شكرا"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

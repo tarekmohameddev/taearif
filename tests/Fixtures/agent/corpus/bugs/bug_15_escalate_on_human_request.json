@@ -1,0 +1,14 @@
+{
+    "type": "bug_regression",
+    "id": "bug_15_escalate_on_human_request",
+    "description": "Must escalate when customer explicitly requests a human",
+    "turns": [
+        {
+            "role": "customer",
+            "text": "ابغى أتكلم مع موظف حقيقي"
+        }
+    ],
+    "invariants": [
+        "escalation_fired"
+    ]
+}

@@ -1,0 +1,699 @@
+{
+    "type": "real_conversation",
+    "id": "conv_6228",
+    "tenant_id": 1635,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الاسم: \nرقم الهاتف: \nرقم الهوية:\nتاریخ الميلاد: \nبدايه العقد:\nرقم الشقه:\nإيجار الشقه:\nمده العقد : سنه \nاجمالي قيمه العقد :"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "غيث"
+        },
+        {
+            "role": "customer",
+            "text": "الغرفتين وصاله ب 3500 وننزل معه"
+        },
+        {
+            "role": "customer",
+            "text": "زين"
+        },
+        {
+            "role": "customer",
+            "text": "الصامل"
+        },
+        {
+            "role": "customer",
+            "text": "الشيخ"
+        },
+        {
+            "role": "customer",
+            "text": "بيجيك شقه 39 انت مصلح عقده حط عقده سنه"
+        },
+        {
+            "role": "customer",
+            "text": "انتهى"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الشيخ"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "وش اكتب ب اللوحه"
+        },
+        {
+            "role": "customer",
+            "text": "احسنت"
+        },
+        {
+            "role": "customer",
+            "text": "حلو"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "بعطيك رقم هويه سوا الغاء له"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "بعدين يخوي مدق علي الا 2 السوق بارد ولا ويش"
+        },
+        {
+            "role": "customer",
+            "text": "اي باب"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "من جهت الصيدليه"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "حصلهم اسمع قله مبقا الا 3  الباقي محجوز افضل"
+        },
+        {
+            "role": "customer",
+            "text": "عشان تروح"
+        },
+        {
+            "role": "customer",
+            "text": "بوريه ازين شي"
+        },
+        {
+            "role": "customer",
+            "text": "عنده العامل توي مشيت انا"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/nhvAhFYPiNKkYDRo7?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هاذي عند واحد من العيال \nعلى كلامه هو الوكيل"
+        },
+        {
+            "role": "customer",
+            "text": "هاه"
+        },
+        {
+            "role": "customer",
+            "text": "كيفها"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "يقول يسوم"
+        },
+        {
+            "role": "customer",
+            "text": "خله يسوم"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلتلك واحد طلاب استاجرو قلت اكتب العقد عند غيث"
+        },
+        {
+            "role": "customer",
+            "text": "تفاهم معهم عاد"
+        },
+        {
+            "role": "customer",
+            "text": "اقوله العصر ولا تنجزه الحين"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "1110542360"
+        },
+        {
+            "role": "customer",
+            "text": "اسمع ابيك تلغي ذا عقد على شقه 4 تدخل وتضربله الغاء"
+        },
+        {
+            "role": "customer",
+            "text": "384608010094379"
+        },
+        {
+            "role": "customer",
+            "text": "يقول مهي 2 الاراضي يقول 6"
+        },
+        {
+            "role": "customer",
+            "text": "عندك عروض شقق عمال شي"
+        },
+        {
+            "role": "customer",
+            "text": "اجانب"
+        },
+        {
+            "role": "customer",
+            "text": "عندك غرفه وصاله عوائل"
+        },
+        {
+            "role": "customer",
+            "text": "سنوي"
+        },
+        {
+            "role": "customer",
+            "text": "غيث شلونك بكره بنكتب عقدين عندك اوكي"
+        },
+        {
+            "role": "customer",
+            "text": "عندي واحد اخذ ب القديمه 14 والجديده 10 بعد جاء عن طريق اليماني ورخصتي تطلع بكره"
+        },
+        {
+            "role": "customer",
+            "text": "ف المكتب"
+        },
+        {
+            "role": "customer",
+            "text": "عطني حساب المكتب حسابك"
+        },
+        {
+            "role": "customer",
+            "text": "GetCertificatePdf.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "GetCertificatePdf.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "GetCertificatePdf.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "تم بس يرد علي وزبطلك الامور"
+        },
+        {
+            "role": "customer",
+            "text": "بيطلب تسجل بينات فقط والباقي هو يكمله"
+        },
+        {
+            "role": "customer",
+            "text": "اكتب الطلب الي تبي كامل عشان احوله الرساله"
+        },
+        {
+            "role": "customer",
+            "text": "تراي اعتبر جديد شوي هذا الي يخليني اسأل بس بعدين راح اصير مدير كبير"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/share.google\/OrCrio4bsSVqnvpM2"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "لالا"
+        },
+        {
+            "role": "customer",
+            "text": "انت تدفع  بيعلمك"
+        },
+        {
+            "role": "customer",
+            "text": "هو بيضيفها ولك"
+        },
+        {
+            "role": "customer",
+            "text": "سجلو دخول عرفت"
+        },
+        {
+            "role": "customer",
+            "text": "وعطني الرمز"
+        },
+        {
+            "role": "customer",
+            "text": "لاتدفع شي خله يشوف هو انت بس ادخل وزبط الدخول وهو يحط الدورات المطلوبه  وتدخل بعده وتدفع هو مياخذ شي الا اخر شي لاتمت الرخصه في يدك قال حولي حقك"
+        },
+        {
+            "role": "customer",
+            "text": "رجال ثقه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "لا بدراني حربي"
+        },
+        {
+            "role": "customer",
+            "text": "معرفه ترى طحت عليه كذا من التك توك وسبحان الله كلامه واضح وكل شي واضح"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل رابح البدراني الحربي"
+        },
+        {
+            "role": "customer",
+            "text": "تبون رقمه معندي مشكله تبونه عن طريقي ازهلو"
+        },
+        {
+            "role": "customer",
+            "text": "خلها"
+        },
+        {
+            "role": "customer",
+            "text": "عطني الرمز"
+        },
+        {
+            "role": "customer",
+            "text": "هو يزبط الوضع الهويه والرمز"
+        },
+        {
+            "role": "customer",
+            "text": "رقم الهويه"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "السجل ب اسمها صح"
+        },
+        {
+            "role": "customer",
+            "text": "ضفت له الدورات"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "خله بس يسددها وانا اختبرها عنه"
+        },
+        {
+            "role": "customer",
+            "text": "بشر"
+        },
+        {
+            "role": "customer",
+            "text": "عرفت تدفع عشان متجي الصبح الا هي جاهره"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص تم ان شاء الله يقول متصحى الا وهي عندك قلت تم"
+        },
+        {
+            "role": "customer",
+            "text": "ولا انت"
+        },
+        {
+            "role": "customer",
+            "text": "Google.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Google.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Google.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ووجهك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "وش اكتب نص العرض"
+        },
+        {
+            "role": "customer",
+            "text": "291608010111936"
+        },
+        {
+            "role": "customer",
+            "text": "400"
+        },
+        {
+            "role": "customer",
+            "text": "الرجال  حوله 400 تراه كلمني ذا نستفيد منه لو بغا احد شي"
+        },
+        {
+            "role": "customer",
+            "text": "اتعابه"
+        },
+        {
+            "role": "customer",
+            "text": "تبشر ب السعد"
+        },
+        {
+            "role": "customer",
+            "text": "لاهنت"
+        },
+        {
+            "role": "customer",
+            "text": "اسمع يقول 9 الصبح"
+        },
+        {
+            "role": "customer",
+            "text": "ويجيك العلم الاكيد"
+        },
+        {
+            "role": "customer",
+            "text": "هو قال بأ"
+        },
+        {
+            "role": "customer",
+            "text": "بأجركياه هو مستاجره عرفت"
+        },
+        {
+            "role": "customer",
+            "text": "وهو مدير المحل"
+        },
+        {
+            "role": "customer",
+            "text": "طيب ابشر بكره 9 الصبح لا ردلي اروح انا وياك له العصر ونزبط كل شي"
+        },
+        {
+            "role": "customer",
+            "text": "الي تبيه خذه منه"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ابي \n اراضي للايجار تجارية\nشرق فقط ومده طويله الايجار \nيبي يبني عليها ويطورها"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "حد 2500"
+        },
+        {
+            "role": "customer",
+            "text": "الشيخ"
+        },
+        {
+            "role": "customer",
+            "text": "كم الغرف الافراذ"
+        },
+        {
+            "role": "customer",
+            "text": "الافرد"
+        },
+        {
+            "role": "customer",
+            "text": "ليش معلمتني  طلب غرفه واحد كثير"
+        },
+        {
+            "role": "customer",
+            "text": "‏السلام عليكم ورحمة الله وبركاته\n‏دورين للإيجار بحي اشبلية\nمدخل سيارة \nحوش\nمجلس \nمقلط \n3غرف\n‏صالة\nمطبخ\n3دورة مياه\nسطح \nغرفة خادمة+دورة مياة\n‏قريبة من جميع الخدمات\n‏السعر 50 الف\nالكهرباء مستقل\n‏والصلاة والسلام على نبينا محمد"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 24.80470085144, 46.804176330566]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ارحب"
+        },
+        {
+            "role": "customer",
+            "text": "سكن عمال متوفر"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "ف المكتب بيجيك واحد اخذ شقه 6"
+        },
+        {
+            "role": "customer",
+            "text": "ثبته خذ عربون لو 300"
+        },
+        {
+            "role": "customer",
+            "text": "نكتب عقده الخميس ونكمل الامور معنا فيها ابو احمد  السعي 1000 كامل مع كتابه العقد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "انا نسيت 😂 طلعت بخلص شغله ونسيت  جعلك ذخر ي مسلذ"
+        },
+        {
+            "role": "customer",
+            "text": "مسلط"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}
