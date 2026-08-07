@@ -2,6 +2,7 @@
 
 > **Status:** Production (replaced the v1 heuristic bot entirely)
 > **Entry point:** `app/Domain/RealEstateAgent/Brain/Employee::runTurn()`
+> **Last updated:** 2026-08-06 — reflects all eval-cycle fixes through Batch 2
 
 ---
 
@@ -20,14 +21,14 @@ The v1 bot had four structural defects that generated endless instability:
 
 | Law | Mechanism |
 |-----|-----------|
-| **Single reply authority** | Only `ReplyRenderer` emits customer text. No guard may rewrite; guards may only reject. |
+| **Single reply authority** | Only `ReplyRenderer` emits customer text. No guard may rewrite; guards may only reject or redact. |
 | **Rendered facts** | The model outputs `{{p:ID\|field}}` placeholders. PHP replaces them from database rows. Hallucinated prices are structurally impossible. |
 | **Model-owned understanding** | No regex NLU. The model calls `record_customer_fact` with a structured schema. PHP handles identity resolution (LocationResolver) — a lookup, not comprehension. |
 | **Replayability** | Every turn writes a full trace to `ai_turn_traces`. Any trace can replay offline using cassette recordings. |
 
 ---
 
-## Architecture flow
+## Architecture flow (current)
 
 ```
 Inbound message (AutomationEngine / TranscribeAudio)
@@ -35,42 +36,89 @@ Inbound message (AutomationEngine / TranscribeAudio)
     ▼
 Employee::runTurn()
     │
-    ├── TurnGate: loop guard, distributed lock, opt-out, budget, media, idempotency
+    ├── TurnGate: loop guard, distributed lock, opt-out check, monthly budget,
+    │   media gate, idempotency key
     │
-    ├── Playbook (from wa_ai_configs.playbook JSON column)
+    ├── Load WaAiConfig + Playbook (from wa_ai_configs.playbook JSON column)
     │
-    ├── ComplianceService: opt-out / regulated topics / abuse (pre-check)
+    ├── ComplianceService (pre-check)
+    │     ├── Opt-out keywords → pause bot
+    │     ├── Abuse triggers → handoff
+    │     ├── Regulated phrases (تمويل عقاري، تفريغ الصك، ...) → handoff
+    │     ├── REGULATED_ADVICE_ONLY (كفيل، نزاع) → handoff only when paired
+    │     │   with advice/question context (prevents false positives on listing text)
+    │     └── Payment-plan keywords → proceed_with_kb (routes to knowledge search)
+    │
+    ├── PortalLeadParser: detects aqar.fm / bayut portal lead templates
+    │     └── If detected → seeds initial messages with resolved property context
+    │         via ResolveListingTool (matchByUrl → matchByAdId → matchByAttributes)
     │
     ├── Greeting shortcut → HumanCadence (cheap: skip loop for pure greetings)
     │
-    ├── AgentLoop (max 6 tool steps, wall-clock 50s)
+    ├── AgentLoop (max 6 tool steps, 10,000 completion tokens, wall-clock 50s)
     │     │
     │     ├── OpenAiTransport (tools + response_format json_schema strict)
+    │     │     └── Last step: toolChoice='none', tools=[] to force finalization
     │     │
-    │     ├── ToolRegistry dispatches to:
-    │     │     ├── search_inventory      → PropertySearchTool (existing)
-    │     │     ├── get_property_details  → Property model
-    │     │     ├── search_knowledge      → RetrievalService (existing)
-    │     │     ├── propose_viewing       → records intent
-    │     │     ├── escalate_to_human     → signals PolicyGate
-    │     │     └── record_customer_fact  → BriefMerger
+    │     ├── Tool-call deduplication cache (prevents redundant searches)
     │     │
-    │     └── Final structured reply (schema-validated JSON)
+    │     └── ToolRegistry dispatches to:
+    │           ├── search_inventory      → PropertySearchTool (existing)
+    │           ├── get_property_details  → Property model + FAQs + external links
+    │           ├── search_knowledge      → RetrievalService (existing)
+    │           ├── propose_viewing       → records intent
+    │           ├── resolve_listing       → ResolveListingTool (portal lead matching)
+    │           ├── escalate_to_human     → signals PolicyGate
+    │           └── record_customer_fact  → BriefMerger
+    │
+    ├── GroundingPolicy (post-loop check)
+    │     └── If inventory question asked but no search ran → forced search step
+    │
+    ├── HandoffGuard (post-loop check)
+    │     └── If model requested escalation → verify evidence exists
+    │         (portal lead seller-contact phrases never justify escalation)
     │
     ├── FactLedger (populated from tool call log)
     │
-    ├── CitationGuard: validates all {{p:ID|field}} references, no bare numbers
-    │       ├── On violation: one correction retry (system prompt rebuilt with
-    │       │    populated FactLedger + explicit reminder to use placeholders)
-    │       └── Still violated after retry → handoff('citation_violation')
+    ├── CitationGuard
+    │     ├── Validates all {{p:ID|field}} references exist in FactLedger
+    │     ├── Checks for bare numbers ≥4 digits (with NumberProvenance allowlist)
+    │     ├── Checks for comma-formatted large numbers (7,000,000 style)
+    │     ├── Checks for availability claims when ledger has 0 results
+    │     ├── NumberProvenance allowlist: only numbers the CUSTOMER typed (not ledger values)
+    │     ├── hasRefNumberPrefix: allows numbers preceded by ref/plot keywords (رقم القطعة, etc.)
+    │     │
+    │     ├── On violation → ReplyRedactor: strip offending sentence(s) first
+    │     └── Still violated after redaction → one full correction retry,
+    │         then handoff('citation_violation')
     │
-    ├── ReplyRenderer: replaces placeholders with real DB values
+    ├── ReplyRenderer
+    │     ├── Substitutes {{p:ID|field}} with real DB values
+    │     ├── Strips {{k:...}} knowledge chunk markers
+    │     ├── Strips any surviving {{...}} syntax
+    │     └── Location-relax prefix ("ما لقيت في X، لكن هذي نتائج قريبة...")
+    │         ONLY prepended when properties were actually rendered in the reply
+    │
+    ├── RepetitionGuard
+    │     ├── Detects reply too similar (Jaccard ≥ 0.82) to last 5 bot replies
+    │     └── If similar → one rephrase step with forbidden-phrases system message
+    │
+    ├── Markdown stripper
+    │     ├── Removes ## heading lines
+    │     └── Converts **bold** → plain text (Rule 4 enforcement)
+    │
+    ├── Boilerplate stripper (via RepetitionGuard.stripBoilerplate)
+    │     └── Removes closing filler: "أنا هنا للمساعدة"، "لا تتردد في السؤال"، etc.
     │
     ├── PolicyGate: deliver | shadow | handoff | opt_out
     │
-    ├── HumanCadence: debounce + typing sim + message split → DeliveryService
+    ├── HumanCadence
+    │     ├── Jittered debounce (based on inbound message length, not fixed 8s)
+    │     ├── Typing indicator delay before each segment
+    │     └── Message split + DeliveryService
     │
     ├── BriefMerger: persists brief_updates to WaConversationAiState.facts
+    │     └── Tracks weak-search turns; resets counter when new criteria supplied
     │
     └── TraceRecorder: writes ai_turn_traces row
 ```
@@ -85,12 +133,13 @@ Employee::runTurn()
 |------|---------|
 | `Contracts/AgentTool.php` | Interface every tool implements |
 | `Contracts/AgentTransport.php` | Interface for provider-agnostic transport |
-| `Runtime/AgentLoop.php` | The loop: dispatch tools, validate final reply |
-| `Runtime/StepBudget.php` | Tracks steps, tokens, wall-clock timeout |
+| `Runtime/AgentLoop.php` | Loop: tool dispatch, forced finalization on last step, dedup cache |
+| `Runtime/StepBudget.php` | Tracks steps, **completion tokens** (prompt tokens excluded from limit), wall-clock |
 | `Runtime/ToolRegistry.php` | Holds and dispatches tools |
+| `DTOs/AgentStepRequest.php` | Includes `toolChoice` field for last-step forcing |
 | `Schema/JsonSchema.php` | Builds `response_format json_schema` payload |
 | `Schema/SchemaValidator.php` | Local JSON Schema validator (never trust provider) |
-| `Transport/OpenAiTransport.php` | OpenAI-compatible transport with tool calling |
+| `Transport/OpenAiTransport.php` | OpenAI-compatible transport; passes `tool_choice` when set |
 | `Transport/RecordingTransport.php` | Cassette recorder (used by `ai:agent:record`) |
 | `Transport/ReplayTransport.php` | Cassette player (CI, zero network) |
 | `Telemetry/TurnTrace.php` | Immutable snapshot of one turn |
@@ -102,22 +151,29 @@ Employee::runTurn()
 |------|---------|
 | `Brain/Employee.php` | **Single entry point.** Fully auditable linear flow. |
 | `Brain/Playbook.php` | Per-tenant persona config from `wa_ai_configs.playbook` |
-| `Brain/PersonaComposer.php` | Builds the system prompt with citation protocol |
+| `Brain/PersonaComposer.php` | Builds system prompt; 12 hard rules; citation protocol; broker persona; FAQ guidance; few-shot examples |
 | `Brain/EmployeeTurnResult.php` | Return value: delivered/shadow/handoff/skipped/failed |
 | `State/CustomerBrief.php` | Typed immutable DTO for customer search session |
 | `State/BriefMerger.php` | Safely merges brief_updates with type validation |
+| `Leads/PortalLeadParser.php` | Detects aqar.fm/bayut portal lead templates; extracts structured fields |
 | `Tools/SearchInventoryTool.php` | Wraps PropertySearchTool (existing) |
-| `Tools/GetPropertyDetailsTool.php` | Fetches single property details |
+| `Tools/GetPropertyDetailsTool.php` | Fetches property details **including FAQs**, external links, video/tour URLs |
+| `Tools/ResolveListingTool.php` | Matches portal URL/fields to tenant inventory (URL → ad_id → attributes) |
 | `Tools/SearchKnowledgeTool.php` | Wraps RetrievalService (existing) |
 | `Tools/ProposeViewingTool.php` | Records viewing intent |
-| `Tools/EscalateToHumanTool.php` | Signals handoff to PolicyGate |
+| `Tools/EscalateToHumanTool.php` | Signals handoff; description narrowed — portal leads are NOT a reason to escalate |
 | `Tools/RecordCustomerFactTool.php` | Replaces MessageFactExtractor |
 | `Safety/FactLedger.php` | Accumulates all tool results for a turn |
-| `Safety/CitationGuard.php` | Validates placeholder references; catches comma-formatted numbers |
-| `Safety/ReplyRenderer.php` | The only place customer numbers are formatted |
+| `Safety/CitationGuard.php` | Validates placeholders; catches bare/comma numbers; blocks ungrounded availability claims |
+| `Safety/NumberProvenance.php` | Builds allowlist of numbers the **customer typed** (ledger values excluded — must use placeholders) |
+| `Safety/ReplyRedactor.php` | Last-resort: strips offending sentences rather than immediately handing off |
+| `Safety/ReplyRenderer.php` | Substitutes placeholders; location-relax prefix only when properties actually rendered |
+| `Safety/GroundingPolicy.php` | Forces a search step when inventory question asked without any prior search |
+| `Safety/HandoffGuard.php` | Verifies escalation has supporting evidence; blocks seller-contact portal phrases |
+| `Safety/RepetitionGuard.php` | Detects high-similarity replies; strips boilerplate closings |
 | `Safety/PolicyGate.php` | Wraps ComplianceService + HandoffService |
-| `Delivery/HumanCadence.php` | Typing sim, split, send |
-| `Eval/ReplayRunner.php` | Runs corpus fixtures with hard invariant assertions |
+| `Delivery/HumanCadence.php` | Jittered debounce, typing indicator, message split, send |
+| `Eval/ReplayRunner.php` | Corpus fixture runner with hard + soft invariants |
 | `Eval/ReplayResult.php` | Pass/fail + failure list for one fixture |
 
 ---
@@ -126,47 +182,142 @@ Employee::runTurn()
 
 The model's final reply uses this format:
 
-```
-"say": "شوف {{p:1301|title}} في {{p:1301|address}}، السعر {{p:1301|price}} والمساحة {{p:1301|area}}. تحب أرتب معاينة؟"
-"cited_properties": [1301]
+```json
+{
+  "say": "شوف {{p:1301|title}} في {{p:1301|address}}، السعر {{p:1301|price}} والمساحة {{p:1301|area}}. تحب أرتب معاينة؟",
+  "cited_properties": [1301]
+}
 ```
 
 `ReplyRenderer` substitutes each placeholder from the `FactLedger` row that `search_inventory` returned this turn. The model never types a price; it types `{{p:1301|price}}` and PHP writes `500,000 ريال`.
 
-`CitationGuard` rejects the turn when:
-- A placeholder references an ID not in the FactLedger
-- `say` contains a bare number ≥4 digits outside known-safe patterns (years, phone numbers)
-- `say` contains a comma-formatted large number ≥10,000 (e.g. `7,000,000`) — these bypass the bare-digit regex but are still bare prices
-- `say` uses markdown bold (`**text**`) around a number — the guard strips bold markers before scanning
-- `say` claims availability ("عندنا", "متوفر") when the ledger has 0 properties after a search
+### Supported placeholder fields
 
-On rejection: one correction retry (system prompt rebuilt with populated FactLedger + explicit reminder to use `{{p:ID|field}}` only), then escalate to human.
+| Field | Output |
+|-------|--------|
+| `title` | Property title / listing name |
+| `price` | Price formatted with commas + ريال |
+| `area` | Area in م² |
+| `address` | Full address string |
+| `bedrooms` | Bedroom count |
+| `bathrooms` | Bathroom count |
+| `purpose` | بيع / إيجار |
+| `type` | Property type |
+
+### What CitationGuard blocks
+
+| Violation | Detection |
+|-----------|-----------|
+| Unknown property ID | Placeholder ID not in FactLedger |
+| Non-numeric placeholder ID | `{{p:abc|price}}` — catches garbled output |
+| Bare price/area | 4+ digit sequence not in NumberProvenance allowlist |
+| Comma-formatted large number | e.g. `7,000,000` — bypasses digit regex but caught separately |
+| Availability claim without results | "عندنا"/"متوفر" when `searchWasRun() && !hasResults()` |
+
+**NumberProvenance allowlist** contains only numbers the customer typed in their messages (e.g. their stated budget). Ledger values (prices, areas) are intentionally excluded so the model is forced to use `{{p:ID|field}}` — this was the fix for the bare-number hallucination bug.
+
+On violation: `ReplyRedactor` strips the offending clause first. If the reply is still violated after redaction, one full correction retry is attempted (system prompt rebuilt with FactLedger + explicit reminder). After two failures: `handoff('citation_violation')`.
 
 ---
 
-## Database schema changes
+## Portal lead handling
 
-### New table: `ai_turn_traces`
+When a customer arrives via aqar.fm / bayut / similar portals, their first message is a template like:
+
+```
+أرغب في التواصل مع المعلن على تطبيق عقار بخصوص الإعلان:
+شقة للإيجار في شارع X, حي Y, مدينة Z بسعر 32000.00 ريال
+https://sa.aqar.fm/ad/6633737/ar
+```
+
+`PortalLeadParser` detects this pattern and extracts:
+- `platform`, `ad_url`, `ad_id`, `property_type_ar`, `purpose`, `city`, `district`, `price`
+
+`ResolveListingTool` then tries to match to the tenant's inventory in priority order:
+1. Match by external link URL
+2. Match by ad ID in `PropertyExternalLink` records
+3. Match by price + type + city attributes
+
+If matched, the property is seeded into the agent context before the loop starts. The model answers using that property's data (including FAQs via `get_property_details`) rather than handing off.
+
+`EscalateToHumanTool` description explicitly states: portal leads are **not** a reason to escalate.
+
+---
+
+## FAQ-aware property queries
+
+When a customer asks a specific property question (رقم الحارس, أطوال الأرض, رقم الدور, etc.):
+
+1. Model calls `get_property_details(property_id)`
+2. Tool returns `faqs` array alongside all other fields
+3. Model checks FAQs for the answer
+4. If found → answers directly from FAQ; if not → "ما عندي هذي المعلومة، لكن أقدر أرتّب معاينة"
+
+This is enforced by Rule 10 in the system prompt and the `get_property_details` tool description.
+
+---
+
+## Compliance rules (ComplianceService)
+
+| Category | Trigger | Action |
+|----------|---------|--------|
+| Opt-out | إيقاف، stop، ما أبي... | Pause bot permanently |
+| Abuse | احمق، غبي، نصاب... | Immediate handoff |
+| Regulated (phrase) | تمويل عقاري، رهن عقاري، تفريغ الصك، قضية، محكمة... | Handoff |
+| Regulated (advice-only) | كفيل، نزاع — **only** when paired with question context | Handoff |
+| Payment plan | دفعات، تقسيط، قسط شهري... | `proceed_with_kb` → model uses search_knowledge first |
+| صك in listing text | "مساحه بالصك 123م" — NOT regulated without question context | No action (fixed: صك removed from advice-only list) |
+
+---
+
+## System prompt rules (PersonaComposer)
+
+The model receives 12 hard rules every turn:
+
+1. Large numbers (4+ digits) via `{{p:ID|field}}` only — never bare
+2. No availability claims when search returned zero results
+3. No legal/financial advice — route to team
+4. No markdown headings (`##`) or bold (`**text**`) — plain text only
+5. Maximum two paragraphs per reply unless listing multiple properties
+6. Arabic always (unless customer writes in another language)
+7. Admit being AI when asked directly
+8. No filler closings ("أنا هنا للمساعدة"...)
+9. One question per reply maximum
+10. For property-specific questions → call `get_property_details` first, check `faqs`
+11. Any "عندنا عقار" claim requires a `{{p:ID|field}}` placeholder — never echo customer descriptions as inventory
+12. Business service solicitations (video, marketing, contractor pitches) → polite one-sentence decline
+
+---
+
+## Database schema
+
+### Table: `ai_turn_traces`
 
 | Column | Type | Purpose |
 |--------|------|---------|
-| `idempotency_key` | varchar(128) unique | Derived from provider message ID; prevents duplicate replies |
-| `brief_before` / `brief_after` | json | CustomerBrief before/after this turn |
+| `idempotency_key` | varchar(128) unique | Prevents duplicate replies |
+| `brief_before` / `brief_after` | json | CustomerBrief snapshot |
 | `steps` | json | Full loop trace: tool calls + final reply |
-| `tool_call_log` | json | Compact log of each tool call and result |
-| `guard_violations` | json | CitationGuard violations (if any) |
+| `tool_call_log` | json | Compact per-tool log |
+| `guard_violations` | json | CitationGuard violations |
 | `decision` | varchar(20) | delivered / shadow / handoff / skipped / failed |
 | `rendered_reply` | text | Final customer-facing text |
 | `delivery_status` | varchar(20) | pending / sent / delivered / failed |
 | `delivery_attempts` | tinyint | Incremented by reconciler |
 | `cassette_key` | varchar(64) | SHA-256 for replay matching |
 
-### New columns on `wa_ai_configs`
+### Columns on `wa_ai_configs`
 
 | Column | Purpose |
 |--------|---------|
-| `playbook` | JSON overrides for persona (tone, assistant_name, few_shot_examples, etc.) |
-| `max_tokens_per_turn` | Per-turn token ceiling (default 800) |
+| `playbook` | JSON overrides for persona (tone, assistant_name, few_shot_examples, custom_instructions) |
+| `max_tokens_per_turn` | Per-turn completion token ceiling (default 800) |
+
+### Column on `whatsapp_messages`
+
+| Column | Purpose |
+|--------|---------|
+| `direction` | `inbound` (customer) / `outbound` (business). Bot loop only processes inbound rows, preventing agent words from being mistaken as customer inquiries. Outbound echoes from linked devices are stored and trigger bot-pause logic. |
 
 ---
 
@@ -182,12 +333,27 @@ php artisan ai:agent:record --corpus=tests/Fixtures/agent/corpus
 # 3. CI replay (zero network, deterministic)
 php artisan ai:agent:evaluate --replay
 
-# 4. Nightly live judge
-php artisan ai:agent:evaluate --live
+# 4. Live sandbox evaluation against 50 conversations
+php artisan ai:agent:eval-conversations --convs=storage/app/_eval_convs.json \
+    --tenant=1430 --wa-number=2 --report-path=docs/bot-eval-report.md
 ```
 
-PHPUnit test suite: `tests/Feature/Agent/AgentLoopTest.php`
-- Tests SchemaValidator, CitationGuard, ReplyRenderer, BriefMerger, AgentLoop all with zero network.
+PHPUnit test suite: `tests/Feature/Agent/AgentLoopTest.php` (36 tests)
+- Tests: SchemaValidator, CitationGuard, NumberProvenance, ReplyRenderer, BriefMerger, AgentLoop, PortalLeadParser, HandoffGuard, GroundingPolicy, RepetitionGuard — all zero-network.
+
+### ReplayRunner invariants
+
+| Invariant | Type | What it catches |
+|-----------|------|----------------|
+| `no_budget_exhausted` | hard | Agent loop hit token/step limit |
+| `no_unrendered_placeholder` | hard | Raw `{{p:...}}` reached the customer |
+| `no_unevidenced_escalation` | hard | Handoff requested without evidence |
+| `no_bare_number_in_reply` | soft | Price/area typed as digits (bypasses renderer) |
+| `no_repeated_reply` | soft | Same reply twice in 5 turns |
+| `no_assistant_boilerplate` | soft | Banned closing phrases |
+| `portal_lead_resolved` | soft | Portal lead fixture matched to inventory |
+| `bot_skipped_or_opted_out` | soft | Conversation correctly skipped |
+| `no_availability_claim_without_search` | soft | Claiming inventory without running search_inventory |
 
 ---
 
@@ -195,12 +361,13 @@ PHPUnit test suite: `tests/Feature/Agent/AgentLoopTest.php`
 
 | Mechanism | Detail |
 |-----------|--------|
-| Greeting shortcut | Pure greetings on returning customers skip the agent loop entirely |
-| Per-turn token ceiling | `wa_ai_configs.max_tokens_per_turn` (default 800) enforced by StepBudget |
-| 6 tool-step limit | `StepBudget.maxSteps = 6` — gives enough room for multi-tool searches without runaway loops |
+| Greeting shortcut | Pure greetings skip the agent loop entirely |
+| Per-turn token ceiling | Completion tokens only (prompt growth doesn't trigger exhaustion) |
+| 6 tool-step limit | `StepBudget.maxSteps = 6` |
 | 50s wall-clock cap | `StepBudget.wallClockMs = 50,000` |
+| Tool-call dedup | Identical tool calls within a turn return cached results |
+| Monthly budget | `wa_ai_configs.monthly_token_budget`; checked before the loop starts |
 | 24-hour cost alert | Logs `ALERT` when rolling cost per turn exceeds 3.5× baseline |
-| Monthly budget | `wa_ai_configs.monthly_token_budget` column; checked before the loop starts |
 
 ---
 
@@ -235,4 +402,25 @@ Every future production issue must become a corpus fixture in `tests/Fixtures/ag
 | `SearchSession.php` | FactLedger |
 | `PersonaBuilder.php` | PersonaComposer + Playbook |
 
-**Kept unchanged:** `ComplianceService`, `HandoffService`, `DeliveryService`, `CrmFlywheelService`, `ListingLinkResolver`, `LocationResolver`, `UsageRecorder`, `LlmDriverFactory`, `CredentialResolver`, `PropertySearchService`, all of `app/Domain/Ai/Knowledge/`.
+**Kept unchanged:** `ComplianceService` (extended), `HandoffService`, `DeliveryService`, `CrmFlywheelService`, `ListingLinkResolver`, `LocationResolver`, `UsageRecorder`, `LlmDriverFactory`, `CredentialResolver`, `PropertySearchService`, all of `app/Domain/Ai/Knowledge/`.
+
+---
+
+## Changelog (eval cycles)
+
+### Batch 1 eval fixes (RC1–RC6)
+- **RC1 — Budget exhaustion:** `StepBudget` now tracks prompt and completion tokens separately. The exhaustion limit applies to completion tokens only, so prompt growth from a long conversation history no longer prematurely kills the loop.
+- **RC2 — Unevidenced handoffs:** `HandoffGuard` added. Seller contact phrases in portal lead messages no longer trigger escalation. `EscalateToHumanTool` description narrowed.
+- **RC3 — Bare number bypass:** `NumberProvenance` added. Ledger values (prices, areas) are **excluded** from the allowlist — only customer-supplied numbers are trusted. Forces model to use placeholders.
+- **RC4 — Portal leads incorrectly escalated:** `PortalLeadParser` + `ResolveListingTool` added. Portal leads are resolved to inventory and answered as buyer inquiries.
+- **RC5 — صك false-positive regulated topic:** `صك` moved to `REGULATED_ADVICE_ONLY` (then later removed entirely from that list — only `تفريغ الصك` in `REGULATED_PHRASES` is regulated).
+- **RC6 — Repetitive replies:** `RepetitionGuard` + boilerplate stripper added. Payment-plan keywords route to `proceed_with_kb` instead of escalation.
+
+### Batch 2 eval fixes
+- **Location-relax prefix leak:** `ReplyRenderer` now only prepends "ما لقيت في X، لكن هذي نتائج قريبة" when at least one `{{p:ID|field}}` placeholder was rendered. Previously it leaked onto clarifying questions.
+- **صك in listing text:** Removed `صك` from `REGULATED_ADVICE_ONLY` entirely. Phrases like "مساحه بالصك 123م" are normal listing language, not regulated advice requests.
+- **Markdown bold in replies:** `Employee` strips `**bold**` and `## headings` before delivery. Rule 4 is now enforced in both prompt and post-processing.
+- **FAQ-aware property queries:** `GetPropertyDetailsTool` updated to explicitly return and surface `faqs`. System prompt Rule 10 instructs model to check FAQs for property-specific questions (رقم الحارس, etc.).
+- **Availability parroting:** System prompt Rule 11 bans claiming "عندنا عقار" without a `{{p:ID|field}}` placeholder. Model may not echo back customer property descriptions as if they're in inventory.
+- **Off-topic B2B solicitations:** System prompt Rule 12 + few-shot example instructs model to decline marketing pitches (video production, contractors, etc.) with a single-sentence redirect.
+- **Outbound echo handling:** `whatsapp_messages.direction` column added. Bot loop filters to `inbound` only. Outbound echoes from linked devices pause the bot and pair with shadow drafts.
