@@ -36,8 +36,13 @@ class UpdateAiConfigRequest extends BaseApiFormRequest
             'disclose_as_assistant' => 'nullable|boolean',
             'assistant_name' => 'nullable|string|max:100',
             'monthly_token_budget' => 'nullable|integer|min:0',
+            'max_tokens_per_turn' => 'nullable|integer|min:200|max:4000',
             'fallback_to_human' => 'nullable|boolean',
             'fallback_delay' => 'nullable|integer|min:0',
+            'playbook' => 'nullable|array',
+            'playbook.few_shot_examples' => 'nullable|array',
+            'playbook.few_shot_examples.*.customer' => 'nullable|string|max:2000',
+            'playbook.few_shot_examples.*.bot' => 'nullable|string|max:2000',
         ];
     }
 }

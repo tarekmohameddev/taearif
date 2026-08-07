@@ -17,19 +17,60 @@
 2. [Quality Dashboard](#2-quality-dashboard)
    - [GET ai/bot/dashboard](#21-get-aibotdashboard)
 3. [Shadow Mode Inbox](#3-shadow-mode-inbox)
-   - [GET ai/bot/shadow-drafts](#31-get-aibotshallow-drafts)
+   - [GET ai/bot/shadow-drafts](#31-get-aibotshadow-drafts)
    - [POST ai/bot/shadow-drafts/{id}/act](#32-post-aibotshadow-draftsidact)
 4. [Unanswered Questions](#4-unanswered-questions)
-   - [POST ai/bot/unanswered/{id}/mark-faq](#41-post-aibotunanswereditmark-faq)
+   - [POST ai/bot/unanswered/{id}/mark-faq](#41-post-aibotunansweredidmark-faq)
 5. [Sandbox Simulator](#5-sandbox-simulator)
-   - [POST ai/bot/simulate](#51-post-aibotimulate)
+   - [POST ai/bot/simulate](#51-post-aibotsimulate)
    - [GET ai/bot/simulate/conversation](#52-get-aibotsimulateconversation)
-   - [POST ai/bot/simulate/reset](#53-post-aibotimulatereset)
-6. [Flow Diagrams](#6-flow-diagrams)
-   - [Complete Bot Turn](#61-complete-bot-turn)
-   - [Shadow Mode Lifecycle](#62-shadow-mode-lifecycle)
-   - [Simulator Flow](#63-simulator-flow)
-7. [Error Reference](#7-error-reference)
+   - [POST ai/bot/simulate/reset](#53-post-aibotsimulatereset)
+6. [Knowledge Base](#6-knowledge-base)
+   - [GET ai/knowledge](#61-get-aiknowledge)
+   - [POST ai/knowledge](#62-post-aiknowledge)
+   - [GET ai/knowledge/{id}](#63-get-aiknowledgeid)
+   - [PATCH ai/knowledge/{id}](#64-patch-aiknowledgeid)
+   - [DELETE ai/knowledge/{id}](#65-delete-aiknowledgeid)
+7. [FAQ Candidates](#7-faq-candidates)
+   - [GET ai/faq-candidates](#71-get-aifaq-candidates)
+   - [PATCH ai/faq-candidates/{id}](#72-patch-aifaq-candidatesid)
+8. [Property External Links](#8-property-external-links)
+   - [GET properties/{propertyId}/external-links](#81-get-propertiespropertyidexternal-links)
+   - [POST properties/{propertyId}/external-links](#82-post-propertiespropertyidexternal-links)
+   - [PATCH properties/{propertyId}/external-links/{linkId}](#83-patch-propertiespropertyidexternal-linkslinkid)
+   - [DELETE properties/{propertyId}/external-links/{linkId}](#84-delete-propertiespropertyidexternal-linkslinkid)
+9. [Flow Diagrams](#9-flow-diagrams)
+   - [Complete Bot Turn](#91-complete-bot-turn)
+   - [Shadow Mode Lifecycle](#92-shadow-mode-lifecycle)
+   - [Simulator Flow](#93-simulator-flow)
+10. [Error Reference](#10-error-reference)
+
+### Endpoint index
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `ai/config/{numberId}` | Fetch bot config for a number |
+| `PUT` | `ai/config/{numberId}` | Create / update bot config |
+| `PATCH` | `ai/config/{numberId}/toggle` | Toggle `enabled` |
+| `GET` | `ai/stats` | Tenant AI usage summary |
+| `GET` | `ai/bot/dashboard` | Quality-loop metrics |
+| `GET` | `ai/bot/shadow-drafts` | Pending shadow drafts |
+| `POST` | `ai/bot/shadow-drafts/{id}/act` | Approve / edit / discard draft |
+| `POST` | `ai/bot/unanswered/{id}/mark-faq` | Mark gap question as FAQ-resolved |
+| `POST` | `ai/bot/simulate` | Run one sandbox bot turn |
+| `GET` | `ai/bot/simulate/conversation` | Sandbox transcript |
+| `POST` | `ai/bot/simulate/reset` | Clear sandbox conversation |
+| `GET` | `ai/knowledge` | List knowledge sources |
+| `POST` | `ai/knowledge` | Create + index a knowledge source |
+| `GET` | `ai/knowledge/{id}` | Show one knowledge source |
+| `PATCH` | `ai/knowledge/{id}` | Update / re-index a source |
+| `DELETE` | `ai/knowledge/{id}` | Delete source + chunks |
+| `GET` | `ai/faq-candidates` | List mined FAQ candidates |
+| `PATCH` | `ai/faq-candidates/{id}` | Correct / reject a candidate |
+| `GET` | `properties/{propertyId}/external-links` | List listing URLs for a property |
+| `POST` | `properties/{propertyId}/external-links` | Attach a portal listing URL |
+| `PATCH` | `properties/{propertyId}/external-links/{linkId}` | Update a listing URL |
+| `DELETE` | `properties/{propertyId}/external-links/{linkId}` | Remove a listing URL |
 
 ---
 
@@ -125,22 +166,27 @@ Create or update the bot configuration for a number. Partial updates are support
 | Field | Type | Values | Description |
 |---|---|---|---|
 | `enabled` | boolean | `true\|false` | Master on/off switch |
-| `autonomy_level` | string | `off\|shadow\|autonomous` | Bot behavior mode |
+| `autonomy_level` | string | `off\|shadow\|autonomous` | Bot behavior mode (`off` = disabled) |
 | `goal` | string | `salesman\|support\|booking` | Bot role / persona |
-| `tone` | string | `friendly\|formal\|enthusiastic` | Conversational tone |
-| `language` | string | `ar\|en` | Primary reply language |
+| `tone` | string | — | Conversational tone (e.g. `friendly`, `formal`, `enthusiastic`) |
+| `language` | string | — | Primary reply language (e.g. `ar`, `en`) |
 | `assistant_name` | string | — | Display name shown in the system prompt (e.g. `نورة`) |
 | `disclose_as_assistant` | boolean | — | Honest AI disclosure on first contact |
-| `reply_length_target` | integer | 50–500 | Target chars per reply |
+| `reply_length_target` | integer | 50–2000 | Target chars per reply |
 | `confidence_threshold` | integer | 0–100 | Below this → handoff (legacy; agent loop uses its own escalation tool) |
 | `groundedness_threshold` | integer | 0–100 | Reserved for future use |
 | `fallback_to_human` | boolean | — | Enable human escalation |
-| `monthly_token_budget` | integer | — | Maximum tokens allowed per month for this number. `0` = unlimited |
-| `max_tokens_per_turn` | integer | 200–4000 | Per-turn LLM token ceiling. Defaults to 800 |
+| `fallback_delay` | integer | ≥0 | Seconds to wait before escalating when fallback is enabled |
+| `monthly_token_budget` | integer | ≥0 | Maximum tokens allowed per month for this number. `0` = unlimited |
+| `max_tokens_per_turn` | integer | 200–4000 | Per-turn LLM completion-token ceiling. Defaults to 800 |
 | `custom_instructions` | string | — | Free-text instructions appended to every system prompt |
 | `playbook` | object | — | Advanced persona overrides (see below) |
 | `business_hours` | object | — | Day-keyed schedule (see shape below) |
+| `business_hours_only` | boolean | — | Legacy flag: restrict replies to business hours |
+| `business_hours_start` | string | `H:i` | Legacy single start time (prefer `business_hours`) |
+| `business_hours_end` | string | `H:i` | Legacy single end time (prefer `business_hours`) |
 | `timezone` | string | — | Timezone for business hours (e.g. `Asia/Riyadh`) |
+| `scenarios` | array | — | Optional scenario overrides |
 | `escalation_rules` | array | — | Custom escalation conditions |
 
 **`playbook` shape**
@@ -314,6 +360,11 @@ Authorization: Bearer {token}
     "avg_latency_ms": 1840,
     "cost_usd": 0.7118
   },
+  "mining_spend": {
+    "calls": 12,
+    "tokens": 48000,
+    "cost_usd": 0.012
+  },
   "shadow": {
     "total": 210,
     "approved": 168,
@@ -321,6 +372,10 @@ Authorization: Bearer {token}
     "discarded": 14,
     "avg_confidence": 81,
     "edit_rate_pct": 20.0
+  },
+  "quality_rates": {
+    "grounding_failure_rate_pct": 1.2,
+    "handoff_rate_pct": 8.5
   },
   "handoff_reasons": [
     { "handoff_reason": "customer_requested_human",  "count": 22 },
@@ -354,8 +409,11 @@ Authorization: Bearer {token}
 
 | Field | Description |
 |---|---|
-| `usage.cost_usd` | Estimated LLM cost in USD (from `ai_usage_logs.cost_micros / 1,000,000`) |
-| `shadow.edit_rate_pct` | `(edited + discarded) / total × 100`. Graduate to autonomous when < 15% |
+| `usage.cost_usd` | Estimated production LLM cost in USD (`cost_micros / 1,000,000`). Excludes `simulate` and `mine` pass types |
+| `mining_spend` | Separate spend bucket for FAQ/knowledge mine jobs (`pass_type = mine`) |
+| `shadow.edit_rate_pct` | `(edited + discarded) / total × 100`. Graduate to autonomous when < 15%. `null` when no drafts |
+| `quality_rates.grounding_failure_rate_pct` | Failed `generate` passes / total generate passes in period |
+| `quality_rates.handoff_rate_pct` | Conversations with a handoff reason / conversations touched in period |
 | `handoff_reasons` | Top 10 reasons bot handed off, sorted by frequency |
 | `top_unanswered` | Questions bot failed to answer (not yet added to FAQ). Use to grow knowledge base |
 | `last_eval.passed` | `true` when `groundedness ≥ 75`, `task_success ≥ 70`, `dialect ≥ 70` |
@@ -549,6 +607,7 @@ Run one bot turn.
 | `message` | string | yes | The customer message to simulate (max 1,000 chars) |
 | `customer_phone` | string | no | Simulated customer phone. Defaults to `+966500000001`. Use a consistent value across turns to continue the same conversation. |
 | `tenant_id` | integer | no | Defaults to authenticated user. Admins can override. |
+| `include_transcript` | boolean | no | When `true`, response also includes the full sandbox `transcript` object (same shape as §5.2) |
 
 **Request example — first turn**
 ```http
@@ -805,9 +864,367 @@ Content-Type: application/json
 
 ---
 
-## 6. Flow Diagrams
+## 6. Knowledge Base
 
-### 6.1 Complete Bot Turn
+Per-tenant knowledge sources power `search_knowledge`. Without indexed sources the retrieval layer stays empty.
+
+### 6.1 GET ai/knowledge
+
+List all knowledge sources for the authenticated tenant.
+
+**Request**
+```http
+GET /api/v1/whatsapp/ai/knowledge
+Authorization: Bearer {token}
+```
+
+**Response 200**
+```json
+{
+  "data": [
+    {
+      "id": 7,
+      "type": "faq",
+      "name": "رسوم التسجيل",
+      "chunk_count": 3,
+      "active": true,
+      "last_indexed_at": "2026-08-01T12:00:00+00:00",
+      "created_at": "2026-08-01T12:00:00+00:00"
+    }
+  ]
+}
+```
+
+---
+
+### 6.2 POST ai/knowledge
+
+Create a knowledge source and index its content immediately (embeds + chunk storage).
+
+**Request body**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | yes | Display name (max 255) |
+| `type` | string | yes | `text` \| `faq` \| `property_faq` \| `document` |
+| `content` | string | yes | Plain text to index (10–100,000 chars). For file uploads, send extracted text here |
+| `active` | boolean | no | Defaults to `true` |
+
+**Request example**
+```http
+POST /api/v1/whatsapp/ai/knowledge
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "name": "رسوم التسجيل",
+  "type": "faq",
+  "content": "س: كم رسوم التسجيل في الصكوك؟\nج: رسوم التسجيل تبلغ 1% من قيمة العقار.",
+  "active": true
+}
+```
+
+**Response 201**
+```json
+{
+  "id": 7,
+  "name": "رسوم التسجيل",
+  "chunk_count": 1,
+  "message": "Source indexed successfully."
+}
+```
+
+**Response 422** — validation error (missing/invalid fields)
+
+---
+
+### 6.3 GET ai/knowledge/{id}
+
+Show a single knowledge source (full model row).
+
+**Path params**
+
+| Param | Type | Description |
+|---|---|---|
+| `id` | integer | `ai_knowledge_sources.id` |
+
+**Response 200**
+```json
+{
+  "id": 7,
+  "user_id": 123,
+  "type": "faq",
+  "name": "رسوم التسجيل",
+  "file_path": null,
+  "mime_type": null,
+  "chunk_count": 1,
+  "embedding_model": "text-embedding-3-small",
+  "active": true,
+  "last_indexed_at": "2026-08-01T12:00:00+00:00",
+  "content_hash": "a1b2c3...",
+  "created_at": "2026-08-01T12:00:00+00:00",
+  "updated_at": "2026-08-01T12:00:00+00:00"
+}
+```
+
+**Response 404** — source not found for this tenant
+
+---
+
+### 6.4 PATCH ai/knowledge/{id}
+
+Update name/active flag. If `content` is sent, old chunks are deleted and the source is re-indexed.
+
+**Request body** (all optional; at least one field)
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | string | New display name |
+| `active` | boolean | Enable / disable retrieval for this source |
+| `content` | string | New text to re-index (10–100,000 chars) |
+
+**Request example — re-index**
+```http
+PATCH /api/v1/whatsapp/ai/knowledge/7
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "content": "س: كم رسوم التسجيل؟\nج: 1% من قيمة العقار، تدفع عند الإفراغ."
+}
+```
+
+**Response 200**
+```json
+{
+  "success": true,
+  "chunk_count": 1
+}
+```
+
+---
+
+### 6.5 DELETE ai/knowledge/{id}
+
+Delete a knowledge source and all of its chunks. Also clears the tenant embedding-matrix cache.
+
+**Response 200**
+```json
+{
+  "success": true
+}
+```
+
+---
+
+## 7. FAQ Candidates
+
+Auto-mined FAQ drafts for tenant review. Correcting a candidate re-indexes its linked knowledge source when `knowledge_source_id` is set.
+
+### 7.1 GET ai/faq-candidates
+
+Paginated list of FAQ candidates filtered by approval status.
+
+**Query params**
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `status` | string | `auto_approved` | `auto_approved` \| `pending` \| `rejected` |
+| `page` | integer | `1` | Laravel paginator page |
+
+**Request**
+```http
+GET /api/v1/whatsapp/ai/faq-candidates?status=auto_approved
+Authorization: Bearer {token}
+```
+
+**Response 200** (Laravel paginator envelope)
+```json
+{
+  "current_page": 1,
+  "data": [
+    {
+      "id": 41,
+      "user_id": 123,
+      "cluster_key": "a3f9...",
+      "question": "كم رسوم التسجيل في الصكوك؟",
+      "drafted_answer": "رسوم التسجيل تبلغ 1% من قيمة العقار.",
+      "occurrence_count": 7,
+      "approval_status": "auto_approved",
+      "knowledge_source_id": 7,
+      "mine_batch": "2026-08-01",
+      "created_at": "2026-08-01T03:00:00+00:00",
+      "updated_at": "2026-08-01T03:00:00+00:00"
+    }
+  ],
+  "per_page": 25,
+  "total": 3
+}
+```
+
+---
+
+### 7.2 PATCH ai/faq-candidates/{id}
+
+Correct the drafted answer and optionally change approval status. If the candidate is linked to a knowledge source, that source is re-indexed with `question + drafted_answer`.
+
+**Path params**
+
+| Param | Type | Description |
+|---|---|---|
+| `id` | integer | `bot_faq_candidates.id` |
+
+**Request body**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `drafted_answer` | string | yes | Corrected answer (5–2000 chars) |
+| `approval_status` | string | no | `auto_approved` \| `pending` \| `rejected` |
+
+**Request example**
+```http
+PATCH /api/v1/whatsapp/ai/faq-candidates/41
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "drafted_answer": "رسوم التسجيل 1% من قيمة العقار، تُدفع عند الإفراغ.",
+  "approval_status": "auto_approved"
+}
+```
+
+**Response 200**
+```json
+{
+  "success": true
+}
+```
+
+**Response 404** — candidate not found for this tenant
+
+---
+
+## 8. Property External Links
+
+Attach portal listing URLs (Aqar, Bayut, etc.) to internal properties so `resolve_listing` can match inbound portal leads.
+
+### 8.1 GET properties/{propertyId}/external-links
+
+**Path params**
+
+| Param | Type | Description |
+|---|---|---|
+| `propertyId` | integer | Tenant-owned property ID |
+
+**Request**
+```http
+GET /api/v1/whatsapp/properties/1301/external-links
+Authorization: Bearer {token}
+```
+
+**Response 200**
+```json
+{
+  "data": [
+    {
+      "id": 9,
+      "platform": "aqar",
+      "url": "https://sa.aqar.fm/ad/6633737/ar",
+      "label": "إعلان عقار",
+      "active": true,
+      "created_at": "2026-08-01T10:00:00+00:00"
+    }
+  ]
+}
+```
+
+**Response 404** — property not found for this tenant
+
+---
+
+### 8.2 POST properties/{propertyId}/external-links
+
+**Request body**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `platform` | string | yes | Portal key (e.g. `aqar`, `bayut`) — max 60 |
+| `url` | string | yes | Full listing URL (max 2048). Trailing `/` is stripped |
+| `label` | string | no | Optional display label (max 120) |
+| `active` | boolean | no | Defaults to `true` |
+
+**Request example**
+```http
+POST /api/v1/whatsapp/properties/1301/external-links
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "platform": "aqar",
+  "url": "https://sa.aqar.fm/ad/6633737/ar",
+  "label": "إعلان عقار"
+}
+```
+
+**Response 201**
+```json
+{
+  "id": 9,
+  "property_id": 1301,
+  "user_id": 123,
+  "platform": "aqar",
+  "url": "https://sa.aqar.fm/ad/6633737/ar",
+  "label": "إعلان عقار",
+  "active": true,
+  "created_at": "2026-08-01T10:00:00+00:00",
+  "updated_at": "2026-08-01T10:00:00+00:00"
+}
+```
+
+---
+
+### 8.3 PATCH properties/{propertyId}/external-links/{linkId}
+
+**Request body** (all optional)
+
+| Field | Type | Description |
+|---|---|---|
+| `platform` | string | Portal key |
+| `url` | string | Listing URL |
+| `label` | string \| null | Display label |
+| `active` | boolean | Enable / disable for matching |
+
+**Response 200**
+```json
+{
+  "success": true,
+  "link": {
+    "id": 9,
+    "property_id": 1301,
+    "platform": "aqar",
+    "url": "https://sa.aqar.fm/ad/6633737/ar",
+    "label": "إعلان عقار محدّث",
+    "active": true
+  }
+}
+```
+
+---
+
+### 8.4 DELETE properties/{propertyId}/external-links/{linkId}
+
+**Response 200**
+```json
+{
+  "success": true
+}
+```
+
+---
+
+## 9. Flow Diagrams
+
+### 9.1 Complete Bot Turn
 
 ```
 Customer sends WhatsApp message
@@ -862,8 +1279,12 @@ Customer sends WhatsApp message
             │       → FactLedger.addProperties()
             │
             ├─ Tool: get_property_details(property_id)
-            │       → Fetch full property record
+            │       → Fetch full property record + FAQs + external links
             │       → FactLedger.addProperties()
+            │
+            ├─ Tool: resolve_listing(url | ad_id | attributes)
+            │       → ResolveListingTool (portal lead matching)
+            │       → URL → PropertyExternalLink → ad_id → attributes
             │
             ├─ Tool: search_knowledge(query)
             │       → EmbeddingService → RetrievalService (cosine sim over KB)
@@ -942,7 +1363,7 @@ Customer sends WhatsApp message
 
 ---
 
-### 6.2 Shadow Mode Lifecycle
+### 9.2 Shadow Mode Lifecycle
 
 ```
                                     BOT TURN COMPLETES
@@ -978,7 +1399,7 @@ Target: < 15% before graduating to autonomous
 
 ---
 
-### 6.3 Simulator Flow
+### 9.3 Simulator Flow
 
 ```
 POST /api/v1/whatsapp/ai/bot/simulate
@@ -1042,7 +1463,7 @@ Cache::forget('bot.loop.conv.' . $id)
 
 ---
 
-## 7. Error Reference
+## 10. Error Reference
 
 | HTTP | Code | When |
 |---|---|---|
@@ -1052,6 +1473,7 @@ Cache::forget('bot.loop.conv.' . $id)
 | 404 | `WA_NUMBER_NOT_FOUND` | `numberId` not owned by this tenant |
 | 404 | `WA_AI_CONFIG_NOT_FOUND` | No config exists for this number yet |
 | 404 | `No bot config found...` | Simulate: no `wa_ai_configs` row for this number |
+| 404 | (ModelNotFound) | Knowledge source, FAQ candidate, property, or external link not found for tenant |
 | 409 | `Draft is no longer pending.` | Act on a draft that was already approved/discarded |
 | 422 | (Laravel validation) | Required field missing or invalid value |
 | 500 | (exception message) | LLM timeout, network failure, or unexpected error |
