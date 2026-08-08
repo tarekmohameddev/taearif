@@ -11,7 +11,7 @@ class WhatsAppConversationService
     public function listForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = WaConversationState::query()
-            ->with(['conversation', 'waNumber'])
+            ->with(['conversation', 'waNumber', 'aiState'])
             ->where('user_id', $userId)
             ->whereHas('conversation', fn ($q) => $q->where('channel', 'whatsapp'));
 
@@ -25,6 +25,18 @@ class WhatsAppConversationService
             $term = '%' . $filters['search'] . '%';
             $query->whereHas('conversation', function ($q) use ($term) {
                 $q->where('external_party_identifier', 'like', $term);
+            });
+        }
+
+        if ($this->isTruthyFilter($filters['needs_attention'] ?? null)) {
+            $excluded = WaConversationState::HANDOFF_REASONS_EXCLUDED_FROM_ATTENTION;
+            $query->whereHas('aiState', function ($q) use ($excluded) {
+                $q->whereNotNull('bot_paused_until')
+                    ->where('bot_paused_until', '>', now())
+                    ->where(function ($inner) use ($excluded) {
+                        $inner->whereNull('handoff_reason')
+                            ->orWhereNotIn('handoff_reason', $excluded);
+                    });
             });
         }
 
@@ -42,17 +54,25 @@ class WhatsAppConversationService
         $sortDir = strtolower($filters['sort_dir'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
         $query->orderBy($sortBy, $sortDir);
 
-        return $query->paginate(min(max($perPage, 1), 100));
+        $paginator = $query->paginate(min(max($perPage, 1), 100));
+        $paginator->getCollection()->each(function (WaConversationState $state) {
+            // Expose only needs_attention / handoff_reason / bot_paused_until via appends.
+            $state->makeHidden(['aiState']);
+        });
+
+        return $paginator;
     }
 
     public function findForUser(int $userId, int $conversationId): ?WaConversationState
     {
-        return WaConversationState::query()
-            ->with(['conversation', 'waNumber'])
+        $state = WaConversationState::query()
+            ->with(['conversation', 'waNumber', 'aiState'])
             ->where('user_id', $userId)
             ->where('conversation_id', $conversationId)
             ->whereHas('conversation', fn ($q) => $q->where('channel', 'whatsapp'))
             ->first();
+
+        return $this->hideAiStateRelation($state);
     }
 
     public function findForUserByConversationOrStateId(int $userId, int $id): ?WaConversationState
@@ -62,12 +82,36 @@ class WhatsAppConversationService
             return $state;
         }
 
-        return WaConversationState::query()
-            ->with(['conversation', 'waNumber'])
+        $state = WaConversationState::query()
+            ->with(['conversation', 'waNumber', 'aiState'])
             ->where('user_id', $userId)
             ->where('id', $id)
             ->whereHas('conversation', fn ($q) => $q->where('channel', 'whatsapp'))
             ->first();
+
+        return $this->hideAiStateRelation($state);
+    }
+
+    private function hideAiStateRelation(?WaConversationState $state): ?WaConversationState
+    {
+        if ($state !== null) {
+            $state->makeHidden(['aiState']);
+        }
+
+        return $state;
+    }
+
+    private function isTruthyFilter(mixed $value): bool
+    {
+        if ($value === null || $value === '') {
+            return false;
+        }
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        return in_array(strtolower((string) $value), ['1', 'true', 'yes'], true);
     }
 
     public function createOrReturnConversation(int $userId, string $externalPartyIdentifierNormalized, ?int $waNumberId = null): Conversation

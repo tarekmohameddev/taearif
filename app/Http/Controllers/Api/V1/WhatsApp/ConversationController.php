@@ -24,6 +24,7 @@ class ConversationController extends BaseApiController
             'search' => $request->input('search'),
             'sort_by' => $request->input('sort_by'),
             'sort_dir' => $request->input('sort_dir'),
+            'needs_attention' => $request->input('needs_attention'),
         ], $perPage);
 
         return $this->ok([

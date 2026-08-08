@@ -19,6 +19,7 @@
 3. [Shadow Mode Inbox](#3-shadow-mode-inbox)
    - [GET ai/bot/shadow-drafts](#31-get-aibotshadow-drafts)
    - [POST ai/bot/shadow-drafts/{id}/act](#32-post-aibotshadow-draftsidact)
+   - [GET conversations?needs_attention=1](#33-get-conversationsneeds_attention1)
 4. [Unanswered Questions](#4-unanswered-questions)
    - [POST ai/bot/unanswered/{id}/mark-faq](#41-post-aibotunansweredidmark-faq)
 5. [Sandbox Simulator](#5-sandbox-simulator)
@@ -56,6 +57,7 @@
 | `GET` | `ai/bot/dashboard` | Quality-loop metrics |
 | `GET` | `ai/bot/shadow-drafts` | Pending shadow drafts |
 | `POST` | `ai/bot/shadow-drafts/{id}/act` | Approve / edit / discard draft |
+| `GET` | `conversations?needs_attention=1` | Agent inbox: bot-escalated chats |
 | `POST` | `ai/bot/unanswered/{id}/mark-faq` | Mark gap question as FAQ-resolved |
 | `POST` | `ai/bot/simulate` | Run one sandbox bot turn |
 | `GET` | `ai/bot/simulate/conversation` | Sandbox transcript |
@@ -549,6 +551,78 @@ Content-Type: application/json
   "message": "The action field is required.",
   "errors": {
     "action": ["The action field is required."]
+  }
+}
+```
+
+---
+
+### 3.3 GET conversations?needs_attention=1
+
+Agent handoff inbox. Filters the existing WhatsApp conversations list to chats where the bot has been paused and a human must reply.
+
+This is **not** the same as `status=pending` (CRM workflow status on `wa_conversation_states`). Needs-attention comes from `wa_conversation_ai_states.bot_paused_until` / `handoff_reason`.
+
+**Query params** (all optional; combinable with existing filters)
+
+| Param | Type | Description |
+|---|---|---|
+| `needs_attention` | boolean-ish | `1` / `true` / `yes` → only escalated chats |
+| `wa_number_id` | integer | Limit to one WhatsApp number |
+| `status` | string | CRM status: `active` \| `pending` \| `resolved` |
+| `search` | string | Match customer phone / identifier |
+| `per_page` | integer | Page size (max 100) |
+| `page` | integer | Page number |
+
+**Request**
+```http
+GET /api/v1/whatsapp/conversations?needs_attention=1&wa_number_id=2&per_page=50&page=1
+Authorization: Bearer {token}
+```
+
+**Included / excluded**
+
+| Included | Excluded |
+|---|---|
+| Bot paused (`bot_paused_until` in the future) with a handoff reason such as `customer_requested_human`, `model_needs_human`, `citation_violation`, `compliance`, … | `handoff_reason = agent_takeover` (human already replied) |
+| | Expired pauses (`bot_paused_until` in the past) |
+| | Conversations with no AI pause |
+
+**Response fields** (on every conversation row, including unfiltered lists)
+
+| Field | Type | Description |
+|---|---|---|
+| `needs_attention` | boolean | `true` when bot is paused for a non-takeover handoff |
+| `handoff_reason` | string\|null | Why the bot paused |
+| `bot_paused_until` | string\|null | ISO 8601 pause expiry |
+
+**Response 200** (excerpt)
+```json
+{
+  "status": "success",
+  "data": {
+    "data": [
+      {
+        "id": 88,
+        "state_id": 88,
+        "conversation_id": 4201,
+        "user_id": 123,
+        "wa_number_id": 2,
+        "status": "active",
+        "unread_count": 1,
+        "needs_attention": true,
+        "handoff_reason": "customer_requested_human",
+        "bot_paused_until": "2026-08-08T12:00:00+00:00",
+        "last_message_preview": "أبي أتكلم مع موظف",
+        "last_message_time": "2026-08-07T20:55:00+00:00"
+      }
+    ],
+    "pagination": {
+      "current_page": 1,
+      "per_page": 50,
+      "total": 1,
+      "last_page": 1
+    }
   }
 }
 ```
