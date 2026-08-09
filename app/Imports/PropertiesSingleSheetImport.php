@@ -14,6 +14,7 @@ use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 use App\Models\User\Language;
 use App\Models\User\UserDistrict;
 use App\Rules\PropertyTypeRule;
+use App\Services\PropertyConflictDetectionService;
 use App\Support\PropertyCompletionRequirements;
 use App\Support\PropertyExcelMapping;
 use Maatwebsite\Excel\Concerns\OnEachRow;
@@ -432,6 +433,25 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             if ($normalizedType === null || !in_array($normalizedType, PropertyTypeRule::allowed(), true)) {
                 $validationErrors[] = 'property_type must be one of: '
                     . implode(', ', PropertyTypeRule::allowed());
+            }
+        }
+
+        // Exact five-field duplicate check only for rows that would land complete.
+        // Use onError (SkipsErrors) — do NOT throw from onRow (aborts whole import).
+        if (empty($missingFields) && empty($validationErrors)) {
+            $dup = app(PropertyConflictDetectionService::class)->findExactCompletionDuplicate(
+                (int) $this->userId,
+                array_merge($row, ['property_type' => $row['type'] ?? $row['property_type'] ?? null]),
+                null,
+                $this->defaultLanguageId
+            );
+            if ($dup) {
+                $this->onError(new RowValidationException(
+                    "Row {$rowIndex}: A property with the same title, address, description, featured image, and property type already exists",
+                    field: 'completion_identity',
+                    row: $rowIndex
+                ));
+                return;
             }
         }
 

@@ -561,4 +561,248 @@ class PropertiesBulkImportArabicHeadersTest extends TestCase
         $this->assertNotNull($content);
         $this->assertSame('شقة مكتملة بالحد الأدنى', $content->title);
     }
+
+    /**
+     * @param  array{title: string, address: string, description: string, featured_image: string, property_type: string}  $identity
+     */
+    private function seedCompletePeer(User $tenant, Language $language, array $identity): Property
+    {
+        $property = Property::create([
+            'user_id' => $tenant->id,
+            'created_by' => $tenant->id,
+            'price' => 100000,
+            'purpose' => 'sale',
+            'listing_purpose' => 'sale',
+            'unit_status' => 'available',
+            'publish_status' => 'published',
+            'property_type' => $identity['property_type'],
+            'area' => 100,
+            'status' => 1,
+            'completion_status' => 'complete',
+            'featured' => 0,
+            'featured_image' => $identity['featured_image'],
+            'completed_at' => now(),
+        ]);
+
+        PropertyContent::create([
+            'user_id' => $tenant->id,
+            'property_id' => $property->id,
+            'language_id' => $language->id,
+            'title' => $identity['title'],
+            'slug' => 'complete-peer-' . $property->id . '-' . uniqid(),
+            'address' => $identity['address'],
+            'description' => $identity['description'],
+        ]);
+
+        return $property->fresh();
+    }
+
+    /** @return list<string> */
+    private function fiveFieldHeaders(): array
+    {
+        return [
+            'عنوان الإعلان *',
+            'العنوان *',
+            'الوصف *',
+            'النوع *',
+            'الصورة الرئيسية *',
+        ];
+    }
+
+    /**
+     * @param  array{title: string, address: string, description: string, property_type: string, featured_image: string}  $identity
+     * @return list<mixed>
+     */
+    private function fiveFieldRow(array $identity): array
+    {
+        return [
+            $identity['title'],
+            $identity['address'],
+            $identity['description'],
+            $identity['property_type'] === 'residential' ? 'سكني' : $identity['property_type'],
+            $identity['featured_image'],
+        ];
+    }
+
+    public function test_import_same_title_address_different_description_creates(): void
+    {
+        $this->skipIfMissingSchema();
+        [$tenant, $language] = $this->actingAsTenantWithCreate();
+
+        $peerIdentity = [
+            'title' => 'Villa Dup Test A',
+            'address' => 'Street 1 District Test',
+            'description' => 'Original description long enough',
+            'featured_image' => 'https://example.com/img.jpg',
+            'property_type' => 'residential',
+        ];
+        $this->seedCompletePeer($tenant, $language, $peerIdentity);
+
+        $before = Property::where('user_id', $tenant->id)->count();
+
+        $file = $this->makeExcelUpload(
+            $this->fiveFieldHeaders(),
+            [$this->fiveFieldRow(array_merge($peerIdentity, [
+                'description' => 'Different description long enough',
+            ]))],
+        );
+
+        $response = $this->post('/api/properties/bulk-import', ['file' => $file], [
+            'Accept' => 'application/json',
+        ]);
+
+        $this->assertSame(0, (int) ($response->json('failed_count') ?? 0), $response->getContent());
+        $this->assertGreaterThan(0, (int) ($response->json('imported_count') ?? 0), $response->getContent());
+        $this->assertSame($before + 1, Property::where('user_id', $tenant->id)->count());
+    }
+
+    public function test_import_exact_five_field_match_fails_row_but_continues_file(): void
+    {
+        $this->skipIfMissingSchema();
+        [$tenant, $language] = $this->actingAsTenantWithCreate();
+
+        $peerIdentity = [
+            'title' => 'Exact Match Peer Villa',
+            'address' => 'Match Street Address Here',
+            'description' => 'Matching description text here',
+            'featured_image' => 'https://example.com/match.jpg',
+            'property_type' => 'residential',
+        ];
+        $this->seedCompletePeer($tenant, $language, $peerIdentity);
+
+        $before = Property::where('user_id', $tenant->id)->count();
+
+        $other = [
+            'title' => 'Other Unique Villa Row',
+            'address' => 'Other Street Address Here',
+            'description' => 'Other description text here ok',
+            'featured_image' => 'https://example.com/other.jpg',
+            'property_type' => 'residential',
+        ];
+
+        $file = $this->makeExcelUpload(
+            $this->fiveFieldHeaders(),
+            [
+                $this->fiveFieldRow($peerIdentity),
+                $this->fiveFieldRow($other),
+            ],
+        );
+
+        $response = $this->post('/api/properties/bulk-import', ['file' => $file], [
+            'Accept' => 'application/json',
+        ]);
+
+        $this->assertSame(1, (int) ($response->json('failed_count') ?? 0), $response->getContent());
+        $this->assertGreaterThan(0, (int) ($response->json('imported_count') ?? 0), $response->getContent());
+        $this->assertSame($before + 1, Property::where('user_id', $tenant->id)->count());
+
+        $created = PropertyContent::where('user_id', $tenant->id)
+            ->where('title', $other['title'])
+            ->first();
+        $this->assertNotNull($created);
+
+        $dupTitles = PropertyContent::where('user_id', $tenant->id)
+            ->where('title', $peerIdentity['title'])
+            ->count();
+        $this->assertSame(1, $dupTitles);
+    }
+
+    public function test_import_two_identical_five_field_rows_second_fails(): void
+    {
+        $this->skipIfMissingSchema();
+        [$tenant] = $this->actingAsTenantWithCreate();
+
+        $identity = [
+            'title' => 'Twin Row Villa Import',
+            'address' => 'Twin Street Address Here',
+            'description' => 'Twin description text here ok',
+            'featured_image' => 'https://example.com/twin.jpg',
+            'property_type' => 'residential',
+        ];
+
+        $before = Property::where('user_id', $tenant->id)->count();
+        $row = $this->fiveFieldRow($identity);
+
+        $file = $this->makeExcelUpload($this->fiveFieldHeaders(), [$row, $row]);
+
+        $response = $this->post('/api/properties/bulk-import', ['file' => $file], [
+            'Accept' => 'application/json',
+        ]);
+
+        $this->assertSame(1, (int) ($response->json('failed_count') ?? 0), $response->getContent());
+        $this->assertSame(1, (int) ($response->json('imported_count') ?? 0), $response->getContent());
+        $this->assertSame($before + 1, Property::where('user_id', $tenant->id)->count());
+    }
+
+    public function test_import_invalid_featured_image_url_creates_incomplete_not_duplicate(): void
+    {
+        $this->skipIfMissingSchema();
+        [$tenant, $language] = $this->actingAsTenantWithCreate();
+
+        $peerIdentity = [
+            'title' => 'Invalid Image Peer Villa',
+            'address' => 'Invalid Image Street Addr',
+            'description' => 'Invalid image peer description',
+            'featured_image' => 'https://example.com/valid.jpg',
+            'property_type' => 'residential',
+        ];
+        $this->seedCompletePeer($tenant, $language, $peerIdentity);
+
+        $before = Property::where('user_id', $tenant->id)->count();
+
+        $file = $this->makeExcelUpload(
+            $this->fiveFieldHeaders(),
+            [$this->fiveFieldRow(array_merge($peerIdentity, [
+                'featured_image' => 'not-a-valid-image-url',
+            ]))],
+        );
+
+        $response = $this->post('/api/properties/bulk-import', ['file' => $file], [
+            'Accept' => 'application/json',
+        ]);
+
+        $this->assertSame(0, (int) ($response->json('failed_count') ?? 0), $response->getContent());
+        $this->assertGreaterThan(0, (int) ($response->json('incomplete_count') ?? 0), $response->getContent());
+        $this->assertSame($before + 1, Property::where('user_id', $tenant->id)->count());
+
+        $created = Property::where('user_id', $tenant->id)->latest('id')->first();
+        $this->assertNotNull($created);
+        $this->assertSame('incomplete', $created->completion_status);
+    }
+
+    public function test_import_casing_whitespace_variant_treated_as_duplicate(): void
+    {
+        $this->skipIfMissingSchema();
+        [$tenant, $language] = $this->actingAsTenantWithCreate();
+
+        $peerIdentity = [
+            'title' => 'Villa A',
+            'address' => 'Main Street Address',
+            'description' => 'Canonical description text',
+            'featured_image' => 'https://example.com/case.jpg',
+            'property_type' => 'residential',
+        ];
+        $this->seedCompletePeer($tenant, $language, $peerIdentity);
+
+        $before = Property::where('user_id', $tenant->id)->count();
+
+        $file = $this->makeExcelUpload(
+            $this->fiveFieldHeaders(),
+            [$this->fiveFieldRow([
+                'title' => 'villa a ',
+                'address' => '  Main   Street Address  ',
+                'description' => 'Canonical description text',
+                'featured_image' => 'https://example.com/case.jpg',
+                'property_type' => 'residential',
+            ])],
+        );
+
+        $response = $this->post('/api/properties/bulk-import', ['file' => $file], [
+            'Accept' => 'application/json',
+        ]);
+
+        $this->assertSame(1, (int) ($response->json('failed_count') ?? 0), $response->getContent());
+        $this->assertSame(0, (int) ($response->json('imported_count') ?? 0), $response->getContent());
+        $this->assertSame($before, Property::where('user_id', $tenant->id)->count());
+    }
 }

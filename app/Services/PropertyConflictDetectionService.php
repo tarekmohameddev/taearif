@@ -2,38 +2,62 @@
 
 namespace App\Services;
 
+use App\Models\User\Language;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\PropertyContent;
 use App\Rules\PropertyTypeRule;
 use App\Support\PropertyCompletionRequirements;
-use Illuminate\Support\Facades\DB;
 
 class PropertyConflictDetectionService
 {
     /**
-     * Find a complete property owned by the same user that already uses this
-     * title + address pair. Incomplete drafts are not peers — only completed
-     * listings can be duplicated.
+     * Find a complete property owned by the same user whose five completion-
+     * identity fields match $data exactly (after canonicalize).
+     *
+     * Folding strategy:
+     * - PHP: PropertyCompletionRequirements::canonicalize (trim, collapse
+     *   internal whitespace, mb_strtolower) + PropertyTypeRule::normalize for type
+     * - SQL: REGEXP_REPLACE(LOWER(TRIM(col)), '[[:space:]]+', ' ') compared to
+     *   already-canonical bindings, so a DB value with irregular internal
+     *   spacing still folds to the same key as the PHP side (MariaDB/MySQL 8+;
+     *   plain LOWER(TRIM()) alone does not collapse mid-string whitespace).
      *
      * @param  int  $userId  Tenant owner id
+     * @param  array<string, mixed>  $data
      * @param  int|null  $excludePropertyId  Property being completed, if any
+     * @param  int|null  $languageId  Defaults to the owner's default language
      */
-    public function findTitleAddressDuplicate(
+    public function findExactCompletionDuplicate(
         int $userId,
-        ?string $title,
-        ?string $address,
-        ?int $excludePropertyId = null
+        array $data,
+        ?int $excludePropertyId = null,
+        ?int $languageId = null
     ): ?PropertyContent {
-        if (!PropertyCompletionRequirements::valueProvided($title)
-            || !PropertyCompletionRequirements::valueProvided($address)) {
+        $identity = PropertyCompletionRequirements::identityValues($data);
+        if ($identity === null) {
             return null;
         }
 
-        return PropertyContent::where('title', $title)
-            ->where('address', $address)
-            ->whereHas('property', function ($q) use ($userId, $excludePropertyId) {
-                $q->where('user_id', $userId)
-                  ->where('completion_status', 'complete');
+        if ($languageId === null) {
+            $languageId = Language::where('user_id', $userId)
+                ->where('is_default', 1)
+                ->value('id');
+        }
+
+        if ($languageId === null) {
+            return null;
+        }
+
+        return PropertyContent::query()
+            ->where('user_id', $userId)
+            ->where('language_id', $languageId)
+            ->whereRaw("REGEXP_REPLACE(LOWER(TRIM(title)), '[[:space:]]+', ' ') = ?", [$identity['title']])
+            ->whereRaw("REGEXP_REPLACE(LOWER(TRIM(address)), '[[:space:]]+', ' ') = ?", [$identity['address']])
+            ->whereRaw("REGEXP_REPLACE(LOWER(TRIM(description)), '[[:space:]]+', ' ') = ?", [$identity['description']])
+            ->whereHas('property', function ($q) use ($excludePropertyId, $identity) {
+                $q->where('completion_status', 'complete')
+                    ->whereRaw("REGEXP_REPLACE(LOWER(TRIM(featured_image)), '[[:space:]]+', ' ') = ?", [$identity['featured_image']])
+                    ->whereRaw("REGEXP_REPLACE(LOWER(TRIM(property_type)), '[[:space:]]+', ' ') = ?", [$identity['property_type']]);
 
                 if ($excludePropertyId !== null) {
                     $q->where('id', '!=', $excludePropertyId);
@@ -54,19 +78,18 @@ class PropertyConflictDetectionService
         $conflicts = [];
         $data = PropertyCompletionRequirements::normalizeInput($data);
 
-        // Check for duplicate title + address combination
-        $duplicate = $this->findTitleAddressDuplicate(
+        // Exact match on all five completion-identity fields vs a complete peer
+        $duplicate = $this->findExactCompletionDuplicate(
             $property->user_id,
-            $data['title'] ?? null,
-            $data['address'] ?? null,
+            $data,
             $property->id
         );
 
         if ($duplicate) {
             $conflicts[] = [
                 'type' => 'duplicate',
-                'field' => 'title+address',
-                'message' => 'A property with the same title and address already exists',
+                'field' => 'completion_identity',
+                'message' => 'A property with the same title, address, description, featured image, and property type already exists',
                 'severity' => 'error'
             ];
         }

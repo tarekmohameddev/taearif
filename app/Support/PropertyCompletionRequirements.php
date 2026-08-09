@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Rules\PropertyTypeRule;
+
 /**
  * Single source of truth for the fields a property must have to be "complete".
  *
@@ -35,6 +37,71 @@ class PropertyCompletionRequirements
         }
 
         return $data;
+    }
+
+    /**
+     * Fold a string for exact-identity comparison: trim, collapse internal
+     * whitespace, then lowercase.
+     */
+    public static function canonicalize(string $v): string
+    {
+        $v = trim($v);
+        $v = preg_replace('/\s+/u', ' ', $v) ?? $v;
+
+        return mb_strtolower($v);
+    }
+
+    /**
+     * Canonical five identity values, or null if any field is blank / un-normalizable.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{title: string, address: string, description: string, featured_image: string, property_type: string}|null
+     */
+    public static function identityValues(array $data): ?array
+    {
+        $data = self::normalizeInput($data);
+        $values = [];
+
+        foreach (self::fields() as $field) {
+            $raw = $data[$field] ?? null;
+
+            if ($field === 'property_type') {
+                $normalized = is_string($raw) ? PropertyTypeRule::normalize($raw) : null;
+                if ($normalized === null) {
+                    return null;
+                }
+                $values[$field] = self::canonicalize($normalized);
+                continue;
+            }
+
+            if (!self::valueProvided($raw)) {
+                return null;
+            }
+
+            $values[$field] = self::canonicalize((string) $raw);
+        }
+
+        return $values;
+    }
+
+    /**
+     * Stable hashable key for the five identity values (tests / optional in-memory sets).
+     *
+     * @param  array{title: string, address: string, description: string, featured_image: string, property_type: string}|null  $values
+     */
+    public static function identityKey(?array $values): ?string
+    {
+        if ($values === null) {
+            return null;
+        }
+
+        return implode("\x1f", [
+            $values['title'],
+            $values['address'],
+            $values['description'],
+            $values['featured_image'],
+            $values['property_type'],
+        ]);
     }
 
     /**
