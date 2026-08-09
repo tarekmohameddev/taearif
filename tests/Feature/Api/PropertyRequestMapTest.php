@@ -6,6 +6,7 @@ namespace Tests\Feature\Api;
 
 use App\Models\Api\UserPropertyRequest;
 use App\Models\User;
+use App\Models\User\RealestateManagement\Project;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\PropertyContent;
 use App\Models\User\UserCity;
@@ -34,6 +35,35 @@ class PropertyRequestMapTest extends TestCase
         if (! Schema::hasColumn('users_property_requests', 'initial_property_id')) {
             $this->markTestSkipped('initial_property_id column required. Run migration.');
         }
+    }
+
+    private function skipIfMissingProjectIdColumn(): void
+    {
+        $this->skipIfMissingSchema();
+
+        if (! Schema::hasTable('user_projects')) {
+            $this->markTestSkipped('user_projects table required.');
+        }
+
+        if (! Schema::hasColumn('users_property_requests', 'project_id')) {
+            $this->markTestSkipped('project_id column required on users_property_requests. Run migration.');
+        }
+    }
+
+    private function createProject(User $tenant): Project
+    {
+        return Project::query()->create([
+            'user_id' => $tenant->id,
+            'featured_image' => 'projects/test.jpg',
+            'min_price' => 100000,
+            'max_price' => 200000,
+            'featured' => 0,
+            'published' => 1,
+            'developer' => 'Test Developer',
+            'units' => 10,
+            'completion_date' => now()->addYear()->toDateString(),
+            'complete_status' => 0,
+        ]);
     }
 
     private function grantPermissions(User $tenant, array $permissions): void
@@ -279,6 +309,91 @@ class PropertyRequestMapTest extends TestCase
             'id' => $requestId,
             'initial_property_id' => $property->id,
             'source' => 'property_interest',
+        ]);
+    }
+
+    public function test_store_from_interest_inherits_project_id_from_property_when_omitted(): void
+    {
+        $this->skipIfMissingProjectIdColumn();
+
+        $tenant = $this->createTenant();
+        $project = $this->createProject($tenant);
+        $property = $this->createProperty($tenant, ['project_id' => $project->id]);
+
+        $response = $this->postJson('/api/v1/property-requests/interest', [
+            'tenant_username' => $tenant->username,
+            'property_id' => $property->id,
+            'full_name' => 'Interest Inherit Project',
+            'phone' => '+966501112244',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.property_id', $property->id)
+            ->assertJsonMissingPath('data.project_id');
+
+        $requestId = (int) $response->json('data.request_id');
+        $this->assertDatabaseHas('users_property_requests', [
+            'id' => $requestId,
+            'initial_property_id' => $property->id,
+            'project_id' => $project->id,
+            'source' => 'property_interest',
+        ]);
+    }
+
+    public function test_store_from_interest_body_project_id_overrides_property_project(): void
+    {
+        $this->skipIfMissingProjectIdColumn();
+
+        $tenant = $this->createTenant();
+        $propertyProject = $this->createProject($tenant);
+        $overrideProject = $this->createProject($tenant);
+        $property = $this->createProperty($tenant, ['project_id' => $propertyProject->id]);
+
+        $response = $this->postJson('/api/v1/property-requests/interest', [
+            'tenant_username' => $tenant->username,
+            'property_id' => $property->id,
+            'full_name' => 'Interest Override Project',
+            'phone' => '+966501112255',
+            'project_id' => $overrideProject->id,
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonMissingPath('data.project_id');
+
+        $requestId = (int) $response->json('data.request_id');
+        $this->assertDatabaseHas('users_property_requests', [
+            'id' => $requestId,
+            'project_id' => $overrideProject->id,
+            'source' => 'property_interest',
+        ]);
+    }
+
+    public function test_public_store_with_valid_project_id_persists(): void
+    {
+        $this->skipIfMissingProjectIdColumn();
+
+        $tenant = $this->createTenant();
+        $city = UserCity::query()->first();
+        if (! $city) {
+            $this->markTestSkipped('user_cities must have at least one row.');
+        }
+        $project = $this->createProject($tenant);
+
+        $response = $this->postJson('/api/v1/property-requests/public', [
+            'tenant_username' => $tenant->username,
+            'full_name' => 'Public Project User',
+            'phone' => '+966502223355',
+            'region' => $city->id,
+            'project_id' => $project->id,
+        ]);
+
+        $response->assertCreated();
+
+        $this->assertDatabaseHas('users_property_requests', [
+            'id' => $response->json('data.id'),
+            'user_id' => $tenant->id,
+            'project_id' => $project->id,
+            'source' => 'public_form',
         ]);
     }
 

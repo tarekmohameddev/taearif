@@ -2,126 +2,54 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\UserStep;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Onboarding\CompleteOnboardingStepRequest;
+use App\Services\SiteSetupProgressService;
+use Illuminate\Http\Request;
 
 class StepProgressController extends Controller
 {
-    /**
-     * Step map configuration - moved to class constant to avoid per-request allocation
-     */
-    private const STEP_MAP = [
-        'banner' => [
-            'path' => '/content/banner',
-            'text' => 'قم بتخصيص البانر الخاص بك',
-        ],
-        'footer' => [
-            'path' => '/content/footer',
-            'text' => 'قم بتخصيص التذييل الخاص بك',
-        ],
-        'homepage_about_update' => [
-            'path' => '/content/about',
-            'text' => 'قم بتحديث قسم من نحن',
-        ],
-        'menu_builder' => [
-            'path' => '/content/menu',
-            'text' => 'قم بإعداد قائمة الموقع',
-        ],
-        'projects' => [
-            'path' => '/projects/add',
-            'text' => 'أضف أول مشروع',
-        ],
-        'properties' => [
-            'path' => '/properties/add',
-            'text' => 'اضف اول عقار الآن',
-        ],
-    ];
+    public function __construct(
+        private readonly SiteSetupProgressService $progressService,
+    ) {}
 
     /**
-     * Display the progress of a specific step for a user.
+     * Display site setup progress for the authenticated user's tenant owner.
      *
-     * @param  Request  $request
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function getSteps(Request $request)
     {
-        $user = $request->user();
-        
-        // Check if performance optimizations are enabled
-        $useOptimizations = config('performance.enable_api_performance_optimizations');
-        
-        if ($useOptimizations) {
-            // Select only the columns we use to avoid pulling large blobs
-            $stepKeys = array_keys(self::STEP_MAP);
-            $steps = UserStep::select(['user_id', ...$stepKeys])
-                ->firstOrCreate(['user_id' => $user->id], array_fill_keys($stepKeys, false));
-        } else {
-            $steps = UserStep::firstOrCreate(['user_id' => $user->id]);
+        $progress = $this->progressService->getProgress($request->user());
+
+        if ($progress === null) {
+            return response()->json([
+                'message' => 'Unable to resolve tenant owner.',
+            ], 403);
         }
 
-        $stepMap = self::STEP_MAP;
-        $rawData = $steps->only(array_keys($stepMap));
-
-    $stepsWithStatus = [];
-    foreach ($stepMap as $key => $info) {
-        $value = $rawData[$key] ?? null;
-        $stepsWithStatus[$key] = [
-            'status' => $value,
-            'text' => $info['text'],
-        ];
+        return response()->json($progress);
     }
 
-    $progress = collect($stepsWithStatus)->filter(fn($step) => $step['status'])->count();
-    $percentage = intval(($progress / count($stepMap)) * 100);
-
-    $continuePath = collect($stepMap)
-        ->filter(fn($_, $key) => empty($rawData[$key]))
-        ->pluck('path')
-        ->first();
-
-    return response()->json([
-        'steps' => $stepsWithStatus,
-        'progress' => $percentage,
-        'continue_path' => $continuePath,
-    ]);
-}
-
-
+    /**
+     * Mark a setup step complete (owner user_steps write) and return GET-shaped progress.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function completeStep(CompleteOnboardingStepRequest $request)
     {
         $validated = $request->validated();
-        $user = auth()->user();
-        $steps = UserStep::firstOrCreate(['user_id' => $user->id]);
+        $result = $this->progressService->completeStep($request->user(), $validated['step']);
 
-        $steps->{$validated['step']} = true;
-        // Optional: check if all steps are completed now
-        $stepKeys = ['banner', 'footer', 'homepage_about_update', 'menu_builder', 'projects', 'properties'];
-        $remaining = collect($steps->only($stepKeys))->filter(fn ($v) => ! $v);
-
-        if ($remaining->isEmpty() && ! $steps->completed_at) {
-            $steps->completed_at = now();
+        if (! $result['ok']) {
+            return response()->json([
+                'message' => $result['error'] ?? 'Unable to complete step.',
+            ], $result['status'] ?? 422);
         }
 
-        $steps->save();
-
-        $data = $steps->only($stepKeys);
-        $progress = collect($data)->filter(fn ($v) => $v)->count();
-        $percentage = intval(($progress / count($stepKeys)) * 100);
-
-        $continuePath = collect(self::STEP_MAP)
-            ->filter(fn ($_, $key) => empty($data[$key]))
-            ->pluck('path')
-            ->first();
-
-        return response()->json([
-            'message' => 'Step marked as completed.',
-            'steps' => $data,
-            'progress' => $percentage,
-            'continue_path' => $continuePath,
-        ]);
+        return response()->json(array_merge(
+            ['message' => 'Step marked as completed.'],
+            $result['progress']
+        ));
     }
-
-
 }

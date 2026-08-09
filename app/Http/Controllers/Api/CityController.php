@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User\UserDistrict;
+use App\Models\User\UserCity;
+use App\Support\LocationLookupCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class CityController extends Controller
 {
@@ -13,7 +15,7 @@ class CityController extends Controller
      * GET /api/cities
      * GET /api/cities?country_id=1
      *
-     * Returns distinct cities from user_districts. country_id is optional.
+     * Returns cities from user_cities. country_id is optional.
      */
     public function index(Request $request): JsonResponse
     {
@@ -21,18 +23,22 @@ class CityController extends Controller
             'country_id' => ['sometimes', 'nullable', 'integer', 'exists:user_cities,country_id'],
         ]);
 
-        $cities = UserDistrict::query()
-            ->whereNotNull('city_id')
-            ->whereNotNull('city_name_ar')
-            ->when($request->filled('country_id'), function ($query) use ($request) {
-                $query->whereHas('city', function ($q) use ($request) {
-                    $q->where('country_id', (int) $request->input('country_id'));
-                });
-            })
-            ->select('city_id as id', 'city_name_ar as name_ar', 'city_name_en as name_en')
-            ->distinct()
-            ->orderBy('city_name_ar')
-            ->get();
+        $countryId = $request->filled('country_id') ? (int) $request->input('country_id') : null;
+
+        $cities = Cache::remember(
+            LocationLookupCache::key('cities', $countryId),
+            LocationLookupCache::TTL_SECONDS,
+            function () use ($countryId) {
+                return UserCity::query()
+                    ->when($countryId !== null, function ($query) use ($countryId) {
+                        $query->where('country_id', $countryId);
+                    })
+                    ->select('id', 'name_ar', 'name_en')
+                    ->orderBy('name_ar')
+                    ->get()
+                    ->toArray();
+            }
+        );
 
         return response()->json(['data' => $cities]);
     }

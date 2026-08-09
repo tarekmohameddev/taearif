@@ -14,7 +14,7 @@ class CompleteOnboardingStepRequest extends BaseApiFormRequest
     public function rules()
     {
         return [
-            'step' => 'required|in:banner,footer,homepage_about_update,menu_builder,projects,properties',
+            'step' => 'required|in:site_identity,contact_info,first_property,integrated_link,connect_site,properties',
         ];
     }
 }

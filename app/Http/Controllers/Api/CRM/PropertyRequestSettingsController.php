@@ -82,7 +82,7 @@ class PropertyRequestSettingsController extends Controller
     {
         return [
             'settings' => [
-                'auto_create_customer' => $settings?->auto_create_customer ?? false,
+                'auto_create_customer' => $settings?->auto_create_customer ?? true,
                 'default_stage_id' => $settings?->default_stage_id,
                 'default_stage' => $settings?->defaultStage,
             ],

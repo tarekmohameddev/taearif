@@ -2,11 +2,10 @@
 
 namespace App\Models\Api;
 
-use App\Models\User;
 use App\Domain\Domain\Models\CustomDomain;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class ApiDomainSetting extends Model
 {
@@ -26,7 +25,7 @@ class ApiDomainSetting extends Model
         'registrar',
         'expires_at',
         'auto_renewal',
-        'dns_records', // Add this
+        'dns_records',
     ];
 
     protected $casts = [
@@ -35,7 +34,7 @@ class ApiDomainSetting extends Model
         'added_date' => 'date',
         'expires_at' => 'date',
         'auto_renewal' => 'boolean',
-        'dns_records' => 'array', // Add this
+        'dns_records' => 'array',
     ];
 
     public function user()
@@ -55,23 +54,35 @@ class ApiDomainSetting extends Model
             ->orderByDesc('primary')
             ->orderByDesc('id');
     }
-    public function getDnsRecords()
+
+    /**
+     * DNS / nameserver setup instructions for tenants using Vercel NS.
+     *
+     * @return array{mode: string, nameservers: list<string>, steps: list<string>}
+     */
+    public static function nameserverInstructions(): array
     {
-        $user = Auth::user();
+        $nameservers = array_values(config('services.vercel.nameservers', [
+            'ns1.vercel-dns.com',
+            'ns2.vercel-dns.com',
+        ]));
+
         return [
-        [
-            'type' => 'A',
-            'name' => '@',
-            'value' => '76.76.21.21',
-            'ttl' => 3600,
-        ],
-        [
-            'type' => 'CNAME',
-            'name' => 'www',
-            'value' => $this->user->id . '.taearif.com',
-            'ttl' => 3600,
-        ],
+            'mode' => 'nameservers',
+            'nameservers' => $nameservers,
+            'steps' => [
+                'At your registrar (e.g. GoDaddy), set custom nameservers to the values above.',
+                'Wait for propagation, then click Verify.',
+            ],
         ];
     }
-}
 
+    /**
+     * @deprecated Prefer nameserverInstructions(); kept for callers expecting a list shape.
+     * @return array{mode: string, nameservers: list<string>, steps: list<string>}
+     */
+    public function getDnsRecords()
+    {
+        return self::nameserverInstructions();
+    }
+}
