@@ -61,6 +61,8 @@ use App\Http\Requests\Api\Property\UpdatePropertyRequest;
 
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\PropertiesImport;
+use App\Rules\PropertyTypeRule;
+use App\Support\PropertyCompletionRequirements;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class PropertyController extends Controller
@@ -77,6 +79,8 @@ class PropertyController extends Controller
         'title' => 'اسم الوحدة',
         'description' => 'الوصف',
         'address' => 'العنوان',
+        'featured_image' => 'الصورة الرئيسية',
+        'type' => 'نوع الوحدة',
         'city_id' => 'المدينة',
         'price' => 'المبلغ',
         'pricePerMeter' => 'سعر المتر',
@@ -187,12 +191,9 @@ class PropertyController extends Controller
                 // The collection excludes the header due to WithHeadingRow trait
                 $firstSheet = $collection->first();
 
-                // Required fields for a complete property
-                $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'property_type', 'area'];
-
                 // Count rows that will be complete (have all required fields)
                 // Only complete properties count toward the limit
-                $incomingCompleteCount = $firstSheet->filter(function($row) use ($requiredFields) {
+                $incomingCompleteCount = $firstSheet->filter(function($row) {
                     $rowArray = $row->toArray();
 
                     // Skip rows marked as empty by prepareForValidation
@@ -214,28 +215,23 @@ class PropertyController extends Controller
                         return false;
                     }
 
-                    // Check if this row has all required fields (will be complete)
-                    foreach ($requiredFields as $field) {
-                        $value = $rowArray[$field] ?? null;
-                        if (is_null($value) || (is_string($value) && trim($value) === '') || $value === '') {
-                            return false; // Missing required field - will be incomplete
+                    // Normalize row keys (Excel imports use 'type', API uses 'property_type')
+                    $rowArray = PropertyCompletionRequirements::normalizeInput($rowArray);
+
+                    // Check if row is complete using the single source of truth
+                    if (!PropertyCompletionRequirements::isComplete($rowArray)) {
+                        return false;
+                    }
+
+                    // Validate property_type is an allowed value
+                    $propertyType = $rowArray['property_type'] ?? null;
+                    if ($propertyType !== null) {
+                        $normalized = is_string($propertyType)
+                            ? PropertyTypeRule::normalize($propertyType)
+                            : null;
+                        if (!in_array($normalized, PropertyTypeRule::allowed(), true)) {
+                            return false; // Invalid property_type - will fail validation
                         }
-                    }
-
-                    // Validate numeric fields
-                    if (isset($rowArray['price']) && !is_numeric($rowArray['price'])) {
-                        return false; // Invalid price - will fail validation
-                    }
-                    if (isset($rowArray['area']) && (!is_numeric($rowArray['area']) || $rowArray['area'] < 1)) {
-                        return false; // Invalid area - will fail validation
-                    }
-
-                    // Validate enum fields
-                    if (isset($rowArray['purpose']) && !in_array($rowArray['purpose'], ['sale', 'rent'])) {
-                        return false; // Invalid purpose - will fail validation
-                    }
-                    if (isset($rowArray['property_type']) && !in_array(strtolower((string) $rowArray['property_type']), ['residential', 'commercial', 'agricultural', 'industrial'], true)) {
-                        return false; // Invalid property_type - will fail validation
                     }
 
                     // All required fields present and valid - will be complete
@@ -3914,7 +3910,7 @@ class PropertyController extends Controller
             DB::transaction(function () use ($property, $owner, $defaultLanguage, $validated) {
                 // Update property fields
                 $propertyData = [];
-                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'property_type', 'beds', 'bath', 'area',
+                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'property_type', 'featured_image', 'beds', 'bath', 'area',
                     'size', 'video_url', 'virtual_tour', 'features', 'payment_method',
                     'water_meter_number', 'electricity_meter_number', 'deed_number',
                     'advertising_license', 'latitude', 'longitude', 'category_id', 'project_id', 'building_id',
@@ -3963,30 +3959,18 @@ class PropertyController extends Controller
                     }
                 }
 
-                // Recalculate missing fields
-                $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'property_type', 'area'];
-                $missing = [];
-
-                // Get current property data
+                // Recalculate missing fields against the shared five-field definition
+                $content = $property->contents()->where('language_id', $defaultLanguage->id)->first();
                 $currentData = [
-                    'title' => $property->contents()->where('language_id', $defaultLanguage->id)->value('title'),
-                    'price' => $property->price,
-                    'address' => $property->contents()->where('language_id', $defaultLanguage->id)->value('address'),
-                    'description' => $property->contents()->where('language_id', $defaultLanguage->id)->value('description'),
-                    'purpose' => $property->purpose,
+                    'title' => $content?->title,
+                    'address' => $content?->address,
+                    'description' => $content?->description,
+                    'featured_image' => $property->featured_image,
                     'property_type' => $property->property_type,
-                    'area' => $property->area,
                 ];
 
-                foreach ($requiredFields as $field) {
-                    $value = $currentData[$field] ?? null;
-                    if (is_null($value) || (is_string($value) && trim($value) === '') || $value === '') {
-                        $missing[] = $field;
-                    }
-                }
-
                 $property->update([
-                    'missing_fields' => $missing,
+                    'missing_fields' => PropertyCompletionRequirements::missingFrom($currentData),
                 ]);
             });
 
@@ -4072,6 +4056,7 @@ class PropertyController extends Controller
                 'description' => $validated['description'] ?? $propertyContent?->description,
                 'purpose' => $validated['purpose'] ?? $property->purpose,
                 'property_type' => $validated['property_type'] ?? $property->property_type,
+                'featured_image' => $validated['featured_image'] ?? $property->featured_image,
                 'area' => $validated['area'] ?? $property->area,
             ];
 
@@ -4100,7 +4085,7 @@ class PropertyController extends Controller
             DB::transaction(function () use ($property, $owner, $defaultLanguage, $completeData, $validated) {
                 // Update property with all data
                 $propertyData = [];
-                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'property_type', 'beds', 'bath', 'area',
+                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'property_type', 'featured_image', 'beds', 'bath', 'area',
                     'size', 'video_url', 'virtual_tour', 'features', 'payment_method',
                     'water_meter_number', 'electricity_meter_number', 'deed_number',
                     'advertising_license', 'latitude', 'longitude', 'category_id', 'project_id', 'building_id',
@@ -4120,6 +4105,7 @@ class PropertyController extends Controller
                 if (isset($completeData['price'])) $propertyData['price'] = $completeData['price'];
                 if (isset($completeData['purpose'])) $propertyData['purpose'] = $completeData['purpose'];
                 if (isset($completeData['property_type'])) $propertyData['property_type'] = $completeData['property_type'];
+                if (isset($completeData['featured_image'])) $propertyData['featured_image'] = $completeData['featured_image'];
                 if (isset($completeData['area'])) $propertyData['area'] = $completeData['area'];
 
                 $propertyData['status'] = 1; // Active
@@ -4272,6 +4258,7 @@ class PropertyController extends Controller
                         'description' => $propertyContent?->description,
                         'purpose' => $property->purpose,
                         'property_type' => $property->property_type,
+                        'featured_image' => $property->featured_image,
                         'area' => $property->area,
                     ];
 

@@ -35,6 +35,12 @@ class PropertyExcelHeaderMapping
             return '';
         }
 
+        // Strip trailing asterisk (and surrounding whitespace) used to mark required columns
+        $header = trim(preg_replace('/\s*\*\s*$/', '', $header));
+        if ($header === '') {
+            return '';
+        }
+
         $map = self::arabicHeaderToKey();
         if (isset($map[$header])) {
             return $map[$header];

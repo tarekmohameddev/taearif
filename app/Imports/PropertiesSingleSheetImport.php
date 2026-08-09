@@ -13,6 +13,8 @@ use App\Models\User\RealestateManagement\PropertySpecification;
 use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 use App\Models\User\Language;
 use App\Models\User\UserDistrict;
+use App\Rules\PropertyTypeRule;
+use App\Support\PropertyCompletionRequirements;
 use App\Support\PropertyExcelMapping;
 use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -192,6 +194,18 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         return false;
     }
     /**
+     * Drop the trailing " *" the blank template puts on required headings.
+     *
+     * With heading_row.formatter = slug this is already handled (Str::slug drops
+     * the asterisk), so this is a safety net for the exact-Arabic lookup path and
+     * for any future switch to formatter = none.
+     */
+    private static function stripRequiredMarker(string $header): string
+    {
+        return trim(preg_replace('/\s*\*\s*$/u', '', trim($header)));
+    }
+
+    /**
      * Normalize row keys: map Arabic / slugified Arabic headers to English, keep existing English keys.
      */
     private function normalizeRowKeys(array $row): array
@@ -200,7 +214,7 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         $out = [];
         foreach ($row as $header => $value) {
             $headerStr = is_string($header) ? $header : (string) $header;
-            $key = $map[$headerStr] ?? $headerStr;
+            $key = $map[$headerStr] ?? $map[self::stripRequiredMarker($headerStr)] ?? $headerStr;
             if ($this->valueProvided($value)) {
                 $out[$key] = $value;
             } elseif (!array_key_exists($key, $out)) {
@@ -339,39 +353,31 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         [$cityId, $stateId] = $this->resolveLocationIds($row, $rowIndex);
         
         // Track location resolution failures as validation errors for incomplete properties
-        // Location (city_id) is REQUIRED - if missing, property must be incomplete
-        // This check is done before validation_errors array is populated
+        // Location validation: only bad city names hard-fail; missing city or
+        // unresolvable district names are soft errors (validation_errors, not row-fail).
+        // This aligns with Decision B: empty city is OK for a complete property.
         $locationValidationErrors = [];
-        
-        // Check if city_id is missing (location is required)
-        if (!$cityId) {
-            $locationValidationErrors[] = "موقع المدينة مطلوب. يرجى تقديم معرف المدينة (city_id) أو اسم المدينة (city_name).";
-        }
-        
-        // Check if district was provided but couldn't be resolved (location validation error)
+
+        // Check if district was provided but couldn't be resolved (soft error)
         if ($this->valueProvided($row['district_name'] ?? null) && !$stateId && $cityId) {
             $locationValidationErrors[] = "District '{$row['district_name']}' not found in the specified city. Please verify the district name or use state_id.";
         }
 
-        // Validate featured image URL format
-        if (!empty($row['featured_image'])) {
+        // Image URL validation: soft-fail path. Invalid featured_image or
+        // gallery URLs are tracked as validation errors, not row failures.
+        // This allows incomplete properties to be created with the bad URLs for
+        // later user correction, matching soft-incomplete Decision B.
+        if ($this->valueProvided($row['featured_image'] ?? null)) {
             if (!$this->validateImageUrl($row['featured_image'])) {
-                throw new RowValidationException(
-                    "Row {$rowIndex}: Invalid featured_image URL format. URL must be http/https with valid image extension (jpg, jpeg, png, gif, webp).",
-                    field: 'featured_image',
-                    row: $rowIndex
-                );
+                $validationErrors[] = "featured_image URL format is invalid: must be http/https with jpg, jpeg, png, gif, or webp extension";
             }
         }
 
-        // Validate gallery image URLs
         foreach ($galleryImages as $galleryUrl) {
             if (!$this->validateImageUrl($galleryUrl)) {
-                throw new RowValidationException(
-                    "Row {$rowIndex}: Invalid gallery image URL: {$galleryUrl}. URL must be http/https with valid image extension (jpg, jpeg, png, gif, webp).",
-                    field: 'gallery_images',
-                    row: $rowIndex
-                );
+                $validationErrors[] = "gallery_images contains invalid URL: {$galleryUrl} (must be http/https with jpg, jpeg, png, gif, or webp extension)";
+                // Only report once per row; don't error every URL in the list
+                break;
             }
         }
 
@@ -393,52 +399,61 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             );
         }
         
-        $requiredFields = [
-            'title' => ['min' => 3, 'max' => 255],
-            'price' => ['min' => 0],
-            'address' => ['min' => 5, 'max' => 500],
-            'description' => ['min' => 10],
-            'purpose' => ['values' => ['sale', 'rent']],
-            'type' => ['values' => ['residential', 'commercial']],
-            'area' => ['min' => 1],
-        ];
-        
-        foreach ($requiredFields as $field => $rules) {
-            $value = $row[$field] ?? null;
-            
-            // Check if field is missing or empty
-            if (is_null($value) || (is_string($value) && trim($value) === '') || $value === '') {
-                $missingFields[] = $field;
-                continue;
-            }
-            
-            // Validate field rules
-            if (isset($rules['min']) && isset($rules['max'])) {
-                $length = is_string($value) ? strlen($value) : $value;
-                if ($length < $rules['min'] || $length > $rules['max']) {
-                    $validationErrors[] = "{$field} must be between {$rules['min']} and {$rules['max']} characters";
-                }
-            } elseif (isset($rules['min'])) {
-                if (is_string($value)) {
-                    if (strlen($value) < $rules['min']) {
-                        $validationErrors[] = "{$field} must be at least {$rules['min']} characters";
-                    }
-                } elseif (is_numeric($value) && $value < $rules['min']) {
-                    $validationErrors[] = "{$field} must be at least {$rules['min']}";
-                }
-            } elseif (isset($rules['values'])) {
-                if (!in_array($value, $rules['values'])) {
-                    $validationErrors[] = "{$field} must be one of: " . implode(', ', $rules['values']);
-                }
+        // Completeness is the shared five-field definition: title, address,
+        // description, featured_image, property_type. Reported as canonical
+        // English keys (`property_type`, never the Excel alias `type`).
+        $missingFields = PropertyCompletionRequirements::missingFrom($row);
+
+        // Format checks run only on values that were actually supplied. A blank
+        // required field is already reported once in $missingFields and must not
+        // error twice; a blank price / purpose / area is simply absent, not invalid.
+        if ($this->valueProvided($row['title'] ?? null)) {
+            $length = mb_strlen((string) $row['title']);
+            if ($length < 3 || $length > 255) {
+                $validationErrors[] = "title must be between 3 and 255 characters";
             }
         }
-        
-        // Validate numeric fields
-        if (isset($row['price']) && !is_numeric($row['price'])) {
-            $validationErrors[] = "price must be a number";
+
+        if ($this->valueProvided($row['address'] ?? null)) {
+            $length = mb_strlen((string) $row['address']);
+            if ($length < 5 || $length > 500) {
+                $validationErrors[] = "address must be between 5 and 500 characters";
+            }
         }
-        if (isset($row['area']) && !is_numeric($row['area'])) {
-            $validationErrors[] = "area must be a number";
+
+        if ($this->valueProvided($row['description'] ?? null)
+            && mb_strlen((string) $row['description']) < 10) {
+            $validationErrors[] = "description must be at least 10 characters";
+        }
+
+        if ($this->valueProvided($row['price'] ?? null)) {
+            if (!is_numeric($row['price'])) {
+                $validationErrors[] = "price must be a number";
+            } elseif ($row['price'] < 0) {
+                $validationErrors[] = "price must be at least 0";
+            }
+        }
+
+        if ($this->valueProvided($row['area'] ?? null)) {
+            if (!is_numeric($row['area'])) {
+                $validationErrors[] = "area must be a number";
+            } elseif ($row['area'] < 1) {
+                $validationErrors[] = "area must be at least 1";
+            }
+        }
+
+        if ($this->valueProvided($row['purpose'] ?? null)
+            && !in_array($row['purpose'], ['sale', 'rent'], true)) {
+            $validationErrors[] = "purpose must be one of: sale, rent";
+        }
+
+        $rowType = $row['type'] ?? null;
+        if ($this->valueProvided($rowType)) {
+            $normalizedType = is_string($rowType) ? PropertyTypeRule::normalize($rowType) : null;
+            if ($normalizedType === null || !in_array($normalizedType, PropertyTypeRule::allowed(), true)) {
+                $validationErrors[] = 'property_type must be one of: '
+                    . implode(', ', PropertyTypeRule::allowed());
+            }
         }
 
         // Wrap entire row processing in transaction (create-only)
@@ -488,12 +503,14 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                     $this->actorId
                 );
 
-                // Only create PropertyContent if title and address are provided
-                if (!empty($row['title']) && !empty($row['address'])) {
+                // Create PropertyContent when EITHER title or address is present.
+                // Requiring both left a title-only draft with no content row at
+                // all, so it showed up nameless in the drafts UI.
+                if ($this->valueProvided($row['title'] ?? null) || $this->valueProvided($row['address'] ?? null)) {
                     $contentData = [
                         'language_id'      => $this->defaultLanguageId,
-                        'title'            => $row['title'],
-                        'address'          => $row['address'],
+                        'title'            => $row['title'] ?? '',
+                        'address'          => $row['address'] ?? '',
                         'description'      => $row['description'] ?? '',
                         'meta_keyword'     => null,
                         'meta_description' => !empty($row['description']) ? Str::limit($row['description'], 150) : null,
@@ -525,15 +542,18 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                 
                 $this->incompleteCount++;
             } else {
-                // All required fields present - create complete property
+                // All required fields present - create complete property.
+                // price / purpose / area are optional now, so every read must be
+                // null-safe: Property::storeProperty() indexes price and area
+                // directly and would fatal on an absent key.
                 $propertyData = [
-                    'price'           => $row['price'],
+                    'price'           => $row['price'] ?? null,
                     'pricePerMeter'   => $row['price_per_meter'] ?? null,
-                    'purpose'         => $row['purpose'],
-                    'type'            => $row['type'],
+                    'purpose'         => $row['purpose'] ?? null,
+                    'property_type'   => $row['type'] ?? null,
                     'beds'            => $row['beds'] ?? null,
                     'bath'            => $row['bath'] ?? null,
-                    'area'            => $row['area'],
+                    'area'            => $row['area'] ?? null,
                     'video_url'       => $row['video_url'] ?? null,
                     'status'          => $row['status'] ?? 1,
                     'latitude'        => null,
@@ -545,6 +565,9 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                     'show_reservations' => true,
                     'payment_method'  => $this->mapPaymentMethod($row['payment_method'] ?? null),
                     'completion_status' => 'complete',
+                    // Was missing: complete rows were never tagged with their batch,
+                    // so the bulk-import report could not see them.
+                    'import_batch_id' => $this->importBatchId,
                 ];
 
                 // Images (Expect URLs)
@@ -572,7 +595,7 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                     'address'          => $row['address'],
                     'description'      => $row['description'],
                     'meta_keyword'     => null,
-                    'meta_description' => Str::limit($row['description'], 150),
+                    'meta_description' => Str::limit((string) $row['description'], 150),
                     'category_id'      => $property->category_id,
                     'city_id'          => $cityId,
                     'state_id'         => $stateId, // District ID from user_districts table
@@ -979,7 +1002,7 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             'address'     => 'nullable|string|max:500',
             'description' => 'nullable|string',
             'purpose'     => 'nullable|in:sale,rent',
-            'type'        => 'nullable|in:residential,commercial',
+            'type'        => 'nullable|in:residential,commercial,agricultural,industrial',
             'area'        => 'nullable|numeric|min:0',
             'size'        => 'nullable|numeric|min:0',
             'beds'        => 'nullable|integer|min:0|max:50',
@@ -988,7 +1011,7 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             'city_name'   => 'nullable|string|max:255',
             'district_name' => 'nullable|string|max:255',
             'country_name' => 'nullable|string|max:255',
-            'featured_image' => 'nullable|url|max:500',
+            'featured_image' => 'nullable|string|max:500',
             'video_url'   => 'nullable|url|max:500',
             'virtual_tour' => 'nullable|url|max:500',
             'gallery_images' => 'nullable|string',

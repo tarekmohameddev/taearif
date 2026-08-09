@@ -4,13 +4,47 @@ namespace App\Services;
 
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\PropertyContent;
+use App\Rules\PropertyTypeRule;
+use App\Support\PropertyCompletionRequirements;
 use Illuminate\Support\Facades\DB;
 
 class PropertyConflictDetectionService
 {
     /**
+     * Find a complete property owned by the same user that already uses this
+     * title + address pair. Incomplete drafts are not peers — only completed
+     * listings can be duplicated.
+     *
+     * @param  int  $userId  Tenant owner id
+     * @param  int|null  $excludePropertyId  Property being completed, if any
+     */
+    public function findTitleAddressDuplicate(
+        int $userId,
+        ?string $title,
+        ?string $address,
+        ?int $excludePropertyId = null
+    ): ?PropertyContent {
+        if (!PropertyCompletionRequirements::valueProvided($title)
+            || !PropertyCompletionRequirements::valueProvided($address)) {
+            return null;
+        }
+
+        return PropertyContent::where('title', $title)
+            ->where('address', $address)
+            ->whereHas('property', function ($q) use ($userId, $excludePropertyId) {
+                $q->where('user_id', $userId)
+                  ->where('completion_status', 'complete');
+
+                if ($excludePropertyId !== null) {
+                    $q->where('id', '!=', $excludePropertyId);
+                }
+            })
+            ->first();
+    }
+
+    /**
      * Check for conflicts before completing a property
-     * 
+     *
      * @param Property $property
      * @param array $data
      * @return array Array of conflicts with severity levels
@@ -18,38 +52,28 @@ class PropertyConflictDetectionService
     public function detectConflicts(Property $property, array $data): array
     {
         $conflicts = [];
-        
+        $data = PropertyCompletionRequirements::normalizeInput($data);
+
         // Check for duplicate title + address combination
-        if (isset($data['title']) && isset($data['address'])) {
-            $duplicate = PropertyContent::where('title', $data['title'])
-                ->where('address', $data['address'])
-                ->whereHas('property', function($q) use ($property) {
-                    $q->where('user_id', $property->user_id)
-                      ->where('id', '!=', $property->id)
-                      ->where('completion_status', 'complete');
-                })
-                ->first();
-            
-            if ($duplicate) {
-                $conflicts[] = [
-                    'type' => 'duplicate',
-                    'field' => 'title+address',
-                    'message' => 'A property with the same title and address already exists',
-                    'severity' => 'error'
-                ];
-            }
+        $duplicate = $this->findTitleAddressDuplicate(
+            $property->user_id,
+            $data['title'] ?? null,
+            $data['address'] ?? null,
+            $property->id
+        );
+
+        if ($duplicate) {
+            $conflicts[] = [
+                'type' => 'duplicate',
+                'field' => 'title+address',
+                'message' => 'A property with the same title and address already exists',
+                'severity' => 'error'
+            ];
         }
-        
-        // Validate required fields are present
-        $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'type', 'area'];
-        $missing = [];
-        
-        foreach ($requiredFields as $field) {
-            if (!isset($data[$field]) || (is_string($data[$field]) && trim($data[$field]) === '') || $data[$field] === null) {
-                $missing[] = $field;
-            }
-        }
-        
+
+        // Validate required fields are present (shared five-field definition)
+        $missing = PropertyCompletionRequirements::missingFrom($data);
+
         if (!empty($missing)) {
             $conflicts[] = [
                 'type' => 'missing_fields',
@@ -59,8 +83,12 @@ class PropertyConflictDetectionService
             ];
         }
         
-        // Validate data formats
-        if (isset($data['price']) && (!is_numeric($data['price']) || $data['price'] < 0)) {
+        // Validate data formats.
+        // price / purpose / area are optional for completeness — only their
+        // FORMAT is checked, and only when a value was actually supplied.
+        // An empty string is "not supplied", not "invalid".
+        if (PropertyCompletionRequirements::valueProvided($data['price'] ?? null)
+            && (!is_numeric($data['price']) || $data['price'] < 0)) {
             $conflicts[] = [
                 'type' => 'validation',
                 'field' => 'price',
@@ -68,8 +96,9 @@ class PropertyConflictDetectionService
                 'severity' => 'error'
             ];
         }
-        
-        if (isset($data['area']) && (!is_numeric($data['area']) || $data['area'] < 1)) {
+
+        if (PropertyCompletionRequirements::valueProvided($data['area'] ?? null)
+            && (!is_numeric($data['area']) || $data['area'] < 1)) {
             $conflicts[] = [
                 'type' => 'validation',
                 'field' => 'area',
@@ -77,8 +106,9 @@ class PropertyConflictDetectionService
                 'severity' => 'error'
             ];
         }
-        
-        if (isset($data['purpose']) && !in_array($data['purpose'], ['sale', 'rent'])) {
+
+        if (PropertyCompletionRequirements::valueProvided($data['purpose'] ?? null)
+            && !in_array($data['purpose'], ['sale', 'rent'])) {
             $conflicts[] = [
                 'type' => 'validation',
                 'field' => 'purpose',
@@ -86,19 +116,23 @@ class PropertyConflictDetectionService
                 'severity' => 'error'
             ];
         }
-        
-        $propertyType = $data['property_type'] ?? ($data['type'] ?? null);
-        if ($propertyType !== null && !in_array($propertyType, ['residential', 'commercial'])) {
+
+        $allowedTypes = PropertyTypeRule::allowed();
+        $rawType = $data['property_type'] ?? null;
+        $propertyType = is_string($rawType) ? PropertyTypeRule::normalize($rawType) : null;
+        if ($propertyType !== null && !in_array($propertyType, $allowedTypes, true)) {
             $conflicts[] = [
                 'type' => 'validation',
                 'field' => 'property_type',
-                'message' => 'Property type must be either "residential" or "commercial"',
+                'message' => 'Property type must be one of: ' . implode(', ', $allowedTypes),
                 'severity' => 'error'
             ];
         }
-        
-        // Validate title length
-        if (isset($data['title']) && (strlen($data['title']) < 3 || strlen($data['title']) > 255)) {
+
+        // Length checks run only on supplied values — a blank required field is
+        // already reported once as missing_fields and must not error twice.
+        if (PropertyCompletionRequirements::valueProvided($data['title'] ?? null)
+            && (mb_strlen($data['title']) < 3 || mb_strlen($data['title']) > 255)) {
             $conflicts[] = [
                 'type' => 'validation',
                 'field' => 'title',
@@ -106,9 +140,9 @@ class PropertyConflictDetectionService
                 'severity' => 'error'
             ];
         }
-        
-        // Validate address length
-        if (isset($data['address']) && (strlen($data['address']) < 5 || strlen($data['address']) > 500)) {
+
+        if (PropertyCompletionRequirements::valueProvided($data['address'] ?? null)
+            && (mb_strlen($data['address']) < 5 || mb_strlen($data['address']) > 500)) {
             $conflicts[] = [
                 'type' => 'validation',
                 'field' => 'address',
@@ -116,9 +150,9 @@ class PropertyConflictDetectionService
                 'severity' => 'error'
             ];
         }
-        
-        // Validate description length
-        if (isset($data['description']) && strlen($data['description']) < 10) {
+
+        if (PropertyCompletionRequirements::valueProvided($data['description'] ?? null)
+            && mb_strlen($data['description']) < 10) {
             $conflicts[] = [
                 'type' => 'validation',
                 'field' => 'description',
@@ -126,7 +160,7 @@ class PropertyConflictDetectionService
                 'severity' => 'error'
             ];
         }
-        
+
         return $conflicts;
     }
     

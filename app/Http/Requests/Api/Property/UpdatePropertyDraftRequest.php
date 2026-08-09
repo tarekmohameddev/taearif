@@ -4,6 +4,7 @@ namespace App\Http\Requests\Api\Property;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
 use App\Http\Requests\Concerns\ValidatesTenantProjectId;
+use App\Rules\PropertyTypeRule;
 
 class UpdatePropertyDraftRequest extends BaseApiFormRequest
 {
@@ -12,6 +13,12 @@ class UpdatePropertyDraftRequest extends BaseApiFormRequest
     protected function prepareForValidation(): void
     {
         $this->normalizeNullableProjectId();
+
+        // Legacy clients send `type`; the column and the completeness check are
+        // both `property_type`. Alias it so the value is no longer dropped.
+        if (!$this->has('property_type') && $this->has('type')) {
+            $this->merge(['property_type' => $this->input('type')]);
+        }
     }
     public function authorize()
     {
@@ -28,6 +35,10 @@ class UpdatePropertyDraftRequest extends BaseApiFormRequest
             'pricePerMeter' => 'sometimes|nullable|numeric',
             'purpose' => 'sometimes|nullable|string',
             'type' => 'sometimes|nullable|string',
+            // Required for completeness — a draft must be able to set both
+            // while it is still being edited, not only at completion time.
+            'property_type' => array_merge(['sometimes'], PropertyTypeRule::nullableRule()),
+            'featured_image' => 'sometimes|nullable|string|max:500',
             'beds' => 'sometimes|nullable|integer|min:0',
             'bath' => 'sometimes|nullable|integer|min:0',
             'area' => 'sometimes|nullable|numeric|min:0',
