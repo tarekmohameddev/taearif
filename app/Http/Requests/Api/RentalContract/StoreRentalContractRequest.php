@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\RentalContract;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreRentalContractRequest extends BaseApiFormRequest
 {
@@ -13,8 +14,13 @@ class StoreRentalContractRequest extends BaseApiFormRequest
 
     public function rules()
     {
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : auth()->id();
+
         return [
-            'rental_id' => 'required|exists:rm_rentals,id',
+            'rental_id' => [
+                'required',
+                Rule::exists('rm_rentals', 'id')->where(fn ($q) => $q->where('user_id', $ownerId)),
+            ],
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
             'status' => 'required|in:pending,active',

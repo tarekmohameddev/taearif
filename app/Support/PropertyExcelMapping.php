@@ -19,6 +19,8 @@ class PropertyExcelMapping
     public const TYPE_TO_EXCEL = [
         'residential' => 'سكني',
         'commercial' => 'تجاري',
+        'agricultural' => 'زراعي',
+        'industrial' => 'صناعي',
     ];
 
     /** Excel (Arabic or English) → DB (purpose) */
@@ -33,8 +35,12 @@ class PropertyExcelMapping
     public const TYPE_TO_DB = [
         'سكني' => 'residential',
         'تجاري' => 'commercial',
+        'زراعي' => 'agricultural',
+        'صناعي' => 'industrial',
         'residential' => 'residential',
         'commercial' => 'commercial',
+        'agricultural' => 'agricultural',
+        'industrial' => 'industrial',
     ];
 
     /** Lookup sheet title for City-District Reference (used in title() and setFormula1) */
@@ -127,7 +133,9 @@ class PropertyExcelMapping
             return self::TYPE_TO_DB[$v];
         }
         $lower = mb_strtolower($v);
-        return in_array($lower, ['residential', 'commercial']) ? $lower : $value;
+        return in_array($lower, ['residential', 'commercial', 'agricultural', 'industrial'], true)
+            ? $lower
+            : $value;
     }
 
     public static function purposeExcelOptions(): string
@@ -137,7 +145,7 @@ class PropertyExcelMapping
 
     public static function typeExcelOptions(): string
     {
-        return 'سكني,تجاري';
+        return 'سكني,تجاري,زراعي,صناعي';
     }
 
     /**

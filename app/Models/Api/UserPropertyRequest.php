@@ -82,6 +82,7 @@ class UserPropertyRequest extends Model
         'customers_hub_stage_id',
         'property_ids',
         'initial_property_id',
+        'project_id',
         'responsible_employee_id',
         'inquiry_type',
         'currency',
@@ -158,6 +159,11 @@ class UserPropertyRequest extends Model
     public function initialProperty()
     {
         return $this->belongsTo(\App\Models\User\RealestateManagement\Property::class, 'initial_property_id');
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(\App\Models\User\RealestateManagement\Project::class, 'project_id');
     }
 
     /**

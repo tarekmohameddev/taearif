@@ -37,7 +37,7 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['single'],
+            'channels' => ['daily'],
             'ignore_exceptions' => false,
         ],
 
@@ -49,6 +49,7 @@ return [
 
         'daily' => [
             'driver' => 'daily',
+            'tap' => [App\Logging\DateFirstFilename::class],
             'path' => storage_path('logs/laravel.log'),
             'level' => 'debug',
             'days' => 14,

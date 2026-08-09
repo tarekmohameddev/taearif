@@ -2,35 +2,37 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Contract\StoreApiContractRequest;
 use App\Http\Requests\Api\Contract\UpdateApiContractRequest;
 use App\Models\Contract;
+use App\Models\Customer;
 use App\Models\Api\Rms\RmContract;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
-class ApiContractController extends Controller
+class ApiContractController extends BaseApiController
 {
     /**
      * Display a listing of contracts.
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function index(Request $request): JsonResponse
     {
         try {
-            $type = $request->get('type', 'regular'); // 'regular' or 'rms'
+            $type = $request->get('type', 'regular');
+            if ($denied = $this->ensureContractPermission('view', $type)) {
+                return $denied;
+            }
+
             $perPage = $request->get('per_page', 15);
             $search = $request->get('search');
             $status = $request->get('status');
             $contractType = $request->get('contract_type');
+            $ownerId = $this->getUserId();
 
             if ($type === 'rms') {
                 $query = RmContract::with(['rental:id,contract_number,property_id,project_id'])
-                    ->where('user_id', Auth::id());
+                    ->where('user_id', $ownerId);
 
                 if ($search) {
                     $query->where(function ($q) use ($search) {
@@ -45,9 +47,8 @@ class ApiContractController extends Controller
 
                 $contracts = $query->orderBy('created_at', 'desc')
                     ->paginate($perPage);
-
             } else {
-                $query = Contract::with(['customer:id,name,email,phone']);
+                $query = $this->regularContractsQuery($ownerId);
 
                 if ($search) {
                     $query->where(function ($q) use ($search) {
@@ -95,23 +96,23 @@ class ApiContractController extends Controller
 
     /**
      * Display the specified contract.
-     *
-     * @param int $id
-     * @param Request $request
-     * @return JsonResponse
      */
     public function show(int $id, Request $request): JsonResponse
     {
         try {
             $type = $request->get('type', 'regular');
+            if ($denied = $this->ensureContractPermission('view', $type)) {
+                return $denied;
+            }
+
+            $ownerId = $this->getUserId();
 
             if ($type === 'rms') {
                 $contract = RmContract::with(['rental:id,contract_number,property_id,project_id'])
-                    ->where('user_id', Auth::id())
+                    ->where('user_id', $ownerId)
                     ->findOrFail($id);
             } else {
-                $contract = Contract::with(['customer:id,name,email,phone'])
-                    ->findOrFail($id);
+                $contract = $this->regularContractsQuery($ownerId)->findOrFail($id);
             }
 
             return response()->json([
@@ -129,23 +130,24 @@ class ApiContractController extends Controller
 
     /**
      * Store a newly created contract.
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function store(StoreApiContractRequest $request): JsonResponse
     {
         try {
             $type = $request->get('type', 'regular');
+            if ($denied = $this->ensureContractPermission('create', $type)) {
+                return $denied;
+            }
+
             $validated = $request->validated();
             unset($validated['type']);
+            $ownerId = $this->getUserId();
 
             if ($type === 'rms') {
                 $contract = RmContract::create(array_merge($validated, [
-                    'user_id' => Auth::id(),
+                    'user_id' => $ownerId,
                     'created_by' => Auth::id(),
                 ]));
-
             } else {
                 $contract = Contract::create($validated);
             }
@@ -166,28 +168,27 @@ class ApiContractController extends Controller
 
     /**
      * Update the specified contract.
-     *
-     * @param Request $request
-     * @param int $id
-     * @return JsonResponse
      */
     public function update(UpdateApiContractRequest $request, int $id): JsonResponse
     {
         try {
             $type = $request->get('type', 'regular');
+            if ($denied = $this->ensureContractPermission('update', $type)) {
+                return $denied;
+            }
+
             $validated = $request->validated();
             unset($validated['type']);
+            $ownerId = $this->getUserId();
 
             if ($type === 'rms') {
-                $contract = RmContract::where('user_id', Auth::id())->findOrFail($id);
+                $contract = RmContract::where('user_id', $ownerId)->findOrFail($id);
 
                 $contract->update(array_merge($validated, [
                     'updated_by' => Auth::id(),
                 ]));
-
             } else {
-                $contract = Contract::findOrFail($id);
-
+                $contract = $this->regularContractsQuery($ownerId)->findOrFail($id);
                 $contract->update($validated);
             }
 
@@ -207,20 +208,21 @@ class ApiContractController extends Controller
 
     /**
      * Remove the specified contract.
-     *
-     * @param int $id
-     * @param Request $request
-     * @return JsonResponse
      */
     public function destroy(int $id, Request $request): JsonResponse
     {
         try {
             $type = $request->get('type', 'regular');
+            if ($denied = $this->ensureContractPermission('delete', $type)) {
+                return $denied;
+            }
+
+            $ownerId = $this->getUserId();
 
             if ($type === 'rms') {
-                $contract = RmContract::where('user_id', Auth::id())->findOrFail($id);
+                $contract = RmContract::where('user_id', $ownerId)->findOrFail($id);
             } else {
-                $contract = Contract::findOrFail($id);
+                $contract = $this->regularContractsQuery($ownerId)->findOrFail($id);
             }
 
             $contract->delete();
@@ -240,31 +242,32 @@ class ApiContractController extends Controller
 
     /**
      * Get contract statistics.
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function statistics(Request $request): JsonResponse
     {
         try {
             $type = $request->get('type', 'regular');
+            if ($denied = $this->ensureContractPermission('view', $type)) {
+                return $denied;
+            }
+
+            $ownerId = $this->getUserId();
 
             if ($type === 'rms') {
-                $userId = Auth::id();
-                
                 $stats = [
-                    'total' => RmContract::where('user_id', $userId)->count(),
-                    'active' => RmContract::where('user_id', $userId)->where('status', 'active')->count(),
-                    'pending' => RmContract::where('user_id', $userId)->where('status', 'pending')->count(),
-                    'expired' => RmContract::where('user_id', $userId)->where('status', 'expired')->count(),
-                    'terminated' => RmContract::where('user_id', $userId)->where('status', 'terminated')->count(),
+                    'total' => RmContract::where('user_id', $ownerId)->count(),
+                    'active' => RmContract::where('user_id', $ownerId)->where('status', 'active')->count(),
+                    'pending' => RmContract::where('user_id', $ownerId)->where('status', 'pending')->count(),
+                    'expired' => RmContract::where('user_id', $ownerId)->where('status', 'expired')->count(),
+                    'terminated' => RmContract::where('user_id', $ownerId)->where('status', 'terminated')->count(),
                 ];
             } else {
+                $base = $this->regularContractsQuery($ownerId);
                 $stats = [
-                    'total' => Contract::count(),
-                    'draft' => Contract::where('contract_status', 'draft')->count(),
-                    'signed' => Contract::where('contract_status', 'signed')->count(),
-                    'expired' => Contract::where('contract_status', 'expired')->count(),
+                    'total' => (clone $base)->count(),
+                    'draft' => (clone $base)->where('contract_status', 'draft')->count(),
+                    'signed' => (clone $base)->where('contract_status', 'signed')->count(),
+                    'expired' => (clone $base)->where('contract_status', 'expired')->count(),
                 ];
             }
 
@@ -283,14 +286,28 @@ class ApiContractController extends Controller
 
     /**
      * Get contracts by customer (for regular contracts).
-     *
-     * @param int $customerId
-     * @return JsonResponse
      */
     public function getByCustomer(int $customerId): JsonResponse
     {
         try {
-            $contracts = Contract::with(['customer:id,name,email,phone'])
+            if ($denied = $this->ensureContractPermission('view', 'regular')) {
+                return $denied;
+            }
+
+            $ownerId = $this->getUserId();
+
+            $customer = Customer::where('id', $customerId)
+                ->where('user_id', $ownerId)
+                ->first();
+
+            if (!$customer) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Customer not found',
+                ], 404);
+            }
+
+            $contracts = $this->regularContractsQuery($ownerId)
                 ->where('customer_id', $customerId)
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -310,16 +327,17 @@ class ApiContractController extends Controller
 
     /**
      * Get contracts by rental (for RMS contracts).
-     *
-     * @param int $rentalId
-     * @return JsonResponse
      */
     public function getByRental(int $rentalId): JsonResponse
     {
         try {
+            if ($denied = $this->ensureContractPermission('view', 'rms')) {
+                return $denied;
+            }
+
             $contracts = RmContract::with(['rental:id,contract_number,property_id,project_id'])
                 ->where('rental_id', $rentalId)
-                ->where('user_id', Auth::id())
+                ->where('user_id', $this->getUserId())
                 ->orderBy('start_date')
                 ->get();
 
@@ -334,5 +352,35 @@ class ApiContractController extends Controller
                 'message' => 'Error retrieving rental contracts: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Regular CRM contracts scoped to the tenant owner via customer.user_id.
+     */
+    private function regularContractsQuery(int $ownerId)
+    {
+        return Contract::with(['customer:id,name,email,phone'])
+            ->whereHas('customer', function ($q) use ($ownerId) {
+                $q->where('user_id', $ownerId);
+            });
+    }
+
+    /**
+     * Enforce Spatie permission for regular (crm.*) vs RMS (rentals.*) contract ops.
+     */
+    private function ensureContractPermission(string $action, string $type): ?JsonResponse
+    {
+        $permission = $type === 'rms'
+            ? "rentals.{$action}"
+            : "crm.{$action}";
+
+        if (!Auth::user() || !Auth::user()->can($permission)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Forbidden',
+            ], 403);
+        }
+
+        return null;
     }
 }

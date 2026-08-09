@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use App\Models\Api\UserPropertyRequest;
 use App\Models\User\UserCity;
 use App\Models\User\RealestateManagement\Property;
+use App\Models\User\RealestateManagement\Project;
 use App\Http\Requests\Api\Property\StorePropertyRequestRequest;
 use App\Http\Requests\Api\Property\UpdatePropertyRequestRequest;
 use App\Http\Requests\Api\Property\UpdateStatusPropertyRequestRequest;
@@ -91,6 +92,26 @@ class ApiPropertyRequestController extends Controller
             }
 
             $propertyIds = $validIds;
+        }
+
+        // Ensure provided project_id belongs to the resolved tenant
+        if (array_key_exists('project_id', $data) && $data['project_id'] !== null) {
+            $projectId = (int) $data['project_id'];
+            $owned = Project::query()
+                ->where('user_id', $tenant->id)
+                ->where('id', $projectId)
+                ->exists();
+
+            if (! $owned) {
+                return response()->json([
+                    'message' => 'The selected project ID is invalid or does not belong to this tenant.',
+                    'errors' => [
+                        'project_id' => ['The selected project ID is invalid or unauthorized for this tenant.'],
+                    ],
+                ], 422);
+            }
+
+            $data['project_id'] = $projectId;
         }
 
         if (! empty($data['region'])) {
@@ -192,12 +213,17 @@ class ApiPropertyRequestController extends Controller
      */
     public function storeFromInterest(Request $request): JsonResponse
     {
+        if ($request->has('project_id') && $request->input('project_id') === '') {
+            $request->merge(['project_id' => null]);
+        }
+
         $validated = $request->validate([
             'tenant_username' => 'required|string|max:255',
             'property_id' => 'required|integer|exists:user_properties,id',
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
             'notes' => 'nullable|string|max:1000',
+            'project_id' => 'nullable|integer|exists:user_projects,id',
         ]);
 
         try {
@@ -219,6 +245,30 @@ class ApiPropertyRequestController extends Controller
                 'message' => 'Property not found.',
                 'errors' => ['property_id' => ['Property does not exist or does not belong to this tenant.']],
             ], 404);
+        }
+
+        // Body project_id wins when key present; otherwise inherit from property when set.
+        $projectId = null;
+        if (array_key_exists('project_id', $validated)) {
+            $projectId = $validated['project_id'] !== null ? (int) $validated['project_id'] : null;
+        } elseif (! empty($property->project_id)) {
+            $projectId = (int) $property->project_id;
+        }
+
+        if ($projectId !== null) {
+            $owned = Project::query()
+                ->where('user_id', $tenant->id)
+                ->where('id', $projectId)
+                ->exists();
+
+            if (! $owned) {
+                return response()->json([
+                    'message' => 'The selected project ID is invalid or does not belong to this tenant.',
+                    'errors' => [
+                        'project_id' => ['The selected project ID is invalid or unauthorized for this tenant.'],
+                    ],
+                ], 422);
+            }
         }
 
         $content = $property->contents->first();
@@ -247,6 +297,7 @@ class ApiPropertyRequestController extends Controller
             'initial_property_id' => $property->id,
             'latitude' => $property->latitude,
             'longitude' => $property->longitude,
+            'project_id' => $projectId,
         ];
 
         $data = app(PropertyRequestLocationNormalizer::class)->normalize($data, 'property_interest');

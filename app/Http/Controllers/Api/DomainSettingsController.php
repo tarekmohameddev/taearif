@@ -2,25 +2,28 @@
 
 namespace App\Http\Controllers\Api;
 
-use Log;
-use Mail;
-use App\Models\User;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Domain\RequestDomainSslRequest;
 use App\Http\Requests\Api\Domain\SetPrimaryDomainRequest;
 use App\Http\Requests\Api\Domain\StoreDomainSettingRequest;
-use App\Http\Requests\Api\Domain\UpdateDomainSslStatusRequest;
 use App\Http\Requests\Api\Domain\VerifyDomainRequest;
-use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use App\Support\TenantActivity;
-use App\Http\Controllers\Controller;
 use App\Models\Api\ApiDomainSetting;
-use Illuminate\Support\Facades\Auth;
+use App\Services\Vercel\DomainStatusSyncService;
+use App\Services\Vercel\VercelDomainClient;
+use App\Services\Vercel\VercelDomainException;
+use App\Support\TenantActivity;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Mail;
 
 class DomainSettingsController extends Controller
 {
-
+    public function __construct(
+        private readonly VercelDomainClient $vercel,
+        private readonly DomainStatusSyncService $domainSync
+    ) {
+    }
 
     /**
      * Display a listing of the resource.
@@ -34,82 +37,158 @@ class DomainSettingsController extends Controller
 
         return response()->json([
             'domains' => $domains->map(function ($domain) {
-            return [
-                'id' => $domain->id,
-                'custom_name' => $domain->custom_name,
-                'status' => $domain->status,
-                'primary' => $domain->primary,
-                'ssl' => $domain->ssl,
-                'addedDate' => $domain->added_date->format('Y-m-d'),
-            ];
+                return [
+                    'id' => $domain->id,
+                    'custom_name' => $domain->custom_name,
+                    'status' => $domain->status,
+                    'primary' => $domain->primary,
+                    'ssl' => $domain->ssl,
+                    'addedDate' => $domain->added_date?->format('Y-m-d'),
+                ];
             }),
-            'dnsInstructions' => [
-            'records' => [
-                [
-                'type' => 'A',
-                'name' => '@',
-                'value' => '76.76.21.21',
-                'ttl' => 3600,
-                ],
-                [
-                'type' => 'CNAME',
-                'name' => 'www',
-                'value' => $user->id . 'taearif.com',
-                'ttl' => 3600,
-                ],
-            ],
-            ],
+            'dnsInstructions' => ApiDomainSetting::nameserverInstructions(),
         ]);
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
     public function store(StoreDomainSettingRequest $request)
     {
         $user = Auth::user();
         $validated = $request->validated();
-        $existingDomain = ApiDomainSetting::where('custom_name', $validated['custom_name'])->where('user_id', $user->id)->first();
+        $customName = $this->vercel->normalizeApex($validated['custom_name']);
+
+        $existingDomain = ApiDomainSetting::where('custom_name', $customName)->first();
         if ($existingDomain) {
+            if ((int) $existingDomain->user_id === (int) $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Domain already exists',
+                    'errors' => [
+                        [
+                            'field' => 'custom_name',
+                            'message' => 'This domain is already added to your account',
+                        ],
+                    ],
+                ], 400);
+            }
+
             return response()->json([
-               'success' => false,
-                'message' => 'Domain already exists',
+                'success' => false,
+                'message' => 'Domain already in use',
                 'errors' => [
                     [
-                    'field' => 'custom_name',
-                    'message' => 'This domain is already added to your account',
-                      ],
+                        'field' => 'custom_name',
+                        'message' => 'This domain is already in use',
+                    ],
                 ],
             ], 400);
         }
+
+        $autoAttach = (bool) config('services.vercel.auto_attach_custom_domain', true);
+
+        if ($autoAttach && ! $this->vercel->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Domain hosting is not configured. Please contact support.',
+            ], 503);
+        }
+
         $domainsCount = ApiDomainSetting::where('user_id', $user->id)->count();
+        $maxDomains = max(1, (int) config('services.vercel.max_domains_per_tenant', 5));
+        if ($domainsCount >= $maxDomains) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Domain limit reached',
+                'errors' => [
+                    [
+                        'field' => 'custom_name',
+                        'message' => "You can add up to {$maxDomains} domains.",
+                    ],
+                ],
+            ], 400);
+        }
+
         $domain = new ApiDomainSetting([
             'user_id' => $user->id,
-            'custom_name' => $validated['custom_name'],
+            'custom_name' => $customName,
             'status' => 'pending',
-            'primary' => $domainsCount === 0, // First domain is primary by default
+            'primary' => $domainsCount === 0,
             'ssl' => false,
             'added_date' => now(),
-
         ]);
         $domain->save();
 
-        TenantActivity::emit($request, 'domain.added', 'api_domains_settings', $domain->id, null, $domain->only(['custom_name','status','primary','ssl']));
+        if ($autoAttach) {
+            try {
+                $this->vercel->addApexWithWwwRedirect($customName);
+            } catch (VercelDomainException $e) {
+                $domain->delete();
+                Log::error('Failed to attach domain to Vercel', [
+                    'domain' => $customName,
+                    'error' => $e->getMessage(),
+                    'status' => $e->statusCode,
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to register domain with hosting provider. Please try again later.',
+                ], 502);
+            }
+        }
+
+        // Immediate verify + NS check so the dashboard can show success or setup guidance
+        $syncResult = $this->domainSync->sync($domain, true, $request);
+        $domain->refresh();
+
+        TenantActivity::emit(
+            $request,
+            'domain.added',
+            'api_domains_settings',
+            $domain->id,
+            null,
+            $domain->only(['custom_name', 'status', 'primary', 'ssl'])
+        );
+
+        if ($domain->status === 'active') {
+            $this->notifyAdminOfVerifiedDomain($domain);
+            TenantActivity::emit(
+                $request,
+                'domain.verified',
+                'api_domains_settings',
+                $domain->id,
+                ['old_status' => $syncResult['old_status']],
+                ['new_status' => 'active']
+            );
+        }
+
+        $verified = $domain->status === 'active';
 
         return response()->json([
             'success' => true,
             'message' => 'Domain added successfully',
             'data' => [
-            'id' => $domain->id,
-            'custom_name' => $domain->custom_name,
-            'status' => $domain->status,
-            'primary' => $domain->primary,
-            'ssl' => $domain->ssl,
-            'addedDate' => $domain->added_date->format('Y-m-d'),
+                'id' => $domain->id,
+                'custom_name' => $domain->custom_name,
+                'status' => $domain->status,
+                'primary' => $domain->primary,
+                'ssl' => $domain->ssl,
+                'addedDate' => $domain->added_date?->format('Y-m-d'),
             ],
+            'verification' => [
+                'verified' => $verified,
+                'nameservers_ok' => (bool) ($syncResult['nameservers_ok'] ?? false),
+                'status' => $domain->status,
+                'message' => $syncResult['message'] ?? (
+                    $verified
+                        ? 'Domain is verified and nameservers are correct.'
+                        : 'Nameservers are not pointing to Vercel yet.'
+                ),
+            ],
+            'dnsInstructions' => ApiDomainSetting::nameserverInstructions(),
         ], 201);
     }
 
@@ -130,10 +209,8 @@ class DomainSettingsController extends Controller
             'status' => $domain->status,
             'primary' => $domain->primary,
             'ssl' => $domain->ssl,
-            'addedDate' => $domain->added_date->format('Y-m-d'),
-            'dnsInstructions' => [
-            'records' => $domain->getDnsRecords(),
-            ],
+            'addedDate' => $domain->added_date?->format('Y-m-d'),
+            'dnsInstructions' => ApiDomainSetting::nameserverInstructions(),
         ]);
     }
 
@@ -142,8 +219,7 @@ class DomainSettingsController extends Controller
      *
      * @param  int  $id
      * @return \Illuminate\Http\Response
-    */
-
+     */
     public function destroy($id)
     {
         $user = Auth::user();
@@ -159,7 +235,6 @@ class DomainSettingsController extends Controller
             ], 404);
         }
 
-        // If this is the primary domain, set another domain as primary
         if ($domain->primary) {
             $anotherDomain = ApiDomainSetting::where('user_id', $user->id)
                 ->where('id', '!=', $domain->id)
@@ -172,8 +247,23 @@ class DomainSettingsController extends Controller
             }
         }
 
+        if ((bool) config('services.vercel.auto_attach_custom_domain', true) && $this->vercel->isConfigured()) {
+            try {
+                $this->vercel->removeApexAndWww((string) $domain->custom_name);
+            } catch (VercelDomainException $e) {
+                Log::warning('Failed to remove domain from Vercel during destroy', [
+                    'domain_id' => $domain->id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to remove domain from hosting provider. Please try again later.',
+                ], 502);
+            }
+        }
+
         $domain->delete();
-        // TenantActivity::emit($request, 'domain.deleted', 'api_domains_settings', $domain->id, $domain->toArray(), null);
 
         return response()->json([
             'success' => true,
@@ -181,7 +271,6 @@ class DomainSettingsController extends Controller
         ]);
     }
 
-    /* verify domain */
     public function verify(VerifyDomainRequest $request)
     {
         $user = Auth::user();
@@ -191,33 +280,84 @@ class DomainSettingsController extends Controller
             ->where('user_id', $user->id)
             ->firstOrFail();
 
-        if ($domain->status !== 'active') {
-            $domain->status = 'active';
-            $domain->save();
+        $autoAttach = (bool) config('services.vercel.auto_attach_custom_domain', true);
+        $checkNameservers = (bool) config('services.vercel.check_nameservers', true);
 
-
-            $this->notifyAdminOfVerifiedDomain($domain); // Notify admin
+        if ($autoAttach && ! $this->vercel->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Domain hosting is not configured. Please contact support.',
+            ], 503);
         }
 
-        TenantActivity::emit($request, 'domain.verified', 'api_domains_settings', $domain->id, ['old_status' => 'pending'], ['new_status' => 'active']);
+        if (! $autoAttach && ! $checkNameservers) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Verification checks are disabled. Please contact support.',
+            ], 503);
+        }
+
+        $result = $this->domainSync->sync($domain, true, $request);
+        $domain->refresh();
+
+        if ($result['new_status'] === 'active') {
+            if ($result['changed'] || $result['old_status'] !== 'active') {
+                $this->notifyAdminOfVerifiedDomain($domain);
+            }
+
+            TenantActivity::emit(
+                $request,
+                'domain.verified',
+                'api_domains_settings',
+                $domain->id,
+                ['old_status' => $result['old_status']],
+                ['new_status' => 'active']
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Domain verified successfully',
+                'data' => [
+                    'id' => $domain->id,
+                    'custom_name' => $domain->custom_name,
+                    'status' => $domain->status,
+                    'ssl' => $domain->ssl,
+                    'verificationStatus' => 'verified',
+                    'message' => $result['message'],
+                ],
+            ]);
+        }
+
+        if ($result['new_status'] === 'failed') {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?: 'Domain verification failed',
+                'data' => [
+                    'id' => $domain->id,
+                    'custom_name' => $domain->custom_name,
+                    'status' => $domain->status,
+                    'verificationStatus' => 'failed',
+                    'message' => $result['message'],
+                ],
+            ], 422);
+        }
 
         return response()->json([
-            'success' => true,
-            'message' => 'Domain verification initiated',
+            'success' => false,
+            'message' => $result['message'] ?: 'Domain verification is still pending',
             'data' => [
                 'id' => $domain->id,
                 'custom_name' => $domain->custom_name,
                 'status' => $domain->status,
-                'verificationStatus' => 'in_progress',
-                'estimatedTime' => '1-2 minutes',
+                'verificationStatus' => 'pending',
+                'message' => $result['message'],
+                'dnsInstructions' => ApiDomainSetting::nameserverInstructions(),
             ],
-        ]);
+        ], 422);
     }
 
-    /* set primary domain */
     public function setPrimary(SetPrimaryDomainRequest $request)
     {
-
         $user = Auth::user();
         $validated = $request->validated();
 
@@ -225,16 +365,17 @@ class DomainSettingsController extends Controller
 
         if ($domain->status !== 'active') {
             return response()->json([
-            'success' => false,
-            'message' => 'Cannot set pending domain as primary',
-            'errors' => [
-                [
-                'field' => 'id',
-                'message' => 'Domain must be active to be set as primary',
+                'success' => false,
+                'message' => 'Cannot set pending domain as primary',
+                'errors' => [
+                    [
+                        'field' => 'id',
+                        'message' => 'Domain must be active to be set as primary',
+                    ],
                 ],
-            ],
             ], 400);
         }
+
         ApiDomainSetting::where('user_id', $user->id)->update(['primary' => false]);
         $domain->primary = true;
         $domain->save();
@@ -244,32 +385,29 @@ class DomainSettingsController extends Controller
         TenantActivity::emit($request, 'domain.set_primary', 'api_domains_settings', $domain->id);
 
         return response()->json([
-        'success' => true,
-        'message' => 'Primary domain updated successfully',
-        'data' => [
-            'domains' => $domains->map(function ($domain) {
-            return [
-                'id' => $domain->id,
-                'custom_name' => $domain->custom_name,
-                'status' => $domain->status,
-                'primary' => $domain->primary,
-                'ssl' => $domain->ssl,
-                'addedDate' => $domain->added_date->format('Y-m-d'),
-            ];
-            }),
-        ],
+            'success' => true,
+            'message' => 'Primary domain updated successfully',
+            'data' => [
+                'domains' => $domains->map(function ($domain) {
+                    return [
+                        'id' => $domain->id,
+                        'custom_name' => $domain->custom_name,
+                        'status' => $domain->status,
+                        'primary' => $domain->primary,
+                        'ssl' => $domain->ssl,
+                        'addedDate' => $domain->added_date?->format('Y-m-d'),
+                    ];
+                }),
+            ],
         ]);
-
-
-
     }
 
-    /* Notify admin of verified domain */
     private function notifyAdminOfVerifiedDomain(ApiDomainSetting $domain)
     {
-        $adminEmail = env('MAIL_ADMIN_ADDRESS', 'admin@example.com'); // from .env
-        if (!$adminEmail) {
-            Log::error("Failed to send admin domain verification email: Admin email not set in .env");
+        $adminEmail = env('MAIL_ADMIN_ADDRESS', 'admin@example.com');
+        if (! $adminEmail) {
+            Log::error('Failed to send admin domain verification email: Admin email not set in .env');
+
             return;
         }
 
@@ -289,14 +427,12 @@ class DomainSettingsController extends Controller
         try {
             Mail::raw($message, function ($mail) use ($adminEmail, $subject) {
                 $mail->to($adminEmail)
-                     ->subject($subject);
+                    ->subject($subject);
             });
         } catch (\Exception $e) {
-            Log::error("Failed to send admin domain verification email: " . $e->getMessage());
+            Log::error('Failed to send admin domain verification email: ' . $e->getMessage());
         }
     }
-
-    /* user request to enable the ssl */
 
     public function requestSsl(RequestDomainSslRequest $request)
     {
@@ -314,42 +450,31 @@ class DomainSettingsController extends Controller
             ], 400);
         }
 
-        if ($domain->ssl) {
-            return response()->json([
-                'success' => false,
-                'message' => 'SSL is already enabled for this domain.',
-            ], 400);
-        }
+        $result = $this->domainSync->sync($domain, true, $request);
+        $domain->refresh();
 
         TenantActivity::emit($request, 'domain.ssl_requested', 'api_domains_settings', $domain->id);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'SSL request submitted. It will be provisioned shortly.',
-        ]);
-    }
-
-    /* admin update ssl status */
-
-    public function updateSslStatus(UpdateDomainSslStatusRequest $request)
-    {
-        $validated = $request->validated();
-
-        $domain = ApiDomainSetting::findOrFail($validated['domain_id']);
-        $domain->ssl = $validated['ssl'];
-        $domain->save();
+        if ($domain->ssl) {
+            return response()->json([
+                'success' => true,
+                'message' => 'SSL is enabled for this domain.',
+                'data' => [
+                    'id' => $domain->id,
+                    'ssl' => true,
+                    'status' => $domain->status,
+                ],
+            ]);
+        }
 
         return response()->json([
-            'success' => true,
-            'message' => 'SSL status updated successfully.',
+            'success' => false,
+            'message' => $result['message'] ?: 'SSL is not ready yet. Please try again shortly.',
             'data' => [
                 'id' => $domain->id,
-                'custom_name' => $domain->requested_domain ?? $domain->custom_name,
-                'ssl' => $domain->ssl,
+                'ssl' => false,
+                'status' => $domain->status,
             ],
-        ]);
+        ], 422);
     }
-
-
-
 }

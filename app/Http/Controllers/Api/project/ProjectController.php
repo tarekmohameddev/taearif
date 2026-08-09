@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api\project;
 
 use App\Http\Requests\Api\Project\ToggleProjectFeaturedRequest;
 use App\Support\Audit;
+use App\Support\AuditContext;
 use App\Models\Membership;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\User\Language;
 use App\Models\Api\ApiMenuItem;
@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\Api\Project\StoreProjectRequest;
 use App\Http\Requests\Api\Project\UpdateProjectRequest;
+use App\Jobs\WriteProjectAuditJob;
 use App\Models\User\RealestateManagement\Amenity;
 use App\Http\Resources\Api\ProjectPropertyResource;
 use App\Models\User\RealestateManagement\Project;
@@ -404,67 +405,58 @@ class ProjectController extends Controller
             $requestData['brochure'] = !empty($request->brochure) ? $request->brochure : null;
             $requestData['amenities'] = $this->normalizeAmenities($request->input('amenities'));
 
-            $project = Project::storeProject($ownerId, $requestData, auth()->id());
+            // Suppress ProjectObserver::created — audit is written once via queued job after commit.
+            $project = Project::withoutEvents(function () use ($ownerId, $requestData) {
+                return Project::storeProject($ownerId, $requestData, auth()->id());
+            });
 
-            // Gallery images
-            if ($request->has('gallery_images') && is_array($request->gallery_images)) {
-                foreach ($request->gallery_images as $imgPath) {
-                    ProjectGalleryImg::storeGalleryImage($ownerId, $project->id, $imgPath);
-                }
-            }
+            $galleryImages = $request->has('gallery_images') && is_array($request->gallery_images)
+                ? array_values($request->gallery_images)
+                : [];
+            ProjectGalleryImg::insertManyForProject($ownerId, $project->id, $galleryImages);
 
-            // Floorplan images
-            if ($request->has('floorplan_images') && is_array($request->floorplan_images)) {
-                foreach ($request->floorplan_images as $imgPath) {
-                    ProjectFloorplanImg::storeFloorplanImage($ownerId, $project->id, $imgPath);
-                }
-            }
+            $floorplanImages = $request->has('floorplan_images') && is_array($request->floorplan_images)
+                ? array_values($request->floorplan_images)
+                : [];
+            ProjectFloorplanImg::insertManyForProject($ownerId, $project->id, $floorplanImages);
 
-            // Process all contents (multi-language support)
-            $contents = (array) $request->input('contents', []);
-            foreach ($contents as $content) {
-                ProjectContent::storeProjectContent($ownerId, [
-                    'project_id' => $project->id,
-                    'language_id' => $content['language_id'],
-                    'title' => $content['title'] ?? '',
-                    'address' => $content['address'] ?? null,
-                    'description' => $content['description'] ?? null,
-                    'meta_keyword' => $content['meta_keyword'] ?? null,
-                    'meta_description' => $content['meta_description'] ?? null,
-                ]);
-            }
+            ProjectContent::insertManyForProject(
+                $ownerId,
+                $project->id,
+                (array) $request->input('contents', [])
+            );
 
-            // Process specifications
-            $specifications = (array) $request->input('specifications', []);
-            foreach ($specifications as $spec) {
-                ProjectSpecification::storeSpecification($ownerId, [
-                    'language_id' => $defaultLang->id,
-                    'project_id' => $project->id,
-                    'key' => $spec['key'],
-                    'label' => $spec['label'],
-                    'value' => $spec['value'],
-                ]);
-            }
+            ProjectSpecification::insertManyForProject(
+                $ownerId,
+                $project->id,
+                (int) $defaultLang->id,
+                (array) $request->input('specifications', [])
+            );
 
-            // Process types
             if ($request->has('types')) {
-                $types = (array) $request->types;
-                foreach ($types as $type) {
-                    ProjectType::storeProjectType($ownerId, [
-                        'project_id' => $project->id,
-                        'language_id' => $type['language_id'] ?? $defaultLang->id,
-                        'title' => $type['title'] ?? null,
-                        'min_area' => $type['min_area'] ?? null,
-                        'max_area' => $type['max_area'] ?? null,
-                        'min_price' => $type['min_price'] ?? null,
-                        'max_price' => $type['max_price'] ?? null,
-                        'unit' => $type['unit'] ?? null,
-                    ]);
-                }
+                ProjectType::insertManyForProject(
+                    $ownerId,
+                    $project->id,
+                    (int) $defaultLang->id,
+                    (array) $request->types
+                );
             }
 
-            $this->ensureProjectsMenuExistsForUser($ownerId); // Add projects menu item if not exists for the user
+            $auditCtx = AuditContext::data();
+            $projectAttributes = $project->getAttributes();
 
+            DB::afterCommit(function () use ($ownerId, $project, $auditCtx, $projectAttributes) {
+                WriteProjectAuditJob::dispatch([
+                    'tenant_id' => $auditCtx['tenant_id'] ?? $ownerId,
+                    'project_id' => $project->id,
+                    'actor_id' => $auditCtx['actor_id'] ?? null,
+                    'actor_type' => $auditCtx['actor_type'] ?? 'tenant',
+                    'ip_address' => $auditCtx['ip_address'] ?? null,
+                    'user_agent' => $auditCtx['user_agent'] ?? null,
+                    'changes' => ['after' => $projectAttributes],
+                    'attributes' => $projectAttributes,
+                ]);
+            });
         });
 
         if (!$project) {
@@ -473,6 +465,8 @@ class ProjectController extends Controller
                 'message' => 'Project creation failed',
             ], 500);
         }
+
+        $this->ensureProjectsMenuExistsForUser($ownerId);
 
         $responseProject = Project::with([
             'galleryImages',
@@ -513,24 +507,11 @@ class ProjectController extends Controller
 
         $this->appendProjectLocationAlias($responseProject);
 
-        // Log the activity
+        // Log the activity (sync — do not queue)
         TenantActivity::emit($request, 'project.created', 'user_projects', $responseProject->id, null, [
             'id' => $responseProject->id, 'title' => optional($responseProject->contents->first())->title
         ]);
-        Audit::project(
-            $ownerId,
-            $responseProject->id,
-            'created',
-            'Project created',
-            [
-                'after' => [
-                    'id'        => $responseProject->id,
-                    'featured'  => (bool) $responseProject->featured,
-                    'min_price' => $responseProject->min_price,
-                    'max_price' => $responseProject->max_price,
-                ],
-            ]
-        );
+
         return response()->json([
             'status' => 'success',
             'message' => 'Project created successfully',
@@ -675,67 +656,47 @@ class ProjectController extends Controller
             $requestData['amenities'] = $this->normalizeAmenities($request->input('amenities', $project->amenities));
 
             $project->updateProject($requestData);
+
             if ($request->has('gallery_images')) {
                 ProjectGalleryImg::where('project_id', $project->id)->delete();
-                foreach ($request->gallery_images as $imgPath) {
-                    ProjectGalleryImg::storeGalleryImage($ownerId, $project->id, $imgPath);
-                }
+                $galleryImages = is_array($request->gallery_images)
+                    ? array_values($request->gallery_images)
+                    : [];
+                ProjectGalleryImg::insertManyForProject($ownerId, $project->id, $galleryImages);
             }
+
             if ($request->has('floorplan_images')) {
                 ProjectFloorplanImg::where('project_id', $project->id)->delete();
-                foreach ($request->floorplan_images as $imgPath) {
-                    ProjectFloorplanImg::storeFloorplanImage($ownerId, $project->id, $imgPath);
-                }
+                $floorplanImages = is_array($request->floorplan_images)
+                    ? array_values($request->floorplan_images)
+                    : [];
+                ProjectFloorplanImg::insertManyForProject($ownerId, $project->id, $floorplanImages);
             }
 
             ProjectContent::where('project_id', $project->id)->delete();
-
-            $contents = (array) $request->input('contents', []);
-            foreach ($contents as $content) {
-                ProjectContent::storeProjectContent($ownerId, [
-                    'project_id' => $project->id,
-                    'language_id' => $content['language_id'],
-                    'title' => $content['title'],
-                    'address' => $content['address'],
-                    'description' => $content['description'],
-                    'meta_keyword' => $content['meta_keyword'],
-                    'meta_description' => $content['meta_description'],
-                    'slug' => str_replace('.', '', Str::slug($content['title'])),
-                ]);
-            }
+            ProjectContent::insertManyForProject(
+                $ownerId,
+                $project->id,
+                (array) $request->input('contents', [])
+            );
 
             ProjectSpecification::where('project_id', $project->id)->delete();
-
-            $specifications = (array) $request->input('specifications', []);
-            foreach ($specifications as $spec) {
-                ProjectSpecification::storeSpecification($ownerId, [
-                    'language_id' => $defaultLang->id,
-                    'project_id' => $project->id,
-                    'key' => $spec['key'],
-                    'label' => $spec['label'],
-                    'value' => $spec['value'],
-                ]);
-            }
+            ProjectSpecification::insertManyForProject(
+                $ownerId,
+                $project->id,
+                (int) $defaultLang->id,
+                (array) $request->input('specifications', [])
+            );
 
             ProjectType::where('project_id', $project->id)->delete();
-
             if ($request->has('types')) {
-                $types = (array) $request->types;
-                foreach ($types as $type) {
-                    ProjectType::storeProjectType($ownerId, [
-                        'project_id' => $project->id,
-                        'language_id' => $type['language_id'] ?? $defaultLang->id,
-                        'title' => $type['title'] ?? null,
-                        'min_area' => $type['min_area'] ?? null,
-                        'max_area' => $type['max_area'] ?? null,
-                        'min_price' => $type['min_price'] ?? null,
-                        'max_price' => $type['max_price'] ?? null,
-                        'unit' => $type['unit'] ?? null,
-                    ]);
-                }
+                ProjectType::insertManyForProject(
+                    $ownerId,
+                    $project->id,
+                    (int) $defaultLang->id,
+                    (array) $request->types
+                );
             }
-
-
         });
 
         $responseProject = Project::with([

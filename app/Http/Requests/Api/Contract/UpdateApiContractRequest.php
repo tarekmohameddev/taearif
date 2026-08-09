@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\Contract;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateApiContractRequest extends BaseApiFormRequest
 {
@@ -17,7 +18,9 @@ class UpdateApiContractRequest extends BaseApiFormRequest
             'type' => 'nullable|in:regular,rms',
         ];
 
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : auth()->id();
         $type = request()->input('type', 'regular');
+
         if ($type === 'rms') {
             return array_merge($rules, [
                 'start_date' => 'sometimes|date',
@@ -33,7 +36,10 @@ class UpdateApiContractRequest extends BaseApiFormRequest
         }
 
         return array_merge($rules, [
-            'customer_id' => 'sometimes|exists:customers,id',
+            'customer_id' => [
+                'sometimes',
+                Rule::exists('customers', 'id')->where(fn ($q) => $q->where('user_id', $ownerId)),
+            ],
             'subject' => 'sometimes|string|max:255',
             'contract_value' => 'sometimes|numeric|min:0',
             'contract_type' => 'sometimes|string|in:Standard,Contracts under Seal,Lease Agreement,Other',

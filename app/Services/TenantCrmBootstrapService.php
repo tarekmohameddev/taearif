@@ -37,6 +37,21 @@ class TenantCrmBootstrapService
     }
 
     /**
+     * Run ensureForTenant without propagating exceptions (user create paths).
+     */
+    public function ensureForTenantSafely(int $userId): void
+    {
+        try {
+            $this->ensureForTenant($userId);
+        } catch (\Throwable $e) {
+            Log::error('Tenant CRM bootstrap failed on user create', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * Create the 3 default CRM stages when the tenant has no active stages.
      */
     public function ensureDefaultStages(int $userId): void
