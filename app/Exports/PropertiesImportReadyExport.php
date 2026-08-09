@@ -87,7 +87,6 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithChunkReadin
     public function headings(): array
     {
         return [
-            'المعرّف',
             'عنوان الإعلان',
             'السعر',
             'العنوان',
@@ -196,7 +195,6 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithChunkReadin
         $featuredImage = $property->featured_image ? asset($property->featured_image) : '';
 
         return [
-            $property->id,
             $content?->title ?? '',
             $property->price ?? '',
             $content?->address ?? '',
@@ -282,22 +280,22 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithChunkReadin
                 // Set header row height
                 $sheet->getRowDimension(1)->setRowHeight(25);
 
-                // Purpose Column (F) - "sale,rent"
-                $validation = $sheet->getCell('F2')->getDataValidation();
+                // Purpose Column (E) — matches PropertiesTemplateExport (no id)
+                $validation = $sheet->getCell('E2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
-                $validation->setAllowBlank(false);
+                $validation->setAllowBlank(true);
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
                 $validation->setFormula1('"' . PropertyExcelMapping::purposeExcelOptions() . '"');
                 
                 for ($i = 3; $i <= $rowCount; $i++) {
-                    $sheet->getCell("F$i")->setDataValidation(clone $validation);
+                    $sheet->getCell("E$i")->setDataValidation(clone $validation);
                 }
 
-                // Type Column (G) - Arabic options
-                $validation = $sheet->getCell('G2')->getDataValidation();
+                // Type Column (F) - Arabic options
+                $validation = $sheet->getCell('F2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
                 $validation->setAllowBlank(false);
@@ -307,11 +305,11 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithChunkReadin
                 $validation->setFormula1('"' . PropertyExcelMapping::typeExcelOptions() . '"');
 
                 for ($i = 3; $i <= $rowCount; $i++) {
-                    $sheet->getCell("G$i")->setDataValidation(clone $validation);
+                    $sheet->getCell("F$i")->setDataValidation(clone $validation);
                 }
 
-                // City Name Column (K) - Reference Lookup Sheet
-                $validation = $sheet->getCell('K2')->getDataValidation();
+                // City Name Column (J) - Reference Lookup Sheet
+                $validation = $sheet->getCell('J2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
                 $validation->setAllowBlank(true);
@@ -321,11 +319,11 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithChunkReadin
                 $validation->setFormula1("'" . PropertyExcelMapping::LOOKUP_SHEET_TITLE . "'!\$A\$2:\$A\${$cityEndRow}");
 
                 for ($i = 3; $i <= $rowCount; $i++) {
-                    $sheet->getCell("K$i")->setDataValidation(clone $validation);
+                    $sheet->getCell("J$i")->setDataValidation(clone $validation);
                 }
 
-                // District Name Column (L) - Reference Lookup Sheet
-                $validation = $sheet->getCell('L2')->getDataValidation();
+                // District Name Column (K) - Reference Lookup Sheet
+                $validation = $sheet->getCell('K2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
                 $validation->setAllowBlank(true);
@@ -335,11 +333,11 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithChunkReadin
                 $validation->setFormula1("'" . PropertyExcelMapping::LOOKUP_SHEET_TITLE . "'!\$B\$2:\$B\${$districtEndRow}");
 
                 for ($i = 3; $i <= $rowCount; $i++) {
-                    $sheet->getCell("L$i")->setDataValidation(clone $validation);
+                    $sheet->getCell("K$i")->setDataValidation(clone $validation);
                 }
 
-                // Payment Method Column (AJ) - Arabic options
-                $validation = $sheet->getCell('AJ2')->getDataValidation();
+                // Payment Method Column (AL) - Arabic options
+                $validation = $sheet->getCell('AL2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
                 $validation->setAllowBlank(true);
@@ -349,11 +347,11 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithChunkReadin
                 $validation->setFormula1('"شهري,ربع سنوي,نصف سنوي,سنوي"');
 
                 for ($i = 3; $i <= $rowCount; $i++) {
-                    $sheet->getCell("AJ$i")->setDataValidation(clone $validation);
+                    $sheet->getCell("AL$i")->setDataValidation(clone $validation);
                 }
 
-                // Featured Column (AK) - "Yes,No"
-                $validation = $sheet->getCell('AK2')->getDataValidation();
+                // Featured Column (AM) - "Yes,No"
+                $validation = $sheet->getCell('AM2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
                 $validation->setAllowBlank(true);
@@ -363,7 +361,7 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithChunkReadin
                 $validation->setFormula1('"Yes,No"');
 
                 for ($i = 3; $i <= $rowCount; $i++) {
-                    $sheet->getCell("AK$i")->setDataValidation(clone $validation);
+                    $sheet->getCell("AM$i")->setDataValidation(clone $validation);
                 }
             },
         ];

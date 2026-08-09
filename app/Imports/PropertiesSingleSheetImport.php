@@ -27,7 +27,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithValidation, SkipsOnFailure, SkipsOnError, WithLimit
 {
@@ -301,6 +300,9 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             throw new \Exception("Row {$rowIndex}: Invalid file format. This appears to be a raw export file. Please use the official Import Template or the 'Export for Import' feature to get a safe, re-importable file.");
         }
 
+        // Bulk import is create-only: ignore المعرّف / id (do not update existing rows).
+        unset($row['id']);
+
         // Parse new relational columns
         $galleryImages = $this->parseCommaSeparated($row['gallery_images'] ?? null);
         $amenityIds = $this->parseAmenities($row, $rowIndex);
@@ -334,27 +336,6 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             Log::warning("Row {$rowIndex}: Failed to parse amenity_ids", ['value' => $row['amenity_ids']]);
         }
 
-        // Check if this is an update (id column exists and has value)
-        $propertyId = isset($row['id']) && !empty($row['id']) ? (int)$row['id'] : null;
-        $isUpdate = false;
-        $existingProperty = null;
-
-        if ($propertyId) {
-            // Check if property exists and belongs to user
-            $existingProperty = Property::where('id', $propertyId)
-                ->where('user_id', $this->userId)
-                ->first();
-            
-            if ($existingProperty) {
-                $isUpdate = true;
-            } else {
-                // ID provided but property doesn't exist or doesn't belong to user
-                // Log warning and create new property instead
-                Log::warning("Row {$rowIndex}: Property ID {$propertyId} not found or doesn't belong to user. Creating new property.");
-                $propertyId = null;
-            }
-        }
-
         [$cityId, $stateId] = $this->resolveLocationIds($row, $rowIndex);
         
         // Track location resolution failures as validation errors for incomplete properties
@@ -363,7 +344,7 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         $locationValidationErrors = [];
         
         // Check if city_id is missing (location is required)
-        if (!$cityId && !$isUpdate) {
+        if (!$cityId) {
             $locationValidationErrors[] = "موقع المدينة مطلوب. يرجى تقديم معرف المدينة (city_id) أو اسم المدينة (city_name).";
         }
         
@@ -394,329 +375,230 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             }
         }
 
-        // Business rule validation (after determining if it's an update)
-        $businessViolations = $this->validateBusinessRules($row, $rowIndex, $isUpdate);
+        // Business rule validation (create-only import)
+        $businessViolations = $this->validateBusinessRules($row, $rowIndex, false);
 
-        // Check for missing required fields (only for new properties, not updates)
+        // Check for missing required fields
         $missingFields = [];
         $validationErrors = [];
         
         // Add location validation errors
         $validationErrors = array_merge($validationErrors, $locationValidationErrors);
 
-        // Soft-fail business rules for creates; hard-fail for updates
-        if ($isUpdate && !empty($businessViolations)) {
-            $first = $businessViolations[0];
-            throw new RowValidationException(
-                "Row {$rowIndex}: {$first['message']}",
-                field: $first['field'],
-                row: $rowIndex
-            );
-        }
-        if (!$isUpdate && !empty($businessViolations)) {
+        // Soft-fail business rules for creates
+        if (!empty($businessViolations)) {
             $validationErrors = array_merge(
                 $validationErrors,
                 array_column($businessViolations, 'message')
             );
         }
         
-        if (!$isUpdate) {
-            $requiredFields = [
-                'title' => ['min' => 3, 'max' => 255],
-                'price' => ['min' => 0],
-                'address' => ['min' => 5, 'max' => 500],
-                'description' => ['min' => 10],
-                'purpose' => ['values' => ['sale', 'rent']],
-                'type' => ['values' => ['residential', 'commercial']],
-                'area' => ['min' => 1],
-            ];
+        $requiredFields = [
+            'title' => ['min' => 3, 'max' => 255],
+            'price' => ['min' => 0],
+            'address' => ['min' => 5, 'max' => 500],
+            'description' => ['min' => 10],
+            'purpose' => ['values' => ['sale', 'rent']],
+            'type' => ['values' => ['residential', 'commercial']],
+            'area' => ['min' => 1],
+        ];
+        
+        foreach ($requiredFields as $field => $rules) {
+            $value = $row[$field] ?? null;
             
-            foreach ($requiredFields as $field => $rules) {
-                $value = $row[$field] ?? null;
-                
-                // Check if field is missing or empty
-                if (is_null($value) || (is_string($value) && trim($value) === '') || $value === '') {
-                    $missingFields[] = $field;
-                    continue;
-                }
-                
-                // Validate field rules
-                if (isset($rules['min']) && isset($rules['max'])) {
-                    $length = is_string($value) ? strlen($value) : $value;
-                    if ($length < $rules['min'] || $length > $rules['max']) {
-                        $validationErrors[] = "{$field} must be between {$rules['min']} and {$rules['max']} characters";
-                    }
-                } elseif (isset($rules['min'])) {
-                    if (is_string($value)) {
-                        if (strlen($value) < $rules['min']) {
-                            $validationErrors[] = "{$field} must be at least {$rules['min']} characters";
-                        }
-                    } elseif (is_numeric($value) && $value < $rules['min']) {
-                        $validationErrors[] = "{$field} must be at least {$rules['min']}";
-                    }
-                } elseif (isset($rules['values'])) {
-                    if (!in_array($value, $rules['values'])) {
-                        $validationErrors[] = "{$field} must be one of: " . implode(', ', $rules['values']);
-                    }
-                }
+            // Check if field is missing or empty
+            if (is_null($value) || (is_string($value) && trim($value) === '') || $value === '') {
+                $missingFields[] = $field;
+                continue;
             }
             
-            // Validate numeric fields
-            if (isset($row['price']) && !is_numeric($row['price'])) {
-                $validationErrors[] = "price must be a number";
-            }
-            if (isset($row['area']) && !is_numeric($row['area'])) {
-                $validationErrors[] = "area must be a number";
+            // Validate field rules
+            if (isset($rules['min']) && isset($rules['max'])) {
+                $length = is_string($value) ? strlen($value) : $value;
+                if ($length < $rules['min'] || $length > $rules['max']) {
+                    $validationErrors[] = "{$field} must be between {$rules['min']} and {$rules['max']} characters";
+                }
+            } elseif (isset($rules['min'])) {
+                if (is_string($value)) {
+                    if (strlen($value) < $rules['min']) {
+                        $validationErrors[] = "{$field} must be at least {$rules['min']} characters";
+                    }
+                } elseif (is_numeric($value) && $value < $rules['min']) {
+                    $validationErrors[] = "{$field} must be at least {$rules['min']}";
+                }
+            } elseif (isset($rules['values'])) {
+                if (!in_array($value, $rules['values'])) {
+                    $validationErrors[] = "{$field} must be one of: " . implode(', ', $rules['values']);
+                }
             }
         }
+        
+        // Validate numeric fields
+        if (isset($row['price']) && !is_numeric($row['price'])) {
+            $validationErrors[] = "price must be a number";
+        }
+        if (isset($row['area']) && !is_numeric($row['area'])) {
+            $validationErrors[] = "area must be a number";
+        }
 
-        // Wrap entire row processing in transaction
-        DB::transaction(function () use ($row, $rowIndex, $galleryImages, $amenityIds, $specifications, $cityId, $stateId, $features, $featured, $isUpdate, $existingProperty, $propertyId, $missingFields, $validationErrors) {
-            if ($isUpdate && $existingProperty) {
-                // UPDATE EXISTING PROPERTY
-                $property = $existingProperty;
+        // Wrap entire row processing in transaction (create-only)
+        DB::transaction(function () use ($row, $rowIndex, $galleryImages, $amenityIds, $specifications, $cityId, $stateId, $features, $featured, $missingFields, $validationErrors) {
+            // CREATE NEW PROPERTY
+            
+            // Check if this is an incomplete property (missing required fields)
+            if (!empty($missingFields) || !empty($validationErrors)) {
+                // Create incomplete property with partial data
+                $propertyData = [
+                    'price'           => $row['price'] ?? null,
+                    'pricePerMeter'   => $row['price_per_meter'] ?? null,
+                    'purpose'         => $row['purpose'] ?? null,
+                    'property_type'   => $row['type'] ?? null,
+                    'beds'            => $row['beds'] ?? null,
+                    'bath'            => $row['bath'] ?? null,
+                    'area'            => $row['area'] ?? null,
+                    'video_url'       => $row['video_url'] ?? null,
+                    'status'          => 0, // Hidden
+                    'latitude'        => null,
+                    'longitude'       => null,
+                    'features'        => $features,
+                    'region_id'       => null,
+                    'city_id'         => $cityId,
+                    'category_id'     => null,
+                    'show_reservations' => true,
+                    'payment_method'  => $this->mapPaymentMethod($row['payment_method'] ?? null),
+                    'completion_status' => 'incomplete',
+                    'missing_fields'  => $missingFields,
+                    'validation_errors' => $validationErrors,
+                    'import_batch_id' => $this->importBatchId,
+                ];
 
-                // Prepare update data (only include fields that are present in the row)
-                $propertyData = [];
-                if (isset($row['price'])) $propertyData['price'] = $row['price'];
-                if (isset($row['price_per_meter'])) $propertyData['pricePerMeter'] = $row['price_per_meter'];
-                if (isset($row['purpose'])) $propertyData['purpose'] = $row['purpose'];
-                if (isset($row['type'])) $propertyData['property_type'] = $row['type'];
-                if (isset($row['beds'])) $propertyData['beds'] = $row['beds'];
-                if (isset($row['bath'])) $propertyData['bath'] = $row['bath'];
-                if (isset($row['area'])) $propertyData['area'] = $row['area'];
-                if (isset($row['video_url'])) $propertyData['video_url'] = $row['video_url'];
-                if (isset($row['virtual_tour'])) $propertyData['virtual_tour'] = $row['virtual_tour'];
-                if (isset($row['status'])) $propertyData['status'] = $row['status'];
-                if (isset($row['features'])) $propertyData['features'] = $features;
-                if (isset($row['payment_method'])) $propertyData['payment_method'] = $this->mapPaymentMethod($row['payment_method']);
-                if (isset($row['water_meter_number'])) $propertyData['water_meter_number'] = $row['water_meter_number'];
-                if (isset($row['electricity_meter_number'])) $propertyData['electricity_meter_number'] = $row['electricity_meter_number'];
-                if (isset($row['deed_number'])) $propertyData['deed_number'] = $row['deed_number'];
-                if (isset($row['show_reservations'])) $propertyData['show_reservations'] = strtolower($row['show_reservations']) === '1' || strtolower($row['show_reservations']) === 'yes';
-                $propertyData['featured'] = $featured;
+                // Images (Expect URLs)
+                $featuredImage = $row['featured_image'] ?? null;
+                $videoImage    = null;
+                $floorPlans    = null;
 
-                // Update featured image if provided
-                if (isset($row['featured_image']) && !empty($row['featured_image'])) {
-                    $propertyData['featured_image'] = $row['featured_image'];
-                }
+                // Create incomplete Property
+                $property = Property::storeProperty(
+                    $this->userId,
+                    $propertyData,
+                    $featuredImage,
+                    $floorPlans,
+                    $videoImage,
+                    $featured,
+                    $this->actorId
+                );
 
-                // Update property
-                $property->updateProperty($propertyData);
-
-                // Update Property Content
-                // Capture the existing content BEFORE it's deleted below, so fields not
-                // present in this import row (e.g. meta_keyword/meta_description, which
-                // the import template never carries) are preserved instead of wiped.
-                $existingContent = PropertyContent::where('property_id', $property->id)->first();
-
-                $contentData = [];
-                if (isset($row['title'])) $contentData['title'] = $row['title'];
-                if (isset($row['address'])) $contentData['address'] = $row['address'];
-                if (isset($row['description'])) {
-                    $contentData['description'] = $row['description'];
-                    $contentData['meta_description'] = Str::limit($row['description'], 150);
-                }
-                if ($cityId) $contentData['city_id'] = $cityId;
-                if ($stateId) $contentData['state_id'] = $stateId;
-
-                // Delete existing content and create new (same as API update method)
-                PropertyContent::where('property_id', $property->id)->delete();
-                if (!empty($contentData) || $cityId || $stateId) {
-                    $contentData['language_id'] = $this->defaultLanguageId;
-                    $contentData['category_id'] = $property->category_id;
-                    $contentData['title'] ??= $existingContent->title ?? '';
-                    $contentData['address'] ??= $existingContent->address ?? '';
-                    $contentData['description'] ??= $existingContent->description ?? '';
-                    $contentData['meta_keyword'] ??= $existingContent->meta_keyword ?? null;
-                    $contentData['meta_description'] ??= $existingContent->meta_description ?? null;
-                    $contentData['city_id'] ??= $existingContent->city_id ?? null;
-                    $contentData['state_id'] ??= $existingContent->state_id ?? null;
-                    PropertyContent::storePropertyContent($this->userId, $property->id, $contentData);
-                }
-
-                // Replace gallery images (delete existing, add new)
-                if (isset($row['gallery_images'])) {
-                    PropertySliderImg::where('property_id', $property->id)->delete();
-                    if (is_array($galleryImages) && !empty($galleryImages)) {
-                        $this->bulkInsertGalleryImages($property->id, $galleryImages);
-                    }
-                }
-
-                // Replace amenities (delete existing, add new)
-                PropertyAmenity::where('property_id', $property->id)->delete();
-                if (!empty($amenityIds)) {
-                    $this->bulkInsertAmenities($property->id, $amenityIds);
-                }
-
-                // Replace specifications (delete existing, add new)
-                PropertySpecification::where('property_id', $property->id)->delete();
-                if (is_array($specifications) && !empty($specifications)) {
-                    $this->bulkInsertSpecifications($property->id, $specifications);
-                }
-
-                // Update characteristics if provided
-                $this->updateCharacteristics($property, $row, $rowIndex);
-
-                $this->updatedCount++;
-            } else {
-                // CREATE NEW PROPERTY
-                
-                // Check if this is an incomplete property (missing required fields)
-                if (!empty($missingFields) || !empty($validationErrors)) {
-                    // Create incomplete property with partial data
-                    $propertyData = [
-                        'price'           => $row['price'] ?? null,
-                        'pricePerMeter'   => $row['price_per_meter'] ?? null,
-                        'purpose'         => $row['purpose'] ?? null,
-                        'property_type'   => $row['type'] ?? null,
-                        'beds'            => $row['beds'] ?? null,
-                        'bath'            => $row['bath'] ?? null,
-                        'area'            => $row['area'] ?? null,
-                        'video_url'       => $row['video_url'] ?? null,
-                        'status'          => 0, // Hidden
-                        'latitude'        => null,
-                        'longitude'       => null,
-                        'features'        => $features,
-                        'region_id'       => null,
-                        'city_id'         => $cityId,
-                        'category_id'     => null,
-                        'show_reservations' => true,
-                        'payment_method'  => $this->mapPaymentMethod($row['payment_method'] ?? null),
-                        'completion_status' => 'incomplete',
-                        'missing_fields'  => $missingFields,
-                        'validation_errors' => $validationErrors,
-                        'import_batch_id' => $this->importBatchId,
-                    ];
-
-                    // Images (Expect URLs)
-                    $featuredImage = $row['featured_image'] ?? null;
-                    $videoImage    = null;
-                    $floorPlans    = null;
-
-                    // Create incomplete Property
-                    $property = Property::storeProperty(
-                        $this->userId,
-                        $propertyData,
-                        $featuredImage,
-                        $floorPlans,
-                        $videoImage,
-                        $featured,
-                        $this->actorId
-                    );
-
-                    // Only create PropertyContent if title and address are provided
-                    if (!empty($row['title']) && !empty($row['address'])) {
-                        $contentData = [
-                            'language_id'      => $this->defaultLanguageId,
-                            'title'            => $row['title'],
-                            'address'          => $row['address'],
-                            'description'      => $row['description'] ?? '',
-                            'meta_keyword'     => null,
-                            'meta_description' => !empty($row['description']) ? Str::limit($row['description'], 150) : null,
-                            'category_id'      => $property->category_id,
-                            'city_id'          => $cityId,
-                            'state_id'         => $stateId,
-                        ];
-
-                        PropertyContent::storePropertyContent($this->userId, $property->id, $contentData);
-                    }
-
-                    // Process gallery images if provided
-                    if (is_array($galleryImages) && !empty($galleryImages)) {
-                        $this->bulkInsertGalleryImages($property->id, $galleryImages);
-                    }
-
-                    // Process amenities if provided
-                    if (!empty($amenityIds) && is_array($amenityIds)) {
-                        $this->bulkInsertAmenities($property->id, $amenityIds);
-                    }
-
-                    // Process specifications if provided
-                    if (is_array($specifications) && !empty($specifications)) {
-                        $this->bulkInsertSpecifications($property->id, $specifications);
-                    }
-
-                    // Create characteristics if provided
-                    $this->updateCharacteristics($property, $row, $rowIndex);
-                    
-                    $this->incompleteCount++;
-                } else {
-                    // All required fields present - create complete property
-                    $propertyData = [
-                        'price'           => $row['price'],
-                        'pricePerMeter'   => $row['price_per_meter'] ?? null,
-                        'purpose'         => $row['purpose'],
-                        'type'            => $row['type'],
-                        'beds'            => $row['beds'] ?? null,
-                        'bath'            => $row['bath'] ?? null,
-                        'area'            => $row['area'],
-                        'video_url'       => $row['video_url'] ?? null,
-                        'status'          => $row['status'] ?? 1,
-                        'latitude'        => null,
-                        'longitude'       => null,
-                        'features'        => $features,
-                        'region_id'       => null, // Region is automatically set to السعودية
-                        'city_id'         => $cityId,
-                        'category_id'     => null,
-                        'show_reservations' => true,
-                        'payment_method'  => $this->mapPaymentMethod($row['payment_method'] ?? null),
-                        'completion_status' => 'complete',
-                    ];
-
-                    // Images (Expect URLs)
-                    $featuredImage = $row['featured_image'] ?? null;
-                    $videoImage    = null;
-                    $floorPlans    = null;
-                    // $featured is now set above based on row data
-
-                    // Create Property
-                    $property = Property::storeProperty(
-                        $this->userId,
-                        $propertyData,
-                        $featuredImage,
-                        $floorPlans,
-                        $videoImage,
-                        $featured,
-                        $this->actorId
-                    );
-
-                    // Create Property Content (Title, Description, Address)
-                    // Note: slug is auto-generated by PropertyContent::storePropertyContent
+                // Only create PropertyContent if title and address are provided
+                if (!empty($row['title']) && !empty($row['address'])) {
                     $contentData = [
                         'language_id'      => $this->defaultLanguageId,
                         'title'            => $row['title'],
                         'address'          => $row['address'],
-                        'description'      => $row['description'],
+                        'description'      => $row['description'] ?? '',
                         'meta_keyword'     => null,
-                        'meta_description' => Str::limit($row['description'], 150),
+                        'meta_description' => !empty($row['description']) ? Str::limit($row['description'], 150) : null,
                         'category_id'      => $property->category_id,
                         'city_id'          => $cityId,
-                        'state_id'         => $stateId, // District ID from user_districts table
+                        'state_id'         => $stateId,
                     ];
 
                     PropertyContent::storePropertyContent($this->userId, $property->id, $contentData);
-
-                    // Process gallery images
-                    if (is_array($galleryImages) && !empty($galleryImages)) {
-                        $this->bulkInsertGalleryImages($property->id, $galleryImages);
-                    }
-
-                    // Process amenities (no validation - same as API store method)
-                    if (!empty($amenityIds) && is_array($amenityIds)) {
-                        $this->bulkInsertAmenities($property->id, $amenityIds);
-                    }
-
-                    // Process specifications (use integer keys matching API behavior)
-                    if (is_array($specifications) && !empty($specifications)) {
-                        $this->bulkInsertSpecifications($property->id, $specifications);
-                    }
-
-                    // Create characteristics if provided
-                    $this->updateCharacteristics($property, $row, $rowIndex);
-                    
-                    $this->importedCount++;
                 }
+
+                // Process gallery images if provided
+                if (is_array($galleryImages) && !empty($galleryImages)) {
+                    $this->bulkInsertGalleryImages($property->id, $galleryImages);
+                }
+
+                // Process amenities if provided
+                if (!empty($amenityIds) && is_array($amenityIds)) {
+                    $this->bulkInsertAmenities($property->id, $amenityIds);
+                }
+
+                // Process specifications if provided
+                if (is_array($specifications) && !empty($specifications)) {
+                    $this->bulkInsertSpecifications($property->id, $specifications);
+                }
+
+                // Create characteristics if provided
+                $this->updateCharacteristics($property, $row, $rowIndex);
+                
+                $this->incompleteCount++;
+            } else {
+                // All required fields present - create complete property
+                $propertyData = [
+                    'price'           => $row['price'],
+                    'pricePerMeter'   => $row['price_per_meter'] ?? null,
+                    'purpose'         => $row['purpose'],
+                    'type'            => $row['type'],
+                    'beds'            => $row['beds'] ?? null,
+                    'bath'            => $row['bath'] ?? null,
+                    'area'            => $row['area'],
+                    'video_url'       => $row['video_url'] ?? null,
+                    'status'          => $row['status'] ?? 1,
+                    'latitude'        => null,
+                    'longitude'       => null,
+                    'features'        => $features,
+                    'region_id'       => null, // Region is automatically set to السعودية
+                    'city_id'         => $cityId,
+                    'category_id'     => null,
+                    'show_reservations' => true,
+                    'payment_method'  => $this->mapPaymentMethod($row['payment_method'] ?? null),
+                    'completion_status' => 'complete',
+                ];
+
+                // Images (Expect URLs)
+                $featuredImage = $row['featured_image'] ?? null;
+                $videoImage    = null;
+                $floorPlans    = null;
+                // $featured is now set above based on row data
+
+                // Create Property
+                $property = Property::storeProperty(
+                    $this->userId,
+                    $propertyData,
+                    $featuredImage,
+                    $floorPlans,
+                    $videoImage,
+                    $featured,
+                    $this->actorId
+                );
+
+                // Create Property Content (Title, Description, Address)
+                // Note: slug is auto-generated by PropertyContent::storePropertyContent
+                $contentData = [
+                    'language_id'      => $this->defaultLanguageId,
+                    'title'            => $row['title'],
+                    'address'          => $row['address'],
+                    'description'      => $row['description'],
+                    'meta_keyword'     => null,
+                    'meta_description' => Str::limit($row['description'], 150),
+                    'category_id'      => $property->category_id,
+                    'city_id'          => $cityId,
+                    'state_id'         => $stateId, // District ID from user_districts table
+                ];
+
+                PropertyContent::storePropertyContent($this->userId, $property->id, $contentData);
+
+                // Process gallery images
+                if (is_array($galleryImages) && !empty($galleryImages)) {
+                    $this->bulkInsertGalleryImages($property->id, $galleryImages);
+                }
+
+                // Process amenities (no validation - same as API store method)
+                if (!empty($amenityIds) && is_array($amenityIds)) {
+                    $this->bulkInsertAmenities($property->id, $amenityIds);
+                }
+
+                // Process specifications (use integer keys matching API behavior)
+                if (is_array($specifications) && !empty($specifications)) {
+                    $this->bulkInsertSpecifications($property->id, $specifications);
+                }
+
+                // Create characteristics if provided
+                $this->updateCharacteristics($property, $row, $rowIndex);
+                
+                $this->importedCount++;
             }
         });
     }
@@ -1091,11 +973,6 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         // Note: Fields are intentionally NOT required here to allow incomplete properties
         // Custom validation in onRow() determines completeness and creates incomplete properties if needed
         return [
-            'id' => [
-                'nullable',
-                'integer',
-                Rule::exists('user_properties', 'id')->where('user_id', $this->userId),
-            ],
             'title'       => 'nullable|string|max:255',
             'price'       => 'nullable|numeric|min:0',
             'price_per_meter' => 'nullable|numeric|min:0',
@@ -1212,6 +1089,9 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             unset($data['id']);
             $data['_raw_export'] = '1';
         }
+
+        // Bulk import is create-only: ignore المعرّف / id even on import-safe files.
+        unset($data['id']);
 
         // Check if row is completely empty (all values are null or empty)
         $hasData = !empty(array_filter($data, function ($value) {

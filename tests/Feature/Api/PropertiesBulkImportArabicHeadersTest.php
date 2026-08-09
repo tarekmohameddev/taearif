@@ -309,12 +309,12 @@ class PropertiesBulkImportArabicHeadersTest extends TestCase
         $this->assertSame('commercial', $property->property_type);
     }
 
-    public function test_bulk_import_update_via_id_does_not_crash_and_preserves_meta_fields(): void
+    public function test_bulk_import_ignores_id_column_and_creates_instead_of_updating(): void
     {
         $this->skipIfMissingSchema();
         [$tenant] = $this->actingAsTenantWithCreate();
 
-        // Create an initial property via import (mirrors the create path)
+        // Create an initial property via import
         $file = $this->makeExcelUpload(
             ['عنوان الإعلان', 'السعر', 'العنوان', 'الوصف', 'الغرض', 'النوع', 'المساحة'],
             [['شقة أصلية', 500000, 'حي الأصلي الرياض', 'وصف عقار أصلي للاختبار', 'بيع', 'سكني', 100]],
@@ -322,45 +322,54 @@ class PropertiesBulkImportArabicHeadersTest extends TestCase
         $response = $this->post('/api/properties/bulk-import', ['file' => $file], ['Accept' => 'application/json']);
         $this->assertSame(0, (int) ($response->json('failed_count') ?? 0), $response->getContent());
 
-        $property = Property::where('user_id', $tenant->id)->latest('id')->first();
-        $this->assertNotNull($property);
+        $existing = Property::where('user_id', $tenant->id)->latest('id')->first();
+        $this->assertNotNull($existing);
+        $existingId = $existing->id;
+        $existingUpdatedAt = $existing->updated_at?->toDateTimeString();
 
-        // The import template has no SEO meta fields; simulate a value set some other way
-        // (e.g. via the property edit UI) that a re-import must not silently wipe.
-        PropertyContent::where('property_id', $property->id)->update([
+        PropertyContent::where('property_id', $existing->id)->update([
             'meta_keyword' => 'شقة مميزة, عقار الرياض',
             'meta_description' => 'وصف ميتا مخصص للسيو',
         ]);
 
-        // Re-import an update row referencing this property's id, as export-for-import round-trips do
-        $updateFile = $this->makeExcelUpload(
+        // File still includes المعرّف (legacy export-for-import) — must be ignored (create-only)
+        $createFile = $this->makeExcelUpload(
             ['المعرّف', 'عنوان الإعلان', 'السعر', 'العنوان', 'الوصف', 'الغرض', 'النوع', 'المساحة'],
-            [[$property->id, 'شقة محدثة', 600000, 'حي محدث الرياض', 'وصف عقار محدث للاختبار', 'بيع', 'سكني', 120]],
+            [[$existingId, 'شقة جديدة من الاستيراد', 600000, 'حي جديد الرياض', 'وصف عقار جديد للاختبار', 'بيع', 'سكني', 120]],
         );
 
-        $updateResponse = $this->post('/api/properties/bulk-import', ['file' => $updateFile], [
+        $createResponse = $this->post('/api/properties/bulk-import', ['file' => $createFile], [
             'Accept' => 'application/json',
         ]);
 
-        $this->assertSame(
-            200,
-            $updateResponse->status(),
-            'Update-via-id import must not crash (e.g. undefined array key): ' . $updateResponse->getContent()
+        $this->assertContains($createResponse->status(), [200, 422], $createResponse->getContent());
+        $this->assertSame(0, (int) ($createResponse->json('failed_count') ?? 0), $createResponse->getContent());
+        $this->assertSame(0, (int) ($createResponse->json('updated_count') ?? 0), $createResponse->getContent());
+        $this->assertGreaterThan(
+            0,
+            (int) ($createResponse->json('imported_count') ?? 0) + (int) ($createResponse->json('incomplete_count') ?? 0),
+            $createResponse->getContent()
         );
-        $this->assertSame(0, (int) ($updateResponse->json('failed_count') ?? 0), $updateResponse->getContent());
-        $this->assertGreaterThan(0, (int) ($updateResponse->json('updated_count') ?? 0), $updateResponse->getContent());
 
-        $property->refresh();
-        $this->assertEquals(600000, (float) $property->price);
+        $existing->refresh();
+        $this->assertEquals(500000, (float) $existing->price);
+        $this->assertSame($existingUpdatedAt, $existing->updated_at?->toDateTimeString());
 
-        $content = PropertyContent::where('property_id', $property->id)->first();
-        $this->assertNotNull($content);
-        $this->assertSame('شقة محدثة', $content->title);
-        // meta_keyword has no column in the import template at all — must be preserved, not wiped to null
-        $this->assertSame('شقة مميزة, عقار الرياض', $content->meta_keyword);
-        // meta_description is intentionally re-derived from the row's (changed) description
-        $this->assertNotNull($content->meta_description);
-        $this->assertStringContainsString('وصف عقار محدث للاختبار', $content->meta_description);
+        $existingContent = PropertyContent::where('property_id', $existingId)->first();
+        $this->assertNotNull($existingContent);
+        $this->assertSame('شقة أصلية', $existingContent->title);
+        $this->assertSame('شقة مميزة, عقار الرياض', $existingContent->meta_keyword);
+
+        $created = Property::where('user_id', $tenant->id)
+            ->where('id', '!=', $existingId)
+            ->latest('id')
+            ->first();
+        $this->assertNotNull($created);
+        $this->assertEquals(600000, (float) $created->price);
+
+        $createdContent = PropertyContent::where('property_id', $created->id)->first();
+        $this->assertNotNull($createdContent);
+        $this->assertSame('شقة جديدة من الاستيراد', $createdContent->title);
     }
 
     public function test_raw_export_numeric_zero_cells_do_not_fail_string_validation(): void
