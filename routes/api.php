@@ -1342,6 +1342,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::delete('properties/{propertyId}/external-links/{linkId}', [\App\Http\Controllers\Api\apps\whatsapp\PropertyExternalLinkController::class, 'destroy']);
 
         Route::get('stats', [WhatsAppStatsController::class, 'index']);
+        Route::get('dashboard-summary', [WhatsAppStatsController::class, 'dashboardSummary']);
         Route::get('campaigns', [WaCampaignController::class, 'index']);
         Route::get('campaigns/{id}', [WaCampaignController::class, 'show']);
         Route::post('campaigns', [WaCampaignController::class, 'store']);

@@ -9,7 +9,14 @@ class WhatsAppNumberService
 {
     public function listForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        $query = WaNumber::query()->where('user_id', $userId);
+        $query = WaNumber::query()
+            ->where('user_id', $userId)
+            ->with(['aiConfig:wa_number_id,enabled'])
+            ->withCount([
+                'conversationStates as unread_conversations_count' => function ($q) use ($userId) {
+                    $q->where('user_id', $userId)->where('unread_count', '>', 0);
+                },
+            ]);
 
         if (isset($filters['status']) && $filters['status'] !== null && $filters['status'] !== '') {
             $query->where('status', (string) $filters['status']);
