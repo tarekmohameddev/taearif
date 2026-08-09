@@ -12,18 +12,25 @@ class WaTemplate extends Model
 
     protected $fillable = [
         'user_id',
+        'meta_template_id',
         'name',
-        'content',
         'category',
-        'variables',
-        'is_active',
+        'status',
         'language',
+        'content',
+        'variables',
+        'components',
+        'namespace',
+        'is_active',
+        'synced_at',
     ];
 
     /** @var array<string, string> */
     protected $casts = [
         'variables' => 'array',
+        'components' => 'array',
         'is_active' => 'boolean',
+        'synced_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

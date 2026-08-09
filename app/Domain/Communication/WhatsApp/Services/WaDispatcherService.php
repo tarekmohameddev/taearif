@@ -137,11 +137,24 @@ class WaDispatcherService implements WaDispatcher
         }
 
         try {
-            $result = $this->channelSender->send(
-                $waNumber,
-                $log->recipient_phone,
-                $log->message
-            );
+            $logMeta = is_array($log->meta) ? $log->meta : [];
+            $isTemplate = ! empty($logMeta['is_template']);
+
+            if ($isTemplate) {
+                $result = $this->channelSender->sendTemplate(
+                    $waNumber,
+                    $log->recipient_phone,
+                    (string) ($logMeta['template_name'] ?? ''),
+                    (string) ($logMeta['template_language'] ?? 'en'),
+                    is_array($logMeta['template_components'] ?? null) ? $logMeta['template_components'] : []
+                );
+            } else {
+                $result = $this->channelSender->send(
+                    $waNumber,
+                    $log->recipient_phone,
+                    $log->message
+                );
+            }
         } catch (ProviderSendFailedException $e) {
             $result = null;
             Log::error('WaDispatcherService: ProviderSendFailedException', [

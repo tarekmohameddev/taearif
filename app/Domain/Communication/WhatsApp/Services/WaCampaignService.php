@@ -109,7 +109,9 @@ class WaCampaignService
     }
 
     /**
-     * Get the effective message text for a campaign: rendered template or plain message.
+     * Get the effective plain-text message for a campaign.
+     * For Meta templates, returns the body component text (used as a preview / fallback).
+     * For plain message campaigns, returns the message directly.
      */
     private function getEffectiveMessage(WaCampaign $campaign): string
     {
@@ -121,17 +123,105 @@ class WaCampaignService
             if (! $template) {
                 throw new InvalidArgumentException('Template not found for campaign.');
             }
-            $variables = $campaign->meta['variables'] ?? [];
-            if (! is_array($variables)) {
-                $variables = [];
-            }
-            return $this->templateService->renderContent($template, $variables);
+            return $this->extractTemplateBodyText($template);
         }
         $msg = $campaign->message;
         if ($msg === null || trim($msg) === '') {
             throw new InvalidArgumentException('WA_CAMPAIGN_CONTENT_REQUIRED');
         }
         return trim($msg);
+    }
+
+    /**
+     * Extract body component text from a Meta template (for logging / preview).
+     */
+    private function extractTemplateBodyText(WaTemplate $template): string
+    {
+        if (is_array($template->components)) {
+            foreach ($template->components as $component) {
+                if (
+                    isset($component['type']) &&
+                    strtoupper((string) $component['type']) === 'BODY' &&
+                    isset($component['text'])
+                ) {
+                    return (string) $component['text'];
+                }
+            }
+        }
+        return $template->name;
+    }
+
+    /**
+     * Resolve the WaTemplate for a campaign and validate it is approved for sending.
+     * Returns null when the campaign uses a plain message (no template_id).
+     */
+    private function resolveTemplateForSend(WaCampaign $campaign): ?WaTemplate
+    {
+        if (! $campaign->template_id) {
+            return null;
+        }
+
+        $template = WaTemplate::query()
+            ->where('id', $campaign->template_id)
+            ->where('user_id', $campaign->user_id)
+            ->first();
+
+        if (! $template) {
+            throw new InvalidArgumentException('Template not found for campaign.');
+        }
+
+        if ($template->status !== null && strtoupper((string) $template->status) !== 'APPROVED') {
+            throw new InvalidArgumentException('WA_TEMPLATE_NOT_APPROVED');
+        }
+
+        return $template;
+    }
+
+    /**
+     * Build the template component parameters array for the Meta Template Message API.
+     * Maps campaign variables (key→value or positional) onto the template components.
+     *
+     * @param array<string, mixed> $variables
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildTemplateComponentParameters(WaTemplate $template, array $variables): array
+    {
+        if (empty($variables) || ! is_array($template->components)) {
+            return [];
+        }
+
+        $components = [];
+        foreach ($template->components as $component) {
+            $type = strtoupper((string) ($component['type'] ?? ''));
+            if (! in_array($type, ['BODY', 'HEADER'], true)) {
+                continue;
+            }
+
+            $text = $component['text'] ?? '';
+            if (! is_string($text) || $text === '') {
+                continue;
+            }
+
+            preg_match_all('/\{\{(\d+)\}\}/', $text, $matches);
+            if (empty($matches[1])) {
+                continue;
+            }
+
+            $parameters = [];
+            foreach ($matches[1] as $varIndex) {
+                $value = $variables[$varIndex] ?? $variables[(int) $varIndex - 1] ?? '';
+                $parameters[] = ['type' => 'text', 'text' => (string) $value];
+            }
+
+            if (! empty($parameters)) {
+                $components[] = [
+                    'type'       => strtolower($type),
+                    'parameters' => $parameters,
+                ];
+            }
+        }
+
+        return $components;
     }
 
     private function getCurrentCreditsPerMessage(): int
@@ -292,12 +382,27 @@ class WaCampaignService
             $this->creditService->reserve($userId, $requiredCredits, 'wa_campaign', (string) $campaignId);
 
             $messageText = $this->getEffectiveMessage($campaign);
+            $template = $this->resolveTemplateForSend($campaign);
             $dispatchReference = (string) Str::uuid();
             $now = now();
             $waNumberId = (int) $campaign->wa_number_id;
 
+            $variables = is_array($campaign->meta['variables'] ?? null) ? $campaign->meta['variables'] : [];
+            $templateComponentParams = $template !== null
+                ? $this->buildTemplateComponentParameters($template, $variables)
+                : [];
+
             $rows = [];
             foreach ($recipients as $recipient) {
+                $logMeta = ['dispatch_reference' => $dispatchReference];
+
+                if ($template !== null) {
+                    $logMeta['is_template']        = true;
+                    $logMeta['template_name']      = $template->name;
+                    $logMeta['template_language']  = $template->language ?? 'en';
+                    $logMeta['template_components'] = $templateComponentParams;
+                }
+
                 $rows[] = [
                     'user_id' => $userId,
                     'campaign_id' => $campaign->id,
@@ -307,7 +412,7 @@ class WaCampaignService
                     'recipient_name' => $recipient['name'],
                     'message' => $messageText,
                     'status' => 'pending',
-                    'meta' => json_encode(['dispatch_reference' => $dispatchReference]),
+                    'meta' => json_encode($logMeta),
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
@@ -584,12 +689,27 @@ class WaCampaignService
 
                 $this->creditService->reserve($userId, $requiredCredits, 'wa_campaign_restart', (string) $campaignId);
 
+                $restartTemplate = $this->resolveTemplateForSend($campaign);
+                $restartVariables = is_array($campaign->meta['variables'] ?? null) ? $campaign->meta['variables'] : [];
+                $restartTemplateComponentParams = $restartTemplate !== null
+                    ? $this->buildTemplateComponentParameters($restartTemplate, $restartVariables)
+                    : [];
+
                 $dispatchReference = (string) Str::uuid();
                 $now = now();
                 $waNumberId = (int) $campaign->wa_number_id;
 
                 $rows = [];
                 foreach ($recipients as $recipient) {
+                    $logMeta = ['dispatch_reference' => $dispatchReference];
+
+                    if ($restartTemplate !== null) {
+                        $logMeta['is_template']         = true;
+                        $logMeta['template_name']       = $restartTemplate->name;
+                        $logMeta['template_language']   = $restartTemplate->language ?? 'en';
+                        $logMeta['template_components'] = $restartTemplateComponentParams;
+                    }
+
                     $rows[] = [
                         'user_id' => $userId,
                         'campaign_id' => $campaign->id,
@@ -599,7 +719,7 @@ class WaCampaignService
                         'recipient_name' => $recipient['name'],
                         'message' => $currentMessage,
                         'status' => 'pending',
-                        'meta' => json_encode(['dispatch_reference' => $dispatchReference]),
+                        'meta' => json_encode($logMeta),
                         'created_at' => $now,
                         'updated_at' => $now,
                     ];

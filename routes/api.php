@@ -1296,9 +1296,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 
         Route::get('templates', [WhatsAppTemplateController::class, 'index']);
         Route::get('templates/{id}', [WhatsAppTemplateController::class, 'show']);
-        Route::post('templates', [WhatsAppTemplateController::class, 'store']);
-        Route::put('templates/{id}', [WhatsAppTemplateController::class, 'update']);
-        Route::delete('templates/{id}', [WhatsAppTemplateController::class, 'destroy']);
+        Route::post('templates/sync', [WhatsAppTemplateController::class, 'sync']);
 
         Route::get('automation/rules', [WhatsAppAutomationRuleController::class, 'index']);
         Route::get('automation/rules/{id}', [WhatsAppAutomationRuleController::class, 'show']);
