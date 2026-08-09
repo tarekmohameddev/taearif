@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\Communication\WhatsApp\Bot;
 
+use App\Domain\Communication\Contracts\CreditService;
 use App\Domain\Communication\DTOs\SendMessageDto;
 use App\Domain\Communication\Services\CommunicationServiceImpl;
 use App\Domain\Communication\Support\CommunicationEndpoints;
 use App\Domain\Communication\WhatsApp\Bot\DTOs\BotReply;
+use App\Domain\Communication\WhatsApp\Services\WaPricingResolver;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -29,6 +31,8 @@ final class DeliveryService
 
     public function __construct(
         private readonly CommunicationServiceImpl $commService,
+        private readonly CreditService $creditService,
+        private readonly WaPricingResolver $pricingResolver,
     ) {}
 
     /**
@@ -46,8 +50,10 @@ final class DeliveryService
     /**
      * Deliver the bot reply to the customer.
      * Splits long replies, simulates typing, and sends each part.
+     * On success, deducts one AI Bot credit per turn (not per segment).
      *
      * @param array<string, mixed> $messageMeta Message meta (must contain wa_number_id, to, etc.)
+     * @param int|null             $triggerMessageId Inbound message that triggered this turn (for idempotency)
      */
     public function deliver(
         int $tenantId,
@@ -56,6 +62,7 @@ final class DeliveryService
         string $toPhone,
         BotReply $reply,
         array $messageMeta,
+        ?int $triggerMessageId = null,
     ): bool {
         if ($reply->needsHuman || trim($reply->reply) === '') {
             return false;
@@ -102,7 +109,40 @@ final class DeliveryService
             }
         }
 
+        // Deduct one AI Bot credit per delivered turn (not per segment).
+        // The reference id is conversation:triggerMessage so it is unique per turn
+        // and the idempotency marker in CreditServiceImpl prevents double-charging.
+        $this->deductAiBotCredit($tenantId, $conversationId, $triggerMessageId);
+
         return true;
+    }
+
+    /**
+     * Deduct one AI Bot credit for a delivered turn.
+     * Silently skips when the category is not billable or credits = 0.
+     */
+    private function deductAiBotCredit(int $tenantId, int $conversationId, ?int $triggerMessageId): void
+    {
+        try {
+            if (! $this->pricingResolver->isAiBotBillable()) {
+                return;
+            }
+
+            $credits = $this->pricingResolver->creditsForAiReply();
+            if ($credits <= 0) {
+                return;
+            }
+
+            $refId = $conversationId . ':' . ($triggerMessageId ?? Str::uuid()->toString());
+            $this->creditService->deduct($tenantId, $credits, 'wa_bot_reply', $refId);
+        } catch (\Throwable $e) {
+            // Non-fatal — log and continue so a billing hiccup doesn't block the customer
+            Log::warning('bot.delivery.credit_deduct_failed', [
+                'tenant_id'       => $tenantId,
+                'conversation_id' => $conversationId,
+                'error'           => $e->getMessage(),
+            ]);
+        }
     }
 
     /** @return string[] */

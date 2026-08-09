@@ -204,23 +204,33 @@ class UserCredit extends Model
     }
 
     /**
-     * Get cost for message type from MarketingChannelPricing table
-     * Requires pricing to be configured - throws exception if not found
-     * 
+     * Get cost for message type from MarketingChannelPricing table.
+     * Requires pricing to be configured - throws exception if not found.
+     *
+     * The optional $category parameter supports per-category WhatsApp pricing
+     * (e.g. 'marketing', 'utility', 'authentication', 'ai_bot', 'service').
+     * Existing call sites that omit $category receive the 'default' row,
+     * keeping their behaviour unchanged.
+     *
+     * Returns 0 for rows where is_billable = false.
+     *
      * @param string $messageType The channel type (e.g., 'sms', 'whatsapp')
+     * @param string $category    Message category (default 'default')
      * @return int Credits required per message
-     * @throws \App\Domain\Communication\Exceptions\ChannelPricingNotConfiguredException If pricing is not configured for the channel type
+     * @throws \App\Domain\Communication\Exceptions\ChannelPricingNotConfiguredException If pricing is not configured
      */
-    public static function getCostForMessageType($messageType)
+    public static function getCostForMessageType($messageType, $category = 'default')
     {
-        $pricing = MarketingChannelPricing::active()
-            ->forChannel($messageType)
-            ->first();
-        
+        $pricing = MarketingChannelPricing::resolveFor($messageType, $category);
+
         if (!$pricing) {
             throw new \App\Domain\Communication\Exceptions\ChannelPricingNotConfiguredException($messageType);
         }
-        
+
+        if (!$pricing->is_billable) {
+            return 0;
+        }
+
         return $pricing->credits_per_message;
     }
 }

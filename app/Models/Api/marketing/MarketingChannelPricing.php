@@ -13,13 +13,16 @@ class MarketingChannelPricing extends Model
 
     protected $fillable = [
         'channel_type',
+        'message_category',
         'credits_per_message',
         'price_per_credit',
         'effective_price_per_message',
         'currency',
         'is_active',
+        'is_billable',
         'description',
         'description_ar',
+        'label_ar',
         'channel_specific_settings',
     ];
 
@@ -28,6 +31,7 @@ class MarketingChannelPricing extends Model
         'price_per_credit' => 'decimal:4',
         'effective_price_per_message' => 'decimal:4',
         'is_active' => 'boolean',
+        'is_billable' => 'boolean',
         'channel_specific_settings' => 'array',
     ];
 
@@ -38,6 +42,14 @@ class MarketingChannelPricing extends Model
     const CHANNEL_INSTAGRAM = 'instagram';
     const CHANNEL_SMS = 'sms';
 
+    // Message category constants (WhatsApp-specific)
+    const CATEGORY_MARKETING       = 'marketing';
+    const CATEGORY_UTILITY         = 'utility';
+    const CATEGORY_AUTHENTICATION  = 'authentication';
+    const CATEGORY_AI_BOT          = 'ai_bot';
+    const CATEGORY_SERVICE         = 'service';
+    const CATEGORY_DEFAULT         = 'default';
+
     public static function getChannelTypes()
     {
         return [
@@ -47,6 +59,48 @@ class MarketingChannelPricing extends Model
             self::CHANNEL_INSTAGRAM => 'Instagram',
             self::CHANNEL_SMS => 'SMS',
         ];
+    }
+
+    /**
+     * All known message categories with Arabic labels.
+     */
+    public static function getMessageCategories()
+    {
+        return [
+            self::CATEGORY_MARKETING      => ['en' => 'Marketing',       'ar' => 'تسويقية'],
+            self::CATEGORY_UTILITY        => ['en' => 'Utility',         'ar' => 'خدمات'],
+            self::CATEGORY_AUTHENTICATION => ['en' => 'Authentication',  'ar' => 'مصادقة'],
+            self::CATEGORY_AI_BOT         => ['en' => 'AI Bot',          'ar' => 'بوت ذكي'],
+            self::CATEGORY_SERVICE        => ['en' => 'Service (Free)',  'ar' => 'خدمة (مجاني)'],
+            self::CATEGORY_DEFAULT        => ['en' => 'Default',         'ar' => 'افتراضي'],
+        ];
+    }
+
+    /**
+     * Resolve the pricing row for a given channel+category, falling back to 'default'.
+     * Returns null only if neither exact nor default row exists.
+     */
+    public static function resolveFor(string $channelType, string $category): ?self
+    {
+        // Try exact match first
+        $exact = self::active()
+            ->forChannel($channelType)
+            ->forCategory($category)
+            ->first();
+
+        if ($exact !== null) {
+            return $exact;
+        }
+
+        // Fall back to default category
+        if ($category !== self::CATEGORY_DEFAULT) {
+            return self::active()
+                ->forChannel($channelType)
+                ->forCategory(self::CATEGORY_DEFAULT)
+                ->first();
+        }
+
+        return null;
     }
 
     /**
@@ -112,6 +166,14 @@ class MarketingChannelPricing extends Model
     public function scopeForChannel($query, $channelType)
     {
         return $query->where('channel_type', $channelType);
+    }
+
+    /**
+     * Scope for specific message category
+     */
+    public function scopeForCategory($query, $category)
+    {
+        return $query->where('message_category', $category);
     }
 
     /**

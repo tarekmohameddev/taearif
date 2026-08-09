@@ -27,7 +27,8 @@ class WaCampaignService
         private readonly WaRecipientResolverService $recipientResolver,
         private readonly IdempotencyService $idempotencyService,
         private readonly CreditService $creditService,
-        private readonly WhatsAppTemplateService $templateService
+        private readonly WhatsAppTemplateService $templateService,
+        private readonly WaPricingResolver $pricingResolver
     ) {}
 
     public function listForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
@@ -224,16 +225,17 @@ class WaCampaignService
         return $components;
     }
 
-    private function getCurrentCreditsPerMessage(): int
+    private function getCurrentCreditsPerMessage(?WaTemplate $template = null): int
     {
-        return max(1, (int) UserCredit::getCostForMessageType('whatsapp'));
+        $metaCategory = $template?->category;
+        return max(0, $this->pricingResolver->creditsForTemplateCategory($metaCategory));
     }
 
     private function getCampaignCreditsPerMessage(WaCampaign $campaign): int
     {
         $meta = is_array($campaign->meta) ? $campaign->meta : [];
         if (isset($meta['credits_per_message']) && is_numeric($meta['credits_per_message'])) {
-            return max(1, (int) $meta['credits_per_message']);
+            return max(0, (int) $meta['credits_per_message']);
         }
 
         return $this->getCurrentCreditsPerMessage();
@@ -373,16 +375,19 @@ class WaCampaignService
                 throw new InvalidArgumentException('No valid phone numbers from the given customer_ids or manual_phones. Ensure customer IDs exist and have a valid phone (8–16 digits), and that manual_phones are valid (8–16 digits).');
             }
 
-            $creditsPerMessage = $this->getCurrentCreditsPerMessage();
+            // Resolve template FIRST so we can price by its category
+            $messageText = $this->getEffectiveMessage($campaign);
+            $template = $this->resolveTemplateForSend($campaign);
+
+            $creditsPerMessage = $this->getCurrentCreditsPerMessage($template);
             $requiredCredits = count($recipients) * $creditsPerMessage;
-            if (! $this->creditService->hasSufficientCredits($userId, $requiredCredits)) {
+            if ($requiredCredits > 0 && ! $this->creditService->hasSufficientCredits($userId, $requiredCredits)) {
                 throw new InsufficientCreditsException($userId, $requiredCredits);
             }
 
-            $this->creditService->reserve($userId, $requiredCredits, 'wa_campaign', (string) $campaignId);
-
-            $messageText = $this->getEffectiveMessage($campaign);
-            $template = $this->resolveTemplateForSend($campaign);
+            if ($requiredCredits > 0) {
+                $this->creditService->reserve($userId, $requiredCredits, 'wa_campaign', (string) $campaignId);
+            }
             $dispatchReference = (string) Str::uuid();
             $now = now();
             $waNumberId = (int) $campaign->wa_number_id;
@@ -628,11 +633,13 @@ class WaCampaignService
                 }
 
                 $requiredCredits = $count * $creditsPerMessage;
-                if (! $this->creditService->hasSufficientCredits($userId, $requiredCredits)) {
+                if ($requiredCredits > 0 && ! $this->creditService->hasSufficientCredits($userId, $requiredCredits)) {
                     throw new InsufficientCreditsException($userId, $requiredCredits);
                 }
 
-                $this->creditService->reserve($userId, $requiredCredits, 'wa_campaign_resume', (string) $campaignId);
+                if ($requiredCredits > 0) {
+                    $this->creditService->reserve($userId, $requiredCredits, 'wa_campaign_resume', (string) $campaignId);
+                }
 
                 WaMessageLog::query()
                     ->where('campaign_id', $campaignId)
@@ -682,14 +689,19 @@ class WaCampaignService
                 }
 
                 $recipientCount = count($recipients);
+
+                // Resolve template before pricing so category is known
+                $restartTemplate = $this->resolveTemplateForSend($campaign);
+                $creditsPerMessage = $this->getCurrentCreditsPerMessage($restartTemplate);
+
                 $requiredCredits = $recipientCount * $creditsPerMessage;
-                if (! $this->creditService->hasSufficientCredits($userId, $requiredCredits)) {
+                if ($requiredCredits > 0 && ! $this->creditService->hasSufficientCredits($userId, $requiredCredits)) {
                     throw new InsufficientCreditsException($userId, $requiredCredits);
                 }
 
-                $this->creditService->reserve($userId, $requiredCredits, 'wa_campaign_restart', (string) $campaignId);
-
-                $restartTemplate = $this->resolveTemplateForSend($campaign);
+                if ($requiredCredits > 0) {
+                    $this->creditService->reserve($userId, $requiredCredits, 'wa_campaign_restart', (string) $campaignId);
+                }
                 $restartVariables = is_array($campaign->meta['variables'] ?? null) ? $campaign->meta['variables'] : [];
                 $restartTemplateComponentParams = $restartTemplate !== null
                     ? $this->buildTemplateComponentParameters($restartTemplate, $restartVariables)

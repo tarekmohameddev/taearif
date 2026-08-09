@@ -249,7 +249,7 @@
             </div>
         </div>
 
-        <!-- Right Panel - Channel Pricing -->
+        <!-- Right Panel - Channel Pricing (grouped by channel) -->
         <div class="col-lg-6">
             <div class="card border h-100">
                 <div class="card-header text-white border-0" style="background: #f39c12;">
@@ -258,122 +258,133 @@
                             <i class="fas fa-broadcast-tower me-2"></i> {{ __('Channel Pricing') }}
                         </h5>
                         <button class="btn btn-light btn-sm" data-toggle="modal" data-target="#createPricingModal">
-                            <i class="fas fa-plus me-1"></i> {{ __('Add Channel') }}
+                            <i class="fas fa-plus me-1"></i> {{ __('Add Category') }}
                         </button>
                     </div>
                 </div>
                 <div class="card-body">
-                    <!-- Channel Filters -->
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <select class="form-select form-select-sm border-0 bg-light" id="channelStatusFilter">
-                                <option value="" {{ request('channel_status') == '' ? 'selected' : '' }}>{{ __('All Status') }}</option>
-                                <option value="active" {{ request('channel_status') == 'active' ? 'selected' : '' }}>{{ __('Active') }}</option>
-                                <option value="inactive" {{ request('channel_status') == 'inactive' ? 'selected' : '' }}>{{ __('Inactive') }}</option>
-                            </select>
-                        </div>
-                        <div class="col-md-5">
-                            <input type="text" class="form-control form-control-sm border-0 bg-light" id="channelSearch" placeholder="🔍 {{ __('Search channels...') }}" value="{{ request('channel_search') }}">
-                        </div>
-                        <div class="col-md-3">
-                            <button class="btn btn-outline-secondary btn-sm w-100" id="resetChannelFilters" title="{{ __('Reset all filters') }}">
-                                <i class="fas fa-redo me-1"></i> {{ __('Reset') }}
-                            </button>
-                        </div>
-                    </div>
+                    @php
+                        $channelIcons = [
+                            'whatsapp'  => ['icon' => 'fab fa-whatsapp',  'color' => '#25D366'],
+                            'facebook'  => ['icon' => 'fab fa-facebook',  'color' => '#1877F2'],
+                            'telegram'  => ['icon' => 'fab fa-telegram',  'color' => '#0088cc'],
+                            'instagram' => ['icon' => 'fab fa-instagram', 'color' => '#E4405F'],
+                            'sms'       => ['icon' => 'fas fa-sms',       'color' => '#FF6B6B'],
+                            'email'     => ['icon' => 'fas fa-envelope',  'color' => '#EA4335'],
+                        ];
+                        $categoryColors = [
+                            'marketing'      => '#e74c3c',
+                            'utility'        => '#3498db',
+                            'authentication' => '#9b59b6',
+                            'ai_bot'         => '#1abc9c',
+                            'service'        => '#95a5a6',
+                            'default'        => '#f39c12',
+                        ];
+                        $categoryIcons = [
+                            'marketing'      => 'fas fa-bullhorn',
+                            'utility'        => 'fas fa-tools',
+                            'authentication' => 'fas fa-key',
+                            'ai_bot'         => 'fas fa-robot',
+                            'service'        => 'fas fa-headset',
+                            'default'        => 'fas fa-tag',
+                        ];
+                    @endphp
 
-                    <!-- Channel Pricing List -->
+                    @if($channelPricingGrouped->isEmpty())
+                    <div class="empty-state text-center py-5">
+                        <i class="fas fa-broadcast-tower fa-4x text-muted mb-3" style="opacity: 0.3;"></i>
+                        <h5 class="text-muted">{{ __('No channel pricing found') }}</h5>
+                        <p class="text-muted mb-3">{{ __('Create your first channel pricing to get started') }}</p>
+                        <button class="btn btn-warning" data-toggle="modal" data-target="#createPricingModal">
+                            <i class="fas fa-plus me-1"></i> {{ __('Add Category') }}
+                        </button>
+                    </div>
+                    @else
                     <div id="pricingList">
-                        @forelse($channelPricing as $pricing)
-                        <div class="pricing-item bg-white border p-4 mb-3" data-pricing-id="{{ $pricing->id }}">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                @php
-                                    $channelConfig = [
-                                        'whatsapp' => ['icon' => 'fab fa-whatsapp', 'color' => '#25D366'],
-                                        'facebook' => ['icon' => 'fab fa-facebook', 'color' => '#1877F2'],
-                                        'telegram' => ['icon' => 'fab fa-telegram', 'color' => '#0088cc'],
-                                        'instagram' => ['icon' => 'fab fa-instagram', 'color' => '#E4405F'],
-                                        'sms' => ['icon' => 'fas fa-sms', 'color' => '#FF6B6B'],
-                                        'email' => ['icon' => 'fas fa-envelope', 'color' => '#EA4335'],
-                                    ];
-                                    $channelKey = strtolower($pricing->channel_type);
-                                    $config = $channelConfig[$channelKey] ?? ['icon' => 'fas fa-comment', 'color' => '#95a5a6'];
-                                @endphp
-                                <div class="d-flex align-items-center">
-                                    <div class="text-white p-3 me-3" style="background: {{ $config['color'] }}; min-width: 50px; text-align: center;">
-                                        <i class="{{ $config['icon'] }} fa-lg"></i>
-                                    </div>
-                                    <h6 class="mb-0 me-3 fw-bold text-dark px-2">{{ ucfirst($pricing->channel_type) }}</h6>
+                        @foreach($channelPricingGrouped as $channelType => $rows)
+                        @php
+                            $cfg = $channelIcons[strtolower($channelType)] ?? ['icon' => 'fas fa-comment', 'color' => '#95a5a6'];
+                        @endphp
+                        <div class="channel-group mb-4">
+                            <!-- Channel header -->
+                            <div class="d-flex align-items-center mb-2 p-2 border-bottom" style="border-left: 4px solid {{ $cfg['color'] }} !important;">
+                                <div class="text-white p-2 me-2" style="background: {{ $cfg['color'] }}; min-width: 36px; text-align: center;">
+                                    <i class="{{ $cfg['icon'] }}"></i>
                                 </div>
-                                <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-primary btn-sm btn-edit-pricing" data-pricing-id="{{ $pricing->id }}" title="{{ __('Edit Pricing') }}">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-outline-{{ $pricing->is_active ? 'warning' : 'success' }} btn-sm btn-toggle-pricing"
-                                            data-pricing-id="{{ $pricing->id }}" title="{{ $pricing->is_active ? __('Deactivate') : __('Activate') }}">
-                                        <i class="fas fa-{{ $pricing->is_active ? 'pause' : 'play' }}"></i>
-                                    </button>
-                                    <button class="btn btn-outline-danger btn-sm btn-delete-pricing" data-pricing-id="{{ $pricing->id }}" title="{{ __('Delete Pricing') }}">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-@if($pricing->is_active)
-                                <span class="badge bg-success px-3 py-2">{{ __('Active') }}</span>
-                                @else
-                                    <span class="badge bg-secondary px-3 py-2">{{ __('Inactive') }}</span>
+                                <h6 class="mb-0 fw-bold text-dark">{{ ucfirst($channelType) }}</h6>
+                                @if($channelType === 'whatsapp')
+                                <small class="ms-2 text-muted">({{ $rows->count() }} {{ __('categories') }})</small>
                                 @endif
                             </div>
-                            <div>
-                                    <div class="row g-3">
-                                        <div class="col-6">
-                                            <div class="bg-light p-2 border">
-                                                <small class="text-muted d-block">{{ __('Credits per message') }}</small>
-                                                <strong class="text-primary">{{ $pricing->credits_per_message }}</strong>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="bg-light p-2 border">
-                                                <small class="text-muted d-block">{{ __('Price per credit') }}</small>
-                                                <strong class="text-warning">{{ $pricing->currency }} {{ number_format($pricing->price_per_credit, 4) }}</strong>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="mt-3">
-                                        <div class="text-white p-2" style="background: #1abc9c;">
-                                            <small class="d-block">{{ __('Effective price per message') }}</small>
-                                            <strong class="text-white">{{ $pricing->currency }} {{ number_format($pricing->effective_price_per_message, 4) }}</strong>
-                                        </div>
-                                    </div>
-                            </div>
-                        </div>
-                        @empty
-                        <!-- Empty State -->
-                        <div class="empty-state text-center py-5">
-                            <i class="fas fa-broadcast-tower fa-4x text-muted mb-3" style="opacity: 0.3;"></i>
-                            <h5 class="text-muted">{{ __('No channel pricing found') }}</h5>
-                            @if(request()->hasAny(['channel_status', 'channel_search']))
-                                <p class="text-muted mb-3">{{ __('Try adjusting your filters or search terms') }}</p>
-                                <button class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('resetChannelFilters').click()">
-                                    <i class="fas fa-redo me-1"></i> {{ __('Clear Filters') }}
-                                </button>
-                            @else
-                                <p class="text-muted mb-3">{{ __('Create your first channel pricing to get started') }}</p>
-                                <button class="btn btn-warning" data-toggle="modal" data-target="#createPricingModal">
-                                    <i class="fas fa-plus me-1"></i> {{ __('Add Channel') }}
-                                </button>
-                            @endif
-                        </div>
-                        @endforelse
-                    </div>
 
-                    <!-- Pagination -->
-                    <div class="d-flex justify-content-center mt-4">
-                        <div class="pagination-wrapper">
-                            {{ $channelPricing->appends(request()->query())->links() }}
+                            @if($channelType === 'whatsapp')
+                            <div class="alert alert-info py-2 px-3 mb-2" style="font-size:12px; border-radius:0;">
+                                <i class="fas fa-info-circle me-1"></i>
+                                {{ __('Service messages inside the 24h customer window are free from Meta. AI Bot credits cover LLM inference cost only.') }}
+                            </div>
+                            @endif
+
+                            <!-- Category rows -->
+                            @foreach($rows as $pricing)
+                            @php
+                                $catColor = $categoryColors[$pricing->message_category] ?? '#95a5a6';
+                                $catIcon  = $categoryIcons[$pricing->message_category] ?? 'fas fa-tag';
+                                $catLabel = $pricing->label_ar
+                                    ?: ($messageCategories[$pricing->message_category]['ar']
+                                        ?? ucfirst(str_replace('_', ' ', $pricing->message_category)));
+                            @endphp
+                            <div class="pricing-item bg-white border p-3 mb-2 ms-3" data-pricing-id="{{ $pricing->id }}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge px-2 py-1" style="background: {{ $catColor }}; color:#fff; font-size:11px; border-radius:0; border:none;">
+                                            <i class="{{ $catIcon }} me-1"></i>{{ $catLabel }}
+                                        </span>
+                                        @if(!$pricing->is_active)
+                                        <span class="badge bg-secondary px-2 py-1" style="font-size:10px;">{{ __('Inactive') }}</span>
+                                        @endif
+                                        @if(!$pricing->is_billable)
+                                        <span class="badge px-2 py-1" style="background:#6c757d; color:#fff; font-size:10px;">{{ __('Free') }}</span>
+                                        @endif
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="text-end me-2">
+                                            @if($pricing->is_billable)
+                                            <small class="d-block text-muted">{{ $pricing->credits_per_message }} {{ __('cr/msg') }}</small>
+                                            <small class="d-block fw-bold text-success">{{ $pricing->currency }} {{ number_format($pricing->effective_price_per_message, 4) }}</small>
+                                            @else
+                                            <small class="d-block text-muted fw-bold">{{ __('FREE') }}</small>
+                                            @endif
+                                        </div>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary btn-sm btn-edit-pricing"
+                                                    data-pricing-id="{{ $pricing->id }}"
+                                                    title="{{ __('Edit') }}">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-outline-{{ $pricing->is_active ? 'warning' : 'success' }} btn-sm btn-toggle-pricing"
+                                                    data-pricing-id="{{ $pricing->id }}"
+                                                    title="{{ $pricing->is_active ? __('Deactivate') : __('Activate') }}">
+                                                <i class="fas fa-{{ $pricing->is_active ? 'pause' : 'play' }}"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-toggle-billable {{ $pricing->is_billable ? 'btn-outline-secondary' : 'btn-outline-info' }}"
+                                                    data-pricing-id="{{ $pricing->id }}"
+                                                    title="{{ $pricing->is_billable ? __('Mark as Free') : __('Mark as Billable') }}">
+                                                <i class="fas fa-{{ $pricing->is_billable ? 'dollar-sign' : 'gift' }}"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger btn-sm btn-delete-pricing"
+                                                    data-pricing-id="{{ $pricing->id }}"
+                                                    title="{{ __('Delete') }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
                         </div>
+                        @endforeach
                     </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -443,48 +454,75 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{{ __('Create Channel Pricing') }}</h5>
+                <h5 class="modal-title">{{ __('Create Channel Pricing Category') }}</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <form id="createPricingForm">
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Channel Type') }}</label>
-                        <input type="text" class="form-control" name="channel_type" id="channel_type_input" list="channelTypes" required placeholder="{{ __('Enter or select channel type (e.g., whatsapp, twitter, email)') }}">
-                        <datalist id="channelTypes">
-                            @foreach($channelTypes as $key => $name)
-                                <option value="{{ $key }}">{{ $name }}</option>
-                            @endforeach
-                        </datalist>
-                        <small class="form-text text-muted">
-                            <i class="fas fa-info-circle"></i> {{ __('You can select from existing types or enter a new custom channel type.') }}
-                        </small>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">{{ __('Channel Type') }} <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="channel_type" id="channel_type_input" list="channelTypes" required placeholder="whatsapp">
+                                <datalist id="channelTypes">
+                                    @foreach($channelTypes as $key => $name)
+                                        <option value="{{ $key }}">{{ $name }}</option>
+                                    @endforeach
+                                </datalist>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">{{ __('Message Category') }} <span class="text-danger">*</span></label>
+                                <select class="form-control" name="message_category" id="create_message_category" required>
+                                    @foreach($messageCategories as $key => $labels)
+                                        <option value="{{ $key }}">{{ $labels['en'] }} ({{ $labels['ar'] }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">{{ __('Credits per Message') }}</label>
-                                <input type="number" class="form-control" name="credits_per_message" min="1" required>
+                                <label class="form-label">{{ __('Credits per Message') }} <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" name="credits_per_message" min="0" required>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">{{ __('Price per Credit') }}</label>
+                                <label class="form-label">{{ __('Price per Credit') }} <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control" name="price_per_credit" step="0.0001" min="0" required>
                             </div>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Currency') }}</label>
-                        <select class="form-control" name="currency" required>
-                            <option value="SAR" selected>SAR</option>
-                        </select>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">{{ __('Currency') }}</label>
+                                <select class="form-control" name="currency" required>
+                                    <option value="SAR" selected>SAR</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">{{ __('Arabic Label') }}</label>
+                                <input type="text" class="form-control" name="label_ar" placeholder="{{ __('e.g. تسويقية') }}">
+                            </div>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">{{ __('Description (Arabic)') }}</label>
-                        <textarea class="form-control" name="description_ar" rows="3"></textarea>
+                        <textarea class="form-control" name="description_ar" rows="2"></textarea>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="is_billable" value="1" id="create_is_billable" checked>
+                        <label class="form-check-label" for="create_is_billable">
+                            {{ __('Billable (uncheck for free categories like Service)') }}
+                        </label>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -788,6 +826,13 @@ document.addEventListener('DOMContentLoaded', function() {
             togglePricingStatus(pricingId);
         }
 
+        // Toggle billable flag
+        if (e.target.closest('.btn-toggle-billable')) {
+            const btn = e.target.closest('.btn-toggle-billable');
+            const pricingId = btn.getAttribute('data-pricing-id');
+            toggleBillable(pricingId);
+        }
+
         // Delete pricing
         if (e.target.closest('.btn-delete-pricing')) {
             const btn = e.target.closest('.btn-delete-pricing');
@@ -870,6 +915,29 @@ function togglePricingStatus(pricingId) {
         console.error('Error:', error);
         alert('An error occurred while updating pricing status: ' + error.message);
     });
+}
+
+function toggleBillable(pricingId) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    if (!csrfToken) { alert('Security token not found. Please refresh the page.'); return; }
+
+    fetch('{{ url("admin/credit-management/pricing") }}/' + pricingId + '/toggle-billable', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken.getAttribute('content'),
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => { alert('An error occurred: ' + error.message); });
 }
 
 function deletePackage(packageId) {

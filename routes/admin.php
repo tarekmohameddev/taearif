@@ -621,6 +621,7 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::put('/credit-management/pricing/{id}/quick-update', 'Admin\CreditManagementController@quickUpdatePricing')->name('credit-management.pricing.quick-update');
         Route::post('/credit-management/packages/{id}/toggle-status', 'Admin\CreditManagementController@togglePackageStatus')->name('credit-management.packages.toggle-status');
         Route::post('/credit-management/pricing/{id}/toggle-status', 'Admin\CreditManagementController@togglePricingStatus')->name('credit-management.pricing.toggle-status');
+        Route::post('/credit-management/pricing/{id}/toggle-billable', 'Admin\CreditManagementController@toggleBillable')->name('credit-management.pricing.toggle-billable');
         Route::delete('/credit-management/packages/{id}', 'Admin\CreditManagementController@deletePackage')->name('credit-management.packages.delete');
         Route::delete('/credit-management/pricing/{id}', 'Admin\CreditManagementController@deletePricing')->name('credit-management.pricing.delete');
         Route::get('/credit-management/packages/{id}/estimates', 'Admin\CreditManagementController@getPackageEstimates')->name('credit-management.packages.estimates');

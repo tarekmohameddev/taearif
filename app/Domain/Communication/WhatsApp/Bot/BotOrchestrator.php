@@ -10,9 +10,11 @@ use App\Domain\Ai\Knowledge\RetrievalService;
 use App\Domain\Ai\Knowledge\ArabicNormalizer;
 use App\Domain\Ai\Services\LlmDriverFactory;
 use App\Domain\Ai\Services\UsageRecorder;
+use App\Domain\Communication\Contracts\CreditService;
 use App\Domain\Communication\WhatsApp\Bot\DTOs\BotContext;
 use App\Domain\Communication\WhatsApp\Bot\DTOs\BotReply;
 use App\Domain\Communication\WhatsApp\Bot\DTOs\BotTurnResult;
+use App\Domain\Communication\WhatsApp\Services\WaPricingResolver;
 use App\Domain\Communication\WhatsApp\Bot\Jobs\SummarizeConversationJob;
 use App\Domain\Communication\WhatsApp\Bot\MessageFactExtractor;
 use App\Models\AiUsageLog;
@@ -59,6 +61,8 @@ final class BotOrchestrator
         private readonly RelevanceGate $relevanceGate,
         private readonly SlotFillingPolicy $slotFillingPolicy,
         private readonly RetrievalService $retrievalService,
+        private readonly CreditService $creditService,
+        private readonly WaPricingResolver $pricingResolver,
     ) {}
 
     /**
@@ -387,6 +391,29 @@ final class BotOrchestrator
                 segments: $sandbox ? $this->deliveryService->prepareSegments($replyText) : [],
                 trace: $trace, factsUpdated: [],
             );
+        }
+
+        // ─── Credit guard ─────────────────────────────────────────────────────
+        // Check before generation so we don't waste LLM tokens when the tenant has run out.
+        if (! $sandbox && $this->pricingResolver->isAiBotBillable()) {
+            $creditsNeeded = $this->pricingResolver->creditsForAiReply();
+            if ($creditsNeeded > 0 && ! $this->creditService->hasSufficientCredits($tenantId, $creditsNeeded)) {
+                $trace[] = 'credits: INSUFFICIENT';
+                $replyText = 'نعتذر، نفد رصيدك المخصص للردود الآلية. يرجى التواصل مع إدارة الحساب.';
+                $this->deliveryService->deliver(
+                    $tenantId, $conversationId, $waNumberId, $customerPhone,
+                    new BotReply(reply: $replyText, usedSources: [], confidence: 100, needsHuman: false,
+                        handoffReason: 'insufficient_credits', factsUpdate: [], nextQuestion: null),
+                    ['to' => $customerPhone]
+                );
+                return $this->makeResult(
+                    outcome: 'handoff', replyText: $replyText, botReply: null, groundingResult: null,
+                    styleResult: null, intent: 'general', difficulty: 'easy', kbChunksUsed: 0,
+                    propertiesFound: 0, tokensIn: 0, tokensOut: 0,
+                    segments: [],
+                    trace: $trace, factsUpdated: [],
+                );
+            }
         }
 
         // ─── Deterministic fact extraction ───────────────────────────────────
