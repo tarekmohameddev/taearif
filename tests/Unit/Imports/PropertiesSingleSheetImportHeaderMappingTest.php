@@ -138,6 +138,64 @@ class PropertiesSingleSheetImportHeaderMappingTest extends TestCase
         $this->assertSame('لا', $data['amenity_أمن']);
     }
 
+    public function test_normalize_row_keys_strips_trailing_required_asterisk(): void
+    {
+        $normalize = (new ReflectionClass(PropertiesSingleSheetImport::class))->getMethod('normalizeRowKeys');
+        $normalize->setAccessible(true);
+        $import = $this->newImportWithoutConstructor();
+
+        $normalized = $normalize->invoke($import, [
+            'عنوان الإعلان *' => 'شقة الرياض',
+            'العنوان *' => 'حي العليا',
+            'الوصف *' => 'وصف كافٍ للعقار المستورد',
+            'النوع *' => 'سكني',
+            'الصورة الرئيسية *' => 'https://example.com/img1.jpg',
+        ]);
+
+        $this->assertSame('شقة الرياض', $normalized['title']);
+        $this->assertSame('حي العليا', $normalized['address']);
+        $this->assertSame('وصف كافٍ للعقار المستورد', $normalized['description']);
+        $this->assertSame('سكني', $normalized['type']);
+        $this->assertSame('https://example.com/img1.jpg', $normalized['featured_image']);
+    }
+
+    public function test_template_shaped_row_is_not_marked_raw_export(): void
+    {
+        $import = $this->newImportWithoutConstructor();
+        $method = (new ReflectionClass(PropertiesSingleSheetImport::class))->getMethod('isRawExportRow');
+        $method->setAccessible(true);
+
+        $this->assertFalse($method->invoke($import, [
+            'title' => 'شقة',
+            'address' => 'عنوان كافٍ',
+            'description' => 'وصف كافٍ للاستيراد',
+            'type' => 'residential',
+            'featured_image' => 'https://example.com/a.jpg',
+            // id alone is create-only ignore, not raw-export
+            'id' => 42,
+        ]));
+
+        $this->assertFalse($method->invoke($import, [
+            'title' => 'شقة',
+            // Empty metadata headers must not reject (Option A)
+            'user_id' => '',
+            'created_at' => null,
+        ]));
+    }
+
+    public function test_raw_export_row_with_metadata_values_is_detected(): void
+    {
+        $import = $this->newImportWithoutConstructor();
+        $method = (new ReflectionClass(PropertiesSingleSheetImport::class))->getMethod('isRawExportRow');
+        $method->setAccessible(true);
+
+        $this->assertTrue($method->invoke($import, [
+            'title' => 'شقة',
+            'user_id' => 7,
+            'created_at' => '2026-01-01 00:00:00',
+        ]));
+    }
+
     public function test_amenity_validation_rules_accept_arabic_yes_no(): void
     {
         $import = $this->newImportWithoutConstructor();

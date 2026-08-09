@@ -30,153 +30,69 @@ class PropertiesTemplateExport implements WithMultipleSheets
 
 class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, WithTitle, WithEvents
 {
+    /**
+     * Required-for-complete columns (Excel ` *` is UX only; server soft-incomplete still applies).
+     * Indices match headings() below.
+     */
+    private const REQUIRED_HEADER_INDICES = [0, 2, 3, 5, 11]; // A, C, D, F, L
+
     public function array(): array
     {
+        // Sparse samples: values only in the five required columns.
+        // Delete these rows before a real import (they create live properties).
+        $empty = array_fill(0, 40, '');
+
+        $row = static function (string $title, string $address, string $description, string $type, string $image) use ($empty): array {
+            $r = $empty;
+            $r[0] = $title;
+            $r[2] = $address;
+            $r[3] = $description;
+            $r[5] = $type;
+            $r[11] = $image;
+
+            return $r;
+        };
+
         return [
-            [
+            $row(
                 'شقة فاخرة في القلب التجاري',
-                '750000',
                 'شارع الملك فهد، حي العليا',
                 'شقة ثلاث غرف نوم بإطلالة مدينة ومصعد وأمن على مدار الساعة',
-                'بيع',
                 'سكني',
-                '180',
-                '3',
-                '2',
-                'الرياض',
-                'حي العليا',
-                'https://example.com/img1.jpg',
-                'https://example.com/video1.mp4',
-                '1',
-                'https://example.com/g1.jpg,https://example.com/g2.jpg',
-                'نعم',
-                'نعم',
-                'نعم',
-                'نعم',
-                'لا',
-                'نعم',
-                'نعم',
-                'نعم',
-                'موقف دراجات,غرفة غسيل',
-                'A-101',
-                '5',
-                '5',
-                'إطلالة مدينة',
-                'مفروش بالكامل',
-                '2',
-                'نعم',
-                'نعم',
-                'نعم',
-                'نعم',
-                'نعم',
-                '0',
-                'ارتفاع السقف: 3.5 م، نوع المطبخ: مطبخ مفتوح، أرضيات: رخام',
-                'شهري',
-                'نعم',
-                'منزل ذكي، ألواح شمسية',
-            ],
-            [
+                'https://example.com/img1.jpg'
+            ),
+            $row(
                 'فيلا للإيجار بحديقة ومسبح',
-                '120000',
                 'حي النخيل، طريق الأمير محمد',
                 'فيلا أربع غرف نوم مع حديقة خاصة ومسبح وصالة رياضية',
-                'إيجار',
                 'سكني',
-                '350',
-                '4',
-                '4',
-                'جدة',
-                'حي النخيل',
-                'https://example.com/img2.jpg',
-                '',
-                '1',
-                'https://example.com/g1.jpg',
-                'نعم',
-                'نعم',
-                'نعم',
-                'نعم',
-                'نعم',
-                'نعم',
-                'نعم',
-                'نعم',
-                'سونا، جاكوزي',
-                '1',
-                '0',
-                '8',
-                'إطلالة حديقة',
-                'مفروش جزئياً',
-                '3',
-                'نعم',
-                'نعم',
-                'نعم',
-                'نعم',
-                'نعم',
-                '120',
-                'مساحة مبنية: 350 م²، التكييف: مركزي',
-                'سنوي',
-                'نعم',
-                'مدخل مستقل، مواقف زوار',
-            ],
-            [
+                'https://example.com/img2.jpg'
+            ),
+            $row(
                 'مكتب تجاري للبيع بموقع مميز',
-                '1200000',
                 'شارع العليا العام، برج الأعمال',
                 'مكتب بإطلالة بحرية ومناسب للشركات، مواقف تحت الأرض',
-                'بيع',
                 'تجاري',
-                '220',
-                '0',
-                '2',
-                'الدمام',
-                'حي الفيصلية',
-                'https://example.com/img3.jpg',
-                '',
-                '1',
-                '',
-                'نعم',
-                'نعم',
-                'نعم',
-                'نعم',
-                'نعم',
-                'نعم',
-                'نعم',
-                'نعم',
-                'غرفة اجتماعات، استقبال',
-                '301',
-                '3',
-                '12',
-                'إطلالة بحرية',
-                'غير مفروش',
-                '10',
-                'نعم',
-                'لا',
-                'نعم',
-                'نعم',
-                'لا',
-                '0',
-                'نظام إطفاء حريق، إنذار، كاميرات',
-                'ربع سنوي',
-                'لا',
-                'مدخل فاخر، مصعد خاص بالمكتب',
-            ],
+                'https://example.com/img3.jpg'
+            ),
         ];
     }
 
     public function headings(): array
     {
         return [
-            'عنوان الإعلان',
+            'عنوان الإعلان *',
             'السعر',
-            'العنوان',
-            'الوصف',
+            'العنوان *',
+            'الوصف *',
             'الغرض',
-            'النوع',
+            'النوع *',
             'المساحة',
             'غرف النوم',
             'دورات المياه',
             'المدينة',
             'الحي',
-            'الصورة الرئيسية',
+            'الصورة الرئيسية *',
             'رابط الفيديو',
             'الحالة',
             'معرض الصور',
@@ -251,6 +167,21 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                     ],
                 ]);
 
+                // Emphasize the five required header cells (A, C, D, F, L)
+                foreach (self::REQUIRED_HEADER_INDICES as $index) {
+                    $col = Coordinate::stringFromColumnIndex($index + 1);
+                    $sheet->getStyle("{$col}1")->applyFromArray([
+                        'font' => [
+                            'bold' => true,
+                            'color' => ['rgb' => 'FFFFFF'],
+                        ],
+                        'fill' => [
+                            'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                            'startColor' => ['rgb' => '2F5496'],
+                        ],
+                    ]);
+                }
+
                 // Set header row height for better visibility
                 $sheet->getRowDimension(1)->setRowHeight(25);
 
@@ -262,21 +193,42 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                     }
                 }
 
-                // Purpose Column (E) - "sale,rent"
+                // Text-length "required" UX on title / address / description / featured_image.
+                // Excel only warns on cell entry; untouched blanks never fire — ` *` is the real signal.
+                foreach (['A', 'C', 'D', 'L'] as $col) {
+                    $validation = $sheet->getCell("{$col}2")->getDataValidation();
+                    $validation->setType(DataValidation::TYPE_TEXTLENGTH);
+                    $validation->setOperator(DataValidation::OPERATOR_GREATERTHAN);
+                    $validation->setFormula1('0');
+                    $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
+                    $validation->setAllowBlank(false);
+                    $validation->setShowInputMessage(true);
+                    $validation->setShowErrorMessage(true);
+                    $validation->setPromptTitle('حقل مطلوب');
+                    $validation->setPrompt('هذا الحقل مطلوب لاكتمال العقار');
+                    $validation->setErrorTitle('حقل مطلوب');
+                    $validation->setError('يرجى إدخال قيمة في هذا الحقل');
+
+                    for ($i = 3; $i <= $rowCount; $i++) {
+                        $sheet->getCell("{$col}{$i}")->setDataValidation(clone $validation);
+                    }
+                }
+
+                // Purpose Column (E) — optional for complete
                 $validation = $sheet->getCell('E2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
-                $validation->setAllowBlank(false);
+                $validation->setAllowBlank(true);
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
                 $validation->setFormula1('"' . PropertyExcelMapping::purposeExcelOptions() . '"');
-                
+
                 for ($i = 3; $i <= $rowCount; $i++) {
                     $sheet->getCell("E$i")->setDataValidation(clone $validation);
                 }
 
-                // Type Column (F) - "residential,commercial"
+                // Type Column (F) — required; four types
                 $validation = $sheet->getCell('F2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);

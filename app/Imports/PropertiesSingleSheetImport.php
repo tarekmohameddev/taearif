@@ -176,19 +176,27 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
     /**
      * Detect PropertiesExport (raw) rows that must not be imported.
      *
+     * Option A: only reject when export-only metadata columns carry VALUES.
+     * Template / ImportReady / new clean exports (template columns only, or
+     * empty metadata headers) must pass. Legacy raw exports with user_id,
+     * created_at, etc. filled in are rejected with a clear message.
+     *
+     * المعرّف / id alone is ignored (create-only) and does not mark raw export.
+     *
      * @param  array<string, mixed>  $row
      */
     private function isRawExportRow(array $row): bool
     {
-        if (array_key_exists('id', $row) && array_key_exists('created_at', $row) && array_key_exists('user_id', $row)) {
-            return true;
-        }
-
         $exportOnlyColumns = ['slug', 'user_id', 'user_name', 'created_by', 'creator_name', 'created_at', 'updated_at'];
         foreach ($exportOnlyColumns as $col) {
             if (array_key_exists($col, $row) && $this->valueProvided($row[$col])) {
                 return true;
             }
+        }
+
+        // Old comma-separated amenities column without individual amenity_* flags
+        if ($this->valueProvided($row['amenities'] ?? null) && !isset($row['amenity_مصعد'])) {
+            return true;
         }
 
         return false;
@@ -290,27 +298,11 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             return;
         }
 
-        // SAFETY CHECK: Reject raw exports
-        // Raw exports contain 'user_id' and 'created_at' which are not in the official template.
-        if (isset($row['id']) && isset($row['created_at']) && isset($row['user_id'])) {
-             throw new \Exception("Row {$rowIndex}: Invalid file format. It appears you are trying to import a raw Export file which is not supported. Please copy your data into the official Import Template.");
-        }
-
-        // SAFETY CHECK: Detect raw export files (not import-safe)
-        // Export-only columns that should NOT be in import templates:
-        $exportOnlyColumns = ['slug', 'user_id', 'user_name', 'created_by', 'creator_name', 'created_at', 'updated_at'];
-        $hasExportOnlyColumn = false;
-        foreach ($exportOnlyColumns as $col) {
-            if (isset($row[$col]) && $this->valueProvided($row[$col])) {
-                $hasExportOnlyColumn = true;
-                break;
-            }
-        }
-
-        // Also check if they're using the old 'amenities' comma-separated column (should use individual amenity_* columns)
-        $hasOldAmenitiesFormat = isset($row['amenities']) && $this->valueProvided($row['amenities']) && !isset($row['amenity_مصعد']);
-
-        if ($hasExportOnlyColumn || $hasOldAmenitiesFormat) {
+        // SAFETY CHECK: Reject raw exports only when metadata columns have values
+        // (see isRawExportRow). Clean template / ImportReady files must pass.
+        // Prefer validation (_raw_export) when WithValidation runs first; this is
+        // a belt-and-suspenders path if onRow sees the row anyway.
+        if ($this->isRawExportRow($row)) {
             throw new \Exception("Row {$rowIndex}: Invalid file format. This appears to be a raw export file. Please use the official Import Template or the 'Export for Import' feature to get a safe, re-importable file.");
         }
 
@@ -351,22 +343,19 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         }
 
         [$cityId, $stateId] = $this->resolveLocationIds($row, $rowIndex);
-        
-        // Track location resolution failures as validation errors for incomplete properties
-        // Location validation: only bad city names hard-fail; missing city or
-        // unresolvable district names are soft errors (validation_errors, not row-fail).
-        // This aligns with Decision B: empty city is OK for a complete property.
-        $locationValidationErrors = [];
 
-        // Check if district was provided but couldn't be resolved (soft error)
+        // Soft validation_errors (Decision B): missing requireds + format issues
+        // create an incomplete draft; only bad city / raw-export hard-fail the row.
+        $missingFields = [];
+        $validationErrors = [];
+
+        // Location: empty city is OK for complete; unresolvable district is soft.
         if ($this->valueProvided($row['district_name'] ?? null) && !$stateId && $cityId) {
-            $locationValidationErrors[] = "District '{$row['district_name']}' not found in the specified city. Please verify the district name or use state_id.";
+            $validationErrors[] = "District '{$row['district_name']}' not found in the specified city. Please verify the district name or use state_id.";
         }
 
-        // Image URL validation: soft-fail path. Invalid featured_image or
-        // gallery URLs are tracked as validation errors, not row failures.
-        // This allows incomplete properties to be created with the bad URLs for
-        // later user correction, matching soft-incomplete Decision B.
+        // Image URL validation: soft-fail. Invalid featured_image / gallery URLs
+        // go into validation_errors → incomplete draft (not a hard row failure).
         if ($this->valueProvided($row['featured_image'] ?? null)) {
             if (!$this->validateImageUrl($row['featured_image'])) {
                 $validationErrors[] = "featured_image URL format is invalid: must be http/https with jpg, jpeg, png, gif, or webp extension";
@@ -376,22 +365,12 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         foreach ($galleryImages as $galleryUrl) {
             if (!$this->validateImageUrl($galleryUrl)) {
                 $validationErrors[] = "gallery_images contains invalid URL: {$galleryUrl} (must be http/https with jpg, jpeg, png, gif, or webp extension)";
-                // Only report once per row; don't error every URL in the list
                 break;
             }
         }
 
-        // Business rule validation (create-only import)
-        $businessViolations = $this->validateBusinessRules($row, $rowIndex, false);
-
-        // Check for missing required fields
-        $missingFields = [];
-        $validationErrors = [];
-        
-        // Add location validation errors
-        $validationErrors = array_merge($validationErrors, $locationValidationErrors);
-
         // Soft-fail business rules for creates
+        $businessViolations = $this->validateBusinessRules($row, $rowIndex, false);
         if (!empty($businessViolations)) {
             $validationErrors = array_merge(
                 $validationErrors,

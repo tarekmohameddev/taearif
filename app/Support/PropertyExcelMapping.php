@@ -133,7 +133,9 @@ class PropertyExcelMapping
             return self::TYPE_TO_DB[$v];
         }
         $lower = mb_strtolower($v);
-        return in_array($lower, ['residential', 'commercial']) ? $lower : $value;
+        return in_array($lower, ['residential', 'commercial', 'agricultural', 'industrial'], true)
+            ? $lower
+            : $value;
     }
 
     public static function purposeExcelOptions(): string

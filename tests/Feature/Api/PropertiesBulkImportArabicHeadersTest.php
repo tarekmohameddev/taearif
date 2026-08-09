@@ -472,4 +472,93 @@ class PropertiesBulkImportArabicHeadersTest extends TestCase
             'Raw export fixture should not fail string validation: ' . json_encode($stringErrors, JSON_UNESCAPED_UNICODE)
         );
     }
+
+    public function test_import_ready_shaped_file_is_not_rejected_as_raw_export(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->actingAsTenantWithCreate();
+
+        // Same columns as PropertiesImportReadyExport / blank template (no metadata).
+        $file = $this->makeExcelUpload(
+            [
+                'عنوان الإعلان',
+                'السعر',
+                'العنوان',
+                'الوصف',
+                'الغرض',
+                'النوع',
+                'المساحة',
+                'الصورة الرئيسية',
+            ],
+            [[
+                'عقار من تصدير للاستيراد',
+                250000,
+                'حي النرجس الرياض',
+                'وصف عقار كافٍ لاستيراد ملف تصدير جاهز',
+                'بيع',
+                'سكني',
+                140,
+                'https://example.com/ready.jpg',
+            ]],
+        );
+
+        $response = $this->post('/api/properties/bulk-import', ['file' => $file], [
+            'Accept' => 'application/json',
+        ]);
+
+        $errors = $response->json('errors') ?? [];
+        foreach ($errors as $error) {
+            $message = (string) ($error['error'] ?? '');
+            $this->assertStringNotContainsString('raw Export', $message, $response->getContent());
+            $this->assertStringNotContainsString('raw export', $message, $response->getContent());
+            $this->assertStringNotContainsString('_raw_export', $message, $response->getContent());
+        }
+
+        $this->assertSame(0, (int) ($response->json('failed_count') ?? 0), $response->getContent());
+        $this->assertGreaterThan(
+            0,
+            (int) ($response->json('imported_count') ?? 0) + (int) ($response->json('incomplete_count') ?? 0),
+            $response->getContent()
+        );
+    }
+
+    public function test_asterisk_required_headers_map_and_five_fields_create_complete(): void
+    {
+        $this->skipIfMissingSchema();
+        [$tenant] = $this->actingAsTenantWithCreate();
+
+        $file = $this->makeExcelUpload(
+            [
+                'عنوان الإعلان *',
+                'العنوان *',
+                'الوصف *',
+                'النوع *',
+                'الصورة الرئيسية *',
+            ],
+            [[
+                'شقة مكتملة بالحد الأدنى',
+                'شارع الاختبار حي العليا',
+                'وصف عقار كافٍ لاكتمال الاستيراد بالخمسة',
+                'سكني',
+                'https://example.com/complete.jpg',
+            ]],
+        );
+
+        $response = $this->post('/api/properties/bulk-import', ['file' => $file], [
+            'Accept' => 'application/json',
+        ]);
+
+        $this->assertSame(0, (int) ($response->json('failed_count') ?? 0), $response->getContent());
+        $this->assertGreaterThan(0, (int) ($response->json('imported_count') ?? 0), $response->getContent());
+        $this->assertSame(0, (int) ($response->json('incomplete_count') ?? 0), $response->getContent());
+
+        $property = Property::where('user_id', $tenant->id)->latest('id')->first();
+        $this->assertNotNull($property);
+        $this->assertSame('complete', $property->completion_status);
+        $this->assertSame('residential', $property->property_type);
+
+        $content = PropertyContent::where('property_id', $property->id)->first();
+        $this->assertNotNull($content);
+        $this->assertSame('شقة مكتملة بالحد الأدنى', $content->title);
+    }
 }
