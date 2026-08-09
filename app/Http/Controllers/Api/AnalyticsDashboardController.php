@@ -1260,6 +1260,12 @@ class AnalyticsDashboardController extends Controller
     {
         $data = app(SiteSetupProgressService::class)->getProgress($request->user());
 
+        if ($data === null) {
+            return response()->json([
+                'message' => 'Unable to resolve tenant owner.',
+            ], 403);
+        }
+
         return response()->json($data);
     }
 

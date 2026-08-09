@@ -2363,8 +2363,23 @@ namespace App\Http\Controllers\Api;
  *         operationId="get_dashboard_setup_progress_0",
  *         tags={"Dashboard"},
  *         summary="Setup Progress", security={{"sanctum":{}}},
- *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
- *         @OA\Response(response=401, description="Unauthenticated")
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object",
+ *             @OA\Property(property="progress", type="number", format="float", example=0.4),
+ *             @OA\Property(property="done", type="integer", example=2),
+ *             @OA\Property(property="total", type="integer", example=5),
+ *             @OA\Property(property="headline_key", type="string", enum={"start","early","mid","almost","done"}),
+ *             @OA\Property(property="dismissed", type="boolean", example=false),
+ *             @OA\Property(property="steps", type="array", @OA\Items(type="object",
+ *                 @OA\Property(property="id", type="string", enum={"site_identity","contact_info","first_property","integrated_link","connect_site"}),
+ *                 @OA\Property(property="label_ar", type="string"),
+ *                 @OA\Property(property="status", type="boolean"),
+ *                 @OA\Property(property="href", type="string", nullable=true),
+ *                 @OA\Property(property="order", type="integer"),
+ *                 @OA\Property(property="locked", type="boolean", example=false)
+ *             ))
+ *         )),
+ *         @OA\Response(response=401, description="Unauthenticated"),
+ *         @OA\Response(response=403, description="Unable to resolve tenant owner")
  *     )
  *
  * )
@@ -4178,10 +4193,27 @@ namespace App\Http\Controllers\Api;
  *         tags={"Steps"},
  *         summary="Complete Step", security={{"sanctum":{}}},
  *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"step"},
- *             @OA\Property(property="step", type="string", enum={"banner","footer","homepage_about_update","menu_builder","projects","properties"}),
+ *             @OA\Property(property="step", type="string", enum={"site_identity","contact_info","first_property","integrated_link","connect_site","properties"}),
  *         )),
- *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
- *         @OA\Response(response=401, description="Unauthenticated")
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object",
+ *             @OA\Property(property="message", type="string", example="Step marked as completed."),
+ *             @OA\Property(property="progress", type="number", format="float", example=0.4),
+ *             @OA\Property(property="done", type="integer", example=2),
+ *             @OA\Property(property="total", type="integer", example=5),
+ *             @OA\Property(property="headline_key", type="string", enum={"start","early","mid","almost","done"}),
+ *             @OA\Property(property="dismissed", type="boolean", example=false),
+ *             @OA\Property(property="steps", type="array", @OA\Items(type="object",
+ *                 @OA\Property(property="id", type="string"),
+ *                 @OA\Property(property="label_ar", type="string"),
+ *                 @OA\Property(property="status", type="boolean"),
+ *                 @OA\Property(property="href", type="string", nullable=true),
+ *                 @OA\Property(property="order", type="integer"),
+ *                 @OA\Property(property="locked", type="boolean", example=false)
+ *             ))
+ *         )),
+ *         @OA\Response(response=401, description="Unauthenticated"),
+ *         @OA\Response(response=403, description="Unable to resolve tenant owner"),
+ *         @OA\Response(response=422, description="Validation error")
  *     )
  *
  * )
@@ -4194,8 +4226,23 @@ namespace App\Http\Controllers\Api;
  *         operationId="get_steps_progress_0",
  *         tags={"Steps"},
  *         summary="Get Steps", security={{"sanctum":{}}},
- *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
- *         @OA\Response(response=401, description="Unauthenticated")
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object",
+ *             @OA\Property(property="progress", type="number", format="float", example=0.4),
+ *             @OA\Property(property="done", type="integer", example=2),
+ *             @OA\Property(property="total", type="integer", example=5),
+ *             @OA\Property(property="headline_key", type="string", enum={"start","early","mid","almost","done"}),
+ *             @OA\Property(property="dismissed", type="boolean", example=false),
+ *             @OA\Property(property="steps", type="array", @OA\Items(type="object",
+ *                 @OA\Property(property="id", type="string", enum={"site_identity","contact_info","first_property","integrated_link","connect_site"}),
+ *                 @OA\Property(property="label_ar", type="string"),
+ *                 @OA\Property(property="status", type="boolean"),
+ *                 @OA\Property(property="href", type="string", nullable=true),
+ *                 @OA\Property(property="order", type="integer"),
+ *                 @OA\Property(property="locked", type="boolean", example=false)
+ *             ))
+ *         )),
+ *         @OA\Response(response=401, description="Unauthenticated"),
+ *         @OA\Response(response=403, description="Unable to resolve tenant owner")
  *     )
  *
  * )

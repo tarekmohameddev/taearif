@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\PropertyContent;
 use App\Models\User\Language;
+use App\Support\PropertyCompletionRequirements;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -29,11 +30,6 @@ class FixLegacyIncompleteProperties extends Command
      * @var string
      */
     protected $description = 'Fix legacy properties that are marked as complete but are missing required fields';
-
-    /**
-     * Required fields for a complete property
-     */
-    protected $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'type', 'area'];
 
     /**
      * Execute the console command.
@@ -78,7 +74,7 @@ class FixLegacyIncompleteProperties extends Command
             ->with(['contents' => function($q) {
                 $q->select('id', 'property_id', 'language_id', 'title', 'address', 'description');
             }])
-            ->get(['id', 'user_id', 'price', 'purpose', 'type', 'area', 'completion_status']);
+            ->get(['id', 'user_id', 'price', 'purpose', 'property_type', 'area', 'featured_image', 'completion_status']);
 
         $incompleteProperties = [];
         $sampleData = [];
@@ -202,7 +198,7 @@ class FixLegacyIncompleteProperties extends Command
         // Process in chunks to avoid memory issues
         // Select only fields we need to avoid loading large JSON features that might trigger features_text virtual column issues
         $query = $baseQuery()
-            ->select(['id', 'user_id', 'price', 'purpose', 'property_type', 'area', 'completion_status']);
+            ->select(['id', 'user_id', 'price', 'purpose', 'property_type', 'area', 'featured_image', 'completion_status']);
 
         $totalToProcess = $query->count();
         $this->output->progressStart($totalToProcess);
@@ -366,7 +362,7 @@ class FixLegacyIncompleteProperties extends Command
 
         if (!$defaultLanguage) {
             // If no default language, mark as incomplete with all fields missing
-            return $this->requiredFields;
+            return PropertyCompletionRequirements::fields();
         }
 
         // Get property content for default language
@@ -377,23 +373,13 @@ class FixLegacyIncompleteProperties extends Command
         // Check current data
         $currentData = [
             'title' => $propertyContent?->title,
-            'price' => $property->price,
             'address' => $propertyContent?->address,
             'description' => $propertyContent?->description,
-            'purpose' => $property->purpose,
             'property_type' => $property->property_type,
-            'area' => $property->area,
+            'featured_image' => $property->featured_image,
         ];
 
-        // Identify missing fields
-        $missingFields = [];
-        foreach ($this->requiredFields as $field) {
-            $value = $currentData[$field] ?? null;
-            if (is_null($value) || (is_string($value) && trim($value) === '') || $value === '') {
-                $missingFields[] = $field;
-            }
-        }
-
-        return $missingFields;
+        // Use the helper to get missing fields
+        return PropertyCompletionRequirements::missingFrom($currentData);
     }
 }

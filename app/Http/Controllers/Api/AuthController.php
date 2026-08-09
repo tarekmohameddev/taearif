@@ -42,6 +42,7 @@ use App\Models\User\HomePageText;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\Api\ApiMenuSetting;
 use App\Services\TempTokenService;
+use App\Services\SiteSetupProgressService;
 use Illuminate\Support\Facades\DB;
 use App\Models\User\UserPermission;
 use App\Services\OnboardingService;
@@ -536,8 +537,8 @@ class AuthController extends Controller
             // Log in tenant
             Auth::login($user);
 
-            // Seed default tenant website pages and components (FIRST TIME - before onboarding)
-            app(\App\Services\TenantWebsiteSeeder::class)->seedDefaultWebsite($user);
+            // Seed default tenant website pages and components (async — first time, before onboarding)
+            \App\Jobs\SeedTenantWebsiteJob::dispatch($user->id);
 
             // Onboarding + default categories
             app(\App\Services\OnboardingService::class)->applyDefaultsFor($user);
@@ -1115,7 +1116,9 @@ class AuthController extends Controller
                 }
             }
 
-            DB::transaction(function () use ($user, $owner, $validated) {
+            $didCompanyUpdate = false;
+
+            DB::transaction(function () use ($user, $owner, $validated, &$didCompanyUpdate) {
                 $userFields = $this->extractPersonalProfileFields($validated);
 
                 if ($userFields !== []) {
@@ -1130,8 +1133,13 @@ class AuthController extends Controller
 
                 if ($this->hasCompanyFieldUpdates($validated)) {
                     $this->applyCompanyProfileUpdates($owner, $validated);
+                    $didCompanyUpdate = true;
                 }
             });
+
+            if ($didCompanyUpdate && $owner) {
+                app(SiteSetupProgressService::class)->syncContactsSocialInfo($owner);
+            }
 
             CacheInvalidationHelper::clearTenantProfileCachesAuto($ownerId);
 
