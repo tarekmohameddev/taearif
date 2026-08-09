@@ -2,7 +2,7 @@
 
 > **Status:** Production (replaced the v1 heuristic bot entirely)
 > **Entry point:** `app/Domain/RealEstateAgent/Brain/Employee::runTurn()`
-> **Last updated:** 2026-08-06 — reflects all eval-cycle fixes through Batch 2
+> **Last updated:** 2026-08-09 — external_links accepted inline on POST/PUT /properties
 
 ---
 
@@ -237,6 +237,8 @@ https://sa.aqar.fm/ad/6633737/ar
 1. Match by external link URL
 2. Match by ad ID in `PropertyExternalLink` records
 3. Match by price + type + city attributes
+
+Tenants attach those portal URLs to a property via the optional `external_links` array on `POST /api/properties` / `PUT /api/properties/{id}` (synced into the `property_external_links` table, same shape as FAQs on the property form). Dedicated WhatsApp sub-resource CRUD (`properties/{id}/external-links`) remains available for individual link edits. See `docs/whatsapp-ai-bot-api.md` §8.
 
 If matched, the property is seeded into the agent context before the loop starts. The model answers using that property's data (including FAQs via `get_property_details`) rather than handing off.
 

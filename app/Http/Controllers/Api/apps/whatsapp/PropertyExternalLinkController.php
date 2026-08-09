@@ -54,6 +54,7 @@ class PropertyExternalLinkController extends BaseApiController
         ]);
 
         Cache::forget('listing.links.' . $property->id);
+        $this->forgetPropertyShowCache($property->id, (int) $property->user_id);
 
         return response()->json($link, 201);
     }
@@ -79,6 +80,7 @@ class PropertyExternalLinkController extends BaseApiController
 
         $link->update($validated);
         Cache::forget('listing.links.' . $property->id);
+        $this->forgetPropertyShowCache($property->id, (int) $property->user_id);
 
         return response()->json(['success' => true, 'link' => $link]);
     }
@@ -93,7 +95,18 @@ class PropertyExternalLinkController extends BaseApiController
 
         $link->delete();
         Cache::forget('listing.links.' . $property->id);
+        $this->forgetPropertyShowCache($property->id, (int) $property->user_id);
 
         return response()->json(['success' => true]);
+    }
+
+    private function forgetPropertyShowCache(int $propertyId, int $ownerId): void
+    {
+        foreach ([7, 30, 90, 365] as $days) {
+            Cache::forget("property_api_{$propertyId}_v1_days_{$days}");
+            Cache::forget("property_api_{$propertyId}_owner_{$ownerId}_v1_days_{$days}");
+            Cache::forget("property_api_{$propertyId}_v2_days_{$days}");
+            Cache::forget("property_api_{$propertyId}_owner_{$ownerId}_v2_days_{$days}");
+        }
     }
 }

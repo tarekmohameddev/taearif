@@ -1345,6 +1345,48 @@ Content-Type: application/json
 
 ## 8. Property External Links
 
+Portal listing URLs (Aqar, Bayut, etc.) can be attached to a property in two ways:
+
+1. **Inline on create/update** — pass `external_links` in the body of `POST /api/properties` or `PUT /api/properties/{id}`. On update the full list is synced (existing links are replaced).
+2. **Dedicated CRUD** — individual link management via the sub-resource endpoints below.
+
+Both write to the same `property_external_links` table so `resolve_listing` always has the full picture.
+
+### Inline via POST / PUT /api/properties
+
+**Request body addition** (for both store and update):
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `external_links` | array | no | Portal listing links to attach |
+| `external_links.*.platform` | string | yes (when array present) | Portal key e.g. `aqar`, `bayut` — max 60 |
+| `external_links.*.url` | string | yes (when array present) | Full listing URL — max 2048 |
+| `external_links.*.label` | string | no | Optional display label — max 120 |
+| `external_links.*.active` | boolean | no | Defaults to `true` |
+
+**Example**
+```json
+{
+  "title": "شقة للبيع",
+  "external_links": [
+    { "platform": "aqar", "url": "https://sa.aqar.fm/ad/6633737/ar", "label": "إعلان عقار" },
+    { "platform": "bayut", "url": "https://bayut.sa/property/details-123/" }
+  ]
+}
+```
+
+**Response** — `external_links` is included in both create (`201`) and update (`200`) responses next to `faqs`:
+
+```json
+"external_links": [
+  { "id": 9, "platform": "aqar", "url": "https://sa.aqar.fm/ad/6633737/ar", "label": "إعلان عقار", "active": true }
+]
+```
+
+> **Update sync behaviour**: when `external_links` is present in a PUT request, all existing links for that property are deleted and replaced with the submitted list. Omitting the key leaves existing links untouched.
+
+---
+
 Attach portal listing URLs (Aqar, Bayut, etc.) to internal properties so `resolve_listing` can match inbound portal leads.
 
 ### 8.1 GET properties/{propertyId}/external-links
