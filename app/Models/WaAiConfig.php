@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WaAiConfig extends Model
 {
@@ -35,6 +36,7 @@ class WaAiConfig extends Model
         'monthly_token_budget',
         'playbook',
         'max_tokens_per_turn',
+        'agent_reply_pause',
     ];
 
     /** @var array<string, string> */
@@ -64,5 +66,10 @@ class WaAiConfig extends Model
     public function waNumber(): BelongsTo
     {
         return $this->belongsTo(WaNumber::class, 'wa_number_id');
+    }
+
+    public function excludedPhones(): HasMany
+    {
+        return $this->hasMany(WaAiExcludedPhone::class, 'wa_number_id', 'wa_number_id');
     }
 }

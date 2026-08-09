@@ -147,12 +147,19 @@ final class BotOrchestrator
         }
 
         // ─── Load config ────────────────────────────────────────────────────
-        $config = WaAiConfig::where('user_id', $tenantId)
+        $config = WaAiConfig::with('excludedPhones')
+            ->where('user_id', $tenantId)
             ->where('wa_number_id', $waNumberId)
             ->first();
 
         if ($config === null || ! $config->enabled) {
             return BotTurnResult::skipped('no_config_or_disabled', $trace);
+        }
+
+        // ─── Guard: excluded customer number ────────────────────────────────
+        $excludedPhones = $config->excludedPhones->pluck('phone')->all();
+        if ($excludedPhones !== [] && in_array($customerPhone, $excludedPhones, true)) {
+            return BotTurnResult::skipped('excluded_number', $trace);
         }
 
         // ─── Business hours check ───────────────────────────────────────────

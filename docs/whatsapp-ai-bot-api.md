@@ -20,6 +20,8 @@
    - [GET ai/bot/shadow-drafts](#31-get-aibotshadow-drafts)
    - [POST ai/bot/shadow-drafts/{id}/act](#32-post-aibotshadow-draftsidact)
    - [GET conversations?needs_attention=1](#33-get-conversationsneeds_attention1)
+   - [POST conversations/{id}/bot/resume](#34-post-conversationsidbotresume)
+   - [Excluded Phones sub-resource](#35-excluded-phones-bot-number-exclusion)
 4. [Unanswered Questions](#4-unanswered-questions)
    - [POST ai/bot/unanswered/{id}/mark-faq](#41-post-aibotunansweredidmark-faq)
 5. [Sandbox Simulator](#5-sandbox-simulator)
@@ -58,6 +60,10 @@
 | `GET` | `ai/bot/shadow-drafts` | Pending shadow drafts |
 | `POST` | `ai/bot/shadow-drafts/{id}/act` | Approve / edit / discard draft |
 | `GET` | `conversations?needs_attention=1` | Agent inbox: bot-escalated chats |
+| `POST` | `conversations/{id}/bot/resume` | Resume bot after agent-takeover pause |
+| `GET` | `ai/config/{numberId}/excluded-phones` | List numbers excluded from AI bot |
+| `POST` | `ai/config/{numberId}/excluded-phones` | Add a number to the exclusion list |
+| `DELETE` | `ai/config/{numberId}/excluded-phones/{phoneId}` | Remove a number from the exclusion list |
 | `POST` | `ai/bot/unanswered/{id}/mark-faq` | Mark gap question as FAQ-resolved |
 | `POST` | `ai/bot/simulate` | Run one sandbox bot turn |
 | `GET` | `ai/bot/simulate/conversation` | Sandbox transcript |
@@ -97,50 +103,59 @@ Authorization: Bearer {token}
 **Response 200**
 ```json
 {
-  "status": "success",
+  "status": true,
   "data": {
-    "id": 12,
-    "user_id": 123,
-    "wa_number_id": 45,
-    "enabled": true,
-    "autonomy_level": "shadow",
-    "goal": "salesman",
-    "tone": "friendly",
-    "language": "ar",
-    "assistant_name": "نورة",
-    "disclose_as_assistant": true,
-    "reply_length_target": 200,
-    "confidence_threshold": 70,
-    "groundedness_threshold": 80,
-    "fallback_to_human": true,
-    "monthly_token_budget": 500000,
-    "max_tokens_per_turn": 800,
-    "custom_instructions": "لا تقبل عمولة أقل من 2.5%",
-    "playbook": {
-      "few_shot_examples": [
-        {
-          "customer": "كم سعر الشقة؟",
-          "bot": "سعر الشقة {{p:1301|price}} ريال. هل تودّ معرفة المزيد؟"
-        }
-      ]
-    },
-    "business_hours": {
-      "sunday":    { "open": true,  "from": "09:00", "to": "21:00" },
-      "monday":    { "open": true,  "from": "09:00", "to": "21:00" },
-      "tuesday":   { "open": true,  "from": "09:00", "to": "21:00" },
-      "wednesday": { "open": true,  "from": "09:00", "to": "21:00" },
-      "thursday":  { "open": true,  "from": "09:00", "to": "21:00" },
-      "friday":    { "open": false },
-      "saturday":  { "open": true,  "from": "10:00", "to": "18:00" }
-    },
-    "timezone": "Asia/Riyadh",
-    "scenarios": null,
-    "escalation_rules": null,
-    "created_at": "2026-08-02T09:00:00+03:00",
-    "updated_at": "2026-08-02T10:00:00+03:00"
+    "data": {
+      "id": 12,
+      "user_id": 123,
+      "wa_number_id": 45,
+      "enabled": true,
+      "autonomy_level": "shadow",
+      "goal": "salesman",
+      "tone": "friendly",
+      "language": "ar",
+      "assistant_name": "نورة",
+      "disclose_as_assistant": true,
+      "reply_length_target": 200,
+      "confidence_threshold": 70,
+      "groundedness_threshold": 80,
+      "fallback_to_human": true,
+      "monthly_token_budget": 500000,
+      "max_tokens_per_turn": 800,
+      "agent_reply_pause": "48h",
+      "custom_instructions": "لا تقبل عمولة أقل من 2.5%",
+      "playbook": {
+        "few_shot_examples": [
+          {
+            "customer": "كم سعر الشقة؟",
+            "bot": "سعر الشقة {{p:1301|price}} ريال. هل تودّ معرفة المزيد؟"
+          }
+        ]
+      },
+      "business_hours": {
+        "sunday":    { "open": true,  "from": "09:00", "to": "21:00" },
+        "monday":    { "open": true,  "from": "09:00", "to": "21:00" },
+        "tuesday":   { "open": true,  "from": "09:00", "to": "21:00" },
+        "wednesday": { "open": true,  "from": "09:00", "to": "21:00" },
+        "thursday":  { "open": true,  "from": "09:00", "to": "21:00" },
+        "friday":    { "open": false },
+        "saturday":  { "open": true,  "from": "10:00", "to": "18:00" }
+      },
+      "timezone": "Asia/Riyadh",
+      "scenarios": null,
+      "escalation_rules": null,
+      "excluded_phones": [
+        { "id": 1, "phone": "966501234567", "created_at": "2026-08-08T20:00:00+03:00" },
+        { "id": 2, "phone": "966509876543", "created_at": "2026-08-08T21:00:00+03:00" }
+      ],
+      "created_at": "2026-08-02T09:00:00+03:00",
+      "updated_at": "2026-08-02T10:00:00+03:00"
+    }
   }
 }
 ```
+
+> **Response envelope:** All config endpoints use a nested `data.data` wrapper — access config fields at `response.data.data.*`.
 
 **Response 404**
 ```json
@@ -190,6 +205,9 @@ Create or update the bot configuration for a number. Partial updates are support
 | `timezone` | string | — | Timezone for business hours (e.g. `Asia/Riyadh`) |
 | `scenarios` | array | — | Optional scenario overrides |
 | `escalation_rules` | array | — | Custom escalation conditions |
+| `agent_reply_pause` | string | `off\|24h\|48h\|indefinite` | How long to pause the AI bot after a human agent replies (mobile app or CRM). `off` = never pause. `indefinite` = pause until manually resumed via `POST conversations/{id}/bot/resume`. Default: `48h` |
+
+> **Note:** The `excluded_phones` list is managed via the dedicated sub-resource endpoints below, not via this PUT body.
 
 **`playbook` shape**
 
@@ -254,19 +272,21 @@ Content-Type: application/json
 }
 ```
 
-**Response 200**
+**Response 200** — same envelope as GET (`data.data` nesting)
 ```json
 {
-  "status": "success",
+  "status": true,
   "data": {
-    "id": 12,
-    "wa_number_id": 45,
-    "enabled": true,
-    "autonomy_level": "shadow",
-    "goal": "salesman",
-    "assistant_name": "نورة",
-    "max_tokens_per_turn": 800,
-    "updated_at": "2026-08-02T10:15:00+03:00"
+    "data": {
+      "id": 12,
+      "wa_number_id": 45,
+      "enabled": true,
+      "autonomy_level": "shadow",
+      "goal": "salesman",
+      "assistant_name": "نورة",
+      "max_tokens_per_turn": 800,
+      "updated_at": "2026-08-02T10:15:00+03:00"
+    }
   }
 }
 ```
@@ -292,15 +312,17 @@ PATCH /api/v1/whatsapp/ai/config/45/toggle
 Authorization: Bearer {token}
 ```
 
-**Response 200**
+**Response 200** — same `data.data` envelope
 ```json
 {
-  "status": "success",
+  "status": true,
   "data": {
-    "id": 12,
-    "wa_number_id": 45,
-    "enabled": false,
-    "updated_at": "2026-08-02T10:20:00+03:00"
+    "data": {
+      "id": 12,
+      "wa_number_id": 45,
+      "enabled": false,
+      "updated_at": "2026-08-02T10:20:00+03:00"
+    }
   }
 }
 ```
@@ -320,12 +342,14 @@ Authorization: Bearer {token}
 **Response 200**
 ```json
 {
-  "status": "success",
+  "status": true,
   "data": {
-    "total_suggestions": 1240,
-    "suggestions_today": 38,
-    "conversations_with_ai": 312,
-    "avg_confidence": 82.4
+    "data": {
+      "total_suggestions": 1240,
+      "suggestions_today": 38,
+      "conversations_with_ai": 312,
+      "avg_confidence": 82.4
+    }
   }
 }
 ```
@@ -629,6 +653,146 @@ Authorization: Bearer {token}
 
 ---
 
+### 3.4 POST conversations/{id}/bot/resume
+
+Resume the AI bot for a conversation that was paused because a human agent replied (`handoff_reason = agent_takeover`). This is required when `agent_reply_pause` is set to `indefinite` on the number config, but also works for `24h`/`48h` pauses.
+
+> Safety pauses caused by compliance violations, media review, or customer opt-out cannot be cleared with this endpoint. Those return `422`.
+
+**Path params**
+
+| Param | Type | Description |
+|---|---|---|
+| `id` | integer | Conversation state ID (`wa_conversation_states.id`) or `conversation_id` |
+
+**Request**
+```http
+POST /api/v1/whatsapp/conversations/88/bot/resume
+Authorization: Bearer {token}
+```
+
+**Response 200** — bot resumed
+```json
+{
+  "status": true,
+  "data": {
+    "bot_paused_until": null,
+    "handoff_reason": null,
+    "needs_attention": false
+  }
+}
+```
+
+**Response 404** — conversation or AI state not found
+```json
+{
+  "status": "error",
+  "code": "WA_CONVERSATION_NOT_FOUND",
+  "message": "Conversation not found."
+}
+```
+
+**Response 422** — pause reason is not `agent_takeover`
+```json
+{
+  "status": "error",
+  "code": "BOT_PAUSE_NOT_RESUMABLE",
+  "message": "The bot cannot be manually resumed while paused for: compliance."
+}
+```
+
+---
+
+### 3.5 Excluded Phones (Bot Number Exclusion) {#35-excluded-phones-bot-number-exclusion}
+
+These three endpoints manage the list of customer WhatsApp numbers that the AI bot will **never** engage with, regardless of any other configuration. Useful for VIP customers, internal test numbers, or any number that must always be handled by a human.
+
+> **Phone format:** Enter digits only (E.164 without `+`), e.g. `966501234567`. The server strips `+`, spaces, and dashes automatically on save.
+
+#### GET ai/config/{numberId}/excluded-phones
+
+List all excluded numbers for a WhatsApp number.
+
+```http
+GET /api/v1/whatsapp/ai/config/45/excluded-phones
+Authorization: Bearer {token}
+```
+
+**Response 200**
+```json
+{
+  "status": true,
+  "data": [
+    { "id": 1, "phone": "966501234567", "created_at": "2026-08-08T20:00:00+03:00" },
+    { "id": 2, "phone": "966509876543", "created_at": "2026-08-08T21:00:00+03:00" }
+  ]
+}
+```
+
+#### POST ai/config/{numberId}/excluded-phones
+
+Add a number to the exclusion list.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `phone` | string | Yes | Customer phone number. The server normalizes to digits only (strips `+`, spaces, dashes). Max 20 chars before normalization. |
+
+```http
+POST /api/v1/whatsapp/ai/config/45/excluded-phones
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "phone": "+966 50 1234567"
+}
+```
+
+**Response 201** — number added
+```json
+{
+  "status": "ok",
+  "data": {
+    "id": 3,
+    "user_id": 12,
+    "wa_number_id": 45,
+    "phone": "966501234567",
+    "created_at": "2026-08-08T22:00:00+03:00",
+    "updated_at": "2026-08-08T22:00:00+03:00"
+  }
+}
+```
+
+**Response 422** — duplicate
+```json
+{
+  "status": "error",
+  "code": "PHONE_ALREADY_EXCLUDED",
+  "message": "This phone number is already in the exclusion list."
+}
+```
+
+#### DELETE ai/config/{numberId}/excluded-phones/{phoneId}
+
+Remove a number from the exclusion list by its row ID.
+
+```http
+DELETE /api/v1/whatsapp/ai/config/45/excluded-phones/3
+Authorization: Bearer {token}
+```
+
+**Response 204** — no content (deleted successfully)
+
+**Response 404** — record not found
+```json
+{
+  "status": "error",
+  "code": "NOT_FOUND",
+  "message": "Excluded phone record not found."
+}
+```
+
+---
+
 ## 4. Unanswered Questions
 
 ### 4.1 POST ai/bot/unanswered/{id}/mark-faq
@@ -809,6 +973,7 @@ Draft is generated but not delivered. `outcome = "shadow"`.
 | Value | Meaning |
 |---|---|
 | `no_config_or_off` | No active `wa_ai_config` found |
+| `excluded_number` | Customer phone is in the tenant's excluded-phones list — bot will never engage |
 | `outside_business_hours` | Current time is outside configured hours |
 | `loop_detected` | Too many bot replies in a short window |
 | `lock_contention` | Concurrent message being processed |
@@ -1546,9 +1711,14 @@ Cache::forget('bot.loop.conv.' . $id)
 | 403 | `Unauthorized.` | Simulating a different tenant without admin |
 | 404 | `WA_NUMBER_NOT_FOUND` | `numberId` not owned by this tenant |
 | 404 | `WA_AI_CONFIG_NOT_FOUND` | No config exists for this number yet |
+| 404 | `NOT_FOUND` | Excluded-phone record not found for this number |
+| 404 | `WA_CONVERSATION_NOT_FOUND` | Conversation ID not found (bot/resume) |
 | 404 | `No bot config found...` | Simulate: no `wa_ai_configs` row for this number |
 | 404 | (ModelNotFound) | Knowledge source, FAQ candidate, property, or external link not found for tenant |
 | 409 | `Draft is no longer pending.` | Act on a draft that was already approved/discarded |
+| 422 | `PHONE_ALREADY_EXCLUDED` | Phone already in the exclusion list (POST excluded-phones) |
+| 422 | `INVALID_PHONE` | Phone contained no digits after normalization |
+| 422 | `BOT_PAUSE_NOT_RESUMABLE` | Attempting to resume a bot that was paused for a non-takeover reason |
 | 422 | (Laravel validation) | Required field missing or invalid value |
 | 500 | (exception message) | LLM timeout, network failure, or unexpected error |
 
@@ -1569,6 +1739,7 @@ Cache::forget('bot.loop.conv.' . $id)
 | Reason | Trigger |
 |---|---|
 | `no_config_or_off` | No enabled `wa_ai_config` for this number |
+| `excluded_number` | Customer phone is in the tenant's excluded-phones list |
 | `outside_business_hours` | Current time outside configured hours |
 | `loop_detected` | More than 3 bot replies in 1 minute for this conversation |
 | `lock_contention` | Another turn is being processed concurrently |

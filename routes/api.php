@@ -103,6 +103,7 @@ use App\Http\Controllers\Api\V1\WhatsApp\{
     TemplateController as WhatsAppTemplateController,
     AutomationRuleController as WhatsAppAutomationRuleController,
     AiConfigController as WhatsAppAiConfigController,
+    AiExcludedPhoneController as WhatsAppAiExcludedPhoneController,
     StatsController as WhatsAppStatsController,
     WebhookController as WhatsAppWebhookController,
 };
@@ -1287,6 +1288,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::patch('conversations/{id}', [WhatsAppConversationController::class, 'update']);
         Route::post('conversations/{id}/read', [WhatsAppConversationController::class, 'read']);
         Route::post('conversations/{id}/star', [WhatsAppConversationController::class, 'star']);
+        Route::post('conversations/{id}/bot/resume', [WhatsAppConversationController::class, 'resumeBot']);
 
         Route::get('conversations/{id}/messages', [WhatsAppMessageController::class, 'index']);
         Route::post('conversations/{id}/messages', [WhatsAppMessageController::class, 'send']);
@@ -1310,6 +1312,10 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::put('ai/config/{numberId}', [WhatsAppAiConfigController::class, 'update']);
         Route::patch('ai/config/{numberId}/toggle', [WhatsAppAiConfigController::class, 'toggle']);
         Route::get('ai/stats', [WhatsAppAiConfigController::class, 'stats']);
+
+        Route::get('ai/config/{numberId}/excluded-phones', [WhatsAppAiExcludedPhoneController::class, 'index']);
+        Route::post('ai/config/{numberId}/excluded-phones', [WhatsAppAiExcludedPhoneController::class, 'store']);
+        Route::delete('ai/config/{numberId}/excluded-phones/{phoneId}', [WhatsAppAiExcludedPhoneController::class, 'destroy']);
 
         // Bot analytics + shadow mode + simulator
         Route::get('ai/bot/dashboard', [\App\Http\Controllers\Api\apps\whatsapp\BotAnalyticsController::class, 'dashboard']);

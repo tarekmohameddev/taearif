@@ -9451,9 +9451,63 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="monthly_token_budget", type="integer"),
  *             @OA\Property(property="fallback_to_human", type="boolean"),
  *             @OA\Property(property="fallback_delay", type="integer", minimum=0),
+ *             @OA\Property(property="agent_reply_pause", type="string", enum={"off","24h","48h","indefinite"}, description="How long to pause the bot after a human agent replies. off=never pause, indefinite=pause until manually resumed. Default: 48h"),
  *         )),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")
+ *     )
+ *
+ * )
+ *
+ * @OA\PathItem(
+ *
+ *     path="/v1/whatsapp/ai/config/{numberId}/excluded-phones",
+ *
+ *     @OA\Get(
+ *         operationId="get_v1_whatsapp_ai_config_excluded_phones_0",
+ *         tags={"Whatsapp"},
+ *         summary="List excluded phone numbers for a WhatsApp number", security={{"sanctum":{}}},
+ *         @OA\Parameter(name="numberId", in="path", required=true, @OA\Schema(type="integer")),
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object",
+ *             @OA\Property(property="status", type="string", example="ok"),
+ *             @OA\Property(property="data", type="array", @OA\Items(type="object",
+ *                 @OA\Property(property="id", type="integer"),
+ *                 @OA\Property(property="phone", type="string", example="966501234567"),
+ *                 @OA\Property(property="created_at", type="string", format="date-time")
+ *             ))
+ *         )),
+ *         @OA\Response(response=401, description="Unauthenticated"),
+ *         @OA\Response(response=404, description="WhatsApp number not found")
+ *     ),
+ *     @OA\Post(
+ *         operationId="post_v1_whatsapp_ai_config_excluded_phones_1",
+ *         tags={"Whatsapp"},
+ *         summary="Add a phone number to the bot exclusion list", security={{"sanctum":{}}},
+ *         @OA\Parameter(name="numberId", in="path", required=true, @OA\Schema(type="integer")),
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"phone"},
+ *             @OA\Property(property="phone", type="string", maxLength=20, description="Phone number (E.164 without +). Server normalizes to digits only.", example="966501234567")
+ *         )),
+ *         @OA\Response(response=201, description="Created"),
+ *         @OA\Response(response=401, description="Unauthenticated"),
+ *         @OA\Response(response=404, description="WhatsApp number not found"),
+ *         @OA\Response(response=422, description="Duplicate or invalid phone")
+ *     )
+ *
+ * )
+ *
+ * @OA\PathItem(
+ *
+ *     path="/v1/whatsapp/ai/config/{numberId}/excluded-phones/{phoneId}",
+ *
+ *     @OA\Delete(
+ *         operationId="delete_v1_whatsapp_ai_config_excluded_phones_2",
+ *         tags={"Whatsapp"},
+ *         summary="Remove a phone number from the bot exclusion list", security={{"sanctum":{}}},
+ *         @OA\Parameter(name="numberId", in="path", required=true, @OA\Schema(type="integer")),
+ *         @OA\Parameter(name="phoneId", in="path", required=true, @OA\Schema(type="integer")),
+ *         @OA\Response(response=204, description="Deleted"),
+ *         @OA\Response(response=401, description="Unauthenticated"),
+ *         @OA\Response(response=404, description="Not found")
  *     )
  *
  * )
@@ -9837,6 +9891,30 @@ namespace App\Http\Controllers\Api;
  *         summary="Star", security={{"sanctum":{}}},
  *         @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
+ *         @OA\Response(response=401, description="Unauthenticated")
+ *     )
+ *
+ * )
+ *
+ * @OA\PathItem(
+ *
+ *     path="/v1/whatsapp/conversations/{id}/bot/resume",
+ *
+ *     @OA\Post(
+ *         operationId="post_v1_whatsapp_conversations_id_bot_resume_0",
+ *         tags={"Whatsapp"},
+ *         summary="Resume bot after agent-takeover pause", security={{"sanctum":{}}},
+ *         @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object",
+ *             @OA\Property(property="status", type="string", example="success"),
+ *             @OA\Property(property="data", type="object",
+ *                 @OA\Property(property="bot_paused_until", type="string", nullable=true),
+ *                 @OA\Property(property="handoff_reason", type="string", nullable=true),
+ *                 @OA\Property(property="needs_attention", type="boolean")
+ *             )
+ *         )),
+ *         @OA\Response(response=404, description="Conversation or AI state not found"),
+ *         @OA\Response(response=422, description="Pause reason is not agent_takeover"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
  *

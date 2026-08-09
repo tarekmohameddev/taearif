@@ -106,13 +106,20 @@ final class Employee
         }
 
         // ── 1. Load config ─────────────────────────────────────────────────────
-        $config = WaAiConfig::where('user_id', $tenantId)
+        $config = WaAiConfig::with('excludedPhones')
+            ->where('user_id', $tenantId)
             ->where('wa_number_id', $waNumberId)
             ->where('enabled', true)
             ->first();
 
         if ($config === null || !in_array($config->autonomy_level, ['shadow', 'autonomous'], true)) {
             return EmployeeTurnResult::skipped('no_config_or_off');
+        }
+
+        // ── Guard: excluded customer number ────────────────────────────────
+        $excludedPhones = $config->excludedPhones->pluck('phone')->all();
+        if ($excludedPhones !== [] && in_array($customerPhone, $excludedPhones, true)) {
+            return EmployeeTurnResult::skipped('excluded_number');
         }
 
         // ── 2. Business hours gate ─────────────────────────────────────────────

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\Communication\WhatsApp\Bot;
 
+use App\Models\WaAiConfig;
 use App\Models\WaConversationAiState;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -17,27 +19,59 @@ use Illuminate\Support\Facades\Log;
  * - Regulated topic detected
  * - Agent sends a manual reply in the conversation (auto-pause)
  *
- * Auto-resume: if no agent reply for RESUME_AFTER_HOURS, the bot resumes.
+ * Pause duration for agent replies is controlled by the WaAiConfig.agent_reply_pause
+ * setting: off | 24h | 48h | indefinite.
  */
 final class HandoffService
 {
+    /** Default hours for non-agent-takeover pauses (compliance, media, etc.) */
     private const PAUSE_DURATION_HOURS = 24;
-    private const RESUME_AFTER_HOURS   = 48;
+
+    /**
+     * Far-future sentinel used when pause mode is "indefinite".
+     * Reuses existing isBotPaused() logic without a schema change.
+     *
+     * MySQL TIMESTAMP max is 2038-01-19; we use 2038-01-01 to stay safely within range.
+     */
+    private const INDEFINITE_SENTINEL = '2038-01-01 00:00:00';
 
     /** @var callable[] */
     private array $notifiers = [];
 
     public function pauseBot(WaConversationAiState $state, string $reason, int $hours = self::PAUSE_DURATION_HOURS): void
     {
+        $until = now()->addHours($hours);
+
         $state->update([
-            'bot_paused_until' => now()->addHours($hours),
+            'bot_paused_until' => $until,
             'handoff_reason'   => $reason,
         ]);
 
         Log::info('bot.handoff.paused', [
             'conversation_id' => $state->conversation_id,
             'reason'          => $reason,
-            'until'           => now()->addHours($hours)->toIso8601String(),
+            'until'           => $until->toIso8601String(),
+        ]);
+
+        $this->notifyAgents($state, $reason);
+    }
+
+    /**
+     * Pause indefinitely (until manually resumed).
+     * Sets bot_paused_until to a far-future date so isBotPaused() stays true.
+     */
+    public function pauseBotIndefinitely(WaConversationAiState $state, string $reason): void
+    {
+        $until = Carbon::parse(self::INDEFINITE_SENTINEL);
+
+        $state->update([
+            'bot_paused_until' => $until,
+            'handoff_reason'   => $reason,
+        ]);
+
+        Log::info('bot.handoff.paused_indefinitely', [
+            'conversation_id' => $state->conversation_id,
+            'reason'          => $reason,
         ]);
 
         $this->notifyAgents($state, $reason);
@@ -56,14 +90,54 @@ final class HandoffService
     }
 
     /**
-     * Called when an agent sends a manual reply — pauses bot to avoid double-reply.
+     * Called when a human agent sends a manual reply.
+     * Pause duration is controlled by the tenant's agent_reply_pause config:
+     *   - off       → no pause
+     *   - 24h       → pause 24 hours (refreshed on each subsequent agent reply)
+     *   - 48h       → pause 48 hours (refreshed on each subsequent agent reply)
+     *   - indefinite → pause until manual resume
+     *
+     * @param string $pauseMode one of: off|24h|48h|indefinite
      */
-    public function handleAgentReply(WaConversationAiState $state): void
+    public function handleAgentReply(WaConversationAiState $state, string $pauseMode = '48h'): void
     {
-        // Pause bot for RESUME_AFTER_HOURS unless agent explicitly hands back
-        if (! $state->isBotPaused()) {
-            $this->pauseBot($state, 'agent_takeover', self::RESUME_AFTER_HOURS);
+        match ($pauseMode) {
+            'off'        => null,
+            '24h'        => $this->pauseBot($state, 'agent_takeover', 24),
+            '48h'        => $this->pauseBot($state, 'agent_takeover', 48),
+            'indefinite' => $this->pauseBotIndefinitely($state, 'agent_takeover'),
+            default      => $this->pauseBot($state, 'agent_takeover', 48),
+        };
+    }
+
+    /**
+     * Convenience method — looks up AI state and config, then pauses the bot
+     * if the tenant's agent_reply_pause setting says so.
+     *
+     * Safe to call on any human send; no-ops if AI state doesn't exist yet.
+     *
+     * @param int      $conversationId  Communication conversation_id
+     * @param int|null $waNumberId      WA number ID used to load tenant config
+     * @param int      $tenantUserId    Tenant owner user_id
+     */
+    public function pauseAfterHumanSend(int $conversationId, ?int $waNumberId, int $tenantUserId): void
+    {
+        $aiState = WaConversationAiState::where('conversation_id', $conversationId)->first();
+        if ($aiState === null) {
+            return;
         }
+
+        $pauseMode = '48h';
+        if ($waNumberId !== null) {
+            $config = WaAiConfig::where('user_id', $tenantUserId)
+                ->where('wa_number_id', $waNumberId)
+                ->first();
+            if ($config !== null) {
+                $pauseMode = (string) ($config->agent_reply_pause ?? '48h');
+            }
+        }
+
+        $this->handleAgentReply($aiState, $pauseMode);
     }
 
     public function shouldHandoff(

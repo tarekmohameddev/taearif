@@ -5,7 +5,6 @@ namespace Modules\WhatsappAI\Http\Controllers;
 use App\Domain\Communication\WhatsApp\Bot\HandoffService;
 use App\Domain\Communication\WhatsApp\Services\SyncWhatsappAiConversationToCommunicationService;
 use App\Models\ShadowBotDraft;
-use App\Models\WaConversationAiState;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -389,20 +388,22 @@ class WebhookController extends Controller
         // human agent have source = 'whatsapp_echo'. Skip if already in our system with
         // source = 'ai' to avoid pausing right after the bot speaks.
         if ($syncedMessage !== null) {
-            $syncedMeta   = is_array($syncedMessage->meta) ? $syncedMessage->meta : [];
+            $syncedMeta    = is_array($syncedMessage->meta) ? $syncedMessage->meta : [];
             $messageSource = $syncedMeta['source'] ?? 'whatsapp_echo';
 
             if ($messageSource !== 'ai') {
-                // Human agent replied — pause the bot for this conversation
+                // Human agent replied — pause the bot according to tenant config.
                 $conversationId = $syncedMessage->conversation_id;
                 if ($conversationId !== null) {
-                    $aiState = WaConversationAiState::where('conversation_id', $conversationId)->first();
-                    if ($aiState !== null) {
-                        $this->handoffService->handleAgentReply($aiState);
+                    $waNumberId = isset($syncedMeta['wa_number_id']) ? (int) $syncedMeta['wa_number_id'] : null;
+                    $this->handoffService->pauseAfterHumanSend(
+                        (int) $conversationId,
+                        $waNumberId,
+                        (int) $whatsappUser->user_id,
+                    );
 
-                        // Pair with any pending shadow draft for the same conversation
-                        $this->pairShadowDraft((int) $conversationId, (string) ($content ?? ''));
-                    }
+                    // Pair with any pending shadow draft for the same conversation
+                    $this->pairShadowDraft((int) $conversationId, (string) ($content ?? ''));
                 }
             }
         }

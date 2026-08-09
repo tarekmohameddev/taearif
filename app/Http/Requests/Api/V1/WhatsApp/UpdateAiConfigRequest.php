@@ -43,6 +43,7 @@ class UpdateAiConfigRequest extends BaseApiFormRequest
             'playbook.few_shot_examples' => 'nullable|array',
             'playbook.few_shot_examples.*.customer' => 'nullable|string|max:2000',
             'playbook.few_shot_examples.*.bot' => 'nullable|string|max:2000',
+            'agent_reply_pause' => 'nullable|string|in:off,24h,48h,indefinite',
         ];
     }
 }

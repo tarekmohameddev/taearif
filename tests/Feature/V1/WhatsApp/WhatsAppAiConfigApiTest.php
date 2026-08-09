@@ -97,4 +97,93 @@ class WhatsAppAiConfigApiTest extends TestCase
         $config = WaAiConfig::where('wa_number_id', $number->id)->first();
         $this->assertSame($businessHours, $config->business_hours);
     }
+
+    /** @test */
+    public function agent_reply_pause_defaults_to_48h(): void
+    {
+        $this->requireTables();
+
+        $tenant = $this->createTenant();
+        $number = WaNumber::create([
+            'user_id' => $tenant->id,
+            'provider' => 'meta',
+            'phone_number' => '+966501112222',
+            'name' => 'AI Number 2',
+            'status' => 'active',
+        ]);
+
+        Sanctum::actingAs($tenant);
+
+        $res = $this->putJson('/api/v1/whatsapp/ai/config/' . $number->id, [
+            'enabled' => true,
+            'autonomy_level' => 'autonomous',
+            'scenarios' => [],
+        ]);
+
+        $res->assertOk();
+
+        $this->assertDatabaseHas('wa_ai_configs', [
+            'wa_number_id' => $number->id,
+            'agent_reply_pause' => '48h',
+        ]);
+    }
+
+    /** @test */
+    public function agent_reply_pause_can_be_set_to_valid_values(): void
+    {
+        $this->requireTables();
+
+        $tenant = $this->createTenant();
+        $number = WaNumber::create([
+            'user_id' => $tenant->id,
+            'provider' => 'meta',
+            'phone_number' => '+966501113333',
+            'name' => 'AI Number 3',
+            'status' => 'active',
+        ]);
+
+        Sanctum::actingAs($tenant);
+
+        // Seed the config first so subsequent calls are updates, not inserts (avoids NOT NULL on scenarios)
+        $this->putJson('/api/v1/whatsapp/ai/config/' . $number->id, [
+            'agent_reply_pause' => '48h',
+            'scenarios' => [],
+        ])->assertOk();
+
+        foreach (['off', '24h', '48h', 'indefinite'] as $mode) {
+            $res = $this->putJson('/api/v1/whatsapp/ai/config/' . $number->id, [
+                'agent_reply_pause' => $mode,
+            ]);
+
+            $res->assertOk();
+            $this->assertDatabaseHas('wa_ai_configs', [
+                'wa_number_id' => $number->id,
+                'agent_reply_pause' => $mode,
+            ]);
+        }
+    }
+
+    /** @test */
+    public function agent_reply_pause_rejects_invalid_value(): void
+    {
+        $this->requireTables();
+
+        $tenant = $this->createTenant();
+        $number = WaNumber::create([
+            'user_id' => $tenant->id,
+            'provider' => 'meta',
+            'phone_number' => '+966501114444',
+            'name' => 'AI Number 4',
+            'status' => 'active',
+        ]);
+
+        Sanctum::actingAs($tenant);
+
+        $res = $this->putJson('/api/v1/whatsapp/ai/config/' . $number->id, [
+            'agent_reply_pause' => '72h',
+            'scenarios' => [],
+        ]);
+
+        $res->assertUnprocessable();
+    }
 }

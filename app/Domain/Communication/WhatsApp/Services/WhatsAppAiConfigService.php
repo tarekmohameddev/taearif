@@ -9,6 +9,7 @@ class WhatsAppAiConfigService
     public function findForNumber(int $userId, int $waNumberId): ?WaAiConfig
     {
         return WaAiConfig::query()
+            ->with('excludedPhones')
             ->where('user_id', $userId)
             ->where('wa_number_id', $waNumberId)
             ->first();
