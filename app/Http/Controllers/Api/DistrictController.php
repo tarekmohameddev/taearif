@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User\UserDistrict;
+use App\Support\LocationLookupCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class DistrictController extends Controller
 {
@@ -18,15 +20,24 @@ class DistrictController extends Controller
     public function index(Request $request): JsonResponse
     {
         $request->validate([
-            'city_id' => ['sometimes', 'nullable', 'integer', 'exists:user_districts,city_id'],
+            'city_id' => ['sometimes', 'nullable', 'integer'],
         ]);
 
-        $districts = UserDistrict::query()
-            ->when($request->filled('city_id'), function ($query) use ($request) {
-                $query->where('city_id', (int) $request->input('city_id'));
-            })
-            ->orderBy('name_ar')
-            ->get();
+        $cityId = $request->filled('city_id') ? (int) $request->input('city_id') : null;
+
+        $districts = Cache::remember(
+            LocationLookupCache::key('districts', $cityId),
+            LocationLookupCache::TTL_SECONDS,
+            function () use ($cityId) {
+                return UserDistrict::query()
+                    ->when($cityId !== null, function ($query) use ($cityId) {
+                        $query->where('city_id', $cityId);
+                    })
+                    ->orderBy('name_ar')
+                    ->get()
+                    ->toArray();
+            }
+        );
 
         return response()->json(['data' => $districts]);
     }
