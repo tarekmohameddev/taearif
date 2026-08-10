@@ -373,6 +373,7 @@ class CustomerController extends Controller
                 'note' => $customer->note ?? null,
                 'inquiry' => $inquiryPayload,
                 'city_id' => $customer->city_id ?? null,
+                'district_id' => $customer->district_id ?? null,
                 'city' => $city ? [
                     'id'      => $city->id,
                     'name_ar' => $city->name_ar,
@@ -549,12 +550,6 @@ class CustomerController extends Controller
         }
 
         $customerData = $customer->toArray();
-
-        // Remove the _id fields from the response
-        unset($customerData['type_id']);
-        unset($customerData['city_id']);
-        unset($customerData['district_id']);
-        unset($customerData['stage_id']);
 
         // Add nested objects for type, city, district, and stage
         $customerData['type'] = $customer->type ? [
