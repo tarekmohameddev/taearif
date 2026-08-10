@@ -32,6 +32,7 @@ use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 use App\Models\User\RealestateManagement\ApiUserCategory as Category;
 use App\Models\Analytics\AnalyticsDailySummary;
 use App\Support\Audit;
+use App\Support\PropertyFilterQuery;
 use App\Support\SourceBrokerNormalizer;
 use App\Services\GoogleAnalyticsService;
 use App\Services\DatabaseVersionService;
@@ -60,6 +61,8 @@ use App\Http\Requests\Api\Property\UpdatePropertyRequest;
 
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\PropertiesImport;
+use App\Rules\PropertyTypeRule;
+use App\Support\PropertyCompletionRequirements;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class PropertyController extends Controller
@@ -76,6 +79,8 @@ class PropertyController extends Controller
         'title' => 'اسم الوحدة',
         'description' => 'الوصف',
         'address' => 'العنوان',
+        'featured_image' => 'الصورة الرئيسية',
+        'type' => 'نوع الوحدة',
         'city_id' => 'المدينة',
         'price' => 'المبلغ',
         'pricePerMeter' => 'سعر المتر',
@@ -159,9 +164,6 @@ class PropertyController extends Controller
                     ], 422);
                 }
 
-                // Smart Method: Calculate the exact number of rows with data
-                // This avoids reading thousands of empty rows
-                $filePath = $uploadedFile->getPathname();
                 $fileSize = $uploadedFile->getSize();
 
                 // Check file size (10MB = 10485760 bytes)
@@ -180,15 +182,8 @@ class PropertyController extends Controller
                     ], 422);
                 }
 
-                $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($filePath);
-                $reader->setReadDataOnly(true); // Optimization: Read only data, ignore formatting
-                $spreadsheet = $reader->load($filePath);
-                $worksheet = $spreadsheet->getActiveSheet();
-                $highestRow = $worksheet->getHighestDataRow(); // This gets the last row with actual data
-
-                // Pass the smart limit to the import class
-                // highestRow includes header, so we pass it as the limit
-                $import = new PropertiesImport($user->id, $highestRow);
+                // Fixed generous row limit — avoid a third PhpSpreadsheet pre-read just for getHighestDataRow()
+                $import = new PropertiesImport($user->id, 5000);
 
                 $collection = Excel::toCollection($import, $uploadedFile);
 
@@ -196,12 +191,9 @@ class PropertyController extends Controller
                 // The collection excludes the header due to WithHeadingRow trait
                 $firstSheet = $collection->first();
 
-                // Required fields for a complete property
-                $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'property_type', 'area'];
-
                 // Count rows that will be complete (have all required fields)
                 // Only complete properties count toward the limit
-                $incomingCompleteCount = $firstSheet->filter(function($row) use ($requiredFields) {
+                $incomingCompleteCount = $firstSheet->filter(function($row) {
                     $rowArray = $row->toArray();
 
                     // Skip rows marked as empty by prepareForValidation
@@ -223,28 +215,23 @@ class PropertyController extends Controller
                         return false;
                     }
 
-                    // Check if this row has all required fields (will be complete)
-                    foreach ($requiredFields as $field) {
-                        $value = $rowArray[$field] ?? null;
-                        if (is_null($value) || (is_string($value) && trim($value) === '') || $value === '') {
-                            return false; // Missing required field - will be incomplete
+                    // Normalize row keys (Excel imports use 'type', API uses 'property_type')
+                    $rowArray = PropertyCompletionRequirements::normalizeInput($rowArray);
+
+                    // Check if row is complete using the single source of truth
+                    if (!PropertyCompletionRequirements::isComplete($rowArray)) {
+                        return false;
+                    }
+
+                    // Validate property_type is an allowed value
+                    $propertyType = $rowArray['property_type'] ?? null;
+                    if ($propertyType !== null) {
+                        $normalized = is_string($propertyType)
+                            ? PropertyTypeRule::normalize($propertyType)
+                            : null;
+                        if (!in_array($normalized, PropertyTypeRule::allowed(), true)) {
+                            return false; // Invalid property_type - will fail validation
                         }
-                    }
-
-                    // Validate numeric fields
-                    if (isset($rowArray['price']) && !is_numeric($rowArray['price'])) {
-                        return false; // Invalid price - will fail validation
-                    }
-                    if (isset($rowArray['area']) && (!is_numeric($rowArray['area']) || $rowArray['area'] < 1)) {
-                        return false; // Invalid area - will fail validation
-                    }
-
-                    // Validate enum fields
-                    if (isset($rowArray['purpose']) && !in_array($rowArray['purpose'], ['sale', 'rent'])) {
-                        return false; // Invalid purpose - will fail validation
-                    }
-                    if (isset($rowArray['property_type']) && !in_array(strtolower((string) $rowArray['property_type']), ['residential', 'commercial', 'agricultural', 'industrial'], true)) {
-                        return false; // Invalid property_type - will fail validation
                     }
 
                     // All required fields present and valid - will be complete
@@ -294,8 +281,7 @@ class PropertyController extends Controller
             }
 
             try {
-                // Use the same smart limit for the actual import
-                $import = new PropertiesImport($user->id, $highestRow);
+                $import = new PropertiesImport($user->id, 5000);
                 Excel::import($import, $uploadedFile);
 
                 $failures = $import->sheetImport->failures();
@@ -348,13 +334,18 @@ class PropertyController extends Controller
                     $row = null;
                     $field = null;
 
+                    if ($error instanceof \App\Imports\Exceptions\RowValidationException) {
+                        $field = $error->field;
+                        $row = $error->row;
+                    }
+
                     // Extract row number if present in exception message
-                    if (preg_match('/Row (\d+):/', $message, $matches)) {
+                    if ($row === null && preg_match('/Row (\d+):/', $message, $matches)) {
                         $row = (int)$matches[1];
                     }
 
                     // Try to extract field name from error message
-                    if (preg_match('/Invalid (\w+)/i', $message, $fieldMatches)) {
+                    if ($field === null && preg_match('/Invalid (\w+)/i', $message, $fieldMatches)) {
                         $field = strtolower($fieldMatches[1]);
                     }
 
@@ -596,7 +587,28 @@ class PropertyController extends Controller
 
     public function downloadTemplate()
     {
-        return Excel::download(new \App\Exports\PropertiesTemplateExport, 'properties_import_template.xlsx');
+        try {
+            return Excel::download(new \App\Exports\PropertiesTemplateExport, 'properties_import_template.xlsx');
+        } catch (\Exception $e) {
+            Log::error('Properties import template generation error', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'code' => 'TEMPLATE_GENERATION_FAILED',
+                'message' => 'Failed to generate import template',
+                'details' => [
+                    'user_id' => auth()->id(),
+                    'error' => config('app.debug')
+                        ? $e->getMessage()
+                        : 'An error occurred while generating the import template. Please try again.',
+                ],
+                'timestamp' => now()->toIso8601String(),
+            ], 500);
+        }
     }
 
 
@@ -3717,112 +3729,7 @@ class PropertyController extends Controller
                   ->orWhere('property_status', '!=', 'rented');
             });
 
-        // Apply property IDs filter if provided
-        if (!empty($filters['ids']) && is_array($filters['ids']) && count($filters['ids']) > 0) {
-            $query->whereIn('id', $filters['ids']);
-        }
-
-        // Apply date range filter
-        if (!empty($filters['date_from'])) {
-            $query->whereDate('created_at', '>=', $filters['date_from']);
-        }
-        if (!empty($filters['date_to'])) {
-            $query->whereDate('created_at', '<=', $filters['date_to']);
-        }
-
-        // Apply purpose filter
-        if (!empty($filters['purposes_filter'])) {
-            $query->where('purpose', $filters['purposes_filter']);
-        }
-        if (!empty($filters['purpose'])) {
-            $query->where('purpose', $filters['purpose']);
-        }
-
-        // Apply property_type filter
-        if (!empty($filters['property_type'])) {
-            $query->where('property_type', $filters['property_type']);
-        }
-
-        // Apply price filters
-        if (!empty($filters['price_from'])) {
-            $query->where('price', '>=', $filters['price_from']);
-        }
-        if (!empty($filters['price_to'])) {
-            $query->where('price', '<=', $filters['price_to']);
-        }
-
-        // Apply area filters
-        if (!empty($filters['area_from'])) {
-            $query->where('area', '>=', $filters['area_from']);
-        }
-        if (!empty($filters['area_to'])) {
-            $query->where('area', '<=', $filters['area_to']);
-        }
-
-        // Apply beds filter
-        if (!empty($filters['beds'])) {
-            $query->where('beds', $filters['beds']);
-        }
-
-        // Apply bath filter
-        if (!empty($filters['bath'])) {
-            $query->where('bath', $filters['bath']);
-        }
-
-        // Apply category filter
-        if (!empty($filters['category_id'])) {
-            $query->where('category_id', $filters['category_id']);
-        }
-
-        // Apply status filter
-        if (isset($filters['status']) && $filters['status'] !== '') {
-            $query->where('status', $filters['status']);
-        }
-
-        // Apply featured filter
-        if (isset($filters['featured']) && $filters['featured'] !== '') {
-            $query->where('featured', $filters['featured']);
-        }
-
-        // Apply city filter
-        if (!empty($filters['city_id'])) {
-            $query->whereHas('contents', function ($q) use ($filters) {
-                $q->where('city_id', $filters['city_id']);
-            });
-        }
-
-        // Apply district filter
-        if (!empty($filters['district_id'])) {
-            $query->whereHas('contents', function ($q) use ($filters) {
-                $q->where('state_id', $filters['district_id']);
-            });
-        }
-
-        // Apply search filter (title/address, plus numeric property ID)
-        if (!empty($filters['search'])) {
-            $search = trim((string) $filters['search']);
-            $numericId = $this->parsePositiveIntSearchId($search);
-            $query->where(function ($q) use ($search, $numericId) {
-                $q->whereHas('contents', function ($cq) use ($search) {
-                    $cq->where(function ($inner) use ($search) {
-                        $inner->where('title', 'like', "%{$search}%")
-                              ->orWhere('address', 'like', "%{$search}%");
-                    });
-                });
-                if ($numericId !== null) {
-                    $q->orWhere('id', $numericId);
-                }
-            });
-        }
-
-        // Apply features filter
-        if (!empty($filters['features'])) {
-            $featuresArray = explode(',', $filters['features']);
-            foreach ($featuresArray as $feature) {
-                $feature = trim($feature);
-                $query->whereJsonContains('features', $feature);
-            }
-        }
+        PropertyFilterQuery::apply($query, $filters);
 
         // Optionally filter out properties with active rentals
         if (method_exists(Property::class, 'rentals')) {
@@ -4003,7 +3910,7 @@ class PropertyController extends Controller
             DB::transaction(function () use ($property, $owner, $defaultLanguage, $validated) {
                 // Update property fields
                 $propertyData = [];
-                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'property_type', 'beds', 'bath', 'area',
+                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'property_type', 'featured_image', 'beds', 'bath', 'area',
                     'size', 'video_url', 'virtual_tour', 'features', 'payment_method',
                     'water_meter_number', 'electricity_meter_number', 'deed_number',
                     'advertising_license', 'latitude', 'longitude', 'category_id', 'project_id', 'building_id',
@@ -4052,30 +3959,18 @@ class PropertyController extends Controller
                     }
                 }
 
-                // Recalculate missing fields
-                $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'property_type', 'area'];
-                $missing = [];
-
-                // Get current property data
+                // Recalculate missing fields against the shared five-field definition
+                $content = $property->contents()->where('language_id', $defaultLanguage->id)->first();
                 $currentData = [
-                    'title' => $property->contents()->where('language_id', $defaultLanguage->id)->value('title'),
-                    'price' => $property->price,
-                    'address' => $property->contents()->where('language_id', $defaultLanguage->id)->value('address'),
-                    'description' => $property->contents()->where('language_id', $defaultLanguage->id)->value('description'),
-                    'purpose' => $property->purpose,
+                    'title' => $content?->title,
+                    'address' => $content?->address,
+                    'description' => $content?->description,
+                    'featured_image' => $property->featured_image,
                     'property_type' => $property->property_type,
-                    'area' => $property->area,
                 ];
 
-                foreach ($requiredFields as $field) {
-                    $value = $currentData[$field] ?? null;
-                    if (is_null($value) || (is_string($value) && trim($value) === '') || $value === '') {
-                        $missing[] = $field;
-                    }
-                }
-
                 $property->update([
-                    'missing_fields' => $missing,
+                    'missing_fields' => PropertyCompletionRequirements::missingFrom($currentData),
                 ]);
             });
 
@@ -4161,6 +4056,7 @@ class PropertyController extends Controller
                 'description' => $validated['description'] ?? $propertyContent?->description,
                 'purpose' => $validated['purpose'] ?? $property->purpose,
                 'property_type' => $validated['property_type'] ?? $property->property_type,
+                'featured_image' => $validated['featured_image'] ?? $property->featured_image,
                 'area' => $validated['area'] ?? $property->area,
             ];
 
@@ -4189,7 +4085,7 @@ class PropertyController extends Controller
             DB::transaction(function () use ($property, $owner, $defaultLanguage, $completeData, $validated) {
                 // Update property with all data
                 $propertyData = [];
-                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'property_type', 'beds', 'bath', 'area',
+                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'property_type', 'featured_image', 'beds', 'bath', 'area',
                     'size', 'video_url', 'virtual_tour', 'features', 'payment_method',
                     'water_meter_number', 'electricity_meter_number', 'deed_number',
                     'advertising_license', 'latitude', 'longitude', 'category_id', 'project_id', 'building_id',
@@ -4209,6 +4105,7 @@ class PropertyController extends Controller
                 if (isset($completeData['price'])) $propertyData['price'] = $completeData['price'];
                 if (isset($completeData['purpose'])) $propertyData['purpose'] = $completeData['purpose'];
                 if (isset($completeData['property_type'])) $propertyData['property_type'] = $completeData['property_type'];
+                if (isset($completeData['featured_image'])) $propertyData['featured_image'] = $completeData['featured_image'];
                 if (isset($completeData['area'])) $propertyData['area'] = $completeData['area'];
 
                 $propertyData['status'] = 1; // Active
@@ -4361,6 +4258,7 @@ class PropertyController extends Controller
                         'description' => $propertyContent?->description,
                         'purpose' => $property->purpose,
                         'property_type' => $property->property_type,
+                        'featured_image' => $property->featured_image,
                         'area' => $property->area,
                     ];
 

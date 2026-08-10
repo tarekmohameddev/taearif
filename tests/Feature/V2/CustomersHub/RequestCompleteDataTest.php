@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\V2\CustomersHub;
 
 use App\Models\User;
+use App\Models\User\RealestateManagement\Project;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -25,9 +26,37 @@ class RequestCompleteDataTest extends TestCase
         }
     }
 
+    private function requireProjectIdColumn(): void
+    {
+        $this->requireTables();
+
+        if (!Schema::hasTable('user_projects')) {
+            $this->markTestSkipped('user_projects table required.');
+        }
+        if (!Schema::hasColumn('users_property_requests', 'project_id')) {
+            $this->markTestSkipped('project_id column required on users_property_requests. Run migration.');
+        }
+    }
+
     private function createTenant(): User
     {
         return User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+    }
+
+    private function createProject(User $tenant): Project
+    {
+        return Project::query()->create([
+            'user_id' => $tenant->id,
+            'featured_image' => 'projects/test.jpg',
+            'min_price' => 100000,
+            'max_price' => 200000,
+            'featured' => 0,
+            'published' => 1,
+            'developer' => 'Test Developer',
+            'units' => 10,
+            'completion_date' => now()->addYear()->toDateString(),
+            'complete_status' => 0,
+        ]);
     }
 
     private function createPropertyRequest(int $userId, array $overrides = []): int
@@ -191,6 +220,28 @@ class RequestCompleteDataTest extends TestCase
         $row = DB::table('users_property_requests')->where('id', $requestId)->first();
         $this->assertEquals('الرياض', $row->city);
         $this->assertEquals('حي النزهة', $row->district);
+    }
+
+    /** @test */
+    public function complete_data_can_set_project_id(): void
+    {
+        $this->requireProjectIdColumn();
+
+        $tenant = $this->createTenant();
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+        $requestId = $this->createPropertyRequest($tenant->id);
+
+        $this->postJson("/api/v2/customers-hub/requests/property_request_{$requestId}/complete-data", [
+            'project_id' => $project->id,
+            'city' => 'الرياض',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('users_property_requests', [
+            'id' => $requestId,
+            'project_id' => $project->id,
+        ]);
     }
 
     /** @test */

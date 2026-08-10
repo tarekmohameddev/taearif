@@ -99,3 +99,4 @@ my-skill/agents/openai.yaml
 _misc_files/db/*
 scripts/git-hooks/
 .cursor/
+scripts/copy-test-db.ps1

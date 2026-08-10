@@ -5,7 +5,9 @@ namespace App\Exports;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\UserDistrict;
 use App\Support\PropertyExcelMapping;
+use App\Support\PropertyFilterQuery;
 use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
@@ -38,7 +40,7 @@ class PropertiesImportReadyExport implements WithMultipleSheets
     }
 }
 
-class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, WithMapping, WithTitle, WithEvents
+class PropertiesImportReadyMainSheetExport implements FromQuery, WithChunkReading, WithHeadings, WithMapping, WithTitle, WithEvents
 {
     protected $userId;
     protected $allowedUserIds;
@@ -72,126 +74,19 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
             ])
             ->whereIn('user_id', $this->allowedUserIds);
 
-        // Apply property IDs filter if provided
-        if (!empty($this->filters['ids']) && is_array($this->filters['ids']) && count($this->filters['ids']) > 0) {
-            $query->whereIn('id', $this->filters['ids']);
-        }
-
-        // Apply date range filter
-        if (!empty($this->filters['date_from'])) {
-            $query->whereDate('created_at', '>=', $this->filters['date_from']);
-        }
-        if (!empty($this->filters['date_to'])) {
-            $query->whereDate('created_at', '<=', $this->filters['date_to']);
-        }
-
-        // Apply purpose filter
-        if (!empty($this->filters['purposes_filter'])) {
-            $query->where('purpose', $this->filters['purposes_filter']);
-        }
-        if (!empty($this->filters['purpose'])) {
-            $query->where('purpose', $this->filters['purpose']);
-        }
-
-        // Apply type filter
-        if (!empty($this->filters['type'])) {
-            $query->where('property_type', $this->filters['type']);
-        }
-
-        // Apply price filters
-        if (!empty($this->filters['price_from'])) {
-            $query->where('price', '>=', $this->filters['price_from']);
-        }
-        if (!empty($this->filters['price_to'])) {
-            $query->where('price', '<=', $this->filters['price_to']);
-        }
-
-        // Apply area filters
-        if (!empty($this->filters['area_from'])) {
-            $query->where('area', '>=', $this->filters['area_from']);
-        }
-        if (!empty($this->filters['area_to'])) {
-            $query->where('area', '<=', $this->filters['area_to']);
-        }
-
-        // Apply beds filter
-        if (!empty($this->filters['beds'])) {
-            $query->where('beds', $this->filters['beds']);
-        }
-
-        // Apply bath filter
-        if (!empty($this->filters['bath'])) {
-            $query->where('bath', $this->filters['bath']);
-        }
-
-        // Apply category filter
-        if (!empty($this->filters['category_id'])) {
-            $query->where('category_id', $this->filters['category_id']);
-        }
-
-        // Apply status filter
-        if (isset($this->filters['status']) && $this->filters['status'] !== '') {
-            $query->where('status', $this->filters['status']);
-        }
-
-        // Apply featured filter
-        if (isset($this->filters['featured']) && $this->filters['featured'] !== '') {
-            $query->where('featured', $this->filters['featured']);
-        }
-
-        // Apply city filter
-        if (!empty($this->filters['city_id'])) {
-            $query->whereHas('contents', function ($q) {
-                $q->where('city_id', $this->filters['city_id']);
-            });
-        }
-
-        // Apply district filter
-        if (!empty($this->filters['district_id'])) {
-            $query->whereHas('contents', function ($q) {
-                $q->where('state_id', $this->filters['district_id']);
-            });
-        }
-
-        // Apply search filter (title/description/address, plus numeric property ID)
-        if (!empty($this->filters['search'])) {
-            $search = trim((string) $this->filters['search']);
-            $numericId = $this->parsePositiveIntSearchId($search);
-            $query->where(function ($q) use ($search, $numericId) {
-                $q->whereHas('contents', function ($cq) use ($search) {
-                    $cq->where(function ($inner) use ($search) {
-                        $inner->where('title', 'like', "%{$search}%")
-                              ->orWhere('description', 'like', "%{$search}%")
-                              ->orWhere('address', 'like', "%{$search}%");
-                    });
-                });
-                if ($numericId !== null) {
-                    $q->orWhere('id', $numericId);
-                }
-            });
-        }
+        PropertyFilterQuery::apply($query, $this->filters);
 
         return $query->orderBy('id', 'desc');
     }
 
-    private function parsePositiveIntSearchId(?string $searchTerm): ?int
+    public function chunkSize(): int
     {
-        $searchTerm = trim((string) $searchTerm);
-        if ($searchTerm === ''
-            || !ctype_digit($searchTerm)
-            || strlen($searchTerm) > 18
-            || (int) $searchTerm <= 0
-        ) {
-            return null;
-        }
-
-        return (int) $searchTerm;
+        return 500;
     }
 
     public function headings(): array
     {
         return [
-            'المعرّف',
             'عنوان الإعلان',
             'السعر',
             'العنوان',
@@ -300,7 +195,6 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
         $featuredImage = $property->featured_image ? asset($property->featured_image) : '';
 
         return [
-            $property->id,
             $content?->title ?? '',
             $property->price ?? '',
             $content?->address ?? '',
@@ -351,8 +245,17 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
 
     public function registerEvents(): array
     {
+        $cityCount = (int) \App\Models\User\RealestateManagement\City::query()
+            ->distinct()
+            ->count('name_ar');
+        $districtCount = (int) UserDistrict::query()
+            ->distinct()
+            ->count('name_ar');
+        $cityEndRow = max(2, 1 + $cityCount);
+        $districtEndRow = max(2, 1 + $districtCount);
+
         return [
-            AfterSheet::class => function(AfterSheet $event) {
+            AfterSheet::class => function(AfterSheet $event) use ($cityEndRow, $districtEndRow) {
                 $sheet = $event->sheet;
                 $highestRow = $sheet->getHighestRow();
                 $rowCount = min($highestRow, 1000); // Apply validation to first 1000 rows
@@ -377,22 +280,22 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
                 // Set header row height
                 $sheet->getRowDimension(1)->setRowHeight(25);
 
-                // Purpose Column (F) - "sale,rent"
-                $validation = $sheet->getCell('F2')->getDataValidation();
+                // Purpose Column (E) — matches PropertiesTemplateExport (no id)
+                $validation = $sheet->getCell('E2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
-                $validation->setAllowBlank(false);
+                $validation->setAllowBlank(true);
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
                 $validation->setFormula1('"' . PropertyExcelMapping::purposeExcelOptions() . '"');
                 
                 for ($i = 3; $i <= $rowCount; $i++) {
-                    $sheet->getCell("F$i")->setDataValidation(clone $validation);
+                    $sheet->getCell("E$i")->setDataValidation(clone $validation);
                 }
 
-                // Type Column (G) - Arabic options
-                $validation = $sheet->getCell('G2')->getDataValidation();
+                // Type Column (F) - Arabic options
+                $validation = $sheet->getCell('F2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
                 $validation->setAllowBlank(false);
@@ -402,10 +305,24 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
                 $validation->setFormula1('"' . PropertyExcelMapping::typeExcelOptions() . '"');
 
                 for ($i = 3; $i <= $rowCount; $i++) {
-                    $sheet->getCell("G$i")->setDataValidation(clone $validation);
+                    $sheet->getCell("F$i")->setDataValidation(clone $validation);
                 }
 
-                // City Name Column (K) - Reference Lookup Sheet
+                // City Name Column (J) - Reference Lookup Sheet
+                $validation = $sheet->getCell('J2')->getDataValidation();
+                $validation->setType(DataValidation::TYPE_LIST);
+                $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
+                $validation->setAllowBlank(true);
+                $validation->setShowInputMessage(true);
+                $validation->setShowErrorMessage(true);
+                $validation->setShowDropDown(true);
+                $validation->setFormula1("'" . PropertyExcelMapping::LOOKUP_SHEET_TITLE . "'!\$A\$2:\$A\${$cityEndRow}");
+
+                for ($i = 3; $i <= $rowCount; $i++) {
+                    $sheet->getCell("J$i")->setDataValidation(clone $validation);
+                }
+
+                // District Name Column (K) - Reference Lookup Sheet
                 $validation = $sheet->getCell('K2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
@@ -413,28 +330,14 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
-                $validation->setFormula1("'" . PropertyExcelMapping::LOOKUP_SHEET_TITLE . "'!\$A\$2:\$A\$500");
+                $validation->setFormula1("'" . PropertyExcelMapping::LOOKUP_SHEET_TITLE . "'!\$B\$2:\$B\${$districtEndRow}");
 
                 for ($i = 3; $i <= $rowCount; $i++) {
                     $sheet->getCell("K$i")->setDataValidation(clone $validation);
                 }
 
-                // District Name Column (L) - Reference Lookup Sheet
-                $validation = $sheet->getCell('L2')->getDataValidation();
-                $validation->setType(DataValidation::TYPE_LIST);
-                $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
-                $validation->setAllowBlank(true);
-                $validation->setShowInputMessage(true);
-                $validation->setShowErrorMessage(true);
-                $validation->setShowDropDown(true);
-                $validation->setFormula1("'" . PropertyExcelMapping::LOOKUP_SHEET_TITLE . "'!\$B\$2:\$B\$10000");
-
-                for ($i = 3; $i <= $rowCount; $i++) {
-                    $sheet->getCell("L$i")->setDataValidation(clone $validation);
-                }
-
-                // Payment Method Column (AJ) - Arabic options
-                $validation = $sheet->getCell('AJ2')->getDataValidation();
+                // Payment Method Column (AL) - Arabic options
+                $validation = $sheet->getCell('AL2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
                 $validation->setAllowBlank(true);
@@ -444,11 +347,11 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
                 $validation->setFormula1('"شهري,ربع سنوي,نصف سنوي,سنوي"');
 
                 for ($i = 3; $i <= $rowCount; $i++) {
-                    $sheet->getCell("AJ$i")->setDataValidation(clone $validation);
+                    $sheet->getCell("AL$i")->setDataValidation(clone $validation);
                 }
 
-                // Featured Column (AK) - "Yes,No"
-                $validation = $sheet->getCell('AK2')->getDataValidation();
+                // Featured Column (AM) - "Yes,No"
+                $validation = $sheet->getCell('AM2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
                 $validation->setAllowBlank(true);
@@ -458,7 +361,7 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
                 $validation->setFormula1('"Yes,No"');
 
                 for ($i = 3; $i <= $rowCount; $i++) {
-                    $sheet->getCell("AK$i")->setDataValidation(clone $validation);
+                    $sheet->getCell("AM$i")->setDataValidation(clone $validation);
                 }
             },
         ];
