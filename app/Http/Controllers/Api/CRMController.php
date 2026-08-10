@@ -33,45 +33,16 @@ class CRMController extends Controller
         $user = $request->user();
         $tenantId = $request->user()->tenantOwnerId();
 
-        // ===== Bootstrap defaults (unchanged) =====
-        app(TenantCrmBootstrapService::class)->ensureDefaultStages((int) $tenantId);
-
-        $defaultProcedures = [
-            ['procedure_name' => 'meeting', 'order' => 1, 'icon' => 'users', 'color' => '#2196f3'],
-            ['procedure_name' => 'visit',   'order' => 2, 'icon' => 'map',   'color' => '#ff9800'],
-        ];
-        foreach ($defaultProcedures as $p) {
-            UserApiCustomerProcedure::firstOrCreate(
-                ['user_id' => $tenantId, 'procedure_name' => $p['procedure_name']],
-                ['order' => $p['order'], 'icon' => $p['icon'], 'color' => $p['color'], 'is_active' => true]
-            );
-        }
-
-        $priorityDefaults = [
-            ['name'=>'Low',    'value'=>1, 'order'=>1, 'color'=>'#4caf50','icon'=>'arrow-down'],
-            ['name'=>'Medium', 'value'=>2, 'order'=>2, 'color'=>'#ff9800','icon'=>'minus'],
-            ['name'=>'High',   'value'=>3, 'order'=>3, 'color'=>'#f44336','icon'=>'arrow-up'],
-        ];
-        foreach ($priorityDefaults as $p) {
-            UserApiCustomerPriority::firstOrCreate(
-                ['user_id'=>$tenantId, 'value'=>$p['value']],
-                ['name'=>$p['name'], 'order'=>$p['order'], 'color'=>$p['color'], 'icon'=>$p['icon'], 'is_active'=>true]
-            );
-        }
-
-        $defaultTypes = [
-            ['name' => 'Rent',   'value' => 'Rent',   'order' => 1, 'icon' => 'home',      'color' => '#2196f3'],
-            ['name' => 'Sale',   'value' => 'Sale',   'order' => 2, 'icon' => 'dollar',    'color' => '#4caf50'],
-            ['name' => 'Rented', 'value' => 'Rented', 'order' => 3, 'icon' => 'check',     'color' => '#9e9e9e'],
-            ['name' => 'Sold',   'value' => 'Sold',   'order' => 4, 'icon' => 'check-all', 'color' => '#9e9e9e'],
-            ['name' => 'Both',   'value' => 'Both',   'order' => 5, 'icon' => 'arrows',    'color' => '#ff9800'],
-        ];
-        foreach ($defaultTypes as $t) {
-            UserApiCustomerType::firstOrCreate(
-                ['user_id' => $tenantId, 'value' => $t['value']],
-                ['name' => $t['name'], 'order' => $t['order'], 'icon' => $t['icon'], 'color' => $t['color'], 'is_active' => true]
-            );
-        }
+        // ===== Bootstrap defaults =====
+        // Kept here so the CRM board self-heals for tenants created before these
+        // rows were seeded at tenant creation; the definitions themselves live in
+        // TenantCrmBootstrapService. Deliberately not ensureForTenant(), which also
+        // rewrites auto-customer settings.
+        $bootstrap = app(TenantCrmBootstrapService::class);
+        $bootstrap->ensureDefaultStages((int) $tenantId);
+        $bootstrap->ensureDefaultProcedures((int) $tenantId);
+        $bootstrap->ensureDefaultPriorities((int) $tenantId);
+        $bootstrap->ensureDefaultTypes((int) $tenantId);
 
         $totalCustomers = ApiCustomer::where('user_id', $tenantId)->count();
 

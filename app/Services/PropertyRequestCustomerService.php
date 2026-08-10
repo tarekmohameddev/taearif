@@ -125,7 +125,7 @@ class PropertyRequestCustomerService
      * Get default customer attributes for a user (cached)
      * Returns array with default type_id, priority_id, procedure_id
      */
-    protected function getDefaultCustomerAttributes(int $userId): array
+    public function getDefaultCustomerAttributes(int $userId): array
     {
         $cacheKey = "customer_defaults:{$userId}";
 
