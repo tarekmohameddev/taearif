@@ -56,10 +56,23 @@
 
                         <div class="col-lg-6">
                             <div class="form-group">
-                                <label for="name_ar">Package Name (Arabic)</label>
+                                <label for="name_ar">Package Name (Arabic) <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('name_ar') is-invalid @enderror"
-                                       id="name_ar" name="name_ar" value="{{ old('name_ar', $package->name_ar) }}">
+                                       id="name_ar" name="name_ar" value="{{ old('name_ar', $package->name_ar) }}" required>
                                 @error('name_ar')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="form-group">
+                                <label for="description">Description</label>
+                                <textarea class="form-control @error('description') is-invalid @enderror"
+                                          id="description" name="description" rows="3">{{ old('description', $package->description) }}</textarea>
+                                @error('description')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>

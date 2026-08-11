@@ -185,10 +185,16 @@
                             <p id="erricon" class="mb-0 text-danger em"></p>
                         </div>
                         <div class="form-group">
-                            <label for="title">{{ __('Package title') }}*</label>
+                            <label for="title">{{ __('Package title (Arabic)') }}*</label>
                             <input id="title" type="text" class="form-control" name="title"
                                 placeholder="{{ __('Enter Package title') }}" value="">
                             <p id="errtitle" class="mb-0 text-danger em"></p>
+                        </div>
+                        <div class="form-group">
+                            <label for="title_en">{{ __('Package title (English)') }}</label>
+                            <input id="title_en" type="text" class="form-control" name="title_en"
+                                placeholder="{{ __('Enter English package title') }}" value="">
+                            <p id="errtitle_en" class="mb-0 text-danger em"></p>
                         </div>
                         {{-- <div class="form-group">
                             <label for="subtitle">{{ __('Package subtitle') }}</label>

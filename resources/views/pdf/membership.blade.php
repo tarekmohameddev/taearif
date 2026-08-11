@@ -365,7 +365,7 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td><strong>{{ cleanArabicText($package_title) }}</strong></td>
+                        <td><strong>{{ optional($membership->package)->title_en ?: cleanArabicText($package_title) }}</strong></td>
                         <td>{{ $request['start_date'] }}</td>
                         <td>{{ \Carbon\Carbon::parse($request['expire_date'])->format('Y') == "9999" ? "Lifetime" : $request['expire_date'] }}</td>
                         <td>{{ cleanArabicText($base_currency_text) }}</td>

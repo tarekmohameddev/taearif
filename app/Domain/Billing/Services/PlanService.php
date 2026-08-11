@@ -8,6 +8,7 @@ use App\Domain\Shared\Services\BaseService;
 use App\Exceptions\ResourceNotFoundException;
 use App\Exceptions\BusinessLogicException;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
@@ -112,6 +113,8 @@ class PlanService extends BaseService
             return $this->planRepository->create($data);
         });
 
+        Cache::forget('payment_active_packages');
+
         return $this->loadActiveSubscribersCount($plan);
     }
 
@@ -142,6 +145,8 @@ class PlanService extends BaseService
             $plan->update($data);
             return $plan->fresh();
         });
+
+        Cache::forget('payment_active_packages');
 
         return $this->loadActiveSubscribersCount($plan);
     }
@@ -176,6 +181,8 @@ class PlanService extends BaseService
             $plan->delete();
         });
 
+        Cache::forget('payment_active_packages');
+
         return $plan;
     }
 
@@ -193,6 +200,8 @@ class PlanService extends BaseService
         $plan = $this->executeInTransaction(function () use ($plan) {
             return $this->planRepository->toggleActive($plan);
         });
+
+        Cache::forget('payment_active_packages');
 
         return $this->loadActiveSubscribersCount($plan);
     }

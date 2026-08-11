@@ -90,10 +90,16 @@
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <label for="title">{{ __('Package title') }}*</label>
+                                    <label for="title">{{ __('Package title (Arabic)') }}*</label>
                                     <input id="title" type="text" class="form-control" name="title"
                                         value="{{ $package->title }}" placeholder="{{ __('Enter name') }}">
                                     <p id="errtitle" class="mb-0 text-danger em"></p>
+                                </div>
+                                <div class="form-group">
+                                    <label for="title_en">{{ __('Package title (English)') }}</label>
+                                    <input id="title_en" type="text" class="form-control" name="title_en"
+                                        value="{{ $package->title_en }}" placeholder="{{ __('Enter English package title') }}">
+                                    <p id="errtitle_en" class="mb-0 text-danger em"></p>
                                 </div>
                                 <div class="form-group">
                                     <label for="price">{{ __('Price') }} ({{ $bex->base_currency_text }})*</label>

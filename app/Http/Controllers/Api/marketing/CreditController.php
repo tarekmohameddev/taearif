@@ -96,7 +96,11 @@ class CreditController extends BaseApiController
                 return [
                     'id' => $package->id,
                     'name' => $package->getLocalizedName($locale),
+                    'name_en' => $package->name,
+                    'name_ar' => $package->name_ar,
                     'description' => $package->getLocalizedDescription($locale),
+                    'description_en' => $package->description,
+                    'description_ar' => $package->description_ar,
                     'credits' => $package->credits,
                     'price' => $package->price,
                     'currency' => $package->currency,
@@ -283,6 +287,8 @@ class CreditController extends BaseApiController
                     'package' => $transaction->creditPackage ? [
                         'id' => $transaction->creditPackage->id,
                         'name' => $transaction->creditPackage->name,
+                        'name_en' => $transaction->creditPackage->name,
+                        'name_ar' => $transaction->creditPackage->name_ar,
                         'credits' => $transaction->creditPackage->credits,
                     ] : null,
                     'is_positive' => $transaction->isPositive(),

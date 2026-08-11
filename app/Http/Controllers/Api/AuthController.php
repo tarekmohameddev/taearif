@@ -837,7 +837,7 @@ class AuthController extends Controller
                     ->orderBy('id', 'desc')
                     ->with(['package' => function ($pkgQuery) {
                         $pkgQuery->select([
-                            'id', 'title', 'video_size_limit', 'file_size_limit',
+                            'id', 'title', 'title_en', 'video_size_limit', 'file_size_limit',
                             'number_of_vcards', 'trial_days', 'features',
                             'project_limit_number', 'real_estate_limit_number',
                             'whatsapp_numbers_limit', 'employees_limit'
@@ -934,6 +934,8 @@ class AuthController extends Controller
                     if ($package) {
                         $membershipDetails['package'] = [
                             'title' => $package->title,
+                            'title_ar' => $package->title,
+                            'title_en' => $package->title_en,
                             'video_size_limit' => $package->video_size_limit,
                             'file_size_limit' => $package->file_size_limit,
                             'number_of_vcards' => $package->number_of_vcards,

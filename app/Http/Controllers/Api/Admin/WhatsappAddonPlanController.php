@@ -36,6 +36,7 @@ class WhatsappAddonPlanController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'name_ar' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'duration' => 'required|integer|min:1',
             'duration_unit' => 'required|in:month,year',
@@ -60,6 +61,7 @@ class WhatsappAddonPlanController extends Controller
 
         $validated = $request->validate([
             'name' => 'string|max:255',
+            'name_ar' => 'sometimes|required|string|max:255',
             'price' => 'numeric|min:0',
             'duration' => 'integer|min:1',
             'duration_unit' => 'in:month,year',
