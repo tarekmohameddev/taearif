@@ -99,6 +99,41 @@ class WhatsAppAiConfigApiTest extends TestCase
     }
 
     /** @test */
+    public function create_defaults_scenarios_when_omitted(): void
+    {
+        $this->requireTables();
+
+        $tenant = $this->createTenant();
+        $number = WaNumber::create([
+            'user_id' => $tenant->id,
+            'provider' => 'meta',
+            'phone_number' => '+966501111000',
+            'name' => 'AI Number No Scenarios',
+            'status' => 'active',
+        ]);
+
+        Sanctum::actingAs($tenant);
+
+        // Mirrors production UI payloads that omit scenarios on first save
+        $res = $this->putJson('/api/v1/whatsapp/ai/config/' . $number->id, [
+            'enabled' => true,
+            'autonomy_level' => 'autonomous',
+            'goal' => 'salesman',
+            'timezone' => 'Asia/Riyadh',
+            'tone' => 'friendly',
+            'language' => 'ar',
+        ]);
+
+        $res->assertOk()
+            ->assertJsonPath('data.data.enabled', true)
+            ->assertJsonPath('data.data.autonomy_level', 'autonomous');
+
+        $config = WaAiConfig::where('wa_number_id', $number->id)->first();
+        $this->assertNotNull($config);
+        $this->assertSame([], $config->scenarios);
+    }
+
+    /** @test */
     public function agent_reply_pause_defaults_to_48h(): void
     {
         $this->requireTables();
@@ -117,7 +152,6 @@ class WhatsAppAiConfigApiTest extends TestCase
         $res = $this->putJson('/api/v1/whatsapp/ai/config/' . $number->id, [
             'enabled' => true,
             'autonomy_level' => 'autonomous',
-            'scenarios' => [],
         ]);
 
         $res->assertOk();
@@ -144,10 +178,8 @@ class WhatsAppAiConfigApiTest extends TestCase
 
         Sanctum::actingAs($tenant);
 
-        // Seed the config first so subsequent calls are updates, not inserts (avoids NOT NULL on scenarios)
         $this->putJson('/api/v1/whatsapp/ai/config/' . $number->id, [
             'agent_reply_pause' => '48h',
-            'scenarios' => [],
         ])->assertOk();
 
         foreach (['off', '24h', '48h', 'indefinite'] as $mode) {
@@ -181,7 +213,6 @@ class WhatsAppAiConfigApiTest extends TestCase
 
         $res = $this->putJson('/api/v1/whatsapp/ai/config/' . $number->id, [
             'agent_reply_pause' => '72h',
-            'scenarios' => [],
         ]);
 
         $res->assertUnprocessable();
