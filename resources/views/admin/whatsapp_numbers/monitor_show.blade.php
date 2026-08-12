@@ -2,7 +2,7 @@
 
 @section('content')
 <style>
-/* WhatsApp Numbers Monitor — detail page (shared class names with list) */
+/* WhatsApp Numbers Monitor — detail page */
 .wa-monitor-phone {
     font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 0.9375rem;
@@ -14,15 +14,24 @@
     font-weight: 600;
 }
 
-.wa-monitor-date {
+.wa-monitor-cell-meta {
+    display: block;
+    font-size: 0.75rem;
+    color: #6c757d;
+    max-width: 14rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.wa-monitor-date__relative {
-    display: block;
+.wa-monitor-date-inline {
+    white-space: nowrap;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+}
+
+.wa-monitor-date-inline .text-muted {
     font-size: 0.75rem;
-    color: #adb5bd;
-    margin-top: 0.125rem;
 }
 
 .wa-monitor-table thead th {
@@ -33,20 +42,26 @@
     color: #495057;
     white-space: nowrap;
     vertical-align: middle;
-    padding: 0.75rem 1rem;
+    padding: 0.625rem 0.875rem;
 }
 
 .wa-monitor-table tbody td,
 .wa-monitor-table tbody th {
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 0.875rem;
     vertical-align: middle;
+    font-size: 0.875rem;
 }
 
 .wa-monitor-table tbody th {
     width: 38%;
     font-weight: 600;
     color: #495057;
-    background: transparent;
+    background: #fafbfc;
+}
+
+.wa-monitor-table .badge {
+    font-size: 0.75rem;
+    font-weight: 500;
 }
 
 .wa-monitor-detail-header {
@@ -55,7 +70,82 @@
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 0.75rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
+    padding: 0.875rem 1rem;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0;
+}
+
+.wa-monitor-detail-header__number {
+    font-size: 1.0625rem;
+    margin: 0;
+}
+
+.wa-monitor-details-card,
+.wa-monitor-messages-panel {
+    border: 1px solid #dee2e6;
+    border-radius: 0;
+    background: #fff;
+    height: 100%;
+}
+
+.wa-monitor-details-card .card-header,
+.wa-monitor-messages-panel .card-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 0;
+    padding: 0.75rem 1rem;
+}
+
+.wa-monitor-messages-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 28rem;
+}
+
+.wa-monitor-messages-panel__hint {
+    padding: 0.625rem 1rem;
+    margin: 0;
+    font-size: 0.8125rem;
+    color: #6c757d;
+    background: #fafbfc;
+    border-bottom: 1px solid #eee;
+}
+
+.wa-monitor-messages-scroll {
+    flex: 1 1 auto;
+    overflow: auto;
+    max-height: 32rem;
+    min-height: 20rem;
+}
+
+.wa-monitor-messages-scroll .wa-monitor-table {
+    margin-bottom: 0;
+}
+
+.wa-monitor-messages-scroll .wa-monitor-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    box-shadow: 0 1px 0 #dee2e6;
+}
+
+.wa-monitor-messages-scroll .wa-monitor-table tbody td {
+    border-top: 1px solid #f1f3f5;
+}
+
+.wa-monitor-preview {
+    max-width: 16rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    direction: auto;
+    unicode-bidi: plaintext;
+}
+
+.wa-monitor-preview[title] {
+    cursor: help;
 }
 
 .wa-monitor-empty {
@@ -64,11 +154,34 @@
     color: #6c757d;
 }
 
+.wa-monitor-empty__icon {
+    font-size: 2rem;
+    color: #adb5bd;
+    margin-bottom: 0.75rem;
+}
+
 .wa-monitor-empty__title {
     font-size: 1rem;
     font-weight: 600;
     color: #495057;
     margin-bottom: 0;
+}
+
+.wa-monitor-messages-count {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #6c757d;
+}
+
+@media (max-width: 991.98px) {
+    .wa-monitor-messages-panel {
+        min-height: 22rem;
+    }
+
+    .wa-monitor-messages-scroll {
+        max-height: 24rem;
+        min-height: 16rem;
+    }
 }
 </style>
 
@@ -91,6 +204,8 @@
         'owner_mismatch' => __('Owner mismatch'),
         'n/a' => __('N/A'),
     ];
+    $backIcon = ! empty($admin_rtl) ? 'fa-arrow-right' : 'fa-arrow-left';
+    $messageCount = $messages->count();
 @endphp
 
 <div class="page-header">
@@ -107,25 +222,25 @@
 </div>
 
 <div class="wa-monitor-detail-header">
-    <p class="text-muted mb-0">
+    <p class="wa-monitor-detail-header__number mb-0">
         @if (!empty($number->number))
             <span class="wa-monitor-phone">{{ $number->number }}</span>
             @if (!empty($number->name))
-                <span class="text-muted"> — {{ $number->name }}</span>
+                <span class="text-muted"> · {{ $number->name }}</span>
             @endif
         @else
             {{ __('WhatsApp number details') }}
         @endif
     </p>
     <a href="{{ route('admin.whatsapp-numbers.monitor') }}" class="btn btn-secondary btn-sm">
-        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        <i class="fas {{ $backIcon }}" aria-hidden="true"></i>
         {{ __('Back to monitor') }}
     </a>
 </div>
 
-<div class="row">
+<div class="row align-items-stretch">
     <div class="col-lg-5 mb-4">
-        <div class="card">
+        <div class="card wa-monitor-details-card mb-0">
             <div class="card-header">
                 <h5 class="card-title mb-0">{{ __('Number details') }}</h5>
             </div>
@@ -146,7 +261,7 @@
                                 @if (!empty($number->username))
                                     <div class="wa-monitor-tenant-name">{{ $number->username }}</div>
                                     @if (!empty($number->email))
-                                        <small class="text-muted d-block">{{ $number->email }}</small>
+                                        <span class="wa-monitor-cell-meta" title="{{ $number->email }}">{{ $number->email }}</span>
                                     @endif
                                 @else
                                     —
@@ -168,10 +283,12 @@
                                 @endif
                             </td>
                         </tr>
-                        <tr>
-                            <th scope="row">{{ __('Request status') }}</th>
-                            <td>{{ $number->request_status ?? '—' }}</td>
-                        </tr>
+                        @if (!empty($number->request_status) && $number->request_status !== $number->status)
+                            <tr>
+                                <th scope="row">{{ __('Request status') }}</th>
+                                <td>{{ $number->request_status }}</td>
+                            </tr>
+                        @endif
                         <tr>
                             <th scope="row">{{ __('Phone ID') }}</th>
                             <td><span class="wa-monitor-phone">{{ $number->phone_id ?? '—' }}</span></td>
@@ -185,10 +302,10 @@
                                         <span class="badge badge-success">{{ $healthLabel }}</span>
                                         @break
                                     @case('no_recent_inbound')
-                                        <span class="badge badge-warning">{{ $healthLabel }}</span>
+                                        <span class="badge badge-warning text-dark">{{ $healthLabel }}</span>
                                         @break
                                     @case('no_inbound_ever')
-                                        <span class="badge badge-warning">{{ $healthLabel }}</span>
+                                        <span class="badge badge-info">{{ $healthLabel }}</span>
                                         @break
                                     @case('not_linked')
                                         <span class="badge badge-secondary">{{ $healthLabel }}</span>
@@ -210,39 +327,39 @@
                                             <span class="badge badge-success">{{ $syncLabel }}</span>
                                             @break
                                         @case('missing')
-                                            <span class="badge badge-warning">{{ $syncLabel }}</span>
+                                            <span class="badge badge-secondary">{{ $syncLabel }}</span>
                                             @break
                                         @case('owner_mismatch')
                                             <span class="badge badge-danger">{{ $syncLabel }}</span>
                                             @if (!empty($number->wa_number_user_id))
-                                                <small class="d-block">{{ __('Routed to tenant #:id', ['id' => $number->wa_number_user_id]) }}</small>
+                                                <span class="wa-monitor-cell-meta">{{ __('Tenant #:id', ['id' => $number->wa_number_user_id]) }}</span>
                                             @endif
                                             @break
                                         @default
                                             <span class="badge badge-secondary">{{ $syncLabel }}</span>
                                     @endswitch
-                                    <br>
                                     @if (!empty($number->wa_number_id))
-                                        #{{ $number->wa_number_id }}
-                                        @if (!empty($number->wa_number_phone))
-                                            — <span class="wa-monitor-phone">{{ $number->wa_number_phone }}</span>
-                                        @endif
-                                        @if (!empty($number->wa_number_status))
-                                            <br><small class="text-muted">{{ $number->wa_number_status }}</small>
-                                        @endif
+                                        <span class="wa-monitor-cell-meta d-block mt-1">
+                                            #{{ $number->wa_number_id }}
+                                            @if (!empty($number->wa_number_phone))
+                                                · <span class="wa-monitor-phone">{{ $number->wa_number_phone }}</span>
+                                            @endif
+                                        </span>
                                     @else
-                                        {{ __('No wa_numbers row matches this phone ID.') }}
+                                        <span class="wa-monitor-cell-meta d-block mt-1">{{ __('No wa_numbers row matches this phone ID.') }}</span>
                                     @endif
                                 @endif
                             </td>
                         </tr>
                         <tr>
                             <th scope="row">{{ __('Last inbound') }}</th>
-                            <td class="wa-monitor-date">
+                            <td>
                                 @if (!empty($number->last_inbound_at))
                                     @php $inboundAt = \Illuminate\Support\Carbon::parse($number->last_inbound_at); @endphp
-                                    <span>{{ $inboundAt->format('Y-m-d H:i') }}</span>
-                                    <span class="wa-monitor-date__relative">{{ $inboundAt->diffForHumans() }}</span>
+                                    <span class="wa-monitor-date-inline">
+                                        {{ $inboundAt->format('Y-m-d H:i') }}
+                                        <span class="text-muted">· {{ $inboundAt->diffForHumans() }}</span>
+                                    </span>
                                 @else
                                     —
                                 @endif
@@ -250,11 +367,13 @@
                         </tr>
                         <tr>
                             <th scope="row">{{ __('Last outbound') }}</th>
-                            <td class="wa-monitor-date">
+                            <td>
                                 @if (!empty($number->last_outbound_at))
                                     @php $outboundAt = \Illuminate\Support\Carbon::parse($number->last_outbound_at); @endphp
-                                    <span>{{ $outboundAt->format('Y-m-d H:i') }}</span>
-                                    <span class="wa-monitor-date__relative">{{ $outboundAt->diffForHumans() }}</span>
+                                    <span class="wa-monitor-date-inline">
+                                        {{ $outboundAt->format('Y-m-d H:i') }}
+                                        <span class="text-muted">· {{ $outboundAt->diffForHumans() }}</span>
+                                    </span>
                                 @else
                                     —
                                 @endif
@@ -267,58 +386,70 @@
     </div>
 
     <div class="col-lg-7 mb-4">
-        <p class="text-muted small mb-2">{{ __('Messages are shown per tenant, not per number. A tenant with several numbers shows the same message history on each.') }}</p>
-        <div class="card">
-            <div class="card-header">
+        <div class="card wa-monitor-messages-panel mb-0">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <h5 class="card-title mb-0">{{ __('Recent messages') }}</h5>
+                <span class="wa-monitor-messages-count">{{ __(':count messages', ['count' => $messageCount]) }}</span>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-striped mb-0 wa-monitor-table">
-                        <thead>
+            <p class="wa-monitor-messages-panel__hint mb-0">
+                {{ __('Messages are shown per tenant, not per number. A tenant with several numbers shows the same message history on each.') }}
+            </p>
+            <div class="wa-monitor-messages-scroll" tabindex="0" role="region" aria-label="{{ __('Recent messages') }}">
+                <table class="table table-striped mb-0 wa-monitor-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{ __('Direction') }}</th>
+                            <th scope="col">{{ __('Status') }}</th>
+                            <th scope="col">{{ __('Preview') }}</th>
+                            <th scope="col">{{ __('Time') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($messages as $message)
                             <tr>
-                                <th scope="col">{{ __('Direction') }}</th>
-                                <th scope="col">{{ __('Status') }}</th>
-                                <th scope="col">{{ __('Preview') }}</th>
-                                <th scope="col">{{ __('Time') }}</th>
+                                <td>
+                                    @if ($message->direction === 'inbound')
+                                        <span class="badge badge-info">{{ __('Inbound') }}</span>
+                                    @elseif ($message->direction === 'outbound')
+                                        <span class="badge badge-primary">{{ __('Outbound') }}</span>
+                                    @else
+                                        <span class="badge badge-secondary">{{ $message->direction ?? '—' }}</span>
+                                    @endif
+                                </td>
+                                <td>{{ $message->status ?? '—' }}</td>
+                                <td>
+                                    @if (!empty($message->preview))
+                                        <span class="wa-monitor-preview" title="{{ $message->preview }}">{{ $message->preview }}</span>
+                                    @else
+                                        —
+                                    @endif
+                                </td>
+                                <td>
+                                    @if (!empty($message->created_at))
+                                        @php $messageAt = \Illuminate\Support\Carbon::parse($message->created_at); @endphp
+                                        <span class="wa-monitor-date-inline">
+                                            {{ $messageAt->format('Y-m-d H:i') }}
+                                            <span class="text-muted">· {{ $messageAt->diffForHumans() }}</span>
+                                        </span>
+                                    @else
+                                        —
+                                    @endif
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($messages as $message)
-                                <tr>
-                                    <td>
-                                        @if ($message->direction === 'inbound')
-                                            <span class="badge badge-info">{{ __('Inbound') }}</span>
-                                        @elseif ($message->direction === 'outbound')
-                                            <span class="badge badge-primary">{{ __('Outbound') }}</span>
-                                        @else
-                                            <span class="badge badge-secondary">{{ $message->direction ?? '—' }}</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ $message->status ?? '—' }}</td>
-                                    <td>{{ $message->preview ?? '—' }}</td>
-                                    <td class="wa-monitor-date">
-                                        @if (!empty($message->created_at))
-                                            @php $messageAt = \Illuminate\Support\Carbon::parse($message->created_at); @endphp
-                                            <span>{{ $messageAt->format('Y-m-d H:i') }}</span>
-                                            <span class="wa-monitor-date__relative">{{ $messageAt->diffForHumans() }}</span>
-                                        @else
-                                            —
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="4">
-                                        <div class="wa-monitor-empty">
-                                            <p class="wa-monitor-empty__title">{{ __('No messages found for this tenant.') }}</p>
+                        @empty
+                            <tr>
+                                <td colspan="4">
+                                    <div class="wa-monitor-empty">
+                                        <div class="wa-monitor-empty__icon" aria-hidden="true">
+                                            <i class="far fa-comment-dots"></i>
                                         </div>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                                        <p class="wa-monitor-empty__title">{{ __('No messages found for this tenant.') }}</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

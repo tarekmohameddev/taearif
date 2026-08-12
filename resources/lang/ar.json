@@ -1290,5 +1290,26 @@
     "No WhatsApp numbers found.": "لم يتم العثور على أرقام واتساب.",
     "Try adjusting your filters or search terms.": "جرّب تعديل الفلاتر أو كلمات البحث.",
     "Tenant #:id": "المستأجر #:id",
-    "Counts cached, generated :time": "الإحصائيات مخزّنة، آخر تحديث :time"
+    "Counts cached, generated :time": "الإحصائيات مخزّنة، آخر تحديث :time",
+
+    "WhatsApp Number Details": "تفاصيل رقم واتساب",
+    "Back to monitor": "العودة للمراقبة",
+    "WhatsApp number details": "تفاصيل رقم واتساب",
+    "Number details": "تفاصيل الرقم",
+    "Name": "الاسم",
+    "Tenant owner ID": "معرف مالك المستأجر",
+    "Request status": "حالة الطلب",
+    "Phone ID": "معرف الهاتف",
+    "Recent messages": "آخر الرسائل",
+    ":count messages": ":count رسالة",
+    "Messages are shown per tenant, not per number. A tenant with several numbers shows the same message history on each.": "الرسائل تُعرض لكل مستأجر وليس لكل رقم. المستأجر الذي لديه عدة أرقام يظهر له نفس سجل الرسائل.",
+    "Direction": "الاتجاه",
+    "Status": "الحالة",
+    "Preview": "معاينة",
+    "Time": "الوقت",
+    "Inbound": "وارد",
+    "Outbound": "صادر",
+    "No messages found for this tenant.": "لم يتم العثور على رسائل لهذا المستأجر.",
+    "No wa_numbers row matches this phone ID.": "لا يوجد سجل wa_numbers يطابق معرف الهاتف هذا.",
+    "Routed to tenant #:id": "موجه للمستأجر #:id"
 }
