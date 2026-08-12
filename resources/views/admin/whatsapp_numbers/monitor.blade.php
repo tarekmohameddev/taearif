@@ -22,7 +22,7 @@
     display: block;
     text-decoration: none !important;
     color: inherit;
-    border-left: 4px solid transparent;
+    border-inline-start: 4px solid transparent;
     border-radius: 0.25rem;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
     margin-bottom: 1rem;
@@ -44,11 +44,11 @@
     box-shadow: 0 0 0 2px #007bff;
 }
 
-.wa-monitor-stat--working { border-left-color: #28a745; }
-.wa-monitor-stat--no_recent_inbound { border-left-color: #ffc107; }
-.wa-monitor-stat--no_inbound_ever { border-left-color: #fd7e14; }
-.wa-monitor-stat--not_linked { border-left-color: #6c757d; }
-.wa-monitor-stat--owner_mismatch { border-left-color: #dc3545; }
+.wa-monitor-stat--working { border-inline-start-color: #28a745; }
+.wa-monitor-stat--no_recent_inbound { border-inline-start-color: #ffc107; }
+.wa-monitor-stat--no_inbound_ever { border-inline-start-color: #fd7e14; }
+.wa-monitor-stat--not_linked { border-inline-start-color: #6c757d; }
+.wa-monitor-stat--owner_mismatch { border-inline-start-color: #dc3545; }
 
 .wa-monitor-stat .card-body {
     display: flex;
@@ -110,12 +110,12 @@
 }
 
 .wa-monitor-search-wrap .form-control {
-    padding-left: 2.25rem;
+    padding-inline-start: 2.25rem;
 }
 
 .wa-monitor-search-wrap__icon {
     position: absolute;
-    left: 0.75rem;
+    inset-inline-start: 0.75rem;
     top: 50%;
     transform: translateY(-50%);
     color: #adb5bd;
@@ -126,9 +126,13 @@
 .wa-monitor-filters__actions {
     display: flex;
     justify-content: flex-end;
-    align-items: flex-end;
+    align-items: center;
     gap: 0.5rem;
     flex-wrap: wrap;
+}
+
+[dir="rtl"] .wa-monitor-filters__actions {
+    justify-content: flex-start;
 }
 
 .wa-monitor-filters__actions .btn {
@@ -148,7 +152,7 @@
     font-size: 0.8125rem;
     font-weight: 600;
     color: #6c757d;
-    margin-right: 0.25rem;
+    margin-inline-end: 0.25rem;
 }
 
 .wa-monitor-pill {
@@ -197,8 +201,37 @@
 }
 
 .wa-monitor-table tbody td {
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 0.75rem;
     vertical-align: middle;
+    font-size: 0.875rem;
+}
+
+.wa-monitor-table .badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: normal;
+    line-height: 1.3;
+    max-width: 9rem;
+}
+
+.wa-monitor-cell-meta {
+    display: block;
+    font-size: 0.75rem;
+    color: #6c757d;
+    max-width: 14rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.wa-monitor-date-inline {
+    white-space: nowrap;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+}
+
+.wa-monitor-date-inline .text-muted {
+    font-size: 0.75rem;
 }
 
 .wa-monitor-sort {
@@ -236,13 +269,6 @@
     white-space: nowrap;
 }
 
-.wa-monitor-date__relative {
-    display: block;
-    font-size: 0.75rem;
-    color: #adb5bd;
-    margin-top: 0.125rem;
-}
-
 .wa-monitor-tenant-name {
     font-weight: 600;
 }
@@ -270,17 +296,35 @@
 .wa-monitor-list-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     flex-wrap: wrap;
     gap: 0.5rem;
+    width: 100%;
+}
+
+.wa-monitor-list-header .badge {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    padding: 0.35rem 0.65rem;
 }
 
 @media (max-width: 767.98px) {
     .wa-monitor-filters__actions {
         justify-content: stretch;
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+
+    [dir="rtl"] .wa-monitor-filters__actions {
+        justify-content: stretch;
     }
 
     .wa-monitor-filters__actions .btn {
         flex: 1 1 auto;
+    }
+
+    .wa-monitor-cell-meta {
+        max-width: 10rem;
     }
 }
 </style>
@@ -305,7 +349,7 @@
         'n/a' => __('N/A'),
     ];
     $counts = $summary['counts'] ?? [];
-    $totalNumbers = array_sum(array_map('intval', $counts));
+    $totalNumbers = (int) ($counts['total'] ?? 0);
     $currentSort = $filters['sort'] ?? 'id';
     $currentOrder = ($filters['order'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
     $currentHealth = $filters['health'] ?? '';
@@ -457,8 +501,8 @@
             </div>
             <div class="card-body">
                 <form method="GET" action="{{ route('admin.whatsapp-numbers.monitor') }}">
-                    <div class="row">
-                        <div class="col-12 col-md-6 col-lg-4 form-group">
+                    <div class="row align-items-end">
+                        <div class="col-12 col-lg-4 form-group mb-lg-0">
                             <label for="wa-monitor-q">{{ __('Search') }}</label>
                             <div class="wa-monitor-search-wrap">
                                 <span class="wa-monitor-search-wrap__icon" aria-hidden="true">
@@ -472,7 +516,7 @@
                                        value="{{ $currentQuery }}">
                             </div>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-2 form-group">
+                        <div class="col-6 col-lg-2 form-group mb-lg-0">
                             <label for="wa-monitor-status">{{ __('Link status') }}</label>
                             <select id="wa-monitor-status" name="status" class="form-control">
                                 <option value="">{{ __('All') }}</option>
@@ -483,10 +527,9 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-3 form-group">
+                        <div class="col-6 col-lg-2 form-group mb-lg-0">
                             <label for="wa-monitor-health" title="{{ __('Recent means inbound within the last :hours hours', ['hours' => $staleHours]) }}">
                                 {{ __('Health') }}
-                                <small class="text-muted font-weight-normal">({{ __('recent = last :hours h', ['hours' => $staleHours]) }})</small>
                             </label>
                             <select id="wa-monitor-health"
                                     name="health"
@@ -500,7 +543,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-3 form-group">
+                        <div class="col-6 col-lg-2 form-group mb-lg-0">
                             <label for="wa-monitor-sync">{{ __('Sync') }}</label>
                             <select id="wa-monitor-sync" name="sync" class="form-control">
                                 <option value="">{{ __('All') }}</option>
@@ -511,9 +554,7 @@
                                 @endforeach
                             </select>
                         </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-12">
+                        <div class="col-6 col-lg-2 form-group mb-0">
                             <div class="wa-monitor-filters__actions">
                                 @if (!empty($filters['sort']))
                                     <input type="hidden" name="sort" value="{{ $filters['sort'] }}">
@@ -526,6 +567,9 @@
                             </div>
                         </div>
                     </div>
+                    <p class="text-muted small mb-0 mt-2">
+                        {{ __('Recent inbound threshold: :hours hours', ['hours' => $staleHours]) }}
+                    </p>
                 </form>
             </div>
         </div>
@@ -568,7 +612,7 @@
             <div class="card-header">
                 <div class="wa-monitor-list-header">
                     <h5 class="card-title mb-0">{{ __('Numbers list') }}</h5>
-                    <span class="badge badge-primary">{{ number_format($numbers->total()) }} {{ __('results') }}</span>
+                    <span class="badge badge-primary">{{ __(':count results', ['count' => number_format($numbers->total())]) }}</span>
                 </div>
             </div>
             <div class="card-body p-0">
@@ -606,14 +650,14 @@
                                     <td>
                                         <div class="wa-monitor-phone">{{ $row->number ?? '—' }}</div>
                                         @if (!empty($row->name))
-                                            <small class="text-muted d-block">{{ $row->name }}</small>
+                                            <span class="wa-monitor-cell-meta" title="{{ $row->name }}">{{ $row->name }}</span>
                                         @endif
                                     </td>
                                     <td>
                                         @if (!empty($row->username))
-                                            <div class="wa-monitor-tenant-name">{{ $row->username }}</div>
+                                            <div class="wa-monitor-tenant-name text-truncate" style="max-width: 11rem;">{{ $row->username }}</div>
                                             @if (!empty($row->email))
-                                                <small class="text-muted d-block">{{ $row->email }}</small>
+                                                <span class="wa-monitor-cell-meta" title="{{ $row->email }}">{{ $row->email }}</span>
                                             @endif
                                         @else
                                             —
@@ -626,8 +670,8 @@
                                         @else
                                             <span class="badge badge-secondary">{{ $statusLabel }}</span>
                                         @endif
-                                        @if (!empty($row->request_status))
-                                            <small class="text-muted d-block">{{ $row->request_status }}</small>
+                                        @if (!empty($row->request_status) && $row->request_status !== $row->status)
+                                            <span class="wa-monitor-cell-meta">{{ $row->request_status }}</span>
                                         @endif
                                     </td>
                                     <td>
@@ -637,10 +681,10 @@
                                                 <span class="badge badge-success">{{ $healthLabel }}</span>
                                                 @break
                                             @case('no_recent_inbound')
-                                                <span class="badge badge-warning">{{ $healthLabel }}</span>
+                                                <span class="badge badge-warning text-dark">{{ $healthLabel }}</span>
                                                 @break
                                             @case('no_inbound_ever')
-                                                <span class="badge badge-warning">{{ $healthLabel }}</span>
+                                                <span class="badge badge-info">{{ $healthLabel }}</span>
                                                 @break
                                             @case('not_linked')
                                                 <span class="badge badge-secondary">{{ $healthLabel }}</span>
@@ -656,12 +700,12 @@
                                                 <span class="badge badge-success">{{ $syncLabel }}</span>
                                                 @break
                                             @case('missing')
-                                                <span class="badge badge-warning">{{ $syncLabel }}</span>
+                                                <span class="badge badge-secondary">{{ $syncLabel }}</span>
                                                 @break
                                             @case('owner_mismatch')
                                                 <span class="badge badge-danger">{{ $syncLabel }}</span>
                                                 @if (!empty($row->wa_number_user_id))
-                                                    <small class="d-block">{{ __('Routed to tenant #:id', ['id' => $row->wa_number_user_id]) }}</small>
+                                                    <span class="wa-monitor-cell-meta">{{ __('Tenant #:id', ['id' => $row->wa_number_user_id]) }}</span>
                                                 @endif
                                                 @break
                                             @case('n/a')
@@ -674,8 +718,10 @@
                                     <td class="wa-monitor-date">
                                         @if (!empty($row->last_inbound_at))
                                             @php $inboundAt = \Illuminate\Support\Carbon::parse($row->last_inbound_at); @endphp
-                                            <span>{{ $inboundAt->format('Y-m-d H:i') }}</span>
-                                            <span class="wa-monitor-date__relative">{{ $inboundAt->diffForHumans() }}</span>
+                                            <span class="wa-monitor-date-inline">
+                                                {{ $inboundAt->format('Y-m-d H:i') }}
+                                                <span class="text-muted">· {{ $inboundAt->diffForHumans() }}</span>
+                                            </span>
                                         @else
                                             —
                                         @endif
@@ -683,17 +729,19 @@
                                     <td class="wa-monitor-date">
                                         @if (!empty($row->last_outbound_at))
                                             @php $outboundAt = \Illuminate\Support\Carbon::parse($row->last_outbound_at); @endphp
-                                            <span>{{ $outboundAt->format('Y-m-d H:i') }}</span>
-                                            <span class="wa-monitor-date__relative">{{ $outboundAt->diffForHumans() }}</span>
+                                            <span class="wa-monitor-date-inline">
+                                                {{ $outboundAt->format('Y-m-d H:i') }}
+                                                <span class="text-muted">· {{ $outboundAt->diffForHumans() }}</span>
+                                            </span>
                                         @else
                                             —
                                         @endif
                                     </td>
-                                    <td>
+                                    <td class="text-center">
                                         <a href="{{ route('admin.whatsapp-numbers.monitor.show', $row->id) }}"
-                                           class="btn btn-sm btn-info">
+                                           class="btn btn-sm btn-info"
+                                           title="{{ __('Details') }}">
                                             <i class="fas fa-eye" aria-hidden="true"></i>
-                                            <span class="sr-only">{{ __('Details') }}</span>
                                         </a>
                                     </td>
                                 </tr>
