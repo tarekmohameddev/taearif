@@ -100,3 +100,5 @@ _misc_files/db/*
 scripts/git-hooks/
 .cursor/
 scripts/copy-test-db.ps1
+/phpunit.local.xml
+dump.rdb
