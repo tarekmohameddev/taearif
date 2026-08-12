@@ -45,6 +45,11 @@ return [
         'campaign' => [
             'require_active_wa_number' => filter_var(env('COMMUNICATION_WHATSAPP_CAMPAIGN_REQUIRE_ACTIVE_WA_NUMBER', true), FILTER_VALIDATE_BOOLEAN),
         ],
+        'monitor' => [
+            // A linked number with no inbound message newer than this is reported as stale.
+            'inbound_stale_hours' => (int) env('COMMUNICATION_WHATSAPP_MONITOR_STALE_HOURS', 24),
+            'summary_cache_seconds' => (int) env('COMMUNICATION_WHATSAPP_MONITOR_SUMMARY_CACHE', 300),
+        ],
         'evolution' => [
             'base_url' => env('COMMUNICATION_WHATSAPP_EVOLUTION_BASE_URL', null),
             'api_key' => env('COMMUNICATION_WHATSAPP_EVOLUTION_API_KEY', null),

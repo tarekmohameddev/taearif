@@ -639,6 +639,12 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/whatsapp-numbers/{id}/toggle-status', 'Admin\WhatsappNumberController@toggleStatus')->name('whatsapp-numbers.toggle-status');
         Route::delete('/whatsapp-numbers/{id}', 'Admin\WhatsappNumberController@destroy')->name('whatsapp-numbers.destroy');
 
+        // WhatsApp Numbers Monitor (read-only)
+        Route::get('/whatsapp-numbers/monitor', 'Admin\WhatsappNumberMonitorController@index')
+            ->name('whatsapp-numbers.monitor');
+        Route::get('/whatsapp-numbers/{id}/monitor', 'Admin\WhatsappNumberMonitorController@show')
+            ->name('whatsapp-numbers.monitor.show');
+
         // WhatsApp Addon Plans Management
         Route::get('/whatsapp-addon-plans', 'Admin\WhatsappAddonPlanController@index')->name('whatsapp-addon-plans.index');
         Route::post('/whatsapp-addon-plans', 'Admin\WhatsappAddonPlanController@store')->name('whatsapp-addon-plans.store');
