@@ -239,6 +239,75 @@
 </div>
 
 <div class="row align-items-stretch">
+    <div class="col-lg-7 mb-4">
+        <div class="card wa-monitor-messages-panel mb-0">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <h5 class="card-title mb-0">{{ __('Recent messages') }}</h5>
+                <span class="wa-monitor-messages-count">{{ __(':count messages', ['count' => $messageCount]) }}</span>
+            </div>
+            <p class="wa-monitor-messages-panel__hint mb-0">
+                {{ __('Messages are shown per tenant, not per number. A tenant with several numbers shows the same message history on each.') }}
+            </p>
+            <div class="wa-monitor-messages-scroll" tabindex="0" role="region" aria-label="{{ __('Recent messages') }}">
+                <table class="table table-striped mb-0 wa-monitor-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{ __('Direction') }}</th>
+                            <th scope="col">{{ __('Status') }}</th>
+                            <th scope="col">{{ __('Preview') }}</th>
+                            <th scope="col">{{ __('Time') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($messages as $message)
+                            <tr>
+                                <td>
+                                    @if ($message->direction === 'inbound')
+                                        <span class="badge badge-info">{{ __('Inbound') }}</span>
+                                    @elseif ($message->direction === 'outbound')
+                                        <span class="badge badge-primary">{{ __('Outbound') }}</span>
+                                    @else
+                                        <span class="badge badge-secondary">{{ $message->direction ?? '—' }}</span>
+                                    @endif
+                                </td>
+                                <td>{{ $message->status ?? '—' }}</td>
+                                <td>
+                                    @if (!empty($message->preview))
+                                        <span class="wa-monitor-preview" title="{{ $message->preview }}">{{ $message->preview }}</span>
+                                    @else
+                                        —
+                                    @endif
+                                </td>
+                                <td>
+                                    @if (!empty($message->created_at))
+                                        @php $messageAt = \Illuminate\Support\Carbon::parse($message->created_at); @endphp
+                                        <span class="wa-monitor-date-inline">
+                                            {{ $messageAt->format('Y-m-d H:i') }}
+                                            <span class="text-muted">· {{ $messageAt->diffForHumans() }}</span>
+                                        </span>
+                                    @else
+                                        —
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4">
+                                    <div class="wa-monitor-empty">
+                                        <div class="wa-monitor-empty__icon" aria-hidden="true">
+                                            <i class="far fa-comment-dots"></i>
+                                        </div>
+                                        <p class="wa-monitor-empty__title">{{ __('No messages found for this tenant.') }}</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <div class="col-lg-5 mb-4">
         <div class="card wa-monitor-details-card mb-0">
             <div class="card-header">
@@ -379,75 +448,6 @@
                                 @endif
                             </td>
                         </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-7 mb-4">
-        <div class="card wa-monitor-messages-panel mb-0">
-            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <h5 class="card-title mb-0">{{ __('Recent messages') }}</h5>
-                <span class="wa-monitor-messages-count">{{ __(':count messages', ['count' => $messageCount]) }}</span>
-            </div>
-            <p class="wa-monitor-messages-panel__hint mb-0">
-                {{ __('Messages are shown per tenant, not per number. A tenant with several numbers shows the same message history on each.') }}
-            </p>
-            <div class="wa-monitor-messages-scroll" tabindex="0" role="region" aria-label="{{ __('Recent messages') }}">
-                <table class="table table-striped mb-0 wa-monitor-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">{{ __('Direction') }}</th>
-                            <th scope="col">{{ __('Status') }}</th>
-                            <th scope="col">{{ __('Preview') }}</th>
-                            <th scope="col">{{ __('Time') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($messages as $message)
-                            <tr>
-                                <td>
-                                    @if ($message->direction === 'inbound')
-                                        <span class="badge badge-info">{{ __('Inbound') }}</span>
-                                    @elseif ($message->direction === 'outbound')
-                                        <span class="badge badge-primary">{{ __('Outbound') }}</span>
-                                    @else
-                                        <span class="badge badge-secondary">{{ $message->direction ?? '—' }}</span>
-                                    @endif
-                                </td>
-                                <td>{{ $message->status ?? '—' }}</td>
-                                <td>
-                                    @if (!empty($message->preview))
-                                        <span class="wa-monitor-preview" title="{{ $message->preview }}">{{ $message->preview }}</span>
-                                    @else
-                                        —
-                                    @endif
-                                </td>
-                                <td>
-                                    @if (!empty($message->created_at))
-                                        @php $messageAt = \Illuminate\Support\Carbon::parse($message->created_at); @endphp
-                                        <span class="wa-monitor-date-inline">
-                                            {{ $messageAt->format('Y-m-d H:i') }}
-                                            <span class="text-muted">· {{ $messageAt->diffForHumans() }}</span>
-                                        </span>
-                                    @else
-                                        —
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4">
-                                    <div class="wa-monitor-empty">
-                                        <div class="wa-monitor-empty__icon" aria-hidden="true">
-                                            <i class="far fa-comment-dots"></i>
-                                        </div>
-                                        <p class="wa-monitor-empty__title">{{ __('No messages found for this tenant.') }}</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforelse
                     </tbody>
                 </table>
             </div>
