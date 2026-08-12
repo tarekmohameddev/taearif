@@ -1,6 +1,77 @@
 @extends('admin.layout')
 
 @section('content')
+<style>
+/* WhatsApp Numbers Monitor — detail page (shared class names with list) */
+.wa-monitor-phone {
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.wa-monitor-tenant-name {
+    font-weight: 600;
+}
+
+.wa-monitor-date {
+    white-space: nowrap;
+}
+
+.wa-monitor-date__relative {
+    display: block;
+    font-size: 0.75rem;
+    color: #adb5bd;
+    margin-top: 0.125rem;
+}
+
+.wa-monitor-table thead th {
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #495057;
+    white-space: nowrap;
+    vertical-align: middle;
+    padding: 0.75rem 1rem;
+}
+
+.wa-monitor-table tbody td,
+.wa-monitor-table tbody th {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+}
+
+.wa-monitor-table tbody th {
+    width: 38%;
+    font-weight: 600;
+    color: #495057;
+    background: transparent;
+}
+
+.wa-monitor-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.wa-monitor-empty {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    color: #6c757d;
+}
+
+.wa-monitor-empty__title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0;
+}
+</style>
+
 @php
     $statusLabels = [
         'active' => __('Active'),
@@ -35,6 +106,23 @@
     </ul>
 </div>
 
+<div class="wa-monitor-detail-header">
+    <p class="text-muted mb-0">
+        @if (!empty($number->number))
+            <span class="wa-monitor-phone">{{ $number->number }}</span>
+            @if (!empty($number->name))
+                <span class="text-muted"> — {{ $number->name }}</span>
+            @endif
+        @else
+            {{ __('WhatsApp number details') }}
+        @endif
+    </p>
+    <a href="{{ route('admin.whatsapp-numbers.monitor') }}" class="btn btn-secondary btn-sm">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        {{ __('Back to monitor') }}
+    </a>
+</div>
+
 <div class="row">
     <div class="col-lg-5 mb-4">
         <div class="card">
@@ -42,11 +130,11 @@
                 <h5 class="card-title mb-0">{{ __('Number details') }}</h5>
             </div>
             <div class="card-body p-0">
-                <table class="table table-striped mb-0">
+                <table class="table table-striped mb-0 wa-monitor-table">
                     <tbody>
                         <tr>
                             <th scope="row">{{ __('Number') }}</th>
-                            <td>{{ $number->number ?? '—' }}</td>
+                            <td><span class="wa-monitor-phone">{{ $number->number ?? '—' }}</span></td>
                         </tr>
                         <tr>
                             <th scope="row">{{ __('Name') }}</th>
@@ -56,9 +144,9 @@
                             <th scope="row">{{ __('Tenant') }}</th>
                             <td>
                                 @if (!empty($number->username))
-                                    <div>{{ $number->username }}</div>
+                                    <div class="wa-monitor-tenant-name">{{ $number->username }}</div>
                                     @if (!empty($number->email))
-                                        <small class="text-muted">{{ $number->email }}</small>
+                                        <small class="text-muted d-block">{{ $number->email }}</small>
                                     @endif
                                 @else
                                     —
@@ -86,7 +174,7 @@
                         </tr>
                         <tr>
                             <th scope="row">{{ __('Phone ID') }}</th>
-                            <td>{{ $number->phone_id ?? '—' }}</td>
+                            <td><span class="wa-monitor-phone">{{ $number->phone_id ?? '—' }}</span></td>
                         </tr>
                         <tr>
                             <th scope="row">{{ __('Health') }}</th>
@@ -127,8 +215,7 @@
                                         @case('owner_mismatch')
                                             <span class="badge badge-danger">{{ $syncLabel }}</span>
                                             @if (!empty($number->wa_number_user_id))
-                                                <br>
-                                                <small>{{ __('Routed to tenant #:id', ['id' => $number->wa_number_user_id]) }}</small>
+                                                <small class="d-block">{{ __('Routed to tenant #:id', ['id' => $number->wa_number_user_id]) }}</small>
                                             @endif
                                             @break
                                         @default
@@ -138,7 +225,7 @@
                                     @if (!empty($number->wa_number_id))
                                         #{{ $number->wa_number_id }}
                                         @if (!empty($number->wa_number_phone))
-                                            — {{ $number->wa_number_phone }}
+                                            — <span class="wa-monitor-phone">{{ $number->wa_number_phone }}</span>
                                         @endif
                                         @if (!empty($number->wa_number_status))
                                             <br><small class="text-muted">{{ $number->wa_number_status }}</small>
@@ -151,9 +238,11 @@
                         </tr>
                         <tr>
                             <th scope="row">{{ __('Last inbound') }}</th>
-                            <td>
+                            <td class="wa-monitor-date">
                                 @if (!empty($number->last_inbound_at))
-                                    {{ \Illuminate\Support\Carbon::parse($number->last_inbound_at)->format('Y-m-d H:i') }}
+                                    @php $inboundAt = \Illuminate\Support\Carbon::parse($number->last_inbound_at); @endphp
+                                    <span>{{ $inboundAt->format('Y-m-d H:i') }}</span>
+                                    <span class="wa-monitor-date__relative">{{ $inboundAt->diffForHumans() }}</span>
                                 @else
                                     —
                                 @endif
@@ -161,9 +250,11 @@
                         </tr>
                         <tr>
                             <th scope="row">{{ __('Last outbound') }}</th>
-                            <td>
+                            <td class="wa-monitor-date">
                                 @if (!empty($number->last_outbound_at))
-                                    {{ \Illuminate\Support\Carbon::parse($number->last_outbound_at)->format('Y-m-d H:i') }}
+                                    @php $outboundAt = \Illuminate\Support\Carbon::parse($number->last_outbound_at); @endphp
+                                    <span>{{ $outboundAt->format('Y-m-d H:i') }}</span>
+                                    <span class="wa-monitor-date__relative">{{ $outboundAt->diffForHumans() }}</span>
                                 @else
                                     —
                                 @endif
@@ -183,13 +274,13 @@
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-striped mb-0">
+                    <table class="table table-striped mb-0 wa-monitor-table">
                         <thead>
                             <tr>
-                                <th>{{ __('Direction') }}</th>
-                                <th>{{ __('Status') }}</th>
-                                <th>{{ __('Preview') }}</th>
-                                <th>{{ __('Time') }}</th>
+                                <th scope="col">{{ __('Direction') }}</th>
+                                <th scope="col">{{ __('Status') }}</th>
+                                <th scope="col">{{ __('Preview') }}</th>
+                                <th scope="col">{{ __('Time') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -206,9 +297,11 @@
                                     </td>
                                     <td>{{ $message->status ?? '—' }}</td>
                                     <td>{{ $message->preview ?? '—' }}</td>
-                                    <td>
+                                    <td class="wa-monitor-date">
                                         @if (!empty($message->created_at))
-                                            {{ \Illuminate\Support\Carbon::parse($message->created_at)->format('Y-m-d H:i') }}
+                                            @php $messageAt = \Illuminate\Support\Carbon::parse($message->created_at); @endphp
+                                            <span>{{ $messageAt->format('Y-m-d H:i') }}</span>
+                                            <span class="wa-monitor-date__relative">{{ $messageAt->diffForHumans() }}</span>
                                         @else
                                             —
                                         @endif
@@ -216,7 +309,11 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="text-center py-4">{{ __('No messages found for this tenant.') }}</td>
+                                    <td colspan="4">
+                                        <div class="wa-monitor-empty">
+                                            <p class="wa-monitor-empty__title">{{ __('No messages found for this tenant.') }}</p>
+                                        </div>
+                                    </td>
                                 </tr>
                             @endforelse
                         </tbody>
