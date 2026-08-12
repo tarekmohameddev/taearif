@@ -631,6 +631,26 @@ class WhatsappNumberMonitorTest extends TestCase
     }
 
     /** @test */
+    public function q_search_matches_whatsapp_user_id_and_tenant_owner_id(): void
+    {
+        $tenantId = $this->createTenant();
+        $employeeId = $this->createEmployee($tenantId);
+        $tenantNumberId = $this->createNumber($tenantId, ['phone_id' => 'search-by-tenant-id']);
+        $employeeNumberId = $this->createNumber($employeeId, ['phone_id' => 'search-by-employee-tenant-id']);
+
+        $otherTenantId = $this->createTenant();
+        $this->createNumber($otherTenantId, ['phone_id' => 'search-noise']);
+
+        $result = $this->service->list(['q' => (string) $tenantNumberId]);
+        $ids = collect($result->items())->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $this->assertSame([$tenantNumberId], $ids);
+
+        $result = $this->service->list(['q' => (string) $tenantId]);
+        $ids = collect($result->items())->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+        $this->assertSame([$employeeNumberId, $tenantNumberId], $ids);
+    }
+
+    /** @test */
     public function list_returns_length_aware_paginator_with_page_size_twenty_five(): void
     {
         $tenantId = $this->createTenant();

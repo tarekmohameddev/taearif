@@ -148,7 +148,7 @@
                         </select>
                     </div>
                     <div class="form-group mr-2 mb-2">
-                        <input type="text" name="q" class="form-control" placeholder="{{ __('Number, phone ID, username or email') }}" value="{{ $filters['q'] ?? '' }}">
+                        <input type="text" name="q" class="form-control" placeholder="{{ __('Number, phone ID, ID, username or email') }}" value="{{ $filters['q'] ?? '' }}">
                     </div>
                     @if (!empty($filters['sort']))
                         <input type="hidden" name="sort" value="{{ $filters['sort'] }}">

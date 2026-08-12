@@ -331,11 +331,20 @@ class WhatsappNumberMonitorService
 
         $like = '%' . $term . '%';
 
-        $query->where(function ($inner) use ($like) {
+        $query->where(function ($inner) use ($like, $term) {
             $inner->where('wu.number', 'like', $like)
                 ->orWhere('wu.phone_id', 'like', $like)
                 ->orWhere('u.username', 'like', $like)
                 ->orWhere('u.email', 'like', $like);
+
+            if (ctype_digit($term)) {
+                $id = (int) $term;
+                $owner = $this->tenantOwnerExpression();
+
+                $inner->orWhere('wu.id', $id)
+                    ->orWhere('u.id', $id)
+                    ->orWhereRaw("{$owner} = ?", [$id]);
+            }
         });
     }
 
