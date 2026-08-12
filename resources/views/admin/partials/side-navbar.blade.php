@@ -161,13 +161,13 @@
                 @endif
 
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Credit Management', $permissions)))
-                    <li class="nav-item @if (request()->is('admin/credit-transactions*') || request()->is('admin/credit-management*') || request()->is('admin/whatsapp-addons*') || request()->is('whatsapp-addons*') || request()->is('admin/whatsapp-addon-plans*') || request()->is('admin/whatsapp-numbers/monitor*') || request()->is('admin/employee-addon-plans*')) active @endif">
+                    <li class="nav-item @if (request()->is('admin/credit-transactions*') || request()->is('admin/credit-management*') || request()->is('admin/whatsapp-addons*') || request()->is('whatsapp-addons*') || request()->is('admin/whatsapp-addon-plans*') || request()->routeIs('admin.whatsapp-numbers.monitor*') || request()->is('admin/employee-addon-plans*')) active @endif">
                         <a data-toggle="collapse" href="#creditManagement">
                             <i data-lucide="coins"></i>
                             <p>{{ __('Credit Management') }}</p>
                             <i data-lucide="chevron-down" class="caret"></i>
                         </a>
-                        <div class="collapse @if (request()->is('admin/credit-transactions*') || request()->is('admin/credit-management*') || request()->is('admin/whatsapp-addons*') || request()->is('whatsapp-addons*') || request()->is('admin/whatsapp-addon-plans*') || request()->is('admin/whatsapp-numbers/monitor*') || request()->is('admin/employee-addon-plans*')) show @endif" id="creditManagement">
+                        <div class="collapse @if (request()->is('admin/credit-transactions*') || request()->is('admin/credit-management*') || request()->is('admin/whatsapp-addons*') || request()->is('whatsapp-addons*') || request()->is('admin/whatsapp-addon-plans*') || request()->routeIs('admin.whatsapp-numbers.monitor*') || request()->is('admin/employee-addon-plans*')) show @endif" id="creditManagement">
                             <ul class="nav nav-collapse">
                                 <li class="@if (request()->path() == 'admin/credit-transactions') active @endif">
                                     <a href="{{ route('admin.credit.transactions.index') }}">
@@ -194,7 +194,7 @@
                                         <span class="sub-item">{{ __('WhatsApp Addon Plans') }}</span>
                                     </a>
                                 </li>
-                                <li class="@if (request()->is('admin/whatsapp-numbers/monitor*')) active @endif">
+                                <li class="@if (request()->routeIs('admin.whatsapp-numbers.monitor*')) active @endif">
                                     <a href="{{ route('admin.whatsapp-numbers.monitor') }}">
                                         <span class="sub-item">{{ __('WhatsApp Monitor') }}</span>
                                     </a>
