@@ -74,7 +74,7 @@ class WhatsappNumberMonitorService
     /**
      * Paginated number list with health and sync resolved per row.
      *
-     * @param  array{status?:string|null,health?:string|null,sync?:string|null,q?:string|null}  $filters
+     * @param  array{status?:string|null,health?:string|null,sync?:string|null,q?:string|null,sort?:string|null,order?:string|null}  $filters
      */
     public function list(array $filters = []): LengthAwarePaginator
     {
@@ -85,25 +85,39 @@ class WhatsappNumberMonitorService
         $this->applySyncFilter($query, $filters['sync'] ?? null);
         $this->applyHealthFilter($query, $filters['health'] ?? null);
 
+        $sortByMessageActivity = $this->applySort(
+            $query,
+            $filters['sort'] ?? null,
+            $filters['order'] ?? null
+        );
+
         $paginator = $query
-            ->orderByDesc('wu.id')
             ->paginate(self::PER_PAGE)
             ->withQueryString();
 
-        $activity = $this->messageActivityFor(
-            collect($paginator->items())->pluck('tenant_owner_id')->all()
-        );
+        if ($sortByMessageActivity) {
+            $paginator->getCollection()->transform(function ($row) {
+                $row->health = $this->resolveHealth($row, $row->last_inbound_at);
+                $row->sync = $this->resolveSync($row);
 
-        $paginator->getCollection()->transform(function ($row) use ($activity) {
-            $stats = $activity[(int) $row->tenant_owner_id] ?? null;
+                return $row;
+            });
+        } else {
+            $activity = $this->messageActivityFor(
+                collect($paginator->items())->pluck('tenant_owner_id')->all()
+            );
 
-            $row->last_inbound_at = $stats->last_inbound_at ?? null;
-            $row->last_outbound_at = $stats->last_outbound_at ?? null;
-            $row->health = $this->resolveHealth($row, $row->last_inbound_at);
-            $row->sync = $this->resolveSync($row);
+            $paginator->getCollection()->transform(function ($row) use ($activity) {
+                $stats = $activity[(int) $row->tenant_owner_id] ?? null;
 
-            return $row;
-        });
+                $row->last_inbound_at = $stats->last_inbound_at ?? null;
+                $row->last_outbound_at = $stats->last_outbound_at ?? null;
+                $row->health = $this->resolveHealth($row, $row->last_inbound_at);
+                $row->sync = $this->resolveSync($row);
+
+                return $row;
+            });
+        }
 
         return $paginator;
     }
@@ -210,6 +224,61 @@ class WhatsappNumberMonitorService
     private function tenantOwnerExpression(): string
     {
         return "(CASE WHEN u.account_type = 'employee' THEN u.tenant_id ELSE u.id END)";
+    }
+
+    /**
+     * @return bool  True when message activity was joined for sorting (skip post-pagination fetch).
+     */
+    private function applySort(Builder $query, ?string $sort, ?string $order): bool
+    {
+        $sort = $sort !== null && $sort !== '' ? $sort : 'id';
+        $order = strtolower((string) ($order ?? 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        if (in_array($sort, ['last_inbound_at', 'last_outbound_at'], true)) {
+            $this->joinMessageActivity($query);
+            $column = 'msg_activity.' . $sort;
+            $query->orderByRaw("({$column} IS NULL) ASC")
+                ->orderBy($column, $order);
+
+            return true;
+        }
+
+        if ($sort === 'created_at') {
+            $query->orderByRaw('(wu.created_at IS NULL) ASC')
+                ->orderBy('wu.created_at', $order);
+
+            return false;
+        }
+
+        if ($order === 'asc') {
+            $query->orderBy('wu.id');
+        } else {
+            $query->orderByDesc('wu.id');
+        }
+
+        return false;
+    }
+
+    private function joinMessageActivity(Builder $query): void
+    {
+        $owner = $this->tenantOwnerExpression();
+
+        $sub = DB::table('messages')
+            ->groupBy('user_id')
+            ->select([
+                'user_id',
+                DB::raw("MAX(CASE WHEN direction = 'inbound' THEN created_at END) as last_inbound_at"),
+                DB::raw("MAX(CASE WHEN direction = 'outbound' THEN created_at END) as last_outbound_at"),
+            ]);
+
+        $query->leftJoinSub($sub, 'msg_activity', function ($join) use ($owner) {
+            $join->whereRaw("msg_activity.user_id = {$owner}");
+        });
+
+        $query->addSelect([
+            'msg_activity.last_inbound_at',
+            'msg_activity.last_outbound_at',
+        ]);
     }
 
     /**

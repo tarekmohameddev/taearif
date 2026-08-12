@@ -12,7 +12,7 @@ class WhatsappNumberMonitorController extends Controller
 
     public function index(Request $request)
     {
-        $filters = $request->only(['status', 'health', 'sync', 'q']);
+        $filters = $request->only(['status', 'health', 'sync', 'q', 'sort', 'order']);
 
         $numbers = $this->service->list($filters);
         $summary = $this->service->summary();

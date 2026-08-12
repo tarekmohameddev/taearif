@@ -687,6 +687,46 @@ class WhatsappNumberMonitorTest extends TestCase
     }
 
     /** @test */
+    public function it_sorts_by_last_inbound_at_desc(): void
+    {
+        $tenantOld = $this->createTenant();
+        $oldId = $this->createNumber($tenantOld);
+        $this->createMessage($tenantOld, 'inbound', now()->subDays(3));
+
+        $tenantRecent = $this->createTenant();
+        $recentId = $this->createNumber($tenantRecent);
+        $this->createMessage($tenantRecent, 'inbound', now()->subHour());
+
+        $tenantNever = $this->createTenant();
+        $neverId = $this->createNumber($tenantNever);
+
+        $result = $this->service->list(['sort' => 'last_inbound_at', 'order' => 'desc']);
+        $ids = collect($result->items())->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $this->assertSame([$recentId, $oldId, $neverId], $ids);
+    }
+
+    /** @test */
+    public function it_sorts_by_last_inbound_at_asc_with_nulls_last(): void
+    {
+        $tenantOld = $this->createTenant();
+        $oldId = $this->createNumber($tenantOld);
+        $this->createMessage($tenantOld, 'inbound', now()->subDays(3));
+
+        $tenantRecent = $this->createTenant();
+        $recentId = $this->createNumber($tenantRecent);
+        $this->createMessage($tenantRecent, 'inbound', now()->subHour());
+
+        $tenantNever = $this->createTenant();
+        $neverId = $this->createNumber($tenantNever);
+
+        $result = $this->service->list(['sort' => 'last_inbound_at', 'order' => 'asc']);
+        $ids = collect($result->items())->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $this->assertSame([$oldId, $recentId, $neverId], $ids);
+    }
+
+    /** @test */
     public function monitor_page_renders_for_authenticated_admin(): void
     {
         $this->ensureAdminViewData();

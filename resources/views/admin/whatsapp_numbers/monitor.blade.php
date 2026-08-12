@@ -21,6 +21,28 @@
         'n/a' => __('N/A'),
     ];
     $counts = $summary['counts'] ?? [];
+    $currentSort = $filters['sort'] ?? 'id';
+    $currentOrder = ($filters['order'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+    $sortParams = array_filter([
+        'status' => $filters['status'] ?? null,
+        'health' => $filters['health'] ?? null,
+        'sync' => $filters['sync'] ?? null,
+        'q' => $filters['q'] ?? null,
+    ], fn ($value) => $value !== null && $value !== '');
+    $sortLink = function (string $column) use ($sortParams, $currentSort, $currentOrder) {
+        $params = $sortParams;
+        $params['sort'] = $column;
+        $params['order'] = ($currentSort === $column && $currentOrder === 'desc') ? 'asc' : 'desc';
+
+        return route('admin.whatsapp-numbers.monitor', $params);
+    };
+    $sortIndicator = function (string $column) use ($currentSort, $currentOrder) {
+        if ($currentSort !== $column) {
+            return '';
+        }
+
+        return $currentOrder === 'asc' ? ' ↑' : ' ↓';
+    };
 @endphp
 
 <div class="page-header">
@@ -128,6 +150,12 @@
                     <div class="form-group mr-2 mb-2">
                         <input type="text" name="q" class="form-control" placeholder="{{ __('Number, phone ID, username or email') }}" value="{{ $filters['q'] ?? '' }}">
                     </div>
+                    @if (!empty($filters['sort']))
+                        <input type="hidden" name="sort" value="{{ $filters['sort'] }}">
+                    @endif
+                    @if (!empty($filters['order']))
+                        <input type="hidden" name="order" value="{{ $filters['order'] }}">
+                    @endif
                     <button type="submit" class="btn btn-primary mb-2 mr-2">{{ __('Filter') }}</button>
                     <a href="{{ route('admin.whatsapp-numbers.monitor') }}" class="btn btn-secondary mb-2">{{ __('Reset') }}</a>
                 </form>
@@ -143,8 +171,12 @@
                                 <th>{{ __('Link status') }}</th>
                                 <th>{{ __('Health') }}</th>
                                 <th>{{ __('Sync') }}</th>
-                                <th>{{ __('Last inbound') }}</th>
-                                <th>{{ __('Last outbound') }}</th>
+                                <th>
+                                    <a href="{{ $sortLink('last_inbound_at') }}">{{ __('Last inbound') }}{{ $sortIndicator('last_inbound_at') }}</a>
+                                </th>
+                                <th>
+                                    <a href="{{ $sortLink('last_outbound_at') }}">{{ __('Last outbound') }}{{ $sortIndicator('last_outbound_at') }}</a>
+                                </th>
                                 <th>{{ __('Details') }}</th>
                             </tr>
                         </thead>
