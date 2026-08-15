@@ -225,13 +225,17 @@
 }
 
 .wa-monitor-date-inline {
+    display: inline-block;
     white-space: nowrap;
     font-size: 0.8125rem;
     line-height: 1.35;
 }
 
 .wa-monitor-date-inline .text-muted {
+    display: block;
     font-size: 0.75rem;
+    color: #adb5bd;
+    margin-top: 0.125rem;
 }
 
 .wa-monitor-sort {
@@ -720,7 +724,7 @@
                                             @php $inboundAt = \Illuminate\Support\Carbon::parse($row->last_inbound_at); @endphp
                                             <span class="wa-monitor-date-inline">
                                                 {{ $inboundAt->format('Y-m-d H:i') }}
-                                                <span class="text-muted">· {{ $inboundAt->diffForHumans() }}</span>
+                                                <span class="text-muted">{{ $inboundAt->diffForHumans() }}</span>
                                             </span>
                                         @else
                                             —
@@ -731,7 +735,7 @@
                                             @php $outboundAt = \Illuminate\Support\Carbon::parse($row->last_outbound_at); @endphp
                                             <span class="wa-monitor-date-inline">
                                                 {{ $outboundAt->format('Y-m-d H:i') }}
-                                                <span class="text-muted">· {{ $outboundAt->diffForHumans() }}</span>
+                                                <span class="text-muted">{{ $outboundAt->diffForHumans() }}</span>
                                             </span>
                                         @else
                                             —

@@ -644,6 +644,9 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
             ->name('whatsapp-numbers.monitor');
         Route::get('/whatsapp-numbers/{id}/monitor', 'Admin\WhatsappNumberMonitorController@show')
             ->name('whatsapp-numbers.monitor.show');
+        Route::post('/whatsapp-numbers/{id}/monitor/diagnose', 'Admin\WhatsappNumberMonitorController@diagnose')
+            ->name('whatsapp-numbers.monitor.diagnose')
+            ->middleware('throttle:10,1');
 
         // WhatsApp Addon Plans Management
         Route::get('/whatsapp-addon-plans', 'Admin\WhatsappAddonPlanController@index')->name('whatsapp-addon-plans.index');

@@ -646,8 +646,12 @@ class WhatsappNumberMonitorTest extends TestCase
         $this->assertSame([$tenantNumberId], $ids);
 
         $result = $this->service->list(['q' => (string) $tenantId]);
-        $ids = collect($result->items())->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
-        $this->assertSame([$employeeNumberId, $tenantNumberId], $ids);
+        $ids = collect($result->items())->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $expectedIds = [$employeeNumberId, $tenantNumberId];
+        sort($expectedIds);
+        sort($ids);
+
+        $this->assertSame($expectedIds, $ids);
     }
 
     /** @test */

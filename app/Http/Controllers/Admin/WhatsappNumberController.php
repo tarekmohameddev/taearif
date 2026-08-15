@@ -7,6 +7,7 @@ use App\Models\WhatsappUser;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class WhatsappNumberController extends Controller
 {
@@ -41,6 +42,11 @@ class WhatsappNumberController extends Controller
 
             return back()->with('success', 'تم التحديث بنجاح');
         } catch (\Exception $e) {
+            Log::error('WhatsApp number update failed', [
+                'error' => $e->getMessage(),
+                'whatsapp_number_id' => $id,
+            ]);
+
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => 'فشل التحديث'], 500);
             }
@@ -84,7 +90,14 @@ class WhatsappNumberController extends Controller
             return back()->with('success', 'تم تغيير الحالة بنجاح');
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
+            Log::error('WhatsApp number status toggle failed', [
+                'error' => $e->getMessage(),
+                'whatsapp_number_id' => $id,
+                'old_status' => $oldStatus ?? null,
+                'new_status' => $newStatus ?? null,
+            ]);
+
             if (request()->wantsJson()) {
                 return response()->json(['success' => false, 'message' => 'فشل تغيير الحالة'], 500);
             }
@@ -126,7 +139,12 @@ class WhatsappNumberController extends Controller
             return back()->with('success', 'تم الحذف بنجاح');
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
+            Log::error('WhatsApp number delete failed', [
+                'error' => $e->getMessage(),
+                'whatsapp_number_id' => $id,
+            ]);
+
             if (request()->wantsJson()) {
                 return response()->json(['success' => false, 'message' => 'فشل الحذف'], 500);
             }

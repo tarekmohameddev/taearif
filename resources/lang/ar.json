@@ -1312,5 +1312,15 @@
     "Outbound": "صادر",
     "No messages found for this tenant.": "لم يتم العثور على رسائل لهذا المستأجر.",
     "No wa_numbers row matches this phone ID.": "لا يوجد سجل wa_numbers يطابق معرف الهاتف هذا.",
-    "Routed to tenant #:id": "موجه للمستأجر #:id"
+    "Routed to tenant #:id": "موجه للمستأجر #:id",
+
+    "Diagnose with Meta": "تشخيص عبر Meta",
+    "Queries Meta directly. Does not change anything.": "يستعلم Meta مباشرة. لا يغيّر أي شيء.",
+    "Meta diagnostics": "تشخيص Meta",
+    "Checked at": "تم الفحص في",
+    "Check": "الفحص",
+    "Meta phone numbers": "أرقام الهاتف في Meta",
+    "Display number": "رقم العرض",
+    "Verified name": "الاسم الموثّق",
+    "Quality rating": "تقييم الجودة"
 }

@@ -25,13 +25,17 @@
 }
 
 .wa-monitor-date-inline {
+    display: inline-block;
     white-space: nowrap;
     font-size: 0.8125rem;
     line-height: 1.35;
 }
 
 .wa-monitor-date-inline .text-muted {
+    display: block;
     font-size: 0.75rem;
+    color: #adb5bd;
+    margin-top: 0.125rem;
 }
 
 .wa-monitor-table thead th {
@@ -283,7 +287,7 @@
                                         @php $messageAt = \Illuminate\Support\Carbon::parse($message->created_at); @endphp
                                         <span class="wa-monitor-date-inline">
                                             {{ $messageAt->format('Y-m-d H:i') }}
-                                            <span class="text-muted">· {{ $messageAt->diffForHumans() }}</span>
+                                            <span class="text-muted">{{ $messageAt->diffForHumans() }}</span>
                                         </span>
                                     @else
                                         —
@@ -310,8 +314,13 @@
 
     <div class="col-lg-5 mb-4">
         <div class="card wa-monitor-details-card mb-0">
-            <div class="card-header">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <h5 class="card-title mb-0">{{ __('Number details') }}</h5>
+                <form method="POST" action="{{ route('admin.whatsapp-numbers.monitor.diagnose', $number->id) }}" class="d-flex align-items-center flex-wrap gap-2 mb-0">
+                    @csrf
+                    <span class="text-muted small">{{ __('Queries Meta directly. Does not change anything.') }}</span>
+                    <button type="submit" class="btn btn-primary btn-sm">{{ __('Diagnose with Meta') }}</button>
+                </form>
             </div>
             <div class="card-body p-0">
                 <table class="table table-striped mb-0 wa-monitor-table">
@@ -427,7 +436,7 @@
                                     @php $inboundAt = \Illuminate\Support\Carbon::parse($number->last_inbound_at); @endphp
                                     <span class="wa-monitor-date-inline">
                                         {{ $inboundAt->format('Y-m-d H:i') }}
-                                        <span class="text-muted">· {{ $inboundAt->diffForHumans() }}</span>
+                                        <span class="text-muted">{{ $inboundAt->diffForHumans() }}</span>
                                     </span>
                                 @else
                                     —
@@ -441,7 +450,7 @@
                                     @php $outboundAt = \Illuminate\Support\Carbon::parse($number->last_outbound_at); @endphp
                                     <span class="wa-monitor-date-inline">
                                         {{ $outboundAt->format('Y-m-d H:i') }}
-                                        <span class="text-muted">· {{ $outboundAt->diffForHumans() }}</span>
+                                        <span class="text-muted">{{ $outboundAt->diffForHumans() }}</span>
                                     </span>
                                 @else
                                     —
@@ -454,4 +463,87 @@
         </div>
     </div>
 </div>
+
+@if (session('diagnostics'))
+    @php
+        $diagnostics = session('diagnostics');
+        $summary = $diagnostics['summary'] ?? '';
+        $summaryBadgeClass = match ($summary) {
+            'ok' => 'badge-success',
+            'warn' => 'badge-warning text-dark',
+            'fail' => 'badge-danger',
+            default => 'badge-secondary',
+        };
+        $checks = $diagnostics['checks'] ?? [];
+        $metaPhoneNumbers = $diagnostics['meta_phone_numbers'] ?? [];
+    @endphp
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card wa-monitor-details-card mb-0">
+                <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <h5 class="card-title mb-0">{{ __('Meta diagnostics') }}</h5>
+                    <span class="badge {{ $summaryBadgeClass }}">{{ strtoupper($summary) }}</span>
+                </div>
+                <div class="card-body p-0">
+                    @if (!empty($diagnostics['checked_at']))
+                        <p class="text-muted small px-3 pt-3 mb-0">{{ __('Checked at') }}: {{ $diagnostics['checked_at'] }}</p>
+                    @endif
+                    <table class="table table-striped mb-0 wa-monitor-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">{{ __('Check') }}</th>
+                                <th scope="col">{{ __('Status') }}</th>
+                                <th scope="col">{{ __('Detail') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($checks as $check)
+                                @php
+                                    $checkStatus = $check['status'] ?? '';
+                                    $checkBadgeClass = match ($checkStatus) {
+                                        'ok' => 'badge-success',
+                                        'warn' => 'badge-warning text-dark',
+                                        'fail' => 'badge-danger',
+                                        'skipped' => 'badge-secondary',
+                                        default => 'badge-secondary',
+                                    };
+                                @endphp
+                                <tr>
+                                    <td>{{ $check['label'] ?? '—' }}</td>
+                                    <td><span class="badge {{ $checkBadgeClass }}">{{ strtoupper($checkStatus) }}</span></td>
+                                    <td>{{ $check['detail'] ?? '' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    @if (!empty($metaPhoneNumbers))
+                        <div class="px-3 py-2 border-top">
+                            <h6 class="mb-2">{{ __('Meta phone numbers') }}</h6>
+                            <table class="table table-striped mb-0 wa-monitor-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">{{ __('ID') }}</th>
+                                        <th scope="col">{{ __('Display number') }}</th>
+                                        <th scope="col">{{ __('Verified name') }}</th>
+                                        <th scope="col">{{ __('Quality rating') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($metaPhoneNumbers as $metaPhone)
+                                        <tr @if (!empty($number->phone_id) && ($metaPhone['id'] ?? '') === $number->phone_id) class="table-active" @endif>
+                                            <td><span class="wa-monitor-phone">{{ $metaPhone['id'] ?? '—' }}</span></td>
+                                            <td><span class="wa-monitor-phone">{{ $metaPhone['display_phone_number'] ?? '—' }}</span></td>
+                                            <td>{{ $metaPhone['verified_name'] ?? '—' }}</td>
+                                            <td>{{ $metaPhone['quality_rating'] ?? '—' }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
 @endsection
