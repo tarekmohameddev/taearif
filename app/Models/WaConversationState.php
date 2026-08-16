@@ -10,7 +10,7 @@ class WaConversationState extends Model
     protected $table = 'wa_conversation_states';
 
     /** @var list<string> */
-    protected $appends = ['state_id'];
+    protected $appends = ['state_id', 'customer_name'];
 
     protected $fillable = [
         'conversation_id',
@@ -50,5 +50,10 @@ class WaConversationState extends Model
     public function getStateIdAttribute(): int
     {
         return (int) $this->getKey();
+    }
+
+    public function getCustomerNameAttribute(): ?string
+    {
+        return $this->relationLoaded('conversation') ? $this->conversation?->customer_name : null;
     }
 }

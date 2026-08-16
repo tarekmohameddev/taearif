@@ -105,6 +105,13 @@ class CommunicationServiceImpl implements CommunicationService
                 );
                 $conversationNewlyCreated = $conversation->wasRecentlyCreated;
 
+                $customerName = isset($meta['customer_name']) && is_string($meta['customer_name'])
+                    ? trim($meta['customer_name'])
+                    : '';
+                if ($customerName !== '' && $customerName !== $conversation->customer_name) {
+                    $conversation->update(['customer_name' => $customerName]);
+                }
+
                 $messageAt = $createdAt !== null ? \Illuminate\Support\Carbon::parse($createdAt) : now();
 
                 $message = Message::create([

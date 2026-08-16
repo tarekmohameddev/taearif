@@ -72,6 +72,37 @@ class WhatsAppWebhookWaNumberMappingTest extends TestCase
         return MarketingChannel::create($channel);
     }
 
+    private function v1IncomingPayload(WaNumber $waNumber, string $from, string $messageId, ?array $contacts): array
+    {
+        $value = [
+            'metadata' => [
+                'phone_number_id' => $waNumber->phone_number_id,
+                'display_phone_number' => $waNumber->phone_number,
+            ],
+            'messages' => [
+                [
+                    'from' => $from,
+                    'id' => $messageId,
+                    'text' => ['body' => 'Customer name test'],
+                ],
+            ],
+        ];
+        if ($contacts !== null) {
+            $value['contacts'] = $contacts;
+        }
+
+        return [
+            'entry' => [
+                [
+                    'id' => 'entry-customer-name',
+                    'changes' => [
+                        ['value' => $value],
+                    ],
+                ],
+            ],
+        ];
+    }
+
     /** @test */
     public function v1_webhook_incoming_maps_wa_number_id_into_conversation_state(): void
     {
@@ -98,6 +129,12 @@ class WhatsAppWebhookWaNumberMappingTest extends TestCase
                                     'phone_number_id' => $waNumber->phone_number_id,
                                     'display_phone_number' => $waNumber->phone_number,
                                 ],
+                                'contacts' => [
+                                    [
+                                        'wa_id' => '966512300010',
+                                        'profile' => ['name' => 'V1 Contact'],
+                                    ],
+                                ],
                                 'messages' => [
                                     [
                                         'from' => '966512300010',
@@ -120,9 +157,91 @@ class WhatsAppWebhookWaNumberMappingTest extends TestCase
             ->where('external_party_identifier', '+966512300010')
             ->first();
         $this->assertNotNull($conversation);
+        $this->assertSame('V1 Contact', $conversation->customer_name);
         $this->assertDatabaseHas('wa_conversation_states', [
             'conversation_id' => $conversation->id,
             'wa_number_id' => $waNumber->id,
+        ]);
+    }
+
+    /** @test */
+    public function v1_webhook_refreshes_customer_name_on_a_new_message_id(): void
+    {
+        $this->requireTables(['users', 'wa_numbers', 'conversations', 'wa_conversation_states', 'messages']);
+
+        $tenant = $this->createTenant();
+        $waNumber = WaNumber::create([
+            'user_id' => $tenant->id,
+            'provider' => 'meta',
+            'phone_number' => '+966500000224',
+            'phone_number_id' => 'pnid-name-refresh-' . uniqid(),
+            'name' => 'Name Refresh Number',
+            'status' => 'active',
+        ]);
+        $from = '966512300014';
+
+        $this->postJson('/api/v1/whatsapp/webhook/incoming', $this->v1IncomingPayload(
+            $waNumber,
+            $from,
+            'wamid.name.first.' . uniqid(),
+            [['wa_id' => $from, 'profile' => ['name' => 'First Name']]]
+        ))->assertOk();
+
+        $this->postJson('/api/v1/whatsapp/webhook/incoming', $this->v1IncomingPayload(
+            $waNumber,
+            $from,
+            'wamid.name.second.' . uniqid(),
+            [['wa_id' => $from, 'profile' => ['name' => 'Updated Name']]]
+        ))->assertOk();
+
+        $this->assertDatabaseHas('conversations', [
+            'user_id' => $tenant->id,
+            'external_party_identifier' => '+' . $from,
+            'customer_name' => 'Updated Name',
+        ]);
+    }
+
+    /** @test */
+    public function v1_webhook_does_not_clear_customer_name_when_contacts_are_missing_or_empty(): void
+    {
+        $this->requireTables(['users', 'wa_numbers', 'conversations', 'wa_conversation_states', 'messages']);
+
+        $tenant = $this->createTenant();
+        $waNumber = WaNumber::create([
+            'user_id' => $tenant->id,
+            'provider' => 'meta',
+            'phone_number' => '+966500000225',
+            'phone_number_id' => 'pnid-name-empty-' . uniqid(),
+            'name' => 'Empty Name Number',
+            'status' => 'active',
+        ]);
+        $from = '966512300015';
+
+        $this->postJson('/api/v1/whatsapp/webhook/incoming', $this->v1IncomingPayload(
+            $waNumber,
+            $from,
+            'wamid.name.initial.' . uniqid(),
+            [['wa_id' => $from, 'profile' => ['name' => 'Kept Name']]]
+        ))->assertOk();
+
+        $this->postJson('/api/v1/whatsapp/webhook/incoming', $this->v1IncomingPayload(
+            $waNumber,
+            $from,
+            'wamid.name.empty.' . uniqid(),
+            [['wa_id' => $from, 'profile' => ['name' => '   ']]]
+        ))->assertOk();
+
+        $this->postJson('/api/v1/whatsapp/webhook/incoming', $this->v1IncomingPayload(
+            $waNumber,
+            $from,
+            'wamid.name.missing.' . uniqid(),
+            null
+        ))->assertOk();
+
+        $this->assertDatabaseHas('conversations', [
+            'user_id' => $tenant->id,
+            'external_party_identifier' => '+' . $from,
+            'customer_name' => 'Kept Name',
         ]);
     }
 

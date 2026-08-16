@@ -51,6 +51,7 @@ class WhatsAppConversationIdResolutionTest extends TestCase
             'user_id' => $tenant->id,
             'channel' => 'whatsapp',
             'external_party_identifier' => '+966512345678',
+            'customer_name' => 'API Customer',
             'last_message_at' => now(),
         ]);
 
@@ -91,6 +92,12 @@ class WhatsAppConversationIdResolutionTest extends TestCase
         $this->assertNotNull($row);
         $this->assertSame($fixture['state']->id, $row['state_id']);
         $this->assertSame($fixture['conversation']->id, $row['conversation_id']);
+        $this->assertSame('API Customer', $row['customer_name']);
+        $this->assertSame('API Customer', $row['conversation']['customer_name']);
+
+        $search = $this->getJson('/api/v1/whatsapp/conversations?search=API%20Customer');
+        $search->assertOk();
+        $this->assertNotNull(collect($search->json('data.data'))->firstWhere('id', $fixture['state']->id));
     }
 
     /** @test */
@@ -127,6 +134,8 @@ class WhatsAppConversationIdResolutionTest extends TestCase
 
         $showByConversation = $this->getJson('/api/v1/whatsapp/conversations/' . $fixture['conversation']->id);
         $showByConversation->assertOk();
+        $showByConversation->assertJsonPath('data.data.customer_name', 'API Customer');
+        $showByConversation->assertJsonPath('data.data.conversation.customer_name', 'API Customer');
 
         $showByState = $this->getJson('/api/v1/whatsapp/conversations/' . $fixture['state']->id);
         $showByState->assertOk();
