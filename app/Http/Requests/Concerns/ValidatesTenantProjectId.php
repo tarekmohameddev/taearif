@@ -26,7 +26,19 @@ trait ValidatesTenantProjectId
             array_unshift($rules, 'sometimes');
         }
 
-        return ['project_id' => $rules];
+        $arrayRules = ['array'];
+        if ($sometimes) {
+            array_unshift($arrayRules, 'sometimes');
+        }
+
+        return [
+            'project_id' => $rules,
+            'project_ids' => $arrayRules,
+            'project_ids.*' => [
+                'integer',
+                'min:1',
+            ],
+        ];
     }
 
     protected function normalizeNullableProjectId(): void

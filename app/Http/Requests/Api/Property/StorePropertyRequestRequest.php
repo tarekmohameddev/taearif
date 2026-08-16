@@ -34,10 +34,12 @@ class StorePropertyRequestRequest extends BaseApiFormRequest
             'tenant_username' => 'nullable|string|max:255',
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
-            'property_ids' => 'nullable|array',
-            'property_ids.*' => 'integer|exists:user_properties,id',
+            'property_ids' => 'sometimes|array',
+            'property_ids.*' => 'integer|min:1',
             // Ownership checked in controller after tenant resolve (public may have no auth).
             'project_id' => 'nullable|integer|exists:user_projects,id',
+            'project_ids' => 'sometimes|array',
+            'project_ids.*' => 'integer|min:1',
             'source' => ['nullable', 'string', Rule::in([
                 'property_interest',
                 'public_form',

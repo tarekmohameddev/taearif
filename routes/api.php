@@ -886,6 +886,8 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         // Property IDs on request (must be before {id} so that .../properties is matched)
         Route::post('/property-requests/{id}/properties', [ApiPropertyRequestController::class, 'attachProperties'])->middleware('can:property_requests.update');
         Route::delete('/property-requests/{id}/properties/{propertyId}', [ApiPropertyRequestController::class, 'detachProperty'])->middleware('can:property_requests.update');
+        Route::post('/property-requests/{id}/projects', [ApiPropertyRequestController::class, 'attachProjects'])->middleware('can:property_requests.update');
+        Route::delete('/property-requests/{id}/projects/{projectId}', [ApiPropertyRequestController::class, 'detachProject'])->middleware('can:property_requests.update');
         Route::get('/property-requests/{id}', [ApiPropertyRequestController::class, 'show'])->middleware('can:property_requests.view');
         // DELETE
         Route::delete('/property-requests/{id}', [ApiPropertyRequestController::class, 'destroy'])->middleware('can:property_requests.delete');

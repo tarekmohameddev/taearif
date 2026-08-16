@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Support\PropertyRequestFilterOptionsCache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Cache;
 
 class UserPropertyRequest extends Model
@@ -119,6 +120,7 @@ class UserPropertyRequest extends Model
         'statusOption',
         'customer',
         'responsibleEmployee',
+        'projects',
         'status_id',
         'is_active',
     ];
@@ -164,6 +166,16 @@ class UserPropertyRequest extends Model
     public function project()
     {
         return $this->belongsTo(\App\Models\User\RealestateManagement\Project::class, 'project_id');
+    }
+
+    public function projects(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            \App\Models\User\RealestateManagement\Project::class,
+            'property_request_project',
+            'property_request_id',
+            'project_id'
+        )->orderBy('property_request_project.id');
     }
 
     /**
@@ -236,6 +248,13 @@ class UserPropertyRequest extends Model
             : null;
 
         $result['employee'] = $this->formatEmployeePayload();
+        if ($this->relationLoaded('projects')) {
+            $result['project_ids'] = $this->projects
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
+        }
 
         return $result;
     }

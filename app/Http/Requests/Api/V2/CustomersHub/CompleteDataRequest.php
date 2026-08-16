@@ -46,6 +46,8 @@ class CompleteDataRequest extends FormRequest
             'area_to'        => ['sometimes', 'nullable', 'integer', 'min:0'],
             'latitude'       => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
             'longitude'      => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
+            'property_ids'   => ['sometimes', 'array'],
+            'property_ids.*' => ['integer', 'min:1'],
         ], $this->tenantProjectIdRules(sometimes: true));
     }
 
@@ -56,6 +58,11 @@ class CompleteDataRequest extends FormRequest
     public function onlyProvided(): array
     {
         $validated = $this->validated();
-        return array_filter($validated, fn ($v) => $v !== null);
+        $provided = array_filter($validated, fn ($v) => $v !== null);
+        if (array_key_exists('project_id', $validated)) {
+            $provided['project_id'] = $validated['project_id'];
+        }
+
+        return $provided;
     }
 }

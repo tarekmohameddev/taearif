@@ -7121,6 +7121,8 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="full_name", type="string", maxLength=255),
  *             @OA\Property(property="phone", type="string", maxLength=20),
  *             @OA\Property(property="property_ids", type="array", @OA\Items(type="integer")),
+ *             @OA\Property(property="project_id", type="integer", nullable=true),
+ *             @OA\Property(property="project_ids", type="array", @OA\Items(type="integer")),
  *             @OA\Property(property="source", type="string"),
  *             @OA\Property(property="referral_source", type="string"),
  *             @OA\Property(property="property_type", type="string"),
@@ -7192,6 +7194,9 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="full_name", type="string", maxLength=255),
  *             @OA\Property(property="phone", type="string", maxLength=20),
  *             @OA\Property(property="notes", type="string", maxLength=1000),
+ *             @OA\Property(property="project_id", type="integer", nullable=true),
+ *             @OA\Property(property="project_ids", type="array", @OA\Items(type="integer")),
+ *             @OA\Property(property="property_ids", type="array", @OA\Items(type="integer")),
  *         )),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")
@@ -7212,6 +7217,8 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="full_name", type="string", maxLength=255),
  *             @OA\Property(property="phone", type="string", maxLength=20),
  *             @OA\Property(property="property_ids", type="array", @OA\Items(type="integer")),
+ *             @OA\Property(property="project_id", type="integer", nullable=true),
+ *             @OA\Property(property="project_ids", type="array", @OA\Items(type="integer")),
  *             @OA\Property(property="source", type="string"),
  *             @OA\Property(property="referral_source", type="string"),
  *             @OA\Property(property="property_type", type="string"),
@@ -7315,6 +7322,8 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="responsible_employee_id", type="integer"),
  *             @OA\Property(property="customer_id", type="integer"),
  *             @OA\Property(property="property_ids", type="array", @OA\Items(type="integer")),
+ *             @OA\Property(property="project_id", type="integer", nullable=true),
+ *             @OA\Property(property="project_ids", type="array", @OA\Items(type="integer")),
  *             @OA\Property(property="inquiry_type", type="string", maxLength=100),
  *             @OA\Property(property="lang", type="string", maxLength=8),
  *             @OA\Property(property="referral_source", type="string", maxLength=255),
@@ -7358,6 +7367,40 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="priority", type="string"),
  *         )),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
+ *         @OA\Response(response=401, description="Unauthenticated")
+ *     )
+ *
+ * )
+ *
+ * @OA\PathItem(
+ *
+ *     path="/v1/property-requests/{id}/projects",
+ *
+ *     @OA\Post(
+ *         operationId="post_v1_property_requests_id_projects_0",
+ *         tags={"Property Requests"},
+ *         summary="Attach Projects", security={{"sanctum":{}}},
+ *         @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"projectIds"},
+ *             @OA\Property(property="projectIds", type="array", minLength=1, @OA\Items(type="integer")),
+ *         )),
+ *         @OA\Response(response=200, description="OK"),
+ *         @OA\Response(response=401, description="Unauthenticated")
+ *     )
+ *
+ * )
+ *
+ * @OA\PathItem(
+ *
+ *     path="/v1/property-requests/{id}/projects/{projectId}",
+ *
+ *     @OA\Delete(
+ *         operationId="delete_v1_property_requests_id_projects_project_id_0",
+ *         tags={"Property Requests"},
+ *         summary="Detach Project", security={{"sanctum":{}}},
+ *         @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+ *         @OA\Parameter(name="projectId", in="path", required=true, @OA\Schema(type="integer")),
+ *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
  *
@@ -10782,6 +10825,9 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="area_to", type="integer", minimum=0),
  *             @OA\Property(property="latitude", type="number"),
  *             @OA\Property(property="longitude", type="number"),
+ *             @OA\Property(property="property_ids", type="array", @OA\Items(type="integer")),
+ *             @OA\Property(property="project_id", type="integer", nullable=true),
+ *             @OA\Property(property="project_ids", type="array", @OA\Items(type="integer")),
  *         )),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")

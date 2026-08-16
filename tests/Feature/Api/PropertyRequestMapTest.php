@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
+use App\Domain\CustomersHub\Services\CustomersHubCacheVersion;
 use App\Models\Api\UserPropertyRequest;
 use App\Models\User;
 use App\Models\User\RealestateManagement\Project;
@@ -47,6 +48,9 @@ class PropertyRequestMapTest extends TestCase
 
         if (! Schema::hasColumn('users_property_requests', 'project_id')) {
             $this->markTestSkipped('project_id column required on users_property_requests. Run migration.');
+        }
+        if (! Schema::hasTable('property_request_project')) {
+            $this->markTestSkipped('property_request_project table required. Run migration.');
         }
     }
 
@@ -368,6 +372,41 @@ class PropertyRequestMapTest extends TestCase
         ]);
     }
 
+    public function test_store_from_interest_explicit_arrays_override_inherited_links(): void
+    {
+        $this->skipIfMissingProjectIdColumn();
+
+        $tenant = $this->createTenant();
+        $inherited = $this->createProject($tenant);
+        $first = $this->createProject($tenant);
+        $second = $this->createProject($tenant);
+        $clicked = $this->createProperty($tenant, ['project_id' => $inherited->id]);
+        $additional = $this->createProperty($tenant);
+
+        $response = $this->postJson('/api/v1/property-requests/interest', [
+            'tenant_username' => $tenant->username,
+            'property_id' => $clicked->id,
+            'full_name' => 'Interest Multiple Links',
+            'phone' => '+966501112266',
+            'project_ids' => [$first->id, $second->id],
+            'property_ids' => [$additional->id],
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.project_ids', [$first->id, $second->id])
+            ->assertJsonPath('data.property_ids', [$additional->id]);
+        $requestId = (int) $response->json('data.request_id');
+        $this->assertDatabaseHas('users_property_requests', [
+            'id' => $requestId,
+            'initial_property_id' => $clicked->id,
+            'project_id' => $first->id,
+        ]);
+        $this->assertDatabaseMissing('property_request_project', [
+            'property_request_id' => $requestId,
+            'project_id' => $inherited->id,
+        ]);
+    }
+
     public function test_public_store_with_valid_project_id_persists(): void
     {
         $this->skipIfMissingProjectIdColumn();
@@ -413,10 +452,13 @@ class PropertyRequestMapTest extends TestCase
             'latitude' => 24.1,
             'longitude' => 46.1,
         ]);
+        $cacheVersion = app(CustomersHubCacheVersion::class);
+        $beforeAttach = $cacheVersion->getVersion((int) $tenant->id);
 
         $this->postJson("/api/v1/property-requests/{$request->id}/properties", [
             'propertyIds' => [$attached->id],
         ])->assertOk();
+        $this->assertGreaterThan($beforeAttach, $cacheVersion->getVersion((int) $tenant->id));
 
         $request->refresh();
         $this->assertSame($initial->id, (int) $request->initial_property_id);

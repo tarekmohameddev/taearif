@@ -12,13 +12,13 @@ use Illuminate\Http\JsonResponse;
 use App\Models\Api\UserPropertyRequest;
 use App\Models\User\UserCity;
 use App\Models\User\RealestateManagement\Property;
-use App\Models\User\RealestateManagement\Project;
 use App\Http\Requests\Api\Property\StorePropertyRequestRequest;
 use App\Http\Requests\Api\Property\UpdatePropertyRequestRequest;
 use App\Http\Requests\Api\Property\UpdateStatusPropertyRequestRequest;
 use App\Http\Requests\Api\Property\UpdateEmployeePropertyRequestRequest;
 use App\Http\Requests\Api\Property\AssignEmployeeToCustomerRequest;
 use App\Http\Requests\Api\Property\AttachPropertiesToPropertyRequestRequest;
+use App\Http\Requests\Api\Property\AttachProjectsToPropertyRequestRequest;
 use App\Http\Requests\Api\Property\IndexPropertyRequestsRequest;
 use App\Http\Requests\Api\Property\UpdatePriorityPropertyRequestRequest;
 use App\Models\User\UserDistrict;
@@ -36,6 +36,7 @@ use Illuminate\Support\Carbon;
 use App\Domain\CustomersHub\Services\IgnoredCustomersService;
 use App\Domain\PropertyRequests\Services\PropertyRequestLocationNormalizer;
 use App\Domain\PropertyRequests\Services\PropertyRequestMapPinResolver;
+use App\Domain\PropertyRequests\Services\PropertyRequestLinkSync;
 use App\Http\Requests\Api\Property\MapPropertyRequestsRequest;
 
 class ApiPropertyRequestController extends Controller
@@ -54,64 +55,27 @@ class ApiPropertyRequestController extends Controller
         $tenant = $tenantResult;
 
         $data = $request->validated();
+        $linkSync = app(PropertyRequestLinkSync::class);
         $rawPropertyIds = $data['property_ids'] ?? [];
+        $hasProjectIds = array_key_exists('project_ids', $data);
+        $projectIds = $linkSync->resolveIncomingProjectIds($data);
         unset($data['property_ids']);
+        unset($data['project_ids'], $data['project_id']);
         unset($data['tenant_username']);
         $data['user_id'] = $tenant->id;
 
-        // Normalize property_ids into a clean integer array
-        $propertyIds = [];
-        if (is_array($rawPropertyIds)) {
-            $propertyIds = array_values(array_unique(
-                array_filter(
-                    array_map('intval', $rawPropertyIds),
-                    static fn (int $id): bool => $id > 0
-                )
-            ));
-        }
-
-        // Ensure provided property IDs belong to the resolved tenant
-        if ($propertyIds !== []) {
-            $validIds = \App\Models\User\RealestateManagement\Property::query()
-                ->where('user_id', $tenant->id)
-                ->whereIn('id', $propertyIds)
-                ->pluck('id')
-                ->all();
-
-            sort($validIds);
-            $sortedRequested = $propertyIds;
-            sort($sortedRequested);
-
-            if ($validIds !== $sortedRequested) {
-                return response()->json([
-                    'message' => 'One or more property IDs are invalid or do not belong to this tenant.',
-                    'errors' => [
-                        'property_ids' => ['The selected property IDs are invalid or unauthorized for this tenant.'],
-                    ],
-                ], 422);
-            }
-
-            $propertyIds = $validIds;
-        }
-
-        // Ensure provided project_id belongs to the resolved tenant
-        if (array_key_exists('project_id', $data) && $data['project_id'] !== null) {
-            $projectId = (int) $data['project_id'];
-            $owned = Project::query()
-                ->where('user_id', $tenant->id)
-                ->where('id', $projectId)
-                ->exists();
-
-            if (! $owned) {
-                return response()->json([
-                    'message' => 'The selected project ID is invalid or does not belong to this tenant.',
-                    'errors' => [
+        $propertyIds = $linkSync->assertOwnedPropertyIds($tenant->id, is_array($rawPropertyIds) ? $rawPropertyIds : []);
+        if ($projectIds !== null) {
+            try {
+                $projectIds = $linkSync->assertOwnedProjectIds($tenant->id, $projectIds);
+            } catch (\Illuminate\Validation\ValidationException $exception) {
+                if (! $hasProjectIds) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
                         'project_id' => ['The selected project ID is invalid or unauthorized for this tenant.'],
-                    ],
-                ], 422);
+                    ]);
+                }
+                throw $exception;
             }
-
-            $data['project_id'] = $projectId;
         }
 
         if (! empty($data['region'])) {
@@ -152,6 +116,7 @@ class ApiPropertyRequestController extends Controller
         }
 
         $data['property_ids'] = $propertyIds;
+        $data['project_id'] = $projectIds[0] ?? null;
 
         // Ignore-list guard: reject creation if this phone/customer is on the tenant's ignore list
         $incomingPhone = $data['phone'] ?? null;
@@ -167,6 +132,7 @@ class ApiPropertyRequestController extends Controller
         unset($data['initial_property_id']);
 
         $propertyRequest = UserPropertyRequest::create($data);
+        $linkSync->syncProjectIds($propertyRequest, $projectIds ?? []);
 
         return response()->json([
             'message' => 'تم إرسال الطلب بنجاح.',
@@ -224,6 +190,10 @@ class ApiPropertyRequestController extends Controller
             'phone' => 'required|string|max:20',
             'notes' => 'nullable|string|max:1000',
             'project_id' => 'nullable|integer|exists:user_projects,id',
+            'project_ids' => 'sometimes|array',
+            'project_ids.*' => 'integer|min:1',
+            'property_ids' => 'sometimes|array',
+            'property_ids.*' => 'integer|min:1',
         ]);
 
         try {
@@ -247,29 +217,25 @@ class ApiPropertyRequestController extends Controller
             ], 404);
         }
 
-        // Body project_id wins when key present; otherwise inherit from property when set.
-        $projectId = null;
-        if (array_key_exists('project_id', $validated)) {
-            $projectId = $validated['project_id'] !== null ? (int) $validated['project_id'] : null;
-        } elseif (! empty($property->project_id)) {
-            $projectId = (int) $property->project_id;
+        $linkSync = app(PropertyRequestLinkSync::class);
+        $hasProjectIds = array_key_exists('project_ids', $validated);
+        $projectIds = $linkSync->resolveIncomingProjectIds($validated);
+        if ($projectIds === null) {
+            $projectIds = ! empty($property->project_id) ? [(int) $property->project_id] : [];
         }
-
-        if ($projectId !== null) {
-            $owned = Project::query()
-                ->where('user_id', $tenant->id)
-                ->where('id', $projectId)
-                ->exists();
-
-            if (! $owned) {
-                return response()->json([
-                    'message' => 'The selected project ID is invalid or does not belong to this tenant.',
-                    'errors' => [
-                        'project_id' => ['The selected project ID is invalid or unauthorized for this tenant.'],
-                    ],
-                ], 422);
+        try {
+            $projectIds = $linkSync->assertOwnedProjectIds($tenant->id, $projectIds);
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            if (! $hasProjectIds && array_key_exists('project_id', $validated)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'project_id' => ['The selected project ID is invalid or unauthorized for this tenant.'],
+                ]);
             }
+            throw $exception;
         }
+        $propertyIds = array_key_exists('property_ids', $validated)
+            ? $linkSync->assertOwnedPropertyIds($tenant->id, $validated['property_ids'])
+            : [(int) $property->id];
 
         $content = $property->contents->first();
         $cityId = $content ? $content->city_id : null;
@@ -293,11 +259,11 @@ class ApiPropertyRequestController extends Controller
             'is_read' => false,
             'is_active' => true,
             'is_archived' => false,
-            'property_ids' => [$property->id],
+            'property_ids' => $propertyIds,
             'initial_property_id' => $property->id,
             'latitude' => $property->latitude,
             'longitude' => $property->longitude,
-            'project_id' => $projectId,
+            'project_id' => $projectIds[0] ?? null,
         ];
 
         $data = app(PropertyRequestLocationNormalizer::class)->normalize($data, 'property_interest');
@@ -312,6 +278,7 @@ class ApiPropertyRequestController extends Controller
         }
 
         $propertyRequest = UserPropertyRequest::create($data);
+        $linkSync->syncProjectIds($propertyRequest, $projectIds);
 
         return response()->json([
             'message' => 'تم إرسال طلبك بنجاح. سيتم التواصل معك قريباً.',
@@ -319,6 +286,8 @@ class ApiPropertyRequestController extends Controller
             'data' => [
                 'request_id' => $propertyRequest->id,
                 'property_id' => $property->id,
+                'property_ids' => $propertyRequest->property_ids,
+                'project_ids' => $propertyRequest->toArray()['project_ids'],
             ],
         ], 201);
     }
@@ -345,6 +314,7 @@ class ApiPropertyRequestController extends Controller
                 'customer.responsibleEmployee:id,first_name,last_name,email',
                 'customer.responsibleEmployee.activeWhatsappUser:id,employee_id,number',
                 'district:id,name_ar',
+                'projects:id',
             ])
             ->where('user_id', $ownerId);
 
@@ -1045,7 +1015,7 @@ class ApiPropertyRequestController extends Controller
 
         $propertyRequest = UserPropertyRequest::where('id', $id)
             ->where('user_id', $ownerId)
-            ->with('customer')
+            ->with(['customer', 'projects:id'])
             ->firstOrFail();
 
         return response()->json($propertyRequest);
@@ -1077,6 +1047,9 @@ class ApiPropertyRequestController extends Controller
             ->firstOrFail();
 
         $data = $request->validated();
+        $linkSync = app(PropertyRequestLinkSync::class);
+        $projectIds = $linkSync->resolveIncomingProjectIds($data);
+        unset($data['project_ids'], $data['project_id']);
         unset($data['initial_property_id']);
 
         // Normalize property_type to canonical lowercase value
@@ -1096,28 +1069,10 @@ class ApiPropertyRequestController extends Controller
 
         // Validate property_ids: ensure they exist and belong to this tenant
         if (array_key_exists('property_ids', $data) && is_array($data['property_ids'])) {
-            $requested = array_values(array_unique(array_filter(array_map('intval', $data['property_ids']), static fn (int $pid): bool => $pid > 0)));
-            if ($requested !== []) {
-                $validIds = Property::query()
-                    ->where('user_id', $ownerId)
-                    ->whereIn('id', $requested)
-                    ->pluck('id')
-                    ->all();
-
-                sort($validIds);
-                $sortedRequested = $requested;
-                sort($sortedRequested);
-
-                if ($validIds !== $sortedRequested) {
-                    return response()->json([
-                        'message' => 'One or more property IDs are invalid or do not belong to this tenant.',
-                        'errors' => [
-                            'property_ids' => ['The selected property IDs are invalid or unauthorized for this tenant.'],
-                        ],
-                    ], 422);
-                }
-            }
-            $data['property_ids'] = $requested;
+            $data['property_ids'] = $linkSync->assertOwnedPropertyIds($ownerId, $data['property_ids']);
+        }
+        if ($projectIds !== null) {
+            $projectIds = $linkSync->assertOwnedProjectIds($ownerId, $projectIds);
         }
 
         $normalizer = app(PropertyRequestLocationNormalizer::class);
@@ -1133,8 +1088,11 @@ class ApiPropertyRequestController extends Controller
         }
 
         $propertyRequest->update($data);
+        if ($projectIds !== null) {
+            $linkSync->syncProjectIds($propertyRequest, $projectIds);
+        }
 
-        $propertyRequest->load(['statusOption', 'customer', 'district']);
+        $propertyRequest->load(['statusOption', 'customer', 'district', 'projects:id']);
 
         return response()->json([
             'message' => 'Property request updated successfully',
@@ -1343,7 +1301,7 @@ class ApiPropertyRequestController extends Controller
         $propertyRequest->property_ids = $merged;
         $propertyRequest->save();
 
-        $propertyRequest->load('customer');
+        $propertyRequest->load(['customer', 'projects:id']);
 
         return response()->json([
             'status' => 'success',
@@ -1372,11 +1330,51 @@ class ApiPropertyRequestController extends Controller
         $propertyRequest->property_ids = $ids;
         $propertyRequest->save();
 
-        $propertyRequest->load('customer');
+        $propertyRequest->load(['customer', 'projects:id']);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Property detached successfully.',
+            'data' => ['property_request' => $propertyRequest],
+        ]);
+    }
+
+    public function attachProjects(AttachProjectsToPropertyRequestRequest $request, $id): JsonResponse
+    {
+        $user = $request->user();
+        $ownerId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+
+        $propertyRequest = UserPropertyRequest::query()
+            ->where('id', $id)
+            ->where('user_id', $ownerId)
+            ->firstOrFail();
+
+        $projectIds = app(PropertyRequestLinkSync::class)
+            ->assertOwnedProjectIds($ownerId, $request->validated('projectIds'));
+        app(PropertyRequestLinkSync::class)->attachProjectIds($propertyRequest, $projectIds);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Projects attached successfully.',
+            'data' => ['property_request' => $propertyRequest],
+        ]);
+    }
+
+    public function detachProject(Request $request, $id, $projectId): JsonResponse
+    {
+        $user = $request->user();
+        $ownerId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+
+        $propertyRequest = UserPropertyRequest::query()
+            ->where('id', $id)
+            ->where('user_id', $ownerId)
+            ->firstOrFail();
+
+        app(PropertyRequestLinkSync::class)->detachProjectId($propertyRequest, (int) $projectId);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Project detached successfully.',
             'data' => ['property_request' => $propertyRequest],
         ]);
     }
