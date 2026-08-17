@@ -1,0 +1,9 @@
+Rental amount and installment schedule update
+
+- Rental create and update now accept base_rent_amount; when both base and total are sent, total_rental_amount wins.
+- PATCH /api/v1/rms/rentals/{id} automatically regenerates unpaid installments when amount, payment plan, duration, rental type, or move-in date changes. regenerate_schedule=true remains available for an explicit rebuild.
+- On mid-lease updates, a client-sent total_rental_amount is a notional full-term rate base. The stored total includes already invoiced surviving installments plus the new rate for the remaining installments.
+- Rental updates are PATCH-only; PUT is not supported.
+- payments on rental PATCH is legacy/discouraged and cannot be combined with schedule-affecting fields. Nested payment validation remains unchanged.
+- The contract schedule guard, formula correction, hardened explicit regeneration, and PATCH regeneration changes must be deployed together. Do not deploy the installment-service portion alone.
+- Contract schedule generation retains the existing grace-period behavior: early installment amounts can be zero when grace_period_months is greater than zero.

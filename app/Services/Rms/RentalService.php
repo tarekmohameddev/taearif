@@ -13,6 +13,7 @@ use App\Exceptions\Rms\RentalException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
 
 class RentalService
 {
@@ -292,6 +293,22 @@ class RentalService
                 }
             }
 
+            $numberOfPayments = InstallmentSchedule::numberOfPayments(
+                $data['rental_duration'] ?? null,
+                $data['rental_type'] ?? null,
+                $data['paying_plan'] ?? null,
+                $data['rental_period'] ?? null
+            );
+            if ($numberOfPayments > 0) {
+                if (array_key_exists('total_rental_amount', $data)) {
+                    $data['total_rental_amount'] = round((float) $data['total_rental_amount'], 2);
+                    $data['base_rent_amount'] = round($data['total_rental_amount'] / $numberOfPayments, 2);
+                } elseif (array_key_exists('base_rent_amount', $data)) {
+                    $data['base_rent_amount'] = round((float) $data['base_rent_amount'], 2);
+                    $data['total_rental_amount'] = round($data['base_rent_amount'] * $numberOfPayments, 2);
+                }
+            }
+
             $rental = RmRental::create(array_merge($data, [
                 'user_id' => $userId,
                 'status' => 'active',
@@ -366,6 +383,15 @@ class RentalService
 
         return DB::transaction(function () use ($ownerId, $id, $data, $regenerate) {
             $rental = RmRental::where('user_id', $ownerId)->findOrFail($id);
+            $scheduleFields = [
+                'base_rent_amount',
+                'total_rental_amount',
+                'paying_plan',
+                'rental_duration',
+                'rental_type',
+                'move_in_date',
+            ];
+            $hasScheduleInput = count(array_intersect($scheduleFields, array_keys($data))) > 0;
 
             // Check if unit_id is being changed and if new unit is available
             if (isset($data['unit_id']) && $data['unit_id'] != $rental->unit_id) {
@@ -419,19 +445,139 @@ class RentalService
                 }
             }
 
+            $contract = null;
+            $surviving = collect();
+            $remainingPayments = null;
+            $numberOfPayments = null;
+            $newBase = null;
+            $newTotal = null;
+
+            if ($hasScheduleInput || $regenerate) {
+                $effectiveType = $data['rental_type'] ?? $rental->rental_type;
+                $effectiveDuration = $data['rental_duration'] ?? $rental->rental_duration;
+                $effectivePlan = $data['paying_plan'] ?? $rental->paying_plan;
+                $numberOfPayments = InstallmentSchedule::numberOfPayments(
+                    $effectiveDuration,
+                    $effectiveType,
+                    $effectivePlan,
+                    $rental->rental_period
+                );
+
+                if ($numberOfPayments <= 0) {
+                    throw ValidationException::withMessages([
+                        'rental_duration' => ['Rental duration must produce at least one installment.'],
+                    ]);
+                }
+
+                $contract = $rental->contracts()->where('status', 'active')->first();
+                $installments = $contract
+                    ? $contract->installments()->orderBy('due_date')->get()
+                    : collect();
+                $surviving = $installments->filter(fn ($item) =>
+                    (float) ($item->paid_amount ?? 0) > 0
+                    || in_array($item->status, ['paid', 'partial'], true)
+                );
+                $remainingPayments = max(0, $numberOfPayments - $surviving->count());
+
+                if (array_key_exists('total_rental_amount', $data)) {
+                    $newBase = round((float) $data['total_rental_amount'] / $numberOfPayments, 2);
+                } elseif (array_key_exists('base_rent_amount', $data)) {
+                    $newBase = round((float) $data['base_rent_amount'], 2);
+                } elseif (
+                    array_key_exists('paying_plan', $data)
+                    || array_key_exists('rental_duration', $data)
+                    || array_key_exists('rental_type', $data)
+                ) {
+                    $newBase = round((float) $rental->total_rental_amount / $numberOfPayments, 2);
+                } else {
+                    $newBase = round((float) $rental->base_rent_amount, 2);
+                    if ($newBase <= 0) {
+                        $currentPayments = InstallmentSchedule::numberOfPayments(
+                            $rental->rental_duration,
+                            $rental->rental_type,
+                            $rental->paying_plan,
+                            $rental->rental_period
+                        );
+                        $newBase = $currentPayments > 0
+                            ? round((float) $rental->total_rental_amount / $currentPayments, 2)
+                            : 0;
+                    }
+                }
+
+                $invoiced = round((float) $surviving->sum('amount'), 2);
+                $newTotal = round($invoiced + ($newBase * $remainingPayments), 2);
+                $data['base_rent_amount'] = $newBase;
+                $data['total_rental_amount'] = $newTotal;
+            }
+
             $rental->update($data);
 
-            if ($regenerate && $rental->activeContract) {
-                RmPaymentInstallment::where('contract_id', $rental->activeContract->id)
-                    ->where('status', 'pending')
+            $scheduleChanged = $rental->wasChanged($scheduleFields);
+            if ($scheduleChanged || $regenerate) {
+                if (!$contract) {
+                    throw ValidationException::withMessages([
+                        'contract' => ['No active contract found for this rental.'],
+                    ]);
+                }
+
+                if (!$rental->move_in_date) {
+                    throw ValidationException::withMessages([
+                        'move_in_date' => ['A move-in date is required to regenerate the schedule.'],
+                    ]);
+                }
+
+                if ($remainingPayments <= 0) {
+                    throw ValidationException::withMessages([
+                        'schedule' => ['The lease is fully invoiced; renew or end the contract instead.'],
+                    ]);
+                }
+
+                $maxSequence = (int) ($contract->installments()->max('sequence_no') ?? 0);
+                $contract->installments()
+                    ->whereIn('status', ['pending', 'overdue'])
+                    ->where(function ($query) {
+                        $query->whereNull('paid_amount')->orWhere('paid_amount', 0);
+                    })
                     ->delete();
 
-                $this->generateInstallments(
-                    $ownerId,
-                    $rental->id,
-                    $rental->activeContract->id,
-                    $rental->toArray()
-                );
+                $interval = InstallmentSchedule::intervalMonths($rental->paying_plan);
+                $start = $surviving->isNotEmpty()
+                    ? Carbon::parse($surviving->sortByDesc('due_date')->first()->due_date)->addMonths($interval)
+                    : Carbon::parse($rental->move_in_date);
+                $invoiced = round((float) $surviving->sum('amount'), 2);
+                $allocated = 0.0;
+
+                for ($i = 0; $i < $remainingPayments; $i++) {
+                    $amount = $i === $remainingPayments - 1
+                        ? round($newTotal - $invoiced - $allocated, 2)
+                        : $newBase;
+                    $allocated = round($allocated + $amount, 2);
+
+                    RmPaymentInstallment::create([
+                        'user_id' => $ownerId,
+                        'rental_id' => $rental->id,
+                        'contract_id' => $contract->id,
+                        'sequence_no' => $maxSequence + $i + 1,
+                        'due_date' => $start->copy()->addMonths($i * $interval),
+                        'amount' => $amount,
+                        'status' => 'pending',
+                        'payment_type' => 'none',
+                        'payment_status' => 'not_due',
+                    ]);
+                }
+
+                $timingChanged = $rental->wasChanged(['rental_type', 'rental_duration', 'move_in_date']);
+                if ($timingChanged && $surviving->isEmpty()) {
+                    $totalMonths = InstallmentSchedule::totalMonths(
+                        $rental->rental_duration,
+                        $rental->rental_type,
+                        $rental->rental_period
+                    );
+                    $contract->update([
+                        'start_date' => $rental->move_in_date,
+                        'end_date' => Carbon::parse($rental->move_in_date)->addMonths($totalMonths)->subDay(),
+                    ]);
+                }
             }
 
             // Update property status after rental update
@@ -701,17 +847,14 @@ class RentalService
         $rentalDuration = (int) $data['rental_duration'];
         $rentalType = $data['rental_type'];
 
-        // Calculate how many installments based on paying plan
-        $chunks = match($plan) {
-            'monthly' => 1,
-            'quarterly' => 3,
-            'semi_annual' => 6,
-            'annual' => 12,
-            default => 1
-        };
+        $chunks = InstallmentSchedule::intervalMonths($plan);
 
         // Calculate total months for the rental
-        $totalMonths = $this->calculateTotalMonthsFromDuration($rentalDuration, $rentalType);
+        $totalMonths = InstallmentSchedule::totalMonths(
+            $rentalDuration,
+            $rentalType,
+            $data['rental_period'] ?? null
+        );
 
         // Validate: Ensure total months is positive
         if ($totalMonths <= 0) {
@@ -720,7 +863,12 @@ class RentalService
 
         // Calculate number of installments using ceil to ensure all months are covered
         // Example: 5 months with quarterly (3) = ceil(5/3) = 2 installments
-        $numberOfInstallments = (int) ceil($totalMonths / $chunks);
+        $numberOfInstallments = InstallmentSchedule::numberOfPayments(
+            $rentalDuration,
+            $rentalType,
+            $plan,
+            $data['rental_period'] ?? null
+        );
 
         // Guard clause: Ensure we have at least 1 installment
         if ($numberOfInstallments < 1) {

@@ -278,7 +278,7 @@ class RentalControllerTest extends TestCase
             'tenant_email' => 'jane@example.com'
         ];
 
-        $request = UpdateRentalRequest::create("/api/rentals/{$rentalId}", 'PUT', $updateData);
+        $request = UpdateRentalRequest::create("/api/rentals/{$rentalId}", 'PATCH', $updateData);
         $request->setContainer($this->app);
         $request->setRedirector($this->app->make(\Illuminate\Routing\Redirector::class));
         $request->setUserResolver(fn () => $this->user);
@@ -315,19 +315,21 @@ class RentalControllerTest extends TestCase
             'regenerate_schedule' => true
         ];
 
-        $request = UpdateRentalRequest::create("/api/rentals/{$rentalId}", 'PUT', $updateData);
+        $request = UpdateRentalRequest::create("/api/rentals/{$rentalId}", 'PATCH', $updateData);
         $request->setContainer($this->app);
         $request->setRedirector($this->app->make(\Illuminate\Routing\Redirector::class));
         $request->setUserResolver(fn () => $this->user);
         $request->validateResolved();
         $validated = $request->validated();
+        $serviceData = $validated;
+        unset($serviceData['regenerate_schedule']);
 
         $updatedRental = $this->rentalStub($rentalId, $updateData);
 
         $this->rentalService
             ->shouldReceive('updateRental')
             ->once()
-            ->with(1, $rentalId, $validated, true)
+            ->with(1, $rentalId, $serviceData, true)
             ->andReturn($updatedRental);
 
         $response = $this->controller->update($request, $rentalId);
@@ -343,7 +345,7 @@ class RentalControllerTest extends TestCase
         $rentalId = 999;
         $updateData = ['tenant_full_name' => 'Jane Doe'];
 
-        $request = UpdateRentalRequest::create("/api/rentals/{$rentalId}", 'PUT', $updateData);
+        $request = UpdateRentalRequest::create("/api/rentals/{$rentalId}", 'PATCH', $updateData);
         $request->setContainer($this->app);
         $request->setRedirector($this->app->make(\Illuminate\Routing\Redirector::class));
         $request->setUserResolver(fn () => $this->user);
@@ -498,7 +500,7 @@ class RentalControllerTest extends TestCase
             'unauthorized_field' => 'should_be_ignored'
         ];
 
-        $request = UpdateRentalRequest::create("/api/rentals/{$rentalId}", 'PUT', $requestData);
+        $request = UpdateRentalRequest::create("/api/rentals/{$rentalId}", 'PATCH', $requestData);
         $request->setContainer($this->app);
         $request->setRedirector($this->app->make(\Illuminate\Routing\Redirector::class));
         $request->setUserResolver(fn () => $this->user);

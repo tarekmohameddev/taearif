@@ -7,7 +7,7 @@ use App\Models\Api\Rms\RmContract;
 use App\Models\Api\Rms\RmRental;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
 
 class InstallmentService
 {
@@ -83,25 +83,31 @@ class InstallmentService
 
     public function generateSchedule(RmContract $contract)
     {
+        if ($contract->installments()->exists()) {
+            throw ValidationException::withMessages([
+                'schedule' => ['An installment schedule already exists; use regenerate instead.'],
+            ]);
+        }
+
         $rental = $contract->rental;
-        $months = $rental->rental_period;
-        $plan   = $rental->paying_plan; // monthly|quarterly|semi_annual|annual
+        $periods = InstallmentSchedule::intervalMonths($rental->paying_plan);
+        $totalPayments = InstallmentSchedule::numberOfPayments(
+            $rental->rental_duration,
+            $rental->rental_type,
+            $rental->paying_plan,
+            $rental->rental_period
+        );
 
-        // Use rental base rent amount
-        $baseRent = $rental->base_rent_amount;
+        if ($totalPayments <= 0) {
+            throw ValidationException::withMessages([
+                'rental_duration' => ['Rental duration must produce at least one installment.'],
+            ]);
+        }
 
-        $userId = $rental->user_id; // already owner id on rental
-
-        $periods = match ($plan) {
-            'monthly' => 1,
-            'quarterly' => 3,
-            'semi_annual' => 6,
-            'annual' => 12,
-            default => 1
-        };
-
-        $totalPayments = (int) ceil($months / $periods);
-        $amount = round($baseRent * $periods, 2);
+        $totalAmount = round((float) $rental->total_rental_amount, 2);
+        $amount = round($totalAmount / $totalPayments, 2);
+        $lastAmount = round($totalAmount - ($amount * ($totalPayments - 1)), 2);
+        $rental->update(['base_rent_amount' => $amount]);
 
         $start = \Carbon\Carbon::parse($contract->start_date);
         $grace = (int) ($contract->grace_period_months ?? 0);
@@ -109,13 +115,14 @@ class InstallmentService
         $installments  = [];
         for ($i = 0; $i < $totalPayments; $i++) {
             $isGrace = $i < $grace;
+            $installmentAmount = $i === $totalPayments - 1 ? $lastAmount : $amount;
             $installments [] = [
-                'user_id'    => $userId,
+                'user_id'    => $rental->user_id,
                 'rental_id'  => $rental->id,
                 'contract_id'=> $contract->id,
                 'sequence_no'=> $i + 1,
                 'due_date'   => $start->copy()->addMonths($i * $periods),
-                'amount'     => $isGrace ? 0 : $amount,
+                'amount'     => $isGrace ? 0 : $installmentAmount,
                 'status'     => 'pending',
                 'payment_type' => 'none',
                 'payment_status' => 'not_due',
@@ -129,22 +136,88 @@ class InstallmentService
 
     public function regenerateSchedule($rentalId, $userId)
     {
-        $rental = RmRental::where('id', $rentalId)
-            ->where('user_id', $userId)
-            ->firstOrFail();
+        return DB::transaction(function () use ($rentalId, $userId) {
+            $rental = RmRental::where('id', $rentalId)
+                ->where('user_id', $userId)
+                ->firstOrFail();
 
-        $contract = $rental->contracts()
-            ->where('status', 'active')
-            ->first();
+            $contract = $rental->contracts()
+                ->where('status', 'active')
+                ->first();
 
-        if (!$contract) {
-            throw new \Exception("No active contract found for this rental.");
-        }
+            if (!$contract) {
+                throw ValidationException::withMessages([
+                    'contract' => ['No active contract found for this rental.'],
+                ]);
+            }
 
-        // Delete all installments for this contract
-        RmPaymentInstallment::where('contract_id', $contract->id)->delete();
+            $installments = $contract->installments()->orderBy('due_date')->get();
+            $surviving = $installments->filter(fn ($item) =>
+                (float) ($item->paid_amount ?? 0) > 0
+                || in_array($item->status, ['paid', 'partial'], true)
+            );
 
-        $this->generateSchedule($contract);
+            $numberOfPayments = InstallmentSchedule::numberOfPayments(
+                $rental->rental_duration,
+                $rental->rental_type,
+                $rental->paying_plan,
+                $rental->rental_period
+            );
+            $remainingPayments = max(0, $numberOfPayments - $surviving->count());
+
+            if ($remainingPayments <= 0) {
+                throw ValidationException::withMessages([
+                    'schedule' => ['The lease is fully invoiced; renew or end the contract instead.'],
+                ]);
+            }
+
+            $newBase = round((float) $rental->base_rent_amount, 2);
+            if ($newBase <= 0 && $numberOfPayments > 0) {
+                $newBase = round((float) $rental->total_rental_amount / $numberOfPayments, 2);
+            }
+
+            $invoiced = round((float) $surviving->sum('amount'), 2);
+            $newTotal = round($invoiced + ($newBase * $remainingPayments), 2);
+            $rental->update([
+                'base_rent_amount' => $newBase,
+                'total_rental_amount' => $newTotal,
+            ]);
+
+            $maxSequence = (int) ($installments->max('sequence_no') ?? 0);
+            $contract->installments()
+                ->whereIn('status', ['pending', 'overdue'])
+                ->where(function ($query) {
+                    $query->whereNull('paid_amount')->orWhere('paid_amount', 0);
+                })
+                ->delete();
+
+            $interval = InstallmentSchedule::intervalMonths($rental->paying_plan);
+            $start = $surviving->isNotEmpty()
+                ? Carbon::parse($surviving->sortByDesc('due_date')->first()->due_date)->addMonths($interval)
+                : Carbon::parse($contract->start_date);
+
+            $allocated = 0.0;
+            for ($i = 0; $i < $remainingPayments; $i++) {
+                $amount = $i === $remainingPayments - 1
+                    ? round($newTotal - $invoiced - $allocated, 2)
+                    : $newBase;
+                $allocated = round($allocated + $amount, 2);
+
+                RmPaymentInstallment::create([
+                    'user_id' => $rental->user_id,
+                    'rental_id' => $rental->id,
+                    'contract_id' => $contract->id,
+                    'sequence_no' => $maxSequence + $i + 1,
+                    'due_date' => $start->copy()->addMonths($i * $interval),
+                    'amount' => $amount,
+                    'status' => 'pending',
+                    'payment_type' => 'none',
+                    'payment_status' => 'not_due',
+                ]);
+            }
+
+            return $rental->fresh();
+        });
     }
 
     protected function determineStatus($amount, $paidAmount, $dueDate)

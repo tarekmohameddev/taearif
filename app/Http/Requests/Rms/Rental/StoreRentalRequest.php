@@ -36,7 +36,8 @@ class StoreRentalRequest extends FormRequest
             'rental_type' => ['required', RmsConstants::validationRule(RmsConstants::RENTAL_TYPES)],
             'rental_duration' => 'required|integer|min:1',
             'paying_plan' => ['required', RmsConstants::validationRule(RmsConstants::PAYING_PLANS)],
-            'total_rental_amount' => 'required|numeric|min:0',
+            'base_rent_amount' => 'required_without:total_rental_amount|numeric|gt:0',
+            'total_rental_amount' => 'required_without:base_rent_amount|numeric|gt:0',
             'currency' => 'nullable|string|size:3',
             'contract_number' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
@@ -71,9 +72,12 @@ class StoreRentalRequest extends FormRequest
             'rental_duration.min' => 'Rental duration must be at least 1 period.',
             'paying_plan.required' => 'Please specify the payment plan.',
             'paying_plan.in' => 'Payment plan must be one of: monthly, quarterly, semi_annual, annual.',
-            'total_rental_amount.required' => 'Please provide the total rental amount.',
+            'base_rent_amount.required_without' => 'Please provide either the base or total rental amount.',
+            'base_rent_amount.numeric' => 'The base rental amount must be a number.',
+            'base_rent_amount.gt' => 'The base rental amount must be greater than zero.',
+            'total_rental_amount.required_without' => 'Please provide either the total or base rental amount.',
             'total_rental_amount.numeric' => 'The rental amount must be a number.',
-            'total_rental_amount.min' => 'The rental amount cannot be negative.',
+            'total_rental_amount.gt' => 'The rental amount must be greater than zero.',
             'currency.size' => 'Currency code must be exactly 3 characters (e.g., USD, SAR).',
 
             // Cost items validation messages
@@ -113,6 +117,7 @@ class StoreRentalRequest extends FormRequest
             'rental_type' => 'rental type',
             'rental_duration' => 'duration',
             'paying_plan' => 'payment plan',
+            'base_rent_amount' => 'base rental amount',
             'total_rental_amount' => 'rental amount',
             'contract_number' => 'contract number',
         ];

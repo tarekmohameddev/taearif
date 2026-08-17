@@ -55,7 +55,6 @@ class RmRental extends Model
     protected $appends = [
         'next_payment_due_date',
         'next_payment_amount',
-        'base_rent_amount',
         'total_tenant_costs',
         'total_owner_costs',
         'one_time_tenant_costs',
@@ -172,8 +171,10 @@ class RmRental extends Model
     public function getNextPaymentDueDateAttribute()
     {
         $installment = $this->installments()
-            ->whereIn('status', ['pending', 'active'])
-            ->whereDate('due_date', '>=', now()->toDateString())
+            ->whereIn('status', ['pending', 'overdue', 'active'])
+            ->where(function ($query) {
+                $query->whereNull('paid_amount')->orWhere('paid_amount', 0);
+            })
             ->orderBy('due_date')
             ->first();
 
@@ -183,58 +184,14 @@ class RmRental extends Model
     public function getNextPaymentAmountAttribute()
     {
         $installment = $this->installments()
-            ->whereIn('status', ['pending', 'active'])
-            ->whereDate('due_date', '>=', now()->toDateString())
+            ->whereIn('status', ['pending', 'overdue', 'active'])
+            ->where(function ($query) {
+                $query->whereNull('paid_amount')->orWhere('paid_amount', 0);
+            })
             ->orderBy('due_date')
             ->first();
 
         return $installment?->amount;
-    }
-
-    public function getBaseRentAmountAttribute()
-    {
-        // Calculate base rent amount = amount per payment based on paying_plan
-        // base_rent_amount = total_rental_amount / number_of_payments
-
-        if (is_null($this->total_rental_amount) ||
-            is_null($this->rental_duration) ||
-            is_null($this->rental_type) ||
-            is_null($this->paying_plan) ||
-            $this->rental_duration <= 0) {  // Prevent division by zero
-            return 0;
-        }
-
-        // Calculate total months based on rental_type
-        if ($this->rental_type === 'monthly') {
-            $totalMonths = $this->rental_duration;
-        } elseif ($this->rental_type === 'annual') {
-            $totalMonths = $this->rental_duration * 12;
-        } else {
-            return 0;
-        }
-
-        // Calculate number of payments based on paying_plan
-        // monthly: every month → totalMonths / 1
-        // quarterly: every 3 months → totalMonths / 3
-        // semi_annual: every 6 months → totalMonths / 6
-        // annual: yearly → totalMonths / 12
-        $paymentInterval = match($this->paying_plan) {
-            'monthly' => 1,
-            'quarterly' => 3,
-            'semi_annual' => 6,
-            'annual' => 12,
-            default => 1
-        };
-
-        // Calculate number of payments
-        $numberOfPayments = ceil($totalMonths / $paymentInterval);
-
-        if ($numberOfPayments <= 0) {
-            return 0;
-        }
-
-        // Calculate base rent amount per payment
-        return $this->total_rental_amount / $numberOfPayments;
     }
 
     public function getTotalTenantCostsAttribute()
