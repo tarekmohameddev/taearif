@@ -710,9 +710,11 @@ Route::prefix('v1/credits')->group(function () {
 
     // Payment callback routes (no auth required for webhooks). Accept GET and POST (e.g. ARB may POST).
     Route::match(['get', 'post'], 'payment/success/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\marketing\CreditController::class, 'paymentSuccess'])
-        ->name('api.credits.payment.success');
+        ->middleware('payment.iframe')->name('api.credits.payment.success');
     Route::match(['get', 'post'], 'payment/cancel/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\marketing\CreditController::class, 'paymentCancel'])
-        ->name('api.credits.payment.cancel');
+        ->middleware('payment.iframe')->name('api.credits.payment.cancel');
+    Route::match(['get', 'post'], 'payment/failed/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\marketing\CreditController::class, 'paymentFailed'])
+        ->middleware('payment.iframe')->name('api.credits.payment.failed');
 });
 
 Route::prefix('v1/whatsapp-addons')->group(function () {
@@ -997,6 +999,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::prefix('credits')->middleware(['auth:sanctum'])->group(function () {
         Route::get('balance', [\App\Http\Controllers\Api\marketing\CreditController::class, 'getBalance']);
         Route::post('purchase', [\App\Http\Controllers\Api\marketing\CreditController::class, 'purchasePackage']);
+        Route::get('payment/status/{transaction_id}', [\App\Http\Controllers\Api\marketing\CreditController::class, 'paymentStatus']);
         Route::get('transactions', [\App\Http\Controllers\Api\marketing\CreditController::class, 'getTransactions']);
         Route::get('analytics', [\App\Http\Controllers\Api\marketing\CreditController::class, 'getAnalytics']);
     });

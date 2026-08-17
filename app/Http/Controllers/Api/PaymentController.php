@@ -78,7 +78,12 @@ class PaymentController extends Controller
 
                 // Add credits to user
                 $userCredit = \App\Models\Api\marketing\UserCredit::getOrCreateForUser($user->id);
-                $userCredit->addCredits($credits, null, "Test credit purchase: {$credits} credits");
+                $userCredit->addCredits(
+                    $credits,
+                    null,
+                    "Test credit purchase: {$credits} credits",
+                    $transaction
+                );
 
                 return response()->json([
                     'status' => 'success',

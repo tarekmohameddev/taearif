@@ -12,6 +12,7 @@ use App\Models\PaymentGateway;
 use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\Front\CheckoutController;
 use App\Http\Controllers\User\UserCheckoutController;
+use App\Services\Payment\MyFatoorahGatewayService;
 use Carbon\Carbon;
 use App\Http\Helpers\MegaMailer;
 use Basel\MyFatoorah\MyFatoorah;
@@ -30,10 +31,10 @@ class MyFatoorahController extends Controller
 
         $paymentMethod = PaymentGateway::where('keyword', 'myfatoorah')->first();
         $paydata = $paymentMethod->convertAutoData();
-        Config::set('myfatorah.token', $paydata['token']);
-        Config::set('myfatorah.DisplayCurrencyIso', $be->base_currency_text);
-        Config::set('myfatorah.CallBackUrl', route('myfatoorah.success'));
-        Config::set('myfatorah.ErrorUrl', route('myfatoorah.cancel'));
+        Config::set('myfatoorah.token', $paydata['token']);
+        Config::set('myfatoorah.DisplayCurrencyIso', $be->base_currency_text);
+        Config::set('myfatoorah.CallBackUrl', route('myfatoorah.success'));
+        Config::set('myfatoorah.ErrorUrl', route('myfatoorah.cancel'));
         if ($paydata['sandbox_status'] == 1) {
             $this->myfatoorah = MyFatoorah::getInstance(true);
         } else {
@@ -80,6 +81,45 @@ class MyFatoorahController extends Controller
             return redirect($result['Data']['InvoiceURL']);
         } else {
             return redirect($_cancel_url);
+        }
+    }
+
+    public function initiateInvoicePayment(array $params): array
+    {
+        try {
+            $paymentMethod = PaymentGateway::where('keyword', 'myfatoorah')->first();
+
+            if (!$paymentMethod) {
+                return [
+                    'success' => false,
+                    'message' => 'MyFatoorah payment gateway is not configured.',
+                ];
+            }
+
+            $result = app(MyFatoorahGatewayService::class)->sendPayment($paymentMethod, $params);
+
+            if ($result && ($result['IsSuccess'] ?? false) === true) {
+                $data = $result['Data'] ?? [];
+                $invoiceId = $data['InvoiceId'] ?? $data['InvoiceID'] ?? null;
+                $paymentId = $data['PaymentId'] ?? $data['PaymentID'] ?? null;
+
+                return [
+                    'success' => true,
+                    'redirect_url' => $data['InvoiceURL'],
+                    'payment_token' => $invoiceId ?? $paymentId,
+                    'invoice_id' => $invoiceId,
+                ];
+            }
+
+            return [
+                'success' => false,
+                'message' => $result['Message'] ?? 'Unable to initiate MyFatoorah payment.',
+            ];
+        } catch (\Throwable $exception) {
+            return [
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ];
         }
     }
 

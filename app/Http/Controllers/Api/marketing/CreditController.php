@@ -9,11 +9,17 @@ use App\Models\Api\marketing\UserCredit;
 use App\Models\Api\marketing\CreditPackage;
 use App\Models\Api\marketing\CreditTransaction;
 use App\Models\PaymentGateway;
+use App\Services\Payment\CreditPaymentCompletionService;
+use App\Services\Payment\MyFatoorahGatewayService;
+use App\Services\Payment\PaymentIframeResult;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class CreditController extends BaseApiController
 {
@@ -204,7 +210,12 @@ class CreditController extends BaseApiController
                         ]);
 
                         // Add credits to user
-                        $userCredit->addCredits($package->credits, $package->id, $this->getPurchaseDescription($package, $locale));
+                        $userCredit->addCredits(
+                            $package->credits,
+                            $package->id,
+                            $this->getPurchaseDescription($package, $locale),
+                            $transaction
+                        );
 
                         DB::commit();
 
@@ -421,6 +432,8 @@ class CreditController extends BaseApiController
                 'context' => 'CREDIT_PURCHASE',
                 'app_id' => 0,
                 'transaction_id' => $transaction->id,
+                // ArbController maps period to udf5; use it to bind the callback.
+                'period' => $transaction->id,
                 'package_id' => $package->id,
             ]);
 
@@ -480,46 +493,39 @@ class CreditController extends BaseApiController
     {
         try {
             $myfatoorahController = new \App\Http\Controllers\Payment\MyFatoorahController();
-            
-            // Create a mock request for MyFatoorah payment process
-            $mfRequest = new Request([
-                'amount' => $package->discounted_price,
-                'title' => "Credit Package: {$package->name}",
-                'user_id' => Auth::id(),
-                'transaction_id' => $transaction->id,
-                'package_id' => $package->id,
-            ]);
 
-            // Get basic extended settings for currency
-            $currentLang = session()->has('lang') ? 
-                (\App\Models\Language::where('code', session()->get('lang'))->first()) :
-                (\App\Models\Language::where('is_default', 1)->first());
-            $be = $currentLang->basic_extended;
-
-            // Generate success and cancel URLs for credit purchase
             $successUrl = route('api.credits.payment.success', [
                 'transaction_id' => $transaction->id,
                 'gateway' => 'myfatoorah'
             ]);
-            $cancelUrl = route('api.credits.payment.cancel', [
+            $failedUrl = route('api.credits.payment.failed', [
                 'transaction_id' => $transaction->id,
                 'gateway' => 'myfatoorah'
             ]);
 
-            // Call MyFatoorah payment process
-            $result = $myfatoorahController->paymentProcess(
-                $mfRequest,
-                $package->discounted_price,
-                $successUrl,
-                $cancelUrl,
-                "Credit Package: {$package->name}",
-                $be
-            );
+            $user = Auth::user();
+            $customerName = $user->name
+                ?? trim(($user->fname ?? '') . ' ' . ($user->lname ?? ''));
 
-            if (isset($result['redirect_url'])) {
+            $result = $myfatoorahController->initiateInvoicePayment([
+                'amount' => $package->discounted_price,
+                'currency' => $package->currency,
+                'success_url' => $successUrl,
+                // initiateInvoicePayment maps cancel_url to MyFatoorah's ErrorUrl.
+                'cancel_url' => $failedUrl,
+                'customer_reference' => $transaction->reference_number,
+                'userDefinedField' => (string) $transaction->id,
+                'customer_name' => $customerName,
+                'customer_email' => $user->email ?? '',
+                'customer_mobile' => $user->phone ?? '',
+                'description' => "Credit Package: {$package->name}",
+                'language' => $this->getUserLocale($request),
+            ]);
+
+            if (($result['success'] ?? false) && isset($result['redirect_url'])) {
                 return [
                     'success' => true,
-                    'transaction_id' => $transaction->reference_number,
+                    'transaction_id' => $result['invoice_id'] ?? $result['payment_token'] ?? null,
                     'gateway_response' => [
                         'status' => 'redirect_required',
                         'method' => 'myfatoorah',
@@ -531,7 +537,7 @@ class CreditController extends BaseApiController
             } else {
                 return [
                     'success' => false,
-                    'error' => 'Failed to initialize MyFatoorah payment',
+                    'error' => $result['message'] ?? 'Failed to initialize MyFatoorah payment',
                 ];
             }
 
@@ -543,223 +549,426 @@ class CreditController extends BaseApiController
         }
     }
 
-    /**
-     * Handle payment success callback
-     *
-     * ARB bank posts encrypted `trandata` to BOTH the responseURL (success) AND errorURL (cancel).
-     * We MUST decrypt trandata to know the real result before granting credits.
-     */
     public function paymentSuccess(Request $request, $transactionId, $gateway)
     {
         try {
-            $transaction = CreditTransaction::findOrFail($transactionId);
+            $transaction = $this->resolveCreditTransaction($transactionId);
 
-            // --- Idempotency guard ---
-            if ($transaction->status === 'completed') {
-                return response()->json([
-                    'status'         => 'success',
-                    'message'        => 'Payment already processed',
-                    'transaction_id' => $transaction->reference_number,
-                ]);
-            }
-
-            if ($transaction->status === 'failed') {
-                return response()->json([
-                    'status'         => 'cancelled',
-                    'message'        => 'Payment was cancelled or failed',
-                    'transaction_id' => $transaction->reference_number,
-                ]);
-            }
-
-            // --- For ARB: decrypt trandata to get the real payment result ---
-            $decryptedData = null;
-            if ($gateway === 'arb' && $request->has('trandata')) {
-                try {
-                    $arbController = new \App\Http\Controllers\Payment\ArbController();
-                    $paymentMethod  = \App\Models\PaymentGateway::where('keyword', 'arb')->first();
-                    $paydata        = $paymentMethod->convertAutoData();
-                    $raw            = $arbController->decryption($request->input('trandata'), $paydata['resource_key']);
-                    $decoded        = json_decode(urldecode($raw), true);
-                    // ARB wraps result in an array
-                    $decryptedData  = is_array($decoded) ? ($decoded[0] ?? $decoded) : null;
-                    \Illuminate\Support\Facades\Log::info('ARB credit payment trandata decrypted', [
-                        'transaction_id' => $transactionId,
-                        'result'         => $decryptedData['result'] ?? 'unknown',
-                    ]);
-                } catch (\Exception $decryptErr) {
-                    \Illuminate\Support\Facades\Log::error('ARB credit trandata decryption failed', [
-                        'transaction_id' => $transactionId,
-                        'error'          => $decryptErr->getMessage(),
-                    ]);
-                    // Cannot verify — treat as failed to be safe
-                    $transaction->update([
-                        'status'   => 'failed',
-                        'metadata' => array_merge($transaction->metadata ?? [], [
-                            'payment_failed_at'  => now()->toISOString(),
-                            'gateway'            => $gateway,
-                            'failure_reason'     => 'trandata decryption failed: ' . $decryptErr->getMessage(),
-                            'callback_data'      => $request->all(),
-                        ]),
-                    ]);
-                    return response()->json([
-                        'status'         => 'error',
-                        'message'        => 'Payment verification failed',
-                        'transaction_id' => $transaction->reference_number,
-                    ], 422);
-                }
-            }
-
-            // --- Determine if payment actually succeeded ---
-            $paymentSucceeded = false;
-            $gatewayTransactionId = $request->get('payment_id') ?? $request->get('transaction_id');
-
-            if ($gateway === 'arb') {
-                if ($decryptedData !== null) {
-                    // ARB: only CAPTURED = real success
-                    $paymentSucceeded     = isset($decryptedData['result']) && $decryptedData['result'] === 'CAPTURED';
-                    $gatewayTransactionId = $decryptedData['transId'] ?? $gatewayTransactionId;
-                } else {
-                    // ARB but missing/failed decryption of trandata -> FAIL
-                    // Do NOT fall back to checking query string params for ARB.
-                    $paymentSucceeded = false;
-                }
-            } else {
-                // Non-ARB gateways: check plain request params for failure signals
-                $paymentSucceeded = !$this->requestIndicatesPaymentFailedOrCancelled($request);
-            }
-
-            // --- Payment was cancelled / failed ---
-            if (!$paymentSucceeded) {
-                $cancellationReason = isset($decryptedData['result'])
-                    ? 'ARB result: ' . $decryptedData['result']
-                    : 'Gateway reported failure or user cancelled';
-
-                $transaction->update([
-                    'status'   => 'failed',
-                    'metadata' => array_merge($transaction->metadata ?? [], [
-                        'payment_cancelled_at' => now()->toISOString(),
-                        'gateway'              => $gateway,
-                        'cancellation_reason'  => $cancellationReason,
-                        'callback_data'        => $request->all(),
-                        'decrypted_data'       => $decryptedData,
-                    ]),
-                ]);
-
-                \Illuminate\Support\Facades\Log::info('Credit payment cancelled/failed', [
-                    'transaction_id'     => $transactionId,
-                    'gateway'            => $gateway,
-                    'cancellation_reason'=> $cancellationReason,
-                ]);
-
-                return response()->json([
-                    'status'         => 'cancelled',
-                    'message'        => 'Payment was cancelled',
-                    'transaction_id' => $transaction->reference_number,
-                ]);
-            }
-
-            // --- Payment truly succeeded: add credits ---
-            $transaction->update([
-                'status'                 => 'completed',
-                'payment_transaction_id' => $gatewayTransactionId,
-                'metadata'               => array_merge($transaction->metadata ?? [], [
-                    'payment_completed_at' => now()->toISOString(),
-                    'gateway'              => $gateway,
-                    'callback_data'        => $request->all(),
-                    'decrypted_data'       => $decryptedData,
-                ]),
-            ]);
-
-            $userCredit = UserCredit::getOrCreateForUser($transaction->user_id);
-            $userCredit->addCredits(
-                $transaction->credits_amount,
-                $transaction->credit_package_id,
-                "Credit purchase via {$gateway}"
+            return $this->handleVerifiedCallback($request, $transaction, $gateway, 'success');
+        } catch (ModelNotFoundException $e) {
+            return app(PaymentIframeResult::class)->respond(
+                $request,
+                $this->iframePayload(null, $gateway, 'failed', 'Unknown transaction')
             );
-
-            \Illuminate\Support\Facades\Log::info('Credit payment completed, credits added', [
-                'transaction_id'  => $transactionId,
-                'user_id'         => $transaction->user_id,
-                'credits_added'   => $transaction->credits_amount,
-                'gateway'         => $gateway,
-            ]);
-
-            return response()->json([
-                'status'         => 'success',
-                'message'        => 'Payment successful and credits added',
-                'transaction_id' => $transaction->reference_number,
-                'credits_added'  => $transaction->credits_amount,
-                'new_balance'    => $userCredit->fresh()->total_credits,
-            ]);
-
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Credit paymentSuccess callback error', [
+        } catch (Throwable $e) {
+            Log::error('Credit payment success callback error', [
                 'transaction_id' => $transactionId ?? null,
                 'gateway'        => $gateway ?? null,
                 'error'          => $e->getMessage(),
+                'trace'          => $e->getTraceAsString(),
             ]);
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Failed to process payment success: ' . $e->getMessage(),
-            ], 500);
+
+            return app(PaymentIframeResult::class)->respond(
+                $request,
+                $this->iframePayload($transaction ?? null, $gateway, 'failed', 'Payment processing failed')
+            );
         }
     }
 
-    /**
-     * Check if request contains gateway params indicating payment failed or was cancelled
-     */
-    private function requestIndicatesPaymentFailedOrCancelled(Request $request): bool
-    {
-        $result = strtoupper((string) ($request->input('result') ?? $request->input('payment_result') ?? $request->input('status') ?? ''));
-        $failedValues = ['NOT CAPTURED', 'NOT_CAPTURED', 'CANCELLED', 'CANCELED', 'FAILED', 'ERROR', 'DECLINED'];
-        if (in_array($result, $failedValues, true)) {
-            return true;
-        }
-        if ($request->has('error') || $request->has('payment_error')) {
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Handle payment cancel callback
-     */
     public function paymentCancel(Request $request, $transactionId, $gateway)
     {
         try {
-            $transaction = CreditTransaction::findOrFail($transactionId);
-            
-            if ($transaction->status === 'completed') {
-                return response()->json([
-                    'status' => 'info',
-                    'message' => 'Payment was already completed',
-                    'transaction_id' => $transaction->reference_number,
-                ]);
+            $transaction = $this->resolveCreditTransaction($transactionId);
+
+            return $this->handleVerifiedCallback($request, $transaction, $gateway, 'cancel');
+        } catch (ModelNotFoundException $e) {
+            return app(PaymentIframeResult::class)->respond(
+                $request,
+                $this->iframePayload(null, $gateway, 'failed', 'Unknown transaction')
+            );
+        } catch (Throwable $e) {
+            Log::error('Credit payment cancel callback error', [
+                'transaction_id' => $transactionId ?? null,
+                'gateway' => $gateway ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return app(PaymentIframeResult::class)->respond(
+                $request,
+                $this->iframePayload($transaction ?? null, $gateway, 'failed', 'Payment processing failed')
+            );
+        }
+    }
+
+    public function paymentFailed(Request $request, $transactionId, $gateway)
+    {
+        try {
+            $transaction = $this->resolveCreditTransaction($transactionId);
+
+            return $this->handleVerifiedCallback($request, $transaction, $gateway, 'failed');
+        } catch (ModelNotFoundException $e) {
+            return app(PaymentIframeResult::class)->respond(
+                $request,
+                $this->iframePayload(null, $gateway, 'failed', 'Unknown transaction')
+            );
+        } catch (Throwable $e) {
+            Log::error('Credit payment failed callback error', [
+                'transaction_id' => $transactionId ?? null,
+                'gateway' => $gateway ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return app(PaymentIframeResult::class)->respond(
+                $request,
+                $this->iframePayload($transaction ?? null, $gateway, 'failed', 'Payment processing failed')
+            );
+        }
+    }
+
+    public function paymentStatus($transactionId): JsonResponse
+    {
+        $query = CreditTransaction::where('user_id', Auth::id());
+
+        if (is_string($transactionId) && str_starts_with($transactionId, 'CT')) {
+            $transaction = $query->where('reference_number', $transactionId)->first();
+        } elseif (ctype_digit((string) $transactionId)) {
+            $transaction = $query->whereKey((int) $transactionId)->first();
+        } else {
+            $transaction = null;
+        }
+
+        if (!$transaction) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Transaction not found',
+                'transaction_id' => null,
+            ], 404);
+        }
+
+        $status = [
+            'completed' => 'success',
+            'failed' => 'failed',
+            'cancelled' => 'cancelled',
+            'pending' => 'pending',
+            'refunded' => 'failed',
+        ][$transaction->status] ?? 'failed';
+
+        $payload = [
+            'status' => $status,
+            'transaction_id' => $transaction->reference_number,
+        ];
+
+        if ($transaction->isCompleted()) {
+            $userCredit = UserCredit::where('user_id', $transaction->user_id)->first();
+            $payload['credits_added'] = (int) $transaction->credits_amount;
+            $payload['new_balance'] = (int) ($userCredit->total_credits ?? 0);
+        }
+
+        return response()->json($payload);
+    }
+
+    private function resolveCreditTransaction($id): CreditTransaction
+    {
+        if (!ctype_digit((string) $id) || (int) $id < 1) {
+            throw (new ModelNotFoundException())->setModel(CreditTransaction::class, [$id]);
+        }
+
+        return CreditTransaction::with('creditPackage')->findOrFail((int) $id);
+    }
+
+    private function verifyArbPayment(Request $request, CreditTransaction $transaction): array
+    {
+        if (!$request->filled('trandata')) {
+            return ['state' => 'missing', 'reason' => 'Missing ARB trandata'];
+        }
+
+        try {
+            $paymentMethod = PaymentGateway::where('keyword', 'arb')->first();
+            if (!$paymentMethod) {
+                return ['state' => 'failed', 'reason' => 'ARB gateway is not configured'];
             }
 
-            // Update transaction status to failed
-            $transaction->update([
-                'status' => 'failed',
-                'metadata' => array_merge($transaction->metadata ?? [], [
-                    'payment_cancelled_at' => now()->toISOString(),
-                    'gateway' => $gateway,
-                    'cancellation_reason' => 'User cancelled payment',
-                    'callback_data' => $request->all(),
-                ]),
-            ]);
+            $paydata = $paymentMethod->convertAutoData();
+            $raw = app(\App\Http\Controllers\Payment\ArbController::class)
+                ->decryption($request->input('trandata'), $paydata['resource_key']);
 
-            return response()->json([
-                'status' => 'cancelled',
-                'message' => 'Payment was cancelled',
-                'transaction_id' => $transaction->reference_number,
-            ]);
+            if ($raw === false) {
+                return ['state' => 'failed', 'reason' => 'ARB trandata decryption failed'];
+            }
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to process payment cancellation: ' . $e->getMessage(),
-            ], 500);
+            $decoded = json_decode(urldecode($raw), true);
+            $data = is_array($decoded) ? ($decoded[0] ?? $decoded) : null;
+            if (!is_array($data)) {
+                return ['state' => 'failed', 'reason' => 'Invalid ARB trandata'];
+            }
+
+            $result = strtoupper((string) ($data['result'] ?? ''));
+            $metadata = ['arb_data' => $data];
+
+            if ($result === 'CAPTURED' && !isset($data['error'])) {
+                $gatewayId = trim((string) ($data['transId'] ?? ''));
+                $amount = $data['amt'] ?? null;
+                $expectedBindings = [
+                    'udf1' => (string) $transaction->credit_package_id,
+                    'udf2' => (string) $transaction->user_id,
+                    'udf3' => 'CREDIT_PURCHASE',
+                    'udf5' => (string) $transaction->id,
+                ];
+
+                if ($gatewayId === '') {
+                    return ['state' => 'failed', 'reason' => 'ARB transaction ID is missing', 'metadata' => $metadata];
+                }
+
+                foreach ($expectedBindings as $field => $expectedValue) {
+                    if ((string) ($data[$field] ?? '') !== $expectedValue) {
+                        return ['state' => 'failed', 'reason' => 'ARB transaction binding mismatch', 'metadata' => $metadata];
+                    }
+                }
+
+                if (
+                    $amount === null
+                    || abs((float) $amount - (float) $transaction->amount_paid) > 0.01
+                ) {
+                    return ['state' => 'failed', 'reason' => 'ARB payment amount mismatch', 'metadata' => $metadata];
+                }
+
+                return [
+                    'state' => 'verified',
+                    'gateway_id' => $gatewayId,
+                    'amount' => (float) $amount,
+                    'metadata' => $metadata,
+                ];
+            }
+
+            if (in_array($result, ['PENDING', 'INPROGRESS', 'IN PROGRESS', 'PROCESSING', 'AUTHORIZED'], true)) {
+                return ['state' => 'pending', 'reason' => "ARB result: {$result}", 'metadata' => $metadata];
+            }
+
+            if (in_array($result, ['CANCELLED', 'CANCELED'], true)) {
+                return ['state' => 'cancelled', 'reason' => "ARB result: {$result}", 'metadata' => $metadata];
+            }
+
+            return [
+                'state' => 'failed',
+                'reason' => $data['error'] ?? ($result ? "ARB result: {$result}" : 'ARB verification failed'),
+                'metadata' => $metadata,
+            ];
+        } catch (Throwable $e) {
+            Log::warning('ARB credit payment verification failed', ['error' => $e->getMessage()]);
+
+            return ['state' => 'failed', 'reason' => 'ARB payment verification failed'];
         }
+    }
+
+    private function verifyMyFatoorahPayment(Request $request, CreditTransaction $transaction): array
+    {
+        $paymentId = $request->input('paymentId');
+        if (!$paymentId) {
+            return ['state' => 'missing', 'reason' => 'Missing MyFatoorah payment ID'];
+        }
+
+        try {
+            $paymentMethod = PaymentGateway::where('keyword', 'myfatoorah')->first();
+            if (!$paymentMethod) {
+                return ['state' => 'failed', 'reason' => 'MyFatoorah gateway is not configured'];
+            }
+
+            $result = app(MyFatoorahGatewayService::class)->getPaymentStatus(
+                $paymentMethod,
+                (string) $paymentId
+            );
+
+            if (!$result || !($result['IsSuccess'] ?? false)) {
+                return ['state' => 'pending', 'reason' => 'MyFatoorah verification is inconclusive'];
+            }
+
+            $data = $result['Data'] ?? [];
+            $invoiceStatus = strtoupper(trim((string) ($data['InvoiceStatus'] ?? '')));
+            $metadata = [
+                'myfatoorah_payment_id' => (string) $paymentId,
+                'myfatoorah_invoice_status' => $data['InvoiceStatus'] ?? null,
+            ];
+
+            if ($invoiceStatus !== 'PAID') {
+                if (in_array($invoiceStatus, ['PENDING', 'INPROGRESS', 'IN PROGRESS', 'PROCESSING', 'NEW', 'UNPAID'], true)) {
+                    return ['state' => 'pending', 'reason' => "MyFatoorah status: {$invoiceStatus}", 'metadata' => $metadata];
+                }
+
+                return ['state' => 'failed', 'reason' => "MyFatoorah status: {$invoiceStatus}", 'metadata' => $metadata];
+            }
+
+            $validBindings = [(string) $transaction->id, (string) $transaction->reference_number];
+            $customerReference = (string) ($data['CustomerReference'] ?? '');
+            $userDefinedField = (string) ($data['UserDefinedField'] ?? $data['UDF'] ?? '');
+            if (
+                !in_array($customerReference, $validBindings, true)
+                && !in_array($userDefinedField, $validBindings, true)
+            ) {
+                return ['state' => 'failed', 'reason' => 'MyFatoorah transaction binding mismatch', 'metadata' => $metadata];
+            }
+
+            $paidAmount = $data['InvoiceValue'] ?? $data['PaidCurrencyValue'] ?? null;
+            if ($paidAmount === null && !empty($data['InvoiceTransactions'][0])) {
+                $invoiceTransaction = $data['InvoiceTransactions'][0];
+                $paidAmount = $invoiceTransaction['PaidCurrencyValue']
+                    ?? $invoiceTransaction['TransationValue']
+                    ?? null;
+            }
+
+            $expectedAmount = $transaction->amount_paid;
+            if ($expectedAmount === null && $transaction->creditPackage) {
+                $expectedAmount = $transaction->creditPackage->discounted_price;
+            }
+
+            if (
+                $paidAmount === null
+                || $expectedAmount === null
+                || abs((float) $paidAmount - (float) $expectedAmount) > 0.01
+            ) {
+                return ['state' => 'failed', 'reason' => 'MyFatoorah payment amount mismatch', 'metadata' => $metadata];
+            }
+
+            return [
+                'state' => 'verified',
+                'gateway_id' => (string) $paymentId,
+                'amount' => (float) $paidAmount,
+                'metadata' => $metadata,
+            ];
+        } catch (Throwable $e) {
+            Log::warning('MyFatoorah credit payment verification failed', [
+                'payment_id' => $paymentId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['state' => 'pending', 'reason' => 'MyFatoorah payment verification is temporarily unavailable'];
+        }
+    }
+
+    private function iframePayload(
+        ?CreditTransaction $transaction,
+        string $gateway,
+        string $status,
+        ?string $message = null
+    ): array {
+        $payload = [
+            'status' => $status,
+            'gateway' => $gateway,
+            'transaction_id' => $transaction?->reference_number,
+            'package_id' => $transaction?->credit_package_id,
+        ];
+
+        if ($message !== null) {
+            $payload['message'] = $message;
+        }
+
+        if ($status === 'success' && $transaction) {
+            $userCredit = UserCredit::where('user_id', $transaction->user_id)->first();
+            $payload['credits_added'] = (int) $transaction->credits_amount;
+            $payload['new_balance'] = (int) ($userCredit->total_credits ?? 0);
+        }
+
+        return $payload;
+    }
+
+    private function handleVerifiedCallback(
+        Request $request,
+        CreditTransaction $transaction,
+        string $gateway,
+        string $entryPoint
+    ) {
+        $gateway = strtolower($gateway);
+        $responder = app(PaymentIframeResult::class);
+        $completion = app(CreditPaymentCompletionService::class);
+
+        if ($gateway === 'arb') {
+            $verification = $this->verifyArbPayment($request, $transaction);
+        } elseif ($gateway === 'myfatoorah') {
+            $verification = $this->verifyMyFatoorahPayment($request, $transaction);
+        } else {
+            $verification = ['state' => 'failed', 'reason' => 'Unsupported payment gateway'];
+        }
+
+        $metadata = array_merge($verification['metadata'] ?? [], [
+            'callback_entry_point' => $entryPoint,
+            'callback_received_at' => now()->toISOString(),
+            'callback_data' => $request->all(),
+        ]);
+
+        if ($transaction->status === 'refunded') {
+            return $responder->respond(
+                $request,
+                $this->iframePayload($transaction, $gateway, 'failed', 'Payment has been refunded')
+            );
+        }
+
+        if ($transaction->isCompleted()) {
+            return $responder->respond(
+                $request,
+                $this->iframePayload($transaction, $gateway, 'success', 'Payment already processed')
+            );
+        }
+
+        if ($verification['state'] === 'verified') {
+            $completed = $completion->complete($transaction, [
+                'payment_transaction_id' => $verification['gateway_id'] ?? null,
+                'payment_method' => $gateway,
+                'metadata' => array_merge($metadata, ['payment_completed_at' => now()->toISOString()]),
+                'amount_paid' => $verification['amount'] ?? $transaction->amount_paid,
+            ]);
+
+            return $responder->respond(
+                $request,
+                $this->iframePayload($completed, $gateway, 'success', 'Payment successful and credits added')
+            );
+        }
+
+        if ($verification['state'] === 'pending') {
+            return $responder->respond(
+                $request,
+                $this->iframePayload($transaction, $gateway, 'pending', $verification['reason'] ?? null)
+            );
+        }
+
+        if (
+            $verification['state'] === 'cancelled'
+            || ($verification['state'] === 'missing' && $entryPoint === 'cancel')
+        ) {
+            $cancelled = $completion->markCancelled($transaction, array_merge($metadata, [
+                'payment_cancelled_at' => now()->toISOString(),
+                'cancellation_reason' => $verification['reason'] ?? 'User cancelled payment',
+            ]));
+
+            if ($cancelled->isCompleted()) {
+                return $responder->respond(
+                    $request,
+                    $this->iframePayload($cancelled, $gateway, 'success', 'Payment already processed')
+                );
+            }
+
+            return $responder->respond(
+                $request,
+                $this->iframePayload($cancelled, $gateway, 'cancelled')
+            );
+        }
+
+        $failed = $completion->markFailed($transaction, array_merge($metadata, [
+            'payment_failed_at' => now()->toISOString(),
+            'failure_reason' => $verification['reason'] ?? 'Payment verification failed',
+        ]));
+
+        if ($failed->isCompleted()) {
+            return $responder->respond(
+                $request,
+                $this->iframePayload($failed, $gateway, 'success', 'Payment already processed')
+            );
+        }
+
+        return $responder->respond(
+            $request,
+            $this->iframePayload($failed, $gateway, 'failed', $verification['reason'] ?? null)
+        );
     }
 
     /**
