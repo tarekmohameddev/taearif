@@ -747,6 +747,16 @@ class AuthController extends Controller
         }
 
         try {
+            app(\App\Domain\Notifications\DevicePushTokenService::class)->deactivate(
+                (int) auth()->id(),
+                $request->validated('device_id'),
+                $request->validated('push_token')
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Push token deactivation failed during logout', ['error' => $e->getMessage()]);
+        }
+
+        try {
             // Always revoke the Bearer token (handles TransientToken case when Sanctum auth's via another guard)
             $bearer = $request->bearerToken();
             if ($bearer !== null && $bearer !== '') {

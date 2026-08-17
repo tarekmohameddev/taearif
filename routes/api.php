@@ -1206,6 +1206,16 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
 
 // Matching Endpoints (Dashboard APIs, require auth) - observer-only, retrieval endpoints
 Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
+    Route::post('devices/push-tokens', [\App\Http\Controllers\Api\V1\NotificationDeviceController::class, 'store']);
+    Route::delete('devices/push-tokens', [\App\Http\Controllers\Api\V1\NotificationDeviceController::class, 'destroy']);
+
+    Route::get('notifications', [\App\Http\Controllers\Api\V1\NotificationController::class, 'index']);
+    Route::get('notifications/unread-count', [\App\Http\Controllers\Api\V1\NotificationController::class, 'unreadCount']);
+    Route::patch('notifications/read-all', [\App\Http\Controllers\Api\V1\NotificationController::class, 'markAllRead']);
+    Route::patch('notifications/{id}/read', [\App\Http\Controllers\Api\V1\NotificationController::class, 'markRead']);
+    Route::get('notifications/preferences', [\App\Http\Controllers\Api\V1\NotificationController::class, 'preferences']);
+    Route::put('notifications/preferences', [\App\Http\Controllers\Api\V1\NotificationController::class, 'updatePreferences']);
+
     Route::prefix('matching')->group(function () {
         // Customer Requests (unified web + whatsapp)
         Route::get('requests', [V1CustomerRequestController::class, 'index']);
