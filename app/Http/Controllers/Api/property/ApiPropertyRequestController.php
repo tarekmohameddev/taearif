@@ -37,6 +37,7 @@ use App\Domain\CustomersHub\Services\IgnoredCustomersService;
 use App\Domain\PropertyRequests\Services\PropertyRequestLocationNormalizer;
 use App\Domain\PropertyRequests\Services\PropertyRequestMapPinResolver;
 use App\Domain\PropertyRequests\Services\PropertyRequestLinkSync;
+use App\Domain\Notifications\NotificationOrchestrator;
 use App\Http\Requests\Api\Property\MapPropertyRequestsRequest;
 
 class ApiPropertyRequestController extends Controller
@@ -133,6 +134,7 @@ class ApiPropertyRequestController extends Controller
 
         $propertyRequest = UserPropertyRequest::create($data);
         $linkSync->syncProjectIds($propertyRequest, $projectIds ?? []);
+        app(NotificationOrchestrator::class)->propertyRequestCreated((int) $tenant->id, $propertyRequest);
 
         return response()->json([
             'message' => 'تم إرسال الطلب بنجاح.',
@@ -279,6 +281,7 @@ class ApiPropertyRequestController extends Controller
 
         $propertyRequest = UserPropertyRequest::create($data);
         $linkSync->syncProjectIds($propertyRequest, $projectIds);
+        app(NotificationOrchestrator::class)->propertyRequestCreated((int) $tenant->id, $propertyRequest);
 
         return response()->json([
             'message' => 'تم إرسال طلبك بنجاح. سيتم التواصل معك قريباً.',

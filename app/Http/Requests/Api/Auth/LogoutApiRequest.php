@@ -13,6 +13,9 @@ class LogoutApiRequest extends BaseApiFormRequest
 
     public function rules()
     {
-        return [];
+        return [
+            'device_id' => ['sometimes', 'string', 'max:191'],
+            'push_token' => ['sometimes', 'string', 'max:4096'],
+        ];
     }
 }
