@@ -4,6 +4,37 @@ namespace App\Services\Rms;
 
 class InstallmentSchedule
 {
+    public static function splitTotalAcrossPayments(float|int $total, int $paymentCount): array
+    {
+        if ($paymentCount < 1) {
+            throw new \InvalidArgumentException('Payment count must be at least 1');
+        }
+
+        $wholeTotal = self::normalizeWholeAmount($total);
+
+        if ($paymentCount === 1) {
+            $base = $wholeTotal;
+            $last = $wholeTotal;
+        } else {
+            $base = (int) round($wholeTotal / $paymentCount, 0, PHP_ROUND_HALF_UP);
+            $last = $wholeTotal - ($base * ($paymentCount - 1));
+        }
+
+        if ($base === 0 || $last < 0) {
+            throw new \InvalidArgumentException('Total amount cannot be split across the payment count');
+        }
+
+        return [
+            'base' => $base,
+            'last' => $last,
+        ];
+    }
+
+    public static function normalizeWholeAmount(float|int $amount): int
+    {
+        return (int) round($amount, 0, PHP_ROUND_HALF_UP);
+    }
+
     public static function intervalMonths(?string $payingPlan): int
     {
         return match ($payingPlan) {

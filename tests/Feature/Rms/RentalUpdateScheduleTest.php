@@ -5,6 +5,9 @@ namespace Tests\Feature\Rms;
 use App\Models\Api\Rms\RmContract;
 use App\Models\Api\Rms\RmPaymentInstallment;
 use App\Models\Api\Rms\RmRental;
+use App\Http\Requests\Rms\Rental\RenewRentalRequest;
+use App\Http\Requests\Rms\Rental\StoreRentalRequest;
+use App\Http\Requests\Rms\Rental\UpdateRentalRequest;
 use App\Services\Rms\ContractService;
 use App\Services\Rms\InstallmentService;
 use App\Services\Rms\RentalService;
@@ -57,13 +60,81 @@ class RentalUpdateScheduleTest extends TestCase
         $this->assertSame('5000.00', $fromBase->base_rent_amount);
         $this->assertSame('60000.00', $fromBase->total_rental_amount);
         $this->assertCount(12, $fromBase->installments);
+        $this->assertSame([5000.0], $fromBase->installments->pluck('amount')->map(
+            fn ($amount) => (float) $amount
+        )->unique()->values()->all());
 
         $both = $service->createRental($this->user->id, $this->rentalData([
             'tenant_full_name' => 'Both amounts',
-            'base_rent_amount' => 100,
-            'total_rental_amount' => 60000,
+            'rental_duration' => 2,
+            'base_rent_amount' => 416.66,
+            'total_rental_amount' => 10000,
         ]));
-        $this->assertSame('5000.00', $both->base_rent_amount);
+        $this->assertSame('417.00', $both->base_rent_amount);
+        $this->assertSame('10000.00', $both->total_rental_amount);
+        $this->assertCount(24, $both->installments);
+        $this->assertEquals(417, $both->installments->first()->amount);
+        $this->assertEquals(409, $both->installments->last()->amount);
+        $this->assertEquals(10000, $both->installments->sum('amount'));
+    }
+
+    public function test_amount_requests_accept_dot_zero_and_reject_fractional_values(): void
+    {
+        $storeData = $this->rentalData(['total_rental_amount' => '5000.00']);
+        $this->assertFalse($this->validatorFor(StoreRentalRequest::class, $storeData)->fails());
+
+        $storeData['total_rental_amount'] = 10000.5;
+        $this->assertTrue($this->validatorFor(StoreRentalRequest::class, $storeData)->fails());
+
+        $this->assertFalse($this->validatorFor(UpdateRentalRequest::class, [
+            'base_rent_amount' => '5000.00',
+        ])->fails());
+        $this->assertTrue($this->validatorFor(UpdateRentalRequest::class, [
+            'base_rent_amount' => 416.66,
+        ])->fails());
+        $this->assertFalse($this->validatorFor(UpdateRentalRequest::class, [
+            'total_rental_amount' => 10000,
+            'base_rent_amount' => 416.66,
+        ])->fails());
+
+        $renewData = [
+            'rental_type' => 'annual',
+            'rental_duration' => 1,
+            'paying_plan' => 'monthly',
+            'total_rental_amount' => '5000.00',
+        ];
+        $this->assertFalse($this->validatorFor(RenewRentalRequest::class, $renewData)->fails());
+
+        $renewData['total_rental_amount'] = 10000.5;
+        $this->assertTrue($this->validatorFor(RenewRentalRequest::class, $renewData)->fails());
+        $renewData['total_rental_amount'] = 0;
+        $this->assertTrue($this->validatorFor(RenewRentalRequest::class, $renewData)->fails());
+    }
+
+    public function test_renew_persists_whole_base_and_uneven_schedule(): void
+    {
+        $oldRental = $this->makeRental([
+            'tenant_full_name' => 'Renew whole amount',
+            'status' => 'ended',
+        ]);
+
+        $result = app(RentalService::class)->renewRental($this->user->id, $oldRental->id, [
+            'rental_type' => 'annual',
+            'rental_duration' => 2,
+            'paying_plan' => 'monthly',
+            'total_rental_amount' => 10000,
+            'currency' => 'SAR',
+        ]);
+
+        $renewed = RmRental::findOrFail($result['id']);
+        $installments = $renewed->installments()->orderBy('sequence_no')->get();
+
+        $this->assertSame('417.00', $renewed->base_rent_amount);
+        $this->assertSame('10000.00', $renewed->total_rental_amount);
+        $this->assertCount(24, $installments);
+        $this->assertEquals(417, $installments->first()->amount);
+        $this->assertEquals(409, $installments->last()->amount);
+        $this->assertEquals(10000, $installments->sum('amount'));
     }
 
     public function test_generate_schedule_uses_modern_and_legacy_terms_and_rejects_duplicates(): void
@@ -96,6 +167,26 @@ class RentalUpdateScheduleTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $service->generateSchedule($legacyContract);
+    }
+
+    public function test_generate_schedule_splits_uneven_total_into_whole_amounts(): void
+    {
+        $rental = $this->makeRental([
+            'tenant_full_name' => 'Uneven generated schedule',
+            'rental_duration' => 2,
+            'base_rent_amount' => null,
+            'total_rental_amount' => 10000,
+        ]);
+        $contract = $this->makeContract($rental);
+
+        app(InstallmentService::class)->generateSchedule($contract);
+
+        $installments = $contract->installments()->orderBy('sequence_no')->get();
+        $this->assertSame('417.00', $rental->fresh()->base_rent_amount);
+        $this->assertCount(24, $installments);
+        $this->assertEquals(417, $installments->first()->amount);
+        $this->assertEquals(409, $installments->last()->amount);
+        $this->assertEquals(10000, $installments->sum('amount'));
     }
 
     public function test_contract_create_only_generates_when_requested(): void
@@ -139,6 +230,30 @@ class RentalUpdateScheduleTest extends TestCase
         $this->assertSame('2026-03-01', $rebuilt->first()->due_date->format('Y-m-d'));
         $this->assertEquals(5000, $rebuilt->first()->amount);
         $this->assertSame('58000.00', $rental->fresh()->total_rental_amount);
+    }
+
+    public function test_regeneration_rounds_fractional_stored_base_and_rebuilds_unpaid_rows(): void
+    {
+        [$rental, $contract] = $this->rentalWithSchedule(400);
+        $originalIds = $contract->installments()->pluck('id')->all();
+        $rental->update([
+            'base_rent_amount' => 416.67,
+            'total_rental_amount' => 5000.04,
+        ]);
+
+        $updated = app(InstallmentService::class)->regenerateSchedule(
+            $rental->id,
+            $this->user->id
+        );
+
+        $rebuilt = $contract->installments()->orderBy('sequence_no')->get();
+        $this->assertSame('417.00', $updated->base_rent_amount);
+        $this->assertSame('5004.00', $updated->total_rental_amount);
+        $this->assertCount(12, $rebuilt);
+        $this->assertNotSame($originalIds, $rebuilt->pluck('id')->all());
+        $this->assertSame([417.0], $rebuilt->pluck('amount')->map(
+            fn ($amount) => (float) $amount
+        )->unique()->values()->all());
     }
 
     public function test_patch_base_amount_auto_regenerates_unpaid_schedule(): void
@@ -216,10 +331,17 @@ class RentalUpdateScheduleTest extends TestCase
         $updated = app(RentalService::class)->updateRental(
             $this->user->id,
             $rental->id,
-            ['base_rent_amount' => 1, 'total_rental_amount' => 60000]
+            ['base_rent_amount' => 416.66, 'total_rental_amount' => 10000]
         );
-        $this->assertSame('5000.00', $updated->base_rent_amount);
-        $this->assertSame('57000.00', $updated->total_rental_amount);
+        $this->assertSame('833.00', $updated->base_rent_amount);
+        $this->assertSame('19497.00', $updated->total_rental_amount);
+        $this->assertSame([833.0], $contract->installments()
+            ->where('status', 'pending')
+            ->pluck('amount')
+            ->map(fn ($amount) => (float) $amount)
+            ->unique()
+            ->values()
+            ->all());
 
         $ids = $contract->installments()->pluck('id')->all();
         app(RentalService::class)->updateRental(
@@ -372,6 +494,18 @@ class RentalUpdateScheduleTest extends TestCase
             'status' => 'active',
             'grace_period_months' => 0,
         ], $overrides);
+    }
+
+    private function validatorFor(string $requestClass, array $data): \Illuminate\Validation\Validator
+    {
+        $request = $requestClass::create('/', 'POST', $data);
+        $validator = validator($request->request->all(), $request->rules());
+
+        if (method_exists($request, 'withValidator')) {
+            $request->withValidator($validator);
+        }
+
+        return $validator;
     }
 
     private function createIsolatedTables(): void

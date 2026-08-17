@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Rms\Rental;
 
 use App\Constants\RmsConstants;
+use App\Rules\WholeNumber;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreRentalRequest extends FormRequest
@@ -22,6 +23,16 @@ class StoreRentalRequest extends FormRequest
      */
     public function rules(): array
     {
+        $baseRentAmountRules = ['required_without:total_rental_amount', 'numeric', 'gt:0'];
+        $totalRentalAmountRules = ['required_without:base_rent_amount', 'numeric', 'gt:0'];
+
+        // total_rental_amount takes precedence; a fractional companion base is ignored.
+        if ($this->exists('total_rental_amount')) {
+            $totalRentalAmountRules[] = new WholeNumber;
+        } else {
+            $baseRentAmountRules[] = new WholeNumber;
+        }
+
         return [
             'tenant_full_name' => 'required|string|max:150',
             'tenant_phone' => 'required|string|max:32',
@@ -36,8 +47,8 @@ class StoreRentalRequest extends FormRequest
             'rental_type' => ['required', RmsConstants::validationRule(RmsConstants::RENTAL_TYPES)],
             'rental_duration' => 'required|integer|min:1',
             'paying_plan' => ['required', RmsConstants::validationRule(RmsConstants::PAYING_PLANS)],
-            'base_rent_amount' => 'required_without:total_rental_amount|numeric|gt:0',
-            'total_rental_amount' => 'required_without:base_rent_amount|numeric|gt:0',
+            'base_rent_amount' => $baseRentAmountRules,
+            'total_rental_amount' => $totalRentalAmountRules,
             'currency' => 'nullable|string|size:3',
             'contract_number' => 'nullable|string|max:255',
             'notes' => 'nullable|string',

@@ -301,11 +301,18 @@ class RentalService
             );
             if ($numberOfPayments > 0) {
                 if (array_key_exists('total_rental_amount', $data)) {
-                    $data['total_rental_amount'] = round((float) $data['total_rental_amount'], 2);
-                    $data['base_rent_amount'] = round($data['total_rental_amount'] / $numberOfPayments, 2);
+                    $data['total_rental_amount'] = InstallmentSchedule::normalizeWholeAmount(
+                        (float) $data['total_rental_amount']
+                    );
+                    $data['base_rent_amount'] = InstallmentSchedule::splitTotalAcrossPayments(
+                        $data['total_rental_amount'],
+                        $numberOfPayments
+                    )['base'];
                 } elseif (array_key_exists('base_rent_amount', $data)) {
-                    $data['base_rent_amount'] = round((float) $data['base_rent_amount'], 2);
-                    $data['total_rental_amount'] = round($data['base_rent_amount'] * $numberOfPayments, 2);
+                    $data['base_rent_amount'] = InstallmentSchedule::normalizeWholeAmount(
+                        (float) $data['base_rent_amount']
+                    );
+                    $data['total_rental_amount'] = $data['base_rent_amount'] * $numberOfPayments;
                 }
             }
 
@@ -480,27 +487,23 @@ class RentalService
                 $remainingPayments = max(0, $numberOfPayments - $surviving->count());
 
                 if (array_key_exists('total_rental_amount', $data)) {
-                    $newBase = round((float) $data['total_rental_amount'] / $numberOfPayments, 2);
+                    $newBase = InstallmentSchedule::splitTotalAcrossPayments(
+                        (float) $data['total_rental_amount'],
+                        $numberOfPayments
+                    )['base'];
                 } elseif (array_key_exists('base_rent_amount', $data)) {
-                    $newBase = round((float) $data['base_rent_amount'], 2);
-                } elseif (
-                    array_key_exists('paying_plan', $data)
-                    || array_key_exists('rental_duration', $data)
-                    || array_key_exists('rental_type', $data)
-                ) {
-                    $newBase = round((float) $rental->total_rental_amount / $numberOfPayments, 2);
+                    $newBase = InstallmentSchedule::normalizeWholeAmount(
+                        (float) $data['base_rent_amount']
+                    );
                 } else {
-                    $newBase = round((float) $rental->base_rent_amount, 2);
+                    $newBase = InstallmentSchedule::normalizeWholeAmount(
+                        (float) $rental->base_rent_amount
+                    );
                     if ($newBase <= 0) {
-                        $currentPayments = InstallmentSchedule::numberOfPayments(
-                            $rental->rental_duration,
-                            $rental->rental_type,
-                            $rental->paying_plan,
-                            $rental->rental_period
-                        );
-                        $newBase = $currentPayments > 0
-                            ? round((float) $rental->total_rental_amount / $currentPayments, 2)
-                            : 0;
+                        $newBase = InstallmentSchedule::splitTotalAcrossPayments(
+                            (float) $rental->total_rental_amount,
+                            $numberOfPayments
+                        )['base'];
                     }
                 }
 
@@ -875,12 +878,12 @@ class RentalService
             $numberOfInstallments = 1;
         }
 
-        // Calculate installment amount
-        $installmentAmount = round($totalAmount / $numberOfInstallments, 2);
-
-        // Calculate the last installment to account for rounding differences
-        $totalAllocated = $installmentAmount * ($numberOfInstallments - 1);
-        $lastInstallmentAmount = round($totalAmount - $totalAllocated, 2);
+        $split = InstallmentSchedule::splitTotalAcrossPayments(
+            (float) $totalAmount,
+            $numberOfInstallments
+        );
+        $installmentAmount = $split['base'];
+        $lastInstallmentAmount = $split['last'];
 
         for ($i = 0; $i < $numberOfInstallments; $i++) {
             // Use adjusted amount for last installment to ensure total matches exactly
@@ -1972,6 +1975,20 @@ class RentalService
                 }
             }
 
+            $numberOfPayments = InstallmentSchedule::numberOfPayments(
+                $data['rental_duration'],
+                $data['rental_type'],
+                $data['paying_plan'],
+                $data['rental_period'] ?? null
+            );
+            $wholeTotal = InstallmentSchedule::normalizeWholeAmount(
+                (float) $data['total_rental_amount']
+            );
+            $split = InstallmentSchedule::splitTotalAcrossPayments(
+                $wholeTotal,
+                $numberOfPayments
+            );
+
             // Prepare new rental data by copying from old rental and merging with new data
             $newRentalData = [
                 'user_id' => $ownerId,
@@ -1990,7 +2007,8 @@ class RentalService
                 'rental_type' => $data['rental_type'],
                 'rental_duration' => $data['rental_duration'],
                 'paying_plan' => $data['paying_plan'],
-                'total_rental_amount' => $data['total_rental_amount'],
+                'base_rent_amount' => $split['base'],
+                'total_rental_amount' => $wholeTotal,
                 'currency' => $data['currency'] ?? $oldRental->currency ?? 'SAR',
                 'move_in_date' => now()->toDateString(), // Start from today
                 'notes' => $data['notes'] ?? null,

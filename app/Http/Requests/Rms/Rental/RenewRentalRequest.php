@@ -4,6 +4,7 @@ namespace App\Http\Requests\Rms\Rental;
 
 use App\Constants\RmsConstants;
 use App\Http\Requests\Api\BaseApiFormRequest;
+use App\Rules\WholeNumber;
 
 class RenewRentalRequest extends BaseApiFormRequest
 {
@@ -26,7 +27,7 @@ class RenewRentalRequest extends BaseApiFormRequest
             'rental_type' => ['required', RmsConstants::validationRule(RmsConstants::RENTAL_TYPES)],
             'rental_duration' => 'required|integer|min:1',
             'paying_plan' => ['required', RmsConstants::validationRule(RmsConstants::PAYING_PLANS)],
-            'total_rental_amount' => 'required|numeric|min:0',
+            'total_rental_amount' => ['required', 'numeric', 'gt:0', new WholeNumber],
             'currency' => 'nullable|string|size:3',
             'notes' => 'nullable|string',
             'cost_items' => 'nullable|array',
@@ -56,7 +57,7 @@ class RenewRentalRequest extends BaseApiFormRequest
             'paying_plan.in' => 'Payment plan must be one of: monthly, quarterly, semi_annual, annual.',
             'total_rental_amount.required' => 'Please provide the total rental amount.',
             'total_rental_amount.numeric' => 'The rental amount must be a number.',
-            'total_rental_amount.min' => 'The rental amount cannot be negative.',
+            'total_rental_amount.gt' => 'The rental amount must be greater than zero.',
             'currency.size' => 'Currency code must be exactly 3 characters.',
             'cost_items.*.name.required' => 'Each cost item must have a name.',
             'cost_items.*.cost.required' => 'Each cost item must have a cost value.',

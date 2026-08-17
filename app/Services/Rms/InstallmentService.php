@@ -104,9 +104,12 @@ class InstallmentService
             ]);
         }
 
-        $totalAmount = round((float) $rental->total_rental_amount, 2);
-        $amount = round($totalAmount / $totalPayments, 2);
-        $lastAmount = round($totalAmount - ($amount * ($totalPayments - 1)), 2);
+        $split = InstallmentSchedule::splitTotalAcrossPayments(
+            (float) $rental->total_rental_amount,
+            $totalPayments
+        );
+        $amount = $split['base'];
+        $lastAmount = $split['last'];
         $rental->update(['base_rent_amount' => $amount]);
 
         $start = \Carbon\Carbon::parse($contract->start_date);
@@ -171,9 +174,14 @@ class InstallmentService
                 ]);
             }
 
-            $newBase = round((float) $rental->base_rent_amount, 2);
+            $newBase = InstallmentSchedule::normalizeWholeAmount(
+                (float) $rental->base_rent_amount
+            );
             if ($newBase <= 0 && $numberOfPayments > 0) {
-                $newBase = round((float) $rental->total_rental_amount / $numberOfPayments, 2);
+                $newBase = InstallmentSchedule::splitTotalAcrossPayments(
+                    (float) $rental->total_rental_amount,
+                    $numberOfPayments
+                )['base'];
             }
 
             $invoiced = round((float) $surviving->sum('amount'), 2);
