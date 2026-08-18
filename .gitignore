@@ -12,6 +12,9 @@
 /storage/api-docs/
 !/storage/app/sa_regions_and_governorates.json
 
+# Server-only credentials (Firebase, APNs keys, etc.)
+/secure/
+
 # Environment files and backups
 .env
 .env.backup
