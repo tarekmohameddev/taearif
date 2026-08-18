@@ -24,6 +24,7 @@ return new class extends Migration
             'الباقة الشهرية' => 'Monthly Package',
             'الباقة السنوية' => 'Annual Package',
             'الباقة المجانية' => 'Free Package',
+            'الباقة التجريبية' => 'Trial Package',
         ];
 
         foreach ($titles as $title => $titleEn) {

@@ -126,6 +126,11 @@ class RegisterUserController extends Controller
                 });
             });
         })
+        ->when($request->filled('package_id'), function ($q) use ($request) {
+            $q->whereHas('currentMembership', function ($m) use ($request) {
+                $m->where('package_id', (int) $request->package_id);
+            });
+        })
         ->orderBy('id', 'DESC')
         ->paginate(10);
 
@@ -145,6 +150,7 @@ class RegisterUserController extends Controller
         $offline = OfflineGateway::where('status', 1)->get();
         $gateways = $online->merge($offline);
         $packages = Package::query()->where('status', '1')->get();
+        $packageFilterButtons = $this->packageFilterButtons($packages);
 
         $logoUploads = UserStep::where('logo_uploaded', true)->count();
         $faviconUploads = UserStep::where('favicon_uploaded', true)->count();
@@ -179,7 +185,8 @@ class RegisterUserController extends Controller
             'activeMembership',
             'paidMember',
             'activeUsers',
-            'userListQuery'
+            'userListQuery',
+            'packageFilterButtons'
         ));
     }
 
@@ -208,7 +215,32 @@ class RegisterUserController extends Controller
             $query['term'] = (string) $request->query('term', '');
         }
 
+        if ($request->query->has('package_id')) {
+            $query['package_id'] = (string) $request->query('package_id', '');
+        }
+
         return $query;
+    }
+
+    private function packageFilterButtons($packages)
+    {
+        $orderedIds = [24, 25, 26, 16];
+        $fallbacks = [
+            24 => 'الباقة المميزة سنوية',
+            25 => 'الباقة المميزة الشهرية',
+            26 => 'الباقة التجريبية',
+            16 => 'الباقة المجانية',
+        ];
+        $packagesById = $packages->keyBy('id');
+
+        return collect($orderedIds)->map(function (int $id) use ($packagesById, $fallbacks) {
+            $package = $packagesById->get($id);
+
+            return (object) [
+                'id' => $id,
+                'title' => ($package && filled($package->title)) ? $package->title : $fallbacks[$id],
+            ];
+        });
     }
 
     public function view($id)

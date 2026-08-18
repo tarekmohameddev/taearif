@@ -135,6 +135,9 @@
                                     @if (array_key_exists('term', $userListQuery))
                                         <input type="hidden" name="term" value="{{ $userListQuery['term'] }}">
                                     @endif
+                                    @if (array_key_exists('package_id', $userListQuery))
+                                        <input type="hidden" name="package_id" value="{{ $userListQuery['package_id'] }}">
+                                    @endif
                                     <div class="input-group date-range-filter flex-wrap">
 
                                         {{-- Date From --}}
@@ -241,6 +244,27 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-lg-12">
+                        <div class="btn-group btn-group-sm flex-wrap mb-3" role="group">
+                            @php
+                                $showAllQuery = Arr::except($userListQuery, ['package_id', 'paid_member', 'page']);
+                            @endphp
+                            <a href="{{ route('admin.register.user', $showAllQuery) }}"
+                               class="btn {{ !request()->filled('package_id') ? 'btn-primary' : 'btn-outline-primary' }}">
+                                {{ __('Show All') }}
+                            </a>
+                            @foreach ($packageFilterButtons as $package)
+                                @php
+                                    $query = Arr::except($userListQuery, ['package_id', 'paid_member', 'page']);
+                                    if ((string) request('package_id') !== (string) $package->id) {
+                                        $query['package_id'] = $package->id;
+                                    }
+                                @endphp
+                                <a href="{{ route('admin.register.user', $query) }}"
+                                   class="btn {{ (string) request('package_id') === (string) $package->id ? 'btn-primary' : 'btn-outline-primary' }}">
+                                    {{ $package->title }}
+                                </a>
+                            @endforeach
+                        </div>
                         @if ($users->total() == 0)
                         <h3 class="text-center">{{ __('NO USER FOUND') }}</h3>
                         @else
