@@ -7,6 +7,15 @@
         padding: 2px;
         border-radius: 5px;
     }
+
+    .dropdown-menu .dropdown-item {
+        transition: transform 0.5s ease;
+        transform-origin: center;
+    }
+
+    .dropdown-menu .dropdown-item:hover {
+        transform: scale(1.05);
+    }
 </style>
 <div class="page-header">
     <h4 class="page-title">
@@ -299,12 +308,6 @@
                                             @if ($currPackage)
                                             <a target="_blank" href="{{route('admin.package.edit', $currPackage->id)}}">{{$currPackage->title}}</a>
                                             <span class="badge badge-secondary badge-xs mr-2">{{ __($currPackage->term) }}</span>
-                                            <button type="submit" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#editCurrentPackage"><i class="far fa-edit"></i></button>
-                                            <form action="{{route('admin.user.currPackage.remove')}}" class="d-inline-block deleteform" method="POST">
-                                                @csrf
-                                                <input type="hidden" name="user_id" value="{{$user->id}}">
-                                                <button type="submit" class="btn btn-xs btn-danger deletebtn"><i class="fas fa-trash"></i></button>
-                                            </form>
 
                                             <p class="mb-0">
                                                 @if ($currMemb->is_trial == 1)
@@ -327,7 +330,7 @@
                                             </p>
 
                                             @else
-                                            <a data-target="#addCurrentPackage" data-toggle="modal" class="btn btn-xs btn-primary text-white"><i class="fas fa-plus"></i> {{ __('Add Package') }}</a>
+                                            <a data-target="#addCurrentPackage-{{ $user->id }}" data-toggle="modal" class="btn btn-xs btn-primary text-white"><i class="fas fa-plus"></i> {{ __('Add Package') }}</a>
                                             @endif
 
                                         </td>
@@ -339,24 +342,37 @@
                                         @includeIf('admin.register_user.edit-next-package')
                                         @includeIf('admin.register_user.add-next-package')
                                         <td>
+                                            @if ($currPackage)
+                                            <form id="remove-package-form-{{ $user->id }}" action="{{ route('admin.user.currPackage.remove') }}" class="deleteform d-none" method="POST">
+                                                @csrf
+                                                <input type="hidden" name="user_id" value="{{ $user->id }}">
+                                                <button type="submit" class="deletebtn"></button>
+                                            </form>
+                                            @endif
+                                            <form id="delete-user-form-{{ $user->id }}" class="deleteform d-none" action="{{ route('admin.register.user.delete') }}" method="post">
+                                                @csrf
+                                                <input type="hidden" name="user_id" value="{{ $user->id }}">
+                                                <button type="submit" class="deletebtn"></button>
+                                            </form>
                                             <div class="dropdown">
                                                 <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                     {{ __('Actions') }}
                                                 </button>
                                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                                    <a class="dropdown-item" href="{{ route('admin.register.user.view', $user->id) }}">{{ __('Details') }}</a>
-                                                    <a class="dropdown-item" href="{{ route('admin.register.user.changePass', $user->id) }}">{{ __('Change Password') }}</a>
-                                                    <form class="deleteform d-block" action="{{ route('admin.register.user.delete') }}" method="post">
-                                                        @csrf
-                                                        <input type="hidden" name="user_id" value="{{ $user->id }}">
-                                                        <button type="submit" class="deletebtn">
-                                                            {{ __('Delete') }}
-                                                        </button>
-                                                    </form>
                                                     <a href="{{ route('admin.register.user.secretLogin', $user) }}" target="_blank" class="dropdown-item">
                                                         {{ __('Secret Login') }}
                                                     </a>
-
+                                                    <a class="dropdown-item" href="{{ route('admin.register.user.view', $user->id) }}">{{ __('Details') }}</a>
+                                                    <a class="dropdown-item" href="{{ route('admin.register.user.changePass', $user->id) }}">{{ __('Change Password') }}</a>
+                                                    @if ($currPackage)
+                                                    <a class="dropdown-item" href="#" data-toggle="modal" data-target="#editCurrentPackage-{{ $user->id }}">{{ __('Change Current Package') }}</a>
+                                                    <a href="#" class="dropdown-item" onclick="event.preventDefault(); document.getElementById('remove-package-form-{{ $user->id }}').querySelector('.deletebtn').click();">
+                                                        {{ __('Remove Package') }}
+                                                    </a>
+                                                    @endif
+                                                    <a href="#" class="dropdown-item" onclick="event.preventDefault(); document.getElementById('delete-user-form-{{ $user->id }}').querySelector('.deletebtn').click();">
+                                                        {{ __('Delete') }}
+                                                    </a>
                                                 </div>
                                             </div>
                                         </td>

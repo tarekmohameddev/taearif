@@ -1,5 +1,5 @@
 <!-- Modal -->
-<div class="modal fade" id="addCurrentPackage" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+<div class="modal fade" id="addCurrentPackage-{{ $user->id }}" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -9,7 +9,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="addCurrPackageForm" action="{{route('admin.user.currPackage.add')}}" method="POST">
+                <form id="addCurrPackageForm-{{ $user->id }}" action="{{route('admin.user.currPackage.add')}}" method="POST">
                     @csrf
                     <input type="hidden" name="user_id" value="{{$user->id}}">
                     <div class="form-group">
@@ -34,7 +34,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
-                <button type="submit" form="addCurrPackageForm" class="btn btn-primary">{{ __('Add') }}</button>
+                <button type="submit" form="addCurrPackageForm-{{ $user->id }}" class="btn btn-primary">{{ __('Add') }}</button>
             </div>
         </div>
     </div>
