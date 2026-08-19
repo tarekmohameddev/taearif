@@ -7,7 +7,7 @@
 <div class="sidebar sidebar-style-2" @if (request()->cookie('admin-theme') == 'dark') data-background-color="dark2" @endif>
     <div class="sidebar-wrapper scrollbar scrollbar-inner">
         <div class="sidebar-content">
-            <ul class="nav nav-primary" style="margin-top: 10px !important;">
+            <ul class="nav nav-primary">
 
                 <li class="nav-item px-3 mb-1">
                     <form action="" class="sidebar-search-container">

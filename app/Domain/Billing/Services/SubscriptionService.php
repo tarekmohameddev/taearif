@@ -170,10 +170,12 @@ class SubscriptionService extends BaseService
                 'payment_method' => $data['payment_method'],
                 'transaction_id' => 'ADMIN_PLAN_CHANGE_' . Str::uuid(),
                 'status' => 1,
-                'is_trial' => false,
-                'trial_days' => 0,
+                'is_trial' => $plan->term === 'trial' || $plan->hasTrial(),
+                'trial_days' => ($plan->term === 'trial' || $plan->hasTrial())
+                    ? (((int) $plan->trial_days > 0) ? (int) $plan->trial_days : \App\Services\MembershipService::DEFAULT_TRIAL_DAYS)
+                    : 0,
                 'start_date' => $startDate->toDateString(),
-                'expire_date' => $this->calculateExpireDate($startDate, $plan->term)->toDateString(),
+                'expire_date' => $this->calculateExpireDate($startDate, $plan->term, $plan->trial_days)->toDateString(),
                 'transaction_details' => !empty($data['notes'])
                     ? json_encode(['admin_notes' => $data['notes']])
                     : null,
@@ -183,8 +185,17 @@ class SubscriptionService extends BaseService
         });
     }
 
-    protected function calculateExpireDate(Carbon $start, ?string $term): Carbon
+    protected function calculateExpireDate(Carbon $start, ?string $term, $trialDays = null): Carbon
     {
+        if ($term === 'trial') {
+            $days = (int) $trialDays;
+            if ($days < 1) {
+                $days = \App\Services\MembershipService::DEFAULT_TRIAL_DAYS;
+            }
+
+            return $start->copy()->addDays($days);
+        }
+
         return match ($term) {
             'daily' => $start->copy()->addDay(),
             'weekly' => $start->copy()->addWeek(),

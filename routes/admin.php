@@ -240,6 +240,7 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('register/user/store', 'Admin\RegisterUserController@store')->name('register.user.store');
         Route::post('register/users/ban', 'Admin\RegisterUserController@userban')->name('register.user.ban');
         Route::post('register/users/featured', 'Admin\RegisterUserController@userFeatured')->name('register.user.featured');
+        Route::post('register/users/maintenance', 'Admin\RegisterUserController@toggleMaintenance')->name('register.user.maintenance');
         Route::post('register/users/template', 'Admin\RegisterUserController@userTemplate')->name('register.user.template');
         Route::post('register/users/template/update', 'Admin\RegisterUserController@userUpdateTemplate')->name('register.user.updateTemplate');
         Route::post('register/users/email', 'Admin\RegisterUserController@emailStatus')->name('register.user.email');

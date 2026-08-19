@@ -1143,7 +1143,7 @@ if (!app()->environment('production')) {
 //Route::post('/whatsapp/webhook', [App\Http\Controllers\Api\WhatsAppWebhookController::class, 'handleWebhook']);
 
 // Tenant Website API (mixed: some routes public, some require auth:sanctum)
-Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.id.response'])->group(function () {
+Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.id.response','tenant.maintenance'])->group(function () {
     Route::post('getTenant', [GetTenantController::class, 'store']);
     Route::post('save-pages', [SavePagesController::class, 'store'])->middleware('auth:sanctum');
 

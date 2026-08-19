@@ -462,27 +462,40 @@ class RegisterUserListingTest extends AdminApiTestCase
 
     protected function ensureAdminViewData(): void
     {
-        $languageId = DB::table('languages')->insertGetId([
-            'name' => 'English',
-            'code' => 'en',
-            'is_default' => 1,
-            'rtl' => 0,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        DB::table('languages')->updateOrInsert(
+            ['code' => 'en'],
+            [
+                'name' => 'English',
+                'is_default' => 1,
+                'rtl' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
 
-        DB::table('basic_settings')->insert([
+        $languageId = (int) DB::table('languages')->where('code', 'en')->value('id');
+
+        $settingsPayload = [
             'language_id' => $languageId,
             'website_title' => 'Taearif',
             'timezone' => 'UTC',
             'logo' => 'logo.png',
             'favicon' => 'favicon.png',
-            'copyright_text' => 'Taearif',
-        ]);
+        ];
 
-        DB::table('basic_extendeds')->insert([
-            'language_id' => $languageId,
-        ]);
+        if (\Illuminate\Support\Facades\Schema::hasColumn('basic_settings', 'copyright_text')) {
+            $settingsPayload['copyright_text'] = 'Taearif';
+        }
+
+        DB::table('basic_settings')->updateOrInsert(
+            ['language_id' => $languageId],
+            $settingsPayload
+        );
+
+        DB::table('basic_extendeds')->updateOrInsert(
+            ['language_id' => $languageId],
+            []
+        );
 
         $currentLang = \App\Models\Language::query()
             ->with(['basic_setting', 'basic_extended'])
@@ -515,7 +528,7 @@ class RegisterUserListingTest extends AdminApiTestCase
                 'id' => 25,
                 'title' => 'الباقة المميزة الشهرية',
             ]),
-            26 => $this->createPackage(MembershipService::TERM_MONTHLY, [
+            26 => $this->createPackage(MembershipService::TERM_TRIAL, [
                 'id' => 26,
                 'title' => 'الباقة التجريبية',
             ]),

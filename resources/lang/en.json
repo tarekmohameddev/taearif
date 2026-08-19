@@ -12,6 +12,7 @@
     "Monthly": "Monthly",
     "Yearly": "Yearly",
     "monthly": "monthly",
+    "trial": "trial",
     "yearly": "yearly",
     "Website": "Website",
     "Follow": "Follow",
@@ -2770,5 +2771,17 @@
     "Connection Successful": "Connection Successful",
     "Connection Failed": "Connection Failed",
     "Unable to connect to provider": "Unable to connect to provider",
-    "Failed to toggle provider": "Failed to toggle provider"
+    "Failed to toggle provider": "Failed to toggle provider",
+    "Subscription": "الاشتراك",
+    "Subscription Expired": "منتهي",
+    "Not Subscribed": "غير مشترك",
+    "Awaiting Payment": "بانتظار الدفع",
+    "Remaining": "باقي",
+    "Free Package": "الباقة المجانية",
+    "Enable Maintenance Mode": "تحت الصيانة",
+    "Disable Maintenance Mode": "إلغاء الصيانة",
+    "Under Maintenance": "تحت الصيانة",
+    "Site set under maintenance": "تم وضع الموقع تحت الصيانة",
+    "Site is back online": "تم إعادة الموقع للعمل",
+    "This website is currently under maintenance": "هذا الموقع حالياً تحت الصيانة"
 }

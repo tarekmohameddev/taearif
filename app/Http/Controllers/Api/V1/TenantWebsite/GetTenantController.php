@@ -11,6 +11,7 @@ use App\Models\TenantGlobalComponent;
 use App\Models\TenantWebsiteLayout;
 use App\Models\TenantSetting;
 use App\Models\Api\ApiDomainSetting;
+use App\Models\Api\GeneralSetting;
 use App\Models\User\BasicSetting;
 
 use App\Http\Requests\Api\V1\TenantWebsite\GetTenantRequest;
@@ -86,6 +87,7 @@ class GetTenantController extends Controller
                 'WebsiteLayout' => $layout?->data ?? [],
                 'ThemesBackup' => $layout?->themes_backup ?? null,
                 'StaticPages' => $staticPagesData,
+                'maintenance_mode' => $this->isMaintenanceMode($tenant),
             ]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('GetTenant failed', [
@@ -109,6 +111,7 @@ class GetTenantController extends Controller
                 'WebsiteLayout' => [],
                 'ThemesBackup' => null,
                 'StaticPages' => null,
+                'maintenance_mode' => $this->isMaintenanceMode($tenant),
             ]);
         }
     }
@@ -178,6 +181,11 @@ class GetTenantController extends Controller
         }
 
         return null;
+    }
+
+    private function isMaintenanceMode(User $tenant): bool
+    {
+        return (bool) (GeneralSetting::where('user_id', $tenant->id)->first()?->maintenance_mode ?? false);
     }
 
     private function normalizeDomain(string $value): string

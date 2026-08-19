@@ -21,7 +21,7 @@ class MembershipService
 {
     const FREE_PACKAGE_ID = 16;
     const PAID_YEARLY_PACKAGE_ID = 24;
-    const PAID_MONTHLY_PACKAGE_ID = 26;
+    const PAID_MONTHLY_PACKAGE_ID = 25;
     const TRIAL_PACKAGE_ID = 26;
 
     // Package terms
@@ -29,6 +29,7 @@ class MembershipService
     const TERM_YEARLY = 'yearly';
     const TERM_LIFETIME = 'lifetime';
     const TERM_TRIAL = 'trial';
+    const DEFAULT_TRIAL_DAYS = 7;
 
     protected $userPackageService;
     protected $whatsappService;
@@ -375,6 +376,15 @@ class MembershipService
     public function calculateExpireDate(Package $package, Carbon $startDate, int $period = 1): Carbon
     {
         $period = max(1, $period);
+
+        if ($package->term === self::TERM_TRIAL) {
+            $trialDays = (int) $package->trial_days;
+            if ($trialDays < 1) {
+                $trialDays = self::DEFAULT_TRIAL_DAYS;
+            }
+
+            return $startDate->copy()->addDays($trialDays);
+        }
 
         return match ($package->term) {
             self::TERM_MONTHLY => $startDate->copy()->addMonths($period),

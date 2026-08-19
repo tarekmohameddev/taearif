@@ -101,6 +101,7 @@ class Kernel extends HttpKernel
         'require.active.package' => \App\Http\Middleware\RequireActiveMembership::class,
         'check.maintenance' => \App\Http\Middleware\CheckMaintenanceMode::class,
         'tenant.resolve' => \App\Http\Middleware\TenantResolution::class,
+        'tenant.maintenance' => \App\Http\Middleware\TenantSiteMaintenance::class,
         'owner-rental.auth' => \App\Http\Middleware\OwnerRentalAuth::class,
         'tenant.id.response' => \App\Http\Middleware\AddTenantIdToResponse::class,
         'prevent.swagger.production' => \App\Http\Middleware\PreventSwaggerInProduction::class,

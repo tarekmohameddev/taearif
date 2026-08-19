@@ -250,7 +250,7 @@ class InvoiceService extends BaseService
 
         // Calculate new dates based on today
         $startDate = Carbon::today();
-        $expireDate = $this->calculateExpireDate($startDate, $package->term);
+        $expireDate = $this->calculateExpireDate($startDate, $package->term, $package->trial_days);
 
         return [
             'start_date' => $startDate->format('Y-m-d'),
@@ -265,8 +265,17 @@ class InvoiceService extends BaseService
      * @param string $term
      * @return Carbon
      */
-    protected function calculateExpireDate(Carbon $startDate, string $term): Carbon
+    protected function calculateExpireDate(Carbon $startDate, string $term, $trialDays = null): Carbon
     {
+        if ($term === 'trial') {
+            $days = (int) $trialDays;
+            if ($days < 1) {
+                $days = MembershipService::DEFAULT_TRIAL_DAYS;
+            }
+
+            return $startDate->copy()->addDays($days);
+        }
+
         return match($term) {
             'daily' => $startDate->copy()->addDay(),
             'weekly' => $startDate->copy()->addWeek(),

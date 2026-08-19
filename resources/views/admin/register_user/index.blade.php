@@ -1,5 +1,18 @@
 @extends('admin.layout')
 
+@section('styles')
+<style>
+    .table.register-users-table thead th,
+    .table.register-users-table thead td,
+    .table.register-users-table tbody td {
+        padding-top: 0.3rem !important;
+        padding-bottom: 0.3rem !important;
+        padding-left: 0.2rem !important;
+        padding-right: 0.2rem !important;
+    }
+</style>
+@endsection
+
 @section('content')
 <style>
     .date-range-filter {
@@ -101,6 +114,54 @@
 
     .card-body .row>div>div {
         cursor: pointer;
+    }
+
+    .register-users-table {
+        width: auto !important;
+        max-width: 100%;
+    }
+
+    .register-users-table thead th,
+    .register-users-table thead td {
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .table.register-users-table thead th,
+    .table.register-users-table thead td,
+    .table.register-users-table td {
+        padding-top: 0.3rem !important;
+        padding-bottom: 0.3rem !important;
+        padding-left: 0.2rem !important;
+        padding-right: 0.2rem !important;
+        white-space: nowrap;
+        width: 1%;
+        vertical-align: middle !important;
+        line-height: 1.3;
+    }
+
+    .register-users-table .col-phone,
+    .register-users-table .col-website {
+        font-size: 12px;
+    }
+
+    .register-users-table.table .col-website {
+        direction: rtl;
+        text-align: right !important;
+        white-space: normal;
+    }
+
+    .register-users-table .col-website a {
+        direction: ltr;
+        unicode-bidi: isolate;
+        display: block;
+    }
+
+    .register-users-table .col-website .badge {
+        display: inline-block;
+        margin-top: 2px;
+        padding: 0.15em 0.4em;
+        font-size: 10px;
     }
 </style>
 
@@ -278,7 +339,7 @@
                         <h3 class="text-center">{{ __('NO USER FOUND') }}</h3>
                         @else
                         <div class="table-responsive">
-                            <table class="table table-striped mt-3">
+                            <table class="table table-striped table-sm mt-3 register-users-table">
                                 <thead>
                                     <tr>
                                         <th scope="col">
@@ -287,6 +348,7 @@
                                         <th scope="col">{{ __('Name') }}</th>
                                         <th scope="col">{{ __('Phone') }}</th>
                                         <th scope="col">{{ __('Web site') }}</th>
+                                        <th scope="col">{{ __('Subscription') }}</th>
                                         <th scope="col">{{ __('Package') }}</th>
                                         <td scope="col">{{ __('Action') }}</td>
                                     </tr>
@@ -298,16 +360,81 @@
                                             <input type="checkbox" class="bulk-check" data-val="{{ $user->id }}">
                                         </td>
                                         <td>{{ $user->basic_setting?->company_name ?? '—' }}</td>
-                                        <td>{{ $user->phone }}</td>
-                                        <td><a href="https://{{$user->username}}.taearif.com/ar/" target="_blank">https://{{$user->username}}.taearif.com/ar/</a></td>
+                                        <td class="col-phone">{{ $user->phone }}</td>
+                                        <td class="col-website">
+                                            <a href="https://{{$user->username}}.taearif.com/ar/" target="_blank">https://{{$user->username}}.taearif.com/ar/</a>
+                                            @php $isUnderMaintenance = (bool) ($maintenanceFlags[$user->id] ?? false); @endphp
+                                            @if ($isUnderMaintenance)
+                                                <span class="badge badge-warning">{{ __('Under Maintenance') }}</span>
+                                            @endif
+                                        </td>
                                         @php
                                         $currMemb = $user->currentMembership ?? $user->pendingMembership;
                                         $currPackage = $currMemb?->package;
+
+                                        $subState = 'none';
+                                        $subDays = null;
+
+                                        if ($currMemb && $currPackage) {
+                                            if ((int) $currPackage->id === \App\Services\MembershipService::FREE_PACKAGE_ID) {
+                                                $subState = 'expired_free';
+                                            } elseif (!is_null($currMemb->status) && (int) $currMemb->status === 0) {
+                                                $subState = 'pending';
+                                            } elseif ($currPackage->term === 'lifetime') {
+                                                $subState = 'lifetime';
+                                            } elseif (empty($currMemb->expire_date)) {
+                                                $subState = 'expired';
+                                            } else {
+                                                $expireDate = \Carbon\Carbon::parse($currMemb->expire_date)->startOfDay();
+
+                                                if ($expireDate->isPast()) {
+                                                    $subState = 'expired';
+                                                } else {
+                                                    $subDays = (int) now()->startOfDay()->diffInDays($expireDate, false);
+                                                    $subState = in_array($currPackage->term, ['trial', 'monthly', 'yearly'], true)
+                                                        ? $currPackage->term
+                                                        : 'active';
+                                                }
+                                            }
+                                        }
                                         @endphp
+                                        <td>
+                                            @switch($subState)
+                                                @case('expired_free')
+                                                    <span class="badge badge-danger">{{ __('Subscription Expired') }}</span>
+                                                    <div class="small text-muted">{{ __('Free Package') }}</div>
+                                                    @break
+                                                @case('expired')
+                                                    <span class="badge badge-danger">{{ __('Subscription Expired') }}</span>
+                                                    @break
+                                                @case('pending')
+                                                    <span class="badge badge-warning">{{ __('Awaiting Payment') }}</span>
+                                                    @break
+                                                @case('lifetime')
+                                                    <span class="badge badge-primary">{{ __('Lifetime') }}</span>
+                                                    @break
+                                                @case('trial')
+                                                    <span class="badge badge-warning">{{ __('Trial') }} {{ __('Remaining') }} {{ trans_choice('messages.Day', $subDays) }}</span>
+                                                    @break
+                                                @case('monthly')
+                                                    <span class="badge badge-success">{{ __('Monthly') }} {{ __('Remaining') }} {{ trans_choice('messages.Day', $subDays) }}</span>
+                                                    @break
+                                                @case('yearly')
+                                                    <span class="badge badge-success">{{ __('Yearly') }} {{ __('Remaining') }} {{ trans_choice('messages.Day', $subDays) }}</span>
+                                                    @break
+                                                @case('active')
+                                                    <span class="badge badge-success">{{ __('Remaining') }} {{ trans_choice('messages.Day', $subDays) }}</span>
+                                                    @break
+                                                @default
+                                                    <span class="badge badge-secondary">{{ __('Not Subscribed') }}</span>
+                                            @endswitch
+                                        </td>
                                         <td>
                                             @if ($currPackage)
                                             <a target="_blank" href="{{route('admin.package.edit', $currPackage->id)}}">{{$currPackage->title}}</a>
+                                            @if ($currPackage->term !== 'trial' && $currPackage->is_trial != 1 && $currPackage->id !== 26)
                                             <span class="badge badge-secondary badge-xs mr-2">{{ __($currPackage->term) }}</span>
+                                            @endif
 
                                             <p class="mb-0">
                                                 @if ($currMemb->is_trial == 1)
@@ -354,6 +481,10 @@
                                                 <input type="hidden" name="user_id" value="{{ $user->id }}">
                                                 <button type="submit" class="deletebtn"></button>
                                             </form>
+                                            <form id="maintenance-form-{{ $user->id }}" class="d-none" action="{{ route('admin.register.user.maintenance') }}" method="POST">
+                                                @csrf
+                                                <input type="hidden" name="user_id" value="{{ $user->id }}">
+                                            </form>
                                             <div class="dropdown">
                                                 <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                     {{ __('Actions') }}
@@ -364,6 +495,9 @@
                                                     </a>
                                                     <a class="dropdown-item" href="{{ route('admin.register.user.view', $user->id) }}">{{ __('Details') }}</a>
                                                     <a class="dropdown-item" href="{{ route('admin.register.user.changePass', $user->id) }}">{{ __('Change Password') }}</a>
+                                                    <a href="#" class="dropdown-item" onclick="event.preventDefault(); document.getElementById('maintenance-form-{{ $user->id }}').submit();">
+                                                        {{ $isUnderMaintenance ? __('Disable Maintenance Mode') : __('Enable Maintenance Mode') }}
+                                                    </a>
                                                     @if ($currPackage)
                                                     <a class="dropdown-item" href="#" data-toggle="modal" data-target="#editCurrentPackage-{{ $user->id }}">{{ __('Change Current Package') }}</a>
                                                     <a href="#" class="dropdown-item" onclick="event.preventDefault(); document.getElementById('remove-package-form-{{ $user->id }}').querySelector('.deletebtn').click();">
@@ -437,9 +571,7 @@
                         <select name="package_id" class="form-control">
                             @if (!empty($packages))
                             @foreach ($packages as $package)
-                            <option value="{{ $package->id }}">{{ $package->title }}
-                                ({{ $package->term }})
-                            </option>
+                            <option value="{{ $package->id }}">@if ($package->term === 'trial' || $package->is_trial == 1 || $package->id === 26){{ $package->title }}@else{{ $package->title }} ({{ __($package->term) }})@endif</option>
                             @endforeach
                             @endif
                         </select>

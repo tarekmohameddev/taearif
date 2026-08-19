@@ -40,6 +40,9 @@ abstract class AdminApiTestCase extends TestCase
         $this->ensureCrmTables();
         $this->ensureAnalyticsTables();
         $this->ensurePackagesTable();
+        $this->ensureUserBasicSettingsTable();
+        $this->ensureMembershipsJsonColumns();
+        $this->ensureRegisterUserListingTables();
         $this->ensureSanctumTables();
         $this->ensureAdminImpersonationsTable();
 
@@ -147,6 +150,7 @@ abstract class AdminApiTestCase extends TestCase
                 $table->string('referral_code')->nullable();
                 $table->string('referral_id')->nullable();
                 $table->timestamps();
+                $table->softDeletes();
             });
         }
 
@@ -166,6 +170,7 @@ abstract class AdminApiTestCase extends TestCase
             'trial_ends_at' => fn (Blueprint $table) => $table->timestamp('trial_ends_at')->nullable()->after('subscription_amount'),
             'referral_code' => fn (Blueprint $table) => $table->string('referral_code')->nullable()->after('active'),
             'uuid' => fn (Blueprint $table) => $table->uuid('uuid')->nullable()->unique()->after('id'),
+            'deleted_at' => fn (Blueprint $table) => $table->softDeletes(),
         ];
 
         foreach ($columns as $column => $callback) {
@@ -633,6 +638,85 @@ abstract class AdminApiTestCase extends TestCase
             $table->unsignedInteger('video_size_limit')->default(0);
             $table->unsignedInteger('file_size_limit')->default(0);
             $table->unsignedInteger('serial_number')->default(0);
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Ensure user_basic_settings exists so register-user listing can eager-load it.
+     */
+    private function ensureUserBasicSettingsTable(): void
+    {
+        $this->createTableIfNotExists('user_basic_settings', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id')->index();
+            $table->string('company_name')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Testing memberships may have JSON CHECKs that reject the string "Trial".
+     */
+    private function ensureMembershipsJsonColumns(): void
+    {
+        if (! Schema::hasTable('memberships')) {
+            return;
+        }
+
+        try {
+            DB::statement('ALTER TABLE memberships MODIFY transaction_details LONGTEXT NULL');
+        } catch (\Throwable $e) {
+            // Column may already be unconstrained.
+        }
+
+        try {
+            DB::statement('ALTER TABLE memberships MODIFY settings LONGTEXT NULL');
+        } catch (\Throwable $e) {
+            // Column may already be unconstrained.
+        }
+    }
+
+    /**
+     * Stub tables required to render admin.register_user.index.
+     */
+    private function ensureRegisterUserListingTables(): void
+    {
+        $this->createTableIfNotExists('payment_gateways', function (Blueprint $table) {
+            $table->id();
+            $table->string('title')->nullable();
+            $table->string('name')->nullable();
+            $table->unsignedTinyInteger('status')->default(1);
+        });
+
+        $this->createTableIfNotExists('offline_gateways', function (Blueprint $table) {
+            $table->id();
+            $table->string('name')->nullable();
+            $table->unsignedTinyInteger('status')->default(1);
+        });
+
+        $this->createTableIfNotExists('user_steps', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->boolean('logo_uploaded')->default(false);
+            $table->boolean('favicon_uploaded')->default(false);
+            $table->boolean('website_named')->default(false);
+            $table->boolean('homepage_updated')->default(false);
+            $table->timestamps();
+        });
+
+        $this->createTableIfNotExists('api_general_settings', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id')->index();
+            $table->boolean('maintenance_mode')->default(false);
+            $table->timestamps();
+        });
+
+        $this->createTableIfNotExists('email_templates', function (Blueprint $table) {
+            $table->id();
+            $table->string('type')->nullable();
+            $table->string('subject')->nullable();
+            $table->text('content')->nullable();
             $table->timestamps();
         });
     }

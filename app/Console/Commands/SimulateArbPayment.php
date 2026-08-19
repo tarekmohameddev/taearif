@@ -108,13 +108,7 @@ class SimulateArbPayment extends Command
 
             // Calculate dates based on package term
             $startDate = Carbon::now();
-            if ($package->term == 'monthly') {
-                $expireDate = Carbon::now()->addMonth();
-            } elseif ($package->term == 'yearly') {
-                $expireDate = Carbon::now()->addYear();
-            } else {
-                $expireDate = Carbon::maxValue();
-            }
+            $expireDate = $this->membershipService->calculateExpireDate($package, $startDate);
 
             // Generate transaction details
             $transactionId = 'ARB_SIM_' . uniqid() . '_' . time();

@@ -113,12 +113,7 @@ class ForceRenewMembership extends Command
         $this->info('🔄 Processing renewal...');
 
         // Calculate expiry date
-        $expiryDate = match($package->term) {
-            'monthly' => Carbon::now()->addMonth(),
-            'yearly' => Carbon::now()->addYear(),
-            'lifetime' => Carbon::maxValue(),
-            default => Carbon::now()->addMonth(),
-        };
+        $expiryDate = $membershipService->calculateExpireDate($package, Carbon::now());
 
         // Step 1: Create new membership
         $newMembership = Membership::create([

@@ -173,6 +173,12 @@ class PaymentLogController extends Controller
                     $data['expire_date'] = Carbon::today()->addMonth()->format('d-m-Y');
                 } elseif ($package->term === "lifetime") {
                     $data['expire_date'] = Carbon::maxValue()->format('d-m-Y');
+                } elseif ($package->term === "trial") {
+                    $trialDays = (int) $package->trial_days;
+                    if ($trialDays < 1) {
+                        $trialDays = MembershipService::DEFAULT_TRIAL_DAYS;
+                    }
+                    $data['expire_date'] = Carbon::today()->addDays($trialDays)->format('d-m-Y');
                 } else {
                     $data['expire_date'] = Carbon::today()->addYear()->format('d-m-Y');
                 }
