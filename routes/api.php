@@ -1413,6 +1413,9 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
 
     // 5. CUSTOMER DETAIL
     Route::prefix('customers')->group(function () {
+        // Create new customer
+        Route::post('/', [\App\Http\Controllers\Api\V2\CustomersHub\DetailController::class, 'store']);
+
         // Get customer details (customer + tasks + properties + preferences)
         Route::get('/{customerId}', [\App\Http\Controllers\Api\V2\CustomersHub\DetailController::class, 'show']);
 

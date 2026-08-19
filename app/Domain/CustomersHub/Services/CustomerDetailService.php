@@ -212,6 +212,30 @@ class CustomerDetailService
     }
 
     /**
+     * Create a new customer.
+     */
+    public function createCustomer(int $userId, array $data): int
+    {
+        $insertData = [
+            'user_id' => $userId,
+            'name' => $data['name'],
+            'phone_number' => $data['phone_number'],
+            'email' => $data['email'] ?? null,
+            'note' => $data['note'] ?? null,
+            'customers_hub_stage_id' => $data['customers_hub_stage_id'] ?? null,
+            'priority_id' => $data['priority_id'] ?? null,
+            'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now(),
+        ];
+
+        if (isset($data['customers_hub_stage_id'])) {
+            $insertData['customers_hub_stage_changed_at'] = Carbon::now();
+        }
+
+        return DB::table('api_customers')->insertGetId($insertData);
+    }
+
+    /**
      * Get customer tasks.
      */
     public function getCustomerTasks(int $userId, int $customerId): array
