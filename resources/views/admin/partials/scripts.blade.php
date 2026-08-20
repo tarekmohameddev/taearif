@@ -198,4 +198,17 @@
             align: $('html').attr('dir') === 'rtl' ? 'left' : 'right'
         };
     }
+
+    // Persist sidebar collapse across page loads
+    $(document).ready(function () {
+        var key = 'admin.sidebar_minimize';
+        var $wrap = $('.wrapper');
+        var $btn = $('.toggle-sidebar');
+
+        $btn.on('click', function () {
+            try {
+                localStorage.setItem(key, $wrap.hasClass('sidebar_minimize') ? '1' : '0');
+            } catch (e) {}
+        });
+    });
 </script>

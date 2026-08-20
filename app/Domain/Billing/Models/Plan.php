@@ -60,6 +60,7 @@ class Plan extends Model
      */
     protected $fillable = [
         'title',
+        'title_en',
         'icon',
         'subtitle',
         'slug',

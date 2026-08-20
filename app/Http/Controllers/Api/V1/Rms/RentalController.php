@@ -82,7 +82,8 @@ class RentalController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request, $id) {
             $data = $request->validated();
-            $regenerate = $request->boolean('regenerate_schedule', false);
+            $regenerate = (bool) ($data['regenerate_schedule'] ?? false);
+            unset($data['regenerate_schedule']);
 
             $rental = $this->rentalService->updateRental(
                 $this->getUserId(),

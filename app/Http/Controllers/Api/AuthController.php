@@ -42,6 +42,7 @@ use App\Models\User\HomePageText;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\Api\ApiMenuSetting;
 use App\Services\TempTokenService;
+use App\Services\SiteSetupProgressService;
 use Illuminate\Support\Facades\DB;
 use App\Models\User\UserPermission;
 use App\Services\OnboardingService;
@@ -536,8 +537,8 @@ class AuthController extends Controller
             // Log in tenant
             Auth::login($user);
 
-            // Seed default tenant website pages and components (FIRST TIME - before onboarding)
-            app(\App\Services\TenantWebsiteSeeder::class)->seedDefaultWebsite($user);
+            // Seed default tenant website pages and components (async — first time, before onboarding)
+            \App\Jobs\SeedTenantWebsiteJob::dispatch($user->id);
 
             // Onboarding + default categories
             app(\App\Services\OnboardingService::class)->applyDefaultsFor($user);
@@ -746,6 +747,16 @@ class AuthController extends Controller
         }
 
         try {
+            app(\App\Domain\Notifications\DevicePushTokenService::class)->deactivate(
+                (int) auth()->id(),
+                $request->validated('device_id'),
+                $request->validated('push_token')
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Push token deactivation failed during logout', ['error' => $e->getMessage()]);
+        }
+
+        try {
             // Always revoke the Bearer token (handles TransientToken case when Sanctum auth's via another guard)
             $bearer = $request->bearerToken();
             if ($bearer !== null && $bearer !== '') {
@@ -836,7 +847,7 @@ class AuthController extends Controller
                     ->orderBy('id', 'desc')
                     ->with(['package' => function ($pkgQuery) {
                         $pkgQuery->select([
-                            'id', 'title', 'video_size_limit', 'file_size_limit',
+                            'id', 'title', 'title_en', 'video_size_limit', 'file_size_limit',
                             'number_of_vcards', 'trial_days', 'features',
                             'project_limit_number', 'real_estate_limit_number',
                             'whatsapp_numbers_limit', 'employees_limit'
@@ -933,6 +944,8 @@ class AuthController extends Controller
                     if ($package) {
                         $membershipDetails['package'] = [
                             'title' => $package->title,
+                            'title_ar' => $package->title,
+                            'title_en' => $package->title_en,
                             'video_size_limit' => $package->video_size_limit,
                             'file_size_limit' => $package->file_size_limit,
                             'number_of_vcards' => $package->number_of_vcards,
@@ -1115,7 +1128,9 @@ class AuthController extends Controller
                 }
             }
 
-            DB::transaction(function () use ($user, $owner, $validated) {
+            $didCompanyUpdate = false;
+
+            DB::transaction(function () use ($user, $owner, $validated, &$didCompanyUpdate) {
                 $userFields = $this->extractPersonalProfileFields($validated);
 
                 if ($userFields !== []) {
@@ -1130,8 +1145,13 @@ class AuthController extends Controller
 
                 if ($this->hasCompanyFieldUpdates($validated)) {
                     $this->applyCompanyProfileUpdates($owner, $validated);
+                    $didCompanyUpdate = true;
                 }
             });
+
+            if ($didCompanyUpdate && $owner) {
+                app(SiteSetupProgressService::class)->syncContactsSocialInfo($owner);
+            }
 
             CacheInvalidationHelper::clearTenantProfileCachesAuto($ownerId);
 

@@ -21,6 +21,7 @@ use App\Domain\CustomersHub\Services\CustomersHubNotificationService;
 use App\Domain\CustomersHub\Services\CustomersHubPropertyRequestNotifier;
 use App\Domain\CustomersHub\Services\PropertyRequestDetailBuilder;
 use App\Domain\PropertyRequests\Services\PropertyRequestLocationNormalizer;
+use App\Domain\PropertyRequests\Services\PropertyRequestLinkSync;
 use App\Models\Api\ApiCustomerInquiry;
 use App\Models\Api\UserApiCustomerType;
 use App\Models\Api\UserApiCustomerPriority;
@@ -266,6 +267,9 @@ class RequestsController extends ApiController
 
             // Load property_ids per property request and batch-load property summaries
             $propertiesByRequestId = [];
+            $propertyIdsByRequestId = [];
+            $projectsByRequestId = [];
+            $projectIdsByRequestId = [];
             if (!empty($propertyRequestSourceIds)) {
                 foreach (array_chunk($propertyRequestSourceIds, self::CH_LIST_WHERE_IN_CHUNK) as $idChunk) {
                     $requestRows = DB::table('users_property_requests')
@@ -279,39 +283,72 @@ class RequestsController extends ApiController
                             $ids = is_array($decoded) ? $decoded : [];
                         }
                         $ids = is_array($ids) ? $ids : [];
-                        $propertiesByRequestId[(int) $row->id] = array_values(array_filter(array_map(function ($id) {
+                        $propertyIdsByRequestId[(int) $row->id] = array_values(array_unique(array_filter(array_map(function ($id) {
                             return is_numeric($id) ? (int) $id : null;
-                        }, $ids)));
+                        }, $ids))));
                     }
                 }
                 $mergedPropertyIds = [];
-                foreach ($propertiesByRequestId as $ids) {
+                foreach ($propertyIdsByRequestId as $ids) {
                     foreach ($ids as $pid) {
                         $mergedPropertyIds[] = $pid;
                     }
                 }
                 $allPropertyIds = array_values(array_unique($mergedPropertyIds));
                 $summariesById = $this->propertyRequestDetailBuilder->getPropertySummariesForIds($userId, $allPropertyIds);
-                foreach ($propertiesByRequestId as $requestId => $ids) {
+                foreach ($propertyIdsByRequestId as $requestId => $ids) {
                     $propertiesByRequestId[$requestId] = array_values(array_filter(array_map(function ($id) use ($summariesById) {
                         return $summariesById[$id] ?? null;
                     }, $ids)));
                 }
+
+                foreach (array_chunk($propertyRequestSourceIds, self::CH_LIST_WHERE_IN_CHUNK) as $idChunk) {
+                    $rows = DB::table('property_request_project')
+                        ->whereIn('property_request_id', $idChunk)
+                        ->orderBy('id')
+                        ->get(['property_request_id', 'project_id']);
+                    foreach ($rows as $row) {
+                        $projectIdsByRequestId[(int) $row->property_request_id][] = (int) $row->project_id;
+                    }
+                }
+                foreach ($propertyRequestSourceIds as $sourceId) {
+                    $projectIdsByRequestId[(int) $sourceId] = array_values(array_unique(
+                        $projectIdsByRequestId[(int) $sourceId] ?? []
+                    ));
+                }
+                $allProjectIds = array_values(array_unique(array_merge([], ...array_values($projectIdsByRequestId))));
+                $projectSummaries = $this->propertyRequestDetailBuilder->getProjectSummariesForIds($userId, $allProjectIds);
+                foreach ($projectIdsByRequestId as $requestId => $ids) {
+                    $projectsByRequestId[$requestId] = array_values(array_filter(array_map(
+                        fn ($id) => $projectSummaries[$id] ?? null,
+                        $ids
+                    )));
+                }
             }
 
-            $items->each(function ($item) use ($appointmentsByRequest, $remindersByRequest, $appointmentsByInquiry, $remindersByInquiry, $propertiesByRequestId) {
+            $items->each(function ($item) use ($appointmentsByRequest, $remindersByRequest, $appointmentsByInquiry, $remindersByInquiry, $propertiesByRequestId, $propertyIdsByRequestId, $projectsByRequestId, $projectIdsByRequestId) {
                 if (($item->objectType ?? '') === 'property_request' && isset($item->sourceId)) {
                     $item->appointments = $appointmentsByRequest[$item->sourceId] ?? [];
                     $item->reminders = $remindersByRequest[$item->sourceId] ?? [];
                     $item->properties = $propertiesByRequestId[$item->sourceId] ?? [];
+                    $item->property_ids = $propertyIdsByRequestId[$item->sourceId] ?? [];
+                    $item->projects = $projectsByRequestId[$item->sourceId] ?? [];
+                    $item->project_ids = $projectIdsByRequestId[$item->sourceId] ?? [];
+                    $item->project_id = $item->project_ids[0] ?? null;
                 } elseif (($item->objectType ?? '') === 'inquiry' && isset($item->sourceId)) {
                     $item->appointments = $appointmentsByInquiry[$item->sourceId] ?? [];
                     $item->reminders = $remindersByInquiry[$item->sourceId] ?? [];
                     $item->properties = [];
+                    $item->property_ids = [];
+                    $item->projects = [];
+                    $item->project_ids = [];
                 } else {
                     $item->appointments = [];
                     $item->reminders = [];
                     $item->properties = [];
+                    $item->property_ids = [];
+                    $item->projects = [];
+                    $item->project_ids = [];
                 }
             });
 
@@ -1561,8 +1598,18 @@ class RequestsController extends ApiController
         }
 
         $fields = $request->onlyProvided();
+        $linkSync = app(PropertyRequestLinkSync::class);
+        $projectIds = $linkSync->resolveIncomingProjectIds($fields);
+        $propertyIdsProvided = array_key_exists('property_ids', $fields);
+        $propertyIds = $propertyIdsProvided
+            ? $linkSync->assertOwnedPropertyIds($userId, $fields['property_ids'])
+            : null;
+        if ($projectIds !== null) {
+            $projectIds = $linkSync->assertOwnedProjectIds($userId, $projectIds);
+        }
+        unset($fields['property_ids'], $fields['project_ids'], $fields['project_id']);
 
-        if (empty($fields)) {
+        if (empty($fields) && ! $propertyIdsProvided && $projectIds === null) {
             return $this->error('No fields provided to update', 422);
         }
 
@@ -1573,7 +1620,13 @@ class RequestsController extends ApiController
         }
 
         $propertyRequest->fill($fields);
+        if ($propertyIdsProvided) {
+            $propertyRequest->property_ids = $propertyIds;
+        }
         $propertyRequest->save();
+        if ($projectIds !== null) {
+            $linkSync->syncProjectIds($propertyRequest, $projectIds);
+        }
 
         $normalizer = app(PropertyRequestLocationNormalizer::class);
         if ($normalizer->hasLocationFields($fields)) {
@@ -1586,6 +1639,7 @@ class RequestsController extends ApiController
 
         $completeness = app(\App\Services\Matching\RequestCompletenessService::class)
             ->validateMinimal('web', $propertyRequest->id);
+        $propertyRequest->load('projects:id');
 
         return $this->success([
             'request_id'             => $requestId,
@@ -1593,6 +1647,8 @@ class RequestsController extends ApiController
             'minimal_missing_fields' => $completeness['minimal_missing_fields'],
             'is_complete'            => $completeness['is_complete'],
             'missing_fields'         => $completeness['missing_fields'],
+            'property_ids'           => $propertyRequest->property_ids,
+            'project_ids'            => $propertyRequest->toArray()['project_ids'],
             'message'                => 'Request updated. Matching will run automatically.',
         ]);
     }

@@ -105,7 +105,8 @@ class CreditManagementController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'name_ar' => 'nullable|string|max:255',
+            'name_ar' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'description_ar' => 'nullable|string',
             'credits' => 'required|integer|min:1',
             'price' => 'required|numeric|min:0',
@@ -124,6 +125,7 @@ class CreditManagementController extends Controller
         $package = CreditPackage::create([
             'name' => $request->name,
             'name_ar' => $request->name_ar,
+            'description' => $request->description,
             'description_ar' => $request->description_ar,
             'credits' => $request->credits,
             'price' => $request->price,
@@ -213,7 +215,8 @@ class CreditManagementController extends Controller
         
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'name_ar' => 'nullable|string|max:255',
+            'name_ar' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'description_ar' => 'nullable|string',
             'credits' => 'required|integer|min:1',
             'price' => 'required|numeric|min:0',
@@ -233,6 +236,7 @@ class CreditManagementController extends Controller
         $package->update([
             'name' => $request->name,
             'name_ar' => $request->name_ar,
+            'description' => $request->description,
             'description_ar' => $request->description_ar,
             'credits' => $request->credits,
             'price' => $request->price,
@@ -400,7 +404,8 @@ class CreditManagementController extends Controller
         
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'name_ar' => 'nullable|string|max:255',
+            'name_ar' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'description_ar' => 'nullable|string',
             'credits' => 'required|integer|min:1',
             'price' => 'required|numeric|min:0',
@@ -415,6 +420,7 @@ class CreditManagementController extends Controller
         $package->update([
             'name' => $request->name,
             'name_ar' => $request->name_ar,
+            'description' => $request->description,
             'description_ar' => $request->description_ar,
             'credits' => $request->credits,
             'price' => $request->price,

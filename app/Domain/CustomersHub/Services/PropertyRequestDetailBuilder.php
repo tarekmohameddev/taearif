@@ -188,6 +188,36 @@ class PropertyRequestDetailBuilder
         $fullAction['reminders'] = $reminders;
         $fullAction['metadata'] = $this->buildPropertyRequestMetadata($propertyRequest, $action->metadata ?? []);
 
+        $propertyIds = $propertyRequest->property_ids;
+        if (is_string($propertyIds)) {
+            $decoded = json_decode($propertyIds, true);
+            $propertyIds = is_array($decoded) ? $decoded : [];
+        }
+        $propertyIds = array_values(array_unique(array_filter(array_map(
+            static fn ($id) => is_numeric($id) ? (int) $id : null,
+            is_array($propertyIds) ? $propertyIds : []
+        ))));
+        $projectIds = DB::table('property_request_project')
+            ->where('property_request_id', $propertyRequestId)
+            ->orderBy('id')
+            ->pluck('project_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $propertySummaries = $this->getPropertySummariesForIds($userId, $propertyIds);
+        $projectSummaries = $this->getProjectSummariesForIds($userId, $projectIds);
+        $fullAction['property_ids'] = $propertyIds;
+        $fullAction['project_ids'] = $projectIds;
+        $fullAction['project_id'] = $projectIds[0] ?? null;
+        $fullAction['properties'] = array_values(array_filter(array_map(
+            fn ($id) => $propertySummaries[$id] ?? null,
+            $propertyIds
+        )));
+        $fullAction['projects'] = array_values(array_filter(array_map(
+            fn ($id) => $projectSummaries[$id] ?? null,
+            $projectIds
+        )));
+
         return $fullAction;
     }
 
@@ -586,6 +616,37 @@ class PropertyRequestDetailBuilder
             ];
         }
         return $result;
+    }
+
+    /**
+     * @param  array<int>  $projectIds
+     * @return array<int, array{id: int, title: string|null, slug: string|null, featuredImage: string|null}>
+     */
+    public function getProjectSummariesForIds(int $userId, array $projectIds): array
+    {
+        $projectIds = array_values(array_unique(array_filter(array_map('intval', $projectIds))));
+        if ($projectIds === []) {
+            return [];
+        }
+
+        $firstContent = DB::table('user_project_contents')
+            ->whereIn('project_id', $projectIds)
+            ->selectRaw('project_id, MIN(id) AS content_id')
+            ->groupBy('project_id');
+
+        return DB::table('user_projects as p')
+            ->where('p.user_id', $userId)
+            ->whereIn('p.id', $projectIds)
+            ->leftJoinSub($firstContent, 'first_pc', 'first_pc.project_id', '=', 'p.id')
+            ->leftJoin('user_project_contents as pc', 'pc.id', '=', 'first_pc.content_id')
+            ->get(['p.id', 'p.featured_image', 'pc.title', 'pc.slug'])
+            ->mapWithKeys(fn ($row) => [(int) $row->id => [
+                'id' => (int) $row->id,
+                'title' => $row->title !== null ? (string) $row->title : null,
+                'slug' => $row->slug !== null ? (string) $row->slug : null,
+                'featuredImage' => $row->featured_image ? asset($row->featured_image) : null,
+            ]])
+            ->all();
     }
 
     /**

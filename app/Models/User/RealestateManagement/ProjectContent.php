@@ -56,6 +56,43 @@ class ProjectContent extends Model
         ]);
     }
 
+    /**
+     * Bulk-insert contents for a project.
+     * Applies slug + Purifier once here — insert() skips Attribute mutators.
+     *
+     * @param  list<array<string, mixed>>  $contents
+     */
+    public static function insertManyForProject(int $userId, int $projectId, array $contents): void
+    {
+        if ($contents === []) {
+            return;
+        }
+
+        $now = now();
+        $rows = [];
+
+        foreach ($contents as $content) {
+            $title = $content['title'] ?? '';
+            $description = $content['description'] ?? null;
+
+            $rows[] = [
+                'user_id' => $userId,
+                'project_id' => $projectId,
+                'language_id' => $content['language_id'],
+                'title' => $title,
+                'slug' => make_slug($title),
+                'address' => $content['address'] ?? null,
+                'description' => Purifier::clean($description, 'youtube'),
+                'meta_keyword' => $content['meta_keyword'] ?? null,
+                'meta_description' => $content['meta_description'] ?? null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        self::insert($rows);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');

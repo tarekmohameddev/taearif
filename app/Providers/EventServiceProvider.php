@@ -112,6 +112,9 @@ class EventServiceProvider extends ServiceProvider
             NotifyTeamOnStatusChange::class,
             CloseCrmDealsOnPropertySold::class,
         ],
+        \App\Events\ContactMessageReceived::class => [
+            \App\Listeners\CreateContactMessageNotification::class,
+        ],
     ];
 
 

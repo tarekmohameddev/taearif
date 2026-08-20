@@ -13,6 +13,7 @@ class EmployeeAddonPlan extends Model
 
     protected $fillable = [
         'name',
+        'name_ar',
         'price',
         'duration',
         'duration_unit',

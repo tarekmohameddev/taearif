@@ -2,11 +2,14 @@
 
 namespace App\Http\Requests\Api\V2\CustomersHub;
 
+use App\Http\Requests\Concerns\ValidatesTenantProjectId;
 use App\Rules\PropertyTypeRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CompleteDataRequest extends FormRequest
 {
+    use ValidatesTenantProjectId;
+
     public function authorize(): bool
     {
         return true;
@@ -14,6 +17,8 @@ class CompleteDataRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $this->normalizeNullableProjectId();
+
         if ($this->has('property_type')) {
             $normalized = \App\Rules\PropertyTypeRule::normalize(is_string($this->input('property_type')) ? $this->input('property_type') : null);
             if ($normalized !== null) {
@@ -24,7 +29,7 @@ class CompleteDataRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        return array_merge([
             'property_type'  => ['sometimes', ...PropertyTypeRule::nullableRule()],
             'purpose'        => ['sometimes', 'nullable', 'string', 'in:rent,sale,buy,invest'],
             'city'           => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -41,7 +46,9 @@ class CompleteDataRequest extends FormRequest
             'area_to'        => ['sometimes', 'nullable', 'integer', 'min:0'],
             'latitude'       => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
             'longitude'      => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
-        ];
+            'property_ids'   => ['sometimes', 'array'],
+            'property_ids.*' => ['integer', 'min:1'],
+        ], $this->tenantProjectIdRules(sometimes: true));
     }
 
     /**
@@ -51,6 +58,11 @@ class CompleteDataRequest extends FormRequest
     public function onlyProvided(): array
     {
         $validated = $this->validated();
-        return array_filter($validated, fn ($v) => $v !== null);
+        $provided = array_filter($validated, fn ($v) => $v !== null);
+        if (array_key_exists('project_id', $validated)) {
+            $provided['project_id'] = $validated['project_id'];
+        }
+
+        return $provided;
     }
 }

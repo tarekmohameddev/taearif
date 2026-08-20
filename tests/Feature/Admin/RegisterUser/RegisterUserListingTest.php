@@ -16,7 +16,7 @@ use Tests\Feature\Admin\AdminApiTestCase;
 
 class RegisterUserListingTest extends AdminApiTestCase
 {
-    protected bool $shouldResetAdminData = false;
+    protected bool $shouldResetAdminData = true;
 
     protected function setUp(): void
     {
@@ -230,6 +230,220 @@ class RegisterUserListingTest extends AdminApiTestCase
         $response->assertSee(__('NO USER FOUND'), false);
     }
 
+    /** @test */
+    public function package_id_filter_returns_only_tenants_with_that_current_package(): void
+    {
+        $this->signInWebAdmin();
+
+        $packages = $this->createPackageFilterPackages();
+
+        $yearlyUser = $this->createTenantUser('yearly-pkg');
+        $monthlyUser = $this->createTenantUser('monthly-pkg');
+        $trialUser = $this->createTenantUser('trial-pkg');
+        $freeUser = $this->createTenantUser('free-pkg');
+
+        $this->createCurrentMembership($yearlyUser, $packages[24]);
+        $this->createCurrentMembership($monthlyUser, $packages[25]);
+        $this->createCurrentMembership($trialUser, $packages[26]);
+        $this->createCurrentMembership($freeUser, $packages[16]);
+
+        $usersByPackageId = [
+            24 => $yearlyUser,
+            25 => $monthlyUser,
+            26 => $trialUser,
+            16 => $freeUser,
+        ];
+
+        foreach ($usersByPackageId as $packageId => $expectedUser) {
+            $response = $this->get(route('admin.register.user', [
+                'package_id' => $packageId,
+            ]));
+
+            $response->assertOk();
+            $this->assertUserListed($response, $expectedUser);
+
+            foreach ($usersByPackageId as $otherPackageId => $otherUser) {
+                if ($otherPackageId === $packageId) {
+                    continue;
+                }
+
+                $this->assertUserNotListed($response, $otherUser);
+            }
+        }
+    }
+
+    /** @test */
+    public function package_id_filter_excludes_expired_and_historical_memberships(): void
+    {
+        $this->signInWebAdmin();
+
+        $packages = $this->createPackageFilterPackages();
+
+        $currentYearlyUser = $this->createTenantUser('current-yearly');
+        $expiredYearlyUser = $this->createTenantUser('expired-yearly');
+        $historicalYearlyUser = $this->createTenantUser('historical-yearly');
+
+        $this->createCurrentMembership($currentYearlyUser, $packages[24]);
+        $this->createExpiredMembership($expiredYearlyUser, $packages[24]);
+        $this->createCurrentMembership($historicalYearlyUser, $packages[16]);
+        $this->createExpiredMembership($historicalYearlyUser, $packages[24]);
+
+        $response = $this->get(route('admin.register.user', [
+            'package_id' => 24,
+        ]));
+
+        $response->assertOk();
+        $this->assertUserListed($response, $currentYearlyUser);
+        $this->assertUserNotListed($response, $expiredYearlyUser);
+        $this->assertUserNotListed($response, $historicalYearlyUser);
+    }
+
+    /** @test */
+    public function package_id_26_does_not_include_legacy_free_package_trial(): void
+    {
+        $this->signInWebAdmin();
+
+        $packages = $this->createPackageFilterPackages();
+
+        $trialPackageUser = $this->createTenantUser('trial-package-user');
+        $legacyTrialUser = $this->createTenantUser('legacy-trial-user');
+
+        $this->createCurrentMembership($trialPackageUser, $packages[26]);
+        $this->createCurrentMembership($legacyTrialUser, $packages[16], [
+            'package_id' => 16,
+            'transaction_details' => 'Trial',
+            'payment_method' => '-',
+        ]);
+
+        $response = $this->get(route('admin.register.user', [
+            'package_id' => 26,
+        ]));
+
+        $response->assertOk();
+        $this->assertUserListed($response, $trialPackageUser);
+        $this->assertUserNotListed($response, $legacyTrialUser);
+    }
+
+    /** @test */
+    public function pagination_links_preserve_package_id(): void
+    {
+        $this->signInWebAdmin();
+
+        $packages = $this->createPackageFilterPackages();
+
+        foreach (range(1, 11) as $index) {
+            $user = $this->createTenantUser('monthly-page-' . $index);
+            $this->createCurrentMembership($user, $packages[25]);
+        }
+
+        $response = $this->get(route('admin.register.user', [
+            'package_id' => 25,
+            'term' => 'monthly-page-',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('page=2', false);
+        $response->assertSee('package_id=25', false);
+    }
+
+    /** @test */
+    public function empty_package_id_results_still_render_filter_buttons(): void
+    {
+        $this->signInWebAdmin();
+
+        $this->createPackageFilterPackages();
+
+        $response = $this->get(route('admin.register.user', [
+            'package_id' => 25,
+            'term' => 'no-such-package-filter-tenant',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee(__('NO USER FOUND'), false);
+        $response->assertSee('الباقة المميزة سنوية', false);
+        $response->assertSee('الباقة المميزة الشهرية', false);
+        $response->assertSee('الباقة التجريبية', false);
+        $response->assertSee('الباقة المجانية', false);
+        $response->assertSee(__('Show All'), false);
+    }
+
+    /** @test */
+    public function show_all_button_clears_package_filter_and_is_active_without_package_id(): void
+    {
+        $this->signInWebAdmin();
+
+        $this->createPackageFilterPackages();
+
+        $withoutFilter = $this->get(route('admin.register.user'));
+        $withoutFilter->assertOk();
+        $this->assertMatchesRegularExpression(
+            '/href="' . preg_quote(route('admin.register.user'), '/') . '"\s+class="btn btn-primary">\s*'
+            . preg_quote(__('Show All'), '/') . '/s',
+            $withoutFilter->getContent()
+        );
+
+        $withFilter = $this->get(route('admin.register.user', [
+            'package_id' => 25,
+            'term' => 'pkg-filter-term',
+        ]));
+        $withFilter->assertOk();
+        $this->assertMatchesRegularExpression(
+            '/href="' . preg_quote(route('admin.register.user', ['term' => 'pkg-filter-term']), '/') . '"\s+class="btn btn-outline-primary">\s*'
+            . preg_quote(__('Show All'), '/') . '/s',
+            $withFilter->getContent()
+        );
+    }
+
+    /** @test */
+    public function out_of_range_package_id_page_redirects_and_keeps_package_id(): void
+    {
+        $this->signInWebAdmin();
+
+        $packages = $this->createPackageFilterPackages();
+
+        foreach (range(1, 5) as $index) {
+            $user = $this->createTenantUser('pkg-paged-user-' . $index);
+            $this->createCurrentMembership($user, $packages[25]);
+        }
+
+        $response = $this->get(route('admin.register.user', [
+            'package_id' => 25,
+            'term' => 'pkg-paged-user-',
+            'page' => 3,
+        ]));
+
+        $response->assertRedirect(route('admin.register.user', [
+            'term' => 'pkg-paged-user-',
+            'package_id' => '25',
+        ]));
+    }
+
+    /** @test */
+    public function search_and_advanced_forms_preserve_package_id_when_present(): void
+    {
+        $this->signInWebAdmin();
+
+        $this->createPackageFilterPackages();
+
+        $withPackageId = $this->get(route('admin.register.user', [
+            'package_id' => 25,
+        ]));
+
+        $withPackageId->assertOk();
+        $this->assertSame(
+            2,
+            substr_count($withPackageId->getContent(), '<input type="hidden" name="package_id" value="25">')
+        );
+
+        $withoutPackageId = $this->get(route('admin.register.user'));
+
+        $withoutPackageId->assertOk();
+        $this->assertSame(
+            0,
+            substr_count($withoutPackageId->getContent(), '<input type="hidden" name="package_id"')
+        );
+    }
+
     protected function signInWebAdmin(): Admin
     {
         $admin = Admin::factory()->create([
@@ -248,27 +462,40 @@ class RegisterUserListingTest extends AdminApiTestCase
 
     protected function ensureAdminViewData(): void
     {
-        $languageId = DB::table('languages')->insertGetId([
-            'name' => 'English',
-            'code' => 'en',
-            'is_default' => 1,
-            'rtl' => 0,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        DB::table('languages')->updateOrInsert(
+            ['code' => 'en'],
+            [
+                'name' => 'English',
+                'is_default' => 1,
+                'rtl' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
 
-        DB::table('basic_settings')->insert([
+        $languageId = (int) DB::table('languages')->where('code', 'en')->value('id');
+
+        $settingsPayload = [
             'language_id' => $languageId,
             'website_title' => 'Taearif',
             'timezone' => 'UTC',
             'logo' => 'logo.png',
             'favicon' => 'favicon.png',
-            'copyright_text' => 'Taearif',
-        ]);
+        ];
 
-        DB::table('basic_extendeds')->insert([
-            'language_id' => $languageId,
-        ]);
+        if (\Illuminate\Support\Facades\Schema::hasColumn('basic_settings', 'copyright_text')) {
+            $settingsPayload['copyright_text'] = 'Taearif';
+        }
+
+        DB::table('basic_settings')->updateOrInsert(
+            ['language_id' => $languageId],
+            $settingsPayload
+        );
+
+        DB::table('basic_extendeds')->updateOrInsert(
+            ['language_id' => $languageId],
+            []
+        );
 
         $currentLang = \App\Models\Language::query()
             ->with(['basic_setting', 'basic_extended'])
@@ -288,6 +515,29 @@ class RegisterUserListingTest extends AdminApiTestCase
             'defaultLang' => $currentLang,
             'adminPermissions' => [],
         ]);
+    }
+
+    protected function createPackageFilterPackages(): array
+    {
+        return [
+            24 => $this->createPackage(MembershipService::TERM_YEARLY, [
+                'id' => 24,
+                'title' => 'الباقة المميزة سنوية',
+            ]),
+            25 => $this->createPackage(MembershipService::TERM_MONTHLY, [
+                'id' => 25,
+                'title' => 'الباقة المميزة الشهرية',
+            ]),
+            26 => $this->createPackage(MembershipService::TERM_TRIAL, [
+                'id' => 26,
+                'title' => 'الباقة التجريبية',
+            ]),
+            16 => $this->createPackage(MembershipService::TERM_YEARLY, [
+                'id' => 16,
+                'title' => 'الباقة المجانية',
+                'is_active' => false,
+            ]),
+        ];
     }
 
     protected function createTenantUser(string $username): User

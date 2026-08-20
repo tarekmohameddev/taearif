@@ -186,16 +186,27 @@ class OnboardingController extends Controller
             $cacheKey = "user:profile:{$user->id}:{$owner->id}";
             Cache::forget($cacheKey);
 
-                DB::afterCommit(function () use ($user) {
-                    try {
-                        \App\Jobs\ReseedTenantWebsiteJob::dispatch($user->id);
-                    } catch (\Throwable $e) {
-                        Log::error('Failed to dispatch ReseedTenantWebsiteJob', [
-                            'user_id' => $user->id,
-                            'error' => $e->getMessage(),
-                        ]);
+                try {
+                    $merged = app(\App\Services\TenantWebsiteSeeder::class)
+                        ->applyOnboardingBrandingToExistingWebsite($user);
+                    if (!$merged) {
+                        DB::afterCommit(function () use ($user) {
+                            try {
+                                \App\Jobs\ReseedTenantWebsiteJob::dispatch($user->id);
+                            } catch (\Throwable $e) {
+                                Log::error('Failed to dispatch ReseedTenantWebsiteJob', [
+                                    'user_id' => $user->id,
+                                    'error' => $e->getMessage(),
+                                ]);
+                            }
+                        });
                     }
-                });
+                } catch (\Throwable $e) {
+                    Log::error('Failed to apply onboarding branding / dispatch ReseedTenantWebsiteJob', [
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             });
 
             // Refresh user model to ensure we have the latest state

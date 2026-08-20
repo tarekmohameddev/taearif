@@ -3,11 +3,14 @@
 namespace App\Http\Requests\Api\Property;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
+use App\Http\Requests\Concerns\ValidatesTenantProjectId;
 use App\Rules\PropertyTypeRule;
 use Illuminate\Validation\Rule;
 
 class StorePropertyRequestRequest extends BaseApiFormRequest
 {
+    use ValidatesTenantProjectId;
+
     public function authorize()
     {
         return true;
@@ -15,6 +18,8 @@ class StorePropertyRequestRequest extends BaseApiFormRequest
 
     protected function prepareForValidation(): void
     {
+        $this->normalizeNullableProjectId();
+
         if ($this->has('property_type')) {
             $normalized = PropertyTypeRule::normalize(is_string($this->input('property_type')) ? $this->input('property_type') : null);
             if ($normalized !== null) {
@@ -29,8 +34,12 @@ class StorePropertyRequestRequest extends BaseApiFormRequest
             'tenant_username' => 'nullable|string|max:255',
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
-            'property_ids' => 'nullable|array',
-            'property_ids.*' => 'integer|exists:user_properties,id',
+            'property_ids' => 'sometimes|array',
+            'property_ids.*' => 'integer|min:1',
+            // Ownership checked in controller after tenant resolve (public may have no auth).
+            'project_id' => 'nullable|integer|exists:user_projects,id',
+            'project_ids' => 'sometimes|array',
+            'project_ids.*' => 'integer|min:1',
             'source' => ['nullable', 'string', Rule::in([
                 'property_interest',
                 'public_form',

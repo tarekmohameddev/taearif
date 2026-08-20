@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Rms\Rental;
 
 use App\Constants\RmsConstants;
+use App\Rules\WholeNumber;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateRentalRequest extends FormRequest
@@ -22,6 +23,16 @@ class UpdateRentalRequest extends FormRequest
      */
     public function rules(): array
     {
+        $baseRentAmountRules = ['sometimes', 'numeric', 'gt:0'];
+        $totalRentalAmountRules = ['sometimes', 'numeric', 'gt:0'];
+
+        // total_rental_amount takes precedence; a fractional companion base is ignored.
+        if ($this->exists('total_rental_amount')) {
+            $totalRentalAmountRules[] = new WholeNumber;
+        } elseif ($this->exists('base_rent_amount')) {
+            $baseRentAmountRules[] = new WholeNumber;
+        }
+
         return [
             'tenant_full_name' => 'sometimes|string|max:150',
             'tenant_phone' => 'sometimes|string|max:32',
@@ -36,7 +47,8 @@ class UpdateRentalRequest extends FormRequest
             'rental_type' => ['sometimes', RmsConstants::validationRule(RmsConstants::RENTAL_TYPES)],
             'rental_duration' => 'sometimes|integer|min:1',
             'paying_plan' => ['sometimes', RmsConstants::validationRule(RmsConstants::PAYING_PLANS)],
-            'total_rental_amount' => 'sometimes|numeric|min:0',
+            'base_rent_amount' => $baseRentAmountRules,
+            'total_rental_amount' => $totalRentalAmountRules,
             'currency' => 'nullable|string|size:3',
             'contract_number' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
@@ -53,6 +65,31 @@ class UpdateRentalRequest extends FormRequest
         ];
     }
 
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $input = $this->all();
+            $scheduleFields = [
+                'base_rent_amount',
+                'total_rental_amount',
+                'paying_plan',
+                'rental_duration',
+                'rental_type',
+                'move_in_date',
+            ];
+
+            $touchesSchedule = count(array_intersect($scheduleFields, array_keys($input))) > 0
+                || filter_var($input['regenerate_schedule'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+            if (array_key_exists('payments', $input) && $touchesSchedule) {
+                $validator->errors()->add(
+                    'payments',
+                    'Payments cannot be combined with schedule-affecting rental changes.'
+                );
+            }
+        });
+    }
+
     /**
      * Get custom error messages for validator errors.
      *
@@ -65,8 +102,10 @@ class UpdateRentalRequest extends FormRequest
             'tenant_phone.max' => 'The phone number cannot exceed 32 characters.',
             'tenant_email.email' => 'Please provide a valid email address.',
             'rental_duration.min' => 'Rental duration must be at least 1 period.',
+            'base_rent_amount.numeric' => 'The base rental amount must be a number.',
+            'base_rent_amount.gt' => 'The base rental amount must be greater than zero.',
             'total_rental_amount.numeric' => 'The rental amount must be a number.',
-            'total_rental_amount.min' => 'The rental amount cannot be negative.',
+            'total_rental_amount.gt' => 'The rental amount must be greater than zero.',
             'currency.size' => 'Currency code must be exactly 3 characters.',
         ];
     }
@@ -84,6 +123,7 @@ class UpdateRentalRequest extends FormRequest
             'tenant_email' => 'email address',
             'rental_duration' => 'duration',
             'paying_plan' => 'payment plan',
+            'base_rent_amount' => 'base rental amount',
             'total_rental_amount' => 'rental amount',
         ];
     }

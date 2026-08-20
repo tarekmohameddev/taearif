@@ -59,6 +59,12 @@ class SyncWhatsappAiConversationToCommunicationService
         if ($waNumberId !== null) {
             $meta['wa_number_id'] = $waNumberId;
         }
+        $customerName = is_string($aiConversation->customer_name)
+            ? trim($aiConversation->customer_name)
+            : '';
+        if ($customerName !== '') {
+            $meta['customer_name'] = $customerName;
+        }
         if (! $incrementUnread) {
             $meta['skip_unread_increment'] = true;
         }

@@ -11,6 +11,30 @@ class UpdateDetailRequest extends BaseApiFormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $map = [
+            'cityId' => 'city_id',
+            'districtId' => 'district_id',
+            'stageId' => 'stage_id',
+            'priorityId' => 'priority_id',
+            'typeId' => 'type_id',
+            'phoneNumber' => 'phone_number',
+            'responsibleEmployeeId' => 'responsible_employee_id',
+            'customersHubStageId' => 'customers_hub_stage_id',
+        ];
+
+        $merge = [];
+        foreach ($map as $camel => $snake) {
+            if ($this->has($camel) && !$this->has($snake)) {
+                $merge[$snake] = $this->input($camel);
+            }
+        }
+        if ($merge) {
+            $this->merge($merge);
+        }
+    }
+
     public function rules()
     {
         return [

@@ -183,6 +183,9 @@ class ActionsAggregatorService
 
     /**
      * Get statistics for the actions.
+     *
+     * stats.today ignores excludeStatuses / excludeStages so the today count still
+     * includes rows that those excludes would hide from the list and other stats.
      */
     public function getStats(int $userId, array $filters = []): array
     {
@@ -200,16 +203,32 @@ class ActionsAggregatorService
                     ELSE 0 
                 END) as pending,
                 SUM(CASE WHEN dueDate < NOW() AND status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as overdue,
-                SUM(CASE WHEN (DATE(dueDate) = CURRENT_DATE OR DATE(createdAt) = CURRENT_DATE) AND status IN ('pending', 'in_progress', 'in_waiting') THEN 1 ELSE 0 END) as today,
+                SUM(CASE WHEN (DATE(dueDate) = CURRENT_DATE OR DATE(createdAt) = CURRENT_DATE) THEN 1 ELSE 0 END) as today,
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
             ")->first();
+
+            $today = (int) ($stats->today ?? 0);
+
+            // Today count must not be reduced by excludeStatuses / excludeStages.
+            if (!empty($filters['excludeStatuses']) || !empty($filters['excludeStages'])) {
+                $todayFilters = $filters;
+                unset($todayFilters['excludeStatuses'], $todayFilters['excludeStages']);
+
+                $todayRow = $this->getUnifiedQuery($userId, $todayFilters)
+                    ->selectRaw("
+                        SUM(CASE WHEN (DATE(dueDate) = CURRENT_DATE OR DATE(createdAt) = CURRENT_DATE) THEN 1 ELSE 0 END) as today
+                    ")
+                    ->first();
+
+                $today = (int) ($todayRow->today ?? 0);
+            }
 
             return [
                 'inbox' => (int) ($stats->inbox ?? 0),
                 'followups' => (int) ($stats->followups ?? 0),
                 'pending' => (int) ($stats->pending ?? 0),
                 'overdue' => (int) ($stats->overdue ?? 0),
-                'today' => (int) ($stats->today ?? 0),
+                'today' => $today,
                 'completed' => (int) ($stats->completed ?? 0),
             ];
         });

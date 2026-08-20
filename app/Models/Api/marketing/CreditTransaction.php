@@ -75,9 +75,35 @@ class CreditTransaction extends Model
             'completed' => 'Completed',
             'failed' => 'Failed',
             'refunded' => 'Refunded',
+            'cancelled' => 'Cancelled',
         ];
 
         return $statuses[$this->status] ?? $this->status;
+    }
+
+    public function isCompleted(): bool
+    {
+        return $this->status === 'completed';
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === 'pending';
+    }
+
+    public function isFailed(): bool
+    {
+        return $this->status === 'failed';
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->status === 'cancelled';
+    }
+
+    public function isRecoverable(): bool
+    {
+        return in_array($this->status, ['pending', 'failed', 'cancelled'], true);
     }
 
     /**

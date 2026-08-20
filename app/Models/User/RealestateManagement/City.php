@@ -13,7 +13,6 @@ class City extends Model
     public $table = "user_cities";
 
     protected $fillable = [
-        'user_id',
         'language_id',
         'country_id',
         'state_id',
@@ -30,32 +29,6 @@ class City extends Model
         return Attribute::make(
             set: fn($value) => make_slug($value),
         );
-    }
-
-    public static function storeCity($userId, $request, $image, $countryId = null, $stateId = null)
-    {
-        return self::create([
-            'user_id' => $userId,
-            'language_id' => $request['language'],
-            'country_id' => $countryId,
-            'state_id' => $stateId,
-            'name' => $request['name'],
-            'slug' => $request['name'],
-            'status' => $request['status'],
-            'image' => $image,
-            'serial_number' => $request['serial_number']
-        ]);
-    }
-
-    public function updateCity($request, $image)
-    {
-        return $this->update([
-            'name' => $request['name'],
-            'slug' => $request['name'],
-            'status' => $request['status'],
-            'image' => $image,
-            'serial_number' => $request['serial_number']
-        ]);
     }
 
     public function country()

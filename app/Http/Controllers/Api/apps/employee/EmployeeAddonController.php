@@ -39,6 +39,8 @@ class EmployeeAddonController extends Controller
                 'plan' => $addon->plan ? [
                     'id' => $addon->plan->id,
                     'name' => $addon->plan->name,
+                    'name_ar' => $addon->plan->name_ar,
+                    'name_en' => $addon->plan->name,
                     'duration' => $addon->plan->duration,
                     'duration_unit' => $addon->plan->duration_unit,
                 ] : null,
@@ -68,6 +70,8 @@ class EmployeeAddonController extends Controller
             ->map(fn ($plan) => [
                 'id' => $plan->id,
                 'name' => $plan->name,
+                'name_ar' => $plan->name_ar,
+                'name_en' => $plan->name,
                 'price' => (float) $plan->price,
                 'duration' => $plan->duration,
                 'duration_unit' => $plan->duration_unit,

@@ -363,7 +363,7 @@ class RentalControllerTest extends TestCase
             ->andReturn($updatedRental);
 
         // Act
-        $response = $this->putJson("/api/v1/rms/rentals/{$rentalId}", $updateData);
+        $response = $this->patchJson("/api/v1/rms/rentals/{$rentalId}", $updateData);
 
         // Assert
         $response->assertStatus(200)
@@ -392,7 +392,7 @@ class RentalControllerTest extends TestCase
             ->andReturn($updatedRental);
 
         // Act
-        $response = $this->putJson("/api/v1/rms/rentals/{$rentalId}", array_merge($updateData, [
+        $response = $this->patchJson("/api/v1/rms/rentals/{$rentalId}", array_merge($updateData, [
             'regenerate_schedule' => true
         ]));
 
@@ -418,7 +418,7 @@ class RentalControllerTest extends TestCase
             ->andThrow(new ModelNotFoundException());
 
         // Act
-        $response = $this->putJson("/api/v1/rms/rentals/{$rentalId}", $updateData);
+        $response = $this->patchJson("/api/v1/rms/rentals/{$rentalId}", $updateData);
 
         // Assert
         $response->assertStatus(404);

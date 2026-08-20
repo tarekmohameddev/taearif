@@ -56,7 +56,8 @@
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>{{ __('Plan Name') }}</th>
+                                <th>{{ __('Plan Name (English)') }}</th>
+                                <th>{{ __('Plan Name (Arabic)') }}</th>
                                 <th>{{ __('Price') }}</th>
                                 <th>{{ __('Duration') }}</th>
                                 <th>{{ __('Status') }}</th>
@@ -69,6 +70,7 @@
                                 <tr id="plan-row-{{ $plan->id }}">
                                     <td>{{ $plan->id }}</td>
                                     <td>{{ $plan->name }}</td>
+                                    <td>{{ $plan->name_ar }}</td>
                                     <td>{{ number_format($plan->price, 2) }} {{ __('SAR') }}</td>
                                     <td>{{ $plan->duration }} {{ $plan->duration_unit == 'month' ? __('Month') : __('Year') }}</td>
                                     <td>
@@ -95,7 +97,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center py-4">{{ __('No employee addon plans available.') }}</td>
+                                    <td colspan="8" class="text-center py-4">{{ __('No employee addon plans available.') }}</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -128,8 +130,12 @@
                         <i class="fas fa-info-circle"></i> {{ __('Each unit of this plan grants +1 employee and +1 WhatsApp number.') }}
                     </div>
                     <div class="form-group">
-                        <label for="create_name">{{ __('Plan Name') }} *</label>
+                        <label for="create_name">{{ __('Plan Name (English)') }} *</label>
                         <input type="text" class="form-control" id="create_name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="create_name_ar">{{ __('Plan Name (Arabic)') }} *</label>
+                        <input type="text" class="form-control" id="create_name_ar" name="name_ar" required>
                     </div>
                     <div class="form-group">
                         <label for="create_price">{{ __('Price (SAR)') }} *</label>
@@ -186,8 +192,12 @@
                         <i class="fas fa-info-circle"></i> {{ __('Each unit of this plan grants +1 employee and +1 WhatsApp number.') }}
                     </div>
                     <div class="form-group">
-                        <label for="edit_name">{{ __('Plan Name') }} *</label>
+                        <label for="edit_name">{{ __('Plan Name (English)') }} *</label>
                         <input type="text" class="form-control" id="edit_name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_name_ar">{{ __('Plan Name (Arabic)') }} *</label>
+                        <input type="text" class="form-control" id="edit_name_ar" name="name_ar" required>
                     </div>
                     <div class="form-group">
                         <label for="edit_price">{{ __('Price (SAR)') }} *</label>
@@ -236,6 +246,7 @@
         if (!plan) return;
 
         $('#edit_name').val(plan.name);
+        $('#edit_name_ar').val(plan.name_ar);
         $('#edit_price').val(plan.price);
         $('#edit_duration').val(plan.duration);
         $('#edit_duration_unit').val(plan.duration_unit);

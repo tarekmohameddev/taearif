@@ -85,15 +85,15 @@ class PropertyContent extends Model
             'category_id' => $requestData['category_id'],
             'country_id' => $requestData['country_id'] ?? null,
             'state_id' => $requestData['state_id'] ?? null,
-            'city_id' => $requestData['city_id'],
+            'city_id' => $requestData['city_id'] ?? null,
 
-            'title' => $requestData['title'],
+            'title' => $requestData['title'] ?? '',
             // 'slug' => $requestData['slug'],
-            'slug' => self::generateUniqueSlug($requestData['title'], $propertyId),
-            'address' => $requestData['address'],
-            'description' => $requestData['description'],
-            'meta_keyword' => $requestData['meta_keyword'],
-            'meta_description' => $requestData['meta_description'],
+            'slug' => self::generateUniqueSlug($requestData['title'] ?? '', $propertyId),
+            'address' => $requestData['address'] ?? '',
+            'description' => $requestData['description'] ?? '',
+            'meta_keyword' => $requestData['meta_keyword'] ?? null,
+            'meta_description' => $requestData['meta_description'] ?? null,
         ]);
     }
 

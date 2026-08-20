@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\User\Language;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\PropertyContent;
+use App\Support\PropertyCompletionRequirements;
 use Illuminate\Console\Command;
 
 /**
@@ -21,15 +22,13 @@ class CheckUserPropertiesCompletion extends Command
 
     protected $description = 'Verify complete properties for a user have no missing required fields (user_properties + user_property_contents)';
 
-    protected array $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'property_type', 'area'];
-
     public function handle(): int
     {
         $userId = (int) $this->argument('user_id');
 
         $query = Property::where('user_id', $userId)
             ->where('completion_status', 'complete')
-            ->select(['id', 'user_id', 'price', 'purpose', 'property_type', 'area', 'completion_status']);
+            ->select(['id', 'user_id', 'price', 'purpose', 'property_type', 'area', 'featured_image', 'completion_status']);
 
         $properties = $query->get();
 
@@ -66,7 +65,7 @@ class CheckUserPropertiesCompletion extends Command
         }
         $this->table(['Property ID', 'Missing fields'], $rows);
         $this->newLine();
-        $this->info('Required: title, price, address, description, purpose, property_type, area.');
+        $this->info('Required: ' . implode(', ', PropertyCompletionRequirements::fields()) . '.');
         $this->info('Content fields come from user_property_contents for the owner default language.');
 
         return self::FAILURE;
@@ -79,7 +78,7 @@ class CheckUserPropertiesCompletion extends Command
             ->first();
 
         if (!$defaultLanguage) {
-            return $this->requiredFields;
+            return PropertyCompletionRequirements::fields();
         }
 
         $content = PropertyContent::where('property_id', $property->id)
@@ -88,22 +87,12 @@ class CheckUserPropertiesCompletion extends Command
 
         $currentData = [
             'title' => $content?->title,
-            'price' => $property->price,
             'address' => $content?->address,
             'description' => $content?->description,
-            'purpose' => $property->purpose,
             'property_type' => $property->property_type,
-            'area' => $property->area,
+            'featured_image' => $property->featured_image,
         ];
 
-        $missing = [];
-        foreach ($this->requiredFields as $field) {
-            $value = $currentData[$field] ?? null;
-            if (is_null($value) || (is_string($value) && trim($value) === '') || $value === '') {
-                $missing[] = $field;
-            }
-        }
-
-        return $missing;
+        return PropertyCompletionRequirements::missingFrom($currentData);
     }
 }

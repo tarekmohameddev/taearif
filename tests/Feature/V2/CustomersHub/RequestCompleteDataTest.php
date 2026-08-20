@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\V2\CustomersHub;
 
 use App\Models\User;
+use App\Models\User\RealestateManagement\Project;
+use App\Models\User\RealestateManagement\Property;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -25,9 +27,51 @@ class RequestCompleteDataTest extends TestCase
         }
     }
 
+    private function requireProjectIdColumn(): void
+    {
+        $this->requireTables();
+
+        if (!Schema::hasTable('user_projects')) {
+            $this->markTestSkipped('user_projects table required.');
+        }
+        if (!Schema::hasColumn('users_property_requests', 'project_id')) {
+            $this->markTestSkipped('project_id column required on users_property_requests. Run migration.');
+        }
+    }
+
     private function createTenant(): User
     {
         return User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+    }
+
+    private function createProject(User $tenant): Project
+    {
+        return Project::query()->create([
+            'user_id' => $tenant->id,
+            'featured_image' => 'projects/test.jpg',
+            'min_price' => 100000,
+            'max_price' => 200000,
+            'featured' => 0,
+            'published' => 1,
+            'developer' => 'Test Developer',
+            'units' => 10,
+            'completion_date' => now()->addYear()->toDateString(),
+            'complete_status' => 0,
+        ]);
+    }
+
+    private function createProperty(User $tenant): Property
+    {
+        return Property::query()->create([
+            'user_id' => $tenant->id,
+            'featured_image' => 'properties/test.jpg',
+            'purpose' => 'sale',
+            'property_status' => 'available',
+            'area' => 120,
+            'completion_status' => 'complete',
+            'status' => 1,
+            'property_type' => 'residential',
+        ]);
     }
 
     private function createPropertyRequest(int $userId, array $overrides = []): int
@@ -191,6 +235,132 @@ class RequestCompleteDataTest extends TestCase
         $row = DB::table('users_property_requests')->where('id', $requestId)->first();
         $this->assertEquals('الرياض', $row->city);
         $this->assertEquals('حي النزهة', $row->district);
+    }
+
+    /** @test */
+    public function complete_data_can_set_project_id(): void
+    {
+        $this->requireProjectIdColumn();
+
+        $tenant = $this->createTenant();
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+        $requestId = $this->createPropertyRequest($tenant->id);
+
+        $this->postJson("/api/v2/customers-hub/requests/property_request_{$requestId}/complete-data", [
+            'project_id' => $project->id,
+            'city' => 'الرياض',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('users_property_requests', [
+            'id' => $requestId,
+            'project_id' => $project->id,
+        ]);
+    }
+
+    /** @test */
+    public function complete_data_replaces_and_clears_project_and_property_ids(): void
+    {
+        $this->requireProjectIdColumn();
+        if (! Schema::hasTable('property_request_project') || ! Schema::hasTable('user_properties')) {
+            $this->markTestSkipped('Multi-link tables required.');
+        }
+
+        $tenant = $this->createTenant();
+        Sanctum::actingAs($tenant);
+        $projects = [$this->createProject($tenant), $this->createProject($tenant)];
+        $properties = [
+            $this->createProperty($tenant),
+            $this->createProperty($tenant),
+        ];
+        $requestId = $this->createPropertyRequest($tenant->id);
+        $url = "/api/v2/customers-hub/requests/property_request_{$requestId}/complete-data";
+
+        $this->postJson('/api/v2/customers-hub/requests/list', [
+            'objectTypes' => ['property_request'],
+            'search' => '+966501234567',
+        ])->assertOk()
+            ->assertJsonPath('data.actions.0.project_ids', [])
+            ->assertJsonPath('data.actions.0.property_ids', []);
+
+        $this->postJson($url, [
+            'project_ids' => array_map(fn ($project) => $project->id, $projects),
+            'property_ids' => array_map(fn ($property) => $property->id, $properties),
+        ])->assertOk()
+            ->assertJsonPath('data.project_ids', [$projects[0]->id, $projects[1]->id])
+            ->assertJsonPath('data.property_ids', [$properties[0]->id, $properties[1]->id]);
+
+        $this->assertDatabaseHas('users_property_requests', [
+            'id' => $requestId,
+            'project_id' => $projects[0]->id,
+        ]);
+
+        $this->getJson("/api/v2/customers-hub/requests/property_request_{$requestId}")
+            ->assertOk()
+            ->assertJsonPath('data.action.project_ids', [$projects[0]->id, $projects[1]->id])
+            ->assertJsonPath('data.action.property_ids', [$properties[0]->id, $properties[1]->id])
+            ->assertJsonPath('data.action.projects.0.id', $projects[0]->id)
+            ->assertJsonPath('data.action.projects.1.id', $projects[1]->id)
+            ->assertJsonPath('data.action.properties.0.id', $properties[0]->id)
+            ->assertJsonPath('data.action.properties.1.id', $properties[1]->id)
+            ->assertJsonStructure([
+                'data' => ['action' => [
+                    'projects' => ['*' => ['id', 'title', 'slug', 'featuredImage']],
+                    'properties' => ['*' => ['id', 'title', 'slug', 'featuredImage']],
+                ]],
+            ]);
+
+        $this->postJson('/api/v2/customers-hub/requests/list', [
+            'objectTypes' => ['property_request'],
+            'search' => '+966501234567',
+        ])->assertOk()
+            ->assertJsonPath('data.actions.0.project_ids', [$projects[0]->id, $projects[1]->id])
+            ->assertJsonPath('data.actions.0.property_ids', [$properties[0]->id, $properties[1]->id])
+            ->assertJsonPath('data.actions.0.projects.0.id', $projects[0]->id)
+            ->assertJsonPath('data.actions.0.properties.0.id', $properties[0]->id)
+            ->assertJsonStructure([
+                'data' => ['actions' => ['*' => [
+                    'projects' => ['*' => ['id', 'title', 'slug', 'featuredImage']],
+                    'properties' => ['*' => ['id', 'title', 'slug', 'featuredImage']],
+                ]]],
+            ]);
+
+        $this->postJson($url, ['project_ids' => [], 'property_ids' => []])
+            ->assertOk()
+            ->assertJsonPath('data.project_ids', [])
+            ->assertJsonPath('data.property_ids', []);
+        $this->assertDatabaseMissing('property_request_project', ['property_request_id' => $requestId]);
+    }
+
+    /** @test */
+    public function complete_data_rejects_cross_tenant_and_nonexistent_link_ids_by_field(): void
+    {
+        $this->requireProjectIdColumn();
+        if (! Schema::hasTable('property_request_project') || ! Schema::hasTable('user_properties')) {
+            $this->markTestSkipped('Multi-link tables required.');
+        }
+
+        $tenant = $this->createTenant();
+        $otherTenant = $this->createTenant();
+        Sanctum::actingAs($tenant);
+        $requestId = $this->createPropertyRequest($tenant->id);
+        $url = "/api/v2/customers-hub/requests/property_request_{$requestId}/complete-data";
+        $foreignProject = $this->createProject($otherTenant);
+        $foreignProperty = $this->createProperty($otherTenant);
+
+        $this->postJson($url, ['project_ids' => [$foreignProject->id]])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['project_ids']);
+        $this->postJson($url, ['property_ids' => [$foreignProperty->id]])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['property_ids']);
+        $this->postJson($url, ['project_ids' => [PHP_INT_MAX]])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['project_ids']);
+        $this->postJson($url, ['property_ids' => [PHP_INT_MAX]])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['property_ids']);
     }
 
     /** @test */

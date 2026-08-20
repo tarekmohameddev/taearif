@@ -240,6 +240,7 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('register/user/store', 'Admin\RegisterUserController@store')->name('register.user.store');
         Route::post('register/users/ban', 'Admin\RegisterUserController@userban')->name('register.user.ban');
         Route::post('register/users/featured', 'Admin\RegisterUserController@userFeatured')->name('register.user.featured');
+        Route::post('register/users/maintenance', 'Admin\RegisterUserController@toggleMaintenance')->name('register.user.maintenance');
         Route::post('register/users/template', 'Admin\RegisterUserController@userTemplate')->name('register.user.template');
         Route::post('register/users/template/update', 'Admin\RegisterUserController@userUpdateTemplate')->name('register.user.updateTemplate');
         Route::post('register/users/email', 'Admin\RegisterUserController@emailStatus')->name('register.user.email');
@@ -638,6 +639,15 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::put('/whatsapp-numbers/{id}', 'Admin\WhatsappNumberController@update')->name('whatsapp-numbers.update');
         Route::post('/whatsapp-numbers/{id}/toggle-status', 'Admin\WhatsappNumberController@toggleStatus')->name('whatsapp-numbers.toggle-status');
         Route::delete('/whatsapp-numbers/{id}', 'Admin\WhatsappNumberController@destroy')->name('whatsapp-numbers.destroy');
+
+        // WhatsApp Numbers Monitor (read-only)
+        Route::get('/whatsapp-numbers/monitor', 'Admin\WhatsappNumberMonitorController@index')
+            ->name('whatsapp-numbers.monitor');
+        Route::get('/whatsapp-numbers/{id}/monitor', 'Admin\WhatsappNumberMonitorController@show')
+            ->name('whatsapp-numbers.monitor.show');
+        Route::post('/whatsapp-numbers/{id}/monitor/diagnose', 'Admin\WhatsappNumberMonitorController@diagnose')
+            ->name('whatsapp-numbers.monitor.diagnose')
+            ->middleware('throttle:10,1');
 
         // WhatsApp Addon Plans Management
         Route::get('/whatsapp-addon-plans', 'Admin\WhatsappAddonPlanController@index')->name('whatsapp-addon-plans.index');

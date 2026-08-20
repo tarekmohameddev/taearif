@@ -4,67 +4,42 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
+use App\Http\Controllers\Payment\ArbController;
 use App\Models\Api\marketing\CreditPackage;
 use App\Models\Api\marketing\CreditTransaction;
 use App\Models\Api\marketing\UserCredit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
+use ReflectionClass;
 use Tests\TestCase;
 
 class CreditArbPaymentFlowTest extends TestCase
 {
     use DatabaseTransactions;
 
+    private const ARB_RESOURCE_KEY = '12345678901234567890123456789012';
+
     private function requireCreditPaymentTables(): void
     {
-        foreach (['users', 'credit_packages', 'credit_transactions', 'user_credits', 'payment_gateways', 'languages', 'basic_extendeds'] as $table) {
+        foreach (['users', 'credit_packages', 'credit_transactions', 'user_credits', 'payment_gateways'] as $table) {
             if (!Schema::hasTable($table)) {
                 $this->markTestSkipped("{$table} table required.");
             }
         }
     }
 
-    private function ensureArbGatewayAndLanguage(): void
+    protected function setUp(): void
     {
-        $languageId = DB::table('languages')->where('is_default', 1)->value('id');
+        parent::setUp();
+        $this->requireCreditPaymentTables();
+        $this->ensureArbGateway();
+    }
 
-        if (!$languageId) {
-            $languageId = DB::table('languages')->insertGetId([
-                'user_id' => null,
-                'name' => 'English',
-                'code' => 'en',
-                'is_default' => 1,
-                'rtl' => 0,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-
-        if (!DB::table('basic_extendeds')->where('language_id', $languageId)->exists()) {
-            DB::table('basic_extendeds')->insert([
-                'language_id' => $languageId,
-                'cookie_alert_status' => 1,
-                'default_language_direction' => 'ltr',
-                'is_smtp' => 0,
-                'base_currency_symbol' => 'SAR',
-                'base_currency_symbol_position' => 'left',
-                'base_currency_text' => 'SAR',
-                'base_currency_text_position' => 'right',
-                'base_currency_rate' => 1,
-                'is_whatsapp' => 1,
-                'whatsapp_popup' => 1,
-                'expiration_reminder' => 3,
-                'welcome_message_email_enabled' => 1,
-                'subscription_expiration_email_enabled' => 1,
-                'subscription_expired_email_enabled' => 1,
-                'email_notifications_enabled' => 1,
-            ]);
-        }
-
+    private function ensureArbGateway(): void
+    {
         DB::table('payment_gateways')->updateOrInsert(
             ['keyword' => 'arb'],
             [
@@ -77,22 +52,37 @@ class CreditArbPaymentFlowTest extends TestCase
                 'information' => json_encode([
                     'tranportal_id' => 'TID123',
                     'tranportal_password' => 'PWD123',
-                    'resource_key' => '12345678901234567890123456789012',
+                    'resource_key' => self::ARB_RESOURCE_KEY,
                     'mode' => 'test',
-                    'test_bank_hosted_endpoint' => 'https://arb.test/init',
-                    'live_bank_hosted_endpoint' => 'https://arb.live/init',
                 ], JSON_UNESCAPED_SLASHES),
             ]
         );
     }
 
-    private function createPackage(): CreditPackage
+    private function createUser(int $balance = 10): User
     {
-        return CreditPackage::create([
-            'name' => 'Starter Credits',
-            'name_ar' => 'باقة البداية',
-            'description' => 'Starter package',
-            'description_ar' => 'باقة تجريبية',
+        $user = User::factory()->create([
+            'account_type' => 'tenant',
+            'tenant_id' => null,
+            'active' => true,
+            'status' => 1,
+        ]);
+
+        UserCredit::getOrCreateForUser($user->id)->update([
+            'total_credits' => $balance,
+            'used_credits' => 0,
+        ]);
+
+        return $user;
+    }
+
+    private function createPackage(array $overrides = []): CreditPackage
+    {
+        return CreditPackage::create(array_merge([
+            'name' => 'Iframe Credits',
+            'name_ar' => 'رصيد الإطار',
+            'description' => 'Iframe callback package',
+            'description_ar' => 'باقة اختبار',
             'credits' => 100,
             'price' => 50,
             'currency' => 'SAR',
@@ -102,240 +92,321 @@ class CreditArbPaymentFlowTest extends TestCase
             'sort_order' => 1,
             'supports_marketing_channels' => true,
             'marketing_priority' => 1,
-        ]);
+        ], $overrides));
     }
 
-    private function createPendingTransaction(User $user, int $credits = 120): CreditTransaction
-    {
-        return CreditTransaction::create([
+    private function createTransaction(
+        User $user,
+        ?CreditPackage $package = null,
+        string $status = 'pending',
+        array $overrides = []
+    ): CreditTransaction {
+        $package = $package ?? $this->createPackage();
+
+        return CreditTransaction::create(array_merge([
             'user_id' => $user->id,
-            'credit_package_id' => null,
+            'credit_package_id' => $package->id,
             'transaction_type' => 'purchase',
-            'credits_amount' => $credits,
-            'amount_paid' => 75,
+            'credits_amount' => $package->credits,
+            'amount_paid' => $package->discounted_price,
             'currency' => 'SAR',
             'payment_method' => 'arb',
-            'status' => 'pending',
-            'reference_number' => 'CT-TEST-' . uniqid(),
-            'description' => 'Test pending credit purchase',
+            'status' => $status,
+            'reference_number' => 'CT' . now()->format('YmdHis') . random_int(1000, 9999),
+            'description' => 'Credit callback test',
             'metadata' => ['source' => 'phpunit'],
-        ]);
+        ], $overrides));
     }
 
-    /** @test */
-    public function arb_purchase_initialization_sends_credit_callback_urls_and_returns_redirect(): void
+    private function encryptTrandata(array $paymentRecord): string
     {
-        $this->requireCreditPaymentTables();
-        $this->ensureArbGatewayAndLanguage();
+        $controller = new ArbController();
+        $reflection = new ReflectionClass($controller);
 
-        Http::fake([
-            'https://arb.test/init' => Http::response([
-                [
-                    'status' => '1',
-                    'result' => 'PID123:IGNORED://pay.example/checkout',
-                ],
-            ], 200),
-        ]);
+        $wrapMethod = $reflection->getMethod('wrapData');
+        $wrapMethod->setAccessible(true);
 
-        $tenant = User::factory()->create([
-            'account_type' => 'tenant',
-            'tenant_id' => null,
-            'active' => true,
-            'status' => 1,
-        ]);
-        Sanctum::actingAs($tenant);
+        $encryptMethod = $reflection->getMethod('encryption');
+        $encryptMethod->setAccessible(true);
 
-        $package = $this->createPackage();
-
-        $response = $this->postJson('/api/v1/credits/purchase', [
-            'package_id' => $package->id,
-            'payment_method' => 'arb',
-        ]);
-
-        $response->assertOk()
-            ->assertJsonPath('status', true)
-            ->assertJsonPath('data.payment_status', 'redirect_required');
-
-        $transactionId = (int) $response->json('data.transaction_id');
-        $this->assertGreaterThan(0, $transactionId);
-
-        $expectedSuccessUrl = route('api.credits.payment.success', [
-            'transaction_id' => $transactionId,
-            'gateway' => 'arb',
-        ]);
-        $expectedCancelUrl = route('api.credits.payment.cancel', [
-            'transaction_id' => $transactionId,
-            'gateway' => 'arb',
-        ]);
-
-        Http::assertSent(function ($request) use ($expectedSuccessUrl, $expectedCancelUrl): bool {
-            $payload = json_decode($request->body(), true);
-
-            return $request->url() === 'https://arb.test/init'
-                && is_array($payload)
-                && isset($payload[0]['responseURL'], $payload[0]['errorURL'])
-                && $payload[0]['responseURL'] === $expectedSuccessUrl
-                && $payload[0]['errorURL'] === $expectedCancelUrl;
-        });
-
-        $this->assertDatabaseHas('credit_transactions', [
-            'id' => $transactionId,
-            'status' => 'pending',
-            'payment_method' => 'arb',
-        ]);
-    }
-
-    /** @test */
-    public function payment_success_marks_transaction_completed_and_adds_credits(): void
-    {
-        $this->requireCreditPaymentTables();
-
-        $tenant = User::factory()->create([
-            'account_type' => 'tenant',
-            'tenant_id' => null,
-            'active' => true,
-            'status' => 1,
-        ]);
-
-        UserCredit::getOrCreateForUser($tenant->id)->update([
-            'total_credits' => 10,
-            'used_credits' => 0,
-        ]);
-
-        $transaction = $this->createPendingTransaction($tenant, 120);
-
-        $response = $this->postJson(
-            "/api/v1/credits/payment/success/{$transaction->id}/arb",
-            ['payment_id' => 'ARB-PAY-001']
+        return $encryptMethod->invoke(
+            $controller,
+            $wrapMethod->invoke($controller, $paymentRecord),
+            self::ARB_RESOURCE_KEY
         );
+    }
 
-        $response->assertOk()
-            ->assertJsonPath('status', 'success')
-            ->assertJsonPath('message', 'Payment successful and credits added')
-            ->assertJsonPath('credits_added', 120)
-            ->assertJsonPath('new_balance', 130);
+    private function capturedRecord(
+        CreditTransaction $transaction,
+        string $gatewayId,
+        array $overrides = []
+    ): array {
+        return array_merge([
+            'result' => 'CAPTURED',
+            'transId' => $gatewayId,
+            'amt' => (float) $transaction->amount_paid,
+            'udf1' => (string) $transaction->credit_package_id,
+            'udf2' => (string) $transaction->user_id,
+            'udf3' => 'CREDIT_PURCHASE',
+            'udf4' => '0',
+            'udf5' => (string) $transaction->id,
+        ], $overrides);
+    }
 
+    private function callbackUrl(string $entryPoint, CreditTransaction $transaction): string
+    {
+        return "/api/v1/credits/payment/{$entryPoint}/{$transaction->id}/arb";
+    }
+
+    private function assertGrantedOnce(CreditTransaction $transaction, int $startingBalance): void
+    {
         $transaction->refresh();
+
         $this->assertSame('completed', $transaction->status);
-        $this->assertSame('ARB-PAY-001', $transaction->payment_transaction_id);
-
-        $credit = UserCredit::where('user_id', $tenant->id)->firstOrFail();
-        $this->assertSame(130, (int) $credit->total_credits);
-    }
-
-    /** @test */
-    public function payment_success_with_failed_result_marks_transaction_failed_and_does_not_add_credits(): void
-    {
-        $this->requireCreditPaymentTables();
-
-        $tenant = User::factory()->create([
-            'account_type' => 'tenant',
-            'tenant_id' => null,
-            'active' => true,
-            'status' => 1,
-        ]);
-
-        UserCredit::getOrCreateForUser($tenant->id)->update([
-            'total_credits' => 40,
-            'used_credits' => 0,
-        ]);
-
-        $transaction = $this->createPendingTransaction($tenant, 200);
-
-        $response = $this->getJson(
-            "/api/v1/credits/payment/success/{$transaction->id}/arb?result=NOT%20CAPTURED"
+        $this->assertSame(
+            $startingBalance + (int) $transaction->credits_amount,
+            (int) UserCredit::where('user_id', $transaction->user_id)->value('total_credits')
         );
-
-        $response->assertOk()
-            ->assertJsonPath('status', 'cancelled')
-            ->assertJsonPath('message', 'Payment was cancelled');
-
-        $transaction->refresh();
-        $this->assertSame('failed', $transaction->status);
-
-        $credit = UserCredit::where('user_id', $tenant->id)->firstOrFail();
-        $this->assertSame(40, (int) $credit->total_credits);
-    }
-
-    /** @test */
-    public function payment_cancel_marks_transaction_failed_and_does_not_add_credits(): void
-    {
-        $this->requireCreditPaymentTables();
-
-        $tenant = User::factory()->create([
-            'account_type' => 'tenant',
-            'tenant_id' => null,
-            'active' => true,
-            'status' => 1,
-        ]);
-
-        UserCredit::getOrCreateForUser($tenant->id)->update([
-            'total_credits' => 55,
-            'used_credits' => 0,
-        ]);
-
-        $transaction = $this->createPendingTransaction($tenant, 150);
-
-        $response = $this->postJson(
-            "/api/v1/credits/payment/cancel/{$transaction->id}/arb",
-            ['reason' => 'user_cancelled']
+        $this->assertSame(
+            1,
+            CreditTransaction::where('user_id', $transaction->user_id)
+                ->where('credit_package_id', $transaction->credit_package_id)
+                ->where('transaction_type', 'purchase')
+                ->count(),
+            'The pending purchase row must be completed in place, not duplicated.'
         );
-
-        $response->assertOk()
-            ->assertJsonPath('status', 'cancelled')
-            ->assertJsonPath('message', 'Payment was cancelled');
-
-        $transaction->refresh();
-        $this->assertSame('failed', $transaction->status);
-
-        $credit = UserCredit::where('user_id', $tenant->id)->firstOrFail();
-        $this->assertSame(55, (int) $credit->total_credits);
     }
 
     /** @test */
-    public function success_and_cancel_callbacks_do_not_reprocess_completed_transaction(): void
+    public function browser_get_and_post_captured_callbacks_return_embeddable_html_and_grant_once(): void
     {
-        $this->requireCreditPaymentTables();
+        $user = $this->createUser(10);
+        $transaction = $this->createTransaction($user);
+        $trandata = $this->encryptTrandata($this->capturedRecord($transaction, 'ARB-HTML-001'));
+        $url = $this->callbackUrl('success', $transaction);
 
-        $tenant = User::factory()->create([
-            'account_type' => 'tenant',
-            'tenant_id' => null,
-            'active' => true,
-            'status' => 1,
-        ]);
+        $get = $this->get($url . '?' . http_build_query(['trandata' => $trandata]));
 
-        UserCredit::getOrCreateForUser($tenant->id)->update([
-            'total_credits' => 300,
-            'used_credits' => 0,
-        ]);
+        $get->assertOk()->assertHeader('Content-Type', 'text/html; charset=UTF-8');
+        $get->assertHeaderMissing('X-Frame-Options');
+        $this->assertStringContainsString('frame-ancestors', (string) $get->headers->get('Content-Security-Policy'));
+        $this->assertStringContainsString('taearif-payment', $get->getContent());
+        $this->assertStringContainsString('"status":"success"', $get->getContent());
+        $this->assertStringContainsString('تمت العملية بنجاح', $get->getContent());
+        $this->assertStringContainsString('#FFFFFF', $get->getContent());
+        $this->assertStringContainsString('#4F9E8E', $get->getContent());
 
-        $transaction = CreditTransaction::create([
-            'user_id' => $tenant->id,
-            'credit_package_id' => null,
-            'transaction_type' => 'purchase',
-            'credits_amount' => 90,
-            'amount_paid' => 45,
-            'currency' => 'SAR',
-            'payment_method' => 'arb',
-            'status' => 'completed',
-            'reference_number' => 'CT-COMPLETE-' . uniqid(),
-            'description' => 'Already completed',
-        ]);
+        $post = $this->post($url, ['trandata' => $trandata]);
+        $post->assertOk()->assertHeader('Content-Type', 'text/html; charset=UTF-8');
+        $this->assertStringContainsString('"status":"success"', $post->getContent());
 
-        $successResponse = $this->getJson("/api/v1/credits/payment/success/{$transaction->id}/arb");
-        $successResponse->assertOk()
+        $this->assertSame('ARB-HTML-001', $transaction->fresh()->payment_transaction_id);
+        $this->assertGrantedOnce($transaction, 10);
+    }
+
+    /** @test */
+    public function accept_json_returns_normalized_success_payload_with_ct_reference(): void
+    {
+        $user = $this->createUser(20);
+        $transaction = $this->createTransaction($user);
+        $trandata = $this->encryptTrandata($this->capturedRecord($transaction, 'ARB-JSON-001'));
+
+        $this->postJson($this->callbackUrl('success', $transaction), ['trandata' => $trandata])
+            ->assertOk()
+            ->assertJsonPath('source', 'taearif-payment')
             ->assertJsonPath('status', 'success')
-            ->assertJsonPath('message', 'Payment already processed');
+            ->assertJsonPath('transaction_id', $transaction->reference_number)
+            ->assertJsonPath('reference_number', $transaction->reference_number);
 
-        $cancelResponse = $this->getJson("/api/v1/credits/payment/cancel/{$transaction->id}/arb");
-        $cancelResponse->assertOk()
-            ->assertJsonPath('status', 'info')
-            ->assertJsonPath('message', 'Payment was already completed');
+        $this->assertGrantedOnce($transaction, 20);
+    }
 
-        $transaction->refresh();
-        $this->assertSame('completed', $transaction->status);
+    /** @test */
+    public function api_callback_path_does_not_force_a_default_get_request_to_json(): void
+    {
+        $user = $this->createUser();
+        $transaction = $this->createTransaction($user);
+        $trandata = $this->encryptTrandata($this->capturedRecord($transaction, 'ARB-DEFAULT-HTML'));
 
-        $credit = UserCredit::where('user_id', $tenant->id)->firstOrFail();
-        $this->assertSame(300, (int) $credit->total_credits);
+        $this->get($this->callbackUrl('success', $transaction) . '?' . http_build_query(['trandata' => $trandata]))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/html; charset=UTF-8');
+    }
+
+    /** @test */
+    public function captured_result_recovers_from_cancel_and_failed_callback_urls(): void
+    {
+        foreach (['cancel', 'failed'] as $entryPoint) {
+            $user = $this->createUser(5);
+            $transaction = $this->createTransaction($user);
+            $gatewayId = 'ARB-RECOVERY-' . strtoupper($entryPoint);
+            $trandata = $this->encryptTrandata($this->capturedRecord($transaction, $gatewayId));
+
+            $this->postJson($this->callbackUrl($entryPoint, $transaction), ['trandata' => $trandata])
+                ->assertOk()
+                ->assertJsonPath('status', 'success');
+
+            $this->assertGrantedOnce($transaction, 5);
+        }
+    }
+
+    /** @test */
+    public function captured_callback_upgrades_failed_and_cancelled_transactions(): void
+    {
+        foreach (['failed', 'cancelled'] as $priorStatus) {
+            $user = $this->createUser(30);
+            $transaction = $this->createTransaction($user, null, $priorStatus);
+            $trandata = $this->encryptTrandata(
+                $this->capturedRecord($transaction, 'ARB-UPGRADE-' . strtoupper($priorStatus))
+            );
+
+            $this->postJson($this->callbackUrl('success', $transaction), ['trandata' => $trandata])
+                ->assertOk()
+                ->assertJsonPath('status', 'success');
+
+            $this->assertGrantedOnce($transaction, 30);
+        }
+    }
+
+    /** @test */
+    public function cancel_without_trandata_returns_cancelled_html_and_json_without_credits(): void
+    {
+        $htmlUser = $this->createUser(40);
+        $htmlTransaction = $this->createTransaction($htmlUser);
+
+        $html = $this->get($this->callbackUrl('cancel', $htmlTransaction));
+        $html->assertOk()->assertHeader('Content-Type', 'text/html; charset=UTF-8');
+        $this->assertStringContainsString('"status":"cancelled"', $html->getContent());
+        $this->assertSame('cancelled', $htmlTransaction->fresh()->status);
+        $this->assertSame(40, (int) UserCredit::where('user_id', $htmlUser->id)->value('total_credits'));
+
+        $jsonUser = $this->createUser(50);
+        $jsonTransaction = $this->createTransaction($jsonUser);
+
+        $this->postJson($this->callbackUrl('cancel', $jsonTransaction))
+            ->assertOk()
+            ->assertJsonPath('status', 'cancelled');
+        $this->assertSame('cancelled', $jsonTransaction->fresh()->status);
+        $this->assertSame(50, (int) UserCredit::where('user_id', $jsonUser->id)->value('total_credits'));
+    }
+
+    /** @test */
+    public function missing_or_undecryptable_trandata_on_success_marks_failed_without_credits(): void
+    {
+        foreach ([[], ['trandata' => 'not-valid-ciphertext']] as $payload) {
+            $user = $this->createUser(60);
+            $transaction = $this->createTransaction($user);
+
+            $this->postJson($this->callbackUrl('success', $transaction), $payload)
+                ->assertOk()
+                ->assertJsonPath('status', 'failed');
+
+            $this->assertSame('failed', $transaction->fresh()->status);
+            $this->assertSame(60, (int) UserCredit::where('user_id', $user->id)->value('total_credits'));
+        }
+    }
+
+    /** @test */
+    public function captured_callback_requires_transaction_binding_amount_and_gateway_id(): void
+    {
+        foreach ([
+            ['gateway_id' => 'ARB-WRONG-BINDING', 'overrides' => ['udf5' => '999999']],
+            ['gateway_id' => 'ARB-WRONG-AMOUNT', 'overrides' => ['amt' => 1.0]],
+            ['gateway_id' => '', 'overrides' => []],
+        ] as $case) {
+            $user = $this->createUser(65);
+            $transaction = $this->createTransaction($user);
+            $trandata = $this->encryptTrandata(
+                $this->capturedRecord($transaction, $case['gateway_id'], $case['overrides'])
+            );
+
+            $this->postJson($this->callbackUrl('success', $transaction), ['trandata' => $trandata])
+                ->assertOk()
+                ->assertJsonPath('status', 'failed');
+
+            $this->assertSame('failed', $transaction->fresh()->status);
+            $this->assertSame(
+                65,
+                (int) UserCredit::where('user_id', $user->id)->value('total_credits')
+            );
+        }
+    }
+
+    /** @test */
+    public function one_gateway_payment_cannot_complete_two_transactions_for_the_same_user(): void
+    {
+        $user = $this->createUser(75);
+        $first = $this->createTransaction($user);
+        $second = $this->createTransaction($user);
+        $gatewayId = 'ARB-UNIQUE-OWNER';
+
+        $this->postJson($this->callbackUrl('success', $first), [
+            'trandata' => $this->encryptTrandata($this->capturedRecord($first, $gatewayId)),
+        ])->assertOk()->assertJsonPath('status', 'success');
+
+        $this->postJson($this->callbackUrl('success', $second), [
+            'trandata' => $this->encryptTrandata($this->capturedRecord($second, $gatewayId)),
+        ])->assertOk()->assertJsonPath('status', 'failed');
+
+        $this->assertSame('completed', $first->fresh()->status);
+        $this->assertSame('pending', $second->fresh()->status);
+        $this->assertSame(
+            75 + (int) $first->credits_amount,
+            (int) UserCredit::where('user_id', $user->id)->value('total_credits')
+        );
+    }
+
+    /** @test */
+    public function two_sequential_captured_posts_are_idempotent(): void
+    {
+        $user = $this->createUser(70);
+        $transaction = $this->createTransaction($user);
+        $trandata = $this->encryptTrandata($this->capturedRecord($transaction, 'ARB-DOUBLE-POST'));
+
+        foreach ([1, 2] as $attempt) {
+            $this->postJson($this->callbackUrl('success', $transaction), ['trandata' => $trandata])
+                ->assertOk()
+                ->assertJsonPath('status', 'success');
+        }
+
+        $this->assertGrantedOnce($transaction, 70);
+    }
+
+    /** @test */
+    public function authenticated_polling_maps_statuses_and_enforces_transaction_ownership(): void
+    {
+        $user = $this->createUser();
+        $otherUser = $this->createUser();
+        Sanctum::actingAs($user);
+
+        $transactions = [];
+        foreach ([
+            'pending' => 'pending',
+            'completed' => 'success',
+            'cancelled' => 'cancelled',
+            'failed' => 'failed',
+        ] as $databaseStatus => $apiStatus) {
+            $transactions[$databaseStatus] = $this->createTransaction($user, null, $databaseStatus);
+            $identifier = $databaseStatus === 'pending'
+                ? (string) $transactions[$databaseStatus]->id
+                : $transactions[$databaseStatus]->reference_number;
+
+            $this->getJson("/api/v1/credits/payment/status/{$identifier}")
+                ->assertOk()
+                ->assertJsonPath('status', $apiStatus)
+                ->assertJsonPath('transaction_id', $transactions[$databaseStatus]->reference_number);
+        }
+
+        $this->getJson(
+            '/api/v1/credits/payment/status/' . $transactions['completed']->id
+        )->assertOk()->assertJsonPath('status', 'success');
+
+        $otherTransaction = $this->createTransaction($otherUser);
+        $this->getJson(
+            "/api/v1/credits/payment/status/{$otherTransaction->id}"
+        )->assertNotFound();
+        $this->getJson(
+            "/api/v1/credits/payment/status/{$otherTransaction->reference_number}"
+        )->assertNotFound();
     }
 }

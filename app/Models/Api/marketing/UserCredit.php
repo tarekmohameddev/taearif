@@ -121,8 +121,30 @@ class UserCredit extends Model
     /**
      * Add credits
      */
-    public function addCredits($credits, $packageId = null, $description = null)
+    public function addCredits(
+        $credits,
+        $packageId = null,
+        $description = null,
+        ?CreditTransaction $existingTransaction = null
+    )
     {
+        if ($existingTransaction) {
+            if ((int) $existingTransaction->user_id !== (int) $this->user_id) {
+                throw new \InvalidArgumentException('The credit transaction belongs to a different user.');
+            }
+
+            $existingTransaction->fill([
+                'credit_package_id' => $packageId ?? $existingTransaction->credit_package_id,
+                'credits_amount' => $credits,
+                'status' => 'completed',
+                'description' => $description ?? $existingTransaction->description ?? 'Credit purchase',
+            ])->save();
+
+            $this->increment('total_credits', $credits);
+
+            return true;
+        }
+
         $this->increment('total_credits', $credits);
 
         // Create transaction record

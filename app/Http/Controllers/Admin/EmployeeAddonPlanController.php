@@ -33,12 +33,14 @@ class EmployeeAddonPlanController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'name_ar' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'duration' => 'required|integer|min:1',
             'duration_unit' => 'required|in:month,year',
             'is_active' => 'boolean',
         ], [
             'name.required' => 'اسم الخطة مطلوب',
+            'name_ar.required' => 'اسم الخطة بالعربية مطلوب',
             'price.required' => 'السعر مطلوب',
             'price.numeric' => 'السعر يجب أن يكون رقماً',
             'duration.required' => 'المدة مطلوبة',
@@ -61,12 +63,14 @@ class EmployeeAddonPlanController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'name_ar' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'duration' => 'required|integer|min:1',
             'duration_unit' => 'required|in:month,year',
             'is_active' => 'boolean',
         ], [
             'name.required' => 'اسم الخطة مطلوب',
+            'name_ar.required' => 'اسم الخطة بالعربية مطلوب',
             'price.required' => 'السعر مطلوب',
             'price.numeric' => 'السعر يجب أن يكون رقماً',
             'duration.required' => 'المدة مطلوبة',
