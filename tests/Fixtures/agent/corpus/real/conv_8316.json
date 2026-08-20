@@ -1,0 +1,399 @@
+{
+    "type": "real_conversation",
+    "id": "conv_8316",
+    "tenant_id": 1507,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "ابويوسف"
+        },
+        {
+            "role": "customer",
+            "text": "رقم الحساب"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الحين"
+        },
+        {
+            "role": "customer",
+            "text": "0534711723"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "حاضر"
+        },
+        {
+            "role": "customer",
+            "text": "والله انا منتظر الراجل جي هو ما يعرف يحوال"
+        },
+        {
+            "role": "customer",
+            "text": "فاهم عليا"
+        },
+        {
+            "role": "customer",
+            "text": "يجي الحين وبحوالك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هو في المرور داله وجي"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الف و200"
+        },
+        {
+            "role": "customer",
+            "text": "وبكره ولا بعده اعطيه 100"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "0575641264"
+        },
+        {
+            "role": "customer",
+            "text": "حبيب ممكن رقم العامل"
+        },
+        {
+            "role": "customer",
+            "text": "الا في الفندق"
+        },
+        {
+            "role": "customer",
+            "text": "والله منتظر"
+        },
+        {
+            "role": "customer",
+            "text": "الكفيل يرجع من مصر"
+        },
+        {
+            "role": "customer",
+            "text": "انا بس ابغا تلاجه في الغرفه"
+        },
+        {
+            "role": "customer",
+            "text": "وانا بعطيها لا العامل الافي الفندف"
+        },
+        {
+            "role": "customer",
+            "text": "مافيش مشكله يا خويا يجي فلوس وانا اعطيها"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "حاضر ياحبيب"
+        },
+        {
+            "role": "customer",
+            "text": "منتظر فلوس والله"
+        },
+        {
+            "role": "customer",
+            "text": "مما معي غير مصاريف ليا"
+        },
+        {
+            "role": "customer",
+            "text": "لو معايا بعطها من غير ما تتكلم"
+        },
+        {
+            "role": "customer",
+            "text": "حاضر ياحبيب"
+        },
+        {
+            "role": "customer",
+            "text": "دي 100ريال"
+        },
+        {
+            "role": "customer",
+            "text": "ما يحتاج"
+        },
+        {
+            "role": "customer",
+            "text": "انا بعطيها"
+        },
+        {
+            "role": "customer",
+            "text": "أوال ما يجي فلوس"
+        },
+        {
+            "role": "customer",
+            "text": "يوام الخميس"
+        },
+        {
+            "role": "customer",
+            "text": "يعطيها ليك"
+        },
+        {
+            "role": "customer",
+            "text": "ما بقصر انشا الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "شحنت"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تامين علي ايش ياحبيب قلبي الغرفه ما فيها غير سرير ودلاب"
+        },
+        {
+            "role": "customer",
+            "text": "ما بقصر معك انا منتظر يجي فلوس وأعطيك مافي مشكله ما يحتاج يعني"
+        },
+        {
+            "role": "customer",
+            "text": "ياخي والله بعطيك"
+        },
+        {
+            "role": "customer",
+            "text": "يومين بي الكتير بس"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "والله منتظر فلوس"
+        },
+        {
+            "role": "customer",
+            "text": "لسه"
+        },
+        {
+            "role": "customer",
+            "text": "يوام 1بعطيك 100ريال"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "منتظر لسه اكلم الكفيل وابلغك"
+        },
+        {
+            "role": "customer",
+            "text": "اليوام أو باكره"
+        },
+        {
+            "role": "customer",
+            "text": "منتظر مكلمه"
+        },
+        {
+            "role": "customer",
+            "text": "الكفيل"
+        },
+        {
+            "role": "customer",
+            "text": "اليوام ببلغك انشا الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الفجر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

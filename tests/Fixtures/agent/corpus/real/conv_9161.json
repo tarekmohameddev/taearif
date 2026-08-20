@@ -1,0 +1,515 @@
+{
+    "type": "real_conversation",
+    "id": "conv_9161",
+    "tenant_id": 1507,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "0505915852"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "0576490252"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "A0503841000"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

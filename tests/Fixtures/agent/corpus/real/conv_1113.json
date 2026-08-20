@@ -1,0 +1,403 @@
+{
+    "type": "real_conversation",
+    "id": "conv_1113",
+    "tenant_id": 1113,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "🔴 *تنبيه هام.* \nأولياء الأمور الكرام. \nالسلام عليكم ورحمة الله وبركاته.\nأسعد الله أوقاتكم بكل خير.\n▪️ *نؤكد على أهمية المبادرة وسرعة التسجيل والمشاركة في مسابقة أقرأ عبر الرابط التالي.*\n▪️ *علما بأن الطالب يقدم للمشاركة في المسابقة مراجعة لكتاب من اختياره ويحكي تجربته الملهمة معه.*\nشاكرين ومقدرين لكم حسن تعاونكم."
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/ireadaward.com\/"
+        },
+        {
+            "role": "customer",
+            "text": "التسجيل في مسابقة أقرأ.\nخطوات متسلسلة وواضحة ✨"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "filename.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزي الوسيط، لديك عقد  مع وسيط بانتظار موافقتك خلال 7 أيام.\nفضلاَ قم بتسجيل الدخول لمنصة الوساطة العقارية لمراجعته أو من خلال زيارة الرابط التالي: https:\/\/eservicesredp.rega.gov.sa\/main\/IndividualBroker\/Contracts\/BrokerToBroker\/ContractDetails\/08de671d-1b3a-4ea6-8b70-3de0825db2c1?isOfficeContract=false\nنسعد بخدمتك خلال 199011"
+        },
+        {
+            "role": "customer",
+            "text": "طلب قبول متدرب.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "اقرار التدريب.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "نموذج_مباشرة_التدريب (8).docx"
+        },
+        {
+            "role": "customer",
+            "text": "اتفاقية تسويق مشروع ملفى تبوك هيلز.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "u9cr97bp7qb"
+        },
+        {
+            "role": "customer",
+            "text": "رقم الشبكه موبايلي الجديده"
+        },
+        {
+            "role": "customer",
+            "text": "بار كود اوتاد الحمراء.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "سجل تجاري اوتاد الحمراء.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/meet.google.com\/vmr-ahkv-ykw"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/eaqartabuk.com\/"
+        },
+        {
+            "role": "customer",
+            "text": "awtadalhamra@gmail.com"
+        },
+        {
+            "role": "customer",
+            "text": "LBZeOd6E*fpT4qwa4$PvfwNy"
+        },
+        {
+            "role": "customer",
+            "text": "HrDiLjzWd8GA"
+        },
+        {
+            "role": "customer",
+            "text": "oIS*xWyvQg2^"
+        },
+        {
+            "role": "customer",
+            "text": "7684 https:\/\/goo.gl\/maps\/BP4b924Yq4Qs6kDm7"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته \nمساء الخير يابوناصر \nوكل عام وانت بخير وصحة وسلامة وعيدك مبارك"
+        },
+        {
+            "role": "customer",
+            "text": "الشقة الدور الأول بعد الغسيل"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "الملحق بعد الغسيل"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/meet.google.com\/rsa-vsqe-jxc"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/crm.eaqartabuk.com\/"
+        },
+        {
+            "role": "customer",
+            "text": "LBZeOd6E*fpT4qwa4$PvfwNy"
+        },
+        {
+            "role": "customer",
+            "text": "awtadalhamra1@gmail.com"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/crm.eaqartabuk.com\/"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "🔻🔻🔻🔻\n🔹 فيلا روف أرضي بحي الحمراء \nمساحة 235 م \n6 غرف\nصالة\n5 دورات مياه\nمطبخ\nغرفة غسيل\nحوش\nجميع الخدمات واصلة\nبناء على الكود السعودي\nتشطيب مودرن\nالسعر 720 صافي\n🔺🔺🔺🔺"
+        },
+        {
+            "role": "customer",
+            "text": "🔻🔻🔻🔻\n🔹 فيلا روف علوي بحي الحمراء \nمساحة 214 م \n5 غرف\nصالة\n4 دورات مياه\nمطبخ\nغرفة غسيل\nسطح\nمصعد مؤسس\nجميع الخدمات واصلة\nبناء على الكود السعودي\nتشطيب مودرن\nالسعر720 صافي\n🔺🔺🔺🔺"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "دور كامل حي الشفاء مع جميع مكيفات الاسبلت راكبه عدد7\nومطبخ جديد مكلف 40 الف \n\nغرفة نوم رئيسية مع غرفة ملابس وحمام \nغرفتين نوم اطفال مع دورة مياه \nمطبخ + غرفة غسيل +صالة طعام + صالة كبيرة \nغرفة شغالة + مجلس حريم +مجلس رجال +مقلط \nمشب كبير \nمساحة الارض 640م\nيوجد رخصة بناء شقتين وملحق\nواجهة شرقي شارع 30م\nقرب مسجد محمد الفالح بالشفاء\nمليون و200 كاش تفاوض للصامل… \nعليه بنك أهلي لازم يتحرر"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "قطعة تجارية مساحتها 1180 \nمخطط العين رقم القطعة 2485 \nمسيوم بمليون و300"
+        },
+        {
+            "role": "customer",
+            "text": "مخطط حي العين  2.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عرض مميز 🚩 \n\nالجامعه 301 \nمساحة 1100 \nشارع 30\nمطلوب 610 صافي"
+        },
+        {
+            "role": "customer",
+            "text": "عرض مباشر 🚩 \n\nالفلاح 2 رقم 59\nمساحه 600 \nشارع 15\nمطلوب 520"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

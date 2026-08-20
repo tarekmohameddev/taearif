@@ -1,0 +1,1035 @@
+{
+    "type": "real_conversation",
+    "id": "conv_252",
+    "tenant_id": 1537,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "ساعة و بجيكم"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "انت بطول برضعه"
+        },
+        {
+            "role": "customer",
+            "text": "مشيت \nخل مفتاح البيت احتياط"
+        },
+        {
+            "role": "customer",
+            "text": "اهلي يمكن يمشون الليلله"
+        },
+        {
+            "role": "customer",
+            "text": "اي وقت"
+        },
+        {
+            "role": "customer",
+            "text": "عبدالله \nابي فلوس بروح القريه اخذ اغراض"
+        },
+        {
+            "role": "customer",
+            "text": "ا"
+        },
+        {
+            "role": "customer",
+            "text": "على حساب امي"
+        },
+        {
+            "role": "customer",
+            "text": "جب لي اغراض وخواتي لهم فولس برجعها"
+        },
+        {
+            "role": "customer",
+            "text": "مشيت"
+        },
+        {
+            "role": "customer",
+            "text": "بتجي الليله"
+        },
+        {
+            "role": "customer",
+            "text": "اهلي بيمشون بكره"
+        },
+        {
+            "role": "customer",
+            "text": "على كم تحينا"
+        },
+        {
+            "role": "customer",
+            "text": "بتجينا"
+        },
+        {
+            "role": "customer",
+            "text": "جاهزين"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "طماط \nبصل \nفلفل بارد \nبذنجان \nخس \nجزر \nبقدونس \nبصل اخضر \nخبز مفرود وخبز صامولي لوزين \nفاصوليا بطماطم \nزيتون \nحليب سائل \nفواكه"
+        },
+        {
+            "role": "customer",
+            "text": "كيك نحول"
+        },
+        {
+            "role": "customer",
+            "text": "وين"
+        },
+        {
+            "role": "customer",
+            "text": "ك"
+        },
+        {
+            "role": "customer",
+            "text": "اخذت علاجك"
+        },
+        {
+            "role": "customer",
+            "text": "وصلت"
+        },
+        {
+            "role": "customer",
+            "text": "للحين نايم"
+        },
+        {
+            "role": "customer",
+            "text": "انت رايح الاستراحه ولا المزاحميه"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلت سناب"
+        },
+        {
+            "role": "customer",
+            "text": "مشيت"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "وش تبي غدا"
+        },
+        {
+            "role": "customer",
+            "text": "مطول ولا اجهزهها الحين"
+        },
+        {
+            "role": "customer",
+            "text": "اخبارك \nوينك في البيت ولا طالع"
+        },
+        {
+            "role": "customer",
+            "text": "موجود \nطيب"
+        },
+        {
+            "role": "customer",
+            "text": "طيب \nمع البنات شويات"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلت سناب"
+        },
+        {
+            "role": "customer",
+            "text": "اخبارك اليوم \nوش مسوي"
+        },
+        {
+            "role": "customer",
+            "text": "تغديت"
+        },
+        {
+            "role": "customer",
+            "text": "زين"
+        },
+        {
+            "role": "customer",
+            "text": "نايم"
+        },
+        {
+            "role": "customer",
+            "text": "اليوم راحت وحده من الامهات لمكتب التنويم"
+        },
+        {
+            "role": "customer",
+            "text": "قال مافي شي عندنا مرفوض \nبس بنتواصل معها الاسبوع الجاي"
+        },
+        {
+            "role": "customer",
+            "text": "عبدالله ماكلمت الدكدكتور"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي يسال"
+        },
+        {
+            "role": "customer",
+            "text": "متاخر مره \nنطلع 14 رمضان"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعين"
+        },
+        {
+            "role": "customer",
+            "text": "اخبارك اليوم\nوش سوت جروحك"
+        },
+        {
+            "role": "customer",
+            "text": "هلا عبدالله \nااخبارك اليوم \nحولي 100 على حساب امي"
+        },
+        {
+            "role": "customer",
+            "text": "هلا اخبارك \nبتجي جهتنا اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "حليب عسوف خلص"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "برد عليه"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "اذا قدرت مر النهدي جبها لي"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص شويات ونطلع"
+        },
+        {
+            "role": "customer",
+            "text": "طيب معك صرف لسواق"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "اي جيب برقر بطاطس"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "لا تنسى هذا"
+        },
+        {
+            "role": "customer",
+            "text": "كوسه\nقرع \nبطاطس\nطماطم\nفلفل بارد\nخيار \nخس\nبقدونس\nكزبره \nرمان\nدجاج \nعصير برتقال \nخبز صامولي لوزين\nفيري \nكلوركس\nعملاق"
+        },
+        {
+            "role": "customer",
+            "text": "مشيت"
+        },
+        {
+            "role": "customer",
+            "text": "مر البقاله \nعطنا \nاندومي الابيض \nحليب سعودي صغير"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "التوصيل في جاهز مجانا"
+        },
+        {
+            "role": "customer",
+            "text": "عنوان القهوه"
+        },
+        {
+            "role": "customer",
+            "text": "اذا جاء عند الباب علمني"
+        },
+        {
+            "role": "customer",
+            "text": "ليه التوصيل 15"
+        },
+        {
+            "role": "customer",
+            "text": "يمكن لان الطلب قليل"
+        },
+        {
+            "role": "customer",
+            "text": "طيب شف وين وصل"
+        },
+        {
+            "role": "customer",
+            "text": "جب مععك مناديل"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "بقدونس \nجرجير \nرمان \nبصل اخضر \nعصير تفاح نادك\nمكرونه"
+        },
+        {
+            "role": "customer",
+            "text": "جب لنا غدا"
+        },
+        {
+            "role": "customer",
+            "text": "مافي موعد تقول تتابعين في عيادة النساء والولاده"
+        },
+        {
+            "role": "customer",
+            "text": "ونشوف بعدين"
+        },
+        {
+            "role": "customer",
+            "text": "وينك بتجينا"
+        },
+        {
+            "role": "customer",
+            "text": "جب معك زيت زيتون\nخبز مفرود"
+        },
+        {
+            "role": "customer",
+            "text": "وش تبي غدا"
+        },
+        {
+            "role": "customer",
+            "text": "جب معك رز"
+        },
+        {
+            "role": "customer",
+            "text": "بتروح مكان"
+        },
+        {
+            "role": "customer",
+            "text": "نروح معك لهلي"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "جب لنا فلافل معك"
+        },
+        {
+            "role": "customer",
+            "text": "تغدى عندنا"
+        },
+        {
+            "role": "customer",
+            "text": "تقدر تجيب خبز"
+        },
+        {
+            "role": "customer",
+            "text": "بشوف اهلي يمكن يجون لعمي غازي اللليله"
+        },
+        {
+            "role": "customer",
+            "text": "يالله اطلب سياره"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/vt.tiktok.com\/ZSaXJoHpm\/"
+        },
+        {
+            "role": "customer",
+            "text": "حلوه الشيله"
+        },
+        {
+            "role": "customer",
+            "text": "على حساب امي"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "اول يوم رمضان"
+        },
+        {
+            "role": "customer",
+            "text": "العشاء \nجب لنا من حق ورق العنب عنده محشي كوسه عطنا مشكل وورق عنب"
+        },
+        {
+            "role": "customer",
+            "text": "مابي شي دسم"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "بقدونس \nرمان\nحليب نادك \nكيك نحول"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "لقيته"
+        },
+        {
+            "role": "customer",
+            "text": "درج الكومدينه"
+        },
+        {
+            "role": "customer",
+            "text": "من عندكم"
+        },
+        {
+            "role": "customer",
+            "text": "عمي فيه"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "عسوف جاهز تجي تاخذه"
+        },
+        {
+            "role": "customer",
+            "text": "لا مدام العيال مجتمعين ماقدر"
+        },
+        {
+            "role": "customer",
+            "text": "يالله بجي"
+        },
+        {
+            "role": "customer",
+            "text": "طلعت"
+        },
+        {
+            "role": "customer",
+            "text": "مر الصيدليه لا تنسى \nحامض الفوليك 5ملي قرام"
+        },
+        {
+            "role": "customer",
+            "text": "عبدالله تقدر تمر اهلي تجيب اغرض لي عندهم"
+        },
+        {
+            "role": "customer",
+            "text": "وانت جاي"
+        },
+        {
+            "role": "customer",
+            "text": "هاه اخليهم يجهزونها"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص اذا قربت علمني يطلعونها"
+        },
+        {
+            "role": "customer",
+            "text": "اخذتها"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص عند الباب"
+        },
+        {
+            "role": "customer",
+            "text": "خلصنا"
+        },
+        {
+            "role": "customer",
+            "text": "قد مشيت"
+        },
+        {
+            "role": "customer",
+            "text": "صابون تايد\nعصير برتقال نادك \n2خبز لوزين صامولي \nاندومي ابيض"
+        },
+        {
+            "role": "customer",
+            "text": "جبن يائل صغير"
+        },
+        {
+            "role": "customer",
+            "text": "سايل"
+        },
+        {
+            "role": "customer",
+            "text": "لا سوينا"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "جيت"
+        },
+        {
+            "role": "customer",
+            "text": "يالليل المواعيد كثرت"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الصرافه فيها فلوس"
+        },
+        {
+            "role": "customer",
+            "text": "يالله"
+        },
+        {
+            "role": "customer",
+            "text": "مرفرفوضه"
+        },
+        {
+            "role": "customer",
+            "text": "اي خلاص"
+        },
+        {
+            "role": "customer",
+            "text": "عبدالله"
+        },
+        {
+            "role": "customer",
+            "text": "حولي اربعه ريال علشان تسحباي الصرافه"
+        },
+        {
+            "role": "customer",
+            "text": "اذا حولت علمني"
+        },
+        {
+            "role": "customer",
+            "text": "جب لنا مويه"
+        },
+        {
+            "role": "customer",
+            "text": "جتك"
+        },
+        {
+            "role": "customer",
+            "text": "ننزل"
+        },
+        {
+            "role": "customer",
+            "text": "انت داق علي \nاخذنا غطه"
+        },
+        {
+            "role": "customer",
+            "text": "قمت"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "نود إبلاغكم بأنه تم قبول طلب المرافقة الخاص بالمريض بنجاح. نشكر لكم تعاونكم. قسم تجربة المريض"
+        },
+        {
+            "role": "customer",
+            "text": "مكرونه \nزيت زيتون\nماجي اصفر \nعصير \nفلفل حار"
+        },
+        {
+            "role": "customer",
+            "text": "مشيت"
+        },
+        {
+            "role": "customer",
+            "text": "خيره"
+        },
+        {
+            "role": "customer",
+            "text": "يالله جتك"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "حولت"
+        },
+        {
+            "role": "customer",
+            "text": "انا عند الصرافه"
+        },
+        {
+            "role": "customer",
+            "text": "بطلب فطور مع الامهات"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص"
+        },
+        {
+            "role": "customer",
+            "text": "ماعندها شي في الصرافه"
+        },
+        {
+            "role": "customer",
+            "text": "كاش اذكر"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مشاءالله \nان شاءالله خير"
+        },
+        {
+            "role": "customer",
+            "text": "وين وصلت"
+        },
+        {
+            "role": "customer",
+            "text": "بقدونس \nبصل اخضر \nرمان \nخل ابيض"
+        },
+        {
+            "role": "customer",
+            "text": "وصلتو مكه"
+        },
+        {
+            "role": "customer",
+            "text": "جيتو"
+        },
+        {
+            "role": "customer",
+            "text": "حمدالله علي السلامه"
+        },
+        {
+            "role": "customer",
+            "text": "متى بتجينا"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "وصللت البيت"
+        },
+        {
+            "role": "customer",
+            "text": "عبدالله تمر اهلي وانت جاي تجيب طلبيتي عندهم"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "هينا منفس"
+        },
+        {
+            "role": "customer",
+            "text": "تسحر عندنا"
+        },
+        {
+            "role": "customer",
+            "text": "وش تبي سحور"
+        },
+        {
+            "role": "customer",
+            "text": "بقدونس \nنعناع \nطماط\nمعجون طماط\nماجي اصفر"
+        },
+        {
+            "role": "customer",
+            "text": "وينكم"
+        },
+        {
+            "role": "customer",
+            "text": "عبدالله اخذت الكيس معك"
+        },
+        {
+            "role": "customer",
+            "text": "يوه متى ارجع"
+        },
+        {
+            "role": "customer",
+            "text": "كلها فاضيه"
+        },
+        {
+            "role": "customer",
+            "text": "زين \nالله يعافيك"
+        },
+        {
+            "role": "customer",
+            "text": "جب معك \nشرايح مطبق \nبيص \nبقدونس \nليمون\nتغليف شفاف"
+        },
+        {
+            "role": "customer",
+            "text": "يعني بتروح تصلي بعدين تجون للقهوه"
+        },
+        {
+            "role": "customer",
+            "text": "خلصتو صلاه"
+        },
+        {
+            "role": "customer",
+            "text": "القهوه جاهزه"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "عبدالله عمي بيفطر هينا نسوي قرصان"
+        },
+        {
+            "role": "customer",
+            "text": "انت بتفطر عندنا"
+        },
+        {
+            "role": "customer",
+            "text": "علشان نسوي فطورنا"
+        },
+        {
+            "role": "customer",
+            "text": "طيب نبي اغراض"
+        },
+        {
+            "role": "customer",
+            "text": "كوسه \nبذنجان \nبطاطس\nفلفل بارد\nبقدونس \nزيت قلي \nلفة سنبوسه\nجبن كيري مربعات\nخبز ترتلا \nدجاج فيليه صحن \nكاتشب"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "بتجينا"
+        },
+        {
+            "role": "customer",
+            "text": "لحم مفروم \nتورتلا \nجبن كيري"
+        },
+        {
+            "role": "customer",
+            "text": "سكر"
+        },
+        {
+            "role": "customer",
+            "text": "معجون طماط"
+        },
+        {
+            "role": "customer",
+            "text": "عصير برتقال"
+        },
+        {
+            "role": "customer",
+            "text": "ماحولت"
+        },
+        {
+            "role": "customer",
+            "text": "طلعت"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "وينك مطول"
+        },
+        {
+            "role": "customer",
+            "text": "عبدالله \nجب معك وانت جاي حفايض لعسوف من البيت"
+        },
+        {
+            "role": "customer",
+            "text": "شفها في الدولاب"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص بطلب من البقاله"
+        },
+        {
+            "role": "customer",
+            "text": "لا تنسى الحليب"
+        },
+        {
+            "role": "customer",
+            "text": "مطول انت ولا ارضعه"
+        },
+        {
+            "role": "customer",
+            "text": "هلا عبدالله \nناقصني فلوس"
+        },
+        {
+            "role": "customer",
+            "text": "400"
+        },
+        {
+            "role": "customer",
+            "text": "حطها على طول في الثلاجه"
+        },
+        {
+            "role": "customer",
+            "text": "اذان  ولا توه"
+        },
+        {
+            "role": "customer",
+            "text": "اسمع اذان استغربت"
+        },
+        {
+            "role": "customer",
+            "text": "العلامه الورديه يعني نوع الجنين"
+        },
+        {
+            "role": "customer",
+            "text": "حمدالله"
+        },
+        {
+            "role": "customer",
+            "text": "حفايض بيبي جوي رقم 5\nحامض الفولك 5"
+        },
+        {
+            "role": "customer",
+            "text": "خلصنا تطلب سياره"
+        },
+        {
+            "role": "customer",
+            "text": "طلبت"
+        },
+        {
+            "role": "customer",
+            "text": "وصلنا عسوف منفس ويبي النوم"
+        },
+        {
+            "role": "customer",
+            "text": "شف السناب"
+        },
+        {
+            "role": "customer",
+            "text": "هلا عبدالله \nاشحن لي جوالي 20 بكلم خالتي"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "يالله"
+        },
+        {
+            "role": "customer",
+            "text": "ويك"
+        },
+        {
+            "role": "customer",
+            "text": "جب لنا معك عشاء"
+        },
+        {
+            "role": "customer",
+            "text": "كباب وورق عنب \nسفن"
+        },
+        {
+            "role": "customer",
+            "text": "الكباب 2"
+        },
+        {
+            "role": "customer",
+            "text": "لو تجيب العشاء الحين مكيه بتنام"
+        },
+        {
+            "role": "customer",
+            "text": "اخبارك \nوصلتو"
+        },
+        {
+            "role": "customer",
+            "text": "طلبت"
+        },
+        {
+            "role": "customer",
+            "text": "قريب ننزل"
+        },
+        {
+            "role": "customer",
+            "text": "كم يبيله"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلت"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب نبي احد يجيب لنا حليب"
+        },
+        {
+            "role": "customer",
+            "text": "باقي رضعه وحده الحين بعطيه"
+        },
+        {
+            "role": "customer",
+            "text": "مشاءالله وش الربيع الزين"
+        },
+        {
+            "role": "customer",
+            "text": "جيب لنا فقع اذا لقيت 😅"
+        },
+        {
+            "role": "customer",
+            "text": "مشاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "طلبنا من الحبيب وصلوه لنا لين البيت"
+        },
+        {
+            "role": "customer",
+            "text": "بتجينا ولا بتروح مكان"
+        },
+        {
+            "role": "customer",
+            "text": "بنتعشى اجل"
+        },
+        {
+            "role": "customer",
+            "text": "وصلت"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "عسوف نايم"
+        },
+        {
+            "role": "customer",
+            "text": "خله ينام"
+        },
+        {
+            "role": "customer",
+            "text": "الحليب ببتامين جونيور فانيلا \nكيبرا  الجرعه 3ملي صباح ومساء\nباكلوفين  10 ملي قرام"
+        },
+        {
+            "role": "customer",
+            "text": "بتفطر عندنا"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "جب معك خبز تورتلا \nعصير سنكولا \nصابون تايد"
+        },
+        {
+            "role": "customer",
+            "text": "اندومي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "لحظه لين تقفل الرحله"
+        },
+        {
+            "role": "customer",
+            "text": "خله"
+        },
+        {
+            "role": "customer",
+            "text": "يالليل"
+        },
+        {
+            "role": "customer",
+            "text": "53"
+        },
+        {
+            "role": "customer",
+            "text": "جب معك مويه"
+        },
+        {
+            "role": "customer",
+            "text": "وش تبي غدا"
+        },
+        {
+            "role": "customer",
+            "text": "مافي خس"
+        },
+        {
+            "role": "customer",
+            "text": "تجيب خس اجهز الباقي"
+        },
+        {
+            "role": "customer",
+            "text": "جيب عصير سنكولا"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

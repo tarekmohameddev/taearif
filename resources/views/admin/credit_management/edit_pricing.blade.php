@@ -43,7 +43,7 @@
                     @method('PUT')
 
                     <div class="row">
-                        <div class="col-lg-6">
+                        <div class="col-lg-4">
                             <div class="form-group">
                                 <label for="channel_type">Channel Type</label>
                                 <input type="text" class="form-control bg-light"
@@ -52,13 +52,41 @@
                             </div>
                         </div>
 
+                        <div class="col-lg-4">
+                            <div class="form-group">
+                                <label for="message_category">Message Category</label>
+                                @php
+                                    $cats = $messageCategories ?? \App\Models\Api\marketing\MarketingChannelPricing::getMessageCategories();
+                                    $catLabel = $cats[$pricing->message_category]['en'] ?? $pricing->message_category;
+                                @endphp
+                                <input type="text" class="form-control bg-light"
+                                       value="{{ $catLabel }}" readonly>
+                                <small class="text-muted">Category cannot be changed (unique per channel)</small>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4">
+                            <div class="form-group">
+                                <label for="label_ar">Arabic Label</label>
+                                <input type="text" class="form-control @error('label_ar') is-invalid @enderror"
+                                       id="label_ar" name="label_ar"
+                                       value="{{ old('label_ar', $pricing->label_ar) }}"
+                                       maxlength="100">
+                                @error('label_ar')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col-lg-3">
                             <div class="form-group">
                                 <label for="credits_per_message">Credits per Message <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control @error('credits_per_message') is-invalid @enderror"
                                        id="credits_per_message" name="credits_per_message"
                                        value="{{ old('credits_per_message', $pricing->credits_per_message) }}"
-                                       min="1" required>
+                                       min="0" required>
                                 @error('credits_per_message')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -110,6 +138,17 @@
                                     <option value="1" {{ old('is_active', $pricing->is_active) ? 'selected' : '' }}>Active</option>
                                     <option value="0" {{ old('is_active', $pricing->is_active) ? '' : 'selected' }}>Inactive</option>
                                 </select>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3">
+                            <div class="form-group">
+                                <label for="is_billable">Billable</label>
+                                <select class="form-control" id="is_billable" name="is_billable">
+                                    <option value="1" {{ old('is_billable', $pricing->is_billable) ? 'selected' : '' }}>Yes — deduct credits</option>
+                                    <option value="0" {{ !old('is_billable', $pricing->is_billable) ? 'selected' : '' }}>No — always free</option>
+                                </select>
+                                <small class="text-muted">Set to "No" for Service (Meta charges $0 for service messages)</small>
                             </div>
                         </div>
 

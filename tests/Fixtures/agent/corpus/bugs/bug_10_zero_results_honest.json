@@ -1,0 +1,14 @@
+{
+    "type": "bug_regression",
+    "id": "bug_10_zero_results_honest",
+    "description": "Must not claim availability when search returns 0 results",
+    "turns": [
+        {
+            "role": "customer",
+            "text": "ابي شقة في حي الفيصلية بالرياض بـ 200 ألف إيجار"
+        }
+    ],
+    "invariants": [
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

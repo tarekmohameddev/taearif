@@ -3,6 +3,9 @@
 return [
     'api_key' => env('OPENAI_API_KEY'),
     'model' => env('OPENAI_MODEL', 'gpt-4-turbo'),
+    'chat_model' => env('OPENAI_CHAT_MODEL', 'gpt-5-mini'),
+    'fast_model' => env('OPENAI_FAST_MODEL', 'gpt-5-nano'),
+    'embedding_model' => env('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small'),
     'max_tokens' => (int) env('OPENAI_MAX_TOKENS', 3000),
     'temperature' => (float) env('OPENAI_TEMPERATURE', 0.3),
 

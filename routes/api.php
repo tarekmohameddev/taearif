@@ -103,6 +103,7 @@ use App\Http\Controllers\Api\V1\WhatsApp\{
     TemplateController as WhatsAppTemplateController,
     AutomationRuleController as WhatsAppAutomationRuleController,
     AiConfigController as WhatsAppAiConfigController,
+    AiExcludedPhoneController as WhatsAppAiExcludedPhoneController,
     StatsController as WhatsAppStatsController,
     WebhookController as WhatsAppWebhookController,
 };
@@ -194,13 +195,13 @@ Route::get('/referrals/{code}', [ReferralController::class, 'show']);  // /api/r
 Route::post('/v1/analytics/page-view', [PageviewController::class, 'track'])
     ->middleware('throttle:api_tracking'); // 100 requests per minute for tracking (production only)
 
-// Public admin articles (admin_articles + admin_articles_categories) — unique paths, no auth
+// Public admin articles (admin_articles + admin_articles_categories) ? unique paths, no auth
 Route::get('/public/admin-article-categories', [PublicAdminArticlesController::class, 'categories']);
 Route::get('/public/admin-article-categories/{slug}/articles', [PublicAdminArticlesController::class, 'categoryArticles']);
 Route::get('/public/admin-articles', [PublicAdminArticlesController::class, 'articles']);
 Route::get('/public/admin-articles/{slug}', [PublicAdminArticlesController::class, 'show']);
 
-// Public support center (support_center_categories + support_center_articles) — no auth
+// Public support center (support_center_categories + support_center_articles) ? no auth
 Route::get('/public/support-center/categories', [PublicSupportCenterController::class, 'categories']);
 Route::get('/public/support-center/categories/{slug}/articles', [PublicSupportCenterController::class, 'categoryArticles']);
 Route::get('/public/support-center/articles', [PublicSupportCenterController::class, 'articles']);
@@ -919,9 +920,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('/',        [ApiPropertyRequestSettingsController::class, 'index']);       // ?merged=true|false
         Route::get('/defaults',[ApiPropertyRequestSettingsController::class, 'defaults']); // ?merged=true|false
 
-        Route::post('/bulk',   [ApiPropertyRequestSettingsController::class, 'bulkUpsert']);  // upsert مجموعة
-        Route::put('/{field}', [ApiPropertyRequestSettingsController::class, 'updateOne']);   // تعديل مفتاح واحد
-        Route::post('/reset',  [ApiPropertyRequestSettingsController::class, 'reset']);       // حذف إعدادات (العودة للديفولت)
+        Route::post('/bulk',   [ApiPropertyRequestSettingsController::class, 'bulkUpsert']);  // upsert ??????
+        Route::put('/{field}', [ApiPropertyRequestSettingsController::class, 'updateOne']);   // ????? ????? ????
+        Route::post('/reset',  [ApiPropertyRequestSettingsController::class, 'reset']);       // ??? ??????? (?????? ????????)
     });
 
     // ===== Employee Auth (PUBLIC) =====
@@ -1304,6 +1305,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::patch('conversations/{id}', [WhatsAppConversationController::class, 'update']);
         Route::post('conversations/{id}/read', [WhatsAppConversationController::class, 'read']);
         Route::post('conversations/{id}/star', [WhatsAppConversationController::class, 'star']);
+        Route::post('conversations/{id}/bot/resume', [WhatsAppConversationController::class, 'resumeBot']);
 
         Route::get('conversations/{id}/messages', [WhatsAppMessageController::class, 'index']);
         Route::post('conversations/{id}/messages', [WhatsAppMessageController::class, 'send']);
@@ -1311,9 +1313,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 
         Route::get('templates', [WhatsAppTemplateController::class, 'index']);
         Route::get('templates/{id}', [WhatsAppTemplateController::class, 'show']);
-        Route::post('templates', [WhatsAppTemplateController::class, 'store']);
-        Route::put('templates/{id}', [WhatsAppTemplateController::class, 'update']);
-        Route::delete('templates/{id}', [WhatsAppTemplateController::class, 'destroy']);
+        Route::post('templates/sync', [WhatsAppTemplateController::class, 'sync']);
 
         Route::get('automation/rules', [WhatsAppAutomationRuleController::class, 'index']);
         Route::get('automation/rules/{id}', [WhatsAppAutomationRuleController::class, 'show']);
@@ -1328,7 +1328,38 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::patch('ai/config/{numberId}/toggle', [WhatsAppAiConfigController::class, 'toggle']);
         Route::get('ai/stats', [WhatsAppAiConfigController::class, 'stats']);
 
+        Route::get('ai/config/{numberId}/excluded-phones', [WhatsAppAiExcludedPhoneController::class, 'index']);
+        Route::post('ai/config/{numberId}/excluded-phones', [WhatsAppAiExcludedPhoneController::class, 'store']);
+        Route::delete('ai/config/{numberId}/excluded-phones/{phoneId}', [WhatsAppAiExcludedPhoneController::class, 'destroy']);
+
+        // Bot analytics + shadow mode + simulator
+        Route::get('ai/bot/dashboard', [\App\Http\Controllers\Api\apps\whatsapp\BotAnalyticsController::class, 'dashboard']);
+        Route::get('ai/bot/shadow-drafts', [\App\Http\Controllers\Api\apps\whatsapp\BotAnalyticsController::class, 'shadowDrafts']);
+        Route::post('ai/bot/shadow-drafts/{id}/act', [\App\Http\Controllers\Api\apps\whatsapp\BotAnalyticsController::class, 'actOnDraft']);
+        Route::post('ai/bot/unanswered/{id}/mark-faq', [\App\Http\Controllers\Api\apps\whatsapp\BotAnalyticsController::class, 'markFaqAdded']);
+        Route::post('ai/bot/simulate', [\App\Http\Controllers\Api\apps\whatsapp\BotAnalyticsController::class, 'simulate']);
+        Route::get('ai/bot/simulate/conversation', [\App\Http\Controllers\Api\apps\whatsapp\BotAnalyticsController::class, 'simulationTranscript']);
+        Route::post('ai/bot/simulate/reset', [\App\Http\Controllers\Api\apps\whatsapp\BotAnalyticsController::class, 'resetSimulation']);
+
+        // Knowledge base ingestion
+        Route::get('ai/knowledge', [\App\Http\Controllers\Api\apps\whatsapp\KnowledgeBaseController::class, 'index']);
+        Route::post('ai/knowledge', [\App\Http\Controllers\Api\apps\whatsapp\KnowledgeBaseController::class, 'store']);
+        Route::get('ai/knowledge/{id}', [\App\Http\Controllers\Api\apps\whatsapp\KnowledgeBaseController::class, 'show']);
+        Route::patch('ai/knowledge/{id}', [\App\Http\Controllers\Api\apps\whatsapp\KnowledgeBaseController::class, 'update']);
+        Route::delete('ai/knowledge/{id}', [\App\Http\Controllers\Api\apps\whatsapp\KnowledgeBaseController::class, 'destroy']);
+
+        // FAQ candidates management (tenant review of LLM-drafted answers)
+        Route::get('ai/faq-candidates', [\App\Http\Controllers\Api\apps\whatsapp\KnowledgeBaseController::class, 'faqCandidates']);
+        Route::patch('ai/faq-candidates/{id}', [\App\Http\Controllers\Api\apps\whatsapp\KnowledgeBaseController::class, 'updateFaqCandidate']);
+
+        // Property external links (listing URL management)
+        Route::get('properties/{propertyId}/external-links', [\App\Http\Controllers\Api\apps\whatsapp\PropertyExternalLinkController::class, 'index']);
+        Route::post('properties/{propertyId}/external-links', [\App\Http\Controllers\Api\apps\whatsapp\PropertyExternalLinkController::class, 'store']);
+        Route::patch('properties/{propertyId}/external-links/{linkId}', [\App\Http\Controllers\Api\apps\whatsapp\PropertyExternalLinkController::class, 'update']);
+        Route::delete('properties/{propertyId}/external-links/{linkId}', [\App\Http\Controllers\Api\apps\whatsapp\PropertyExternalLinkController::class, 'destroy']);
+
         Route::get('stats', [WhatsAppStatsController::class, 'index']);
+        Route::get('dashboard-summary', [WhatsAppStatsController::class, 'dashboardSummary']);
         Route::get('campaigns', [WaCampaignController::class, 'index']);
         Route::get('campaigns/{id}', [WaCampaignController::class, 'show']);
         Route::post('campaigns', [WaCampaignController::class, 'store']);
@@ -1550,4 +1581,67 @@ Route::prefix('v1/owner-rental')->group(function () {
         // Maintenance Requests
         Route::get('/maintenance-requests', [\App\Http\Controllers\OwnerRental\DashboardController::class, 'maintenanceRequests']);
     });
+});
+
+// =============================================================================
+// Calling Module ? Tenant API (v1)
+// =============================================================================
+use App\Http\Controllers\Api\V1\Calling\SoftphoneConfigController;
+use App\Http\Controllers\Api\V1\Calling\AgentExtensionController;
+use App\Http\Controllers\Api\V1\Calling\CallController;
+use App\Http\Controllers\Api\V1\Calling\CallHistoryController;
+use App\Http\Controllers\Api\V1\Calling\SimLineController;
+use App\Http\Controllers\Api\V1\Calling\RecordingWebhookController;
+use App\Http\Controllers\Api\V1\Calling\InboundRoutingController;
+
+// Internal PBX webhooks ? no Sanctum, only shared secret header
+Route::prefix('v1/calling/internal')->middleware(['pbx.secret'])->group(function () {
+    Route::post('recording-ready', RecordingWebhookController::class)
+        ->name('calling.internal.recording-ready');
+    Route::post('route-inbound', InboundRoutingController::class)
+        ->name('calling.internal.route-inbound');
+});
+
+// Authenticated tenant routes
+Route::prefix('v1/calling')->middleware(['auth:sanctum'])->group(function () {
+    // Softphone credentials for the logged-in user
+    Route::get('softphone-config', SoftphoneConfigController::class)
+        ->name('calling.softphone-config');
+
+    // Agent extensions ? manage employees' SIP extensions
+    Route::get('extensions', [AgentExtensionController::class, 'index'])
+        ->name('calling.extensions.index')
+        ->middleware('can:calling.manage_agents');
+    Route::post('extensions/{user}', [AgentExtensionController::class, 'provision'])
+        ->name('calling.extensions.provision')
+        ->middleware('can:calling.manage_agents');
+    Route::delete('extensions/{user}', [AgentExtensionController::class, 'deprovision'])
+        ->name('calling.extensions.deprovision')
+        ->middleware('can:calling.manage_agents');
+
+    // Place / manage calls
+    Route::post('calls', [CallController::class, 'store'])
+        ->name('calling.calls.store')
+        ->middleware('can:calling.place');
+    Route::get('calls/{id}', [CallController::class, 'show'])
+        ->name('calling.calls.show')
+        ->middleware('can:calling.view_history');
+    Route::post('calls/{id}/hangup', [CallController::class, 'hangup'])
+        ->name('calling.calls.hangup')
+        ->middleware('can:calling.place');
+
+    // Call history
+    Route::get('calls', [CallHistoryController::class, 'index'])
+        ->name('calling.calls.index')
+        ->middleware('can:calling.view_history');
+    Route::get('customers/{customer}/calls', [CallHistoryController::class, 'forCustomer'])
+        ->name('calling.customers.calls')
+        ->middleware('can:calling.view_history');
+    Route::get('calls/{id}/recording-url', [CallHistoryController::class, 'recordingUrl'])
+        ->name('calling.calls.recording-url')
+        ->middleware('can:calling.view_history');
+
+    // Assigned SIM lines (read-only for tenant)
+    Route::get('sim-lines', [SimLineController::class, 'index'])
+        ->name('calling.sim-lines.index');
 });

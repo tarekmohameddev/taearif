@@ -13,5 +13,7 @@ final class SendMessageDto
         public readonly ?string $endpointSignature = null,
         public readonly ?int $templateId = null,
         public readonly ?array $variables = null,
+        /** @var array<string, mixed>|null Extra keys merged into the outbound message meta (e.g. source=ai). */
+        public readonly ?array $extraMeta = null,
     ) {}
 }

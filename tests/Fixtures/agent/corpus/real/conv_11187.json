@@ -1,0 +1,691 @@
+{
+    "type": "real_conversation",
+    "id": "conv_11187",
+    "tenant_id": 1507,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "."
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير\nمتوفره الشقه هذي"
+        },
+        {
+            "role": "customer",
+            "text": "نموذج 4 غرفتين وصاله صح ؟"
+        },
+        {
+            "role": "customer",
+            "text": "موثثه ؟"
+        },
+        {
+            "role": "customer",
+            "text": "تمام اذا في صور الله يعافيك"
+        },
+        {
+            "role": "customer",
+            "text": "تمام بجي اشوفها اليوم ان شاءالله اذا في مجال"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "كم شهري الله يعافيك"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "بجي اشوفها ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "نص ساعه كذا"
+        },
+        {
+            "role": "customer",
+            "text": "وصلنا"
+        },
+        {
+            "role": "customer",
+            "text": "انا اللي اتصلت عليك تو انا بالريان"
+        },
+        {
+            "role": "customer",
+            "text": "."
+        },
+        {
+            "role": "customer",
+            "text": "لقيت المدخل"
+        },
+        {
+            "role": "customer",
+            "text": "اي شقه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مع المواقف ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "متوفر بالفايزيه او حولها الافق الصفراء"
+        },
+        {
+            "role": "customer",
+            "text": "ابغى شي مرتب بس اقرب لدوامي"
+        },
+        {
+            "role": "customer",
+            "text": "غرفتين ابغى"
+        },
+        {
+            "role": "customer",
+            "text": "خذ راحتك"
+        },
+        {
+            "role": "customer",
+            "text": "ممتازه"
+        },
+        {
+            "role": "customer",
+            "text": "كم شهري"
+        },
+        {
+            "role": "customer",
+            "text": "تمام ارسل لي اللوكيشن"
+        },
+        {
+            "role": "customer",
+            "text": "يصير اجي بكره اشوفها ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "الساعه 10:30 ان شاءالله بجي للشقه اللي بالفايزيه"
+        },
+        {
+            "role": "customer",
+            "text": "بالطريق"
+        },
+        {
+            "role": "customer",
+            "text": "فين المدخل"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعطيك العافيه شوف لي بأقل سعر ممكن وانا ان شاءالله اقل شي بجلس 6 اشهر"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "انا ابغاها خلاص"
+        },
+        {
+            "role": "customer",
+            "text": "احتاجها غرفتين"
+        },
+        {
+            "role": "customer",
+            "text": "2500 وبجلس سنه ممكن"
+        },
+        {
+            "role": "customer",
+            "text": "والله انها الشقه الوحيده اللي ناسبتني"
+        },
+        {
+            "role": "customer",
+            "text": "شويا غالي 2700 خصوصاً اني بطول فيها"
+        },
+        {
+            "role": "customer",
+            "text": "تمام كلمه الله يعافيك"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "نبيها ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "2600 ؟"
+        },
+        {
+            "role": "customer",
+            "text": "2600 تم"
+        },
+        {
+            "role": "customer",
+            "text": "وكمان نحتاج اجهزه للمطبخ"
+        },
+        {
+            "role": "customer",
+            "text": "ثلاجه ومايكرويف"
+        },
+        {
+            "role": "customer",
+            "text": "وشاشه للصاله"
+        },
+        {
+            "role": "customer",
+            "text": "متى ننتقل"
+        },
+        {
+            "role": "customer",
+            "text": "لو يمدي ذا الويكند"
+        },
+        {
+            "role": "customer",
+            "text": "نحتاج شاشه برضو"
+        },
+        {
+            "role": "customer",
+            "text": "يوفر ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "تمام بحول الان"
+        },
+        {
+            "role": "customer",
+            "text": "متى اجي استلم المفتاح"
+        },
+        {
+            "role": "customer",
+            "text": "ومتى تكون وصلت الثلاجه"
+        },
+        {
+            "role": "customer",
+            "text": "متى استلم المفتاح"
+        },
+        {
+            "role": "customer",
+            "text": "الاسم مرام حمدي الثمالي \n1114827262\n15\/10\/1422"
+        },
+        {
+            "role": "customer",
+            "text": "بيكون في عقد ؟"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "بكره بأذن الله اجي للمكتب نسوي العقد واحول المبلغ"
+        },
+        {
+            "role": "customer",
+            "text": "متى تكون موجود بالمكتب"
+        },
+        {
+            "role": "customer",
+            "text": "اليوم ما اقدر بجي بكره ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "كم مدة العقد"
+        },
+        {
+            "role": "customer",
+            "text": "انا بجدد كل شهر"
+        },
+        {
+            "role": "customer",
+            "text": "خله بدون مده"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل لي نموذج منه الله يعافيك"
+        },
+        {
+            "role": "customer",
+            "text": "14 بخصوص الصيانه"
+        },
+        {
+            "role": "customer",
+            "text": "طيب انا مفروشه يتعدل البند ؟"
+        },
+        {
+            "role": "customer",
+            "text": "كمان الليالي 360 لو ابغى اطلع قبلها ؟"
+        },
+        {
+            "role": "customer",
+            "text": "طيب كيف يتعدل"
+        },
+        {
+            "role": "customer",
+            "text": "نعدله"
+        },
+        {
+            "role": "customer",
+            "text": "الاكيد 3 اشهر"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن اجدد اذا ارتحت فيها"
+        },
+        {
+            "role": "customer",
+            "text": "طيب لو احتجت صيانه"
+        },
+        {
+            "role": "customer",
+            "text": "ايوا اكيد بس ابغى اتأكد"
+        },
+        {
+            "role": "customer",
+            "text": "ايوا اكيد بس ابغى اتأكد من موضوع الصيانه"
+        },
+        {
+            "role": "customer",
+            "text": "ممتاز"
+        },
+        {
+            "role": "customer",
+            "text": "شويات واحول لك"
+        },
+        {
+            "role": "customer",
+            "text": "طيب المده ؟"
+        },
+        {
+            "role": "customer",
+            "text": "alinma-Report.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "لا 3"
+        },
+        {
+            "role": "customer",
+            "text": "وبجدده بعدها ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "تمام بجي السبت"
+        },
+        {
+            "role": "customer",
+            "text": "وصل المبلغ ؟"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير \nاليوم ان شاءالله بروح اودي اغراض للشقه بعد التراويح احتاج المفتاح الله يعافيك لو تقابلني هناك بعد اذنك"
+        },
+        {
+            "role": "customer",
+            "text": "او اذا في عامل للعماره يكون عنده المفتاح ؟"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "في عامل بالعماره ؟ احتاجه يساعدني بالاغراض"
+        },
+        {
+            "role": "customer",
+            "text": "تمام لانو معايا غساله ابغاه يطلعها"
+        },
+        {
+            "role": "customer",
+            "text": "انا بالطريق"
+        },
+        {
+            "role": "customer",
+            "text": "بالطريق"
+        },
+        {
+            "role": "customer",
+            "text": "وصلت"
+        },
+        {
+            "role": "customer",
+            "text": "."
+        },
+        {
+            "role": "customer",
+            "text": "لا ماحصلناه"
+        },
+        {
+            "role": "customer",
+            "text": "لو سمحت بكرا انا ماراح اكون متواجده ممكن لما يجيبو الاغراض"
+        },
+        {
+            "role": "customer",
+            "text": "بحط نسخه من مفتاح شقه 607 فوق صندوق الاطفاء يركبو الاجهزه ويرجعوه اوكي ؟"
+        },
+        {
+            "role": "customer",
+            "text": "لان لسى ما استقريت"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "كمان الله يعافيك الشقه مغبره تكلم العامل ينظفها ؟"
+        },
+        {
+            "role": "customer",
+            "text": "او عطني رقم المالك ولا العامل اتواصل معاه"
+        },
+        {
+            "role": "customer",
+            "text": "لو احتجت شي مستقبلاً"
+        },
+        {
+            "role": "customer",
+            "text": "في مجال يوفر غلايه و مكوى ملابس ؟"
+        },
+        {
+            "role": "customer",
+            "text": "احتاج يوفر غلايه و مكوى ملابس"
+        },
+        {
+            "role": "customer",
+            "text": "اخوي الله يعافيك انا ماخذه شقه مفروشه وهذي من الاساسيات مايحتاج اقولها"
+        },
+        {
+            "role": "customer",
+            "text": "انا جايه من برا المنطقه مو معقوله اجيب معايا الاجهزه"
+        },
+        {
+            "role": "customer",
+            "text": "مفروض تتواجد بس الله يعين"
+        },
+        {
+            "role": "customer",
+            "text": "اليوم ان شاءالله فالليل بجي استقر"
+        },
+        {
+            "role": "customer",
+            "text": "ركب الشاشه والثلاجه ؟"
+        },
+        {
+            "role": "customer",
+            "text": "ممتاز"
+        },
+        {
+            "role": "customer",
+            "text": "الشاشه بيركبها العامل ؟"
+        },
+        {
+            "role": "customer",
+            "text": "لاني ما اعرف اركبها"
+        },
+        {
+            "role": "customer",
+            "text": "ولا عندي لها طاوله"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "بس كلمه ينظف الله يعافيك الارضيات والاسطح والمطبخ"
+        },
+        {
+            "role": "customer",
+            "text": "مشكور"
+        },
+        {
+            "role": "customer",
+            "text": "الله يبشرك بالخير \nبلغني اذا انتهى"
+        },
+        {
+            "role": "customer",
+            "text": "والله باقي ما اشتريتها"
+        },
+        {
+            "role": "customer",
+            "text": "بشوف متى اجيبها واكلمك"
+        },
+        {
+            "role": "customer",
+            "text": "12 بجي لازم ينظف"
+        },
+        {
+            "role": "customer",
+            "text": "المصعد خربان"
+        },
+        {
+            "role": "customer",
+            "text": "جيت العصر مكتوب مغلق"
+        },
+        {
+            "role": "customer",
+            "text": "لان معايه اغراض"
+        },
+        {
+            "role": "customer",
+            "text": "طيب التنظيف ؟ بجي 12 او 1 كذا اخر الليل"
+        },
+        {
+            "role": "customer",
+            "text": "اذا يمدي يجي قبلها ينظف انتظر شويه عادي"
+        },
+        {
+            "role": "customer",
+            "text": "مارد العامل باقي ؟"
+        },
+        {
+            "role": "customer",
+            "text": "تمام الله يعطيك العافيه"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص بجي العصر بكره ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "اذا بيروح ينظفها المفتاح مكانه ما اخذته"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير \nالعامل ساعدني بالاغراض بحول لك مبلغ واعطه اياه لان ماعنده حساب بنكي"
+        },
+        {
+            "role": "customer",
+            "text": "وارسل حسابك"
+        },
+        {
+            "role": "customer",
+            "text": "50"
+        },
+        {
+            "role": "customer",
+            "text": "حولت لك اجرة العامل لاتنسى تعطيه ماعليك امر 👍"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه هذا"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير \nالمصعد ماتصلح الله يعافيك عندي باقي اغراض ماطلعتها"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ، غسالتي اتوماتيك وما فيه لها منفذ مويه نحتاج سباك يصلح لها مكان وكمان الشطاف خربان يهرب مويه"
+        },
+        {
+            "role": "customer",
+            "text": "بعد العشاء متواجدين"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🤍]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🙏]"
+        },
+        {
+            "role": "customer",
+            "text": "بكره يجي طيب  ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "اوكي"
+        },
+        {
+            "role": "customer",
+            "text": "باقي بيجيب قطعه للغسالة"
+        },
+        {
+            "role": "customer",
+            "text": "قال بكره"
+        },
+        {
+            "role": "customer",
+            "text": "سوا الشطاف وراح"
+        },
+        {
+            "role": "customer",
+            "text": "لا يعطيك العافيه بس بكره كلمه يجي العصر ماعليك امر"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير \nالكاميرات اللي عند العماره تشتغل ؟"
+        },
+        {
+            "role": "customer",
+            "text": "تأكد الله يعافيك"
+        },
+        {
+            "role": "customer",
+            "text": "وقفت سيارتي ومسافره مده"
+        },
+        {
+            "role": "customer",
+            "text": "كريتا بيضاء"
+        },
+        {
+            "role": "customer",
+            "text": "بي ابغى اعرف اذا تشتغل الكاميرات لاني وقفتها عند البيت"
+        },
+        {
+            "role": "customer",
+            "text": "بس ابغى اعرف اذا تشتغل الكاميرات لاني وقفتها عند البيت"
+        },
+        {
+            "role": "customer",
+            "text": "لا قدام الباب عادي"
+        },
+        {
+            "role": "customer",
+            "text": "لا والله ما في احد اعرفه هناك والمفاتيح معايا"
+        },
+        {
+            "role": "customer",
+            "text": "بس مو مقفله على احد"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🙏]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام مشكور 🙏"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "alinma-Report.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🙏]"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير \nبالنسبه لاعمال البناء في واجهة العماره على زاوية الشارع تابعه للمالك ؟"
+        },
+        {
+            "role": "customer",
+            "text": "اتمنى ف الليل عشان الازعاج اذا ماعليك امر تبلغ المالك"
+        },
+        {
+            "role": "customer",
+            "text": "اتمنى ما يشتغلون ف الليل عشان الازعاج \nاذا ماعليك امر تبلغ المالك"
+        },
+        {
+            "role": "customer",
+            "text": "امس بالليل سمعت صوت بناء بس ماني عارفه اذا من العماره ولا لا"
+        },
+        {
+            "role": "customer",
+            "text": "لان شفت يشتغلون تحت"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

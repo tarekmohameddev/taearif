@@ -79,6 +79,7 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'checkpermission' => \App\Http\Middleware\CheckPermission::class,
         'checkAdminApiPermission' => \App\Http\Middleware\CheckAdminApiPermission::class,
+        'pbx.secret' => \App\Http\Middleware\VerifyPbxWebhookSecret::class,
         'setlang' => \App\Http\Middleware\SetLangMiddleware::class,
         'setadminlocale' => \App\Http\Middleware\SetAdminLocaleMiddleware::class,
         'checkstatus' => \App\Http\Middleware\CheckStatus::class,
@@ -105,6 +106,7 @@ class Kernel extends HttpKernel
         'owner-rental.auth' => \App\Http\Middleware\OwnerRentalAuth::class,
         'tenant.id.response' => \App\Http\Middleware\AddTenantIdToResponse::class,
         'prevent.swagger.production' => \App\Http\Middleware\PreventSwaggerInProduction::class,
+        'report.access' => \App\Http\Middleware\EnsureReportAccess::class,
         'payment.iframe' => \App\Http\Middleware\AllowPaymentIframeEmbedding::class,
 
     ];

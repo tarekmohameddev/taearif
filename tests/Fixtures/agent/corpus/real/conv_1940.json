@@ -1,0 +1,1099 @@
+{
+    "type": "real_conversation",
+    "id": "conv_1940",
+    "tenant_id": 1557,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "هلا بك سيد جاد"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر الان اسويهم"
+        },
+        {
+            "role": "customer",
+            "text": "عطني الداتا"
+        },
+        {
+            "role": "customer",
+            "text": "انا جاهز"
+        },
+        {
+            "role": "customer",
+            "text": "هات اسم المزاد"
+        },
+        {
+            "role": "customer",
+            "text": "ببدأ لك باللافتات الان"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "طولي صح"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "هذا هوه صح ؟"
+        },
+        {
+            "role": "customer",
+            "text": "ماتقصر حبيبي جاد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "عطني سنابك حبيبي جاد"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تمام ربع ساعه بس وارسل لك الرابط"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/meet.google.com\/spp-hoix-eet"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/drive.google.com\/drive\/folders\/1e29N5icOtN0u444bPn5vrahmXURsQkVR?usp=sharing"
+        },
+        {
+            "role": "customer",
+            "text": "هات الصور"
+        },
+        {
+            "role": "customer",
+            "text": "جاهز بس باقي الصور"
+        },
+        {
+            "role": "customer",
+            "text": "يبدأ الساعة 11 صباحا \nينتهي في الساعة 4.30 الى 5.30 مساء \n\nالتاريخ يبدأ 29\/3\/2026 يوم الاحد \nينتهي 1\/4\/2026 يوم الاربعاء \nعبر منصة مباشر"
+        },
+        {
+            "role": "customer",
+            "text": "هات رقم  الترخيص"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "العقار صحيح ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "برسل لك بدون تحديد وتحدد لي عليهم"
+        },
+        {
+            "role": "customer",
+            "text": "حدد لي هنا الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مزاد فيض الخبر copy.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "للمراجعة"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "جاهزين"
+        },
+        {
+            "role": "customer",
+            "text": "بس باقي اراجعهم وارسلهم لك بعد العشى"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/drive.google.com\/drive\/folders\/1llIMdl51z7m5Y_8rqWzefyb7wN8Sjf9h?usp=sharing"
+        },
+        {
+            "role": "customer",
+            "text": "ايه شغال فيه اراجع البيانات"
+        },
+        {
+            "role": "customer",
+            "text": "الان أعدل لك اللي قلت عليه وارسله"
+        },
+        {
+            "role": "customer",
+            "text": "باقي غيره تعديلات"
+        },
+        {
+            "role": "customer",
+            "text": "الان"
+        },
+        {
+            "role": "customer",
+            "text": "هات رابط المزاذا اسوي له باركود واضيفة على الكتيب"
+        },
+        {
+            "role": "customer",
+            "text": "مزاد فيض الخبر copy.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تمام الان أعدله"
+        },
+        {
+            "role": "customer",
+            "text": "عطني ذا"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "مزاد فيض الخبر copy.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "تم التعديل وجاري الرفع"
+        },
+        {
+            "role": "customer",
+            "text": "حدد لي العقارات الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "احتاج نبذه عن اسدال"
+        },
+        {
+            "role": "customer",
+            "text": "تم التعديل بنفس الرابط"
+        },
+        {
+            "role": "customer",
+            "text": "هات شيك الدخول"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "هات نبذه عن اسدال"
+        },
+        {
+            "role": "customer",
+            "text": "بروشور مزاد مساكن الخبر copy.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "راجع شوف ايش باقي عشان أكمل بقية البوسترات والاعلانات"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "بسوي باركود جديد للافتات بالرابط ذا صح"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "جرب ذا اذا شغال"
+        },
+        {
+            "role": "customer",
+            "text": "بروشور مزاد مساكن الخبر copy.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "جاهز بالرابط"
+        },
+        {
+            "role": "customer",
+            "text": "طيب الان اشوفه"
+        },
+        {
+            "role": "customer",
+            "text": "بغيره الان"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "جرب ذا"
+        },
+        {
+            "role": "customer",
+            "text": "جاهز"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تمام"
+        },
+        {
+            "role": "customer",
+            "text": "ايه نعم غيرتهم وبنفس المكان"
+        },
+        {
+            "role": "customer",
+            "text": "هات الداتا حق المزاد الثاني"
+        },
+        {
+            "role": "customer",
+            "text": "اقصد الثالث"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "ارقام الجوال نفس اللي باللافتات صح"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "وقت البدء والانتهاء"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "هات رابط الكتيب أسوي له باركود"
+        },
+        {
+            "role": "customer",
+            "text": "جرب"
+        },
+        {
+            "role": "customer",
+            "text": "منصة مباشر ؟"
+        },
+        {
+            "role": "customer",
+            "text": "المدينة والحي"
+        },
+        {
+            "role": "customer",
+            "text": "عربون المشاركة"
+        },
+        {
+            "role": "customer",
+            "text": "بنتظارك"
+        },
+        {
+            "role": "customer",
+            "text": "هنا صحيح ؟"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تمام"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/drive.google.com\/drive\/folders\/1e29N5icOtN0u444bPn5vrahmXURsQkVR?usp=sharing"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/drive.google.com\/drive\/folders\/1llIMdl51z7m5Y_8rqWzefyb7wN8Sjf9h?usp=drive_link"
+        },
+        {
+            "role": "customer",
+            "text": "باقي باركود منصة المزادات"
+        },
+        {
+            "role": "customer",
+            "text": "نعم صحيح"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/drive.google.com\/drive\/folders\/1W85-0UXrGSrtbk8ZsD5KVKThGQ1ocprT?usp=sharing"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "لسه يتحملو"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "كم تبغى مقاسها"
+        },
+        {
+            "role": "customer",
+            "text": "يتحمل"
+        },
+        {
+            "role": "customer",
+            "text": "شوفها رقم 4"
+        },
+        {
+            "role": "customer",
+            "text": "فس الرابط"
+        },
+        {
+            "role": "customer",
+            "text": "في الرابط"
+        },
+        {
+            "role": "customer",
+            "text": "اجهز البوسترات تبعهم ؟"
+        },
+        {
+            "role": "customer",
+            "text": "اوبا"
+        },
+        {
+            "role": "customer",
+            "text": "مافي مشكله ارسلها"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تمام"
+        },
+        {
+            "role": "customer",
+            "text": "بنتظارك"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "تمام الساعه 12 الظهر بشتغلهم"
+        },
+        {
+            "role": "customer",
+            "text": "هلا بك"
+        },
+        {
+            "role": "customer",
+            "text": "اديني شغال عليه برسل الان نسخة تتعتمدها"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "الان يجهزو بأذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام أرفعهم ؟"
+        },
+        {
+            "role": "customer",
+            "text": "معلومات عقارات مشروع الخبر43.xlsx"
+        },
+        {
+            "role": "customer",
+            "text": "الغي ذي"
+        },
+        {
+            "role": "customer",
+            "text": "اصلها برج"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/drive.google.com\/drive\/folders\/1e29N5icOtN0u444bPn5vrahmXURsQkVR?usp=drive_link"
+        },
+        {
+            "role": "customer",
+            "text": "راجع ذا وقلي تمام"
+        },
+        {
+            "role": "customer",
+            "text": "لسه يتحملو"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "تم التعديل جاري التحميل"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "جاهز تتحمل"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "اعتمد عشان اكمل"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/drive.google.com\/drive\/folders\/1llIMdl51z7m5Y_8rqWzefyb7wN8Sjf9h?usp=drive_link"
+        },
+        {
+            "role": "customer",
+            "text": "معلومات الرياض 834.xlsx"
+        },
+        {
+            "role": "customer",
+            "text": "ابدأ في ذا كلشي فيه جاهز ؟"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "ركز هنا يبدأ الاحد ولا الاثنين ؟"
+        },
+        {
+            "role": "customer",
+            "text": "قبلما تطبع"
+        },
+        {
+            "role": "customer",
+            "text": "يعني يوم الاثنين"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/drive.google.com\/drive\/folders\/1llIMdl51z7m5Y_8rqWzefyb7wN8Sjf9h?usp=drive_link"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هذي تبع هامات الرياض اعتمدها عشان أكمل الباقي"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/drive.google.com\/drive\/folders\/1W85-0UXrGSrtbk8ZsD5KVKThGQ1ocprT?usp=drive_link"
+        },
+        {
+            "role": "customer",
+            "text": "بنتظارك نراجع البروشورات مراجعة نهائية"
+        },
+        {
+            "role": "customer",
+            "text": "مالها"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/meet.google.com\/fme-uuky-aaf"
+        },
+        {
+            "role": "customer",
+            "text": "هذي لوحة رقم 3"
+        },
+        {
+            "role": "customer",
+            "text": "خش الرابط لو سمحت"
+        },
+        {
+            "role": "customer",
+            "text": "طيب الان"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "دخلت"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/my.qr-code-generator.com\/features-and-pricing?trial=expired"
+        },
+        {
+            "role": "customer",
+            "text": "ماعندي فيزا كارد"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "جرب هذا"
+        },
+        {
+            "role": "customer",
+            "text": "بس مدة الباركود 13 يوم وينتهي"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اشترك هنا وارسل لي باركودات"
+        },
+        {
+            "role": "customer",
+            "text": "16 دولا"
+        },
+        {
+            "role": "customer",
+            "text": "ر"
+        },
+        {
+            "role": "customer",
+            "text": "هات الفيزا"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "هات الكود"
+        },
+        {
+            "role": "customer",
+            "text": "ياراجل"
+        },
+        {
+            "role": "customer",
+            "text": "المبلغ هنا 16 دولار"
+        },
+        {
+            "role": "customer",
+            "text": "بشوف موقع غيره"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تمام"
+        },
+        {
+            "role": "customer",
+            "text": "جرب"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "الان"
+        },
+        {
+            "role": "customer",
+            "text": "حلصت الثلاث ويتحملو بدأت في السبع"
+        },
+        {
+            "role": "customer",
+            "text": "كملت السبع اللوحات مساكن الخبر"
+        },
+        {
+            "role": "customer",
+            "text": "يتحملو"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "جاهز تم الرفع"
+        },
+        {
+            "role": "customer",
+            "text": "بنزل للماركت وجاي لك"
+        },
+        {
+            "role": "customer",
+            "text": "نكمل هامات الرياض"
+        },
+        {
+            "role": "customer",
+            "text": "يتحمل سوي ابديت ع الرابط"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "هيا بنا"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/meet.google.com\/tcv-bqpz-vxv"
+        },
+        {
+            "role": "customer",
+            "text": "نكمل نراجع الكتيب الثاني ؟"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تمام"
+        },
+        {
+            "role": "customer",
+            "text": "الان اسويها"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "لوحة رقم 3 مقاس 2 في 2 copy.jpg"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "هيا بنا"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل لك رابط"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/meet.google.com\/iqr-ppce-rpe"
+        },
+        {
+            "role": "customer",
+            "text": "الرفع المساحي 710204005592.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/meet.google.com\/vjf-uhvg-aau"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/drive.google.com\/drive\/folders\/17GisXM0USRWBwdV4FQndV-gfNm4qySWf?usp=sharing"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "الان"
+        },
+        {
+            "role": "customer",
+            "text": "يتحمل"
+        },
+        {
+            "role": "customer",
+            "text": "بروشور مزاد مساكن الخبر.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "اكمل ازبط"
+        },
+        {
+            "role": "customer",
+            "text": "بروشور مزاد هامات الرباض copy.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "في تعديلات ؟"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/meet.google.com\/spp-hoix-eet"
+        },
+        {
+            "role": "customer",
+            "text": "يتحمل"
+        },
+        {
+            "role": "customer",
+            "text": "بروشور مزاد هامات الرباض copy.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقود الايجار copy.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "طيب الان اشوف"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/meet.google.com\/nki-gsjh-vqo"
+        },
+        {
+            "role": "customer",
+            "text": "بروشور مزاد مساكن الخبر.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "لحظة أشوف"
+        },
+        {
+            "role": "customer",
+            "text": "بروشور مزاد مساكن الخبر copy.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/meet.google.com\/pue-vvky-dkp"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "الان"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/drive.google.com\/drive\/folders\/1kEslIzjYd7PFuxf9TTfEeErI8umsUbaA?usp=drive_link تصوير مزاد الرياض"
+        },
+        {
+            "role": "customer",
+            "text": "تحتاجهم الان؟"
+        },
+        {
+            "role": "customer",
+            "text": "مشغول حاليا ازبط البوسترات"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "قصدك كذا ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا أخي جاد"
+        },
+        {
+            "role": "customer",
+            "text": "معلش ابني رد عليك"
+        },
+        {
+            "role": "customer",
+            "text": "الان اسويها"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "10 copy.jpg"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

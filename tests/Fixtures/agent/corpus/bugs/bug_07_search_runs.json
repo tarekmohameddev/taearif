@@ -1,0 +1,14 @@
+{
+    "type": "bug_regression",
+    "id": "bug_07_search_runs",
+    "description": "search_inventory must be called at least once on a property search turn",
+    "turns": [
+        {
+            "role": "customer",
+            "text": "وش عندك من فلل في جدة؟"
+        }
+    ],
+    "invariants": [
+        "search_tool_was_called"
+    ]
+}

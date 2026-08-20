@@ -58,6 +58,7 @@ use App\Http\Requests\Api\Property\UploadPropertyDeedImageRequest;
 use App\Http\Requests\Api\Property\UpdatePropertyDraftRequest;
 use App\Http\Requests\Api\Property\StorePropertyRequest;
 use App\Http\Requests\Api\Property\UpdatePropertyRequest;
+use App\Models\PropertyExternalLink;
 
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\PropertiesImport;
@@ -1078,7 +1079,7 @@ class PropertyController extends Controller
             } catch (\Throwable $e) {}
 
             $days = (int) $request->query('days', 30);
-            $cacheKey = "property_api_{$id}_owner_{$ownerId}_v1_days_{$days}";
+            $cacheKey = "property_api_{$id}_owner_{$ownerId}_v2_days_{$days}";
             $cacheTtl = 300; // 5 minutes
 
             $response = Cache::remember($cacheKey, $cacheTtl, function () use ($id, $days, $allowedUserIds) {
@@ -1097,6 +1098,7 @@ class PropertyController extends Controller
                     'building.meters',
                     'project.contents',
                     'sourceBroker:id,username,first_name,last_name,phone',
+                    'externalLinks',
                 ])->whereIn('user_id', $allowedUserIds)->findOrFail($id);
 
                 $content = $property->contents->first();
@@ -1367,6 +1369,19 @@ class PropertyController extends Controller
                 }
             }
 
+            if ($request->has('external_links')) {
+                foreach ((array) $request->external_links as $linkData) {
+                    PropertyExternalLink::create([
+                        'property_id' => $property->id,
+                        'user_id'     => (int) auth()->id(),
+                        'platform'    => $linkData['platform'],
+                        'url'         => rtrim($linkData['url'], '/'),
+                        'label'       => $linkData['label'] ?? null,
+                        'active'      => $linkData['active'] ?? true,
+                    ]);
+                }
+            }
+
             $contentRequest = [
                 'language_id' => $defaultLanguage->id,
                 'category_id' => $request->category_id ?? ApiUserCategory::where('slug', 'other')->value('id'),
@@ -1407,6 +1422,7 @@ class PropertyController extends Controller
             'galleryImages',
             'proertyAmenities.amenity',
             'UserPropertyCharacteristics',
+            'externalLinks',
         ]);
 
         $content = $responseProperty->contents->first();
@@ -1443,6 +1459,9 @@ class PropertyController extends Controller
             'updated_at' => $responseProperty->updated_at->toISOString(),
             'category_id' => $responseProperty->category_id,
             'faqs' => $responseProperty->faqs ?? [],
+            'external_links' => $responseProperty->externalLinks
+                ->map(fn ($l) => ['id' => $l->id, 'platform' => $l->platform, 'url' => $l->url, 'label' => $l->label, 'active' => $l->active])
+                ->values()->toArray(),
             'size' => $responseProperty->size ?? null,
             'floor_planning_image' => collect($responseProperty->floor_planning_image)->map(fn($img) => asset($img))->toArray(),
             'video_image' => $responseProperty->video_image ? asset($responseProperty->video_image) : null,
@@ -1643,6 +1662,21 @@ class PropertyController extends Controller
                 }
             }
 
+            if ($request->has('external_links')) {
+                PropertyExternalLink::where('property_id', $property->id)->delete();
+                foreach ((array) $request->external_links as $linkData) {
+                    PropertyExternalLink::create([
+                        'property_id' => $property->id,
+                        'user_id'     => (int) auth()->id(),
+                        'platform'    => $linkData['platform'],
+                        'url'         => rtrim($linkData['url'], '/'),
+                        'label'       => $linkData['label'] ?? null,
+                        'active'      => $linkData['active'] ?? true,
+                    ]);
+                }
+                Cache::forget('listing.links.' . $property->id);
+            }
+
             $contentRequest = [
                 'language_id' => $defaultLanguage->id,
                 'category_id' => $request->category_id ?? ApiUserCategory::where('slug', 'other')->value('id'),
@@ -1666,7 +1700,7 @@ class PropertyController extends Controller
             'galleryImages',
             'proertyAmenities.amenity',
             'UserPropertyCharacteristics',
-
+            'externalLinks',
         ])->find($property->id);
 
         $content = $responseProperty->contents->first();
@@ -1704,6 +1738,9 @@ class PropertyController extends Controller
             'category_id' => $responseProperty->category_id,
             'size' => $responseProperty->size ?? null,
             'faqs' => $responseProperty->faqs ?? [],
+            'external_links' => $responseProperty->relationLoaded('externalLinks')
+                ? $responseProperty->externalLinks->map(fn ($l) => ['id' => $l->id, 'platform' => $l->platform, 'url' => $l->url, 'label' => $l->label, 'active' => $l->active])->values()->toArray()
+                : [],
             'building' => $responseProperty->building,
             'water_meter_number' => $responseProperty->water_meter_number,
             'electricity_meter_number' => $responseProperty->electricity_meter_number,
@@ -1722,6 +1759,8 @@ class PropertyController extends Controller
         foreach ([7, 30, 90, 365] as $days) {
             Cache::forget("property_api_{$id}_v1_days_{$days}");
             Cache::forget("property_api_{$id}_owner_{$ownerId}_v1_days_{$days}");
+            Cache::forget("property_api_{$id}_v2_days_{$days}");
+            Cache::forget("property_api_{$id}_owner_{$ownerId}_v2_days_{$days}");
         }
 
         return response()->json([
@@ -1786,6 +1825,16 @@ class PropertyController extends Controller
             $propertyOwnerId = (int) $property->user_id;
             $tenantId = (int) $owner->id;
 
+            $property->delete();
+
+            // Invalidate cache for this property (all days variants)
+            // Clear both legacy keys and owner-scoped keys
+            foreach ([7, 30, 90, 365] as $days) {
+                Cache::forget("property_api_{$id}_v1_days_{$days}");
+                Cache::forget("property_api_{$id}_owner_{$ownerId}_v1_days_{$days}");
+                Cache::forget("property_api_{$id}_v2_days_{$days}");
+                Cache::forget("property_api_{$id}_owner_{$ownerId}_v2_days_{$days}");
+            }
             $this->deletePropertyAndRelations($property);
             $this->forgetPropertyApiCache($id, $propertyOwnerId);
             PropertyListCacheVersionService::incrementVersion($tenantId);

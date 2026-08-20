@@ -12,8 +12,10 @@ class UnifiedRequest
     public ?string $customerName = null;       // source-provided name if any
 
     // Core needs
-    public ?string $propertyType = null;      // e.g., villa/apartment
-    public ?int $categoryId = null;           // internal category
+    public ?string $propertyType = null;      // e.g., residential/commercial (broad class)
+    public ?int $categoryId = null;           // single internal category (legacy/external use)
+    /** @var int[]|null */
+    public ?array $categoryIds = null;        // one or more category IDs for bot searches
     public ?string $purpose = null;           // buy/rent if available
 
     // Location

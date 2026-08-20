@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\apps\whatsapp;
 
+use App\Domain\Communication\WhatsApp\Services\SyncWhatsappUserToWaNumberService;
 use App\Http\Controllers\Controller;
 use App\Models\WhatsappUser;
 use App\Services\MetaGraphService;
@@ -17,8 +18,10 @@ class MetaOAuthController extends Controller
 {
     protected MetaGraphService $metaGraph;
 
-    public function __construct(MetaGraphService $metaGraph)
-    {
+    public function __construct(
+        MetaGraphService $metaGraph,
+        private readonly SyncWhatsappUserToWaNumberService $syncWaNumber,
+    ) {
         $this->metaGraph = $metaGraph;
     }
 
@@ -297,12 +300,16 @@ class MetaOAuthController extends Controller
                 ]
             );
 
+            // Keep Communication/AI wa_numbers in sync (used by /api/v1/whatsapp/* and AI bot).
+            $waNumber = $this->syncWaNumber->syncQuietly($whatsappUser);
+
             Log::info('MetaOAuthController.callback WhatsApp linked successfully', [
                 'user_id' => $userId,
                 'waba_id' => $wabaId,
                 'phone_id' => $phoneId,
                 'display_phone_number' => $displayPhoneNumber,
                 'is_new_phone' => !in_array($phoneId, $existingPhoneIds),
+                'wa_number_id' => $waNumber?->id,
             ]);
 
             return response()->json([
@@ -310,6 +317,7 @@ class MetaOAuthController extends Controller
                 'message' => 'WhatsApp Business account linked successfully.',
                 'data' => [
                     'whatsapp_user_id' => $whatsappUser->id,
+                    'wa_number_id' => $waNumber?->id,
                     'waba_id' => $wabaId,
                     'phone_number_id' => $phoneId,
                     'display_phone_number' => $displayPhoneNumber,

@@ -1,0 +1,379 @@
+{
+    "type": "real_conversation",
+    "id": "conv_12952",
+    "tenant_id": 1743,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "لاهنت ارسل العرض \nوكم اللي قدامك"
+        },
+        {
+            "role": "customer",
+            "text": "هذي ولا؟"
+        },
+        {
+            "role": "customer",
+            "text": "يبدو انها 630م"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "موجوده ؟"
+        },
+        {
+            "role": "customer",
+            "text": "وكم وصل السوم؟"
+        },
+        {
+            "role": "customer",
+            "text": "من 7 الى 10 🙂"
+        },
+        {
+            "role": "customer",
+            "text": "من 7 الى 10 🙂"
+        },
+        {
+            "role": "customer",
+            "text": "موجوده ؟"
+        },
+        {
+            "role": "customer",
+            "text": "طيب هو وش هو العرض 😂😂"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "مطلوب فله غرب خالد بن الوليد \nوجنوب طريق الملك سلمان\nشارع 20 \nالمساحة 300 وفيها\nشقة\nالعمر اقل من 8 سنوات \nغرفة سواق\n(ممكن يتنازل عن الشقة وغرفة السواق اذا كان السعر للمتر 10 واقل )\n\nبيدفع للمتر 12 الف اذا كان الشارع 20"
+        },
+        {
+            "role": "customer",
+            "text": "عبدالرحمن العريفي"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: contacts]"
+        },
+        {
+            "role": "customer",
+            "text": "إذا جتك عروض ممتازه في اي حي شرق الملك فهد وجنوب الملك سلمان وغرب او قريب من خالد ابو الوليد \nاهم شى عمرها اقل من 8-6 سنوات ما تحتاج ترميم ودرج صاله وشارعها 15 والأفضل 20"
+        },
+        {
+            "role": "customer",
+            "text": "هذي رسايله عشان تفهم طلبه بالضبط ."
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: contacts]"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير ابو سلمان \nشكرا على تواصلك \nنحتاج :\nفله ع الاقل 6 غرف .\nشارع 20 او شارعين 15\nيفضل قرب مسجد حديقه \nحفظك الرحمن ووفقنا واياك"
+        },
+        {
+            "role": "customer",
+            "text": "كاش"
+        },
+        {
+            "role": "customer",
+            "text": "5.5 M"
+        },
+        {
+            "role": "customer",
+            "text": "اي حي شمال ماعدا الوادي \nالندى الغدير الملقا حطين القيروان البساتين"
+        },
+        {
+            "role": "customer",
+            "text": "لكن ترا اخوي عبدالعزيز شايفين واجد لنا سنه نبحث .\nالف شكر"
+        },
+        {
+            "role": "customer",
+            "text": "ملخص الطلب"
+        },
+        {
+            "role": "customer",
+            "text": "طبعا يبي جنوب الملك سلمان"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: contacts]"
+        },
+        {
+            "role": "customer",
+            "text": "يبيون فيلا مستخدمه الى عشر سنوات \nيكون فيها شقتين او شقة \nاظن ماعندهم مشكلة في موضوع شمال الملك سلمان \nالمساحة 450 الى 600 \nالمشترى الى 5 مليون و 500 الف"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: contacts]"
+        },
+        {
+            "role": "customer",
+            "text": "يبي فيلا مستخدمةمن 350 الى  450 تقريبا \nماتزيد عن 10 سنوات يفضل شارع 20م \nاو مساحة 400 \nالأحياء يفضل جنوب سلمان \nاو شماله بس يكون قريب \n\nهذا هو اللي سام فلل الماجد و الارض \nكانوا باخذها مع اخوانه"
+        },
+        {
+            "role": "customer",
+            "text": "اذا عندك فلة قريب المساحة ومعها شقق وعمرها من 10 و اقل فلا نستغني ، ويفضل تكون جنوب سلمان"
+        },
+        {
+            "role": "customer",
+            "text": "مساحة 500 وحولها"
+        },
+        {
+            "role": "customer",
+            "text": "+966 55 455 5040"
+        },
+        {
+            "role": "customer",
+            "text": "نايف القحطاني ابوفراس"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "ولكن اذا عندك اشياء معروضه ثانيه فزودني بها لعل شي منها يناسبني"
+        },
+        {
+            "role": "customer",
+            "text": "ابي شي بشقتين كان عندك"
+        },
+        {
+            "role": "customer",
+            "text": "ويعني حدود 3 مليون اذا توفر"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "سلمت والله طال عمرك باخذها على البنك ويبدو ان فيها كذا اشكاليه"
+        },
+        {
+            "role": "customer",
+            "text": "ولكن اذا عندك اشياء معروضه ثانيه فزودني بها لعل شي منها يناسبني"
+        },
+        {
+            "role": "customer",
+            "text": "ابي شي بشقتين كان عندك"
+        },
+        {
+            "role": "customer",
+            "text": "ويعني حدود 3 مليون اذا توفر"
+        },
+        {
+            "role": "customer",
+            "text": "احمد القحطاني ابوعبدالرحمن"
+        },
+        {
+            "role": "customer",
+            "text": "+966 56 765 5996"
+        },
+        {
+            "role": "customer",
+            "text": "صبحك الله بالخير عمي\n\nعندي مشتري يبحث عن 1500 في النخيل او حطين لبناء قصر .."
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "استراحة بالجبيلة \nمخطط 219 رقم القطعة 526\nالمساحة 2580 \nالاطوال 43 عمق 60 \nشارع 15 شمالي\n \nhttps:\/\/maps.app.goo.gl\/s8opXqhvwFVxqSiS9?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "الاستراحة متاحه \nمطلقين النية ب 5 مليون و 500 الف \nيعني ب 2131 للمتر"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "تصوير لها من الداخل"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "للبيع إستراحة بقيمة ارض في الجبيلة\n\n• المساحة 3200م ، شارع 20م جنوبي\n• ⁠الأطوال 40*80 \n• ⁠ العمر 20 سنة ، فيها مسبح وبئر\n\nالموقع:-  https:\/\/maps.app.goo.gl\/Xmreg3ffHrFHjLik6?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "ووجهك يابعدي"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "السوم من طريقي 2200 \nثم كلمني المالك وقال وصلني سوم 2500 \nوالى الان ماحد"
+        },
+        {
+            "role": "customer",
+            "text": "وتقييم لها من 2400 الى 2700"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "موقعها ممتاز \nالجيران كلهم عوائل معروفه \nوكلها استراحات خاصه او سكن خاص"
+        },
+        {
+            "role": "customer",
+            "text": "الصحيح خله يفرق و ان شاء الله اني أقنعه \n\nلان حتى لو حد الصحيح انك بتفرق معه السوم ما راح تجيب حده على طول"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "ارضين سكنية بالجبيلة \n[ قائم عليها استراحة ] \nمخطط 219 رقم القطعة 705\/ 707 \nاجمالي المساحة 2000 متر \nالاطوال 50م عمق 40م\nشارع 25 شمالي \n\nhttps:\/\/maps.app.goo.gl\/SGci79ZPtaEfxxeZ8?g_st=ac"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "السوم 2200"
+        },
+        {
+            "role": "customer",
+            "text": "السوم امس وبنشوف حده"
+        },
+        {
+            "role": "customer",
+            "text": "استراحة قائمة بالجبيلة \nالمساحة 2400م شارع 30 شمالي \nحد 2500 ريال للمتر"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/4fRDQBycGXEHxuNx7?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن تخلص بأقل"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

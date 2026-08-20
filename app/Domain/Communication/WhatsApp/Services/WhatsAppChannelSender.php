@@ -16,6 +16,30 @@ class WhatsAppChannelSender
     ) {}
 
     /**
+     * Send a Meta-approved template message via the Template Message API.
+     * Falls back to plain text send for non-meta providers (Evolution, etc.).
+     *
+     * @param array<int, array<string, mixed>> $components Component parameters with variable substitutions.
+     */
+    public function sendTemplate(
+        WaNumber $waNumber,
+        string $toPhone,
+        string $templateName,
+        string $language,
+        array $components = []
+    ): ProviderDispatchResult {
+        $provider = strtolower((string) $waNumber->provider);
+        $toPhone = $this->formatPhone($toPhone);
+
+        if ($provider === 'meta') {
+            return $this->sendTemplateViaMeta($waNumber, $toPhone, $templateName, $language, $components);
+        }
+
+        // Non-meta providers do not support the template API; callers should pre-render
+        throw new ProviderSendFailedException("Provider '{$provider}' does not support the Meta Template Message API.");
+    }
+
+    /**
      * Send text message using the given WaNumber (credentials from number + config).
      * Returns ProviderDispatchResult with provider_message_id when available.
      */
@@ -32,6 +56,77 @@ class WhatsAppChannelSender
         }
 
         throw new ProviderSendFailedException("Unsupported WhatsApp provider: {$provider}");
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $components
+     */
+    private function sendTemplateViaMeta(
+        WaNumber $waNumber,
+        string $toPhone,
+        string $templateName,
+        string $language,
+        array $components
+    ): ProviderDispatchResult {
+        $meta = is_array($waNumber->meta) ? $waNumber->meta : [];
+        $accessToken = $meta['access_token'] ?? $meta['meta_access_token'] ?? null;
+        $phoneNumberId = $waNumber->phone_number_id ?? $meta['phone_number_id'] ?? $meta['meta_phone_number_id'] ?? null;
+
+        if (! $accessToken || ! $phoneNumberId) {
+            Log::warning('WhatsAppChannelSender: Meta credentials missing for template send', ['wa_number_id' => $waNumber->id]);
+            throw new ProviderSendFailedException('Meta WhatsApp credentials not configured for this number.');
+        }
+
+        $url = "https://graph.facebook.com/v20.0/{$phoneNumberId}/messages";
+        $payload = [
+            'messaging_product' => 'whatsapp',
+            'to'                => ltrim($toPhone, '+'),
+            'type'              => 'template',
+            'template'          => [
+                'name'       => $templateName,
+                'language'   => ['code' => $language],
+                'components' => $components,
+            ],
+        ];
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $accessToken,
+                'Content-Type'  => 'application/json',
+            ])->post($url, $payload);
+
+            if ($response->successful()) {
+                $body = $response->json();
+                $providerMessageId = isset($body['messages'][0]['id']) ? (string) $body['messages'][0]['id'] : null;
+                return ProviderDispatchResult::success($providerMessageId, $body ?? []);
+            }
+
+            $status = $response->status();
+            $body = $response->json();
+            $errorMessage = $body['error']['message'] ?? $response->body();
+            $errorCode = $body['error']['code'] ?? null;
+
+            Log::error('WhatsAppChannelSender: Meta template send failed', [
+                'wa_number_id'  => $waNumber->id,
+                'template_name' => $templateName,
+                'response'      => $body,
+                'status'        => $status,
+            ]);
+
+            $isTransient = $this->retryPolicyHelper->isTransient(
+                'meta',
+                $status,
+                $errorCode !== null ? (string) $errorCode : null,
+                $errorMessage
+            );
+
+            return ProviderDispatchResult::failure($isTransient, (string) $errorCode, $errorMessage, $body ?? []);
+        } catch (ProviderSendFailedException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            $isTransient = $this->retryPolicyHelper->isTransient('meta', null, null, $e->getMessage());
+            return ProviderDispatchResult::failure($isTransient, null, $e->getMessage(), []);
+        }
     }
 
     private function sendViaMeta(WaNumber $waNumber, string $toPhone, string $content): ProviderDispatchResult

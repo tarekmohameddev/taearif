@@ -1,0 +1,443 @@
+{
+    "type": "real_conversation",
+    "id": "conv_6092",
+    "tenant_id": 1243,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "مين"
+        },
+        {
+            "role": "customer",
+            "text": "وش الي تأمين 1000"
+        },
+        {
+            "role": "customer",
+            "text": "الشقه الي استأجرتها هنا بدون تأمين"
+        },
+        {
+            "role": "customer",
+            "text": "والله مامعي 1000"
+        },
+        {
+            "role": "customer",
+            "text": "معي قيمه الرسوم والايجار"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته \nابو انس تم ابشر اتفقنا على كل شي \nيصير موعد سداد التأمين شهر 9 ادفع 500 وشهر 10 ادفع 500"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "رقم ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "0538997329"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "شوف لي بالله الملاحظات ذي"
+        },
+        {
+            "role": "customer",
+            "text": "شوف لي حل للاسلاك صعب تكون مكشوفه للاطفال"
+        },
+        {
+            "role": "customer",
+            "text": "والسخانات مافيه لا بدورات المياه ولا المطبخ الله يعزك"
+        },
+        {
+            "role": "customer",
+            "text": "طيب خلاص خليها باذن الله خليها امرها بسيط"
+        },
+        {
+            "role": "customer",
+            "text": "والمكيفات لاحظت مافيه شباك"
+        },
+        {
+            "role": "customer",
+            "text": "لا والله عادي ماتهمني السخانات كثر المكيف لاحظت كلها اسبيلت وانا الي عندي شباك وش الحل"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص مافي مشكله بحاول ابيع الي معي واخذ سبليت مع اختي واحد هي بغرفتها وانا ببيع 2 الشباك الي معي واخذ لي واحد ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "ويوفقك يارب ويطول بعمرك"
+        },
+        {
+            "role": "customer",
+            "text": "الي يريحك"
+        },
+        {
+            "role": "customer",
+            "text": "انا كلمت المكتب لو عادي يسوي العقد الحين وانا احول كل الرسوم المطلوبه مني مع الايجار يوم واحد"
+        },
+        {
+            "role": "customer",
+            "text": "لان الحين الله الشاهد مامعي شي"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "متى تبون نكتب العقد"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "بالنسبه للشقه انتو بتغسلوها والا"
+        },
+        {
+            "role": "customer",
+            "text": "اي والله معدومه من الغبار الي جاء اليومين ذي"
+        },
+        {
+            "role": "customer",
+            "text": "والاسلام لازم تتقفل ونشوف لها حل"
+        },
+        {
+            "role": "customer",
+            "text": "طيب في انتظارك"
+        },
+        {
+            "role": "customer",
+            "text": "طيب الله يسعدك متى لان قاعده اجهز العفش والاثاث عشان انقلها"
+        },
+        {
+            "role": "customer",
+            "text": "اقدر انقلها اليوم والا"
+        },
+        {
+            "role": "customer",
+            "text": "مدري جهز العقد والا باقي"
+        },
+        {
+            "role": "customer",
+            "text": "قريته"
+        },
+        {
+            "role": "customer",
+            "text": "طيب بدخل الحين منصه ايجار اوافق عليها"
+        },
+        {
+            "role": "customer",
+            "text": "احنا اتفقنا 1000 التأمين على شهرين 9 و 10 صح"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "طيب الحين ادفع 250 بس للعقد والا كم بالضبط عشان اعرف"
+        },
+        {
+            "role": "customer",
+            "text": "الايجار الحين؟!!!"
+        },
+        {
+            "role": "customer",
+            "text": "والا يوم 1"
+        },
+        {
+            "role": "customer",
+            "text": "معي 250 حقت العقد الحين والوساطه بحولها مع الايجار يوم 1"
+        },
+        {
+            "role": "customer",
+            "text": "تبشر بالخير ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "بحولك يوم 1 بحولك 2100 ايجار ووساطه"
+        },
+        {
+            "role": "customer",
+            "text": "تمشي والا لا"
+        },
+        {
+            "role": "customer",
+            "text": "الله يوفقك وانا اختك ان شاء الله يشهد الله اني في وضع محرج منكم تعرف عمال وشيل وحط"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "لقيتو عامل يغسل الشقه"
+        },
+        {
+            "role": "customer",
+            "text": "طيب والعقد وش وضعه انهيتوه"
+        },
+        {
+            "role": "customer",
+            "text": "طلعت ادور عامل الحين"
+        },
+        {
+            "role": "customer",
+            "text": "طيب انا جايه"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر الحين اوثقه"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "ذا قاعد يهرب مرا بالمطبخ"
+        },
+        {
+            "role": "customer",
+            "text": "وبرضو الي بحمام الرجال الشطاف خربان"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله"
+        },
+        {
+            "role": "customer",
+            "text": "ابو انس فاضي اكلمك شوي"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "على اي حساب احول الايجار والوساطه"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "احول على نفس الحساب ذا؟"
+        },
+        {
+            "role": "customer",
+            "text": "ماعندي حسابه"
+        },
+        {
+            "role": "customer",
+            "text": "ارسله لي ولا عليك امر"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص الوساطه وحولتها باقي الايجار"
+        },
+        {
+            "role": "customer",
+            "text": "تبشر بالخير يارب"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "حولت له خلاص"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "الله يتقبل منا ومنك يارب"
+        },
+        {
+            "role": "customer",
+            "text": "والله كلموني قبل الرواتب وانا مامعي من وين اجيب لهم"
+        },
+        {
+            "role": "customer",
+            "text": "اي عقد"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "حولتها الحين"
+        },
+        {
+            "role": "customer",
+            "text": "ماعليك زود"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "اي عندي رغبه بالانضمام معكم"
+        },
+        {
+            "role": "customer",
+            "text": "الله يبقيك"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله"
+        },
+        {
+            "role": "customer",
+            "text": "جمعه مباركه"
+        },
+        {
+            "role": "customer",
+            "text": "ابي رقم الفاتوره حقي"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم معاد كلمتني عن العقار لو باقي تبي؟"
+        },
+        {
+            "role": "customer",
+            "text": "ايوا ارسلها لي خلاص بشيك عليها الان"
+        },
+        {
+            "role": "customer",
+            "text": "تم ارسلها لي وباذن الله اكون قد المسؤليه والله اني بحاجه الشغل مرا"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر بسدده ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "ابد في انتظارك بالوقت الي تبي"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله"
+        },
+        {
+            "role": "customer",
+            "text": "اخوي ابو انس بغيت اقولك انا والله مقدر احول التأمين كامل كذا لكن بصير احول مع الايجار شهريا 200 ع 5 شهور بكذا يكون اكتمل التأمين تمام"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "عطيني حسابك"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "احول ع حسابك انت رامي"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح"
+        },
+        {
+            "role": "customer",
+            "text": "بس بحولك كل شهر 200"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمة الله وبركاته \nحياك الله اخوي ابو انس\nبالنسبه للعقار انا مستعده ف اي وقت اما الوايت ماعندي رقم نواف ارسله لي وانا اتفاهم معاه مافيه مشكله اذا راح يلحقني راح ادفع"
+        },
+        {
+            "role": "customer",
+            "text": "وجهك ابيض"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

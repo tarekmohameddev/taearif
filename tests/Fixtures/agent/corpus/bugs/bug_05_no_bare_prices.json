@@ -1,0 +1,14 @@
+{
+    "type": "bug_regression",
+    "id": "bug_05_no_bare_prices",
+    "description": "Bot must not type bare price numbers; must use placeholders",
+    "turns": [
+        {
+            "role": "customer",
+            "text": "ابي شقة في الرياض بميزانية 500 ألف"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply"
+    ]
+}

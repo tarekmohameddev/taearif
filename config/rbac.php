@@ -144,10 +144,20 @@ return [
 		'employees.create',
 		'employees.update',
 		'employees.delete',
+
+		// Calling
+		'calling.place',
+		'calling.view_history',
+		'calling.view_all_history',
+		'calling.manage_agents',
 	],
 
 	'role_templates' => [
 		'owner' => [
+			'calling.place',
+			'calling.view_history',
+			'calling.view_all_history',
+			'calling.manage_agents',
 			'customers.view',
             'customers.create',
             'customers.update',
@@ -199,6 +209,10 @@ return [
             'contact_messages.create_customer',
 		],
 		'manager' => [
+			'calling.place',
+			'calling.view_history',
+			'calling.view_all_history',
+			'calling.manage_agents',
 			'customers.view',
             'customers.create',
             'customers.update',
@@ -240,6 +254,8 @@ return [
             'contact_messages.create_customer',
 		],
 		'agent' => [
+			'calling.place',
+			'calling.view_history',
 			'customers.view',
             'customers.create',
 			'projects.view',

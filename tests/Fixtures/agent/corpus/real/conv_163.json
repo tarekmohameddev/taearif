@@ -1,0 +1,299 @@
+{
+    "type": "real_conversation",
+    "id": "conv_163",
+    "tenant_id": 1478,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "هوية المدير التنفيذي - ابو محمد.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "10999522226.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "31063846730003_20260119T122943_SME00005.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "جواز محمد عويس.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "خطاب عدم تجديد العقد الوظيفي.docx"
+        },
+        {
+            "role": "customer",
+            "text": "31116282750003_20260120T114926_SME00006.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "Report-8bZqTG_MwXIci162HSMgcw== (1).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "7200852278\nاعلان عقاري المنصور"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "10039157217"
+        },
+        {
+            "role": "customer",
+            "text": "31063846730003_20260131T150238_SME00006.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "7200860017"
+        },
+        {
+            "role": "customer",
+            "text": "20986163563.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "10013573460.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته،،\n\nأود رفع هذه الشكوى بخصوص وجود ربط غير صحيح في منصة قوى بين منشأتين أصبحتا الآن مستقلتين قانونيًا.\n\nعند الدخول إلى منصة قوى، يظهر أن المصنع (الرقم الموحد: 7011226680) تابع إلى الشركة (الرقم الموحد: 7001629380)، في حين أنه قد تم فصل المصنع عن الشركة رسميًا، ولكل كيان الآن عقد تأسيس مستقل وسجل تجاري منفصل.\n\nنرجو منكم التكرم بمراجعة الوضع وتصحيحه، بحيث يتم فصل المصنع عن الشركة داخل النظام، وتمكين كل كيان من إدارة ملفه التجاري والإداري بشكل مستقل في منصة قوى.\n\nمرفق لكم (في حال وجود):\n\nنسخة من عقود التأسيس الجديدة\n\nالسجلات التجارية لكل كيان\n\nأي مستند داعم يفيد بحدوث الفصل القانوني\n\nشاكرين لكم تعاونكم، ونأمل سرعة المعالجة."
+        },
+        {
+            "role": "customer",
+            "text": "عقد التأسيس لمصنع اوبال بعد الفصل.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد تأسيس شركة اوبال القابضة.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "muqeem-profile-2523829402.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "كشف حساب عقار الصانع التخصصي شهر 1.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "كشف حساب عقار ابراهيم النهضه شهر 1 .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "كشف حساب سليمان المرقب شهر 1.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "كشف حساب عقار لولوه الفايزي شهر 1 2026.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "كشف حساب عقار الخريصي شهر 1.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "33.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Scan_0074.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Scan_0075.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "كشف حساب وقف العامر حي مشعل.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "كشف حساب عبدالعزيز الشدوخي - النازية.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "كشف حساب عقار عبدالعزيز الشدوخي - النهضه.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "كشف حساب عقار الوالدة شهر 1.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "كشف حساب عقار سليمان الوحدة شهر 1.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "كشف حساب عقار العتيق شهر 1.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "كشف حساب عقار الصناعة جديد ةشهر 1.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "كشف حساب  عقار الدغيري جنوبية محمد.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "كشف حساب عقار الاستراحات الاخضر شهر 1.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "كشف حساب عقار ابراهيم النازية شهر 1.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/shadook.taearif.com\/ar\/property\/shk-4-hy-alohd-khlf-mstosf-sraya"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "31063846730003_20260211T130840_SME00007.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "31116214310003_20260211T132010_SME00016.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "31116214310003_20260211T132505_SME00017.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "20023890013.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "20990074802.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "حقوي يناير 2026.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "حقوي نوفمبر 2025.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "حقوي ديسمبر 2025.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "حقوي اكتوبر 2025.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "http:\/\/20.81.43.89:83\/software\/html5.html"
+        },
+        {
+            "role": "customer",
+            "text": "خطاب شركة أوبال طلب انتداب الموظف فهد حقوي 2026.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "1063526568"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ContractByReuestId.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "10364634889.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "استراحة للبيع\nصك إلكتروني (مسجل عيني)\nالمساحة: 740 م²\nزاوية على شارعين (15م شرقي + 10م جنوبي)\n\n🔹 مجلس رجال + مشب\n🔹 مقلط + صالة + مطبخ\n🔹 غرفتين + دورتين مياه\n🔹 غرفة سائق مستقلة\n🔹 تكييف سبلت\n🔹 مدخل رجال + مسلخ + دكة\n🔹 باب سيارة رول"
+        },
+        {
+            "role": "customer",
+            "text": "استراحة للبيع\nصك إلكتروني (مسجل عيني)\nالمساحة: 740 م²\nزاوية على شارعين (15م شرقي + 10م جنوبي)\n\n🔹 مجلس رجال + مشب\n🔹 مقلط\n🔹 صالة + مطبخ\n🔹 غرفتين + دورتين مياه\n🔹 غرفة سائق مستقلة\n🔹 مدخل رجال + دكة + مسلخ\n🔹 تكييف سبلت\n🔹 باب سيارة رول"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/docs.google.com\/spreadsheets\/d\/1mCtGKHbjY6mZWea4JIzk3rwtmWuIDEOq\/htmlview"
+        },
+        {
+            "role": "customer",
+            "text": "Authorized person and Owner List_AR.docx"
+        },
+        {
+            "role": "customer",
+            "text": "Agency - Distribution Letter_AR.docx"
+        },
+        {
+            "role": "customer",
+            "text": "20571148372.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "20759192547.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "سجل تجاري الشركة.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقد التأسيس.pdf"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

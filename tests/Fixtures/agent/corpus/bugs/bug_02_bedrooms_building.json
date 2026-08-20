@@ -1,0 +1,14 @@
+{
+    "type": "bug_regression",
+    "id": "bug_02_bedrooms_building",
+    "description": "Slot fill should not ask bedrooms for building\/land",
+    "turns": [
+        {
+            "role": "customer",
+            "text": "عندك عمارات للبيع؟"
+        }
+    ],
+    "invariants": [
+        "no_bedroom_question_for_building"
+    ]
+}

@@ -1,0 +1,2363 @@
+{
+    "type": "real_conversation",
+    "id": "conv_11945",
+    "tenant_id": 1243,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "وعليكم السلام"
+        },
+        {
+            "role": "customer",
+            "text": "من معاي"
+        },
+        {
+            "role": "customer",
+            "text": "هلا فيك"
+        },
+        {
+            "role": "customer",
+            "text": "سم"
+        },
+        {
+            "role": "customer",
+            "text": "يسلمك ويعافيك"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمه الله"
+        },
+        {
+            "role": "customer",
+            "text": "حنا عند جدتي"
+        },
+        {
+            "role": "customer",
+            "text": "م يمديني اكلمك مكالمه"
+        },
+        {
+            "role": "customer",
+            "text": "الحين وش"
+        },
+        {
+            "role": "customer",
+            "text": "ذا"
+        },
+        {
+            "role": "customer",
+            "text": "سلم مدري وش"
+        },
+        {
+            "role": "customer",
+            "text": "وش اسمك"
+        },
+        {
+            "role": "customer",
+            "text": "ونعم"
+        },
+        {
+            "role": "customer",
+            "text": "احسك منشغل"
+        },
+        {
+            "role": "customer",
+            "text": "او تسوق"
+        },
+        {
+            "role": "customer",
+            "text": "او كذت"
+        },
+        {
+            "role": "customer",
+            "text": "او كذا"
+        },
+        {
+            "role": "customer",
+            "text": "ونعم فيك"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "احب اعرفك بنفسي اسمي اروى من بلي المعيقلي من ام اصلها من حضرموت"
+        },
+        {
+            "role": "customer",
+            "text": "ارمله"
+        },
+        {
+            "role": "customer",
+            "text": "عمري 31"
+        },
+        {
+            "role": "customer",
+            "text": "الله يحفظك"
+        },
+        {
+            "role": "customer",
+            "text": "انا اسكن بالرياض"
+        },
+        {
+            "role": "customer",
+            "text": "لكن م عندي مشكله اسكن في جده"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "ماما من عتبان صيعر حضرموت"
+        },
+        {
+            "role": "customer",
+            "text": "مدرسه قران توها تقاعدت"
+        },
+        {
+            "role": "customer",
+            "text": "انا بلويه"
+        },
+        {
+            "role": "customer",
+            "text": "الاصل من الشمال"
+        },
+        {
+            "role": "customer",
+            "text": "بين تبوك والعلا"
+        },
+        {
+            "role": "customer",
+            "text": "تحديدا مدينه الوجه"
+        },
+        {
+            "role": "customer",
+            "text": "م عليك زود"
+        },
+        {
+            "role": "customer",
+            "text": "اي"
+        },
+        {
+            "role": "customer",
+            "text": "انا م كملت الجامعه"
+        },
+        {
+            "role": "customer",
+            "text": "مخلصه ثانويه عامه"
+        },
+        {
+            "role": "customer",
+            "text": "عقبها خذيت دورت اسعافات اوليه مع الهلال الاحمر السعودي"
+        },
+        {
+            "role": "customer",
+            "text": "بلوم"
+        },
+        {
+            "role": "customer",
+            "text": "تزوجت ووووو"
+        },
+        {
+            "role": "customer",
+            "text": "الله يرحمه ويغفر له"
+        },
+        {
+            "role": "customer",
+            "text": "لا ولدت بالرياض"
+        },
+        {
+            "role": "customer",
+            "text": "احفظ ثلاثه اجزاء"
+        },
+        {
+            "role": "customer",
+            "text": "وبعض السور"
+        },
+        {
+            "role": "customer",
+            "text": "عندي ورد اقرا كل يوم"
+        },
+        {
+            "role": "customer",
+            "text": "اخوي بسم الله عليه"
+        },
+        {
+            "role": "customer",
+            "text": "حافظ القران"
+        },
+        {
+            "role": "customer",
+            "text": "من سنه واكثر"
+        },
+        {
+            "role": "customer",
+            "text": "الله يرحمه ويغفر له"
+        },
+        {
+            "role": "customer",
+            "text": "عندي بنت"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله عليها"
+        },
+        {
+            "role": "customer",
+            "text": "عمرها 6"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله عليها"
+        },
+        {
+            "role": "customer",
+            "text": "ربي يحفظ لك اولادك"
+        },
+        {
+            "role": "customer",
+            "text": "ابوي متوفي"
+        },
+        {
+            "role": "customer",
+            "text": "الله يرحمه ويغفر له"
+        },
+        {
+            "role": "customer",
+            "text": "عندي اخ اصغر مني"
+        },
+        {
+            "role": "customer",
+            "text": "اخوي سعود"
+        },
+        {
+            "role": "customer",
+            "text": "توه خلص ثانويه"
+        },
+        {
+            "role": "customer",
+            "text": "هو ولي امري"
+        },
+        {
+            "role": "customer",
+            "text": "م عليك زود"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه ملك"
+        },
+        {
+            "role": "customer",
+            "text": "وعندنا بيت"
+        },
+        {
+            "role": "customer",
+            "text": "بعنيزه بالقصيم"
+        },
+        {
+            "role": "customer",
+            "text": "مع عمي"
+        },
+        {
+            "role": "customer",
+            "text": "ابوي الله يرحمه كان له مشاريع بالقصيم بعنيزه والزلفي"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "مهتم بدارسته"
+        },
+        {
+            "role": "customer",
+            "text": "هو ذكي بسم الله عليه"
+        },
+        {
+            "role": "customer",
+            "text": "توه خلص ثانويه"
+        },
+        {
+            "role": "customer",
+            "text": "يقول خويه بيوظفه بارامكو"
+        },
+        {
+            "role": "customer",
+            "text": "وماما تقول يخلص جامعه"
+        },
+        {
+            "role": "customer",
+            "text": "م سواء"
+        },
+        {
+            "role": "customer",
+            "text": "الله يحفظك"
+        },
+        {
+            "role": "customer",
+            "text": "اذا كتب ربي نصيب"
+        },
+        {
+            "role": "customer",
+            "text": "بنتي بتقعد مع ماما"
+        },
+        {
+            "role": "customer",
+            "text": "انا بعد ابي كذا"
+        },
+        {
+            "role": "customer",
+            "text": "كان بودي اكلمك مكالمه افضل من هنا"
+        },
+        {
+            "role": "customer",
+            "text": "بس حنا عند جدتي رحنا لها زياره"
+        },
+        {
+            "role": "customer",
+            "text": "واستخدم wi fi م تمسك الشبكه هنا"
+        },
+        {
+            "role": "customer",
+            "text": "لكن بكلمك نبذه عن نفسي"
+        },
+        {
+            "role": "customer",
+            "text": "انا شويات"
+        },
+        {
+            "role": "customer",
+            "text": "وبتوضى"
+        },
+        {
+            "role": "customer",
+            "text": "واصلي الوتر"
+        },
+        {
+            "role": "customer",
+            "text": "واقراء وردي"
+        },
+        {
+            "role": "customer",
+            "text": "للسحور"
+        },
+        {
+            "role": "customer",
+            "text": "اي"
+        },
+        {
+            "role": "customer",
+            "text": "كبروني بالهويه سنه اضن"
+        },
+        {
+            "role": "customer",
+            "text": "لكن ماما تقول ان عمري 31"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "استاذنك"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "لا توني اسوي السحور"
+        },
+        {
+            "role": "customer",
+            "text": "صليت الوتر وقعدت اقرا للحين"
+        },
+        {
+            "role": "customer",
+            "text": "🌹"
+        },
+        {
+            "role": "customer",
+            "text": "ربي يحفظك"
+        },
+        {
+            "role": "customer",
+            "text": "توني تسحرت"
+        },
+        {
+            "role": "customer",
+            "text": "بستخير"
+        },
+        {
+            "role": "customer",
+            "text": "وانت استخير"
+        },
+        {
+            "role": "customer",
+            "text": "ونعم بالله"
+        },
+        {
+            "role": "customer",
+            "text": "صحيتني من النوم"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "انت متى تنام"
+        },
+        {
+            "role": "customer",
+            "text": "م عليه"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "الي يناسبك"
+        },
+        {
+            "role": "customer",
+            "text": "حنا عند جدتي"
+        },
+        {
+            "role": "customer",
+            "text": "والوضع رسميات"
+        },
+        {
+            "role": "customer",
+            "text": "يعني"
+        },
+        {
+            "role": "customer",
+            "text": "تعرف"
+        },
+        {
+            "role": "customer",
+            "text": "م ماخذه راحتي"
+        },
+        {
+            "role": "customer",
+            "text": "عادي"
+        },
+        {
+            "role": "customer",
+            "text": "انت الوقت الي يناسبك نتواصل فيه"
+        },
+        {
+            "role": "customer",
+            "text": "سم قوب"
+        },
+        {
+            "role": "customer",
+            "text": "سم قول"
+        },
+        {
+            "role": "customer",
+            "text": "امممممممم"
+        },
+        {
+            "role": "customer",
+            "text": "تجوال بجوال يشتغل"
+        },
+        {
+            "role": "customer",
+            "text": "بس هي نايمه"
+        },
+        {
+            "role": "customer",
+            "text": "م تمسك الشبكه هنا"
+        },
+        {
+            "role": "customer",
+            "text": "استخدم wi fi"
+        },
+        {
+            "role": "customer",
+            "text": "في صيعر حضرموت"
+        },
+        {
+            "role": "customer",
+            "text": "ديار بعد شروره"
+        },
+        {
+            "role": "customer",
+            "text": "جدتي مزنه مرضت وخذتنا ماما نزورها"
+        },
+        {
+            "role": "customer",
+            "text": "اي والله"
+        },
+        {
+            "role": "customer",
+            "text": "الاسبوع ذا ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "الحمد لله جدتي تحسنت"
+        },
+        {
+            "role": "customer",
+            "text": "صارت بخير"
+        },
+        {
+            "role": "customer",
+            "text": "الحمد لله"
+        },
+        {
+            "role": "customer",
+            "text": "شوف انت الي يناسبك"
+        },
+        {
+            "role": "customer",
+            "text": "وعلمني"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "وصلت البيت"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "نتواصل بعدين اذا فضيت"
+        },
+        {
+            "role": "customer",
+            "text": "انا بنام"
+        },
+        {
+            "role": "customer",
+            "text": "اكلمك الحين وفيني نوم واجد"
+        },
+        {
+            "role": "customer",
+            "text": "سم"
+        },
+        {
+            "role": "customer",
+            "text": "تصب ح ع خير"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "وش الي داخل السعوديه"
+        },
+        {
+            "role": "customer",
+            "text": "صيعر حضرموت بعد شررورع"
+        },
+        {
+            "role": "customer",
+            "text": "تعتبر ارضي حضرميه"
+        },
+        {
+            "role": "customer",
+            "text": "الله يحفظك"
+        },
+        {
+            "role": "customer",
+            "text": "تبي فطور"
+        },
+        {
+            "role": "customer",
+            "text": "الحين"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "اي"
+        },
+        {
+            "role": "customer",
+            "text": "دعوه الحين مستجابه"
+        },
+        {
+            "role": "customer",
+            "text": "احب اخلي لنفسي بالوقت ذا"
+        },
+        {
+            "role": "customer",
+            "text": "وادعي"
+        },
+        {
+            "role": "customer",
+            "text": "نتواصل بعدين"
+        },
+        {
+            "role": "customer",
+            "text": "سم"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "كيفك"
+        },
+        {
+            "role": "customer",
+            "text": "هلا فيك"
+        },
+        {
+            "role": "customer",
+            "text": "كيفك"
+        },
+        {
+            "role": "customer",
+            "text": "بعد الحدود السعوديه"
+        },
+        {
+            "role": "customer",
+            "text": "الاسبوع ذا ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "تبعد عن شروره 50 كليو"
+        },
+        {
+            "role": "customer",
+            "text": "ديار كلها جوامع"
+        },
+        {
+            "role": "customer",
+            "text": "وناس اهل دين وعلم"
+        },
+        {
+            "role": "customer",
+            "text": "كلمنا جدتي تعيش معنا بالرياض"
+        },
+        {
+            "role": "customer",
+            "text": "عيت"
+        },
+        {
+            "role": "customer",
+            "text": "تقول فكوني من الرياض وحرها"
+        },
+        {
+            "role": "customer",
+            "text": "تبي الا ديارها"
+        },
+        {
+            "role": "customer",
+            "text": "ربي يحفظك"
+        },
+        {
+            "role": "customer",
+            "text": "معلش تحدد وقت نتواصل فيه"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "انا م ابي فتره تعارف طويله"
+        },
+        {
+            "role": "customer",
+            "text": "احب تحدد وقت نتواصل فيه ونقرب وجهات النظر اكثر"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام"
+        },
+        {
+            "role": "customer",
+            "text": "الحمد لله طيبه"
+        },
+        {
+            "role": "customer",
+            "text": "انا حلوه بسم بالله علي"
+        },
+        {
+            "role": "customer",
+            "text": "بصراحه"
+        },
+        {
+            "role": "customer",
+            "text": "بالنسبه لي"
+        },
+        {
+            "role": "customer",
+            "text": "مهتمه بنفسي وبالرياضه والاكل الصحي"
+        },
+        {
+            "role": "customer",
+            "text": "انت م فاضب"
+        },
+        {
+            "role": "customer",
+            "text": "انت م فاضي"
+        },
+        {
+            "role": "customer",
+            "text": "نتكلم"
+        },
+        {
+            "role": "customer",
+            "text": "ولا ادري عنك"
+        },
+        {
+            "role": "customer",
+            "text": "يعني متى يناسبك نتكلم"
+        },
+        {
+            "role": "customer",
+            "text": "تكلم هنا"
+        },
+        {
+            "role": "customer",
+            "text": "قولي انت"
+        },
+        {
+            "role": "customer",
+            "text": "وبجاوبك"
+        },
+        {
+            "role": "customer",
+            "text": "واسالك وجاوب"
+        },
+        {
+            "role": "customer",
+            "text": "انت تسوق الحين"
+        },
+        {
+            "role": "customer",
+            "text": "النظره الشرعيه بعد م نناسب بعض"
+        },
+        {
+            "role": "customer",
+            "text": "تتقدم لي وتجينا للبيت ونشوف بعض"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن اشوفك"
+        },
+        {
+            "role": "customer",
+            "text": "اي"
+        },
+        {
+            "role": "customer",
+            "text": "سم"
+        },
+        {
+            "role": "customer",
+            "text": "ذا انت"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله"
+        },
+        {
+            "role": "customer",
+            "text": "ماشاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "حولك وحواليك"
+        },
+        {
+            "role": "customer",
+            "text": "كم قلت لي عمرك"
+        },
+        {
+            "role": "customer",
+            "text": "شكلك اصغر من عمرك"
+        },
+        {
+            "role": "customer",
+            "text": "اي والله"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "بالضبط"
+        },
+        {
+            "role": "customer",
+            "text": "المشكله البيت ضيق شوي"
+        },
+        {
+            "role": "customer",
+            "text": "امممممم"
+        },
+        {
+            "role": "customer",
+            "text": "بطلع السطوح واسجل لك"
+        },
+        {
+            "role": "customer",
+            "text": "وش اقول"
+        },
+        {
+            "role": "customer",
+            "text": "ترا صوتي م حلو"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اخاف خالتي تشوفني تقولي وش عندك"
+        },
+        {
+            "role": "customer",
+            "text": "بروح غرفتي"
+        },
+        {
+            "role": "customer",
+            "text": "تبي تشوف القمر"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "م تبي تنام"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله عليها"
+        },
+        {
+            "role": "customer",
+            "text": "توها راحت لماما بتنام معها"
+        },
+        {
+            "role": "customer",
+            "text": "ابسالك"
+        },
+        {
+            "role": "customer",
+            "text": "ولو سو ادب"
+        },
+        {
+            "role": "customer",
+            "text": "ليه تبي تزوج ع حرمتك"
+        },
+        {
+            "role": "customer",
+            "text": "اذا م تحب تقول م يخالف"
+        },
+        {
+            "role": "customer",
+            "text": "ليه سالتك ذا السوال"
+        },
+        {
+            "role": "customer",
+            "text": "احب اعرف وش الفراغ الي تحس فيه من حرمتك"
+        },
+        {
+            "role": "customer",
+            "text": "واشوف انا مناسبه لك"
+        },
+        {
+            "role": "customer",
+            "text": "وبسد الفراغ"
+        },
+        {
+            "role": "customer",
+            "text": "فهمت"
+        },
+        {
+            "role": "customer",
+            "text": "ربي يخليهم لك ويحفظهم"
+        },
+        {
+            "role": "customer",
+            "text": "شوف انا بكلمك نبذه عن نفسي"
+        },
+        {
+            "role": "customer",
+            "text": "شوف انا بطبيعتي"
+        },
+        {
+            "role": "customer",
+            "text": "احب الهدوء"
+        },
+        {
+            "role": "customer",
+            "text": "نشيطه مره"
+        },
+        {
+            "role": "customer",
+            "text": "احب الحركه"
+        },
+        {
+            "role": "customer",
+            "text": "الرياضه"
+        },
+        {
+            "role": "customer",
+            "text": "نفسي بالطبخ مره حلو"
+        },
+        {
+            "role": "customer",
+            "text": "احب الاهتمام"
+        },
+        {
+            "role": "customer",
+            "text": "م اي اهتمام"
+        },
+        {
+            "role": "customer",
+            "text": "اهتمام من القلب"
+        },
+        {
+            "role": "customer",
+            "text": "تهتم ب الي تحب وانت مستانس عشان مهتم"
+        },
+        {
+            "role": "customer",
+            "text": "بكل رضى وود"
+        },
+        {
+            "role": "customer",
+            "text": "بكل رضى وود"
+        },
+        {
+            "role": "customer",
+            "text": "الحمد لله"
+        },
+        {
+            "role": "customer",
+            "text": "ملتزمه ومحافظه"
+        },
+        {
+            "role": "customer",
+            "text": "عندي ورد اقراء كل يوم"
+        },
+        {
+            "role": "customer",
+            "text": "م اسمع اغاني"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله علي"
+        },
+        {
+            "role": "customer",
+            "text": "م عندي حتا سناب"
+        },
+        {
+            "role": "customer",
+            "text": "واكره"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله علي"
+        },
+        {
+            "role": "customer",
+            "text": "اكره الصوت المرتفع"
+        },
+        {
+            "role": "customer",
+            "text": "اكره العصبيه"
+        },
+        {
+            "role": "customer",
+            "text": "اكره عدم الاحترام والتقدير"
+        },
+        {
+            "role": "customer",
+            "text": "اكره المولات والمطاعم الا لضروره"
+        },
+        {
+            "role": "customer",
+            "text": "اكره الكفيهات"
+        },
+        {
+            "role": "customer",
+            "text": "وم اروح لها"
+        },
+        {
+            "role": "customer",
+            "text": "احب طلعات التماشي"
+        },
+        {
+            "role": "customer",
+            "text": "احب الاماكن الي تكون خضراء"
+        },
+        {
+            "role": "customer",
+            "text": "ومرتفعه"
+        },
+        {
+            "role": "customer",
+            "text": "والهواء فيها مره حلو"
+        },
+        {
+            "role": "customer",
+            "text": "احب السفر"
+        },
+        {
+            "role": "customer",
+            "text": "شعري لين خصري"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله علي"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "بيضاء"
+        },
+        {
+            "role": "customer",
+            "text": "امممممممممم"
+        },
+        {
+            "role": "customer",
+            "text": "م اعرف وش اقولك"
+        },
+        {
+            "role": "customer",
+            "text": "قول اقسم بالله العظيم انك بتحذف صورتي عقب م تشوفها"
+        },
+        {
+            "role": "customer",
+            "text": "م ابي يعني مثلا نتفق وتجينا ونشوف بعض م اعجبك او م تعجبني"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "حلفتك بالله امانه بذمتك ليوم الدين تحذف صورتي عقب م تشوفها"
+        },
+        {
+            "role": "customer",
+            "text": "حلفتك بالله امانه بذمتك ليوم الدين تحذف صورتي عقب م تشوفها"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله علي"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "وربي احس قلبي كاني ركضت"
+        },
+        {
+            "role": "customer",
+            "text": "صرت حمرا من الخجل"
+        },
+        {
+            "role": "customer",
+            "text": "الحمد لله"
+        },
+        {
+            "role": "customer",
+            "text": "☺️🙈🤭"
+        },
+        {
+            "role": "customer",
+            "text": "والنعم بالله"
+        },
+        {
+            "role": "customer",
+            "text": "اي والله العظيم"
+        },
+        {
+            "role": "customer",
+            "text": "انها صورتي"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله علي"
+        },
+        {
+            "role": "customer",
+            "text": "☺️🤭"
+        },
+        {
+            "role": "customer",
+            "text": "وش عجبك فيني"
+        },
+        {
+            "role": "customer",
+            "text": "تراني تمنيت يكون لي اخت"
+        },
+        {
+            "role": "customer",
+            "text": "واقدر اقولها انا حلوه ولا لا"
+        },
+        {
+            "role": "customer",
+            "text": "يعني ماما تقول اني حلوه"
+        },
+        {
+            "role": "customer",
+            "text": "واقول يمكن تجاملني عشان ماما"
+        },
+        {
+            "role": "customer",
+            "text": "وخوياتي كذالك"
+        },
+        {
+            "role": "customer",
+            "text": "اي"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله علي"
+        },
+        {
+            "role": "customer",
+            "text": "استحلفك بالله الذي لا اله الا هو"
+        },
+        {
+            "role": "customer",
+            "text": "لا تجاملني"
+        },
+        {
+            "role": "customer",
+            "text": "ولا تقول الا الصراحه"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله عليك"
+        },
+        {
+            "role": "customer",
+            "text": "اقولك شي بصراحه"
+        },
+        {
+            "role": "customer",
+            "text": "ويشهد علي م اجاملك فيهة"
+        },
+        {
+            "role": "customer",
+            "text": "وجهك مريح"
+        },
+        {
+            "role": "customer",
+            "text": "كيف اوصف لك"
+        },
+        {
+            "role": "customer",
+            "text": "فيك قبول"
+        },
+        {
+            "role": "customer",
+            "text": "يعني ذا شي"
+        },
+        {
+            "role": "customer",
+            "text": "يكون بشخاص"
+        },
+        {
+            "role": "customer",
+            "text": "كذا"
+        },
+        {
+            "role": "customer",
+            "text": "فيهم القبول"
+        },
+        {
+            "role": "customer",
+            "text": "الي يشوفك يتقبل وكذا مريح"
+        },
+        {
+            "role": "customer",
+            "text": "شفت"
+        },
+        {
+            "role": "customer",
+            "text": "والنعم بالله"
+        },
+        {
+            "role": "customer",
+            "text": "والله العظيم"
+        },
+        {
+            "role": "customer",
+            "text": "اني صريحه معك"
+        },
+        {
+            "role": "customer",
+            "text": "بكل شي"
+        },
+        {
+            "role": "customer",
+            "text": "واني ابي مثلك"
+        },
+        {
+            "role": "customer",
+            "text": "تكون صريح معاي"
+        },
+        {
+            "role": "customer",
+            "text": "بكل شي"
+        },
+        {
+            "role": "customer",
+            "text": "م همني ذا الشي"
+        },
+        {
+            "role": "customer",
+            "text": "انا ابي اكون مع شخص"
+        },
+        {
+            "role": "customer",
+            "text": "اكون له زوجه"
+        },
+        {
+            "role": "customer",
+            "text": "وصديقه"
+        },
+        {
+            "role": "customer",
+            "text": "واهل"
+        },
+        {
+            "role": "customer",
+            "text": "ويكون لي كذالك"
+        },
+        {
+            "role": "customer",
+            "text": "ننبسط"
+        },
+        {
+            "role": "customer",
+            "text": "نروح نقعد"
+        },
+        {
+            "role": "customer",
+            "text": "احتويه"
+        },
+        {
+            "role": "customer",
+            "text": "ويحتويني"
+        },
+        {
+            "role": "customer",
+            "text": "وانا تراني مره طيبه"
+        },
+        {
+            "role": "customer",
+            "text": "ماني النوع الي تحب السيطره"
+        },
+        {
+            "role": "customer",
+            "text": "او متحكمه"
+        },
+        {
+            "role": "customer",
+            "text": "او متسلطه"
+        },
+        {
+            "role": "customer",
+            "text": "م يستاهل كل ذا"
+        },
+        {
+            "role": "customer",
+            "text": "ابي اعيش بسعاده"
+        },
+        {
+            "role": "customer",
+            "text": "وحب واهتمام"
+        },
+        {
+            "role": "customer",
+            "text": "ي رب"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "اسمح لي"
+        },
+        {
+            "role": "customer",
+            "text": "شويات"
+        },
+        {
+            "role": "customer",
+            "text": "بتوضى"
+        },
+        {
+            "role": "customer",
+            "text": "واصلب الوتر"
+        },
+        {
+            "role": "customer",
+            "text": "وبستخير بعد"
+        },
+        {
+            "role": "customer",
+            "text": "واقراء"
+        },
+        {
+            "role": "customer",
+            "text": "م اخفيك"
+        },
+        {
+            "role": "customer",
+            "text": "كلامك الي قلته لي"
+        },
+        {
+            "role": "customer",
+            "text": "احسه"
+        },
+        {
+            "role": "customer",
+            "text": "كذا"
+        },
+        {
+            "role": "customer",
+            "text": "طاقه"
+        },
+        {
+            "role": "customer",
+            "text": "ايجابيه"
+        },
+        {
+            "role": "customer",
+            "text": "مستانسه مره"
+        },
+        {
+            "role": "customer",
+            "text": "الله يحفظك"
+        },
+        {
+            "role": "customer",
+            "text": "ونعم بالله"
+        },
+        {
+            "role": "customer",
+            "text": "ماشاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "استاذنك"
+        },
+        {
+            "role": "customer",
+            "text": "يسلمك ويعافيك"
+        },
+        {
+            "role": "customer",
+            "text": "هلا كيفك"
+        },
+        {
+            "role": "customer",
+            "text": "توني اسوي السحور"
+        },
+        {
+            "role": "customer",
+            "text": "وش قاعد تسوي"
+        },
+        {
+            "role": "customer",
+            "text": "ماشاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "بالعافيه"
+        },
+        {
+            "role": "customer",
+            "text": "🙈"
+        },
+        {
+            "role": "customer",
+            "text": "القلوب عند بعضها"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "شف وش سويت"
+        },
+        {
+            "role": "customer",
+            "text": "🌹"
+        },
+        {
+            "role": "customer",
+            "text": "بتسحر"
+        },
+        {
+            "role": "customer",
+            "text": "وارسلك"
+        },
+        {
+            "role": "customer",
+            "text": "استاذنك"
+        },
+        {
+            "role": "customer",
+            "text": "هلا حبي"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "توني تسحرت"
+        },
+        {
+            "role": "customer",
+            "text": "انا بعد"
+        },
+        {
+            "role": "customer",
+            "text": "توني صليت"
+        },
+        {
+            "role": "customer",
+            "text": "اذا كنت فاضيه"
+        },
+        {
+            "role": "customer",
+            "text": "برسلك"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "ربي يحفظك ي رب"
+        },
+        {
+            "role": "customer",
+            "text": "تصبح ع خير"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "ربي يحفظك ي رب"
+        },
+        {
+            "role": "customer",
+            "text": "تونا ردينا البيت"
+        },
+        {
+            "role": "customer",
+            "text": "م افطرت للحين"
+        },
+        {
+            "role": "customer",
+            "text": "لا طلعنا"
+        },
+        {
+            "role": "customer",
+            "text": "المكتب"
+        },
+        {
+            "role": "customer",
+            "text": "الحمد لله"
+        },
+        {
+            "role": "customer",
+            "text": "طيبه"
+        },
+        {
+            "role": "customer",
+            "text": "صليت تراويح"
+        },
+        {
+            "role": "customer",
+            "text": "ماشاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "تقبل الله منك"
+        },
+        {
+            "role": "customer",
+            "text": "انا بعد بقوم اصلي الحين"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "توني صليت التروايح"
+        },
+        {
+            "role": "customer",
+            "text": "تبي حلا"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الحمد لله"
+        },
+        {
+            "role": "customer",
+            "text": "طيبه"
+        },
+        {
+            "role": "customer",
+            "text": "🙈🤭"
+        },
+        {
+            "role": "customer",
+            "text": "ربي يحفظك ي رب"
+        },
+        {
+            "role": "customer",
+            "text": "وش قاعد تسوي"
+        },
+        {
+            "role": "customer",
+            "text": "الله يخليه لك"
+        },
+        {
+            "role": "customer",
+            "text": "ويوفقك بره"
+        },
+        {
+            "role": "customer",
+            "text": "🤭🙈"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "🙈🤭"
+        },
+        {
+            "role": "customer",
+            "text": "من اوب"
+        },
+        {
+            "role": "customer",
+            "text": "ل"
+        },
+        {
+            "role": "customer",
+            "text": "😂😂😂😂😂😂😂"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله علي"
+        },
+        {
+            "role": "customer",
+            "text": "م دلع"
+        },
+        {
+            "role": "customer",
+            "text": "خوياتي يقولون فيني انوثه"
+        },
+        {
+            "role": "customer",
+            "text": "وان جسمي بسم الله عليه م فيه شعر"
+        },
+        {
+            "role": "customer",
+            "text": "واني حلوه"
+        },
+        {
+            "role": "customer",
+            "text": "🌹"
+        },
+        {
+            "role": "customer",
+            "text": "اي"
+        },
+        {
+            "role": "customer",
+            "text": "ذي للتو"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "🙈🤭🤭🤭🤭🤭"
+        },
+        {
+            "role": "customer",
+            "text": "م حب الميك اب"
+        },
+        {
+            "role": "customer",
+            "text": "واجد"
+        },
+        {
+            "role": "customer",
+            "text": "امممممم"
+        },
+        {
+            "role": "customer",
+            "text": "لحضه"
+        },
+        {
+            "role": "customer",
+            "text": "ذي بميك اب"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "بذمتك لا تجاملني"
+        },
+        {
+            "role": "customer",
+            "text": "استحلفك بالله الذي لا اله الا هو"
+        },
+        {
+            "role": "customer",
+            "text": "انحذفت"
+        },
+        {
+            "role": "customer",
+            "text": "😂🤭"
+        },
+        {
+            "role": "customer",
+            "text": "مضايقه شوي"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله علي"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "🤭"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ذي بالعيد"
+        },
+        {
+            "role": "customer",
+            "text": "يعني بالميك اب احلل"
+        },
+        {
+            "role": "customer",
+            "text": "ماما تقعد تحصني اذ في حفله واحط ميك اب"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "🤭🙈"
+        },
+        {
+            "role": "customer",
+            "text": "الله يحفظك ي رب"
+        },
+        {
+            "role": "customer",
+            "text": "انت الحلو وكلامك الحلة"
+        },
+        {
+            "role": "customer",
+            "text": "الله يحفظك وانت والله العظيم"
+        },
+        {
+            "role": "customer",
+            "text": "انك حلو"
+        },
+        {
+            "role": "customer",
+            "text": "صارت مشكله"
+        },
+        {
+            "role": "customer",
+            "text": "🤦‍♀️"
+        },
+        {
+            "role": "customer",
+            "text": "م اعرف وش اقول"
+        },
+        {
+            "role": "customer",
+            "text": "طلعنا حجزنا"
+        },
+        {
+            "role": "customer",
+            "text": "العصر"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "وباقي للمكتب الف وخمسميه"
+        },
+        {
+            "role": "customer",
+            "text": "وكلمت خويتي وانتظرها"
+        },
+        {
+            "role": "customer",
+            "text": "م ترد"
+        },
+        {
+            "role": "customer",
+            "text": "كلمت خويتي وانتظرها"
+        },
+        {
+            "role": "customer",
+            "text": "م عليه كلمت خويتي"
+        },
+        {
+            "role": "customer",
+            "text": "وانتظرها بتحولهم لي ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "ربي يحفظك ي رب"
+        },
+        {
+            "role": "customer",
+            "text": "انا وماما واخوي وشهد"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله عليها"
+        },
+        {
+            "role": "customer",
+            "text": "رحلتنا بكره"
+        },
+        {
+            "role": "customer",
+            "text": "حجزنا وارسلت لخويتي وانا بالمكتب انتظرها م ترد"
+        },
+        {
+            "role": "customer",
+            "text": "سلفتها قبل ومدري عنها"
+        },
+        {
+            "role": "customer",
+            "text": "وكلمت خويتي نوره"
+        },
+        {
+            "role": "customer",
+            "text": "وانتظرها"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "روح شوف ابوك وخليه يدعي لك"
+        },
+        {
+            "role": "customer",
+            "text": "اللهةيوفقك بره"
+        },
+        {
+            "role": "customer",
+            "text": "انا بقعد مع ماما"
+        },
+        {
+            "role": "customer",
+            "text": "اسهر معهم"
+        },
+        {
+            "role": "customer",
+            "text": "اي بسم الله علي"
+        },
+        {
+            "role": "customer",
+            "text": "مهتمه فيه"
+        },
+        {
+            "role": "customer",
+            "text": "اي"
+        },
+        {
+            "role": "customer",
+            "text": "ماشاء الله عليك"
+        },
+        {
+            "role": "customer",
+            "text": "انا شعري كثيف"
+        },
+        {
+            "role": "customer",
+            "text": "واسرحه"
+        },
+        {
+            "role": "customer",
+            "text": "دايم"
+        },
+        {
+            "role": "customer",
+            "text": "وم يتعبني"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله علي"
+        },
+        {
+            "role": "customer",
+            "text": "كلمت خويتي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ربي يحفظك م تقصر"
+        },
+        {
+            "role": "customer",
+            "text": "الفلوس بحساب ماما"
+        },
+        {
+            "role": "customer",
+            "text": "المشكله م في هنا راجحي"
+        },
+        {
+            "role": "customer",
+            "text": "🤦‍♀️"
+        },
+        {
+            "role": "customer",
+            "text": "سافرنا وصرفنا سبعه الالف"
+        },
+        {
+            "role": "customer",
+            "text": "ربي يحفظك"
+        },
+        {
+            "role": "customer",
+            "text": "احس نقصت من نفسي قدامك"
+        },
+        {
+            "role": "customer",
+            "text": "🤦‍♀️"
+        },
+        {
+            "role": "customer",
+            "text": "م عليه تتسهل ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "سم"
+        },
+        {
+            "role": "customer",
+            "text": "معلومه وش"
+        },
+        {
+            "role": "customer",
+            "text": "توها خويتي حولت لي"
+        },
+        {
+            "role": "customer",
+            "text": "750"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "🤦‍♀️"
+        },
+        {
+            "role": "customer",
+            "text": "الحين المكتب باقي له الف وخمسميه"
+        },
+        {
+            "role": "customer",
+            "text": "خويتي حولت لي 750"
+        },
+        {
+            "role": "customer",
+            "text": "اللهم امين"
+        },
+        {
+            "role": "customer",
+            "text": "ماما راتبها نزل اليوم لانها متقاعده"
+        },
+        {
+            "role": "customer",
+            "text": "وفي بحسابها فلوس"
+        },
+        {
+            "role": "customer",
+            "text": "لكن م في هنا راجحي"
+        },
+        {
+            "role": "customer",
+            "text": "ورحلتنا بكره"
+        },
+        {
+            "role": "customer",
+            "text": "اي طيران"
+        },
+        {
+            "role": "customer",
+            "text": "عبر الباص"
+        },
+        {
+            "role": "customer",
+            "text": "🤦‍♀️🤦‍♀️🤦‍♀️🤦‍♀️🤦‍♀️🤦‍♀️🤦‍♀️🤦‍♀️"
+        },
+        {
+            "role": "customer",
+            "text": "م حجزنا طيران"
+        },
+        {
+            "role": "customer",
+            "text": "مكتب رحلات"
+        },
+        {
+            "role": "customer",
+            "text": "عبر الباص نسافر"
+        },
+        {
+            "role": "customer",
+            "text": "سم"
+        },
+        {
+            "role": "customer",
+            "text": "تراني مضايقه"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله علي"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "اكلمك م عشان ابي منك تعطني"
+        },
+        {
+            "role": "customer",
+            "text": "ترا المبلغ بسيط"
+        },
+        {
+            "role": "customer",
+            "text": "م ابي منك"
+        },
+        {
+            "role": "customer",
+            "text": "بكره رحلتنا عشان كذا مضايقه"
+        },
+        {
+            "role": "customer",
+            "text": "ابي نسافر"
+        },
+        {
+            "role": "customer",
+            "text": "وبوصل واحولك لو تبي"
+        },
+        {
+            "role": "customer",
+            "text": "وش لي"
+        },
+        {
+            "role": "customer",
+            "text": "عندك ولا م عندك"
+        },
+        {
+            "role": "customer",
+            "text": "🤦‍♀️"
+        },
+        {
+            "role": "customer",
+            "text": "لا اله الا الله"
+        },
+        {
+            "role": "customer",
+            "text": "اقصد وش دخلني عندك ولا م عندك م ابي منك شي"
+        },
+        {
+            "role": "customer",
+            "text": "🤦‍♀️"
+        },
+        {
+            "role": "customer",
+            "text": "اسالك بالله الذي لا اله الا هو ثمنميخ م عندك"
+        },
+        {
+            "role": "customer",
+            "text": "اسالك بالله الذي لا اله الا هو ثمنميه م عندك"
+        },
+        {
+            "role": "customer",
+            "text": "غريب امرك"
+        },
+        {
+            "role": "customer",
+            "text": "سم"
+        },
+        {
+            "role": "customer",
+            "text": "ليه"
+        },
+        {
+            "role": "customer",
+            "text": "اها"
+        },
+        {
+            "role": "customer",
+            "text": "انا م طلبتك"
+        },
+        {
+            "role": "customer",
+            "text": "ولا ابي منك"
+        },
+        {
+            "role": "customer",
+            "text": "ولا احتاجك"
+        },
+        {
+            "role": "customer",
+            "text": "اقولك شي"
+        },
+        {
+            "role": "customer",
+            "text": "الله يجعلي موت لونك مكاني ورحلتك بكره"
+        },
+        {
+            "role": "customer",
+            "text": "وكلمتني"
+        },
+        {
+            "role": "customer",
+            "text": "جعلي موت"
+        },
+        {
+            "role": "customer",
+            "text": "لفزع لك"
+        },
+        {
+            "role": "customer",
+            "text": "م عشان بتزوح"
+        },
+        {
+            "role": "customer",
+            "text": "ك"
+        },
+        {
+            "role": "customer",
+            "text": "او عشان ابي قربك"
+        },
+        {
+            "role": "customer",
+            "text": "بفزع لك لاني احب اسوي خير"
+        },
+        {
+            "role": "customer",
+            "text": "مبلغ بسيط"
+        },
+        {
+            "role": "customer",
+            "text": "وم يستاهل كل ذا"
+        },
+        {
+            "role": "customer",
+            "text": "لكن انت واضح انك مادي"
+        },
+        {
+            "role": "customer",
+            "text": "او مروح"
+        },
+        {
+            "role": "customer",
+            "text": "ولو قلت لك م ابيها منك بوصل واعطيك"
+        },
+        {
+            "role": "customer",
+            "text": "والله م همني"
+        },
+        {
+            "role": "customer",
+            "text": "لكن الناس للناس"
+        },
+        {
+            "role": "customer",
+            "text": "الي يحب يسوي خير م يقول م اعرفك ولا يقول"
+        },
+        {
+            "role": "customer",
+            "text": "مثل ك قلت"
+        },
+        {
+            "role": "customer",
+            "text": "مصروف ومدري وش"
+        },
+        {
+            "role": "customer",
+            "text": "بيفزع لك"
+        },
+        {
+            "role": "customer",
+            "text": "وعشان م يحرجك"
+        },
+        {
+            "role": "customer",
+            "text": "بيقولك ذي سلف"
+        },
+        {
+            "role": "customer",
+            "text": "وش دخلني"
+        },
+        {
+            "role": "customer",
+            "text": "اصابع يدك تستوي"
+        },
+        {
+            "role": "customer",
+            "text": "وبعدين ثلاثين"
+        },
+        {
+            "role": "customer",
+            "text": "لو المبلغ كبير"
+        },
+        {
+            "role": "customer",
+            "text": "بقولك عندك حق"
+        },
+        {
+            "role": "customer",
+            "text": "لكن الف وخمسميه"
+        },
+        {
+            "role": "customer",
+            "text": "والله تفشل"
+        },
+        {
+            "role": "customer",
+            "text": "والله لونك تبيني وفيك خير"
+        },
+        {
+            "role": "customer",
+            "text": "بتقولي ي اروى انا بفزع لك"
+        },
+        {
+            "role": "customer",
+            "text": "وبكره"
+        },
+        {
+            "role": "customer",
+            "text": "تسافرون"
+        },
+        {
+            "role": "customer",
+            "text": "وتوصلين بالسلامه"
+        },
+        {
+            "role": "customer",
+            "text": "وتحولينهم لي"
+        },
+        {
+            "role": "customer",
+            "text": "ترا ابيهد"
+        },
+        {
+            "role": "customer",
+            "text": "مصاريف"
+        },
+        {
+            "role": "customer",
+            "text": "ووووو"
+        },
+        {
+            "role": "customer",
+            "text": "معلش م بسمع الصوت"
+        },
+        {
+            "role": "customer",
+            "text": "ابي اقولك اسفه اذا ازعجتك"
+        },
+        {
+            "role": "customer",
+            "text": "والمسامحه منم"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله علي"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "م بسمع الصوت"
+        },
+        {
+            "role": "customer",
+            "text": "اعوذ بالله منك"
+        },
+        {
+            "role": "customer",
+            "text": "الله يكفيني شرك"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله علي"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "اعتذر منك"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن طلب"
+        },
+        {
+            "role": "customer",
+            "text": "حذف المحادثه"
+        },
+        {
+            "role": "customer",
+            "text": "لو سمحت"
+        },
+        {
+            "role": "customer",
+            "text": "م بسمع الصوت"
+        },
+        {
+            "role": "customer",
+            "text": "اعتذر منك"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "اعوذ بالله منك"
+        },
+        {
+            "role": "customer",
+            "text": "الله يكفيني شرك"
+        },
+        {
+            "role": "customer",
+            "text": "بسم الله علي"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "استاذنك"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

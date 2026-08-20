@@ -1,0 +1,807 @@
+{
+    "type": "real_conversation",
+    "id": "conv_11210",
+    "tenant_id": 1732,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "مساحة 225 متر \nالسعر 550 الف"
+        },
+        {
+            "role": "customer",
+            "text": "هاذي هي نفسه"
+        },
+        {
+            "role": "customer",
+            "text": "420 الف"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 16.921546936035, 42.559196472168]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هاذي"
+        },
+        {
+            "role": "customer",
+            "text": "176 متر"
+        },
+        {
+            "role": "customer",
+            "text": "166متر"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 16.916633605957, 42.559635162354]"
+        },
+        {
+            "role": "customer",
+            "text": "شقق للبيع تمليك مخطط 5 \nشارعين \nالمساحه 185\nقريبه من الخدمات \nمكونه من \nخمس غرف ومطبخ وصاله و3 دورات مياه \nخزان مياه مستقل \nعداد مياه وكهرباء مستقل \nصرف صحي مشروع\nضمانات على السباكه والكهرباء \nاشراف هندسي \nالسعر 480 الف"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "20250106161943.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "4641302342.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "1099855544_file (1).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "الاول 3.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "360001531400.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هاذي اوراق شقه 7 الدور الاول"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "ماسددت"
+        },
+        {
+            "role": "customer",
+            "text": "له"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "انتا"
+        },
+        {
+            "role": "customer",
+            "text": "اعطيه"
+        },
+        {
+            "role": "customer",
+            "text": "رقمي"
+        },
+        {
+            "role": "customer",
+            "text": "قله"
+        },
+        {
+            "role": "customer",
+            "text": "هاذ المالك"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "رفعت"
+        },
+        {
+            "role": "customer",
+            "text": "للعميل"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "ايش صار معك"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "ايش صار معك"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "ايش صار معك"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "ايش"
+        },
+        {
+            "role": "customer",
+            "text": "صار معك"
+        },
+        {
+            "role": "customer",
+            "text": "الاعفاء الضريبي"
+        },
+        {
+            "role": "customer",
+            "text": "والمبلغ الشيك"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "مبلغ الشيك"
+        },
+        {
+            "role": "customer",
+            "text": "بالضبط"
+        },
+        {
+            "role": "customer",
+            "text": "الهوية"
+        },
+        {
+            "role": "customer",
+            "text": "العميل"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 16.926698684692, 42.55797958374]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "هاذي مساحة 150 متر السعر\nالشقق الاماميه 380 \nوالخلفيه 360"
+        },
+        {
+            "role": "customer",
+            "text": "خمس غرف \nسطح\nمواقف \nخزان \nصرف صحي مشروع"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل هويته كامله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "في افراغ اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "اي ساعه"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "610260115911"
+        },
+        {
+            "role": "customer",
+            "text": "9de38135-f014-4b2d-96c1-a1c68c0d0722.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي هويتك"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي"
+        },
+        {
+            "role": "customer",
+            "text": "الموقع"
+        },
+        {
+            "role": "customer",
+            "text": "هاذ موقع البنك"
+        },
+        {
+            "role": "customer",
+            "text": "جايك"
+        },
+        {
+            "role": "customer",
+            "text": "معتز"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "افرغتو"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "الافائص بعد المغرب بحولك"
+        },
+        {
+            "role": "customer",
+            "text": "أنا بنام ماشي"
+        },
+        {
+            "role": "customer",
+            "text": "معتز"
+        },
+        {
+            "role": "customer",
+            "text": "موجود"
+        },
+        {
+            "role": "customer",
+            "text": "بياخذ الشيك بوزعها"
+        },
+        {
+            "role": "customer",
+            "text": "طيب ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "ه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "دقيق"
+        },
+        {
+            "role": "customer",
+            "text": "قسم بالله"
+        },
+        {
+            "role": "customer",
+            "text": "اني كلمته"
+        },
+        {
+            "role": "customer",
+            "text": "بس قالي بره البيت"
+        },
+        {
+            "role": "customer",
+            "text": "والجوال بالبيت"
+        },
+        {
+            "role": "customer",
+            "text": "بيرجع"
+        },
+        {
+            "role": "customer",
+            "text": "ويحول"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "أنا اشغلني مجدي"
+        },
+        {
+            "role": "customer",
+            "text": "كل شوي اتصل عليه"
+        },
+        {
+            "role": "customer",
+            "text": "قسم بالله"
+        },
+        {
+            "role": "customer",
+            "text": "شغله"
+        },
+        {
+            "role": "customer",
+            "text": "وعطيته الحسابات الكهرباء والمويه"
+        },
+        {
+            "role": "customer",
+            "text": "نقل المويه سوه طلب"
+        },
+        {
+            "role": "customer",
+            "text": "الكهرباء يقول بعد 24 ساعه"
+        },
+        {
+            "role": "customer",
+            "text": "بيحوله ويبقى 10 الف"
+        },
+        {
+            "role": "customer",
+            "text": "لين ينقل العدادات"
+        },
+        {
+            "role": "customer",
+            "text": "مو شغال البنك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "بوجهي"
+        },
+        {
+            "role": "customer",
+            "text": "أنا"
+        },
+        {
+            "role": "customer",
+            "text": "معليش"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "على خشمي"
+        },
+        {
+            "role": "customer",
+            "text": "document_1773410920692.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "برسلك حسابي حولهم علي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "على خشمي"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "بلكي تحولي الفلوس محتاجه"
+        },
+        {
+            "role": "customer",
+            "text": "عطالله احمد الحسين"
+        },
+        {
+            "role": "customer",
+            "text": "انا عطالله احمد الحسين \nان المبلغ اللي سيتم تحويله \nمن فيصل عبدالقادر هادي ال هديش\nبقيمة 40,000 ريال \n\nغرض التحويل \nلعمولة بيع عقار ووساطه لشقة واقعة\nفي جيزان\nرقم الصك 360001531400\n\nمالك العقار : ميساء ابراهيم محمد كامل\nالمشتري : مجدي محمد محمد طميحي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عمارة ميساء باقي فيه شقه 10"
+        },
+        {
+            "role": "customer",
+            "text": "اذا عندك زبون"
+        },
+        {
+            "role": "customer",
+            "text": "166 متر"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: contacts]"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "كيف حالك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ارحب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "كلمني نت"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "لاتنسى حق نايف"
+        },
+        {
+            "role": "customer",
+            "text": "بكرة نتقابل"
+        },
+        {
+            "role": "customer",
+            "text": "جهز الوحه"
+        },
+        {
+            "role": "customer",
+            "text": "حقك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "توصل بسلامه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ترحب"
+        },
+        {
+            "role": "customer",
+            "text": "ارحب"
+        },
+        {
+            "role": "customer",
+            "text": "دقيت عليه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اتصلت علي"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل كلمته \nآخر شي صافي له 390 \nو10 لي شامل حقي 400"
+        },
+        {
+            "role": "customer",
+            "text": "وعليه زبون بس"
+        },
+        {
+            "role": "customer",
+            "text": "ماتجي والله كلمته \nآخر شي"
+        },
+        {
+            "role": "customer",
+            "text": "عليه زبون بس باقي متردد"
+        },
+        {
+            "role": "customer",
+            "text": "ب400 صافي له"
+        },
+        {
+            "role": "customer",
+            "text": "بس أنا قنعته"
+        },
+        {
+            "role": "customer",
+            "text": "عشان نزل عشره"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل زبونك بيخلص على طول \nولا بيتخر"
+        },
+        {
+            "role": "customer",
+            "text": "على اي بنك"
+        },
+        {
+            "role": "customer",
+            "text": "كم يوم"
+        },
+        {
+            "role": "customer",
+            "text": "ويخلص"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "اكلمه الحين"
+        },
+        {
+            "role": "customer",
+            "text": "واخبرك"
+        },
+        {
+            "role": "customer",
+            "text": "عند نايف"
+        },
+        {
+            "role": "customer",
+            "text": "راح العميل"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "860001531406.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "الثانى 2.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "20250106161943.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "4641302342.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "رخصة بناء جيزان 6.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هاذي أوراق شقه 10 الدور الثاني خلفيه"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "كيف حالك"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "جهزت الوحه"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

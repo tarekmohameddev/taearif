@@ -1,0 +1,371 @@
+{
+    "type": "real_conversation",
+    "id": "conv_13321",
+    "tenant_id": 1421,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "موجوده"
+        },
+        {
+            "role": "customer",
+            "text": "الشقه"
+        },
+        {
+            "role": "customer",
+            "text": "من تاريخ 24 مارس الى 28 مارس"
+        },
+        {
+            "role": "customer",
+            "text": "اي شي الي عندك عزاب"
+        },
+        {
+            "role": "customer",
+            "text": "القصيم"
+        },
+        {
+            "role": "customer",
+            "text": "الرس"
+        },
+        {
+            "role": "customer",
+            "text": "او رياض الخبرا"
+        },
+        {
+            "role": "customer",
+            "text": "نبغا عشان جاين زواج خوينا"
+        },
+        {
+            "role": "customer",
+            "text": "في الرس"
+        },
+        {
+            "role": "customer",
+            "text": "تمام ابدا خذ راحتك"
+        },
+        {
+            "role": "customer",
+            "text": "بكم"
+        },
+        {
+            "role": "customer",
+            "text": "هاذا رابط التطبيق"
+        },
+        {
+            "role": "customer",
+            "text": "ولا الشقه"
+        },
+        {
+            "role": "customer",
+            "text": "ما تفتح"
+        },
+        {
+            "role": "customer",
+            "text": "معي"
+        },
+        {
+            "role": "customer",
+            "text": "هو بكم سعرها اليومي"
+        },
+        {
+            "role": "customer",
+            "text": "كثير ولله"
+        },
+        {
+            "role": "customer",
+            "text": "يااخوي الرابط مو شغال"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "لا معي ايفون"
+        },
+        {
+            "role": "customer",
+            "text": "يااخوي يفرق"
+        },
+        {
+            "role": "customer",
+            "text": "طيب بخصوص العدد"
+        },
+        {
+            "role": "customer",
+            "text": "ممتاز"
+        },
+        {
+            "role": "customer",
+            "text": "طيب مالقيته"
+        },
+        {
+            "role": "customer",
+            "text": "كيف ابحث"
+        },
+        {
+            "role": "customer",
+            "text": "الرابط يدخلني الموقع"
+        },
+        {
+            "role": "customer",
+            "text": "بس"
+        },
+        {
+            "role": "customer",
+            "text": "ماعندي ولله"
+        },
+        {
+            "role": "customer",
+            "text": "طيب سو ليا بكم يطلع"
+        },
+        {
+            "role": "customer",
+            "text": "التوتل"
+        },
+        {
+            "role": "customer",
+            "text": "طيب ارسلي صورها"
+        },
+        {
+            "role": "customer",
+            "text": "لاهنت"
+        },
+        {
+            "role": "customer",
+            "text": "ابشرك"
+        },
+        {
+            "role": "customer",
+            "text": "حصلتها"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "زين"
+        },
+        {
+            "role": "customer",
+            "text": "سعرها كو 250"
+        },
+        {
+            "role": "customer",
+            "text": "ا"
+        },
+        {
+            "role": "customer",
+            "text": "طيب غيره"
+        },
+        {
+            "role": "customer",
+            "text": "وبحجز انا"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "1260"
+        },
+        {
+            "role": "customer",
+            "text": "طالع"
+        },
+        {
+            "role": "customer",
+            "text": "نبغاك تصفيها لنا 1000"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه ولله اننا حايسين قسم بالله في الطيران والأمور الباقي نبغاك تنقص من قيه الايجار بحيث معا الرسوم تطلع 1000"
+        },
+        {
+            "role": "customer",
+            "text": "او نحجزها برا الموقع عادي"
+        },
+        {
+            "role": "customer",
+            "text": "1084"
+        },
+        {
+            "role": "customer",
+            "text": "الدفع لازم الحين ولا ايذا وصلنا"
+        },
+        {
+            "role": "customer",
+            "text": "لا ماقصرت ولله"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص باخذها"
+        },
+        {
+            "role": "customer",
+            "text": "بعضها حصلت الدفع عند الاستلام"
+        },
+        {
+            "role": "customer",
+            "text": "طيب انا بجمع القطه ها اليومين من الشباب واكلمك"
+        },
+        {
+            "role": "customer",
+            "text": "اجل بوكنق"
+        },
+        {
+            "role": "customer",
+            "text": "تمام تمام"
+        },
+        {
+            "role": "customer",
+            "text": "طيب وانت طيب"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "كيفك طيب"
+        },
+        {
+            "role": "customer",
+            "text": "باذن لله اليوم احجزها"
+        },
+        {
+            "role": "customer",
+            "text": "ابغا تنزل سعرها زي اول"
+        },
+        {
+            "role": "customer",
+            "text": "انتضر  الشباب يحوولون القطه"
+        },
+        {
+            "role": "customer",
+            "text": "250"
+        },
+        {
+            "role": "customer",
+            "text": "24  الى 28"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام تمام"
+        },
+        {
+            "role": "customer",
+            "text": "بالله ارسلي موقعها"
+        },
+        {
+            "role": "customer",
+            "text": "بالله"
+        },
+        {
+            "role": "customer",
+            "text": "بشوف قريب من بيت خويي"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ارحب المعضره"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "كذا تمام"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "بكره وصولنا"
+        },
+        {
+            "role": "customer",
+            "text": "كيف المفتاح"
+        },
+        {
+            "role": "customer",
+            "text": "ولا دخول ذكي"
+        },
+        {
+            "role": "customer",
+            "text": "تمام وانت طيب"
+        },
+        {
+            "role": "customer",
+            "text": "سلام"
+        },
+        {
+            "role": "customer",
+            "text": "نبغا فرش يا  الامير"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "قيمت اولاة ياعين ابوي يابعد حيي"
+        },
+        {
+            "role": "customer",
+            "text": "صرت زيكم خلاص"
+        },
+        {
+            "role": "customer",
+            "text": "😂😂😂"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

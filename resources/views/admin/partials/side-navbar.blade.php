@@ -412,6 +412,32 @@
                     </li>
                 @endif
 
+                {{-- Calling --}}
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Calling', $permissions)))
+                    <li class="nav-item
+                        @if (request()->is('admin/calling*')) active @endif">
+                        <a data-toggle="collapse" href="#callingModule">
+                            <i data-lucide="phone"></i>
+                            <p>{{ __('Calling') }}</p>
+                            <i data-lucide="chevron-down" class="caret"></i>
+                        </a>
+                        <div class="collapse @if (request()->is('admin/calling*')) show @endif" id="callingModule">
+                            <ul class="nav nav-collapse">
+                                <li class="@if (request()->is('admin/calling/tenants*') || request()->path() == 'admin/calling') active @endif">
+                                    <a href="{{ route('admin.calling.tenants.index') }}">
+                                        <span class="sub-item">{{ __('Tenants & settings') }}</span>
+                                    </a>
+                                </li>
+                                <li class="@if (request()->is('admin/calling/sim-lines*')) active @endif">
+                                    <a href="{{ route('admin.calling.sim-lines.index') }}">
+                                        <span class="sub-item">{{ __('Phone numbers') }}</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                @endif
+
                 {{-- communication --}}
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Communication', $permissions)))
                     <li class="nav-item

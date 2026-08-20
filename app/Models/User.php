@@ -724,4 +724,28 @@ class User extends Authenticatable
     {
         return $this->hasMany(EmployeeAddon::class, 'user_id');
     }
+
+    // -----------------------------------------------------------------
+    // Calling module relationships
+    // -----------------------------------------------------------------
+
+    public function callSetting()
+    {
+        return $this->hasOne(\App\Domain\Calling\Models\CallSetting::class, 'tenant_id');
+    }
+
+    public function callTrunks()
+    {
+        return $this->hasMany(\App\Domain\Calling\Models\CallTrunk::class, 'tenant_id');
+    }
+
+    public function callSimLines()
+    {
+        return $this->hasMany(\App\Domain\Calling\Models\CallSimLine::class, 'tenant_id');
+    }
+
+    public function callAgentExtension()
+    {
+        return $this->hasOne(\App\Domain\Calling\Models\CallAgentExtension::class, 'user_id');
+    }
 }

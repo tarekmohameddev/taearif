@@ -117,6 +117,14 @@ class PropertyContent extends Model
         return $this->belongsTo(UserDistrict::class, 'state_id', 'id');
     }
 
+    /**
+     * Scope to filter property contents by district (stored in state_id column).
+     */
+    public function scopeInDistrict(\Illuminate\Database\Eloquent\Builder $query, int $districtId): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where('state_id', $districtId);
+    }
+
     public function propertySpacifications()
     {
         return $this->hasMany(PropertySpecification::class, 'property_id', 'property_id');

@@ -89,6 +89,11 @@ class RouteServiceProvider extends ServiceProvider
             ->middleware('api') // throttle:api is applied here
             ->namespace($this->namespace)
             ->group(base_path('routes/api.php'));
+
+        Route::prefix('api')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/reports-api.php'));
     }
 
     /**

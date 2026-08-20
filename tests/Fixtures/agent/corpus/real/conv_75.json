@@ -1,0 +1,103 @@
+{
+    "type": "real_conversation",
+    "id": "conv_75",
+    "tenant_id": 1021,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ويااك يارب"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير اخ عبدالله"
+        },
+        {
+            "role": "customer",
+            "text": "كان عندك مشكله ف تحميل الصفحه واللوكيشن والواجهه اذا ممكن تشيك على المشكله لانها انحلت ."
+        },
+        {
+            "role": "customer",
+            "text": "الي هي"
+        },
+        {
+            "role": "customer",
+            "text": "يعافيك"
+        },
+        {
+            "role": "customer",
+            "text": "ابشررر"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعافيك ابشر انا في خدمتك"
+        },
+        {
+            "role": "customer",
+            "text": "اي وقت"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر الان اتواصل معا الدعم"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر اول ماتنحل اعطيك خبر"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام \nاهلا وسهلا \nعلينا وعليك \nابشر بشيك لك"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا فيك \nاخت دنيا قاعده تحل المشكله"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

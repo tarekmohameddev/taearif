@@ -1,0 +1,54 @@
+{
+  "ringing_agent": {
+    "Event": "Newstate",
+    "Channel": "PJSIP/agent_42_7-00000001",
+    "ChannelState": "5",
+    "ChannelStateDesc": "Ringing",
+    "CallerIDNum": "+966512345678",
+    "ConnectedLineNum": "",
+    "TAEARIF_CALL_ID": "550e8400-e29b-41d4-a716-446655440000",
+    "Uniqueid": "1234567890.1"
+  },
+  "dial_begin": {
+    "Event": "Dial",
+    "SubEvent": "Begin",
+    "Channel": "PJSIP/agent_42_7-00000001",
+    "Destination": "PJSIP/966512345678@trunk_42_gsm1-00000002",
+    "DialString": "966512345678",
+    "TAEARIF_CALL_ID": "550e8400-e29b-41d4-a716-446655440000"
+  },
+  "dial_end_answer": {
+    "Event": "Dial",
+    "SubEvent": "End",
+    "Channel": "PJSIP/agent_42_7-00000001",
+    "DialStatus": "ANSWER",
+    "TAEARIF_CALL_ID": "550e8400-e29b-41d4-a716-446655440000"
+  },
+  "bridge_enter": {
+    "Event": "BridgeEnter",
+    "Channel": "PJSIP/agent_42_7-00000001",
+    "BridgeUniqueid": "abc-def-123",
+    "TAEARIF_CALL_ID": "550e8400-e29b-41d4-a716-446655440000"
+  },
+  "hangup_normal": {
+    "Event": "Hangup",
+    "Channel": "PJSIP/agent_42_7-00000001",
+    "Cause": "16",
+    "Cause-txt": "Normal Clearing",
+    "TAEARIF_CALL_ID": "550e8400-e29b-41d4-a716-446655440000"
+  },
+  "hangup_busy": {
+    "Event": "Hangup",
+    "Channel": "PJSIP/966512345678@trunk_42_gsm1-00000002",
+    "Cause": "17",
+    "Cause-txt": "User busy",
+    "TAEARIF_CALL_ID": "550e8400-e29b-41d4-a716-446655440000"
+  },
+  "hangup_no_answer": {
+    "Event": "Hangup",
+    "Channel": "PJSIP/966512345678@trunk_42_gsm1-00000002",
+    "Cause": "19",
+    "Cause-txt": "No answer from user",
+    "TAEARIF_CALL_ID": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}

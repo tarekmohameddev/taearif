@@ -1,0 +1,255 @@
+{
+    "type": "real_conversation",
+    "id": "conv_1119",
+    "tenant_id": 1478,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ذا هو"
+        },
+        {
+            "role": "customer",
+            "text": "ترا الفاتورة مب بسمي ولاهي برقم حسابي وحساب المؤسسة"
+        },
+        {
+            "role": "customer",
+            "text": "ولا بحساب المؤسسة تاكد"
+        },
+        {
+            "role": "customer",
+            "text": "ان شغلتو يشتغل؟"
+        },
+        {
+            "role": "customer",
+            "text": "هلا بعمي"
+        },
+        {
+            "role": "customer",
+            "text": "كنت مشغول يوم تدق سم"
+        },
+        {
+            "role": "customer",
+            "text": "بسدد الفاتورة رحت لم العداد"
+        },
+        {
+            "role": "customer",
+            "text": "وعجزت اعرف لوه والعامل يبي ياخذه"
+        },
+        {
+            "role": "customer",
+            "text": "يبي يجيك باتسر او عقبه ويعطيك العربون ويوقع عقد وهو وكفيله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "شكلك حاطه بسم العامل"
+        },
+        {
+            "role": "customer",
+            "text": "م"
+        },
+        {
+            "role": "customer",
+            "text": "مصيبه"
+        },
+        {
+            "role": "customer",
+            "text": "قسم بالله"
+        },
+        {
+            "role": "customer",
+            "text": "ابي المستودع"
+        },
+        {
+            "role": "customer",
+            "text": "الي هو فيه"
+        },
+        {
+            "role": "customer",
+            "text": "دق علي اتصال"
+        },
+        {
+            "role": "customer",
+            "text": "بكلمك نتي"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله ابو عبدلله"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي رقم الفاتورة"
+        },
+        {
+            "role": "customer",
+            "text": "حوالي متفرمت"
+        },
+        {
+            "role": "customer",
+            "text": "ولا اكتب لي رقم الفاتوررة بسدده وارسله"
+        },
+        {
+            "role": "customer",
+            "text": "لك"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "بس وقف العداد لايحسب على خله يحسب المستاجر"
+        },
+        {
+            "role": "customer",
+            "text": "الجديد"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "الحين ماتبون من شي خخلاص"
+        },
+        {
+            "role": "customer",
+            "text": "شفلي غرفة العامل"
+        },
+        {
+            "role": "customer",
+            "text": "لاهنت"
+        },
+        {
+            "role": "customer",
+            "text": "ان تسانك حولك شي كلمن"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "غرفة نفس الموقع كلمن او حوله شمال"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكك"
+        },
+        {
+            "role": "customer",
+            "text": "م"
+        },
+        {
+            "role": "customer",
+            "text": "متى بتطلع العامل"
+        },
+        {
+            "role": "customer",
+            "text": "الوو"
+        },
+        {
+            "role": "customer",
+            "text": "تقل مودك ترد علي"
+        },
+        {
+            "role": "customer",
+            "text": "شدعوة"
+        },
+        {
+            "role": "customer",
+            "text": "هماك قايلي"
+        },
+        {
+            "role": "customer",
+            "text": "بنطلعها"
+        },
+        {
+            "role": "customer",
+            "text": "نهاية الشهر"
+        },
+        {
+            "role": "customer",
+            "text": "دا"
+        },
+        {
+            "role": "customer",
+            "text": "اعني انت قايلي اني بطلعو نهاية الشهر"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "كم"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي موقعك"
+        },
+        {
+            "role": "customer",
+            "text": "كم"
+        },
+        {
+            "role": "customer",
+            "text": "طيب صل على"
+        },
+        {
+            "role": "customer",
+            "text": "محمد"
+        },
+        {
+            "role": "customer",
+            "text": "انا ابي العامل"
+        },
+        {
+            "role": "customer",
+            "text": "ابيك تجيبو عندك بالمكتب مثلا تشرح له الطريقة الاجار والسداد وان جاك تكلم عشان ان طلع امسكو"
+        },
+        {
+            "role": "customer",
+            "text": "لن صراحة مطلوب علي 19 الالف عشان اقامتة وجددت اقامتة ولاقدرت اعطيه خروج  عشان جوازه منتهي"
+        },
+        {
+            "role": "customer",
+            "text": "ورقم جواله ايهم الي يكلمك منو"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل لي"
+        },
+        {
+            "role": "customer",
+            "text": "؟"
+        },
+        {
+            "role": "customer",
+            "text": "مبارك عليكم شهر رمضان 🌙\nأسأل الله أن يبلّغنا وإياكم هذا الشهر الفضيل وأن يعيننا فيه على الصيام والقيام ويجعلنا فيه من المقبولين والمغفور لهم ويكتب لنا ولكم الأجر والثواب 👍❤️❤️"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

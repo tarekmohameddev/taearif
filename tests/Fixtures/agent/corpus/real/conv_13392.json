@@ -1,0 +1,767 @@
+{
+    "type": "real_conversation",
+    "id": "conv_13392",
+    "tenant_id": 1691,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "عقد عمل.docx"
+        },
+        {
+            "role": "customer",
+            "text": "اتفاقية ...pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "بصمة الجنوب.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "الدمج CamScanner 2026-3-12 18.18.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "الدمج CamScanner 2026-3-12 20.30.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "الدمج CamScanner 2026-3-12 20.32.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Sales-Invoice-200805.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-051234.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Sales-Invoice-200815.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-051235.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Sales-Invoice-200816.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-051236.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Sales-Invoice-200824.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-051237.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Sales-Invoice-200830.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-051238.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Sales-Invoice-200839.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-051239.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Sales-Invoice-200841.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-051241.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Sales-Invoice-200850.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-051242.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Sales-Invoice-200860.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-051243.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Sales-Invoice-200861.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-051244.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Sales-Invoice-200870.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-051245.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Sales-Invoice-200877.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-051246.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Sales-Invoice-200885.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-051247.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Sales-Invoice-200890.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-051248.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-003185.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-003191.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-003186.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-003192.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-003187.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-003193.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-003188.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-003194.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-003189.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-003195.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-003190.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-003196.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-003191.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-003197.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-003192.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-003198.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-003193.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-003199.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-03002.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-000716.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-03003.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-000717.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-03004.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-000718.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-03010.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-000719.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-03011.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-000720.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-03020.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-000721.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-03027.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-000722.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-03035.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-000723.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-03036.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-000724.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "شقه للايجار حي الرمال التعمير ثلاث غرف وصاله ودرتين مياه ومطبخ 30 دفعتين"
+        },
+        {
+            "role": "customer",
+            "text": "‎الدمج CamScanner 2026-3-12 18.19.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-03037.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "10913688252 (1).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "TAX_Invoice-003202.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Template-invoice_payment-003204.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 24.849586486816, 46.82731628418]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عقد تطوير.docx"
+        },
+        {
+            "role": "customer",
+            "text": "شركة تاونكس للتطوير العقاري هي شركة متخصصة في التطوير والاستثمار العقاري مقرها مدينة الرياض. تقدم الشركة خدمات التطوير العقاري والاستشارات العقارية وتعمل على تنفيذ مشاريع عقارية عالية الجودة تلبي احتياجات العملاء والمستثمرين."
+        },
+        {
+            "role": "customer",
+            "text": "بند الإشارة إلى العقد الأساسي واستغلال الأرض وإنشاء المبنى\n\nيقر الطرفان بأن هذا العقد مرتبط بعقد الإيجار الأساسي المبرم بين مالك العقار والمستأجر الأول والمسجل في منصة إيجار برقم العقد :  207597166595 \nوتاريخ 2026\/04\/01 والمتعلق بتأجير أرض لمدة (15) سنة ابتداءً من تاريخ 2026\/08\/02 م \nكما يقر الطرفان بأنه قد تم إنشاء هذا العقد وإضافة العقار في منصة إيجار على أنه مبنى عمارة مكون من عدة وحدات، وذلك لأغراض تنظيمية وفق إجراءات وأحكام منصة إيجار بهدف تمكين إضافة الوحدات العقارية وإتاحة تأجيرها مستقبلاً عبر المنصة، ولا يترتب على ذلك أي نقل للملكية أو تعديل لطبيعة العقد الأساسي المبرم بين المالك والمستأجر الأول.\n\nويقر المستأجر الأول بموافقته على تأجير الأرض محل العقد للمستأجر بالباطن لغرض استغلالها واستثمارها، بما في ذلك إنشاء مبنى عمارة مكون من وحدات سكنية وتجارية وتأجيرها خلال مدة العقد ووفق الأنظمة والتعليمات المعمول بها.\n\nكما يقر جميع الأطراف بأن المباني أو المنشآت التي يتم إنشاؤها على الأرض تكون على نفقة ومسؤولية المستأجر بالباطن، وله حق الانتفاع بها واستثمارها وتأجير وحداتها طوال مدة العقد.\n\nويلتزم المستأجر الأول بسداد قيمة إيجار الأرض للمالك الأساسي وفق ما هو منصوص عليه في العقد الأساسي المبرم بينهما والمسجل في منصة إيجار، ويقر بأن هذا الالتزام يقع على عاتقه وحده، ولا يتحمل المستأجر بالباطن أي التزام مباشر تجاه المالك الأساسي.\n\nكما يلتزم المستأجر بالباطن بسداد قيمة الإيجار السنوي للمستأجر الأول بمبلغ وقدره (250,000) مائتان وخمسون ألف ريال سنوياً طوال مدة العقد، على أن يكون مبلغ الإيجار في السنة الأخيرة (167,400) مائة وسبعة وستون ألفاً وأربعمائة ريال.\n\nويتعهد المستأجر الأول بعدم الإخلال بالتزاماته تجاه المالك الأساسي، كما يتعهد بعدم فسخ العقد الأساسي أو التنازل عنه أو تعديله أو اتخاذ أي إجراء من شأنه الإضرار بحقوق المستأجر بالباطن طوال مدة هذا العقد، ويلتزم بالمحافظة على سريان العقد الأساسي بكامل مدته وشروطه.\n\nوفي حال ترتب على إخلال المستأجر الأول بالتزاماته أو فسخ العقد الأساسي لأي سبب يعود إليه ضرر أو إنهاء لحق الانتفاع بالموقع بالنسبة للمستأجر بالباطن، فإنه يتحمل كامل المسؤولية ويلتزم بتعويض المستأجر بالباطن عن أي أضرار أو خسائر قد تلحق به نتيجة ذلك.\n\nويقر جميع الأطراف بأن المباني أو المنشآت التي يقيمها المستأجر بالباطن على الأرض تعد استثماراً وتحسينات مقامة على نفقته الخاصة طوال مدة العقد.\n\nوعند انتهاء مدة العقد الأساسي وعدم تجديده، يتم الاتفاق بين الأطراف على تعويض المستأجر بالباطن عن قيمة المباني أو المنشآت المقامة على الأرض.\n\nوفي حال عدم اتفاق الأطراف على قيمة التعويض خلال مدة لا تتجاوز (60) يوماً من تاريخ انتهاء العقد، يتم تحديد قيمة التعويض بواسطة مقيم عقاري معتمد من الهيئة السعودية للمقيمين المعتمدين (تقييم)، ويكون تقرير التقييم ملزماً لجميع الأطراف.\n\nكما يحق للمستأجر بالباطن إضافة الوحدات الناتجة عن المبنى في منصة إيجار وتأجيرها طوال مدة العقد دون اعتراض من المستأجر الأول.\n\nويكون للمستأجر بالباطن حق الأولوية في التفاوض على تجديد عقد الإيجار عند انتهاء مدة العقد الأساسي، وذلك قبل عرض العقار على أي طرف آخر.\n\nويعد هذا البند جزءاً لا يتجزأ من العقد ومرتبطاً بالعقد الأساسي المشار إلى رقمه أعلاه، ويعد هذا العقد أساساً لتنظيم العلاقة بين الأطراف فيما يخص إنشاء المبنى وإضافة وحداته وتمكين تأجيرها عبر منصة إيجار، ويتعهد المستأجر الأول بالالتزام بجميع ما ورد فيه من شروط وأحكام."
+        },
+        {
+            "role": "customer",
+            "text": "دراسة مشروع البيان التجارى ..pdf"
+        },
+        {
+            "role": "customer",
+            "text": "إنه في يوم ………… الموافق ………… تم الاتفاق بين كلٍ من:\nالسيد\/ …………………………… (شريك ممول)\nالسيد\/ …………………………… (شريك ممول)\nالسيد\/ …………………………… (شريك ممول)\nالسيد\/ …………………………… (شريك ممول)\nويُشار إليهم مجتمعين بـ (الشركاء الممولين)\nالسيد\/ …………………………… (شريك إداري\/تشغيلي)\nويُشار إليه بـ (الشريك التشغيلي)\nتمهيد\nحيث إن الشركاء يرغبون في الدخول في شراكة لإنشاء وتشغيل مشروع (يُذكر نوع المشروع: ………………) بهدف تحقيق الربح، فقد اتفقوا على ما يلي:\nالبند الأول: موضوع العقد\nاتفق الأطراف على تأسيس مشروع (…………………………) ويكون النشاط في (…………………………).\nالبند الثاني: رأس المال\nيلتزم الشركاء الممولون بتقديم رأس المال بإجمالي قدره (…………………) ريال\/جنيه.\nيتم توزيع المساهمة المالية بينهم حسب الآتي:\nالشريك الأول: …………\nالشريك الثاني: …………\nالشريك الثالث: …………\nالشريك الرابع: …………\nلا يلتزم الشريك التشغيلي بأي مساهمة مالية.\nالبند الثالث: الإدارة والتشغيل\nيتولى الشريك التشغيلي إدارة المشروع بالكامل والإشراف على التشغيل اليومي.\nيلتزم الشريك التشغيلي ببذل العناية اللازمة لتحقيق أفضل نتائج للمشروع.\nلا يجوز للشريك التشغيلي اتخاذ قرارات جوهرية (مثل البيع، القروض، التوسع الكبير) إلا بموافقة الشركاء الممولين مجتمعين أو بنسبة ………%.\nالبند الرابع: توزيع الأرباح والخسائر\nيتم توزيع صافي الأرباح على النحو التالي:\n50% (خمسون بالمائة) للشريك التشغيلي.\n50% (خمسون بالمائة) تُوزع على الشركاء الممولين كلٌ حسب نسبة مساهمته في رأس المال.\nفي حالة الخسارة:\nيتحمل الشركاء الممولون الخسارة بنسبة مساهمتهم في رأس المال.\nلا يتحمل الشريك التشغيلي أي خسائر مالية، ما لم تكن ناتجة عن إهمال جسيم أو سوء إدارة مثبت.\nالبند الخامس: مدة العقد\nمدة هذه الشراكة هي (…………………) تبدأ من تاريخ توقيع العقد، وتجدد باتفاق الأطراف.\nالبند السادس: الحسابات والرقابة\nيتم فتح حساب بنكي باسم المشروع.\nيتم مسك دفاتر محاسبية منتظمة.\nيحق لجميع الشركاء الاطلاع على الحسابات بشكل دوري.\nالبند السابع: الانسحاب أو التنازل\nلا يجوز لأي شريك التنازل عن حصته إلا بموافقة باقي الشركاء.\nفي حالة رغبة أحد الشركاء في الانسحاب، يتم تقييم المشروع وتحديد قيمة حصته.\nالبند الثامن: فسخ العقد\nيتم فسخ العقد في الحالات التالية:\nاتفاق جميع الشركاء\nانتهاء مدة العقد\nتحقيق خسائر جسيمة\nالإخلال الجوهري بأي بند من بنود العقد\nالبند التاسع: تسوية النزاعات\nفي حالة حدوث نزاع، يتم حله وديًا، وفي حال التعذر يتم اللجوء إلى الجهات القضائية المختصة في (…………………).\nالبند العاشر: أحكام عامة\nهذا العقد ملزم لجميع الأطراف.\nتم تحرير هذا العقد من (………) نسخ، بيد كل طرف نسخة للعمل بموجبها.\nتوقيع الأطراف:\nالشريك الأول: ……………………\nالشريك الثاني: ……………………\nالشريك الثالث: ……………………\nالشريك الرابع: ……………………\nالشريك التشغيلي: ……………………"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 24.810604095459, 46.776542663574]"
+        },
+        {
+            "role": "customer",
+            "text": "شقة دور اول \nغرفتين نوم\nصالة\nمطبخ\nمجلس مؤثث \nشهري 2600 \nالموقع البيان"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.google.com\/?q=24.890631,46.868992"
+        },
+        {
+            "role": "customer",
+            "text": "CamScanner 28-09-2025 06.08.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "CamScanner 28-09-2025 06.10.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "66.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "CamScanner 08-11-2025 19.41.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "فاتوره المرحله الاولي مؤسسه بصمه الجنوب.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Adobe Scan Dec 1, 2025.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Adobe Scan Dec 1, 2025 (1).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "CamScanner 03-12-2025 15.08.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مؤسسة بصمة الجنوب للتطوير العقاري.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "CamScanner 04-12-2025 11.54.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "053.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "بصمة الجنوب 176.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "بصمة الجنوب 175.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "312025392100003_20251121T171221_INV-2025-00382(1).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Invoice - .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "312025392100003_20251223T175726_INV-2025-00415.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "312025392100003_20251226T022606_INV-2025-00416.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "312025392100003_20251227T222533_INV-2025-00417.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "312025392100003_20251228T100227_INV-2025-00420.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "312025392100003_20251228T100121_INV-2025-00419.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "بصمة.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "بصمة1.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "312025392100003_20251231T161107_INV-2025-00422.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "43.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ضمان مؤسسة بصمة الجنوب للتطوير العقاري 1.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ضمان مؤسسة بصمة الجنوب للتطوير العقاري 2.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ضمان مؤسسة بصمة الجنوب للتطوير العقاري 3.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "312025392100003_20260110T203855_INV-2026-00009.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "312025392100003_20260110T204610_INV-2026-00010.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "312025392100003_20260116T230726_INV-2026-00016.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "فاتوره المرحله الثانيه بصمه الجنوب.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "فاتوره المرحله الثانيه بصمه الجنوب.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "247.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "257.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "FM26-102.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "466.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Invoice.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "فاتورة رقم 04334 - مؤسسة بصمة الجنوب لتطوير العقاري.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Bullzip PDF Printer (from DESKTOP-HOIHK5G) - Job #46.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "32.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "751.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "225.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "426.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Bullzip PDF Printer (from DESKTOP-HOIHK5G) - Job #94.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "198.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "117.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "37.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "بصمة الجنوب 111.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "2201767.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "850.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "شركة بصمه الجنوب.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مؤسسة بصمة الجنوب للتطوير العقاري.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الهوية الوطنية_25-01-2026.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "طباعة.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Remote Desktop Redirected Printer Doc (5).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "شركة تاونكس للتطوير العقاري.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "اعتماد تصميم خلطة خرسانية مصنع جيل الميدان.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "JEEL AL- MEDAN PRE- QUALIFICATION 02.PDF"
+        },
+        {
+            "role": "customer",
+            "text": "سلطان"
+        },
+        {
+            "role": "customer",
+            "text": "مين اللى راسل سي في"
+        },
+        {
+            "role": "customer",
+            "text": "عايز اى يعنى"
+        },
+        {
+            "role": "customer",
+            "text": "اجمالي المساحة 1164 م \n\nمحاولة بيع بـ 2900"
+        },
+        {
+            "role": "customer",
+            "text": "المصنف1.xlsx"
+        },
+        {
+            "role": "customer",
+            "text": "2264082.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "م بصمة الجنوب 64.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "م بصمة الجنوب 65.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مؤسسة بصمة الجنوب للتطوير العقاري.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مؤسسة بصمة الجنوب للتطوير العقاري.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "م بصمة الجنوب 106.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مؤسسة بصمة الجنوب للتطوير العقاري.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ف مبيعات.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ف النطاقات الذكية.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "بصمة الجنوب .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مؤسسة بصمة الجنوب للتطوير العقاري.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "فاتورة مبيعات.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "بصمة الجنوب  (1).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مؤسسة بصمة الجنوب للتطوير العقاري.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مؤسسة بصمة الجنوب للتطوير العقاري.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مؤسسة بصمة الجنوب للتطوير العقاري.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مؤسسة بصمة الجنوب للتطوير العقاري.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ف مؤسسة النطاقات.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "سند قبض.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "بصمة الجنوب (3).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "فاتورة مبيعات.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "20137.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "20167.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "20467.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "20707.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "20726.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "21000.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "المصنف1.xlsx"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

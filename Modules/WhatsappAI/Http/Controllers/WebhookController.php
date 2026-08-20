@@ -2,22 +2,25 @@
 
 namespace Modules\WhatsappAI\Http\Controllers;
 
+use App\Domain\Communication\WhatsApp\Bot\HandoffService;
+use App\Domain\Communication\WhatsApp\Services\SyncWhatsappAiConversationToCommunicationService;
+use App\Models\ShadowBotDraft;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
-use App\Domain\Communication\WhatsApp\Services\SyncWhatsappAiConversationToCommunicationService;
-use Modules\WhatsappAI\Jobs\ForwardWebhook;
-use App\Models\WhatsappUser;
 use Modules\WhatsappAI\Entities\WhatsappConversation;
 use Modules\WhatsappAI\Entities\WhatsappMessage;
+use Modules\WhatsappAI\Jobs\ForwardWebhook;
 use Modules\WhatsappAI\Jobs\ProcessConversation;
 use Modules\WhatsappAI\Jobs\TranscribeAudio;
+use App\Models\WhatsappUser;
 
 class WebhookController extends Controller
 {
     public function __construct(
         private readonly SyncWhatsappAiConversationToCommunicationService $communicationSyncService,
+        private readonly HandoffService $handoffService,
     ) {}
     /**
      * Handle incoming WhatsApp webhook
@@ -56,16 +59,38 @@ class WebhookController extends Controller
 
                 foreach ($changes as $change) {
                     $entry = $change['value'] ?? null;
-                    if (! is_array($entry) || empty($entry['messages']) || ! is_array($entry['messages'])) {
+                    if (! is_array($entry)) {
                         continue;
                     }
 
-                    foreach ($entry['messages'] as $message) {
-                        if (! is_array($message)) {
+                    // Handle inbound messages (customer -> business)
+                    if (! empty($entry['messages']) && is_array($entry['messages'])) {
+                        foreach ($entry['messages'] as $message) {
+                            if (! is_array($message)) {
+                                continue;
+                            }
+
+                            $result = $this->storeIncomingMessage($entry, $message, $webhookEntry['id'] ?? null);
+                            if ($result !== null) {
+                                $processed++;
+                                $storedConversationId = $result['conversation_id'];
+                                $storedMessageCount = $result['message_count'];
+                            }
+                        }
+                    }
+
+                    // Handle outbound echoes (business -> customer from app/linked device)
+                    // Both message_echoes and smb_message_echoes use the same structure
+                    $echoes = array_merge(
+                        $entry['message_echoes'] ?? [],
+                        $entry['smb_message_echoes'] ?? []
+                    );
+                    foreach ($echoes as $echo) {
+                        if (! is_array($echo)) {
                             continue;
                         }
 
-                        $result = $this->storeIncomingMessage($entry, $message, $webhookEntry['id'] ?? null);
+                        $result = $this->storeOutboundEcho($entry, $echo, $webhookEntry['id'] ?? null);
                         if ($result !== null) {
                             $processed++;
                             $storedConversationId = $result['conversation_id'];
@@ -178,6 +203,7 @@ class WebhookController extends Controller
                 ['whatsapp_message_id' => (string) $providerMessageId],
                 [
                     'conversation_id' => $conversation->id,
+                    'direction' => 'inbound',
                     'message_type' => $storedMessageType,
                     'content' => $content,
                     'media_url' => $mediaUrl,
@@ -188,6 +214,7 @@ class WebhookController extends Controller
         } else {
             $storedMessage = WhatsappMessage::create([
                 'conversation_id' => $conversation->id,
+                'direction' => 'inbound',
                 'whatsapp_message_id' => null,
                 'message_type' => $storedMessageType,
                 'content' => $content,
@@ -233,6 +260,197 @@ class WebhookController extends Controller
             'conversation_id' => (int) $conversation->id,
             'message_count' => (int) $conversation->message_count,
         ];
+    }
+
+    /**
+     * Store an outbound echo (message sent from WhatsApp Business App or linked device).
+     *
+     * @return array{conversation_id: int, message_count: int}|null
+     */
+    private function storeOutboundEcho(array $entry, array $echo, mixed $wabaId): ?array
+    {
+        $phoneNumberId = $entry['metadata']['phone_number_id'] ?? null;
+        // For echoes, 'from' is the business phone, 'to' is the customer
+        $customerPhone = $echo['to'] ?? null;
+
+        if (!$phoneNumberId || !$customerPhone) {
+            Log::warning('WhatsApp AI webhook echo missing required fields', [
+                'phone_id' => $phoneNumberId,
+                'waba_id' => $wabaId,
+                'customer_phone' => $customerPhone,
+                'message_id' => $echo['id'] ?? null,
+                'message_type' => $echo['type'] ?? null,
+            ]);
+
+            return null;
+        }
+
+        $whatsappUser = WhatsappUser::where('phone_id', $phoneNumberId)
+            ->where('status', 'active')
+            ->first();
+
+        if (!$whatsappUser) {
+            Log::warning('WhatsApp user not found for echo', [
+                'phone_id' => $phoneNumberId,
+                'waba_id' => $wabaId,
+                'customer_phone' => $customerPhone,
+                'message_id' => $echo['id'] ?? null,
+            ]);
+
+            return null;
+        }
+
+        $conversation = WhatsappConversation::firstOrCreate(
+            [
+                'whatsapp_user_id' => $whatsappUser->id,
+                'customer_phone' => $customerPhone,
+            ],
+            [
+                'user_id' => $whatsappUser->user_id,
+                'status' => 'collecting',
+                'customer_name' => null,
+            ]
+        );
+
+        $echoMessageType = $echo['type'] ?? 'text';
+        $storedMessageType = $this->normalizeMessageTypeForStorage($echoMessageType);
+        $content = $this->extractMessageContent($echo, $echoMessageType);
+
+        $mediaUrl = null;
+        if (in_array($echoMessageType, ['image', 'document', 'audio', 'video'], true) && isset($echo[$echoMessageType]['url'])) {
+            $mediaUrl = $echo[$echoMessageType]['url'];
+        }
+
+        $providerMessageId = $echo['id'] ?? null;
+        $messageWasNew = true;
+
+        // Check if this message was already stored (e.g., when sent via API)
+        if ($providerMessageId !== null && $providerMessageId !== '') {
+            $existing = WhatsappMessage::where('whatsapp_message_id', (string) $providerMessageId)->first();
+            if ($existing) {
+                // Already stored at send time, skip duplicate
+                return null;
+            }
+
+            $storedMessage = WhatsappMessage::create([
+                'conversation_id' => $conversation->id,
+                'direction' => 'outbound',
+                'whatsapp_message_id' => (string) $providerMessageId,
+                'message_type' => $storedMessageType,
+                'content' => $content,
+                'media_url' => $mediaUrl,
+                'raw_payload' => $echo,
+            ]);
+        } else {
+            // No provider message ID — deduplicate by content hash within a short window
+            // to protect against webhook retries creating duplicate records.
+            $contentHash = md5((string) $content . $storedMessageType);
+            $recentDuplicate = WhatsappMessage::where('conversation_id', $conversation->id)
+                ->where('direction', 'outbound')
+                ->where('message_type', $storedMessageType)
+                ->where('content', $content)
+                ->where('created_at', '>=', now()->subMinutes(5))
+                ->exists();
+
+            if ($recentDuplicate) {
+                return null;
+            }
+
+            $storedMessage = WhatsappMessage::create([
+                'conversation_id' => $conversation->id,
+                'direction' => 'outbound',
+                'whatsapp_message_id' => null,
+                'message_type' => $storedMessageType,
+                'content' => $content,
+                'media_url' => $mediaUrl,
+                'raw_payload' => $echo,
+            ]);
+        }
+
+        // Sync to Communication layer as outbound
+        $syncedMessage = null;
+        try {
+            $syncedMessage = $this->communicationSyncService->syncOutbound(
+                $conversation,
+                $storedMessage,
+                is_array($entry['metadata'] ?? null) ? $entry['metadata'] : null,
+            );
+        } catch (\Throwable $syncError) {
+            Log::error('whatsapp_ai.communication_sync_outbound.exception', [
+                'error' => $syncError->getMessage(),
+                'whatsapp_conversation_id' => $conversation->id,
+                'whatsapp_message_id' => $storedMessage->id,
+            ]);
+        }
+
+        // Agent takeover detection — only when the message is NOT from the bot itself.
+        // Bot messages are tagged meta.source = 'ai' at delivery time; echoes from the
+        // human agent have source = 'whatsapp_echo'. Skip if already in our system with
+        // source = 'ai' to avoid pausing right after the bot speaks.
+        if ($syncedMessage !== null) {
+            $syncedMeta    = is_array($syncedMessage->meta) ? $syncedMessage->meta : [];
+            $messageSource = $syncedMeta['source'] ?? 'whatsapp_echo';
+
+            if ($messageSource !== 'ai') {
+                // Human agent replied — pause the bot according to tenant config.
+                $conversationId = $syncedMessage->conversation_id;
+                if ($conversationId !== null) {
+                    $waNumberId = isset($syncedMeta['wa_number_id']) ? (int) $syncedMeta['wa_number_id'] : null;
+                    $this->handoffService->pauseAfterHumanSend(
+                        (int) $conversationId,
+                        $waNumberId,
+                        (int) $whatsappUser->user_id,
+                    );
+
+                    // Pair with any pending shadow draft for the same conversation
+                    $this->pairShadowDraft((int) $conversationId, (string) ($content ?? ''));
+                }
+            }
+        }
+
+        if ($messageWasNew) {
+            $conversation->increment('message_count');
+            $conversation->update([
+                'last_message_at' => now(),
+            ]);
+        }
+
+        return [
+            'conversation_id' => (int) $conversation->id,
+            'message_count' => (int) $conversation->message_count,
+        ];
+    }
+
+    /**
+     * If a ShadowBotDraft is pending for this conversation, record the agent's actual
+     * reply in the `agent_reply` field so it can feed into the golden corpus later.
+     */
+    private function pairShadowDraft(int $conversationId, string $agentReplyText): void
+    {
+        try {
+            $draft = ShadowBotDraft::where('conversation_id', $conversationId)
+                ->where('status', 'pending')
+                ->latest()
+                ->first();
+
+            if ($draft !== null) {
+                $draft->update([
+                    'agent_reply' => $agentReplyText,
+                    'status'      => 'agent_replied',
+                    'acted_at'    => now(),
+                ]);
+
+                Log::info('whatsapp_ai.shadow_draft.agent_paired', [
+                    'draft_id'        => $draft->id,
+                    'conversation_id' => $conversationId,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('whatsapp_ai.shadow_draft.pair_failed', [
+                'conversation_id' => $conversationId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function mirrorWebhookToForwardUrl(Request $request): void

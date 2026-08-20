@@ -1,0 +1,427 @@
+{
+    "type": "real_conversation",
+    "id": "conv_5567",
+    "tenant_id": 1630,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "الوو"
+        },
+        {
+            "role": "customer",
+            "text": "sales_land_booking_contract.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "appendix_land_booking_contract.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هذا هي"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "لاكن إذا تعرف لي أحد يبغها واتنازل له 15"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الله لاهينك"
+        },
+        {
+            "role": "customer",
+            "text": "طيب محتاج منك خدمه تكفى محتاج 150 منك لاني يشهد الله اني مستلم في الحد في جيزان وابغى امشي من جيزان لان عندي الوالده يشهد في العنايه وقسم بالله اني اني زي المجنون وقفت علي المخالفات حسابي وسيارتي مقطوع من البنزين فااذا بتقدر تسلفني 150 الين اصل أبها واحتزم بها ارجعها لك لان يشهد الله اني محتاجها ضروري ومامعي الاالله ثم انته وابشر بالي تبي لوحبيت اتنازل لك على الارضيه الحين عشان هذا 150"
+        },
+        {
+            "role": "customer",
+            "text": "ويشهد الله اني من حرج منك لان توي تعرفت عليك"
+        },
+        {
+            "role": "customer",
+            "text": "واي ضمنات تبي ارسلها لك ابشر بها"
+        },
+        {
+            "role": "customer",
+            "text": "ويشهد الله اني من حرج منك"
+        },
+        {
+            "role": "customer",
+            "text": "الاسم:\nعبدالعزيز عبدالرحمن احمد عسيري \r\n\nالبنك:: \nالبنك الأهلي السعودي \r\n\nالآيبان: \nSA4410000011100528558703 \r\n\nرقم الحساب: \n11100528558703 \r\n\nرمز تعريف المصرف سويفت: \nNCBKSAJE"
+        },
+        {
+            "role": "customer",
+            "text": "هذا هو"
+        },
+        {
+            "role": "customer",
+            "text": "الله يبيض وجهك"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسمع منك يارب يارب"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "بشر ياذيبان والمعذره أشغلتك"
+        },
+        {
+            "role": "customer",
+            "text": "قسم بالله"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الله يبيض وجهك"
+        },
+        {
+            "role": "customer",
+            "text": "ايشر من عيوني"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ماعليك زود"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "عادي يكون مبلغ المبايعة 500 راح منها 150"
+        },
+        {
+            "role": "customer",
+            "text": "كيف أوقع على العقد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "عقد مبايعة أرض_نسخة.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "أقر انا عبدالرحمن أحمد مفرح عسيري اني بعت ارض في مخطط الخرمه في مخطط الدقيشميه رقم القطعه 1033 إلى عبدالإله حاتم الشريف بمبلغ 500 والله على مااقول شهيد"
+        },
+        {
+            "role": "customer",
+            "text": "ورخصه اي وقت تبي تطلعها اعطني الوو"
+        },
+        {
+            "role": "customer",
+            "text": "طيب بتقدر تشوف لي اي شي لوعن 100 لان عندي جيب هنا ماسوت فيها 150 شي الله يلعنه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اقول عبيت 150 يشهد انها ماسوت شي في موتر معي هنا الله يلعنه فإذا تقدر تشوف لي 100 بس واخصمها من المبلغ"
+        },
+        {
+            "role": "customer",
+            "text": "لان مايوصلني ابها"
+        },
+        {
+            "role": "customer",
+            "text": "والله اني استحيت منك"
+        },
+        {
+            "role": "customer",
+            "text": "طيب اسمع تخبر لي أحد يسوي سلفه بسند امر"
+        },
+        {
+            "role": "customer",
+            "text": "من نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "عادي اخذ بسم الحرمه"
+        },
+        {
+            "role": "customer",
+            "text": "اختي معلمه"
+        },
+        {
+            "role": "customer",
+            "text": "دق على"
+        },
+        {
+            "role": "customer",
+            "text": "لاهنت"
+        },
+        {
+            "role": "customer",
+            "text": "اقلك تعريف بالراتب لازم مع الدوام"
+        },
+        {
+            "role": "customer",
+            "text": "لازم صوره"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هذا هويتها"
+        },
+        {
+            "role": "customer",
+            "text": "0532475212"
+        },
+        {
+            "role": "customer",
+            "text": "طيب خلي اتواصل معهم وارد لك خبر"
+        },
+        {
+            "role": "customer",
+            "text": "الوو"
+        },
+        {
+            "role": "customer",
+            "text": "كلموني يقولن النفاذ جاهز"
+        },
+        {
+            "role": "customer",
+            "text": "بالله تكفى لان يشهد الله اني البنزين ان قده على تحت الربع"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "ولاشي"
+        },
+        {
+            "role": "customer",
+            "text": "قصدك قرض"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "ماعليها شي"
+        },
+        {
+            "role": "customer",
+            "text": "7610"
+        },
+        {
+            "role": "customer",
+            "text": "3174"
+        },
+        {
+            "role": "customer",
+            "text": "9600"
+        },
+        {
+            "role": "customer",
+            "text": "45"
+        },
+        {
+            "role": "customer",
+            "text": "ريال"
+        },
+        {
+            "role": "customer",
+            "text": "9645"
+        },
+        {
+            "role": "customer",
+            "text": "طيب انا مابتمشي"
+        },
+        {
+            "role": "customer",
+            "text": "لي"
+        },
+        {
+            "role": "customer",
+            "text": "القسايم"
+        },
+        {
+            "role": "customer",
+            "text": "وامكان"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "طيب شف اخوك اذا بيقدر يحول لي اي شي ولابتقدر تكمل لي المبلغ حق الارضيه"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تمام"
+        },
+        {
+            "role": "customer",
+            "text": "يعطيك العافيه"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الله امين"
+        },
+        {
+            "role": "customer",
+            "text": "يزينها الله"
+        },
+        {
+            "role": "customer",
+            "text": "الوو"
+        },
+        {
+            "role": "customer",
+            "text": "سلام"
+        },
+        {
+            "role": "customer",
+            "text": "يسعد صباحك"
+        },
+        {
+            "role": "customer",
+            "text": "الوو"
+        },
+        {
+            "role": "customer",
+            "text": "سلام"
+        },
+        {
+            "role": "customer",
+            "text": "اقلك تكفى ابغى تحول الفلوس اذا بتقدر الحين لا الدفن أجلته إلى بكره عشان يجونا اخوت امي وعماني فدخلتها الثلاجه الله يحرم ذاك الوجه ويجعلها في جنات النعيم يارب العالمين"
+        },
+        {
+            "role": "customer",
+            "text": "فإذا تقدر تحول لي الحين تكفى لان ابغى احجز أغراض هنا"
+        },
+        {
+            "role": "customer",
+            "text": "الله لاهينك"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 18.21290568, 42.49499701]"
+        },
+        {
+            "role": "customer",
+            "text": "هذا الموقع"
+        },
+        {
+            "role": "customer",
+            "text": "وصلت الله يبيض وجهك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "وصلت الله يبيض وجهك"
+        },
+        {
+            "role": "customer",
+            "text": "انشد انك من رأس قووم"
+        },
+        {
+            "role": "customer",
+            "text": "والله أنشأ الله"
+        },
+        {
+            "role": "customer",
+            "text": "ابو قلبي"
+        },
+        {
+            "role": "customer",
+            "text": "ابغى باقي 150عشان احجز رحله لااختي في تبوك وماعد الساعتين واحولها لك الفلوس كلها"
+        },
+        {
+            "role": "customer",
+            "text": "لان ماعد معي 100"
+        },
+        {
+            "role": "customer",
+            "text": "طيب تمام لاني ابغى الحق رحله عليها عرض"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

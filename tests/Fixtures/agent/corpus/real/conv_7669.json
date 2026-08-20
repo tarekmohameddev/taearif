@@ -1,0 +1,471 @@
+{
+    "type": "real_conversation",
+    "id": "conv_7669",
+    "tenant_id": 1507,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "اهلاً \nمساء الخير \nعندكم  غرفتين  وصالة عزاب ؟"
+        },
+        {
+            "role": "customer",
+            "text": "اهلاً \nمساء الخير \nعندكم  غرفتين  وصالة عزاب ؟"
+        },
+        {
+            "role": "customer",
+            "text": "بكم الايجار الشهري"
+        },
+        {
+            "role": "customer",
+            "text": "واذا فيه صور ي ليت"
+        },
+        {
+            "role": "customer",
+            "text": "بريدة"
+        },
+        {
+            "role": "customer",
+            "text": "ويفضل شرق بريدة"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل لي الموقع"
+        },
+        {
+            "role": "customer",
+            "text": "ابي اشوفهم الان"
+        },
+        {
+            "role": "customer",
+            "text": "والصور اذا فيه"
+        },
+        {
+            "role": "customer",
+            "text": "هذي غرفة وصالة \nابي غرفتين وصالة"
+        },
+        {
+            "role": "customer",
+            "text": "بكم الغرفتين وصالة حقت الفايزية"
+        },
+        {
+            "role": "customer",
+            "text": "."
+        },
+        {
+            "role": "customer",
+            "text": "موقع المكتب"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبنا"
+        },
+        {
+            "role": "customer",
+            "text": "اي دور لا هنت"
+        },
+        {
+            "role": "customer",
+            "text": "ورقم الشقة"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "اي وصلت"
+        },
+        {
+            "role": "customer",
+            "text": "راجع لك"
+        },
+        {
+            "role": "customer",
+            "text": "الان تمام"
+        },
+        {
+            "role": "customer",
+            "text": "ايوا اعتمده"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "حولت المبلغ كامل"
+        },
+        {
+            "role": "customer",
+            "text": "ي ليت تشوف وضع غسيل الشقة 🙏"
+        },
+        {
+            "role": "customer",
+            "text": "تمام الان"
+        },
+        {
+            "role": "customer",
+            "text": "الهوية الوطنية .jpg"
+        },
+        {
+            "role": "customer",
+            "text": "ي ليت تخلص قبل الساعة 2 الظهر 🙏"
+        },
+        {
+            "role": "customer",
+            "text": "عشان انقل وم نتبهذل 🙏"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبنا الشيخ"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "ايش صار لاهنت"
+        },
+        {
+            "role": "customer",
+            "text": "انا جاهز اي وقت"
+        },
+        {
+            "role": "customer",
+            "text": "المهم نخلص ع 12"
+        },
+        {
+            "role": "customer",
+            "text": "عشان يمدي انقل قبل اسوي تشيك اوت للفندق"
+        },
+        {
+            "role": "customer",
+            "text": "تمام بشوف الان"
+        },
+        {
+            "role": "customer",
+            "text": "لكن هل ممكن احصل عامل ب 30 ؟"
+        },
+        {
+            "role": "customer",
+            "text": "انا والله حسابي م به الا 50 لاني دفعت كل شيء للايجار 😂"
+        },
+        {
+            "role": "customer",
+            "text": "ايوا اجيك"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "قدامك انا بكون بالموقع"
+        },
+        {
+            "role": "customer",
+            "text": "تمام 👍"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "بكرة ان شاء الله بعد صلاة العشاء"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "دورات المياه خلص الماء الي فيها !"
+        },
+        {
+            "role": "customer",
+            "text": "بالنسبة للثلاجة اليوم بمر عليكم باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "موجود انا بالشقة"
+        },
+        {
+            "role": "customer",
+            "text": "الان الى العصر"
+        },
+        {
+            "role": "customer",
+            "text": "وبالله شف الماء"
+        },
+        {
+            "role": "customer",
+            "text": "خلص"
+        },
+        {
+            "role": "customer",
+            "text": "تبشر بالجنة"
+        },
+        {
+            "role": "customer",
+            "text": "هلا وسهلاً"
+        },
+        {
+            "role": "customer",
+            "text": "الليلة بحولكم باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "بس يكمل المبلغ"
+        },
+        {
+            "role": "customer",
+            "text": "الليلة بحولك لكم باذن الله \nلكن احتاج اقابلك بالمكتب"
+        },
+        {
+            "role": "customer",
+            "text": "متى تكون بالمكتب"
+        },
+        {
+            "role": "customer",
+            "text": "1- الاثاث غير مريح اطلاقاً ولا يتناسب مع سعر الايجار سواء كنب الصالة او الاسرة \n2- دورة المياة التي بجانب المطبخ طافية م يوصلها ماء + الشفاط م يشتغل\n3- المطبخ م يوصله ماء + الشفاط م يشتغل"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "TransferReceipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "موجود الان"
+        },
+        {
+            "role": "customer",
+            "text": "الى الفجر"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "اي باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "برا انا"
+        },
+        {
+            "role": "customer",
+            "text": "خله ينتظر ساعة كذا"
+        },
+        {
+            "role": "customer",
+            "text": "بالعيادة انا عندي اجتماع"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن اخلص قبل ساعة كذا"
+        },
+        {
+            "role": "customer",
+            "text": "لا والله"
+        },
+        {
+            "role": "customer",
+            "text": "خله ينتظر اذا يقدر"
+        },
+        {
+            "role": "customer",
+            "text": "م اتوقع بطول"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اها"
+        },
+        {
+            "role": "customer",
+            "text": "لا الثلاجة لسى م جات"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "يقول العامل انه ضبط بس باقي يوصل الماء من فوق السطح"
+        },
+        {
+            "role": "customer",
+            "text": "ومشى"
+        },
+        {
+            "role": "customer",
+            "text": "اي بدا يصب شوي شوب"
+        },
+        {
+            "role": "customer",
+            "text": "اي بدا يصب شوي شوي"
+        },
+        {
+            "role": "customer",
+            "text": "يبتل كذا ؟ والا كيف ؟"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "ايه موجود"
+        },
+        {
+            "role": "customer",
+            "text": "لاهنت وش وضع النت DSL ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "الماء قاضي من امس"
+        },
+        {
+            "role": "customer",
+            "text": "الماء مخلص من امس"
+        },
+        {
+            "role": "customer",
+            "text": "اي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "من البارح كذا"
+        },
+        {
+            "role": "customer",
+            "text": "اي موجود"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "اي فيها ماء"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "اي موجودين"
+        },
+        {
+            "role": "customer",
+            "text": "موجود انا طول اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "اي"
+        },
+        {
+            "role": "customer",
+            "text": "كانت مفتوحة مو مقفله"
+        },
+        {
+            "role": "customer",
+            "text": "قفلتها"
+        },
+        {
+            "role": "customer",
+            "text": "واياك"
+        },
+        {
+            "role": "customer",
+            "text": "تمام 👍"
+        },
+        {
+            "role": "customer",
+            "text": "بدا يصب ع الخفيف"
+        },
+        {
+            "role": "customer",
+            "text": "اي وصل م قصرت"
+        },
+        {
+            "role": "customer",
+            "text": "اممممممم"
+        },
+        {
+            "role": "customer",
+            "text": "لا كذا اوفر 😂"
+        },
+        {
+            "role": "customer",
+            "text": "انا ولد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "."
+        },
+        {
+            "role": "customer",
+            "text": "ع نفس الحساب احول؟"
+        },
+        {
+            "role": "customer",
+            "text": "شوضع النت؟"
+        },
+        {
+            "role": "customer",
+            "text": "من شهرين ولا صار شيء ؟"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

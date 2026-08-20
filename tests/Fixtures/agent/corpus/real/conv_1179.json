@@ -1,0 +1,299 @@
+{
+    "type": "real_conversation",
+    "id": "conv_1179",
+    "tenant_id": 1292,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "برجع لك المفتاح"
+        },
+        {
+            "role": "customer",
+            "text": "والله يجزاك خير اعرضها مره ثانيه\nمكتبكم كبير و زباينكم كثير\nمو صعبه يجيكم زبون حاب الشقه و راغب يستاجرها\nو العموله اللي راح يدفعها لك الزبون ادفعلك زيها \nلكن يا ابن الحلال فكني من هذي الشقه و هذا العقد باقي فيه 6 شهور \nمبلغ و قدره يندفع فيها شهريا حرام وهي معروضه عندكم"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه م حصلنا مستاجر يناسب رايز"
+        },
+        {
+            "role": "customer",
+            "text": "بشوف المكتب يركعه لم انا من امس كلمته ع اساس يجيبه لكم امس"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "وصل لكم المفتاح ؟"
+        },
+        {
+            "role": "customer",
+            "text": "طيب بشوفه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "انا برا الرياض"
+        },
+        {
+            "role": "customer",
+            "text": "وصل لكم المفتاح"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "بشر فيه مستاجرين"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "مافي خبر"
+        },
+        {
+            "role": "customer",
+            "text": "تمام \nبخصوص هذا الشهر تم تسديده\nاذا سكن خلال هذي المده يسددني المتبقي من شهر فبراير"
+        },
+        {
+            "role": "customer",
+            "text": "بيشوف الشقه"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "المتبقي منه خمس شهور بقيمه \n15,418\nمع المتبقي من شهر هذا الشهر (فبراير)"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "وقت مناسب للاتصال؟"
+        },
+        {
+            "role": "customer",
+            "text": "لو سمحت ليه الكهربا مو شغاله بالشقه"
+        },
+        {
+            "role": "customer",
+            "text": "وين الفواتير"
+        },
+        {
+            "role": "customer",
+            "text": "م تجيني"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "لان م تجيني لا فواتير ولا شي"
+        },
+        {
+            "role": "customer",
+            "text": "و شغاله الكهربا"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "العقد حاليا تحت التقبيل شغالين عالاجراءات"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "الرسايل كانت تجي عليه ؟"
+        },
+        {
+            "role": "customer",
+            "text": "مافي رقم عداد كهربا"
+        },
+        {
+            "role": "customer",
+            "text": "يعني ماهي موثقه بالعقد"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "اتصلت على 933 يقول الرقم خاطئ"
+        },
+        {
+            "role": "customer",
+            "text": "م يستقبل الاتصالات يحول على 933"
+        },
+        {
+            "role": "customer",
+            "text": "المشكله ب رقم الحساب"
+        },
+        {
+            "role": "customer",
+            "text": "مين اللي كانت تجيه رسايل الفواتير؟"
+        },
+        {
+            "role": "customer",
+            "text": "حتى بالموقع جربت"
+        },
+        {
+            "role": "customer",
+            "text": "تم سدادها"
+        },
+        {
+            "role": "customer",
+            "text": "تقدر تشوف اذا الكهربا اشتغلت ولالا"
+        },
+        {
+            "role": "customer",
+            "text": "كويس"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم \nتم تقبيل العقد للمستأجر الجديد \nبيتواصل معك ياخذ المفتاح"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "ايش صار؟"
+        },
+        {
+            "role": "customer",
+            "text": "م اخذ المفتاح؟"
+        },
+        {
+            "role": "customer",
+            "text": "هو يتواصل معك قال لي"
+        },
+        {
+            "role": "customer",
+            "text": "انا عطيتك خبر"
+        },
+        {
+            "role": "customer",
+            "text": "مين بيعطيك خبر؟"
+        },
+        {
+            "role": "customer",
+            "text": "طيب وهذا ايش"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "نقلناها ب اسمه خلاص"
+        },
+        {
+            "role": "customer",
+            "text": "خلصنا الاجراءات مع وايز"
+        },
+        {
+            "role": "customer",
+            "text": "مهدي العامري"
+        },
+        {
+            "role": "customer",
+            "text": "محد محدد"
+        },
+        {
+            "role": "customer",
+            "text": "خدمه العملاء عندهم"
+        },
+        {
+            "role": "customer",
+            "text": "خلصنا التقبيل"
+        },
+        {
+            "role": "customer",
+            "text": "رقم رايز الواتس"
+        },
+        {
+            "role": "customer",
+            "text": "رقم الشركه"
+        },
+        {
+            "role": "customer",
+            "text": "مو احد محدد"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مافي شي اسمه مستند"
+        },
+        {
+            "role": "customer",
+            "text": "الا اذا كلمنا رايز ممكن يعطوك شي ك اثبات"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مافي عقد ب اسمي \nمذكور فقط بالطلبات السابقه"
+        },
+        {
+            "role": "customer",
+            "text": "واضح لك بالصوره"
+        },
+        {
+            "role": "customer",
+            "text": "مكتمل"
+        },
+        {
+            "role": "customer",
+            "text": "ليش تحتاج تتاكد وانا قاعده اقولك قبلناه"
+        },
+        {
+            "role": "customer",
+            "text": "تقدر تكلم مهدي العامري المستاجر الجديد و تشوف العقد عنده"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "شكرا لك"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

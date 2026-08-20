@@ -135,6 +135,111 @@ class RepositoryServiceProvider extends ServiceProvider
                 );
             }
         );
+
+        // Calling module — bind AMI client interface to the real client in production.
+        // In tests, swap to FakeAmiClient via $this->app->instance(AmiClientInterface::class, new FakeAmiClient()).
+        $this->app->bind(
+            \App\Domain\Calling\Contracts\AmiClientInterface::class,
+            function ($app) {
+                return new \App\Domain\Calling\Services\AmiClient(
+                    host:     config('calling.ami.host'),
+                    port:     config('calling.ami.port'),
+                    username: config('calling.ami.username'),
+                    secret:   config('calling.ami.secret'),
+                    timeout:  config('calling.ami.timeout', 10),
+                );
+            }
+        );
+
+        $this->app->singleton(
+            \App\Domain\Calling\Repositories\AsteriskRealtimeRepository::class
+        );
+
+        $this->app->singleton(
+            \App\Domain\Calling\Services\SipProvisioningService::class
+        );
+
+        $this->app->singleton(
+            \App\Domain\Calling\Services\PhoneNumberService::class
+        );
+
+        $this->app->singleton(
+            \App\Domain\Calling\Services\CallOriginationService::class
+        );
+
+        // ── WhatsApp AI Bot ─────────────────────────────────────────────────
+        $this->app->singleton(\App\Domain\Ai\Services\LlmDriverFactory::class);
+        $this->app->singleton(\App\Domain\Ai\Services\UsageRecorder::class);
+        $this->app->singleton(\App\Domain\Ai\Services\CredentialResolver::class);
+
+        $this->app->singleton(\App\Domain\Ai\Knowledge\EmbeddingService::class, function () {
+            return new \App\Domain\Ai\Knowledge\EmbeddingService(
+                openAiApiKey: (string) config('openai.api_key', '')
+            );
+        });
+
+        $this->app->singleton(\App\Domain\Ai\Knowledge\RetrievalService::class);
+
+        $this->app->singleton(\App\Domain\Ai\Services\LocationResolver::class);
+
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\Tools\PropertySearchTool::class, function ($app) {
+            return new \App\Domain\Communication\WhatsApp\Bot\Tools\PropertySearchTool(
+                searchService: $app->make(\App\Services\Matching\PropertySearchService::class),
+                locationResolver: $app->make(\App\Domain\Ai\Services\LocationResolver::class),
+            );
+        });
+
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\ListingLinkResolver::class);
+
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\CrmFlywheelService::class);
+
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\DeliveryService::class, function ($app) {
+            return new \App\Domain\Communication\WhatsApp\Bot\DeliveryService(
+                commService: $app->make(\App\Domain\Communication\Services\CommunicationServiceImpl::class),
+            );
+        });
+
+        // ── AI Employee v2 ──────────────────────────────────────────────────
+        $this->app->singleton(\App\Domain\RealEstateAgent\Safety\PolicyGate::class, function () {
+            return new \App\Domain\RealEstateAgent\Safety\PolicyGate(
+                compliance: new \App\Domain\Communication\WhatsApp\Bot\ComplianceService(),
+                handoff:    new \App\Domain\Communication\WhatsApp\Bot\HandoffService(),
+            );
+        });
+
+        $this->app->singleton(\App\Domain\RealEstateAgent\Delivery\HumanCadence::class, function ($app) {
+            return new \App\Domain\RealEstateAgent\Delivery\HumanCadence(
+                commService: $app->make(\App\Domain\Communication\Services\CommunicationServiceImpl::class),
+            );
+        });
+
+        $this->app->singleton(\App\Domain\Ai\Agent\Telemetry\TraceRecorder::class);
+
+        $this->app->singleton(\App\Domain\RealEstateAgent\Brain\Employee::class, function ($app) {
+            return new \App\Domain\RealEstateAgent\Brain\Employee(
+                driverFactory:       $app->make(\App\Domain\Ai\Services\LlmDriverFactory::class),
+                usageRecorder:       $app->make(\App\Domain\Ai\Services\UsageRecorder::class),
+                propertySearchTool:  $app->make(\App\Domain\Communication\WhatsApp\Bot\Tools\PropertySearchTool::class),
+                embeddingService:    $app->make(\App\Domain\Ai\Knowledge\EmbeddingService::class),
+                retrievalService:    $app->make(\App\Domain\Ai\Knowledge\RetrievalService::class),
+                humanCadence:        $app->make(\App\Domain\RealEstateAgent\Delivery\HumanCadence::class),
+                handoffService:      new \App\Domain\Communication\WhatsApp\Bot\HandoffService(),
+                complianceService:   new \App\Domain\Communication\WhatsApp\Bot\ComplianceService(),
+                policyGate:          $app->make(\App\Domain\RealEstateAgent\Safety\PolicyGate::class),
+                citationGuard:       new \App\Domain\RealEstateAgent\Safety\CitationGuard(),
+                replyRenderer:       new \App\Domain\RealEstateAgent\Safety\ReplyRenderer(),
+                briefMerger:         new \App\Domain\RealEstateAgent\State\BriefMerger(),
+                personaComposer:     new \App\Domain\RealEstateAgent\Brain\PersonaComposer(),
+                traceRecorder:       $app->make(\App\Domain\Ai\Agent\Telemetry\TraceRecorder::class),
+                crmFlywheel:         $app->make(\App\Domain\Communication\WhatsApp\Bot\CrmFlywheelService::class),
+            );
+        });
+
+        $this->app->singleton(\App\Domain\Communication\WhatsApp\Bot\SandboxService::class, function ($app) {
+            return new \App\Domain\Communication\WhatsApp\Bot\SandboxService(
+                employee: $app->make(\App\Domain\RealEstateAgent\Brain\Employee::class),
+            );
+        });
     }
 
     /**

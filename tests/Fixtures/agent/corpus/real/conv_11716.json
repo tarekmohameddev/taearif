@@ -1,0 +1,559 @@
+{
+    "type": "real_conversation",
+    "id": "conv_11716",
+    "tenant_id": 1557,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاتة"
+        },
+        {
+            "role": "customer",
+            "text": "بكلمك بخصوص مشروع الخبر"
+        },
+        {
+            "role": "customer",
+            "text": "دي الواجهه صح"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هتكون هنا واستيكر"
+        },
+        {
+            "role": "customer",
+            "text": "هلا حبيبنا"
+        },
+        {
+            "role": "customer",
+            "text": "بلغني بالله تشتغل المشروع عشان عندنا شغل ف لازم ارتب الوضع"
+        },
+        {
+            "role": "customer",
+            "text": "؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "ايه طبعا ادري"
+        },
+        {
+            "role": "customer",
+            "text": "تمام ي غالي"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي المقاسات بقي"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "المتر تركيب شامل الازاله 80 ريال ومبلغ فيه ابو محمد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "التصاميم دي مش زي اللي بالدليل"
+        },
+        {
+            "role": "customer",
+            "text": "الإرشادي"
+        },
+        {
+            "role": "customer",
+            "text": "كده مخالفه"
+        },
+        {
+            "role": "customer",
+            "text": "وترا المراقب اللي بالخبر والله صعب مره"
+        },
+        {
+            "role": "customer",
+            "text": "يجلد مخالفات"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "دليل التسويق والهوية البصرية للمزادات V2.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "فين السبع لوحات"
+        },
+        {
+            "role": "customer",
+            "text": "الفلل"
+        },
+        {
+            "role": "customer",
+            "text": "تمام ي ريس"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "؛ ََََََ"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي ي ريس اللوحات بي دي اف"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "ي ريس بتصل عليك"
+        },
+        {
+            "role": "customer",
+            "text": "بشر"
+        },
+        {
+            "role": "customer",
+            "text": "اطبع؟"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "حولنا دفعه ي غالي"
+        },
+        {
+            "role": "customer",
+            "text": "مصرف الإنماء\n رقم الحساب : 68205827276000\nآيبان: SA6905000068205827276000"
+        },
+        {
+            "role": "customer",
+            "text": "7000"
+        },
+        {
+            "role": "customer",
+            "text": "تمام ي ريس"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي المواقع ي عمده"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "تمام ي غالي"
+        },
+        {
+            "role": "customer",
+            "text": "لو صور العقارات بس"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ي عمدهر"
+        },
+        {
+            "role": "customer",
+            "text": "ي عمده"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الامواج"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ي ريس"
+        },
+        {
+            "role": "customer",
+            "text": "التحويل بالله"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم ي عمده"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ي عمده"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر ي ريس"
+        },
+        {
+            "role": "customer",
+            "text": "خلي بالك بردوا اللوحه تحت ف الارض"
+        },
+        {
+            "role": "customer",
+            "text": "مش ع التجاري فوق"
+        },
+        {
+            "role": "customer",
+            "text": "بس بعدلها حاضن"
+        },
+        {
+            "role": "customer",
+            "text": "حاضر"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه ايوه حاضر"
+        },
+        {
+            "role": "customer",
+            "text": "ترسلي التصمبم"
+        },
+        {
+            "role": "customer",
+            "text": "والموقعز"
+        },
+        {
+            "role": "customer",
+            "text": "التجاريه اللي بنرها متقطع"
+        },
+        {
+            "role": "customer",
+            "text": "صح"
+        },
+        {
+            "role": "customer",
+            "text": "ولا السكنيه"
+        },
+        {
+            "role": "customer",
+            "text": "1 copy.jpg"
+        },
+        {
+            "role": "customer",
+            "text": "بكره الصباح عندك الصور بإذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "الفكره في الطباعه والله انا مهتم بالموضوع مش ساكت يعني"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "اي خدمات تاني ي كبير"
+        },
+        {
+            "role": "customer",
+            "text": "تم تعديل اللوحتين"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبي ي ريس"
+        },
+        {
+            "role": "customer",
+            "text": "اكيد ي ريس"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

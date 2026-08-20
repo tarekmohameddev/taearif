@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api\V1\WhatsApp;
 
 use App\Http\Controllers\Api\BaseApiController;
+use App\Models\WaAiResponseLog;
 use App\Models\WaCampaign;
+use App\Models\WaConversationState;
 use App\Models\WaMessageLog;
 use Illuminate\Http\JsonResponse;
 
@@ -32,6 +34,38 @@ class StatsController extends BaseApiController
             'total_failed' => $totalFailed,
             'delivery_rate' => $deliveryRate,
             'this_month_sent' => $thisMonthSent,
+        ]);
+    }
+
+    /**
+     * Overview page KPI summary — all three stats in a single call.
+     *
+     * GET /api/v1/whatsapp/dashboard-summary
+     */
+    public function dashboardSummary(): JsonResponse
+    {
+        $userId = (int) auth()->user()->tenantOwnerId();
+
+        $botRepliesThisMonth = WaAiResponseLog::query()
+            ->where('user_id', $userId)
+            ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->count();
+
+        $activeConversations = WaConversationState::query()
+            ->where('user_id', $userId)
+            ->where('status', 'active')
+            ->count();
+
+        $messagesThisMonth = WaMessageLog::query()
+            ->where('user_id', $userId)
+            ->whereIn('status', ['sent', 'delivered'])
+            ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->count();
+
+        return $this->ok([
+            'bot_replies_this_month' => $botRepliesThisMonth,
+            'active_conversations'   => $activeConversations,
+            'messages_this_month'    => $messagesThisMonth,
         ]);
     }
 }

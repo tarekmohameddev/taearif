@@ -1,0 +1,319 @@
+{
+    "type": "real_conversation",
+    "id": "conv_1768",
+    "tenant_id": 1478,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "وعليكم السلام \nب اذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "وش صار عليها"
+        },
+        {
+            "role": "customer",
+            "text": "ممتاز"
+        },
+        {
+            "role": "customer",
+            "text": "الوقت غير مناسب"
+        },
+        {
+            "role": "customer",
+            "text": "هلا وسهلا"
+        },
+        {
+            "role": "customer",
+            "text": "المعذره والله"
+        },
+        {
+            "role": "customer",
+            "text": "نقدر الان"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "هلا بك الان مناسب"
+        },
+        {
+            "role": "customer",
+            "text": "هلا بك"
+        },
+        {
+            "role": "customer",
+            "text": "اي نعم"
+        },
+        {
+            "role": "customer",
+            "text": "الي هي لهذي صح"
+        },
+        {
+            "role": "customer",
+            "text": "1030573040"
+        },
+        {
+            "role": "customer",
+            "text": "اعد الارسال"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "صح"
+        },
+        {
+            "role": "customer",
+            "text": "خلصنا صح"
+        },
+        {
+            "role": "customer",
+            "text": "جزاك الله الف خير"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمة الله وبركاته \nهلابك\nوصل المبلغ الله يجزاك خير"
+        },
+        {
+            "role": "customer",
+            "text": "انشاء الله احول لك \nبعد المساء"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام والرحمه"
+        },
+        {
+            "role": "customer",
+            "text": "تمام ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "اعتذر عن التاخير"
+        },
+        {
+            "role": "customer",
+            "text": "سددت الرسوم"
+        },
+        {
+            "role": "customer",
+            "text": "ماادري الصوره مو واضحه"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام والرحمه"
+        },
+        {
+            "role": "customer",
+            "text": "ينفع الان"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام حياك الله"
+        },
+        {
+            "role": "customer",
+            "text": "يلا"
+        },
+        {
+            "role": "customer",
+            "text": "1030573040"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "4842"
+        },
+        {
+            "role": "customer",
+            "text": "5971"
+        },
+        {
+            "role": "customer",
+            "text": "هذا للارضين صح"
+        },
+        {
+            "role": "customer",
+            "text": "الثانيه وش وضعه"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسهل"
+        },
+        {
+            "role": "customer",
+            "text": "9527"
+        },
+        {
+            "role": "customer",
+            "text": "3099"
+        },
+        {
+            "role": "customer",
+            "text": "خذ وقتك"
+        },
+        {
+            "role": "customer",
+            "text": "لا مع الاسف ما اكون عند جوال الوالده"
+        },
+        {
+            "role": "customer",
+            "text": "من 6 المغرب مناسب"
+        },
+        {
+            "role": "customer",
+            "text": "الله يوفقك"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "حلو"
+        },
+        {
+            "role": "customer",
+            "text": "9 صكوك صح"
+        },
+        {
+            "role": "customer",
+            "text": "الحمد الله الف شكر"
+        },
+        {
+            "role": "customer",
+            "text": "كيف"
+        },
+        {
+            "role": "customer",
+            "text": "الحين تحديث الصكوك ب ورفعها ب البورصة العقارية \n\nمختلف عن الي تبع السجل العقاري"
+        },
+        {
+            "role": "customer",
+            "text": "طيب وش اسوي الان وش الخطه"
+        },
+        {
+            "role": "customer",
+            "text": "حلو"
+        },
+        {
+            "role": "customer",
+            "text": "اي ذكرت انا حاولت ادخلها لكن كان المشكله تحديد الموقع"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "اي الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "7098"
+        },
+        {
+            "role": "customer",
+            "text": "9643"
+        },
+        {
+            "role": "customer",
+            "text": "3863"
+        },
+        {
+            "role": "customer",
+            "text": "5410"
+        },
+        {
+            "role": "customer",
+            "text": "3437"
+        },
+        {
+            "role": "customer",
+            "text": "2601"
+        },
+        {
+            "role": "customer",
+            "text": "4375"
+        },
+        {
+            "role": "customer",
+            "text": "1006"
+        },
+        {
+            "role": "customer",
+            "text": "الله يوفقك"
+        },
+        {
+            "role": "customer",
+            "text": "على خير"
+        },
+        {
+            "role": "customer",
+            "text": "اللهم أهله علينا بالأمن والإيمان والسلامة والإسلام \nمبارك قدوم شهر الخير \nوتقبل منا ومنكم صالح الأعمال."
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم \nوش صار عليها"
+        },
+        {
+            "role": "customer",
+            "text": "لاي واحد"
+        },
+        {
+            "role": "customer",
+            "text": "اي ممتاز بس يبقى القطعه الي جنبه"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعافيك"
+        },
+        {
+            "role": "customer",
+            "text": "انا جاهز اذا تبي الدخول"
+        },
+        {
+            "role": "customer",
+            "text": "او نخليهم جميع"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمة الله وبركاته \nايه وصل الله يجزاك الجنه"
+        },
+        {
+            "role": "customer",
+            "text": "ان شاء الله احول لك \nبس تقوم بنتي احول لك"
+        },
+        {
+            "role": "customer",
+            "text": "هلابك\nترى حولت المبلغ\nواسفه على التاخير"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

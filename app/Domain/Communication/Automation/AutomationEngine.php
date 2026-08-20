@@ -3,8 +3,10 @@
 namespace App\Domain\Communication\Automation;
 
 use App\Domain\Communication\Services\AIResponderService;
+use App\Domain\RealEstateAgent\Brain\Employee;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\WaAiConfig;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
@@ -64,6 +66,36 @@ class AutomationEngine
 
             RateLimiter::hit($throttleKey, $windowSeconds);
             Cache::put($dedupeKey, true, self::DEDUPE_TTL_SECONDS);
+
+            // ── New bot pipeline ──────────────────────────────────────────
+            $meta = is_array($message->meta) ? $message->meta : [];
+            $waNumberId = (int) ($meta['wa_number_id'] ?? 0);
+            $tenantId = (int) $message->user_id;
+
+            $botConfig = $waNumberId > 0
+                ? WaAiConfig::where('user_id', $tenantId)->where('wa_number_id', $waNumberId)->where('enabled', true)->first()
+                : null;
+
+            if ($botConfig !== null && in_array($botConfig->autonomy_level, ['shadow', 'autonomous'], true)) {
+                $rawPayload = is_array($meta['raw_payload'] ?? null) ? $meta['raw_payload'] : [];
+                $customerPhone = (string) (
+                    $meta['from']
+                    ?? $meta['customer_phone']
+                    ?? $rawPayload['from']
+                    ?? $message->conversation?->external_party_identifier
+                    ?? ''
+                );
+                $conversationId = (int) $message->conversation_id;
+                app(Employee::class)->runTurn(
+                    $tenantId,
+                    $conversationId,
+                    $waNumberId,
+                    $customerPhone,
+                    $message,
+                );
+                return;
+            }
+            // ── Legacy suggestion (log-only) ──────────────────────────────
 
             $suggestion = $this->aiResponderService->suggestReply($message, []);
             if ($suggestion === null || $suggestion === '') {

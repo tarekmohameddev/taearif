@@ -20,8 +20,8 @@ class AIResponderService
             return null;
         }
 
-        $apiKey = env('OPENAI_API_KEY');
-        if ($apiKey === null || $apiKey === '') {
+        $apiKey = (string) config('openai.api_key', '');
+        if ($apiKey === '') {
             Log::warning('AIResponderService: OPENAI_API_KEY missing, skipping suggestion');
             return null;
         }
@@ -38,7 +38,7 @@ class AIResponderService
 
             $prompt = 'Suggest a brief, professional reply to this message. One or two short sentences only. Do not include URLs unless the message explicitly asks for a link.';
             $response = $client->chat()->create([
-                'model' => env('OPENAI_CHAT_MODEL', 'gpt-4o-mini'),
+                'model' => (string) config('openai.chat_model', 'gpt-4o-mini'),
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt . "\n\nMessage: " . $content],
                 ],

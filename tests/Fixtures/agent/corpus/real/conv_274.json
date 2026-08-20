@@ -1,0 +1,779 @@
+{
+    "type": "real_conversation",
+    "id": "conv_274",
+    "tenant_id": 1557,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "48 نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "صاحي يا رايس"
+        },
+        {
+            "role": "customer",
+            "text": "ابو عبدالله"
+        },
+        {
+            "role": "customer",
+            "text": "27 نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "ابو محمد يقولك تفاهم معة"
+        },
+        {
+            "role": "customer",
+            "text": "55 نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "38"
+        },
+        {
+            "role": "customer",
+            "text": "نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "87"
+        },
+        {
+            "role": "customer",
+            "text": "نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "ابو عبدالله الله يحفظك ارسلي موقع عمارة الشايع"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "84"
+        },
+        {
+            "role": "customer",
+            "text": "59"
+        },
+        {
+            "role": "customer",
+            "text": "22"
+        },
+        {
+            "role": "customer",
+            "text": "معلش"
+        },
+        {
+            "role": "customer",
+            "text": "مش جي يظبط"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "69 نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "92"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "SadadVoucherPdf - 2026-01-14T201125.912.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "SadadVoucherPdf - 2026-01-14T201039.195.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "20403228927.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "10714876567 (1).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Screenshot 2025-12-02 110403.png"
+        },
+        {
+            "role": "customer",
+            "text": "لقطة الشاشة 2026-01-15 184117.jpg"
+        },
+        {
+            "role": "customer",
+            "text": "باقي الصور 2.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "باقي الصور.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Book1.xlsx"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح الرقم"
+        },
+        {
+            "role": "customer",
+            "text": "10573434702.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "SadadVoucherPdf - 2026-01-22T213100.571.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Letter of authorization (4).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "نموذج تسليم .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "هذا نموذج فارع"
+        },
+        {
+            "role": "customer",
+            "text": "ايش اسمه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "نموذج تسليم -1.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي رقم جوال محمود"
+        },
+        {
+            "role": "customer",
+            "text": "0541611151"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تم استلام المفتاح"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "كيف الحال"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "Invoice-00142.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "10"
+        },
+        {
+            "role": "customer",
+            "text": "نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هذا المبلغ معك"
+        },
+        {
+            "role": "customer",
+            "text": "مظبوط"
+        },
+        {
+            "role": "customer",
+            "text": "ليه"
+        },
+        {
+            "role": "customer",
+            "text": "اية المتبقي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام يا باشا"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعطيك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "0556650779"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "SadadVoucherPdf - 2026-02-11T184656.042.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "20612538813.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "شقة 6 عمارة الشايع"
+        },
+        {
+            "role": "customer",
+            "text": "SadadVoucherPdf - 2026-02-11T190951.667.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "10343154929.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "تعالة دقيقة الله يحفظك"
+        },
+        {
+            "role": "customer",
+            "text": "18687.5"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "20 نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "10039157997.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "SadadVoucherPdf - 2026-02-15T185456.524.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "تعالي شوي يا رايس الله لا يهينك"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "تعالة يا رايس"
+        },
+        {
+            "role": "customer",
+            "text": "كلم ابو محمد"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "39"
+        },
+        {
+            "role": "customer",
+            "text": "نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "10"
+        },
+        {
+            "role": "customer",
+            "text": "نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "54 نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "يا ابو عبدالله"
+        },
+        {
+            "role": "customer",
+            "text": "ارض الخالدية"
+        },
+        {
+            "role": "customer",
+            "text": "ACCOUNT_STATEMENT_DETAILS_1769425712895.PDF"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt-59.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "سداد الأصل رقم 259025"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "سداد الأصل رقم 259983"
+        },
+        {
+            "role": "customer",
+            "text": "Caches22012026_1769078446264.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "سداد الأصل رقم 259809"
+        },
+        {
+            "role": "customer",
+            "text": "سداد الأصل رقم 255900"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt-55.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "سداد الأصل رقم 249344"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "سداد الأصل INH223171"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "سداد الأصل رقم INH373986"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt-54.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عقار الشفاء.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "معلومات المشترين في مـزاد نـمـاء الـبـاطــن.xlsx"
+        },
+        {
+            "role": "customer",
+            "text": "21"
+        },
+        {
+            "role": "customer",
+            "text": "نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "66 نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "SadadVoucherPdf - 2026-03-01T154123.450.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "10650336397.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "SadadVoucherPdf - 2026-03-02T010613.540.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "10101010.xlsx"
+        },
+        {
+            "role": "customer",
+            "text": "10101010.xlsx"
+        },
+        {
+            "role": "customer",
+            "text": "مزاد فيض الخبر copy (1).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "بروشور مزاد مساكن الخبر.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عقود الايجار copy.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "بروشور مزاد هامات الرباض copy.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "بروشور مزاد مساكن الخبر.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مزاد فيض الخبر copy (1).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "بروشور مزاد مساكن الخبر copy.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "هلا ابو عبدالله"
+        },
+        {
+            "role": "customer",
+            "text": "كيف الحال"
+        },
+        {
+            "role": "customer",
+            "text": "ابي رابط تصوير عقارات الرياض"
+        },
+        {
+            "role": "customer",
+            "text": "محتاجين النص الكتابي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "29 نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "64"
+        },
+        {
+            "role": "customer",
+            "text": "نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "84"
+        },
+        {
+            "role": "customer",
+            "text": "نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "92"
+        },
+        {
+            "role": "customer",
+            "text": "نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "86"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "فتح"
+        },
+        {
+            "role": "customer",
+            "text": "36 نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/drive.google.com\/drive\/folders\/17k-enk8_d3y5eu-KocT8UsyXqs82Ne47?usp=drive_link"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/drive.google.com\/drive\/folders\/1SNaMERihszCSpbRZJjTUO-ttlpDkRDsB?usp=drive_link"
+        },
+        {
+            "role": "customer",
+            "text": "نموذج تسليم فارغ .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا ابو عبدالله"
+        },
+        {
+            "role": "customer",
+            "text": "صاحي؟"
+        },
+        {
+            "role": "customer",
+            "text": "ابي ادخل إيجار"
+        },
+        {
+            "role": "customer",
+            "text": "64"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عقار شارع الصناعة"
+        },
+        {
+            "role": "customer",
+            "text": "SadadVoucherPdf - 2026-03-28T170813.824.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "16 نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "11 نفاذ"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

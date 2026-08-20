@@ -16,7 +16,7 @@ class EmbeddingController extends Controller
     public function __construct()
     {
     
-        $this->openai = OpenAIClient::client(env('OPENAI_API_KEY'));
+        $this->openai = OpenAIClient::client((string) config('openai.api_key', ''));
     }
 
     /**
@@ -28,7 +28,7 @@ class EmbeddingController extends Controller
 
         // Generate embedding via OpenAI
         $resp = $this->openai->embeddings()->create([
-            'model' => env('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small'),
+            'model' => (string) config('openai.embedding_model', 'text-embedding-3-small'),
             'input' => $data['text'],
         ]);
         $vector = $resp['data'][0]['embedding'];

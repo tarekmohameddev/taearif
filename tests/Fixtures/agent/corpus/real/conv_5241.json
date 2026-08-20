@@ -1,0 +1,651 @@
+{
+    "type": "real_conversation",
+    "id": "conv_5241",
+    "tenant_id": 1243,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "استشيره"
+        },
+        {
+            "role": "customer",
+            "text": "وهو كذلك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "شرق الخط"
+        },
+        {
+            "role": "customer",
+            "text": "حلوين"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "كافي الان"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "صك عمارة 3 الوالد.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "صك الواحة بإسم الوالد.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "صك عمارة 1 بإسم الوالد.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "صك عقار العمارة 2 الوالد.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله شيخ رامي ..\nلو تجهز الصكوك في النظام عندك"
+        },
+        {
+            "role": "customer",
+            "text": "وتجهز القروب"
+        },
+        {
+            "role": "customer",
+            "text": "واذا طلبات اخرى يصير نجهزها"
+        },
+        {
+            "role": "customer",
+            "text": "محمد احمد  العطاس\n+966 56 172 5416"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هات تجاري"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🙏]"
+        },
+        {
+            "role": "customer",
+            "text": "ابدا"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الانوار"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🙏]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🙏]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "درب السلامة"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "مساحات صغيرة واسعار غالية"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسهل"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "اصلي العصر واكلمك"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الله يبشرك بالرضا والنعيم"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "- استلام طلبات الصيانة من المستاجرين من خلال واتس الصيانة وتوثيقها على الجهاز\n- متابعة صيانات العقارات( الاضاءة ، المصاعد، اغطية الخزانات) مع الحراس في كل مبنى.\n- تنسيق بين عامل الصيانة والمستاجر \n- استلام الوحدة الايجارية ( الشقة او المحل ) بعد مغادرة المستاجر \n- استلام طلبات المستأجرين الجدد والافادة بسعر العقار ( من خلال جوال الصيانة)\n- توجيه المستاجر الجديد للوسيط العقاري في حال رغبته في  الاستئجار للوحدة ( العقارية)\n- التواجد في مكتب الاجواد من السبت وحتى الاربعاء من الخامسة وحتى التاسعة"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "اهلا وسهلا"
+        },
+        {
+            "role": "customer",
+            "text": "عيوني 🤝"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "اخبارك .."
+        },
+        {
+            "role": "customer",
+            "text": "ابحث عن معلم بلاط ( سيراميك)"
+        },
+        {
+            "role": "customer",
+            "text": "ومعلم جبس"
+        },
+        {
+            "role": "customer",
+            "text": "اذا فيه عندك اشخاص مجربين"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلهم"
+        },
+        {
+            "role": "customer",
+            "text": "من اي دولة الشيخ نعيم ؟"
+        },
+        {
+            "role": "customer",
+            "text": "باكستان .. عشان ينسق معه الحارس"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم .."
+        },
+        {
+            "role": "customer",
+            "text": "اخبارك ابو معاذ"
+        },
+        {
+            "role": "customer",
+            "text": "احصل عندك معلم عزل ممتاز."
+        },
+        {
+            "role": "customer",
+            "text": "تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "كم المطلوب ؟"
+        },
+        {
+            "role": "customer",
+            "text": "الوالد يسلم عليك"
+        },
+        {
+            "role": "customer",
+            "text": "في البيت حاليا"
+        },
+        {
+            "role": "customer",
+            "text": "تتسهل الامور"
+        },
+        {
+            "role": "customer",
+            "text": "هلا و مرحبا"
+        },
+        {
+            "role": "customer",
+            "text": "طيب كيف فيها تصريح دفاع مدني ويقول ما اجرها ؟\n\nالسعر عالي جدا يا صاحبي"
+        },
+        {
+            "role": "customer",
+            "text": "الوالد يقول .. المنطقة هذي ليست منطقة مستودعات ،،"
+        },
+        {
+            "role": "customer",
+            "text": "فاهم عليك انه مبني هنقر .. لكن هل البلدية تعطيك تصريح مستودع؟"
+        },
+        {
+            "role": "customer",
+            "text": "طبعا فاهم عليك .. اعباء المتابعة واستخراج التصريح هذي لاحقا على من يريد التشغيل .. \nلكن"
+        },
+        {
+            "role": "customer",
+            "text": "طبعا فاهم عليك .. اعباء المتابعة واستخراج التصريح هذي لاحقا على من يريد التشغيل .. \nلكن المنطقة ليست منطقة مستودعات على حد علمي"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عزل الحمامات والمطابخ\n- نظافه كامله \n- تكسير حولين المواسير \n- تركيب ماده معالجه TG مع بوند من شركة فوسام حولين المواسير \n- تكسير الزوايا \n- تركيب مادة معالجه TG مع بوند من شركة فوسام على الزوايا\n- توريد وتركيب صبة نظافه للارضيه كامله \n- عمل عتبة للباب بإرتفاع مناسب \n- فرد وجهين مادة اسمنتية من شركة هنكل\n- دهان ارتفاع 30سم مادة اسمنتية من شركة هنكل \n- دهان وجهين مادة مطاطيه من شركة بيتومات على كامل الارض لحماية العزل الاسمنتي\n- اختبار العزل بالماء \n- توريد وتركيب صبة اسمنتية سماكة 2 سم حماية للعزل \n122 متر في 45 =  5,490 ريال"
+        },
+        {
+            "role": "customer",
+            "text": "مو صحيح"
+        },
+        {
+            "role": "customer",
+            "text": "ما قصرت يا غالي"
+        },
+        {
+            "role": "customer",
+            "text": "لكن ما يمنع نشتغل معه في المرات القادمة"
+        },
+        {
+            "role": "customer",
+            "text": "بالنسبة لعزل الاسطح \n\nأعمال العزل محطة الفروسية\nعزل الاسطح\n- تنظيف السطح \n- تطعيج الحديد \n- عمل اوتار ميول \n- توريد وتركيب فوم كنكريت \n- توريد وتركيب وزره اسمنتيه 5سم للجدران\n- دهان اساس بريمر \n- توريد وتركيب عزل مائي اسود لفات طبقه واحدة \n- توريد وتركيب وزرة مبحص للجدران 20سم \n- تركيب صفايات لسطح طبقتين\n- اختبار العزل بالماء\n1366 متر في 60  = 81,960 ريال"
+        },
+        {
+            "role": "customer",
+            "text": "المرة هذي مافي نصيب \nلكن بلغته ان المرات القادمة بإذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم ابو معاذ"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "موجودين"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "الله يبارك لكم"
+        },
+        {
+            "role": "customer",
+            "text": "كم الايجار يا صاحبي"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "200 ريال \nتم"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "الامور طيبة\nاعتبرها تامين"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته \n⬅️عماره في مكة للبيع \nبحي أجياد المصافي\n\n⬅️ بصك إلكتروني \n⬅️المساحة 137.72 متر\n⬅️23  غرفة بمنافعها \n⬅️مكونة من \nاربع ادوار و بدروم \nيتكون البدروم من خمس غرف \n⬅️كل غرفه بدورة مياه وسيرفس خاص\n\n⬅️دور الاول يتكون من اربع غرف كل غرفه بحمام وسيرفيس خاص \n⬅️ثلاثه ادوار متساويه كل دور يتكون من خمس غرف ب حمام وسيرفيس خاص لكل غرفة\n⬅️يوجد مصعد واحد \n⬅️خزان ارضي بمساحة العماره \n⬅️مساحة العماره 137.72متر\n ⬅️قر يبة جدا للحرم في المنطقة المركزية  مشي على الاقدام\n⬅️تقريبا 450 متر من ساحة باب الملك عبدالعزيز"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "كيف العلم ؟"
+        },
+        {
+            "role": "customer",
+            "text": "فيه زبون ؟"
+        },
+        {
+            "role": "customer",
+            "text": "السعر المبدئي 8 مليون و800 الف قابل للتفاوض"
+        },
+        {
+            "role": "customer",
+            "text": "ما اعرف الى اي مدى السعر مناسب ؟"
+        },
+        {
+            "role": "customer",
+            "text": "الوقت لك"
+        },
+        {
+            "role": "customer",
+            "text": "الوالد قال يبغى يروح يشوفها"
+        },
+        {
+            "role": "customer",
+            "text": "بس ما اعرف وضع عقارات مكة"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "عفوا شيخ رامي \nهل يمكن تعديل التاريخ ليكون يوم 17-4 بدلا من 10-4"
+        },
+        {
+            "role": "customer",
+            "text": "الله يرضا عليك"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "على بركة الله"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "باقي مبلغ التامين تبع الشاليه"
+        },
+        {
+            "role": "customer",
+            "text": "احوله قبيل الموعد بإذن الله 🤝"
+        },
+        {
+            "role": "customer",
+            "text": "ما نختلف"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}
