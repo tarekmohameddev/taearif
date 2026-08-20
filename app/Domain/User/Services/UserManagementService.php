@@ -167,7 +167,7 @@ class UserManagementService extends BaseService
 
             PropertyRequestStatus::ensureWorkflowStatusesForTenant((int) $user->id);
 
-            app(TenantCrmBootstrapService::class)->ensureForTenant((int) $user->id);
+            app(TenantCrmBootstrapService::class)->ensureForTenantSafely((int) $user->id);
 
             SyncTenantToPipedriveJob::dispatch($user->id, 'registration');
 

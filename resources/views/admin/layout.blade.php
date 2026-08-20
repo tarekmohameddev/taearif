@@ -16,6 +16,15 @@
 </head>
 <body @if(request()->cookie('admin-theme') == 'dark') data-background-color="dark" @endif>
 	<div class="wrapper">
+	<script>
+		(function () {
+			try {
+				if (localStorage.getItem('admin.sidebar_minimize') === '1') {
+					document.querySelector('.wrapper').classList.add('sidebar_minimize');
+				}
+			} catch (e) {}
+		})();
+	</script>
 
     {{-- top navbar area start --}}
     @includeif('admin.partials.top-navbar')

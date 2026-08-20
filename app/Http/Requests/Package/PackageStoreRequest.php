@@ -25,6 +25,7 @@ class PackageStoreRequest extends FormRequest
     {
         return [
             'title' => 'required|max:255',
+            'title_en' => 'nullable|string|max:255',
             'icon' => 'required',
             'term' => 'required',
             'price' => 'required',

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\RentalContract\ChangeRentalContractStatusRequest;
 use App\Http\Requests\Api\RentalContract\StoreRentalContractRequest;
 use App\Http\Requests\Api\RentalContract\TerminateRentalContractRequest;
@@ -12,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
-class RentalContractController extends Controller
+class RentalContractController extends BaseApiController
 {
     /**
      * Display a listing of rental contracts.
@@ -29,7 +28,7 @@ class RentalContractController extends Controller
             $rentalId = $request->get('rental_id');
 
             $query = RmContract::with(['rental:id,contract_number,property_id,project_id'])
-                ->where('user_id', Auth::id());
+                ->where('user_id', $this->getUserId());
 
             if ($search) {
                 $query->where(function ($q) use ($search) {
@@ -80,7 +79,7 @@ class RentalContractController extends Controller
     {
         try {
             $contract = RmContract::with(['rental:id,contract_number,property_id,project_id'])
-                ->where('user_id', Auth::id())
+                ->where('user_id', $this->getUserId())
                 ->findOrFail($id);
 
             return response()->json([
@@ -108,7 +107,7 @@ class RentalContractController extends Controller
             $validated = $request->validated();
 
             $contract = RmContract::create(array_merge($validated, [
-                'user_id' => Auth::id(),
+                'user_id' => $this->getUserId(),
                 'created_by' => Auth::id(),
             ]));
 
@@ -136,7 +135,7 @@ class RentalContractController extends Controller
     public function update(UpdateRentalContractRequest $request, int $id): JsonResponse
     {
         try {
-            $contract = RmContract::where('user_id', Auth::id())->findOrFail($id);
+            $contract = RmContract::where('user_id', $this->getUserId())->findOrFail($id);
 
             $validated = $request->validated();
 
@@ -167,7 +166,7 @@ class RentalContractController extends Controller
     public function destroy(int $id): JsonResponse
     {
         try {
-            $contract = RmContract::where('user_id', Auth::id())->findOrFail($id);
+            $contract = RmContract::where('user_id', $this->getUserId())->findOrFail($id);
             $contract->delete();
 
             return response()->json([
@@ -191,7 +190,7 @@ class RentalContractController extends Controller
     public function statistics(): JsonResponse
     {
         try {
-            $userId = Auth::id();
+            $userId = $this->getUserId();
             
             $stats = [
                 'total' => RmContract::where('user_id', $userId)->count(),
@@ -225,7 +224,7 @@ class RentalContractController extends Controller
         try {
             $contracts = RmContract::with(['rental:id,contract_number,property_id,project_id'])
                 ->where('rental_id', $rentalId)
-                ->where('user_id', Auth::id())
+                ->where('user_id', $this->getUserId())
                 ->orderBy('start_date')
                 ->get();
 
@@ -252,7 +251,7 @@ class RentalContractController extends Controller
     public function terminate(TerminateRentalContractRequest $request, int $id): JsonResponse
     {
         try {
-            $contract = RmContract::where('user_id', Auth::id())->findOrFail($id);
+            $contract = RmContract::where('user_id', $this->getUserId())->findOrFail($id);
 
             $validated = $request->validated();
 
@@ -286,7 +285,7 @@ class RentalContractController extends Controller
     public function changeStatus(ChangeRentalContractStatusRequest $request, int $id): JsonResponse
     {
         try {
-            $contract = RmContract::where('user_id', Auth::id())->findOrFail($id);
+            $contract = RmContract::where('user_id', $this->getUserId())->findOrFail($id);
 
             $validated = $request->validated();
 
@@ -319,7 +318,7 @@ class RentalContractController extends Controller
     public function dailyFollowUp(Request $request): JsonResponse
     {
         try {
-            $userId = Auth::id();
+            $userId = $this->getUserId();
             $date = $request->get('date', now()->toDateString());
             $status = $request->get('status', 'active'); // Default to active contracts
 
@@ -406,7 +405,7 @@ class RentalContractController extends Controller
     public function allContracts(Request $request): JsonResponse
     {
         try {
-            $userId = Auth::id();
+            $userId = $this->getUserId();
             $perPage = $request->get('per_page', 15);
             $search = $request->get('search');
             $buildingId = $request->get('building_id');
@@ -550,7 +549,7 @@ class RentalContractController extends Controller
     public function filterContracts(Request $request): JsonResponse
     {
         try {
-            $userId = Auth::id();
+            $userId = $this->getUserId();
             $perPage = $request->get('per_page', 15);
             $search = $request->get('search');
             $buildingId = $request->get('building_id');

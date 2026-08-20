@@ -78,7 +78,12 @@ class PaymentController extends Controller
 
                 // Add credits to user
                 $userCredit = \App\Models\Api\marketing\UserCredit::getOrCreateForUser($user->id);
-                $userCredit->addCredits($credits, null, "Test credit purchase: {$credits} credits");
+                $userCredit->addCredits(
+                    $credits,
+                    null,
+                    "Test credit purchase: {$credits} credits",
+                    $transaction
+                );
 
                 return response()->json([
                     'status' => 'success',
@@ -245,6 +250,8 @@ class PaymentController extends Controller
             $planData = [
                 'id' => $package->id,
                 'name' => $package->title,
+                'name_ar' => $package->title,
+                'name_en' => $package->title_en,
                 'price' => '' . number_format($package->price, 2),
                 'billing' => match ($package->term) {
                     'monthly' => 'شهريًا',
@@ -252,11 +259,18 @@ class PaymentController extends Controller
                     'trial', 'is_trial' => 'تجريبي',
                     default => '',
                 },
+                'billing_key' => match ($package->term) {
+                    'monthly' => 'monthly',
+                    'yearly' => 'yearly',
+                    'trial', 'is_trial' => 'trial',
+                    default => null,
+                },
                 'features' => is_array($package->new_features)
                     ? $package->new_features
                     : json_decode($package->new_features, true, JSON_UNESCAPED_UNICODE) ?? [],
                 'is_trial' => (bool) $package->is_trial,
                 'cta' => $isCurrent ? 'الخطة الحالية' :  'الترقية',
+                'cta_key' => $isCurrent ? 'current' : 'upgrade',
             ];
 
             // Group by term

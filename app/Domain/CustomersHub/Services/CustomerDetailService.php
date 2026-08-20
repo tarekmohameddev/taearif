@@ -98,7 +98,9 @@ class CustomerDetailService
                     'name' => $customer->type_name,
                 ],
                 'city' => $customer->city_name ?? null,
+                'cityId' => $customer->city_id ?? null,
                 'district' => $customer->district_name ?? null,
+                'districtId' => $customer->district_id ?? null,
                 'occupation' => $customer->occupation ?? null,
                 'familySize' => $customer->family_size ?? null,
                 'totalInteractions' => $totalInteractions,
@@ -209,6 +211,30 @@ class CustomerDetailService
             ->where('id', $customerId)
             ->where('user_id', $userId)
             ->update(array_merge($updateData, ['updated_at' => Carbon::now()])) > 0;
+    }
+
+    /**
+     * Create a new customer.
+     */
+    public function createCustomer(int $userId, array $data): int
+    {
+        $insertData = [
+            'user_id' => $userId,
+            'name' => $data['name'],
+            'phone_number' => $data['phone_number'],
+            'email' => $data['email'] ?? null,
+            'note' => $data['note'] ?? null,
+            'customers_hub_stage_id' => $data['customers_hub_stage_id'] ?? null,
+            'priority_id' => $data['priority_id'] ?? null,
+            'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now(),
+        ];
+
+        if (isset($data['customers_hub_stage_id'])) {
+            $insertData['customers_hub_stage_changed_at'] = Carbon::now();
+        }
+
+        return DB::table('api_customers')->insertGetId($insertData);
     }
 
     /**

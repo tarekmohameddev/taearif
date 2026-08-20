@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Api\ApiController;
 use App\Domain\CustomersHub\Services\CustomerDetailService;
+use App\Http\Requests\Api\V2\CustomersHub\StoreCustomerRequest;
 use App\Http\Requests\Api\V2\CustomersHub\UpdateDetailRequest;
 use App\Http\Requests\Api\V2\CustomersHub\UpdatePreferencesRequest;
 use App\Http\Requests\Api\V2\CustomersHub\AddTaskRequest;
@@ -17,6 +18,7 @@ use App\Http\Requests\Api\V2\CustomersHub\UpdateTaskRequest;
  * API endpoints for Customer Detail page.
  * 
  * Routes:
+ * - POST   /api/v2/customers-hub/customers
  * - GET    /api/v2/customers-hub/customers/{customerId}
  * - PUT    /api/v2/customers-hub/customers/{customerId}
  * - POST   /api/v2/customers-hub/customers/{customerId}/tasks
@@ -49,6 +51,24 @@ class DetailController extends ApiController
         }
 
         return $this->success($details);
+    }
+
+    /**
+     * POST /api/v2/customers-hub/customers
+     *
+     * Create a new customer.
+     */
+    public function store(StoreCustomerRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        $userId = $this->getTenantUserId($request);
+
+        $customerId = $this->detailService->createCustomer($userId, $validated);
+
+        return $this->success([
+            'message' => 'Customer created successfully',
+            'customerId' => $customerId,
+        ], 201);
     }
 
     /**

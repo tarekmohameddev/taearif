@@ -28,6 +28,7 @@ class StorePlanRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:255'],
+            'title_en' => ['nullable', 'string', 'max:255'],
             'subtitle' => ['nullable', 'string', 'max:500'],
             'slug' => ['nullable', 'string', 'max:255', 'unique:packages,slug'],
             'price' => ['required', 'numeric', 'min:0'],

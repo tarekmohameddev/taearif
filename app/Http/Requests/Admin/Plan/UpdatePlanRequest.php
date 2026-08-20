@@ -31,6 +31,7 @@ class UpdatePlanRequest extends FormRequest
 
         return [
             'title' => ['sometimes', 'string', 'max:255'],
+            'title_en' => ['nullable', 'string', 'max:255'],
             'subtitle' => ['nullable', 'string', 'max:500'],
             'slug' => [
                 'nullable',

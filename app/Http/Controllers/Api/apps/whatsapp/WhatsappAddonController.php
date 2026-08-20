@@ -32,6 +32,8 @@ class WhatsappAddonController extends Controller
             ->map(fn ($plan) => [
                 'id' => $plan->id,
                 'name' => $plan->name,
+                'name_ar' => $plan->name_ar,
+                'name_en' => $plan->name,
                 'price' => (float) $plan->price,
                 'duration' => $plan->duration,
                 'duration_unit' => $plan->duration_unit,

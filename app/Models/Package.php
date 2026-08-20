@@ -10,6 +10,7 @@ class Package extends Model
 
     protected $fillable = [
         'title',
+        'title_en',
         'icon',
         'subtitle',
         'slug',

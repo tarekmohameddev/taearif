@@ -24,7 +24,8 @@ class WhatsAppConversationService
         if (! empty($filters['search'])) {
             $term = '%' . $filters['search'] . '%';
             $query->whereHas('conversation', function ($q) use ($term) {
-                $q->where('external_party_identifier', 'like', $term);
+                $q->where('external_party_identifier', 'like', $term)
+                    ->orWhere('customer_name', 'like', $term);
             });
         }
 

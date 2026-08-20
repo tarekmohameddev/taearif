@@ -24,6 +24,7 @@ class WaConversationState extends Model
         'needs_attention',
         'handoff_reason',
         'bot_paused_until',
+        'customer_name',
     ];
 
     protected $fillable = [
@@ -107,5 +108,8 @@ class WaConversationState extends Model
         }
 
         return $this->aiState()->first();
+    public function getCustomerNameAttribute(): ?string
+    {
+        return $this->relationLoaded('conversation') ? $this->conversation?->customer_name : null;
     }
 }

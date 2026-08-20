@@ -21,6 +21,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use App\Exceptions\Api\ApiException;
 use App\Http\Responses\ApiResponse;
+use App\Services\Payment\PaymentIframeResult;
 
 class Handler extends ExceptionHandler
 {
@@ -65,6 +66,20 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $exception)
     {
+        if (
+            !$request->expectsJson()
+            && $request->routeIs(
+                'api.credits.payment.success',
+                'api.credits.payment.cancel',
+                'api.credits.payment.failed'
+            )
+        ) {
+            return app(PaymentIframeResult::class)->respond($request, [
+                'status' => 'failed',
+                'gateway' => $request->route('gateway'),
+                'transaction_id' => $request->route('transaction_id'),
+            ]);
+        }
 
         // ── JSON for API calls ──
         if ($request->expectsJson() || $request->is('api/*')) {

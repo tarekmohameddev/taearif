@@ -59,9 +59,9 @@ class ContractService
                 }
             }
 
-            // if (!empty($data['generate_schedule'])) {
+            if (!empty($data['generate_schedule'])) {
                 app(InstallmentService::class)->generateSchedule($contract);
-            // }
+            }
 
             return $contract;
         });

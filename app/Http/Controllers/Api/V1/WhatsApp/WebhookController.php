@@ -80,6 +80,22 @@ class WebhookController extends Controller
                     continue;
                 }
 
+                $contactNames = [];
+                $fallbackContactName = null;
+                foreach ($value['contacts'] ?? [] as $contact) {
+                    $name = isset($contact['profile']['name']) && is_string($contact['profile']['name'])
+                        ? trim($contact['profile']['name'])
+                        : '';
+                    if ($name === '') {
+                        continue;
+                    }
+
+                    $fallbackContactName ??= $name;
+                    if (isset($contact['wa_id']) && is_scalar($contact['wa_id'])) {
+                        $contactNames[(string) $contact['wa_id']] = $name;
+                    }
+                }
+
                 $messages = $value['messages'] ?? [];
                 foreach ($messages as $msg) {
                     $from = $msg['from'] ?? '';
@@ -107,13 +123,18 @@ class WebhookController extends Controller
                     }
 
                     $externalParty = $this->normalizeExternalParty('+' . ltrim((string) $from, '+'));
+                    $meta = ['wa_number_id' => $tenant['wa_number_id']];
+                    $customerName = $contactNames[(string) $from] ?? $fallbackContactName;
+                    if ($customerName !== null) {
+                        $meta['customer_name'] = $customerName;
+                    }
                     $this->communicationService->recordInboundMessage(
                         $tenant['user_id'],
                         $externalParty,
                         $content,
                         'whatsapp',
                         $msgId,
-                        ['wa_number_id' => $tenant['wa_number_id']]
+                        $meta
                     );
                     Log::info('communication.whatsapp.webhook.incoming.persisted', [
                         'message_id' => $msgId,

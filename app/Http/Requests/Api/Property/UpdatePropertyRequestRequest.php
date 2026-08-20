@@ -3,11 +3,14 @@
 namespace App\Http\Requests\Api\Property;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
+use App\Http\Requests\Concerns\ValidatesTenantProjectId;
 use App\Rules\PropertyTypeRule;
 use Illuminate\Validation\Rule;
 
 class UpdatePropertyRequestRequest extends BaseApiFormRequest
 {
+    use ValidatesTenantProjectId;
+
     public function authorize()
     {
         return true;
@@ -15,6 +18,8 @@ class UpdatePropertyRequestRequest extends BaseApiFormRequest
 
     protected function prepareForValidation(): void
     {
+        $this->normalizeNullableProjectId();
+
         if ($this->has('property_type')) {
             $normalized = PropertyTypeRule::normalize(is_string($this->input('property_type')) ? $this->input('property_type') : null);
             if ($normalized !== null) {
@@ -30,7 +35,7 @@ class UpdatePropertyRequestRequest extends BaseApiFormRequest
             ? (int) $user->tenantOwnerId()
             : (int) ($user->id ?? 0);
 
-        return [
+        return array_merge([
             'status_id' => ['nullable', 'integer', 'exists:property_request_statuses,id'],
             'full_name' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
@@ -94,6 +99,6 @@ class UpdatePropertyRequestRequest extends BaseApiFormRequest
             'referral_source' => ['nullable', 'string', 'max:255'],
             'detected_entities_json' => ['nullable', 'array'],
             'notes' => ['nullable', 'string', 'max:5000'],
-        ];
+        ], $this->tenantProjectIdRules(sometimes: true));
     }
 }

@@ -605,7 +605,7 @@
     }
 
     .sidebar .sidebar-content {
-        padding-top: 1.5rem !important;
+        padding-top: 0.5rem !important;
         padding-bottom: 1.5rem;
     }
 
@@ -943,6 +943,12 @@
         text-align: left;
     }
 
+    .table.register-users-table thead th,
+    .table.register-users-table thead td,
+    .table.register-users-table td {
+        padding: 0.3rem 0.2rem !important;
+    }
+
     [dir="rtl"] .table td {
         text-align: right;
     }
@@ -1245,7 +1251,8 @@
     [dir="rtl"] body,
     [dir="rtl"] .wrapper {
         overflow-x: hidden !important;
-        width: 100vw !important;
+        width: 100% !important;
+        max-width: 100% !important;
         position: relative !important;
         margin: 0 !important;
         padding: 0 !important;
@@ -1384,6 +1391,29 @@
             width: 100% !important;
             left: 0 !important;
         }
+    }
+
+    /* Collapsed sidebar: center icons so they are not clipped (RTL leftover margins + style-2 padding) */
+    .sidebar_minimize .sidebar .nav.nav-primary {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .sidebar_minimize .sidebar.sidebar-style-2 .nav .nav-item {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .sidebar_minimize .sidebar .nav > .nav-item > a {
+        padding: 0.75rem 0 !important;
+        justify-content: center !important;
+        overflow: visible !important;
+    }
+
+    .sidebar_minimize .sidebar .nav > .nav-item > a i,
+    .sidebar_minimize .sidebar .nav > .nav-item > a i[data-lucide],
+    .sidebar_minimize .sidebar .nav > .nav-item > a svg {
+        margin: 0 auto !important;
     }
 </style>
 

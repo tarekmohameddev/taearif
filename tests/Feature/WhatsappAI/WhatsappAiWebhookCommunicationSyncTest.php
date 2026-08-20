@@ -160,6 +160,7 @@ class WhatsappAiWebhookCommunicationSyncTest extends TestCase
             ->where('external_party_identifier', '+' . ltrim($customerPhone, '+'))
             ->first();
         $this->assertNotNull($conversation);
+        $this->assertSame('Test Customer', $conversation->customer_name);
 
         $this->assertDatabaseHas('messages', [
             'conversation_id' => $conversation->id,

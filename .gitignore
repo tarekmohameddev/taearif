@@ -12,6 +12,9 @@
 /storage/api-docs/
 !/storage/app/sa_regions_and_governorates.json
 
+# Server-only credentials (Firebase, APNs keys, etc.)
+/secure/
+
 # Environment files and backups
 .env
 .env.backup
@@ -100,3 +103,6 @@ _misc_files/db/*
 scripts/git-hooks/
 .cursor/
 phpunit.xml
+scripts/copy-test-db.ps1
+/phpunit.local.xml
+dump.rdb

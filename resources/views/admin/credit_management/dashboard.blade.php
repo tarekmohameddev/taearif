@@ -409,7 +409,11 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">{{ __('Package Name (Arabic)') }}</label>
-                        <input type="text" class="form-control" name="name_ar">
+                        <input type="text" class="form-control" name="name_ar" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Description') }}</label>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">{{ __('Description (Arabic)') }}</label>

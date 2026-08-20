@@ -2363,8 +2363,23 @@ namespace App\Http\Controllers\Api;
  *         operationId="get_dashboard_setup_progress_0",
  *         tags={"Dashboard"},
  *         summary="Setup Progress", security={{"sanctum":{}}},
- *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
- *         @OA\Response(response=401, description="Unauthenticated")
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object",
+ *             @OA\Property(property="progress", type="number", format="float", example=0.4),
+ *             @OA\Property(property="done", type="integer", example=2),
+ *             @OA\Property(property="total", type="integer", example=5),
+ *             @OA\Property(property="headline_key", type="string", enum={"start","early","mid","almost","done"}),
+ *             @OA\Property(property="dismissed", type="boolean", example=false),
+ *             @OA\Property(property="steps", type="array", @OA\Items(type="object",
+ *                 @OA\Property(property="id", type="string", enum={"site_identity","contact_info","first_property","integrated_link","connect_site"}),
+ *                 @OA\Property(property="label_ar", type="string"),
+ *                 @OA\Property(property="status", type="boolean"),
+ *                 @OA\Property(property="href", type="string", nullable=true),
+ *                 @OA\Property(property="order", type="integer"),
+ *                 @OA\Property(property="locked", type="boolean", example=false)
+ *             ))
+ *         )),
+ *         @OA\Response(response=401, description="Unauthenticated"),
+ *         @OA\Response(response=403, description="Unable to resolve tenant owner")
  *     )
  *
  * )
@@ -4178,10 +4193,27 @@ namespace App\Http\Controllers\Api;
  *         tags={"Steps"},
  *         summary="Complete Step", security={{"sanctum":{}}},
  *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"step"},
- *             @OA\Property(property="step", type="string", enum={"banner","footer","homepage_about_update","menu_builder","projects","properties"}),
+ *             @OA\Property(property="step", type="string", enum={"site_identity","contact_info","first_property","integrated_link","connect_site","properties"}),
  *         )),
- *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
- *         @OA\Response(response=401, description="Unauthenticated")
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object",
+ *             @OA\Property(property="message", type="string", example="Step marked as completed."),
+ *             @OA\Property(property="progress", type="number", format="float", example=0.4),
+ *             @OA\Property(property="done", type="integer", example=2),
+ *             @OA\Property(property="total", type="integer", example=5),
+ *             @OA\Property(property="headline_key", type="string", enum={"start","early","mid","almost","done"}),
+ *             @OA\Property(property="dismissed", type="boolean", example=false),
+ *             @OA\Property(property="steps", type="array", @OA\Items(type="object",
+ *                 @OA\Property(property="id", type="string"),
+ *                 @OA\Property(property="label_ar", type="string"),
+ *                 @OA\Property(property="status", type="boolean"),
+ *                 @OA\Property(property="href", type="string", nullable=true),
+ *                 @OA\Property(property="order", type="integer"),
+ *                 @OA\Property(property="locked", type="boolean", example=false)
+ *             ))
+ *         )),
+ *         @OA\Response(response=401, description="Unauthenticated"),
+ *         @OA\Response(response=403, description="Unable to resolve tenant owner"),
+ *         @OA\Response(response=422, description="Validation error")
  *     )
  *
  * )
@@ -4194,8 +4226,23 @@ namespace App\Http\Controllers\Api;
  *         operationId="get_steps_progress_0",
  *         tags={"Steps"},
  *         summary="Get Steps", security={{"sanctum":{}}},
- *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
- *         @OA\Response(response=401, description="Unauthenticated")
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object",
+ *             @OA\Property(property="progress", type="number", format="float", example=0.4),
+ *             @OA\Property(property="done", type="integer", example=2),
+ *             @OA\Property(property="total", type="integer", example=5),
+ *             @OA\Property(property="headline_key", type="string", enum={"start","early","mid","almost","done"}),
+ *             @OA\Property(property="dismissed", type="boolean", example=false),
+ *             @OA\Property(property="steps", type="array", @OA\Items(type="object",
+ *                 @OA\Property(property="id", type="string", enum={"site_identity","contact_info","first_property","integrated_link","connect_site"}),
+ *                 @OA\Property(property="label_ar", type="string"),
+ *                 @OA\Property(property="status", type="boolean"),
+ *                 @OA\Property(property="href", type="string", nullable=true),
+ *                 @OA\Property(property="order", type="integer"),
+ *                 @OA\Property(property="locked", type="boolean", example=false)
+ *             ))
+ *         )),
+ *         @OA\Response(response=401, description="Unauthenticated"),
+ *         @OA\Response(response=403, description="Unable to resolve tenant owner")
  *     )
  *
  * )
@@ -7074,6 +7121,8 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="full_name", type="string", maxLength=255),
  *             @OA\Property(property="phone", type="string", maxLength=20),
  *             @OA\Property(property="property_ids", type="array", @OA\Items(type="integer")),
+ *             @OA\Property(property="project_id", type="integer", nullable=true),
+ *             @OA\Property(property="project_ids", type="array", @OA\Items(type="integer")),
  *             @OA\Property(property="source", type="string"),
  *             @OA\Property(property="referral_source", type="string"),
  *             @OA\Property(property="property_type", type="string"),
@@ -7145,6 +7194,9 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="full_name", type="string", maxLength=255),
  *             @OA\Property(property="phone", type="string", maxLength=20),
  *             @OA\Property(property="notes", type="string", maxLength=1000),
+ *             @OA\Property(property="project_id", type="integer", nullable=true),
+ *             @OA\Property(property="project_ids", type="array", @OA\Items(type="integer")),
+ *             @OA\Property(property="property_ids", type="array", @OA\Items(type="integer")),
  *         )),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")
@@ -7165,6 +7217,8 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="full_name", type="string", maxLength=255),
  *             @OA\Property(property="phone", type="string", maxLength=20),
  *             @OA\Property(property="property_ids", type="array", @OA\Items(type="integer")),
+ *             @OA\Property(property="project_id", type="integer", nullable=true),
+ *             @OA\Property(property="project_ids", type="array", @OA\Items(type="integer")),
  *             @OA\Property(property="source", type="string"),
  *             @OA\Property(property="referral_source", type="string"),
  *             @OA\Property(property="property_type", type="string"),
@@ -7268,6 +7322,8 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="responsible_employee_id", type="integer"),
  *             @OA\Property(property="customer_id", type="integer"),
  *             @OA\Property(property="property_ids", type="array", @OA\Items(type="integer")),
+ *             @OA\Property(property="project_id", type="integer", nullable=true),
+ *             @OA\Property(property="project_ids", type="array", @OA\Items(type="integer")),
  *             @OA\Property(property="inquiry_type", type="string", maxLength=100),
  *             @OA\Property(property="lang", type="string", maxLength=8),
  *             @OA\Property(property="referral_source", type="string", maxLength=255),
@@ -7311,6 +7367,40 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="priority", type="string"),
  *         )),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
+ *         @OA\Response(response=401, description="Unauthenticated")
+ *     )
+ *
+ * )
+ *
+ * @OA\PathItem(
+ *
+ *     path="/v1/property-requests/{id}/projects",
+ *
+ *     @OA\Post(
+ *         operationId="post_v1_property_requests_id_projects_0",
+ *         tags={"Property Requests"},
+ *         summary="Attach Projects", security={{"sanctum":{}}},
+ *         @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"projectIds"},
+ *             @OA\Property(property="projectIds", type="array", minLength=1, @OA\Items(type="integer")),
+ *         )),
+ *         @OA\Response(response=200, description="OK"),
+ *         @OA\Response(response=401, description="Unauthenticated")
+ *     )
+ *
+ * )
+ *
+ * @OA\PathItem(
+ *
+ *     path="/v1/property-requests/{id}/projects/{projectId}",
+ *
+ *     @OA\Delete(
+ *         operationId="delete_v1_property_requests_id_projects_project_id_0",
+ *         tags={"Property Requests"},
+ *         summary="Detach Project", security={{"sanctum":{}}},
+ *         @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+ *         @OA\Parameter(name="projectId", in="path", required=true, @OA\Schema(type="integer")),
+ *         @OA\Response(response=200, description="OK"),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
  *
@@ -8045,7 +8135,8 @@ namespace App\Http\Controllers\Api;
  *         operationId="post_v1_rms_rentals_1",
  *         tags={"Rms"},
  *         summary="Store", security={{"sanctum":{}}},
- *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"tenant_full_name","tenant_phone","rental_type","rental_duration","paying_plan","total_rental_amount"},
+ *         description="Accepts base_rent_amount or total_rental_amount (either required; total wins if both). Amounts are whole SAR (no fils; accept .00, reject .5). Companion fractional base is ignored when total wins. Ship with installment schedule Phase 1+2 together.",
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"tenant_full_name","tenant_phone","rental_type","rental_duration","paying_plan"},
  *             @OA\Property(property="tenant_full_name", type="string", maxLength=150),
  *             @OA\Property(property="tenant_phone", type="string", maxLength=32),
  *             @OA\Property(property="tenant_email", type="string", format="email"),
@@ -8059,7 +8150,8 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="rental_type", type="string", enum={"monthly","annual"}),
  *             @OA\Property(property="rental_duration", type="integer", minimum=1),
  *             @OA\Property(property="paying_plan", type="string", enum={"monthly","quarterly","semi_annual","annual"}),
- *             @OA\Property(property="total_rental_amount", type="number", minimum=0),
+ *             @OA\Property(property="base_rent_amount", type="number", description="Whole SAR per-payment amount (no fils; .00 ok); required without total_rental_amount; stored/returned as decimal number e.g. 417.00"),
+ *             @OA\Property(property="total_rental_amount", type="number", description="Whole SAR full-term total (no fils; .00 ok); required without base_rent_amount; wins if both sent; response remains number not integer"),
  *             @OA\Property(property="currency", type="string"),
  *             @OA\Property(property="contract_number", type="string", maxLength=255),
  *             @OA\Property(property="notes", type="string"),
@@ -8118,6 +8210,7 @@ namespace App\Http\Controllers\Api;
  *         operationId="patch_v1_rms_rentals_id_1",
  *         tags={"Rms"},
  *         summary="Update", security={{"sanctum":{}}},
+ *         description="PATCH-only. Accepts whole-SAR base_rent_amount / total_rental_amount (no fils; .00 ok, .5 rejected); total wins if both sent (fractional companion base ignored). Auto-regenerates unpaid installments when amount/plan/duration/type/move-in change (or regenerate_schedule=true); regenerate/term-only rounds fractional stored base intentionally. Mid-lease total_rental_amount is a notional rate base; stored total folds invoiced survivors + new whole rate for remaining. payments is legacy/discouraged and cannot combine with schedule-affecting fields. Deploy with installment Phase 1+2 together.",
  *         @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
  *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
  *             @OA\Property(property="tenant_full_name", type="string", maxLength=150),
@@ -8133,13 +8226,14 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="rental_type", type="string", enum={"monthly","annual"}),
  *             @OA\Property(property="rental_duration", type="integer", minimum=1),
  *             @OA\Property(property="paying_plan", type="string", enum={"monthly","quarterly","semi_annual","annual"}),
- *             @OA\Property(property="total_rental_amount", type="number", minimum=0),
+ *             @OA\Property(property="base_rent_amount", type="number", description="Going-forward whole SAR per-payment amount (no fils; .00 ok); response may show 417.00"),
+ *             @OA\Property(property="total_rental_amount", type="number", description="Whole SAR notional full-term rate base mid-lease (no fils; .00 ok); total wins if both amounts sent; stored/returned as number not integer"),
  *             @OA\Property(property="currency", type="string"),
  *             @OA\Property(property="contract_number", type="string", maxLength=255),
  *             @OA\Property(property="notes", type="string"),
  *             @OA\Property(property="cost_items", type="object", properties={@OA\Property(property="*.name", type="string", maxLength=255),@OA\Property(property="*.cost", type="number", minimum=0),@OA\Property(property="*.type", type="string", enum={"fixed","percentage"}),@OA\Property(property="*.payer", type="string", enum={"owner","tenant"}),@OA\Property(property="*.payment_frequency", type="string", enum={"one_time","per_installment"}),@OA\Property(property="*.percentage_of", type="number", minimum=0),@OA\Property(property="*.description", type="string")}),
- *             @OA\Property(property="payments", type="array", @OA\Items(type="string")),
- *             @OA\Property(property="regenerate_schedule", type="boolean"),
+ *             @OA\Property(property="payments", type="array", description="Legacy/discouraged; cannot combine with schedule-affecting fields", @OA\Items(type="string")),
+ *             @OA\Property(property="regenerate_schedule", type="boolean", description="Explicit unpaid schedule rebuild using the same locked survival rules"),
  *         )),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")
@@ -8293,7 +8387,7 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="rental_type", type="string", enum={"monthly","annual"}),
  *             @OA\Property(property="rental_duration", type="integer", minimum=1),
  *             @OA\Property(property="paying_plan", type="string", enum={"monthly","quarterly","semi_annual","annual"}),
- *             @OA\Property(property="total_rental_amount", type="number", minimum=0),
+ *             @OA\Property(property="total_rental_amount", type="number", minimum=1, description="Whole SAR full-term total for the renewed lease, greater than zero (no fils; .00 ok, .5 rejected); response remains number not integer"),
  *             @OA\Property(property="currency", type="string"),
  *             @OA\Property(property="notes", type="string"),
  *             @OA\Property(property="cost_items", type="object", properties={@OA\Property(property="*.name", type="string", maxLength=255),@OA\Property(property="*.cost", type="number", minimum=0),@OA\Property(property="*.type", type="string", enum={"fixed","percentage"}),@OA\Property(property="*.payer", type="string", enum={"owner","tenant"}),@OA\Property(property="*.payment_frequency", type="string", enum={"one_time","per_installment"}),@OA\Property(property="*.percentage_of", type="number", minimum=0),@OA\Property(property="*.description", type="string")}),
@@ -10823,6 +10917,9 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="area_to", type="integer", minimum=0),
  *             @OA\Property(property="latitude", type="number"),
  *             @OA\Property(property="longitude", type="number"),
+ *             @OA\Property(property="property_ids", type="array", @OA\Items(type="integer")),
+ *             @OA\Property(property="project_id", type="integer", nullable=true),
+ *             @OA\Property(property="project_ids", type="array", @OA\Items(type="integer")),
  *         )),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")

@@ -13,6 +13,7 @@ class Conversation extends Model
         'user_id',
         'channel',
         'external_party_identifier',
+        'customer_name',
         'last_message_at',
     ];
 

@@ -8,6 +8,7 @@ use Validator;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Package;
+use App\Models\Api\GeneralSetting;
 use App\Models\UserStep;
 use App\Models\User\Menu;
 use App\Models\Membership;
@@ -126,6 +127,11 @@ class RegisterUserController extends Controller
                 });
             });
         })
+        ->when($request->filled('package_id'), function ($q) use ($request) {
+            $q->whereHas('currentMembership', function ($m) use ($request) {
+                $m->where('package_id', (int) $request->package_id);
+            });
+        })
         ->orderBy('id', 'DESC')
         ->paginate(10);
 
@@ -137,6 +143,8 @@ class RegisterUserController extends Controller
             return redirect()->route('admin.register.user', $userListQuery);
         }
 
+        $maintenanceFlags = GeneralSetting::whereIn('user_id', $users->pluck('id'))->pluck('maintenance_mode', 'user_id');
+
         // $affiliateUsers = User::whereNotNull('referral_code')->get(['id','username','email']);
         $affiliateUsers = User::where('account_type', 'tenant')
             ->whereHas('referrals')->get(['id','username','email']);
@@ -145,6 +153,7 @@ class RegisterUserController extends Controller
         $offline = OfflineGateway::where('status', 1)->get();
         $gateways = $online->merge($offline);
         $packages = Package::query()->where('status', '1')->get();
+        $packageFilterButtons = $this->packageFilterButtons($packages);
 
         $logoUploads = UserStep::where('logo_uploaded', true)->count();
         $faviconUploads = UserStep::where('favicon_uploaded', true)->count();
@@ -179,7 +188,9 @@ class RegisterUserController extends Controller
             'activeMembership',
             'paidMember',
             'activeUsers',
-            'userListQuery'
+            'userListQuery',
+            'packageFilterButtons',
+            'maintenanceFlags'
         ));
     }
 
@@ -208,7 +219,32 @@ class RegisterUserController extends Controller
             $query['term'] = (string) $request->query('term', '');
         }
 
+        if ($request->query->has('package_id')) {
+            $query['package_id'] = (string) $request->query('package_id', '');
+        }
+
         return $query;
+    }
+
+    private function packageFilterButtons($packages)
+    {
+        $orderedIds = [24, 25, 26, 16];
+        $fallbacks = [
+            24 => 'الباقة المميزة سنوية',
+            25 => 'الباقة المميزة الشهرية',
+            26 => 'الباقة التجريبية',
+            16 => 'الباقة المجانية',
+        ];
+        $packagesById = $packages->keyBy('id');
+
+        return collect($orderedIds)->map(function (int $id) use ($packagesById, $fallbacks) {
+            $package = $packagesById->get($id);
+
+            return (object) [
+                'id' => $id,
+                'title' => ($package && filled($package->title)) ? $package->title : $fallbacks[$id],
+            ];
+        });
     }
 
     public function view($id)
@@ -383,13 +419,14 @@ class RegisterUserController extends Controller
             $transaction_id = UserPermissionHelper::uniqidReal(8);
 
             $startDate = Carbon::today()->format('Y-m-d');
-            if ($package->term === "monthly") {
-                $endDate = Carbon::today()->addMonth()->format('Y-m-d');
-            } elseif ($package->term === "yearly") {
-                $endDate = Carbon::today()->addYear()->format('Y-m-d');
-            } elseif ($package->term === "lifetime") {
-                $endDate = Carbon::maxValue()->format('d-m-Y');
-            }
+            $endDate = app(MembershipService::class)
+                ->calculateExpireDate($package, Carbon::today())
+                ->format('Y-m-d');
+
+            $isTrial = $package->term === MembershipService::TERM_TRIAL || (int) $package->is_trial === 1;
+            $trialDays = $isTrial
+                ? (((int) $package->trial_days > 0) ? (int) $package->trial_days : MembershipService::DEFAULT_TRIAL_DAYS)
+                : 0;
 
             Membership::create([
                 'price' => $package->price,
@@ -398,8 +435,8 @@ class RegisterUserController extends Controller
                 'payment_method' => $request["payment_gateway"],
                 'transaction_id' => $transaction_id ? $transaction_id : 0,
                 'status' => 1,
-                'is_trial' => 0,
-                'trial_days' => 0,
+                'is_trial' => $isTrial ? 1 : 0,
+                'trial_days' => $trialDays,
                 'receipt' => $request["receipt_name"] ? $request["receipt_name"] : null,
                 'transaction_details' => null,
                 'settings' => json_encode($be),
@@ -570,6 +607,17 @@ class RegisterUserController extends Controller
         $user->featured = $request->featured;
         $user->save();
         Session::flash('success', 'User featured update successfully!');
+        return back();
+    }
+
+    public function toggleMaintenance(Request $request)
+    {
+        $user = User::findOrFail($request->user_id);
+        $setting = GeneralSetting::firstOrCreate(['user_id' => $user->id], ['maintenance_mode' => 0]);
+        $setting->maintenance_mode = $setting->maintenance_mode ? 0 : 1;
+        $setting->save();
+
+        Session::flash('success', $setting->maintenance_mode ? __('Site set under maintenance') : __('Site is back online'));
         return back();
     }
 
@@ -1702,6 +1750,14 @@ class RegisterUserController extends Controller
                     $nextMembership->expire_date = Carbon::parse(Carbon::today()->addYear()->format('d-m-Y'));
                 } elseif ($nextPackage->term == 'lifetime') {
                     $nextMembership->expire_date = Carbon::parse(Carbon::maxValue()->format('d-m-Y'));
+                } elseif ($nextPackage->term == 'trial') {
+                    $trialDays = (int) $nextPackage->trial_days;
+                    if ($trialDays < 1) {
+                        $trialDays = MembershipService::DEFAULT_TRIAL_DAYS;
+                    }
+                    $nextMembership->expire_date = Carbon::parse(Carbon::today()->addDays($trialDays)->format('d-m-Y'));
+                } else {
+                    $nextMembership->expire_date = Carbon::parse(Carbon::today()->addMonth()->format('d-m-Y'));
                 }
                 $nextMembership->save();
             }
@@ -1827,6 +1883,14 @@ class RegisterUserController extends Controller
             $exDate = Carbon::parse($prevStartDate)->addYear()->format('d-m-Y');
         } elseif ($selectedPackage->term == 'lifetime') {
             $exDate = Carbon::parse(Carbon::maxValue()->format('d-m-Y'));
+        } elseif ($selectedPackage->term == 'trial') {
+            $trialDays = (int) $selectedPackage->trial_days;
+            if ($trialDays < 1) {
+                $trialDays = MembershipService::DEFAULT_TRIAL_DAYS;
+            }
+            $exDate = Carbon::parse($prevStartDate)->addDays($trialDays)->format('d-m-Y');
+        } else {
+            $exDate = Carbon::parse($prevStartDate)->addMonth()->format('d-m-Y');
         }
 
         // store a new membership for selected package
@@ -1880,14 +1944,10 @@ class RegisterUserController extends Controller
 
         // if current package is not lifetime package
         if ($currPackage->term != 'lifetime') {
-            // calculate expire date for selected package
-            if ($selectedPackage->term == 'monthly') {
-                $exDate = Carbon::parse($currMembership->expire_date)->addDay()->addMonth()->format('d-m-Y');
-            } elseif ($selectedPackage->term == 'yearly') {
-                $exDate = Carbon::parse($currMembership->expire_date)->addDay()->addYear()->format('d-m-Y');
-            } elseif ($selectedPackage->term == 'lifetime') {
-                $exDate = Carbon::parse(Carbon::maxValue()->format('d-m-Y'));
-            }
+            $nextStart = Carbon::parse($currMembership->expire_date)->addDay();
+            $exDate = app(MembershipService::class)
+                ->calculateExpireDate($selectedPackage, $nextStart)
+                ->format('Y-m-d');
             // store a new membership for selected package
             $selectedMemb = Membership::create([
                 'price' => $selectedPackage->price,

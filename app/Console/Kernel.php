@@ -200,6 +200,12 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->runInBackground()
             ->onOneServer();
+        $schedule->command('domains:sync-vercel-status')
+            ->hourly()
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->runInBackground();
     }
 
     /**

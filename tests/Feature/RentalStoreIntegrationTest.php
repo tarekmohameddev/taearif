@@ -221,7 +221,11 @@ class RentalStoreIntegrationTest extends TestCase
         // Arrange - Minimal required data only
         $rentalData = [
             'tenant_full_name' => 'Minimal Test',
-            'tenant_phone' => '+966503456789'
+            'tenant_phone' => '+966503456789',
+            'rental_type' => 'monthly',
+            'rental_duration' => 6,
+            'paying_plan' => 'monthly',
+            'total_rental_amount' => 12000,
         ];
 
         // Act
@@ -356,7 +360,9 @@ class RentalStoreIntegrationTest extends TestCase
             'tenant_full_name' => 'Amount Test',
             'tenant_phone' => '+966501234567',
             'base_rent_amount' => 3000.00,
-            'rental_period' => 6
+            'rental_type' => 'monthly',
+            'rental_duration' => 6,
+            'paying_plan' => 'monthly',
         ];
 
         $response = $this->postJson('/api/v1/rms/rentals', $rentalData);
@@ -375,9 +381,10 @@ class RentalStoreIntegrationTest extends TestCase
             'tenant_full_name' => 'Annual Test',
             'tenant_phone' => '+966501234567',
             'move_in_date' => '2024-01-01',
-            'rental_period' => 2, // 2 years
+            'rental_type' => 'annual',
+            'rental_duration' => 2,
             'paying_plan' => 'annual',
-            'base_rent_amount' => 2000.00
+            'base_rent_amount' => 24000.00
         ];
 
         $response = $this->postJson('/api/v1/rms/rentals', $rentalData);
@@ -411,9 +418,10 @@ class RentalStoreIntegrationTest extends TestCase
             'tenant_full_name' => 'Semi Annual Test',
             'tenant_phone' => '+966501234567',
             'move_in_date' => '2024-01-01',
-            'rental_period' => 4, // 4 semi-annual periods = 24 months
+            'rental_type' => 'annual',
+            'rental_duration' => 2,
             'paying_plan' => 'semi_annual',
-            'base_rent_amount' => 1500.00
+            'base_rent_amount' => 9000.00
         ];
 
         $response = $this->postJson('/api/v1/rms/rentals', $rentalData);

@@ -105,6 +105,39 @@ class RegisterUserPackageChangeTest extends AdminApiTestCase
     }
 
     /** @test */
+    public function admin_add_current_trial_package_expires_in_seven_days(): void
+    {
+        $this->signInWebAdmin();
+
+        $package = $this->createPackage(MembershipService::TERM_TRIAL, [
+            'id' => MembershipService::TRIAL_PACKAGE_ID,
+            'title' => 'الباقة التجريبية',
+            'trial_days' => 7,
+            'is_trial' => 1,
+        ]);
+        $user = $this->createTenantUser('add-trial');
+
+        $response = $this->from(route('admin.register.user.view', $user->id))
+            ->post(route('admin.user.currPackage.add'), [
+                'user_id' => $user->id,
+                'package_id' => $package->id,
+                'payment_method' => 'manual',
+            ]);
+
+        $response->assertRedirect(route('admin.register.user.view', $user->id));
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('memberships', [
+            'user_id' => $user->id,
+            'package_id' => $package->id,
+            'payment_method' => 'manual',
+            'status' => 1,
+            'start_date' => Carbon::now()->toDateString(),
+            'expire_date' => Carbon::now()->addDays(7)->toDateString(),
+        ]);
+    }
+
+    /** @test */
     public function admin_can_remove_current_package(): void
     {
         $this->signInWebAdmin();
@@ -343,10 +376,12 @@ class RegisterUserPackageChangeTest extends AdminApiTestCase
 
     private function createTenantUser(string $username): User
     {
+        $unique = $username . '-' . Str::random(6);
+
         return User::factory()->create([
             'account_type' => 'tenant',
-            'username' => $username,
-            'email' => $username . '@example.test',
+            'username' => $unique,
+            'email' => $unique . '@example.test',
         ]);
     }
 

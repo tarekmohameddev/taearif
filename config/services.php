@@ -89,4 +89,18 @@ return [
         'redirect_uri' => env('META_REDIRECT_URI'),
     ],
 
+    'vercel' => [
+        'token' => env('VERCEL_TOKEN'),
+        'team_id' => env('VERCEL_TEAM_ID'),
+        'project_id' => env('VERCEL_PROJECT_ID'),
+        'base_url' => env('VERCEL_API_BASE', 'https://api.vercel.com'),
+        'nameservers' => [
+            'ns1.vercel-dns.com',
+            'ns2.vercel-dns.com',
+        ],
+        'max_domains_per_tenant' => (int) env('VERCEL_MAX_DOMAINS_PER_TENANT', 5),
+        'check_nameservers' => filter_var(env('VERCEL_CHECK_NAMESERVERS', true), FILTER_VALIDATE_BOOLEAN),
+        'auto_attach_custom_domain' => filter_var(env('VERCEL_AUTO_ATTACH_CUSTOM_DOMAIN', true), FILTER_VALIDATE_BOOLEAN),
+    ],
+
 ];

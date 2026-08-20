@@ -322,31 +322,32 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // --- Contracts ---
+// Permission checks are enforced in ApiContractController (crm.* for regular, rentals.* for type=rms).
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/contracts', [ApiContractController::class, 'index']); // Get all contracts
-    Route::get('/contracts/{id}', [ApiContractController::class, 'show']); // Get a single contract
-    Route::post('/contracts', [ApiContractController::class, 'store']); // Create a contract
-    Route::put('/contracts/{id}', [ApiContractController::class, 'update']); // Update a contract
-    Route::delete('/contracts/{id}', [ApiContractController::class, 'destroy']); // Delete a contract
-    Route::get('/contracts/statistics', [ApiContractController::class, 'statistics']); // Get contract statistics
-    Route::get('/contracts/customer/{customerId}', [ApiContractController::class, 'getByCustomer']); // Get contracts by customer
-    Route::get('/contracts/rental/{rentalId}', [ApiContractController::class, 'getByRental']); // Get contracts by rental
+    Route::get('/contracts', [ApiContractController::class, 'index']);
+    Route::get('/contracts/statistics', [ApiContractController::class, 'statistics']);
+    Route::get('/contracts/customer/{customerId}', [ApiContractController::class, 'getByCustomer']);
+    Route::get('/contracts/rental/{rentalId}', [ApiContractController::class, 'getByRental']);
+    Route::post('/contracts', [ApiContractController::class, 'store']);
+    Route::get('/contracts/{id}', [ApiContractController::class, 'show']);
+    Route::put('/contracts/{id}', [ApiContractController::class, 'update']);
+    Route::delete('/contracts/{id}', [ApiContractController::class, 'destroy']);
 });
 
 // --- Rental contracts (RMS) ---
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/rental-contracts', [RentalContractController::class, 'index']); // Get all rental contracts
-    Route::get('/rental-contracts/statistics', [RentalContractController::class, 'statistics']); // Get rental contract statistics
-    Route::get('/rental-contracts/daily-follow-up', [RentalContractController::class, 'dailyFollowUp']); // Daily follow-up for rental contracts
-    Route::get('/rental-contracts/all-contracts', [RentalContractController::class, 'allContracts']); // All contracts with color status
-    Route::get('/rental-contracts/filter', [RentalContractController::class, 'filterContracts']); // Advanced contract filtering
-    Route::get('/rental-contracts/rental/{rentalId}', [RentalContractController::class, 'getByRental']); // Get contracts by rental
-    Route::post('/rental-contracts', [RentalContractController::class, 'store']); // Create a rental contract
-    Route::get('/rental-contracts/{id}', [RentalContractController::class, 'show']); // Get a single rental contract
-    Route::put('/rental-contracts/{id}', [RentalContractController::class, 'update']); // Update a rental contract
-    Route::delete('/rental-contracts/{id}', [RentalContractController::class, 'destroy']); // Delete a rental contract
-    Route::post('/rental-contracts/{id}/terminate', [RentalContractController::class, 'terminate']); // Terminate a rental contract
-    Route::patch('/rental-contracts/{id}/status', [RentalContractController::class, 'changeStatus']); // Change rental contract status
+    Route::get('/rental-contracts', [RentalContractController::class, 'index'])->middleware('can:rentals.view');
+    Route::get('/rental-contracts/statistics', [RentalContractController::class, 'statistics'])->middleware('can:rentals.view');
+    Route::get('/rental-contracts/daily-follow-up', [RentalContractController::class, 'dailyFollowUp'])->middleware('can:rentals.view');
+    Route::get('/rental-contracts/all-contracts', [RentalContractController::class, 'allContracts'])->middleware('can:rentals.view');
+    Route::get('/rental-contracts/filter', [RentalContractController::class, 'filterContracts'])->middleware('can:rentals.view');
+    Route::get('/rental-contracts/rental/{rentalId}', [RentalContractController::class, 'getByRental'])->middleware('can:rentals.view');
+    Route::post('/rental-contracts', [RentalContractController::class, 'store'])->middleware('can:rentals.create');
+    Route::get('/rental-contracts/{id}', [RentalContractController::class, 'show'])->middleware('can:rentals.view');
+    Route::put('/rental-contracts/{id}', [RentalContractController::class, 'update'])->middleware('can:rentals.update');
+    Route::delete('/rental-contracts/{id}', [RentalContractController::class, 'destroy'])->middleware('can:rentals.delete');
+    Route::post('/rental-contracts/{id}/terminate', [RentalContractController::class, 'terminate'])->middleware('can:rentals.update');
+    Route::patch('/rental-contracts/{id}/status', [RentalContractController::class, 'changeStatus'])->middleware('can:rentals.update');
 });
 
 // --- Projects ---
@@ -389,6 +390,8 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     Route::patch ('/properties/drafts/{id}',              [PropertyController::class, 'updateDraft'])->middleware('can:properties.update');
     Route::post  ('/properties/drafts/{id}/complete',     [PropertyController::class, 'completeDraft'])->middleware('can:properties.create');
     Route::post  ('/properties/drafts/bulk-complete',     [PropertyController::class, 'bulkCompleteDrafts'])->middleware('can:properties.create');
+    Route::delete('/properties/drafts/{id}',              [PropertyController::class, 'destroyDraft'])->middleware('can:properties.delete');
+    Route::post  ('/properties/drafts/bulk-delete',       [PropertyController::class, 'bulkDestroyDrafts'])->middleware('can:properties.delete');
 
     Route::post  ('/properties/bulk',                     [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'bulkCreate'])->middleware('can:properties.create');
     Route::post  ('/properties/import/excel',           [\App\Http\Controllers\Api\property\PropertyManagementController::class, 'importExcel'])->middleware('can:properties.create');
@@ -529,13 +532,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // (small note: remove the stray spaces in your paths like '/settings/domain ')
     Route::get   ('/settings/domain',                 [DomainSettingsController::class, 'index'])->middleware('can:settings.update');
     Route::get   ('/settings/domain/{id}',            [DomainSettingsController::class, 'show'])->middleware('can:settings.update');
-    Route::post  ('/settings/domain',                 [DomainSettingsController::class, 'store'])->middleware('can:settings.update');
-    Route::post  ('/settings/domain/verify',          [DomainSettingsController::class, 'verify'])->middleware('can:settings.update');
+    Route::post  ('/settings/domain',                 [DomainSettingsController::class, 'store'])->middleware(['can:settings.update', 'throttle:10,1']);
+    Route::post  ('/settings/domain/verify',          [DomainSettingsController::class, 'verify'])->middleware(['can:settings.update', 'throttle:10,1']);
     Route::match(['post', 'patch'], '/settings/domain/set-primary', [DomainSettingsController::class, 'setPrimary'])->middleware('can:settings.update');
-    Route::delete('/settings/domain/{id}',            [DomainSettingsController::class, 'destroy'])->middleware('can:settings.update');
+    Route::delete('/settings/domain/{id}',            [DomainSettingsController::class, 'destroy'])->middleware(['can:settings.update', 'throttle:10,1']);
 
     Route::patch ('/settings/domain/request-ssl',     [DomainSettingsController::class, 'requestSsl'])->middleware('can:settings.update');
-    Route::patch ('/settings/domain/ssl-status',      [DomainSettingsController::class, 'updateSslStatus'])->middleware('can:settings.update');
 });
 
 
@@ -709,9 +711,11 @@ Route::prefix('v1/credits')->group(function () {
 
     // Payment callback routes (no auth required for webhooks). Accept GET and POST (e.g. ARB may POST).
     Route::match(['get', 'post'], 'payment/success/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\marketing\CreditController::class, 'paymentSuccess'])
-        ->name('api.credits.payment.success');
+        ->middleware('payment.iframe')->name('api.credits.payment.success');
     Route::match(['get', 'post'], 'payment/cancel/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\marketing\CreditController::class, 'paymentCancel'])
-        ->name('api.credits.payment.cancel');
+        ->middleware('payment.iframe')->name('api.credits.payment.cancel');
+    Route::match(['get', 'post'], 'payment/failed/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\marketing\CreditController::class, 'paymentFailed'])
+        ->middleware('payment.iframe')->name('api.credits.payment.failed');
 });
 
 Route::prefix('v1/whatsapp-addons')->group(function () {
@@ -885,6 +889,8 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         // Property IDs on request (must be before {id} so that .../properties is matched)
         Route::post('/property-requests/{id}/properties', [ApiPropertyRequestController::class, 'attachProperties'])->middleware('can:property_requests.update');
         Route::delete('/property-requests/{id}/properties/{propertyId}', [ApiPropertyRequestController::class, 'detachProperty'])->middleware('can:property_requests.update');
+        Route::post('/property-requests/{id}/projects', [ApiPropertyRequestController::class, 'attachProjects'])->middleware('can:property_requests.update');
+        Route::delete('/property-requests/{id}/projects/{projectId}', [ApiPropertyRequestController::class, 'detachProject'])->middleware('can:property_requests.update');
         Route::get('/property-requests/{id}', [ApiPropertyRequestController::class, 'show'])->middleware('can:property_requests.view');
         // DELETE
         Route::delete('/property-requests/{id}', [ApiPropertyRequestController::class, 'destroy'])->middleware('can:property_requests.delete');
@@ -994,6 +1000,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::prefix('credits')->middleware(['auth:sanctum'])->group(function () {
         Route::get('balance', [\App\Http\Controllers\Api\marketing\CreditController::class, 'getBalance']);
         Route::post('purchase', [\App\Http\Controllers\Api\marketing\CreditController::class, 'purchasePackage']);
+        Route::get('payment/status/{transaction_id}', [\App\Http\Controllers\Api\marketing\CreditController::class, 'paymentStatus']);
         Route::get('transactions', [\App\Http\Controllers\Api\marketing\CreditController::class, 'getTransactions']);
         Route::get('analytics', [\App\Http\Controllers\Api\marketing\CreditController::class, 'getAnalytics']);
     });
@@ -1137,7 +1144,7 @@ if (!app()->environment('production')) {
 //Route::post('/whatsapp/webhook', [App\Http\Controllers\Api\WhatsAppWebhookController::class, 'handleWebhook']);
 
 // Tenant Website API (mixed: some routes public, some require auth:sanctum)
-Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.id.response'])->group(function () {
+Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.id.response','tenant.maintenance'])->group(function () {
     Route::post('getTenant', [GetTenantController::class, 'store']);
     Route::post('save-pages', [SavePagesController::class, 'store'])->middleware('auth:sanctum');
 
@@ -1203,6 +1210,16 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
 
 // Matching Endpoints (Dashboard APIs, require auth) - observer-only, retrieval endpoints
 Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
+    Route::post('devices/push-tokens', [\App\Http\Controllers\Api\V1\NotificationDeviceController::class, 'store']);
+    Route::delete('devices/push-tokens', [\App\Http\Controllers\Api\V1\NotificationDeviceController::class, 'destroy']);
+
+    Route::get('notifications', [\App\Http\Controllers\Api\V1\NotificationController::class, 'index']);
+    Route::get('notifications/unread-count', [\App\Http\Controllers\Api\V1\NotificationController::class, 'unreadCount']);
+    Route::patch('notifications/read-all', [\App\Http\Controllers\Api\V1\NotificationController::class, 'markAllRead']);
+    Route::patch('notifications/{id}/read', [\App\Http\Controllers\Api\V1\NotificationController::class, 'markRead']);
+    Route::get('notifications/preferences', [\App\Http\Controllers\Api\V1\NotificationController::class, 'preferences']);
+    Route::put('notifications/preferences', [\App\Http\Controllers\Api\V1\NotificationController::class, 'updatePreferences']);
+
     Route::prefix('matching')->group(function () {
         // Customer Requests (unified web + whatsapp)
         Route::get('requests', [V1CustomerRequestController::class, 'index']);
@@ -1444,6 +1461,9 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
 
     // 5. CUSTOMER DETAIL
     Route::prefix('customers')->group(function () {
+        // Create new customer
+        Route::post('/', [\App\Http\Controllers\Api\V2\CustomersHub\DetailController::class, 'store']);
+
         // Get customer details (customer + tasks + properties + preferences)
         Route::get('/{customerId}', [\App\Http\Controllers\Api\V2\CustomersHub\DetailController::class, 'show']);
 

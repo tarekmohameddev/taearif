@@ -94,8 +94,10 @@
                                                             data-val="{{ $package->id }}">
                                                     </td>
                                                     <td>{{ strlen($package->title) > 30 ? mb_substr($package->title, 0, 30, 'UTF-8') . '...' : $package->title }}
+                                                        @if ($package->term !== 'trial' && $package->is_trial != 1 && $package->id !== 26)
                                                         <span
                                                             class="badge text-capitalize @if ($package->term == 'monthly') badge-info @elseif($package->term == 'yearly')badge-primary @else badge-success @endif nav-pills ">{{ __($package->term) }}</span>
+                                                        @endif
                                                     </td>
                                                     <td>
                                                         @if ($package->price == 0)
@@ -185,10 +187,16 @@
                             <p id="erricon" class="mb-0 text-danger em"></p>
                         </div>
                         <div class="form-group">
-                            <label for="title">{{ __('Package title') }}*</label>
+                            <label for="title">{{ __('Package title (Arabic)') }}*</label>
                             <input id="title" type="text" class="form-control" name="title"
                                 placeholder="{{ __('Enter Package title') }}" value="">
                             <p id="errtitle" class="mb-0 text-danger em"></p>
+                        </div>
+                        <div class="form-group">
+                            <label for="title_en">{{ __('Package title (English)') }}</label>
+                            <input id="title_en" type="text" class="form-control" name="title_en"
+                                placeholder="{{ __('Enter English package title') }}" value="">
+                            <p id="errtitle_en" class="mb-0 text-danger em"></p>
                         </div>
                         {{-- <div class="form-group">
                             <label for="subtitle">{{ __('Package subtitle') }}</label>

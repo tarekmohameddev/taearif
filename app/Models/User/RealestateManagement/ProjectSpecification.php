@@ -31,6 +31,36 @@ class ProjectSpecification extends Model
         ]);
     }
 
+    /**
+     * Bulk-insert specifications for a project (skips Eloquent events).
+     *
+     * @param  list<array<string, mixed>>  $specifications
+     */
+    public static function insertManyForProject(int $userId, int $projectId, int $languageId, array $specifications): void
+    {
+        if ($specifications === []) {
+            return;
+        }
+
+        $now = now();
+        $rows = [];
+
+        foreach ($specifications as $spec) {
+            $rows[] = [
+                'user_id' => $userId,
+                'project_id' => $projectId,
+                'language_id' => $languageId,
+                'key' => $spec['key'],
+                'label' => $spec['label'],
+                'value' => $spec['value'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        self::insert($rows);
+    }
+
     public function project()
     {
         return $this->belongsTo(Project::class, 'project_id');

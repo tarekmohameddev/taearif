@@ -2,9 +2,11 @@
 
 namespace App\Observers;
 
+use App\Models\User;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\Logs\PropertyLog;
 use App\Services\Audit\EntityAuditLogger;
+use App\Services\SiteSetupProgressService;
 use App\Support\AuditContext;
 use App\Support\PropertyAuditFields;
 use App\Support\CacheInvalidationHelper;
@@ -90,6 +92,12 @@ class PropertyObserver
         
         // Clear property-related caches when new property is created
         $this->clearPropertyCachesForUser($m->user_id);
+
+        // Sync owner user_steps.properties for site setup progress (GET still derives from DB).
+        $propertyOwner = User::find($m->user_id);
+        if ($propertyOwner) {
+            app(SiteSetupProgressService::class)->syncPropertiesFlag($propertyOwner);
+        }
     }
     
     public function updated(Property $m): void {
