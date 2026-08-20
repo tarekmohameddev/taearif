@@ -137,11 +137,13 @@ class UpdateUserProfileTest extends TestCase
             'company_phone' => '+966511111111',
             'company_address' => 'Company Street',
             'working_hours' => 'Sun-Thu 9-5',
+            'valLicense' => 'VAL-123',
             'district' => 'Al Olaya',
         ]);
 
         $response->assertOk()
-            ->assertJsonPath('data.company_name', 'New Company');
+            ->assertJsonPath('data.company_name', 'New Company')
+            ->assertJsonPath('data.valLicense', 'VAL-123');
 
         $basicSetting = BasicSetting::query()->where('user_id', $tenant->id)->first();
         $this->assertNotNull($basicSetting);
@@ -155,6 +157,7 @@ class UpdateUserProfileTest extends TestCase
         $this->assertSame('+966511111111', $footer->general['phone']);
         $this->assertSame('Company Street', $footer->general['address']);
         $this->assertSame('Sun-Thu 9-5', $footer->general['workingHours']);
+        $this->assertSame('VAL-123', $footer->general['valLicense']);
         $this->assertCount(1, $footer->social);
         $this->assertCount(1, $footer->columns);
         $this->assertSame('Newsletter', $footer->newsletter['title']);
@@ -263,7 +266,53 @@ class UpdateUserProfileTest extends TestCase
         ])->assertStatus(403)
             ->assertJsonPath('code', 'FORBIDDEN');
 
+        $this->putJson('/api/user/profile', [
+            'valLicense' => 'VAL-HACKED',
+        ])->assertStatus(403)
+            ->assertJsonPath('code', 'FORBIDDEN');
+
         $basicSetting = BasicSetting::query()->where('user_id', $tenant->id)->first();
         $this->assertSame('Tenant Company', $basicSetting?->company_name);
+    }
+
+    public function test_omitting_val_license_still_allows_profile_update(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->tenant()->create([
+            'first_name' => 'Old',
+            'email' => 'tenant-optional-val-' . uniqid('', true) . '@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+
+        BasicSetting::query()->create([
+            'user_id' => $tenant->id,
+            'company_name' => 'Optional Val Co',
+        ]);
+
+        FooterSetting::query()->create([
+            'user_id' => $tenant->id,
+            'general' => [
+                'companyName' => 'Optional Val Co',
+            ],
+            'social' => [],
+            'columns' => [],
+            'newsletter' => [],
+            'style' => [],
+            'status' => true,
+        ]);
+
+        Sanctum::actingAs($tenant);
+
+        $this->putJson('/api/user/profile', [
+            'first_name' => 'Updated',
+            'company_name' => 'Optional Val Co Updated',
+        ])->assertOk()
+            ->assertJsonPath('data.first_name', 'Updated')
+            ->assertJsonPath('data.company_name', 'Optional Val Co Updated');
+
+        $footer = FooterSetting::query()->where('user_id', $tenant->id)->first();
+        $this->assertNotNull($footer);
+        $this->assertArrayNotHasKey('valLicense', $footer->general ?? []);
     }
 }

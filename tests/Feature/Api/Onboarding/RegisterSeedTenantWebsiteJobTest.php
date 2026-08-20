@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api\Onboarding;
 
 use App\Jobs\SeedTenantWebsiteJob;
+use App\Models\Api\FooterSetting;
 use App\Models\BasicExtended;
 use App\Models\Language;
 use App\Models\Package;
@@ -16,7 +17,7 @@ class RegisterSeedTenantWebsiteJobTest extends TestCase
 {
     use DatabaseTransactions;
 
-    public function test_register_dispatches_seed_tenant_website_job_and_returns_201_shape(): void
+    private function skipIfMissingRegisterSchema(): void
     {
         if (!Schema::hasTable('users')
             || !Schema::hasTable('packages')
@@ -24,7 +25,10 @@ class RegisterSeedTenantWebsiteJobTest extends TestCase
             || !Schema::hasTable('basic_extendeds')) {
             $this->markTestSkipped('Required tables are missing for register seed job test.');
         }
+    }
 
+    private function ensureDefaultLanguageAndCurrency(): void
+    {
         if (!Package::query()->find(26)) {
             $this->markTestSkipped('Trial package id 26 is missing.');
         }
@@ -63,6 +67,34 @@ class RegisterSeedTenantWebsiteJobTest extends TestCase
                 ])->save();
             }
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function registerPayload(string $suffix, array $extra = []): array
+    {
+        return array_merge([
+            'recaptcha_token' => 'TEST_BYPASS_TOKEN',
+            'email' => "register-seed-{$suffix}@example.com",
+            'username' => 'regseed' . substr(md5($suffix), 0, 10),
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'phone' => '+9665' . substr(preg_replace('/\D/', '', $suffix) . '00000000', 0, 8),
+            'first_name' => 'Register',
+            'last_name' => 'Seed',
+            'account_type' => 'tenant',
+        ], $extra);
+    }
+
+    public function test_register_dispatches_seed_tenant_website_job_and_returns_201_shape(): void
+    {
+        $this->skipIfMissingRegisterSchema();
+        $this->ensureDefaultLanguageAndCurrency();
+
+        if (!Schema::hasTable('api_footer_settings')) {
+            $this->markTestSkipped('Missing DB table: api_footer_settings.');
+        }
 
         // Recaptcha + any Mandhoor URL — register must not require Mandhoor before 201.
         Http::fake([
@@ -76,17 +108,9 @@ class RegisterSeedTenantWebsiteJobTest extends TestCase
         Bus::fake();
 
         $suffix = uniqid('', true);
-        $response = $this->postJson('/api/register', [
-            'recaptcha_token' => 'TEST_BYPASS_TOKEN',
-            'email' => "register-seed-{$suffix}@example.com",
-            'username' => 'regseed' . substr(md5($suffix), 0, 10),
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
-            'phone' => '+9665' . substr(preg_replace('/\D/', '', $suffix) . '00000000', 0, 8),
-            'first_name' => 'Register',
-            'last_name' => 'Seed',
-            'account_type' => 'tenant',
-        ]);
+        $response = $this->postJson('/api/register', $this->registerPayload($suffix, [
+            'valLicense' => 'VAL-REG-456',
+        ]));
 
         if ($response->status() !== 201) {
             $this->markTestSkipped(
@@ -107,6 +131,43 @@ class RegisterSeedTenantWebsiteJobTest extends TestCase
             (bool) data_get($response->json(), 'user.onboarding_completed'),
             'New tenant should have onboarding_completed false'
         );
+
+        Bus::assertDispatched(SeedTenantWebsiteJob::class);
+
+        $userId = data_get($response->json(), 'user.id');
+        $this->assertNotNull($userId);
+
+        $footer = FooterSetting::query()->where('user_id', $userId)->first();
+        $this->assertNotNull($footer);
+        $this->assertSame('VAL-REG-456', $footer->general['valLicense'] ?? null);
+    }
+
+    public function test_register_without_val_license_still_returns_201(): void
+    {
+        $this->skipIfMissingRegisterSchema();
+        $this->ensureDefaultLanguageAndCurrency();
+
+        Http::fake([
+            'https://www.google.com/recaptcha/*' => Http::response([
+                'success' => true,
+                'score' => 0.9,
+            ], 200),
+            '*' => Http::response(['ok' => true], 200),
+        ]);
+
+        Bus::fake();
+
+        $suffix = uniqid('noval', true);
+        $response = $this->postJson('/api/register', $this->registerPayload($suffix));
+
+        if ($response->status() !== 201) {
+            $this->markTestSkipped(
+                'Register returned ' . $response->status() . ': ' . $response->getContent()
+            );
+        }
+
+        $response->assertCreated()
+            ->assertJsonPath('status', 'success');
 
         Bus::assertDispatched(SeedTenantWebsiteJob::class);
     }

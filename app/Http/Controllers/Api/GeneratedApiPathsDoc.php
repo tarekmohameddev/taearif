@@ -3794,6 +3794,7 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="first_name", type="string", maxLength=191),
  *             @OA\Property(property="last_name", type="string", maxLength=191),
  *             @OA\Property(property="industry_type", type="string", maxLength=100),
+ *             @OA\Property(property="valLicense", type="string", maxLength=191),
  *             @OA\Property(property="company_size", type="string", maxLength=50),
  *             @OA\Property(property="temp_token", type="string"),
  *             @OA\Property(property="referral_code", type="string"),
@@ -4424,6 +4425,40 @@ namespace App\Http\Controllers\Api;
  *         operationId="get_user_get_ser_nfo_0",
  *         tags={"User"},
  *         summary="Get User Profile", security={{"sanctum":{}}},
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
+ *         @OA\Response(response=401, description="Unauthenticated")
+ *     )
+ *
+ * )
+ *
+ * @OA\PathItem(
+ *
+ *     path="/user/profile",
+ *
+ *     @OA\Put(
+ *         operationId="put_user_profile_0",
+ *         tags={"User"},
+ *         summary="Update User Profile", security={{"sanctum":{}}},
+ *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={},
+ *             @OA\Property(property="first_name", type="string", maxLength=191),
+ *             @OA\Property(property="last_name", type="string", maxLength=191),
+ *             @OA\Property(property="name", type="string", maxLength=191),
+ *             @OA\Property(property="email", type="string", format="email", maxLength=191),
+ *             @OA\Property(property="phone", type="string", maxLength=191),
+ *             @OA\Property(property="address", type="string", maxLength=500),
+ *             @OA\Property(property="city", type="string", maxLength=191),
+ *             @OA\Property(property="state", type="string", maxLength=191),
+ *             @OA\Property(property="district", type="string", maxLength=191),
+ *             @OA\Property(property="country", type="string", maxLength=191),
+ *             @OA\Property(property="company_name", type="string", maxLength=100),
+ *             @OA\Property(property="company_email", type="string", format="email", maxLength=100),
+ *             @OA\Property(property="company_phone", type="string", maxLength=255),
+ *             @OA\Property(property="company_address", type="string", maxLength=255),
+ *             @OA\Property(property="working_hours", type="string", maxLength=100),
+ *             @OA\Property(property="valLicense", type="string", maxLength=191),
+ *             @OA\Property(property="current_password", type="string"),
+ *             @OA\Property(property="password", type="string", minLength=6),
+ *         )),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )

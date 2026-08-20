@@ -208,6 +208,12 @@
                                     @if (array_key_exists('package_id', $userListQuery))
                                         <input type="hidden" name="package_id" value="{{ $userListQuery['package_id'] }}">
                                     @endif
+                                    @if (array_key_exists('btn_start_date', $userListQuery))
+                                        <input type="hidden" name="btn_start_date" value="{{ $userListQuery['btn_start_date'] }}">
+                                    @endif
+                                    @if (array_key_exists('btn_end_date', $userListQuery))
+                                        <input type="hidden" name="btn_end_date" value="{{ $userListQuery['btn_end_date'] }}">
+                                    @endif
                                     <div class="input-group date-range-filter flex-wrap">
 
                                         {{-- Date From --}}
@@ -314,6 +320,27 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-lg-12">
+                        <form action="{{ route('admin.register.user') }}" method="GET" class="form-inline mb-2 flex-wrap">
+                            @foreach (Arr::except($userListQuery, ['btn_start_date', 'btn_end_date', 'page']) as $key => $value)
+                                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                            @endforeach
+
+                            <label for="btn_start_date" class="small text-muted mb-0 mr-2">{{ __('Subscription Started From') }}</label>
+                            <input type="date" id="btn_start_date" name="btn_start_date" class="form-control form-control-sm mr-3"
+                                   value="{{ request('btn_start_date') }}">
+
+                            <label for="btn_end_date" class="small text-muted mb-0 mr-2">{{ __('Subscription Started To') }}</label>
+                            <input type="date" id="btn_end_date" name="btn_end_date" class="form-control form-control-sm mr-3"
+                                   value="{{ request('btn_end_date') }}">
+
+                            <button type="submit" class="btn btn-sm btn-primary mr-2">
+                                <i class="fas fa-filter mr-1"></i> {{ __('Filter') }}
+                            </button>
+                            @if (request()->filled('btn_start_date') || request()->filled('btn_end_date'))
+                                <a href="{{ route('admin.register.user', Arr::except($userListQuery, ['btn_start_date', 'btn_end_date', 'page'])) }}"
+                                   class="btn btn-sm btn-outline-secondary">{{ __('Clear Dates') }}</a>
+                            @endif
+                        </form>
                         <div class="btn-group btn-group-sm flex-wrap mb-3" role="group">
                             @php
                                 $showAllQuery = Arr::except($userListQuery, ['package_id', 'paid_member', 'page']);
@@ -436,14 +463,21 @@
                                             <span class="badge badge-secondary badge-xs mr-2">{{ __($currPackage->term) }}</span>
                                             @endif
 
-                                            <p class="mb-0">
-                                                @if ($currMemb->is_trial == 1)
-                                                ({{ __('Expire Date') }}: {{Carbon\Carbon::parse($currMemb->expire_date)->format('M-d-Y')}})
-                                                <span class="badge badge-primary">تجريبية</span>
-                                                @else
-                                                ({{ __('Expire Date') }}: {{$currPackage->term === 'lifetime' ? __('Lifetime') : Carbon\Carbon::parse($currMemb->expire_date)->format('M-d-Y')}})
+                                            <div class="small text-muted">
+                                                @if ($currMemb->start_date)
+                                                    ({{ __('Subscription Start Date') }} : {{ \Carbon\Carbon::parse($currMemb->start_date)->format('M-d-Y') }})
                                                 @endif
-                                                @if ($currMemb->status == 0)
+                                            </div>
+                                            <div class="small text-muted">
+                                                ({{ __('Subscription Expire Date') }} :
+                                                {{ $currPackage->term === 'lifetime'
+                                                    ? __('Lifetime')
+                                                    : ($currMemb->expire_date ? \Carbon\Carbon::parse($currMemb->expire_date)->format('M-d-Y') : '—') }})
+                                                @if ($currMemb->is_trial == 1)
+                                                    <span class="badge badge-primary">تجريبية</span>
+                                                @endif
+                                            </div>
+                                            @if ($currMemb->status == 0)
                                             <form id="statusForm{{$currMemb->id}}" class="d-inline-block" action="{{route('admin.payment-log.update')}}" method="post">
                                                 @csrf
                                                 <input type="hidden" name="id" value="{{$currMemb->id}}">
@@ -454,7 +488,6 @@
                                                 </select>
                                             </form>
                                             @endif
-                                            </p>
 
                                             @else
                                             <a data-target="#addCurrentPackage-{{ $user->id }}" data-toggle="modal" class="btn btn-xs btn-primary text-white"><i class="fas fa-plus"></i> {{ __('Add Package') }}</a>

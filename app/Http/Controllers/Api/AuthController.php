@@ -541,7 +541,9 @@ class AuthController extends Controller
             \App\Jobs\SeedTenantWebsiteJob::dispatch($user->id);
 
             // Onboarding + default categories
-            app(\App\Services\OnboardingService::class)->applyDefaultsFor($user);
+            app(\App\Services\OnboardingService::class)->applyDefaultsFor($user, [
+                'valLicense' => $validated['valLicense'] ?? null,
+            ]);
 
             // Re-seed tenant website pages with updated onboarding settings (SECOND TIME - after onboarding)
            // app(\App\Services\TenantWebsiteSeeder::class)->reseedWebsite($user);
@@ -869,6 +871,9 @@ class AuthController extends Controller
                     ->first();
                 $companyName = $basicSetting?->company_name;
 
+                $footer = FooterSetting::where('user_id', $owner->id)->first();
+                $valLicense = is_array($footer?->general) ? ($footer->general['valLicense'] ?? null) : null;
+
                 // Eager load employee counts to avoid N+1 queries
                 // Use withCount to get counts in a single query instead of two separate count() calls
                 $owner->loadCount([
@@ -896,6 +901,9 @@ class AuthController extends Controller
                 // Get company_name from BasicSetting (owner)
                 $basicSetting = BasicSetting::where('user_id', $owner->id)->first(['company_name']);
                 $companyName = $basicSetting ? $basicSetting->company_name : null;
+
+                $footer = FooterSetting::where('user_id', $owner->id)->first();
+                $valLicense = is_array($footer?->general) ? ($footer->general['valLicense'] ?? null) : null;
             }
 
               $membershipDetails = null;
@@ -1050,6 +1058,7 @@ class AuthController extends Controller
                   'domain' => $domain ? $domain->custom_name : "https://{$owner->username}.taearif.com/",
                   'onboarding_completed' => $user->onboarding_completed ?? false,
                   'company_name' => $companyName,
+                  'valLicense' => $valLicense,
                   'whatsapp' => [
                       'quota' => $whatsappQuota,
                       'usage' => $owner->whatsapp_usage,
@@ -1176,7 +1185,7 @@ class AuthController extends Controller
      */
     private function hasCompanyFieldUpdates(array $validated): bool
     {
-        foreach (['company_name', 'company_email', 'company_phone', 'company_address', 'working_hours', 'district'] as $key) {
+        foreach (['company_name', 'company_email', 'company_phone', 'company_address', 'working_hours', 'valLicense', 'district'] as $key) {
             if (array_key_exists($key, $validated)) {
                 return true;
             }
@@ -1273,6 +1282,10 @@ class AuthController extends Controller
 
         if (array_key_exists('working_hours', $validated)) {
             $general['workingHours'] = $validated['working_hours'];
+        }
+
+        if (array_key_exists('valLicense', $validated)) {
+            $general['valLicense'] = $validated['valLicense'];
         }
 
         $footerSetting->general = $general;

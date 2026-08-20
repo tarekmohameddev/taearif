@@ -64,6 +64,7 @@ class RegisterApiRequest extends BaseApiFormRequest
             'first_name' => 'nullable|string|max:191',
             'last_name' => 'nullable|string|max:191',
             'industry_type' => 'nullable|string|max:100',
+            'valLicense' => 'nullable|string|max:191',
             'company_size' => 'nullable|string|max:50',
             'temp_token' => 'nullable|string',
             'referral_code' => 'nullable|string',
