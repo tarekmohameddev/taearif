@@ -44,6 +44,7 @@ class UpdateUserProfileRequest extends BaseApiFormRequest
             'company_phone' => 'sometimes|nullable|string|max:255',
             'company_address' => 'sometimes|nullable|string|max:255',
             'working_hours' => 'sometimes|nullable|string|max:100',
+            'valLicense' => 'sometimes|nullable|string|max:191',
             'current_password' => 'required_with:password|nullable|string',
             'password' => 'nullable|string|min:6|confirmed',
         ];

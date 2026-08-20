@@ -24,7 +24,7 @@ use App\Models\User\GeneralSetting as UserGeneralSetting;
 
 class OnboardingService extends Controller
 {
-    public function applyDefaultsFor($user)
+    public function applyDefaultsFor($user, array $extra = [])
     {
         try {
             // Get default language (system-wide)
@@ -79,7 +79,7 @@ class OnboardingService extends Controller
 
             $this->seedDefaultApiMenuItems($user->id);
             $this->ApiMenuSetting($user->id);
-            $this->saveDefaultFooterSettings($user->id);
+            $this->saveDefaultFooterSettings($user->id, $extra);
 
             $user->onboarding_completed = false;
             $user->save();
@@ -246,7 +246,7 @@ class OnboardingService extends Controller
     }
 
     // Save default footer settings
-    private function saveDefaultFooterSettings(int $userId)
+    private function saveDefaultFooterSettings(int $userId, array $extra = [])
     {
         $general = [
             "companyName" => "اسم الشركة",
@@ -254,6 +254,7 @@ class OnboardingService extends Controller
             "phone" => "+966 5XXXXXXXX",
             "email" => "info@example.com",
             "workingHours" => "الأحد - الخميس: 9:00 ص - 5:00 م",
+            "valLicense" => $extra['valLicense'] ?? null,
             "copyrightText" => "© " . date('Y') . " جميع الحقوق محفوظة",
             "showCopyright" => true,
             "showContactInfo" => true,
