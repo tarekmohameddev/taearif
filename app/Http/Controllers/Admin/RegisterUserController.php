@@ -61,6 +61,19 @@ class RegisterUserController extends Controller
         $referredBy = $request->referred_by;
         $subscriptionStart = $request->filled('subscription_start') ? Carbon::createFromFormat('Y-m-d', $request->subscription_start)->startOfDay() : null;
         $subscriptionEnd = $request->filled('subscription_end') ? Carbon::createFromFormat('Y-m-d', $request->subscription_end)->endOfDay() : null;
+        $membershipStartFrom = null;
+        $membershipStartTo = null;
+        try {
+            if ($request->filled('btn_start_date')) {
+                $membershipStartFrom = Carbon::createFromFormat('Y-m-d', $request->btn_start_date)->startOfDay();
+            }
+            if ($request->filled('btn_end_date')) {
+                $membershipStartTo = Carbon::createFromFormat('Y-m-d', $request->btn_end_date)->endOfDay();
+            }
+        } catch (\Throwable $e) {
+            $membershipStartFrom = null;
+            $membershipStartTo = null;
+        }
         $activeMembership = $request->input('active_membership');
         $paidMember = $request->input('paid_member');
 
@@ -130,6 +143,16 @@ class RegisterUserController extends Controller
         ->when($request->filled('package_id'), function ($q) use ($request) {
             $q->whereHas('currentMembership', function ($m) use ($request) {
                 $m->where('package_id', (int) $request->package_id);
+            });
+        })
+        ->when($membershipStartFrom || $membershipStartTo, function ($q) use ($membershipStartFrom, $membershipStartTo) {
+            $q->whereHas('currentMembership', function ($m) use ($membershipStartFrom, $membershipStartTo) {
+                if ($membershipStartFrom) {
+                    $m->where('start_date', '>=', $membershipStartFrom);
+                }
+                if ($membershipStartTo) {
+                    $m->where('start_date', '<=', $membershipStartTo);
+                }
             });
         })
         ->orderBy('id', 'DESC')
@@ -221,6 +244,12 @@ class RegisterUserController extends Controller
 
         if ($request->query->has('package_id')) {
             $query['package_id'] = (string) $request->query('package_id', '');
+        }
+
+        foreach (['btn_start_date', 'btn_end_date'] as $key) {
+            if ($request->query->has($key)) {
+                $query[$key] = (string) $request->query($key, '');
+            }
         }
 
         return $query;
