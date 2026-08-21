@@ -115,7 +115,7 @@ class SyncWhatsappAiConversationToCommunicationService
             $this->applyHistoricalTimestamps($message, Carbon::parse($aiMessage->created_at));
         }
 
-        Log::info('whatsapp_ai.communication_sync.completed', [
+        Log::debug('whatsapp_ai.communication_sync.completed', [
             'whatsapp_conversation_id' => $aiConversation->id,
             'whatsapp_message_id' => $aiMessage->id,
             'communication_message_id' => $message->id,
@@ -181,7 +181,7 @@ class SyncWhatsappAiConversationToCommunicationService
             ->first();
 
         if ($existing !== null) {
-            Log::info('whatsapp_ai.communication_sync_outbound.already_exists', [
+            Log::debug('whatsapp_ai.communication_sync_outbound.already_exists', [
                 'whatsapp_conversation_id' => $aiConversation->id,
                 'whatsapp_message_id' => $aiMessage->id,
                 'existing_message_id' => $existing->id,
@@ -214,7 +214,7 @@ class SyncWhatsappAiConversationToCommunicationService
             $this->applyHistoricalTimestamps($message, Carbon::parse($aiMessage->created_at));
         }
 
-        Log::info('whatsapp_ai.communication_sync_outbound.completed', [
+        Log::debug('whatsapp_ai.communication_sync_outbound.completed', [
             'whatsapp_conversation_id' => $aiConversation->id,
             'whatsapp_message_id' => $aiMessage->id,
             'communication_message_id' => $message->id,

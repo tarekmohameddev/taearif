@@ -44,14 +44,14 @@ return [
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
-            'level' => 'debug',
+            'level' => env('LOG_LEVEL', 'info'),
         ],
 
         'daily' => [
             'driver' => 'daily',
             'tap' => [App\Logging\DateFirstFilename::class],
             'path' => storage_path('logs/laravel.log'),
-            'level' => 'debug',
+            'level' => env('LOG_LEVEL', 'info'),
             'days' => 14,
         ],
 

@@ -4,10 +4,14 @@ namespace App\Domain\Communication\WhatsApp\Services;
 
 use App\Models\WaNumber;
 use App\Models\WhatsappUser;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class WhatsAppWebhookService
 {
+    private const UNRESOLVED_MAPPING_WARNING_TTL_SECONDS = 3600;
+
     public function __construct(
         private readonly SyncWhatsappUserToWaNumberService $syncWaNumber,
     ) {}
@@ -41,14 +45,7 @@ class WhatsAppWebhookService
             return ['user_id' => (int) $waNumber->user_id, 'wa_number_id' => (int) $waNumber->id];
         }
 
-        Log::warning('communication.whatsapp.wa_number_mapping', [
-            'outcome' => 'unresolved',
-            'provider' => $provider,
-            'phone_number_id' => $phoneNumberId !== null ? (string) $phoneNumberId : null,
-            'display_phone_number' => $displayPhone !== null ? (string) $displayPhone : null,
-            'provider_account_id' => isset($payload['provider_account_id']) ? (string) $payload['provider_account_id'] : null,
-            'instance' => isset($payload['instance']) ? (string) $payload['instance'] : null,
-        ]);
+        $this->logUnresolved($provider, $phoneNumberId, $displayPhone, $payload);
 
         return null;
     }
@@ -181,12 +178,51 @@ class WhatsAppWebhookService
 
     private function logResolved(string $provider, WaNumber $waNumber, string $matchedBy): void
     {
-        Log::info('communication.whatsapp.wa_number_mapping', [
+        Log::debug('communication.whatsapp.wa_number_mapping', [
             'outcome' => 'resolved',
             'provider' => $provider,
             'matched_by' => $matchedBy,
             'user_id' => (int) $waNumber->user_id,
             'wa_number_id' => (int) $waNumber->id,
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function logUnresolved(string $provider, mixed $phoneNumberId, mixed $displayPhone, array $payload): void
+    {
+        $context = [
+            'outcome' => 'unresolved',
+            'provider' => $provider,
+            'phone_number_id' => $phoneNumberId !== null ? (string) $phoneNumberId : null,
+            'display_phone_number' => $displayPhone !== null ? (string) $displayPhone : null,
+            'provider_account_id' => isset($payload['provider_account_id']) ? (string) $payload['provider_account_id'] : null,
+            'instance' => isset($payload['instance']) ? (string) $payload['instance'] : null,
+        ];
+
+        $fingerprint = sha1(implode('|', [
+            (string) ($context['provider'] ?? ''),
+            (string) ($context['phone_number_id'] ?? ''),
+            (string) ($context['display_phone_number'] ?? ''),
+            (string) ($context['provider_account_id'] ?? ''),
+            (string) ($context['instance'] ?? ''),
+        ]));
+        $cacheKey = 'communication.whatsapp.wa_number_mapping.unresolved.'.$fingerprint;
+
+        $shouldWarn = true;
+        try {
+            $shouldWarn = Cache::add($cacheKey, 1, self::UNRESOLVED_MAPPING_WARNING_TTL_SECONDS);
+        } catch (Throwable $e) {
+            $shouldWarn = true;
+        }
+
+        if ($shouldWarn) {
+            Log::warning('communication.whatsapp.wa_number_mapping', $context);
+
+            return;
+        }
+
+        Log::debug('communication.whatsapp.wa_number_mapping', $context);
     }
 }

@@ -156,7 +156,7 @@ class CommunicationServiceImpl implements CommunicationService
                     $state->save();
 
                     if ($waNumberId === null) {
-                        Log::info('communication.whatsapp.wa_number_mapping', [
+                        Log::debug('communication.whatsapp.wa_number_mapping', [
                             'outcome' => 'unresolved',
                             'conversation_id' => (int) $conversation->id,
                             'user_id' => (int) $userId,
@@ -164,7 +164,7 @@ class CommunicationServiceImpl implements CommunicationService
                             'source' => $meta['source'] ?? null,
                         ]);
                     } elseif ($existingWaNumberId === null) {
-                        Log::info('communication.whatsapp.wa_number_mapping', [
+                        Log::debug('communication.whatsapp.wa_number_mapping', [
                             'outcome' => $wasExisting ? 'backfilled' : 'resolved',
                             'conversation_id' => (int) $conversation->id,
                             'user_id' => (int) $userId,
@@ -181,7 +181,7 @@ class CommunicationServiceImpl implements CommunicationService
                             'source' => $meta['source'] ?? null,
                         ]);
                     } else {
-                        Log::info('communication.whatsapp.wa_number_mapping', [
+                        Log::debug('communication.whatsapp.wa_number_mapping', [
                             'outcome' => 'resolved',
                             'conversation_id' => (int) $conversation->id,
                             'user_id' => (int) $userId,
@@ -359,7 +359,7 @@ class CommunicationServiceImpl implements CommunicationService
                 }
             });
 
-            Log::info('CommunicationService::recordOutboundFromEcho success', [
+            Log::debug('CommunicationService::recordOutboundFromEcho success', [
                 'message_id' => $message?->id,
                 'conversation_id' => $message?->conversation_id,
                 'user_id' => $userId,
