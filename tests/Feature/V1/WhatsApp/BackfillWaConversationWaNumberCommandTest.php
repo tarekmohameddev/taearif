@@ -9,6 +9,7 @@ use App\Models\Message;
 use App\Models\User;
 use App\Models\WaConversationState;
 use App\Models\WaNumber;
+use App\Models\WhatsappUser;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -161,6 +162,76 @@ class BackfillWaConversationWaNumberCommandTest extends TestCase
 
         $state = $this->createConversationStateWithMessage($tenant, [
             'channel_id' => 34567,
+        ]);
+
+        $this->artisan('communication:backfill-wa-conversation-wa-number')
+            ->assertExitCode(0);
+
+        $state->refresh();
+        $this->assertSame((int) $waNumber->id, (int) $state->wa_number_id);
+    }
+
+    /** @test */
+    public function it_backfills_using_meta_phone_number_id(): void
+    {
+        $this->requireTables();
+
+        $tenant = $this->createTenant();
+        $waNumber = WaNumber::create([
+            'user_id' => $tenant->id,
+            'provider' => 'meta',
+            'phone_number' => '+966500010010',
+            'phone_number_id' => 'pnid-meta-phone-' . uniqid(),
+            'name' => 'Phone Id Match',
+            'status' => 'active',
+        ]);
+
+        $state = $this->createConversationStateWithMessage($tenant, [
+            'phone_number_id' => $waNumber->phone_number_id,
+        ]);
+
+        $this->artisan('communication:backfill-wa-conversation-wa-number')
+            ->assertExitCode(0);
+
+        $state->refresh();
+        $this->assertSame((int) $waNumber->id, (int) $state->wa_number_id);
+    }
+
+    /** @test */
+    public function it_backfills_using_whatsapp_ai_conversation_id(): void
+    {
+        $this->requireTables();
+        if (! Schema::hasTable('whatsapp_users') || ! Schema::hasTable('whatsapp_conversations')) {
+            $this->markTestSkipped('whatsapp_users and whatsapp_conversations tables required.');
+        }
+
+        $tenant = $this->createTenant();
+        $phoneId = 'pnid-ai-conv-' . uniqid();
+        $whatsappUser = WhatsappUser::create([
+            'user_id' => $tenant->id,
+            'number' => '+966500010011',
+            'phone_id' => $phoneId,
+            'status' => 'active',
+        ]);
+        $waNumber = WaNumber::create([
+            'user_id' => $tenant->id,
+            'provider' => 'meta',
+            'phone_number' => '+966500010011',
+            'phone_number_id' => $phoneId,
+            'name' => 'AI Conv Match',
+            'status' => 'active',
+        ]);
+
+        $aiConversation = \Modules\WhatsappAI\Entities\WhatsappConversation::create([
+            'user_id' => $tenant->id,
+            'whatsapp_user_id' => $whatsappUser->id,
+            'customer_phone' => '966512300099',
+            'status' => 'collecting',
+        ]);
+
+        $state = $this->createConversationStateWithMessage($tenant, [
+            'source' => 'whatsapp_ai_webhook',
+            'whatsapp_ai_conversation_id' => $aiConversation->id,
         ]);
 
         $this->artisan('communication:backfill-wa-conversation-wa-number')

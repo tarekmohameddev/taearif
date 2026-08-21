@@ -51,12 +51,12 @@ class WhatsappAiWebhookCommunicationSyncTest extends TestCase
         ]);
     }
 
-    private function createWhatsappUser(User $tenant, string $phoneId = 'phone_test_123'): WhatsappUser
+    private function createWhatsappUser(User $tenant, string $phoneId = 'phone_test_123', string $number = '+966501111111'): WhatsappUser
     {
         return WhatsappUser::create([
             'user_id' => $tenant->id,
             'phone_id' => $phoneId,
-            'number' => '+966501111111',
+            'number' => $number,
             'status' => 'active',
         ]);
     }
@@ -185,6 +185,90 @@ class WhatsappAiWebhookCommunicationSyncTest extends TestCase
 
         Queue::assertPushed(ProcessConversation::class);
         Queue::assertNotPushed(TranscribeAudio::class);
+    }
+
+    /** @test */
+    public function whatsapp_ai_webhook_backfills_wa_number_from_whatsapp_user_when_missing(): void
+    {
+        $this->requireTables();
+        Queue::fake();
+
+        $tenant = $this->createTenant();
+        $phoneId = (string) random_int(100000000000000, 999999999999999);
+        $displayPhone = '+9665' . random_int(10000000, 99999999);
+        $this->createWhatsappUser($tenant, $phoneId, $displayPhone);
+
+        $this->assertSame(0, WaNumber::where('user_id', $tenant->id)->where('phone_number_id', $phoneId)->count());
+
+        $customerPhone = '966509' . random_int(1000000, 9999999);
+        $messageId = 'wamid.missing_wa.' . uniqid();
+        $payload = $this->webhookPayload($phoneId, $customerPhone, $messageId);
+        $payload['entry'][0]['changes'][0]['value']['metadata']['display_phone_number'] = $displayPhone;
+
+        $this->postJson('/api/whatsapp-ai/webhook', $payload)
+            ->assertOk()
+            ->assertJsonPath('status', 'stored');
+
+        $waNumber = WaNumber::where('user_id', $tenant->id)->where('phone_number_id', $phoneId)->first();
+        $this->assertNotNull($waNumber);
+        $this->assertSame('meta', $waNumber->provider);
+        $this->assertSame($displayPhone, $waNumber->phone_number);
+
+        $conversation = Conversation::where('user_id', $tenant->id)
+            ->where('channel', 'whatsapp')
+            ->where('external_party_identifier', '+' . ltrim($customerPhone, '+'))
+            ->first();
+        $this->assertNotNull($conversation);
+
+        $this->assertDatabaseHas('wa_conversation_states', [
+            'conversation_id' => $conversation->id,
+            'user_id' => $tenant->id,
+            'wa_number_id' => $waNumber->id,
+        ]);
+    }
+
+    /** @test */
+    public function whatsapp_ai_webhook_repairs_incomplete_wa_number_and_maps_conversation(): void
+    {
+        $this->requireTables();
+        Queue::fake();
+
+        $tenant = $this->createTenant();
+        $phoneId = (string) random_int(100000000000000, 999999999999999);
+        $this->createWhatsappUser($tenant, $phoneId, '+966 58 382 8258');
+
+        $existing = WaNumber::create([
+            'user_id' => $tenant->id,
+            'provider' => 'meta',
+            'phone_number' => '+966 58 382 8258',
+            'phone_number_id' => null,
+            'name' => 'Incomplete',
+            'status' => 'active',
+        ]);
+
+        $customerPhone = '966509' . random_int(1000000, 9999999);
+        $messageId = 'wamid.repair_wa.' . uniqid();
+        $payload = $this->webhookPayload($phoneId, $customerPhone, $messageId);
+        $payload['entry'][0]['changes'][0]['value']['metadata']['display_phone_number'] = '966583828258';
+
+        $this->postJson('/api/whatsapp-ai/webhook', $payload)
+            ->assertOk()
+            ->assertJsonPath('status', 'stored');
+
+        $existing->refresh();
+        $this->assertSame($phoneId, $existing->phone_number_id);
+        $this->assertSame('+966583828258', $existing->phone_number);
+        $this->assertSame(1, WaNumber::where('user_id', $tenant->id)->count());
+
+        $conversation = Conversation::where('user_id', $tenant->id)
+            ->where('channel', 'whatsapp')
+            ->first();
+        $this->assertNotNull($conversation);
+        $this->assertDatabaseHas('wa_conversation_states', [
+            'conversation_id' => $conversation->id,
+            'user_id' => $tenant->id,
+            'wa_number_id' => $existing->id,
+        ]);
     }
 
     /** @test */
