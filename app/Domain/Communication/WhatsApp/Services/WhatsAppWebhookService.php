@@ -3,10 +3,15 @@
 namespace App\Domain\Communication\WhatsApp\Services;
 
 use App\Models\WaNumber;
+use App\Models\WhatsappUser;
 use Illuminate\Support\Facades\Log;
 
 class WhatsAppWebhookService
 {
+    public function __construct(
+        private readonly SyncWhatsappUserToWaNumberService $syncWaNumber,
+    ) {}
+
     /**
      * Resolve tenant (user_id) and wa_number_id from webhook payload.
      * Returns ['user_id' => int, 'wa_number_id' => int] or null if unresolved.
@@ -16,42 +21,24 @@ class WhatsAppWebhookService
         $phoneNumberId = $payload['metadata']['phone_number_id'] ?? $payload['phone_number_id'] ?? null;
         $displayPhone = $payload['metadata']['display_phone_number'] ?? $payload['display_phone_number'] ?? null;
 
-        if ($provider === 'meta') {
-            if ($phoneNumberId !== null) {
-                $waNumber = WaNumber::query()
-                    ->where('provider', 'meta')
-                    ->where('phone_number_id', (string) $phoneNumberId)
-                    ->first();
-                if ($waNumber) {
-                    $this->logResolved($provider, $waNumber, 'phone_number_id');
-                    return ['user_id' => (int) $waNumber->user_id, 'wa_number_id' => (int) $waNumber->id];
-                }
+        $waNumber = $this->findWaNumberByProviderId($provider, $phoneNumberId, $payload);
+
+        if ($waNumber === null) {
+            $healed = $this->healFromWhatsappUser($provider, $phoneNumberId !== null ? (string) $phoneNumberId : null);
+            if ($healed !== null) {
+                $this->logResolved($provider, $healed, 'whatsapp_user_backfill');
+
+                return ['user_id' => (int) $healed->user_id, 'wa_number_id' => (int) $healed->id];
             }
-            if ($displayPhone !== null) {
-                $normalized = $this->normalizePhone($displayPhone);
-                $waNumber = WaNumber::query()
-                    ->where('provider', 'meta')
-                    ->where('phone_number', $normalized)
-                    ->first();
-                if ($waNumber) {
-                    $this->logResolved($provider, $waNumber, 'display_phone_number');
-                    return ['user_id' => (int) $waNumber->user_id, 'wa_number_id' => (int) $waNumber->id];
-                }
-            }
+
+            $waNumber = $this->findWaNumberByDisplayPhone($provider, $displayPhone);
         }
 
-        if ($provider === 'evolution') {
-            $accountId = $payload['provider_account_id'] ?? $payload['instance'] ?? null;
-            if ($accountId !== null) {
-                $waNumber = WaNumber::query()
-                    ->where('provider', 'evolution')
-                    ->where('provider_account_id', (string) $accountId)
-                    ->first();
-                if ($waNumber) {
-                    $this->logResolved($provider, $waNumber, 'provider_account_id');
-                    return ['user_id' => (int) $waNumber->user_id, 'wa_number_id' => (int) $waNumber->id];
-                }
-            }
+        if ($waNumber !== null) {
+            $matchedBy = $this->describeMatch($waNumber, $phoneNumberId, $displayPhone);
+            $this->logResolved($provider, $waNumber, $matchedBy);
+
+            return ['user_id' => (int) $waNumber->user_id, 'wa_number_id' => (int) $waNumber->id];
         }
 
         Log::warning('communication.whatsapp.wa_number_mapping', [
@@ -75,6 +62,108 @@ class WhatsAppWebhookService
         $expected = 'sha256=' . hash_hmac('sha256', $payload, $secret);
 
         return hash_equals($expected, $signature);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function findWaNumberByProviderId(string $provider, mixed $phoneNumberId, array $payload): ?WaNumber
+    {
+        if ($provider === 'meta' && $phoneNumberId !== null) {
+            return WaNumber::query()
+                ->where('provider', 'meta')
+                ->where('phone_number_id', (string) $phoneNumberId)
+                ->first();
+        }
+
+        if ($provider === 'evolution') {
+            $accountId = $payload['provider_account_id'] ?? $payload['instance'] ?? null;
+            if ($accountId !== null) {
+                return WaNumber::query()
+                    ->where('provider', 'evolution')
+                    ->where('provider_account_id', (string) $accountId)
+                    ->first();
+            }
+        }
+
+        return null;
+    }
+
+    private function findWaNumberByDisplayPhone(string $provider, mixed $displayPhone): ?WaNumber
+    {
+        if ($provider !== 'meta' || $displayPhone === null) {
+            return null;
+        }
+
+        $normalized = $this->normalizePhone((string) $displayPhone);
+        $waNumber = WaNumber::query()
+            ->where('provider', 'meta')
+            ->where('phone_number', $normalized)
+            ->first();
+        if ($waNumber) {
+            return $waNumber;
+        }
+
+        return $this->findMetaByPhoneDigits((string) $displayPhone);
+    }
+
+    private function healFromWhatsappUser(string $provider, ?string $phoneNumberId): ?WaNumber
+    {
+        if ($phoneNumberId === null || $phoneNumberId === '') {
+            return null;
+        }
+
+        $whatsappUser = WhatsappUser::query()
+            ->where('phone_id', $phoneNumberId)
+            ->where('status', 'active')
+            ->first();
+
+        if ($whatsappUser === null) {
+            return null;
+        }
+
+        $providerOverride = in_array($provider, ['meta', 'evolution'], true) ? $provider : null;
+
+        return $this->syncWaNumber->syncQuietly($whatsappUser, $providerOverride);
+    }
+
+    private function findMetaByPhoneDigits(string $displayPhone): ?WaNumber
+    {
+        $digits = $this->syncWaNumber->phoneDigits($displayPhone);
+        if ($digits === '') {
+            return null;
+        }
+
+        $candidates = WaNumber::query()
+            ->where('provider', 'meta')
+            ->whereNotNull('phone_number')
+            ->get();
+
+        foreach ($candidates as $candidate) {
+            if ($this->syncWaNumber->phoneDigits((string) $candidate->phone_number) === $digits) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private function describeMatch(WaNumber $waNumber, mixed $phoneNumberId, mixed $displayPhone): string
+    {
+        if ($phoneNumberId !== null && (string) $waNumber->phone_number_id === (string) $phoneNumberId) {
+            return 'phone_number_id';
+        }
+        if ($displayPhone !== null) {
+            $normalized = $this->normalizePhone((string) $displayPhone);
+            if ((string) $waNumber->phone_number === $normalized) {
+                return 'display_phone_number';
+            }
+            if ($this->syncWaNumber->phoneDigits((string) $waNumber->phone_number) === $this->syncWaNumber->phoneDigits((string) $displayPhone)) {
+                return 'display_phone_number_digits';
+            }
+        }
+
+        return 'whatsapp_user_backfill';
     }
 
     private function normalizePhone(string $value): string

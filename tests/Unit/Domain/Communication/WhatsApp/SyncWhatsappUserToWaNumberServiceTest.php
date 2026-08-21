@@ -150,4 +150,71 @@ final class SyncWhatsappUserToWaNumberServiceTest extends TestCase
         $this->assertNull($this->service->sync($wu));
         $this->assertSame(0, WaNumber::where('user_id', $user->id)->count());
     }
+
+    public function test_it_treats_numeric_phone_id_without_token_as_meta(): void
+    {
+        $user = User::factory()->create();
+        $wu = WhatsappUser::create([
+            'user_id'  => $user->id,
+            'number'   => '+966 54 644 4785',
+            'status'   => 'active',
+            'phone_id' => '1416819372043755',
+        ]);
+
+        $waNumber = $this->service->sync($wu);
+
+        $this->assertNotNull($waNumber);
+        $this->assertSame('meta', $waNumber->provider);
+        $this->assertSame('1416819372043755', $waNumber->phone_number_id);
+        $this->assertSame('+966546444785', $waNumber->phone_number);
+    }
+
+    public function test_it_repairs_existing_wa_number_missing_phone_number_id(): void
+    {
+        $user = User::factory()->create();
+
+        $existing = WaNumber::create([
+            'user_id'         => $user->id,
+            'provider'        => 'meta',
+            'phone_number'    => '+966 58 382 8258',
+            'phone_number_id' => null,
+            'name'            => 'Incomplete',
+            'status'          => 'active',
+        ]);
+
+        $wu = WhatsappUser::create([
+            'user_id'      => $user->id,
+            'number'       => '+966 58 382 8258',
+            'name'         => 'Office',
+            'status'       => 'active',
+            'phone_id'     => '712754425256909',
+            'access_token' => 'tok',
+            'waba_id'      => 'waba-1',
+        ]);
+
+        $waNumber = $this->service->sync($wu);
+
+        $this->assertNotNull($waNumber);
+        $this->assertSame($existing->id, $waNumber->id);
+        $this->assertSame('712754425256909', $waNumber->phone_number_id);
+        $this->assertSame('+966583828258', $waNumber->phone_number);
+        $this->assertSame(1, WaNumber::where('user_id', $user->id)->count());
+    }
+
+    public function test_provider_hint_forces_meta_for_non_numeric_phone_id(): void
+    {
+        $user = User::factory()->create();
+        $wu = WhatsappUser::create([
+            'user_id'  => $user->id,
+            'number'   => '+966509998877',
+            'status'   => 'active',
+            'phone_id' => 'named-instance',
+        ]);
+
+        $waNumber = $this->service->sync($wu, 'meta');
+
+        $this->assertNotNull($waNumber);
+        $this->assertSame('meta', $waNumber->provider);
+        $this->assertSame('named-instance', $waNumber->phone_number_id);
+    }
 }

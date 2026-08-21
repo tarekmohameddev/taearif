@@ -21,8 +21,10 @@ final class SyncWhatsappUserToWaNumberService
      *
      * Returns null when there is no provider phone id to key on, or when the
      * number is not active and no WaNumber row exists yet.
+     *
+     * @param  'meta'|'evolution'|null  $provider  Override inferred provider (use 'meta' from Meta webhooks).
      */
-    public function sync(WhatsappUser $whatsappUser): ?WaNumber
+    public function sync(WhatsappUser $whatsappUser, ?string $provider = null): ?WaNumber
     {
         $phoneId = trim((string) ($whatsappUser->phone_id ?? ''));
         if ($phoneId === '') {
@@ -30,7 +32,7 @@ final class SyncWhatsappUserToWaNumberService
         }
 
         $userId = (int) $whatsappUser->user_id;
-        $isMeta = $this->isMetaProvider($whatsappUser);
+        $isMeta = $this->resolveIsMeta($whatsappUser, $provider);
         $normalized = $this->normalizePhone((string) ($whatsappUser->number ?? ''));
         $desiredStatus = $this->mapStatus((string) ($whatsappUser->status ?? ''));
 
@@ -76,11 +78,13 @@ final class SyncWhatsappUserToWaNumberService
 
     /**
      * Best-effort sync that never throws — use from HTTP controllers.
+     *
+     * @param  'meta'|'evolution'|null  $provider
      */
-    public function syncQuietly(WhatsappUser $whatsappUser): ?WaNumber
+    public function syncQuietly(WhatsappUser $whatsappUser, ?string $provider = null): ?WaNumber
     {
         try {
-            return $this->sync($whatsappUser);
+            return $this->sync($whatsappUser, $provider);
         } catch (\Throwable $e) {
             Log::warning('whatsapp.sync_wa_number.failed', [
                 'whatsapp_user_id' => $whatsappUser->id,
@@ -104,9 +108,38 @@ final class SyncWhatsappUserToWaNumberService
         return $cleaned;
     }
 
+    public function phoneDigits(string $number): string
+    {
+        return preg_replace('/\D+/', '', $number) ?? '';
+    }
+
+    /**
+     * @param  'meta'|'evolution'|null  $provider
+     */
+    private function resolveIsMeta(WhatsappUser $whatsappUser, ?string $provider): bool
+    {
+        if ($provider === 'meta') {
+            return true;
+        }
+        if ($provider === 'evolution') {
+            return false;
+        }
+
+        return $this->isMetaProvider($whatsappUser);
+    }
+
     private function isMetaProvider(WhatsappUser $whatsappUser): bool
     {
-        return ! empty($whatsappUser->token) || ! empty($whatsappUser->access_token);
+        if (! empty($whatsappUser->token) || ! empty($whatsappUser->access_token)) {
+            return true;
+        }
+        if (! empty($whatsappUser->waba_id) || ! empty($whatsappUser->business_id)) {
+            return true;
+        }
+
+        $phoneId = trim((string) ($whatsappUser->phone_id ?? ''));
+
+        return $phoneId !== '' && ctype_digit($phoneId);
     }
 
     private function mapStatus(string $status): string
@@ -131,7 +164,22 @@ final class SyncWhatsappUserToWaNumberService
         }
 
         if ($normalized !== '') {
-            return (clone $base)->where('phone_number', $normalized)->first();
+            $exact = (clone $base)->where('phone_number', $normalized)->first();
+            if ($exact !== null) {
+                return $exact;
+            }
+        }
+
+        $digits = $this->phoneDigits($normalized !== '' ? $normalized : $phoneId);
+        if ($digits === '') {
+            return null;
+        }
+
+        $candidates = (clone $base)->whereNotNull('phone_number')->get();
+        foreach ($candidates as $candidate) {
+            if ($this->phoneDigits((string) $candidate->phone_number) === $digits) {
+                return $candidate;
+            }
         }
 
         return null;

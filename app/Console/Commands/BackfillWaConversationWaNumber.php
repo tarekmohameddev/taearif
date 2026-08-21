@@ -5,8 +5,11 @@ namespace App\Console\Commands;
 use App\Models\Message;
 use App\Models\WaConversationState;
 use App\Models\WaNumber;
+use App\Models\WhatsappUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Modules\WhatsappAI\Entities\WhatsappConversation;
 
 class BackfillWaConversationWaNumber extends Command
 {
@@ -153,9 +156,11 @@ class BackfillWaConversationWaNumber extends Command
     /**
      * Strict priority resolver:
      * 1) meta.wa_number_id
-     * 2) meta.display_phone / meta.display_phone_number
-     * 3) meta.context.instance
-     * 4) meta.channel_id
+     * 2) meta.phone_number_id
+     * 3) meta.whatsapp_ai_conversation_id → whatsapp_users.phone_id
+     * 4) meta.display_phone / meta.display_phone_number
+     * 5) meta.context.instance
+     * 6) meta.channel_id
      */
     private function resolveWaNumberId(WaConversationState $state): array
     {
@@ -187,6 +192,67 @@ class BackfillWaConversationWaNumber extends Command
                     'matched_by' => 'meta.wa_number_id',
                     'message_id' => (int) $message->id,
                 ];
+            }
+        }
+
+        $phoneNumberId = $meta['phone_number_id']
+            ?? data_get($meta, 'metadata.phone_number_id');
+        if (is_string($phoneNumberId) && trim($phoneNumberId) !== '') {
+            $candidateIds = WaNumber::query()
+                ->where('user_id', $state->user_id)
+                ->where('phone_number_id', trim($phoneNumberId))
+                ->pluck('id')
+                ->all();
+
+            if (count($candidateIds) === 1) {
+                return [
+                    'outcome' => 'resolved',
+                    'wa_number_id' => (int) $candidateIds[0],
+                    'matched_by' => 'meta.phone_number_id',
+                    'message_id' => (int) $message->id,
+                ];
+            }
+            if (count($candidateIds) > 1) {
+                return [
+                    'outcome' => 'ambiguous',
+                    'matched_by' => 'meta.phone_number_id',
+                    'candidate_wa_number_ids' => array_map('intval', $candidateIds),
+                    'message_id' => (int) $message->id,
+                ];
+            }
+        }
+
+        $aiConversationId = $meta['whatsapp_ai_conversation_id'] ?? null;
+        if ($aiConversationId !== null && (int) $aiConversationId > 0 && Schema::hasTable('whatsapp_conversations')) {
+            $aiConversation = WhatsappConversation::query()->find((int) $aiConversationId);
+            $whatsappUserId = $aiConversation !== null ? (int) ($aiConversation->whatsapp_user_id ?? 0) : 0;
+            $whatsappUser = $whatsappUserId > 0
+                ? WhatsappUser::query()->find($whatsappUserId)
+                : null;
+            $legacyPhoneId = trim((string) ($whatsappUser->phone_id ?? ''));
+            if ($legacyPhoneId !== '' && (int) ($whatsappUser->user_id ?? 0) === (int) $state->user_id) {
+                $candidateIds = WaNumber::query()
+                    ->where('user_id', $state->user_id)
+                    ->where('phone_number_id', $legacyPhoneId)
+                    ->pluck('id')
+                    ->all();
+
+                if (count($candidateIds) === 1) {
+                    return [
+                        'outcome' => 'resolved',
+                        'wa_number_id' => (int) $candidateIds[0],
+                        'matched_by' => 'meta.whatsapp_ai_conversation_id',
+                        'message_id' => (int) $message->id,
+                    ];
+                }
+                if (count($candidateIds) > 1) {
+                    return [
+                        'outcome' => 'ambiguous',
+                        'matched_by' => 'meta.whatsapp_ai_conversation_id',
+                        'candidate_wa_number_ids' => array_map('intval', $candidateIds),
+                        'message_id' => (int) $message->id,
+                    ];
+                }
             }
         }
 
