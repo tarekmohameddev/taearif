@@ -77,7 +77,18 @@ class AuthServiceProvider extends ServiceProvider
             $isTenant = method_exists($user, 'isTenant')
                 ? $user->isTenant()
                 : in_array(($user->account_type ?? ''), ['tenant','user'], true);
-            return $isTenant ? true : null; // owners can do everything
+            if ($isTenant) {
+                return true; // owners can do everything
+            }
+
+            // Employees: cheap SQL/cache check instead of Spatie hydrating all pivots.
+            // Return null (not false) on miss so real policies can still run.
+            if (method_exists($user, 'isEmployee') && $user->isEmployee()) {
+                return app(\App\Services\Rbac\LightweightPermissionChecker::class)
+                    ->userHasPermission($user, $ability) ?: null;
+            }
+
+            return null;
         });
         /*
         // If you want to allow certain admin roles later, you can do:

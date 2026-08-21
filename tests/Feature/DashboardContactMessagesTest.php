@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\ApiCustomer;
 use App\Models\ContactMessage;
 use App\Models\User;
+use App\Services\Rbac\LightweightPermissionChecker;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Permission;
@@ -347,5 +349,74 @@ class DashboardContactMessagesTest extends TestCase
         $res = $this->getJson('/api/v1/customers/' . $customer->id . '/contact-messages');
         $res->assertOk();
         $this->assertCount(1, $res->json('data'));
+    }
+
+    // -------------------------------------------------------------------------
+    // Employee permission tests (lightweight-checker path)
+    // -------------------------------------------------------------------------
+
+    public function test_employee_with_permission_can_access_unread_count(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $employee = User::factory()->create([
+            'account_type' => 'employee',
+            'tenant_id' => $tenant->id,
+        ]);
+
+        $this->grantPermissionsToEmployee($tenant, $employee, ['contact_messages.view']);
+        $this->seedMessage($tenant);
+
+        Cache::flush(); // start with empty lightweight cache
+
+        Sanctum::actingAs($employee);
+
+        $res = $this->getJson('/api/v1/contact-messages/unread-count');
+        $res->assertOk()->assertJson([
+            'success' => true,
+            'data' => ['unread_count' => 1],
+        ]);
+    }
+
+    public function test_employee_without_permission_is_denied_unread_count(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $employee = User::factory()->create([
+            'account_type' => 'employee',
+            'tenant_id' => $tenant->id,
+        ]);
+
+        // No permissions granted – ensure lightweight cache is clean
+        LightweightPermissionChecker::forgetFor((int) $employee->id, (int) $tenant->id);
+
+        Sanctum::actingAs($employee);
+
+        $this->getJson('/api/v1/contact-messages/unread-count')->assertStatus(403);
+    }
+
+    private function grantPermissionsToEmployee(User $tenant, User $employee, array $permissions): void
+    {
+        $registrar = app(PermissionRegistrar::class);
+        $registrar->setPermissionsTeamId((int) $tenant->id);
+        $registrar->forgetCachedPermissions();
+
+        foreach ($permissions as $permissionName) {
+            try {
+                $permission = Permission::findByName($permissionName, 'sanctum');
+            } catch (\Throwable $e) {
+                $permission = Permission::create([
+                    'name' => $permissionName,
+                    'guard_name' => 'sanctum',
+                    'team_id' => $tenant->id,
+                ]);
+            }
+            $employee->givePermissionTo($permission);
+        }
+
+        $registrar->forgetCachedPermissions();
+        LightweightPermissionChecker::forgetFor((int) $employee->id, (int) $tenant->id);
     }
 }
