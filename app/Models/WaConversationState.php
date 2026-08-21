@@ -108,6 +108,8 @@ class WaConversationState extends Model
         }
 
         return $this->aiState()->first();
+    }
+
     public function getCustomerNameAttribute(): ?string
     {
         return $this->relationLoaded('conversation') ? $this->conversation?->customer_name : null;
