@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\TokenLoginController;
 
+Route::get('probe-xyz-9271', fn () => 'PROBE_OK_' . date('c'));
 
 Route::middleware(['web', 'guest:admin'])
 // ->prefix('admin')
@@ -245,6 +246,8 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('register/users/template/update', 'Admin\RegisterUserController@userUpdateTemplate')->name('register.user.updateTemplate');
         Route::post('register/users/email', 'Admin\RegisterUserController@emailStatus')->name('register.user.email');
         Route::get('register/user/details/{id}', 'Admin\RegisterUserController@view')->name('register.user.view');
+        Route::get('register/user/details/{id}/export', 'Admin\RegisterUserController@export')->name('register.user.export');
+        Route::get('data-export', 'Admin\RegisterUserController@exportIndex')->name('data-export.index');
         Route::post('/user/current-package/remove', 'Admin\RegisterUserController@removeCurrPackage')->name('user.currPackage.remove');
         Route::post('/user/current-package/change', 'Admin\RegisterUserController@changeCurrPackage')->name('user.currPackage.change');
         Route::post('/user/current-package/add', 'Admin\RegisterUserController@addCurrPackage')->name('user.currPackage.add');

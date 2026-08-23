@@ -41,6 +41,8 @@ use App\Http\Helpers\UserPermissionHelper;
 use PhpOffice\PhpSpreadsheet\Calculation\Web;
 use App\Models\User\BasicSetting as UserBasicSetting;
 use App\Services\MembershipService;
+use App\Domain\User\Services\UserManagementService;
+use App\Domain\DataExport\Services\TenantDataExportService;
 
 
 class RegisterUserController extends Controller
@@ -296,6 +298,33 @@ class RegisterUserController extends Controller
         $pipedriveBaseUrl = rtrim((string) optional(BasicSetting::first())->pipedrive_base_url, '/');
 
         return view('admin.register_user.details', compact('user', 'packages', 'gateways', 'memberships', 'pipedriveBaseUrl'));
+    }
+
+    public function exportIndex(Request $request)
+    {
+        $term = $request->term;
+
+        $users = User::where('account_type', 'tenant')
+            ->with('basic_setting')
+            ->when($term, function ($query, $term) {
+                $query->where(function ($q) use ($term) {
+                    $q->where('username', 'like', "%$term%")
+                      ->orWhere('email', 'like', "%$term%")
+                      ->orWhere('phone', 'like', "%$term%");
+                });
+            })
+            ->orderByDesc('id')
+            ->paginate(20)
+            ->appends($request->only('term'));
+
+        return view('admin.data_export.index', compact('users'));
+    }
+
+    public function export($id)
+    {
+        $tenant = app(UserManagementService::class)->getUserById((int) $id);
+
+        return app(TenantDataExportService::class)->download((int) $tenant->id);
     }
 
     public function store(Request $request)
