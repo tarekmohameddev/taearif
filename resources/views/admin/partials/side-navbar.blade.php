@@ -49,6 +49,14 @@
                     </li>
                 @endif
 
+                {{-- Data export: always visible in sidebar (route still gated by Registered Users middleware) --}}
+                <li class="nav-item @if (request()->is('admin/data-export*')) active @endif">
+                    <a href="{{ url('admin/data-export') }}">
+                        <i data-lucide="download"></i>
+                        <p>{{ __('تصدير البيانات') }}</p>
+                    </a>
+                </li>
+
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Payment Log', $permissions)))
                     <li class="nav-item
                     @if (request()->path() == 'admin/payment-log') active @endif">
