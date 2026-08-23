@@ -1,0 +1,167 @@
+{
+    "type": "real_conversation",
+    "id": "conv_1142",
+    "tenant_id": 1478,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "وعليكم السلام هلا ومسهلا حبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "تمام بحذفه لك"
+        },
+        {
+            "role": "customer",
+            "text": "رقم ذا وش بكون"
+        },
+        {
+            "role": "customer",
+            "text": "وش اكتب عليه"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "يعني فاكس وسجل تجاري"
+        },
+        {
+            "role": "customer",
+            "text": "يحذف ونكتب الرقم الموحد"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا حبيبنا"
+        },
+        {
+            "role": "customer",
+            "text": "تفضل شوف كذا تم"
+        },
+        {
+            "role": "customer",
+            "text": "سلمك ربي من كل سوء"
+        },
+        {
+            "role": "customer",
+            "text": "الان ارسلهم لك بمرفقات حقهم"
+        },
+        {
+            "role": "customer",
+            "text": "ورق رسمي.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ورق رسمي ورد.docx"
+        },
+        {
+            "role": "customer",
+            "text": "تم بمرفقات حقهم حبيبنا"
+        },
+        {
+            "role": "customer",
+            "text": "ورق رسمي ورد.docx"
+        },
+        {
+            "role": "customer",
+            "text": "ورق رسمي.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🌷]"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح"
+        },
+        {
+            "role": "customer",
+            "text": "والله انا أطلب أكثر"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمه الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "هلا وسهلا"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبنا"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله"
+        },
+        {
+            "role": "customer",
+            "text": "طيب ولايهمك ان شاء الله مابقصر معك"
+        },
+        {
+            "role": "customer",
+            "text": "واذا يمدي تكرمني"
+        },
+        {
+            "role": "customer",
+            "text": "لاتقصر معنا"
+        },
+        {
+            "role": "customer",
+            "text": "والله ماقصرنا معك"
+        },
+        {
+            "role": "customer",
+            "text": "عخير ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "تشرفنا بأي وقت"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "تفضل حبيبنا شوف كذا تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ورق رسمي.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ورق رسمي ورد.docx"
+        },
+        {
+            "role": "customer",
+            "text": "هي ورد + pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 🙏]"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

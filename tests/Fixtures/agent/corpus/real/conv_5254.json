@@ -1,0 +1,491 @@
+{
+    "type": "real_conversation",
+    "id": "conv_5254",
+    "tenant_id": 1507,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعافيك أنا ساكنه بالشقه اللي بدور الثاني"
+        },
+        {
+            "role": "customer",
+            "text": "اي"
+        },
+        {
+            "role": "customer",
+            "text": "عندي عقد"
+        },
+        {
+            "role": "customer",
+            "text": "دلال سعود محمد الرشيدي"
+        },
+        {
+            "role": "customer",
+            "text": "نبغى سخان للحمام والمطبخ"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "والباب ثاني مدقر"
+        },
+        {
+            "role": "customer",
+            "text": "هنا"
+        },
+        {
+            "role": "customer",
+            "text": "خرب عندي باب وصلحته 70 وكنه بيطيح من يوم سكنا"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "متى تزينون لنا"
+        },
+        {
+            "role": "customer",
+            "text": "برد"
+        },
+        {
+            "role": "customer",
+            "text": "أنا كلمت صاحب العماره"
+        },
+        {
+            "role": "customer",
+            "text": "وقال كلميهم"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعافيك"
+        },
+        {
+            "role": "customer",
+            "text": "نبي سخان للمطبخ والحمام"
+        },
+        {
+            "role": "customer",
+            "text": "مافيهن"
+        },
+        {
+            "role": "customer",
+            "text": "برد"
+        },
+        {
+            "role": "customer",
+            "text": "والباب مدقر"
+        },
+        {
+            "role": "customer",
+            "text": "واحد يهتز كنه بيطيح من يوم سكنا وصحلت يداه خربت"
+        },
+        {
+            "role": "customer",
+            "text": "صلحته ب70"
+        },
+        {
+            "role": "customer",
+            "text": "هو يقول تواصلي معهم"
+        },
+        {
+            "role": "customer",
+            "text": "إلا أنا دافعه"
+        },
+        {
+            "role": "customer",
+            "text": "الشهر هذا ألفين وميتين"
+        },
+        {
+            "role": "customer",
+            "text": "والأشهر اللي راحت احول له"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعافيك أنا عندي أطفال الله يجزآك"
+        },
+        {
+            "role": "customer",
+            "text": "خير"
+        },
+        {
+            "role": "customer",
+            "text": "ذبحنا البرد"
+        },
+        {
+            "role": "customer",
+            "text": "المطبخ والحمام"
+        },
+        {
+            "role": "customer",
+            "text": "م في سخان"
+        },
+        {
+            "role": "customer",
+            "text": "تعبنا وكلمت قال كلميهم"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسر امرك"
+        },
+        {
+            "role": "customer",
+            "text": "سووهن لنا"
+        },
+        {
+            "role": "customer",
+            "text": "الله يفرجها"
+        },
+        {
+            "role": "customer",
+            "text": "؟"
+        },
+        {
+            "role": "customer",
+            "text": "الله يجزآك خير"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعافيك حمام والمطبخ"
+        },
+        {
+            "role": "customer",
+            "text": "ضروري"
+        },
+        {
+            "role": "customer",
+            "text": "ليش حرام والله ضروري الما بارد"
+        },
+        {
+            "role": "customer",
+            "text": "ليش"
+        },
+        {
+            "role": "customer",
+            "text": "طيب بكم هو اجل نركب للمطبخ ونخصم من الاجار الشهر الجاي"
+        },
+        {
+            "role": "customer",
+            "text": "اجل تركبون"
+        },
+        {
+            "role": "customer",
+            "text": "انتم"
+        },
+        {
+            "role": "customer",
+            "text": "للمطبخ والحمام"
+        },
+        {
+            "role": "customer",
+            "text": "بكره لازم"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 26.384811401367, 43.862926483154]"
+        },
+        {
+            "role": "customer",
+            "text": "الساعه 12"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص المغرب"
+        },
+        {
+            "role": "customer",
+            "text": "طيب ابي العامل اللي يجي"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "إذا جا بلغني"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "يسار"
+        },
+        {
+            "role": "customer",
+            "text": "دقيقه"
+        },
+        {
+            "role": "customer",
+            "text": "اي هنا"
+        },
+        {
+            "role": "customer",
+            "text": "دقيقه"
+        },
+        {
+            "role": "customer",
+            "text": "راح"
+        },
+        {
+            "role": "customer",
+            "text": "وماجا"
+        },
+        {
+            "role": "customer",
+            "text": "دخل شاف وطلع"
+        },
+        {
+            "role": "customer",
+            "text": "بشوف ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "ليش بكره"
+        },
+        {
+            "role": "customer",
+            "text": "جا شاف وراح يقول بجيب"
+        },
+        {
+            "role": "customer",
+            "text": "أنا طيب ابيه يحط الواحد هذا بالمطبخ"
+        },
+        {
+            "role": "customer",
+            "text": "والحمام بعدمافيه"
+        },
+        {
+            "role": "customer",
+            "text": "بس شكوى لله"
+        },
+        {
+            "role": "customer",
+            "text": "نبيه يحطه بالمطبخ"
+        },
+        {
+            "role": "customer",
+            "text": "هوبيجيب واحد يحطه بالمطبخ طيب"
+        },
+        {
+            "role": "customer",
+            "text": "خل الحكام"
+        },
+        {
+            "role": "customer",
+            "text": "م"
+        },
+        {
+            "role": "customer",
+            "text": "اي يحطه بالحمام العادي"
+        },
+        {
+            "role": "customer",
+            "text": "سخان بالحمام الافرنجي"
+        },
+        {
+            "role": "customer",
+            "text": "وأبيه يركب لنا بالمطبخ"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسر امرك"
+        },
+        {
+            "role": "customer",
+            "text": "أنا قلت له وقال"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "إلا والله"
+        },
+        {
+            "role": "customer",
+            "text": "الله يوفقك والله برد والما بارد"
+        },
+        {
+            "role": "customer",
+            "text": "تعبنا"
+        },
+        {
+            "role": "customer",
+            "text": "ابيه ينقل السخان للحمام العادي"
+        },
+        {
+            "role": "customer",
+            "text": "والمطبخ يركب له اللي هو بيجيب"
+        },
+        {
+            "role": "customer",
+            "text": "ليش"
+        },
+        {
+            "role": "customer",
+            "text": "والله مامعي شي"
+        },
+        {
+            "role": "customer",
+            "text": "مسدده الاجار"
+        },
+        {
+            "role": "customer",
+            "text": "وناقص علينا"
+        },
+        {
+            "role": "customer",
+            "text": "لا انت تقول سخان واحد"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "مافيها شي"
+        },
+        {
+            "role": "customer",
+            "text": "الشقه واصلا بيبانها"
+        },
+        {
+            "role": "customer",
+            "text": "خربانه"
+        },
+        {
+            "role": "customer",
+            "text": "من يوم سكنت"
+        },
+        {
+            "role": "customer",
+            "text": "كلهن"
+        },
+        {
+            "role": "customer",
+            "text": "يدقرن"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "إلى"
+        },
+        {
+            "role": "customer",
+            "text": "رويته"
+        },
+        {
+            "role": "customer",
+            "text": "وين العامل م جا احد"
+        },
+        {
+            "role": "customer",
+            "text": "رويته"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "انت قبل"
+        },
+        {
+            "role": "customer",
+            "text": "قايل سخان واحد عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "أنا يوم كلمت راعي البيت قال تواصلي معهم"
+        },
+        {
+            "role": "customer",
+            "text": "وقلت واحد فقط نركب"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص"
+        },
+        {
+            "role": "customer",
+            "text": "وتركبونه خلاص جيب واحد"
+        },
+        {
+            "role": "customer",
+            "text": "وتركبونه خلاص جيب واحد"
+        },
+        {
+            "role": "customer",
+            "text": "وين ماجا احد"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "وينه"
+        },
+        {
+            "role": "customer",
+            "text": "الوووو"
+        },
+        {
+            "role": "customer",
+            "text": "إلى"
+        },
+        {
+            "role": "customer",
+            "text": "و"
+        },
+        {
+            "role": "customer",
+            "text": "لو سمحت ماصارت"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

@@ -1,0 +1,30 @@
+{
+    "type": "bug_regression",
+    "id": "bug_38_no_repeated_reply",
+    "description": "Bot must not repeat the same reply verbatim across multiple turns",
+    "turns": [
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "bot",
+            "text": "أهلاً! كيف أقدر أساعدك اليوم؟"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا"
+        },
+        {
+            "role": "bot",
+            "text": "أهلاً! كيف أقدر أساعدك اليوم؟"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        }
+    ],
+    "invariants": [
+        "no_repeated_reply"
+    ]
+}

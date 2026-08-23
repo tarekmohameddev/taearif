@@ -1,0 +1,14 @@
+{
+    "type": "bug_regression",
+    "id": "bug_33_opt_out_works",
+    "description": "Bot must stop responding after opt-out keyword",
+    "turns": [
+        {
+            "role": "customer",
+            "text": "إيقاف"
+        }
+    ],
+    "invariants": [
+        "bot_skipped_or_opted_out"
+    ]
+}

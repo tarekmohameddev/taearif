@@ -27,7 +27,8 @@ class WaCampaignService
         private readonly WaRecipientResolverService $recipientResolver,
         private readonly IdempotencyService $idempotencyService,
         private readonly CreditService $creditService,
-        private readonly WhatsAppTemplateService $templateService
+        private readonly WhatsAppTemplateService $templateService,
+        private readonly WaPricingResolver $pricingResolver
     ) {}
 
     public function listForUser(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
@@ -109,7 +110,9 @@ class WaCampaignService
     }
 
     /**
-     * Get the effective message text for a campaign: rendered template or plain message.
+     * Get the effective plain-text message for a campaign.
+     * For Meta templates, returns the body component text (used as a preview / fallback).
+     * For plain message campaigns, returns the message directly.
      */
     private function getEffectiveMessage(WaCampaign $campaign): string
     {
@@ -121,11 +124,7 @@ class WaCampaignService
             if (! $template) {
                 throw new InvalidArgumentException('Template not found for campaign.');
             }
-            $variables = $campaign->meta['variables'] ?? [];
-            if (! is_array($variables)) {
-                $variables = [];
-            }
-            return $this->templateService->renderContent($template, $variables);
+            return $this->extractTemplateBodyText($template);
         }
         $msg = $campaign->message;
         if ($msg === null || trim($msg) === '') {
@@ -134,16 +133,109 @@ class WaCampaignService
         return trim($msg);
     }
 
-    private function getCurrentCreditsPerMessage(): int
+    /**
+     * Extract body component text from a Meta template (for logging / preview).
+     */
+    private function extractTemplateBodyText(WaTemplate $template): string
     {
-        return max(1, (int) UserCredit::getCostForMessageType('whatsapp'));
+        if (is_array($template->components)) {
+            foreach ($template->components as $component) {
+                if (
+                    isset($component['type']) &&
+                    strtoupper((string) $component['type']) === 'BODY' &&
+                    isset($component['text'])
+                ) {
+                    return (string) $component['text'];
+                }
+            }
+        }
+        return $template->name;
+    }
+
+    /**
+     * Resolve the WaTemplate for a campaign and validate it is approved for sending.
+     * Returns null when the campaign uses a plain message (no template_id).
+     */
+    private function resolveTemplateForSend(WaCampaign $campaign): ?WaTemplate
+    {
+        if (! $campaign->template_id) {
+            return null;
+        }
+
+        $template = WaTemplate::query()
+            ->where('id', $campaign->template_id)
+            ->where('user_id', $campaign->user_id)
+            ->first();
+
+        if (! $template) {
+            throw new InvalidArgumentException('Template not found for campaign.');
+        }
+
+        if ($template->status !== null && strtoupper((string) $template->status) !== 'APPROVED') {
+            throw new InvalidArgumentException('WA_TEMPLATE_NOT_APPROVED');
+        }
+
+        return $template;
+    }
+
+    /**
+     * Build the template component parameters array for the Meta Template Message API.
+     * Maps campaign variables (key→value or positional) onto the template components.
+     *
+     * @param array<string, mixed> $variables
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildTemplateComponentParameters(WaTemplate $template, array $variables): array
+    {
+        if (empty($variables) || ! is_array($template->components)) {
+            return [];
+        }
+
+        $components = [];
+        foreach ($template->components as $component) {
+            $type = strtoupper((string) ($component['type'] ?? ''));
+            if (! in_array($type, ['BODY', 'HEADER'], true)) {
+                continue;
+            }
+
+            $text = $component['text'] ?? '';
+            if (! is_string($text) || $text === '') {
+                continue;
+            }
+
+            preg_match_all('/\{\{(\d+)\}\}/', $text, $matches);
+            if (empty($matches[1])) {
+                continue;
+            }
+
+            $parameters = [];
+            foreach ($matches[1] as $varIndex) {
+                $value = $variables[$varIndex] ?? $variables[(int) $varIndex - 1] ?? '';
+                $parameters[] = ['type' => 'text', 'text' => (string) $value];
+            }
+
+            if (! empty($parameters)) {
+                $components[] = [
+                    'type'       => strtolower($type),
+                    'parameters' => $parameters,
+                ];
+            }
+        }
+
+        return $components;
+    }
+
+    private function getCurrentCreditsPerMessage(?WaTemplate $template = null): int
+    {
+        $metaCategory = $template?->category;
+        return max(0, $this->pricingResolver->creditsForTemplateCategory($metaCategory));
     }
 
     private function getCampaignCreditsPerMessage(WaCampaign $campaign): int
     {
         $meta = is_array($campaign->meta) ? $campaign->meta : [];
         if (isset($meta['credits_per_message']) && is_numeric($meta['credits_per_message'])) {
-            return max(1, (int) $meta['credits_per_message']);
+            return max(0, (int) $meta['credits_per_message']);
         }
 
         return $this->getCurrentCreditsPerMessage();
@@ -283,21 +375,39 @@ class WaCampaignService
                 throw new InvalidArgumentException('No valid phone numbers from the given customer_ids or manual_phones. Ensure customer IDs exist and have a valid phone (8–16 digits), and that manual_phones are valid (8–16 digits).');
             }
 
-            $creditsPerMessage = $this->getCurrentCreditsPerMessage();
+            // Resolve template FIRST so we can price by its category
+            $messageText = $this->getEffectiveMessage($campaign);
+            $template = $this->resolveTemplateForSend($campaign);
+
+            $creditsPerMessage = $this->getCurrentCreditsPerMessage($template);
             $requiredCredits = count($recipients) * $creditsPerMessage;
-            if (! $this->creditService->hasSufficientCredits($userId, $requiredCredits)) {
+            if ($requiredCredits > 0 && ! $this->creditService->hasSufficientCredits($userId, $requiredCredits)) {
                 throw new InsufficientCreditsException($userId, $requiredCredits);
             }
 
-            $this->creditService->reserve($userId, $requiredCredits, 'wa_campaign', (string) $campaignId);
-
-            $messageText = $this->getEffectiveMessage($campaign);
+            if ($requiredCredits > 0) {
+                $this->creditService->reserve($userId, $requiredCredits, 'wa_campaign', (string) $campaignId);
+            }
             $dispatchReference = (string) Str::uuid();
             $now = now();
             $waNumberId = (int) $campaign->wa_number_id;
 
+            $variables = is_array($campaign->meta['variables'] ?? null) ? $campaign->meta['variables'] : [];
+            $templateComponentParams = $template !== null
+                ? $this->buildTemplateComponentParameters($template, $variables)
+                : [];
+
             $rows = [];
             foreach ($recipients as $recipient) {
+                $logMeta = ['dispatch_reference' => $dispatchReference];
+
+                if ($template !== null) {
+                    $logMeta['is_template']        = true;
+                    $logMeta['template_name']      = $template->name;
+                    $logMeta['template_language']  = $template->language ?? 'en';
+                    $logMeta['template_components'] = $templateComponentParams;
+                }
+
                 $rows[] = [
                     'user_id' => $userId,
                     'campaign_id' => $campaign->id,
@@ -307,7 +417,7 @@ class WaCampaignService
                     'recipient_name' => $recipient['name'],
                     'message' => $messageText,
                     'status' => 'pending',
-                    'meta' => json_encode(['dispatch_reference' => $dispatchReference]),
+                    'meta' => json_encode($logMeta),
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
@@ -523,11 +633,13 @@ class WaCampaignService
                 }
 
                 $requiredCredits = $count * $creditsPerMessage;
-                if (! $this->creditService->hasSufficientCredits($userId, $requiredCredits)) {
+                if ($requiredCredits > 0 && ! $this->creditService->hasSufficientCredits($userId, $requiredCredits)) {
                     throw new InsufficientCreditsException($userId, $requiredCredits);
                 }
 
-                $this->creditService->reserve($userId, $requiredCredits, 'wa_campaign_resume', (string) $campaignId);
+                if ($requiredCredits > 0) {
+                    $this->creditService->reserve($userId, $requiredCredits, 'wa_campaign_resume', (string) $campaignId);
+                }
 
                 WaMessageLog::query()
                     ->where('campaign_id', $campaignId)
@@ -577,12 +689,23 @@ class WaCampaignService
                 }
 
                 $recipientCount = count($recipients);
+
+                // Resolve template before pricing so category is known
+                $restartTemplate = $this->resolveTemplateForSend($campaign);
+                $creditsPerMessage = $this->getCurrentCreditsPerMessage($restartTemplate);
+
                 $requiredCredits = $recipientCount * $creditsPerMessage;
-                if (! $this->creditService->hasSufficientCredits($userId, $requiredCredits)) {
+                if ($requiredCredits > 0 && ! $this->creditService->hasSufficientCredits($userId, $requiredCredits)) {
                     throw new InsufficientCreditsException($userId, $requiredCredits);
                 }
 
-                $this->creditService->reserve($userId, $requiredCredits, 'wa_campaign_restart', (string) $campaignId);
+                if ($requiredCredits > 0) {
+                    $this->creditService->reserve($userId, $requiredCredits, 'wa_campaign_restart', (string) $campaignId);
+                }
+                $restartVariables = is_array($campaign->meta['variables'] ?? null) ? $campaign->meta['variables'] : [];
+                $restartTemplateComponentParams = $restartTemplate !== null
+                    ? $this->buildTemplateComponentParameters($restartTemplate, $restartVariables)
+                    : [];
 
                 $dispatchReference = (string) Str::uuid();
                 $now = now();
@@ -590,6 +713,15 @@ class WaCampaignService
 
                 $rows = [];
                 foreach ($recipients as $recipient) {
+                    $logMeta = ['dispatch_reference' => $dispatchReference];
+
+                    if ($restartTemplate !== null) {
+                        $logMeta['is_template']         = true;
+                        $logMeta['template_name']       = $restartTemplate->name;
+                        $logMeta['template_language']   = $restartTemplate->language ?? 'en';
+                        $logMeta['template_components'] = $restartTemplateComponentParams;
+                    }
+
                     $rows[] = [
                         'user_id' => $userId,
                         'campaign_id' => $campaign->id,
@@ -599,7 +731,7 @@ class WaCampaignService
                         'recipient_name' => $recipient['name'],
                         'message' => $currentMessage,
                         'status' => 'pending',
-                        'meta' => json_encode(['dispatch_reference' => $dispatchReference]),
+                        'meta' => json_encode($logMeta),
                         'created_at' => $now,
                         'updated_at' => $now,
                     ];

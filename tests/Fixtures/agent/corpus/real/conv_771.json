@@ -1,0 +1,663 @@
+{
+    "type": "real_conversation",
+    "id": "conv_771",
+    "tenant_id": 1557,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "توكل على الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "يارب"
+        },
+        {
+            "role": "customer",
+            "text": "طلع الضريبه نسدد"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt1264418859722105449.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "هذي تبع الضريبه الي سددناها الان؟"
+        },
+        {
+            "role": "customer",
+            "text": "نقدر نؤجر الغرفه الداخليه بمجمع ريفيا بعقد الكتروني مستقل \nلكفي بريو؟"
+        },
+        {
+            "role": "customer",
+            "text": "ممتاز"
+        },
+        {
+            "role": "customer",
+            "text": "غرفة داخليه\nبالميزان"
+        },
+        {
+            "role": "customer",
+            "text": "هذي وش رايك؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "أحسنت"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعافيك"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص\nنقلنا الرقم"
+        },
+        {
+            "role": "customer",
+            "text": "ابمر به عليك"
+        },
+        {
+            "role": "customer",
+            "text": "حصلتهم محولين على بنك البلاد"
+        },
+        {
+            "role": "customer",
+            "text": "ليتك حدثت معي المعلومه و خبرتني"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "👍🏻"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "نقدر نطلع له اعفاء ضريبي سكني"
+        },
+        {
+            "role": "customer",
+            "text": "مستندات ممسوحة ضوئيًا.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "نهى\n1063626483\n1406\/11\/24"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المستفيد:\nنفيدك بإلغاء خاصية التجديد التلقائي للعقد رقم 20430510382 من قبل جوهره ناصر عبدالله المشوح، وسينتهي العقد بالتاريخ المتفق عليه 2026-04-30.\nنسعد بخدمتك"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المستفيد:\nيمكنك الموافقة على توثيق عقد الإيجار المعاد إبرامه رقم #20828521786 برقم الطلب  5HTUFGNM عبر شبكة إيجار خلال مهلة 7 أيام عبر الرابط الآتي:\nhttps:\/\/eservices.ejar.sa\/r\/GDMH8H6H\nنسعد بخدمتك"
+        },
+        {
+            "role": "customer",
+            "text": "مرحباً عبدالرحمن\nنفيدك بإصدار فاتورة رقم 2601310878896 للعقد المتجدد تلقائيا رقم 20828521786 مع المستأجر فيصل.\nويمكنك الدفع مباشرة من خلال الرابط https:\/\/eservices.ejar.sa\/ar\/financials\/bo-invoices-receipts تفادياً لإنشاء مديونية إيجار."
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا عبدالرحمن\n\nنفيدك ان التجديد التلقائي لعقد الإيجار رقم 20828521786 للمستأجر فيصل يتطلب سداد المقابل المالي لتوثيق العقد في منصة إيجار، قبل تاريخ انتهاء العقد 2027-04-30\n\nوفي حال توفر رصيد في المحفظة سيتم حجز المقابل المالي تلقائياً للتجديد ،كما يمكنكم شحن المحفظة بالمبلغ المطلوب لسداد المقابل المالي من خلال منصة إيجار https:\/\/eservices.ejar.sa\/ar\/contracts\/commercial\/ca1c50c4-7355-470f-99f7-a20236804237 وسيتم تجديد العقد تلقائياً، علماً أن عدم السداد يعد إشعارا ضمنيا بعدم رغبتك بتجديد العقد.\n\nنسعد بخدمتك\nمركز الاتصال الموحّد :199011"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المستفيد:\nنفيدك بإلغاء خاصية التجديد التلقائي للعقد رقم 20828521786 من قبل فيصل عبد العزيز صالح الرقيبه، وسينتهي العقد بالتاريخ المتفق عليه 2026-04-30.\nنسعد بخدمتك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هلابك"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزي العميل: \nاسم المستخدم الخاص بكم هو: 1126669835"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا العميل  \nاسم المستخدم: 1126669835\nكلمة المرور الجديدة: E+150166\nيمكنك تغيير كلمة المرور مباشرة بعد تسجيل الدخول\nالخدمات الالكترونية – غرفة الرياض"
+        },
+        {
+            "role": "customer",
+            "text": "رقم التأكيد : 5771"
+        },
+        {
+            "role": "customer",
+            "text": "تم الموافقة على الخطاب رقم : 26089786 - غرفة الرياض"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا\nمتى تدخل ايجار\nتلغي التجديد التلقائي"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 5716\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #5716"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 9689\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #9689"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "ما قصرت"
+        },
+        {
+            "role": "customer",
+            "text": "document_1770034087839.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "لوح الحفر"
+        },
+        {
+            "role": "customer",
+            "text": "وفيه التصوير\nالايصال مرسل في القروب\n\nسجلهم بملف\n\nبوركت"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt7662732337124343835.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt7995750855139815382.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt1553277443820863668.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt7588974406452659752.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا"
+        },
+        {
+            "role": "customer",
+            "text": "تدخل ايجار\nتشوف اضافة رواق"
+        },
+        {
+            "role": "customer",
+            "text": "علشان نسوي عقد ايجار"
+        },
+        {
+            "role": "customer",
+            "text": "DOC-20260119-WA0041."
+        },
+        {
+            "role": "customer",
+            "text": "الحمدلله"
+        },
+        {
+            "role": "customer",
+            "text": "ادخل انت"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المؤجر،\nنُفيدك بوجود طلب لتحديث بيانات العقارات والوحدات للوثيقة رقم1803814283900000 من الوسيط مؤسسة مكسب العقارية للاطلاع والموافقة أو\nالرفض يرجى تسجيل الدخول .لشبكة إيجار الطلب صالح لمدة 7 أيام فقط.\nنسعد بخدمتك"
+        },
+        {
+            "role": "customer",
+            "text": "document_1770215533599.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "7829"
+        },
+        {
+            "role": "customer",
+            "text": "مره اخرى"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزي المستفيد،\n\nلنتمكن من خدمتكم بشكل أفضل، الرجاء تزويدنا بالمستندات اللازمة ، وذلك عبر الرابط الآتي:\n\nhttp:\/\/helpdesk.rer-sa.com\/follow-up-page\/EZXQQ\n\nيسعدنا خدمتكـم في السجل العقاري."
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا"
+        },
+        {
+            "role": "customer",
+            "text": "يفتح معك الرابط هذا؟"
+        },
+        {
+            "role": "customer",
+            "text": "تقدر ترفق فيه هذا الملف"
+        },
+        {
+            "role": "customer",
+            "text": "div.dwg"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "حمل هذا البرنامج ويفتح معك"
+        },
+        {
+            "role": "customer",
+            "text": "بارك الله فيك"
+        },
+        {
+            "role": "customer",
+            "text": "ماهذا"
+        },
+        {
+            "role": "customer",
+            "text": "وش تحدث فيه؟"
+        },
+        {
+            "role": "customer",
+            "text": "اها"
+        },
+        {
+            "role": "customer",
+            "text": "لاننا مهب سويين عقد لهم"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "ممتاز"
+        },
+        {
+            "role": "customer",
+            "text": "واضح"
+        },
+        {
+            "role": "customer",
+            "text": "اهم شي ابووليد"
+        },
+        {
+            "role": "customer",
+            "text": "حط هذا\n‏‪9180000275608010096798‬‏"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزي ممثل المنشأة بالرقم الموحد (3_100859),\r\nبرر مرة واحدة عن عدة أشهر، واضمن التزامك بنظام حماية الأجور دون مخالفات مستقبلية. \r\n\r\nللتبرير الاستباقي: https:\/\/mudad.co\/467ZcRJ"
+        },
+        {
+            "role": "customer",
+            "text": "وش يقصد هذا"
+        },
+        {
+            "role": "customer",
+            "text": "راسل ابوفهد الخضير مباشره"
+        },
+        {
+            "role": "customer",
+            "text": "خله يبحث عن صاحب المبنى و يكلمه"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "لإعادة تعيين كلمة المرور ، الرجاء ادخال رمز التحقق :9919"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "👍🏻"
+        },
+        {
+            "role": "customer",
+            "text": "بارك الله فيك"
+        },
+        {
+            "role": "customer",
+            "text": "الغيت العقد الرجاء الموافقه عليه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المستفيد:طلب إنهاء العقد رقم  #20430510382 من قبل جوهره ناصر عبدالله المشوح بانتظار موافقتك  رقم الطلب #P2FC463Y ، وذلك بتسجيل الدخول إلى شبكة إيجار عبر الرابط أدناه نسعد بخدمتك https:\/\/eservices.ejar.sa\/r\/3BUPST2C"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المستفيد،نفيدك بأن طلب إنهاء عقد الإيجار رقم #20430510382  مقبول.\nنأمل مشاركتنا تجربتك وتقييم الأطراف الإيجارية من خلال الرابط التالي:\nhttps:\/\/eservices.ejar.sa\/ar\/rental-questionnaires\n\nنسعد بخدمتك\nمركز الاتصال الموحّد: 199011."
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا عبدالرحمن،\n\nنود إشعارك بأنه تم تنشيط الحساب رقم 030106850546 للعداد رقم SMR2420868054594 من تاريخ 19.02.2026 وذلك بعد خروج المستفيد من العداد.\n\nوبخدمتك في أي وقت من خلال تطبيق الكهرباء باستخدام الرابط التالي:\nhttps:\/\/www.se.com.sa\/app\n\nيومك سعيد."
+        },
+        {
+            "role": "customer",
+            "text": "بارك الله فيك"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 6621\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #6621"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 7809\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #7809"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 6105\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #6105"
+        },
+        {
+            "role": "customer",
+            "text": "ماهذه الرسايل"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 3120\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #3120"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "ازالة لوح الحفر"
+        },
+        {
+            "role": "customer",
+            "text": "document_1771972388666.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "5443"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا\nنحتاج نسوي مسير راتب الحماد على يانعه"
+        },
+        {
+            "role": "customer",
+            "text": "🤚🏻"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "حياك"
+        },
+        {
+            "role": "customer",
+            "text": "ما هذا"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزي عبدالرحمن ابراهيم حمد الدبيخي ،\nنفيدكم باعتماد الطلب رقم (889107791 )،\nلإصدار شهادة الالتزام رقم (110630942)\nللمنشأة رقم (650066561 ).\nلمزيد من التفاصيل، يمكنكم زيارة حساب المنشأة في تطبيق .GOSI\nنسعد بخدمتك\nالتأمينات الاجتماعية (GOSI)"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزي ممثل المنشأة (3_100859)،\r\nاشتراك منشأتك نشط، استفد من خدمة التحويل التلقائي للرواتب لضمان التزام منشأتك وحمايتها من المخالفات.\r\nلإدارة حسابك: \r\nhttps:\/\/mudad.co\/4bxWIik"
+        },
+        {
+            "role": "customer",
+            "text": "هذا تبع من"
+        },
+        {
+            "role": "customer",
+            "text": "."
+        },
+        {
+            "role": "customer",
+            "text": "🤔"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "للدخول في منصة مدد استخدم رمز التحقق: 4189 \nالتأمينات الاجتماعية"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "لاعتماد عملية تحويل الرواتب في منصة مدد الرجاء استخدام رمز التحقق : 5216 \nالتأمينات الاجتماعية"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزي العميل، يرجى العلم بضرورة سداد المبلغ المستحق عن شهر فبراير 2026 لمنشأتكم (رقم اشتراك: 642328158) تفادياً لفرض غرامة تأخير بمبلغ (1.23 ر.س) و تعليق شهادة الالتزام، علماً بأن المبلغ المستحق (61.41 ر.س)، ومستحقة الدفع قبل: 17\/03\/2026 بإمكانكم السداد الكترونيا من خلال تطبيق GOSI، او عن طريق نظام سداد باستخدام الرمز(060) سداد باستخدام الرمز.(https:\/\/url.gosi.gov.sa\/a8mqgb67)."
+        },
+        {
+            "role": "customer",
+            "text": "اهلا\nتبع من"
+        },
+        {
+            "role": "customer",
+            "text": "🤚🏻"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "وهذا"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "1720"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تم السداد"
+        },
+        {
+            "role": "customer",
+            "text": "تم السداد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "statement.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا"
+        },
+        {
+            "role": "customer",
+            "text": "كيف نرجعها"
+        },
+        {
+            "role": "customer",
+            "text": "مسددها قبل تصدر من حساب يانعه"
+        },
+        {
+            "role": "customer",
+            "text": "عميلنا العزيز، نود إشعاركم بفشل معالجة المسير رقم 15019149 لمزيد من التفاصيل يمكنك الدخول على حسابك عن طريق الرابط https:\/\/mudad.com.sa\/login"
+        },
+        {
+            "role": "customer",
+            "text": "ليش بدري"
+        },
+        {
+            "role": "customer",
+            "text": "الحساب ما يغطي\nانا فكرته انه بيعالج المسير بنفس التاريخ او قبل بيوم او يومين"
+        },
+        {
+            "role": "customer",
+            "text": "اذا حولت للحساب اعطيك خبر\nبس الاكيد بعد العيد ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "لكن هذي كيف نرجعها"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزي عبدالرحمن ابراهيم حمد الدبيخي ،\nنفيدكم باعتماد الطلب رقم (1370226287 ) لتعديل الكيان القانونيً للمنشأة رقم (630458447 )، وذلك وفقا للبيانات الواردة من وزارة الموارد البشرية والتنمية الاجتماعية.\nلمزيد من التفاصيل، يمكنكم زيارة حساب المنشأة في تطبيق .GOSI\n\nنسعد بخدمتك\nالتأمينات الاجتماعية(GOSI)"
+        },
+        {
+            "role": "customer",
+            "text": "ما هذه"
+        },
+        {
+            "role": "customer",
+            "text": "اهلا"
+        },
+        {
+            "role": "customer",
+            "text": "احتاج ارفاق هنا"
+        },
+        {
+            "role": "customer",
+            "text": "هذا"
+        },
+        {
+            "role": "customer",
+            "text": "هل تستطيع"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا\nودي اسوي مسير راتب الحماد"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

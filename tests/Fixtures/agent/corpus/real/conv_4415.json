@@ -1,0 +1,1331 @@
+{
+    "type": "real_conversation",
+    "id": "conv_4415",
+    "tenant_id": 1243,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "وين نتقابل"
+        },
+        {
+            "role": "customer",
+            "text": "؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اسم انته"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "اين انت"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبًا،\nتم إصدار فاتورة رسوم إيصال الخدمة الكهربائية لطلبك رقم 252121315 بمبلغ إجمالي 14873.59ريال.\n\nيمكنك السداد مباشرة من خلال تطبيق الكهرباء عبر الرابط التالي:\nhttps:\/\/www.se.com.sa\/app\n\r\nوبإمكانك السداد عبر نظام سداد باستخدام رقم الحساب 7725212131503\r\n\r\nيومك سعيد."
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "حول لهذا عربون 500 حق التصريح السياحي"
+        },
+        {
+            "role": "customer",
+            "text": "بتنزل في حسابك دفعه يوم الجمعه"
+        },
+        {
+            "role": "customer",
+            "text": "شيل منها"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "وصل"
+        },
+        {
+            "role": "customer",
+            "text": "500"
+        },
+        {
+            "role": "customer",
+            "text": "كذا اخدت منك 1000"
+        },
+        {
+            "role": "customer",
+            "text": "للحين"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي"
+        },
+        {
+            "role": "customer",
+            "text": "الموقع"
+        },
+        {
+            "role": "customer",
+            "text": "حق الديوانيه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "يلا"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "مساءالخير"
+        },
+        {
+            "role": "customer",
+            "text": "خذ راحتك"
+        },
+        {
+            "role": "customer",
+            "text": "يالله صباح خير"
+        },
+        {
+            "role": "customer",
+            "text": "🤣🤣"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل رقم حسابك"
+        },
+        {
+            "role": "customer",
+            "text": "بحولك الين نجمع المبلغ"
+        },
+        {
+            "role": "customer",
+            "text": "كلمت مستاجر ليحول 1000"
+        },
+        {
+            "role": "customer",
+            "text": "يلا هانت"
+        },
+        {
+            "role": "customer",
+            "text": "ليتدبر الباقي"
+        },
+        {
+            "role": "customer",
+            "text": "موفق يارب"
+        },
+        {
+            "role": "customer",
+            "text": "شاهد لك لا عليك يارب هذا الجيل ❤️❤️"
+        },
+        {
+            "role": "customer",
+            "text": "يطرح في البركه"
+        },
+        {
+            "role": "customer",
+            "text": "ويكسبك أجرهم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "لا تنسى السداد الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "مراح انام الين تعطيني خبر فيها ناس مابي الكهرباء تفصل عليهم"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "الوووو"
+        },
+        {
+            "role": "customer",
+            "text": "صلاهً"
+        },
+        {
+            "role": "customer",
+            "text": "يامسلمين"
+        },
+        {
+            "role": "customer",
+            "text": "رد ضروري"
+        },
+        {
+            "role": "customer",
+            "text": "للاهميه"
+        },
+        {
+            "role": "customer",
+            "text": "فهد زقزقوق بيتصل عليك"
+        },
+        {
+            "role": "customer",
+            "text": "قله الاسبوع هذا راح يطلع التصريح السياحي"
+        },
+        {
+            "role": "customer",
+            "text": "وبمجرد مايطلع إيجارك يتتدبر"
+        },
+        {
+            "role": "customer",
+            "text": "إذا عطوني الذره ضوء اخضر"
+        },
+        {
+            "role": "customer",
+            "text": "انتبه تقول غير ذا الكلام"
+        },
+        {
+            "role": "customer",
+            "text": "ادق عليك ماترد"
+        },
+        {
+            "role": "customer",
+            "text": "ياخي رد"
+        },
+        {
+            "role": "customer",
+            "text": "تكفى ثواني بس"
+        },
+        {
+            "role": "customer",
+            "text": "انفداك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الحمدانية \nعندي \nزبون"
+        },
+        {
+            "role": "customer",
+            "text": "600 متر\nشارع 15"
+        },
+        {
+            "role": "customer",
+            "text": "قريب من الشارع \nوالبنك \nوالشرطة"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل عروض الحمدانية"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "عندك 500 فك زنقه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم ياحبيب القلب مازولا"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "رد عليك"
+        },
+        {
+            "role": "customer",
+            "text": "؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "فضيت"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "صاحي"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل"
+        },
+        {
+            "role": "customer",
+            "text": "؟"
+        },
+        {
+            "role": "customer",
+            "text": "ماترد"
+        },
+        {
+            "role": "customer",
+            "text": "أنا بروح المكتب"
+        },
+        {
+            "role": "customer",
+            "text": "تبغى نشرب شاي هناك سوا"
+        },
+        {
+            "role": "customer",
+            "text": "بصلي الظهر عنده"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "يا الو"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "بشر"
+        },
+        {
+            "role": "customer",
+            "text": "؟"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم خلاص كلمه بعد العشاء"
+        },
+        {
+            "role": "customer",
+            "text": "اجتهد الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "مراح أنساها لك"
+        },
+        {
+            "role": "customer",
+            "text": "لانو منك يستحي"
+        },
+        {
+            "role": "customer",
+            "text": "حببب"
+        },
+        {
+            "role": "customer",
+            "text": "بشر"
+        },
+        {
+            "role": "customer",
+            "text": "صار شي معاك"
+        },
+        {
+            "role": "customer",
+            "text": "الساعه 10"
+        },
+        {
+            "role": "customer",
+            "text": "دق عليه الحين"
+        },
+        {
+            "role": "customer",
+            "text": "قوله بيوقف خدماتي لو ماحولت له اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "خله يحس شوي طلبتك"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي رابط"
+        },
+        {
+            "role": "customer",
+            "text": "الدفع"
+        },
+        {
+            "role": "customer",
+            "text": "الحين"
+        },
+        {
+            "role": "customer",
+            "text": "تركي بيسدد من عنده"
+        },
+        {
+            "role": "customer",
+            "text": "ارجوك عجل"
+        },
+        {
+            "role": "customer",
+            "text": "الو ح"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "رامي"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي الرابط تركي بيسدد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "1001997012"
+        },
+        {
+            "role": "customer",
+            "text": "هذي هويتك"
+        },
+        {
+            "role": "customer",
+            "text": "؟"
+        },
+        {
+            "role": "customer",
+            "text": "76"
+        },
+        {
+            "role": "customer",
+            "text": "نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "خوش الحين"
+        },
+        {
+            "role": "customer",
+            "text": "خش نفاد"
+        },
+        {
+            "role": "customer",
+            "text": "الرقم 76"
+        },
+        {
+            "role": "customer",
+            "text": "دخلت"
+        },
+        {
+            "role": "customer",
+            "text": "؟"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص حبيبي"
+        },
+        {
+            "role": "customer",
+            "text": "المعذره"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل"
+        },
+        {
+            "role": "customer",
+            "text": "بحاول اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "بشوف وش اقدر واودع لك"
+        },
+        {
+            "role": "customer",
+            "text": "1000"
+        },
+        {
+            "role": "customer",
+            "text": "تم ايداعها"
+        },
+        {
+            "role": "customer",
+            "text": "والله يا ابو انس عشانك بس"
+        },
+        {
+            "role": "customer",
+            "text": "ولا الوضع مدخل رمضان انته عارف"
+        },
+        {
+            "role": "customer",
+            "text": "بس حبيب انته"
+        },
+        {
+            "role": "customer",
+            "text": "كذا باقي لك 500"
+        },
+        {
+            "role": "customer",
+            "text": "وانا باقي لي 5"
+        },
+        {
+            "role": "customer",
+            "text": "حبيب قلبي"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "متى موعدنا مع المطيري"
+        },
+        {
+            "role": "customer",
+            "text": "وفين"
+        },
+        {
+            "role": "customer",
+            "text": "؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "يتوالد"
+        },
+        {
+            "role": "customer",
+            "text": "الحق"
+        },
+        {
+            "role": "customer",
+            "text": "عطنا نفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "53"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الان"
+        },
+        {
+            "role": "customer",
+            "text": "وش"
+        },
+        {
+            "role": "customer",
+            "text": "احرك ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "فك زنقه 500"
+        },
+        {
+            "role": "customer",
+            "text": "عندك"
+        },
+        {
+            "role": "customer",
+            "text": "بعطيك قبل العيد باذن الله مع ال500 الي اول"
+        },
+        {
+            "role": "customer",
+            "text": "اهلي عندك"
+        },
+        {
+            "role": "customer",
+            "text": "ابغا احول لواحد"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "ياخي رامي"
+        },
+        {
+            "role": "customer",
+            "text": "شكرا والله"
+        },
+        {
+            "role": "customer",
+            "text": "لا عدمناك يارب"
+        },
+        {
+            "role": "customer",
+            "text": "بتجيك ااايحارات على حسابك"
+        },
+        {
+            "role": "customer",
+            "text": "قريب بحول الله"
+        },
+        {
+            "role": "customer",
+            "text": "مثل المطر ياكريم"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي إذا حولت"
+        },
+        {
+            "role": "customer",
+            "text": "إذا فاضي"
+        },
+        {
+            "role": "customer",
+            "text": "كلمني"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اسمع نسق مع خالد على يوم الاربعاء"
+        },
+        {
+            "role": "customer",
+            "text": "بعد صلاه التروايح لاني بطلع من جده اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "وبرجع المساء بكره باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "واذا اخذت وعد منه بنتظر"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الاحد ممتاز"
+        },
+        {
+            "role": "customer",
+            "text": "بعد التراويح بخرج مع الاهل عند أرحامي فطور وسحور"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "وين بالظبط"
+        },
+        {
+            "role": "customer",
+            "text": "؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "في"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "يارب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "بنواصل معاه اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "إذا كلمك"
+        },
+        {
+            "role": "customer",
+            "text": "ارزع الصوره في وجهه"
+        },
+        {
+            "role": "customer",
+            "text": "مارد من امس"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الموضوع خرج من اليد"
+        },
+        {
+            "role": "customer",
+            "text": "زي ماتوقعت"
+        },
+        {
+            "role": "customer",
+            "text": "تركي سلم الاوراق للمحامي"
+        },
+        {
+            "role": "customer",
+            "text": "كبيقذم على فيصل الشاعر"
+        },
+        {
+            "role": "customer",
+            "text": "أنا بتصل على فيصل بحكم العشره"
+        },
+        {
+            "role": "customer",
+            "text": "ايلغه بالي صار"
+        },
+        {
+            "role": "customer",
+            "text": "وإنو ماكتب الله لسعينا"
+        },
+        {
+            "role": "customer",
+            "text": "ولا كلمه انته"
+        },
+        {
+            "role": "customer",
+            "text": "تركي سألني بالله اطلع منها"
+        },
+        {
+            "role": "customer",
+            "text": "أنا طلعت حبيت أقولك"
+        },
+        {
+            "role": "customer",
+            "text": "✋🏼"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ياخي ابيض وجه"
+        },
+        {
+            "role": "customer",
+            "text": "وربي"
+        },
+        {
+            "role": "customer",
+            "text": "شكرا لك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "أحتريك"
+        },
+        {
+            "role": "customer",
+            "text": "يعافيك الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ابغا منه 5 الف دفعه الدره"
+        },
+        {
+            "role": "customer",
+            "text": "دفعتها عنده"
+        },
+        {
+            "role": "customer",
+            "text": "و3 الف حق مواطير المسبح"
+        },
+        {
+            "role": "customer",
+            "text": "تمام ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هذا الكلام"
+        },
+        {
+            "role": "customer",
+            "text": "تم التحويل"
+        },
+        {
+            "role": "customer",
+            "text": "العفو منك"
+        },
+        {
+            "role": "customer",
+            "text": "السبت تجيني فلوس احولك 500 الثانيه"
+        },
+        {
+            "role": "customer",
+            "text": "ها"
+        },
+        {
+            "role": "customer",
+            "text": "رد عليك"
+        },
+        {
+            "role": "customer",
+            "text": "دق"
+        },
+        {
+            "role": "customer",
+            "text": "مراح يرد"
+        },
+        {
+            "role": "customer",
+            "text": "اساسا"
+        },
+        {
+            "role": "customer",
+            "text": "بس عشان تشغله"
+        },
+        {
+            "role": "customer",
+            "text": "يوم يشوف رقمك"
+        },
+        {
+            "role": "customer",
+            "text": "يلا"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "مافي مشكله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "مطلوب شراء عماره جديده\n16 شقه\nعدادات مكتمله\nبحدود 7 مليون ريال\nالفيصليه \nالبوادي \nالعزيزية \nالنزهه\nمشرفه"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل"
+        },
+        {
+            "role": "customer",
+            "text": "إذا عندك"
+        },
+        {
+            "role": "customer",
+            "text": "المساحة 1820م\nالنزلة الشرقية\nشارعين شمالي شرقي\n15 تجاري\nللبيع او المشاركة.....\nالمطلوب في المتر 4000 ريال\n\n\nhttps:\/\/maps.app.goo.gl\/KnJUw1EHa9bHFQXXA"
+        },
+        {
+            "role": "customer",
+            "text": "عندك شركه قويه تأخذها مشاركه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

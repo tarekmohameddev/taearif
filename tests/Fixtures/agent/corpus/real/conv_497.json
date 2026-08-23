@@ -1,0 +1,291 @@
+{
+    "type": "real_conversation",
+    "id": "conv_497",
+    "tenant_id": 1478,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "عاد شي متبقي الله يعطيك العافية"
+        },
+        {
+            "role": "customer",
+            "text": "والكهرباء ابغا اسالك ؟"
+        },
+        {
+            "role": "customer",
+            "text": "كم رقم العداد"
+        },
+        {
+            "role": "customer",
+            "text": "حق الملحق"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "."
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "يعطيك العافية"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عادها"
+        },
+        {
+            "role": "customer",
+            "text": "والله اول مرة في هذه المواضيع"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "كيفك اخ محمد"
+        },
+        {
+            "role": "customer",
+            "text": "الكهرباء بالملحق"
+        },
+        {
+            "role": "customer",
+            "text": "مافي"
+        },
+        {
+            "role": "customer",
+            "text": "كيف نوثقه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مدري اي منهم"
+        },
+        {
+            "role": "customer",
+            "text": "مامعي الرقم"
+        },
+        {
+            "role": "customer",
+            "text": "ودخلت الغرفة لي فيها عدادات ماعرفت اي منهم"
+        },
+        {
+            "role": "customer",
+            "text": "تمام اشوفه"
+        },
+        {
+            "role": "customer",
+            "text": "جا العامل بس قال مفصول من الشركة"
+        },
+        {
+            "role": "customer",
+            "text": "الكهرباء"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته\nجا العامل الصباح بس قال مفصول من الشركة الكهرباء"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "إيه"
+        },
+        {
+            "role": "customer",
+            "text": "هذه"
+        },
+        {
+            "role": "customer",
+            "text": "يقول ذا مافيه كهرباء لانه فحصه حصله مافيه كهرباء"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعطيك العافية"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هذه عليها"
+        },
+        {
+            "role": "customer",
+            "text": "يبغا سداد"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هذه ماراحت لاني ماني مسدد لك عبر ايجار"
+        },
+        {
+            "role": "customer",
+            "text": "تواصلت مع الكهرباء قالي سدد"
+        },
+        {
+            "role": "customer",
+            "text": "اول"
+        },
+        {
+            "role": "customer",
+            "text": "هذا الرقم حق الملحق متاكد"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير استاذ محمج"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير استاذ محمد"
+        },
+        {
+            "role": "customer",
+            "text": "بشر"
+        },
+        {
+            "role": "customer",
+            "text": "نبغا الكهرباء تولع"
+        },
+        {
+            "role": "customer",
+            "text": "ضروري لان ابغا اسكن بكرة في الملحق"
+        },
+        {
+            "role": "customer",
+            "text": "تكفى"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير\nكيفك"
+        },
+        {
+            "role": "customer",
+            "text": "لازالت الفاتورة تطلع علي"
+        },
+        {
+            "role": "customer",
+            "text": "وش رايك تحولها لي واسددها ولا كيف وضعها"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "."
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "والله لو جا احد عندي ضيف مثلا ومعهم رجال قلت بايفيدنا باستخدمه لان الوسع قدك عارف غرفة وصالة"
+        },
+        {
+            "role": "customer",
+            "text": "النساء في الصالة والرجال باندبر حالنا فرشة في السطوح لانه مافيه مضرة يكشف على اي حد السطح هذا"
+        },
+        {
+            "role": "customer",
+            "text": "لوحد جا بس كلها دقايق وصكرته تكفى اخ محمد"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

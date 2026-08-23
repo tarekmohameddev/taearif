@@ -1,0 +1,711 @@
+{
+    "type": "real_conversation",
+    "id": "conv_8231",
+    "tenant_id": 1421,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله \nكيف حالك عندي شقق للايجار بنفس العمارة\n3 غرف بصالة وسطح خاص جديدة  ب 25 الف\nغرفتين ومطبخ ب 17 الف\nغرفتين وصالة صغيرة مع سطح خاص ب 20 الف\n5 غرف ب 32 الف  \n\nنظام سنوي على دفعتين"
+        },
+        {
+            "role": "customer",
+            "text": "هنا"
+        },
+        {
+            "role": "customer",
+            "text": "كم السعي ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "لايوجد مصعد\nاكثر من 10 سنوات\nشرقية"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله \nكيف حالك عندي شقق للايجار بنفس العمارة\n3 غرف بصالة وسطح خاص جديدة  ب 25 الف  دورتين مياه\nغرفتين ومطبخ ب 17 الف دورة مياه واحدة\nغرفتين وصالة صغيرة مع سطح  خاص ب 20 الف دورة مياه واحدة\n5 غرف ب 32 الف  3 دورات مياه وصالة و مدخلين \n\nنظام سنوي على دفعتين"
+        },
+        {
+            "role": "customer",
+            "text": "طبعا غير مفروشة"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الان شقة  5 غرف"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "التالي\nلشقة غرفة 2 بدون صالة"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "شقة 3 غرف ملحق مع صالة  الان"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "شقة غرفتين بسطح"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هل ممكن نشر الاعلان بموقع حراج"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "وانت طيب ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍🏻]"
+        },
+        {
+            "role": "customer",
+            "text": "ماعندنا"
+        },
+        {
+            "role": "customer",
+            "text": "بس اتواصل معاي توه"
+        },
+        {
+            "role": "customer",
+            "text": "بيجي يتفرج"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "3 غرف ملحق"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "كيف حالك ياعبد الرحمن \nجاني زبون للشقة الغرفتين بدون صالة الي ب 17\nعن طريق معلن اخر"
+        },
+        {
+            "role": "customer",
+            "text": "انتظر لس ماعملنا العقد"
+        },
+        {
+            "role": "customer",
+            "text": "المسا  ارد عليك"
+        },
+        {
+            "role": "customer",
+            "text": "بس لاتوجه احد"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "امين\nوان شاء الله ربي يرزقكم في باقي الشقق"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "0543105430"
+        },
+        {
+            "role": "customer",
+            "text": "0507465171"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "+962 7 9538 0434"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "+966 56 942 4371"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "document_1770904631774.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا شادى:\nنفيدك بسداد المستأجر هيا سامي فليح الزبن مبلغ بقيمة 15,000.00 ريال للعقد رقم 10898620753 وجاري تحويله إلى حسابك البنكي المرتبط بالعقد والمنتهي بـ 7402 خلال 5 أيام عمل.\nنسعد بخدمتك\nالرقم الموحد 199011"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طلبات عقد ايجار\n\nتـاريخ بداية العقد : 25 \/ فبراير \/ 2026\n\nرقم هوية المؤجر : 1009920545\nتاريخ ميلاد المؤجر : 1403\/10\/29\nرقم جوال المؤجر : 0505548946\n\n\nرقم الصك : 660002534285\nتاريخ الصك : 29\/05\/1447\nالعنوان الوطني أو موقع العقار: \nعدد الأدوار : دورين ومللحق\nعدد الشقق في كل دور : 3\nرقم الوحدة : 7\nعدد الغرف : 2\nمساحة الوحدة: 80 م\n\nرقم هوية المستأجر :\nتاريخ ميلاد المستأجر :\nرقم جوال المستأجر :\n\nقيمة الإيجار : 19 الف ريال\nطريقة الدفعات : دفعة واحدة عند توثيق العقد\nالتأمين (إن وجد) :\n\nصورة الايبان للمؤجر :\nصورة فاتورة الكهرباء : (اختياري)\nصورة فاتورة المياه : (اختياري)\nصورة السجل التجاري للعقود التجارية"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "بيانات المستاجر اذا ارسلها \nبارسلها لكم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "document_1771520835188.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "‎⁨الهوية الوطنية_09-12-2025⁩.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "من تاريخ 24 ان شاء الله بداية العقد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم \nكيف حالكم\nممكن ننزل في سعر الثلاث غرف الى 23 الف  \nوحاول تنعش الاعلانات عليها تحديدا \nحاليا متاحة بسطح \nواخرى بدون سطح كلها من 23 نمشيها ان شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تبشر"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هذا رقمي 😂"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍🏻]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍🏻]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تم التحديث 👍🏻"
+        },
+        {
+            "role": "customer",
+            "text": "فيه ايضا مبلغ تامين الف ريال \nبلغتهم عليه ووافقو"
+        },
+        {
+            "role": "customer",
+            "text": "نهايته 402"
+        },
+        {
+            "role": "customer",
+            "text": "اللهم امين"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب حاليا  المتاح  الشقة 2\nالي في السطح   3 غرف \n\nبالنسبة ال 5 غرف \nراح اقسمها ان شاء الله الى شقتين \nغرفتين و غرفتين  بس بعد العيد\n( الغي اعلان  الخمس غرف)\nوالي يبغى غرفتين قله بعد العيد ان شاء الله بتكون جاهزة  لاكن ممكن يحجز ."
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "للإيجار شقق بمكة المكرمة حي العوالي مجددة غير مفروشة ( دفعة او دفعتين )\nالشقة الاولى :\nالسعر 17 الف ريال\n2 غرف نوم\n1 دورة مياه \nومطبخ\nتجهز بعد اسبوعين تقريبا  ولامانع من الحجز\n\nالشقة الثانية :\nالسعر 23 الف ريال\n3 غرف نوم\n2 دورة مياه\nصالة واحدة\nوسطح خاص\nومطبخ\nجاهزة حاليا\nالشقة الثالثة :\nالسعر 17 الف ريال\n2 غرف نوم\n1 دورة مياه\nومطبخ\n\nتجهز بعد اسبوعين  لامانع من الحجز\nالشقة الرابعة :\nالسعر 20 الف \n3 غرف وصالة ودورتين مياه\nتجهز بعد اسبوعين \nعائلة صغيرة فقط\n\nالمميزات قريبة مسجد جامع وحديقة العوالي"
+        },
+        {
+            "role": "customer",
+            "text": "للإيجار شقق بمكة المكرمة حي العوالي مجددة غير مفروشة ( دفعة او دفعتين )\nالشقة الاولى :\nالسعر 17 الف ريال\n2 غرف نوم\n1 دورة مياه \nومطبخ\nتجهز بعد اسبوعين تقريبا  ولامانع من الحجز\n\nالشقة الثانية :\nالسعر 23 الف ريال\n3 غرف نوم\n2 دورة مياه\nصالة واحدة\nوسطح خاص\nومطبخ\nجاهزة حاليا\nالشقة الثالثة :\nالسعر 17 الف ريال\n2 غرف نوم\n1 دورة مياه\nومطبخ\n\nتجهز بعد اسبوعين  لامانع من الحجز\nالشقة الرابعة :\nالسعر 20 الف \n2 غرف وصالة ودورتين مياه\nتجهز بعد اسبوعين\nعائلة صغيرة فقط\n\nالمميزات قريبة مسجد جامع وحديقة العوالي"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "للإيجار شقق بمكة المكرمة حي العوالي مجددة غير مفروشة ( دفعة او دفعتين )\nالشقة الاولى :\nالسعر 17 الف ريال\n2 غرف نوم\n1 دورة مياه \nومطبخ\nتجهز بعد اسبوعين تقريبا  ولامانع من الحجز\n\nالشقة الثانية :\nالسعر 23 الف ريال\n3 غرف نوم\n2 دورة مياه\nصالة واحدة\nوسطح خاص\nومطبخ\nجاهزة حاليا\nالشقة الثالثة :\nالسعر 17 الف ريال\n2 غرف نوم\n1 دورة مياه\nومطبخ\n\nتجهز بعد اسبوعين  لامانع من الحجز\nالشقة الرابعة :\nالسعر 20 الف \n2 غرف وصالة ودورتين مياه\nتجهز بعد اسبوعين\n\nغرفة واحدة بدورة مياه \nمدخل مستقل  \nعائلة صغيرة فقط\nجاهزة حاليا \n\n\n\nالمميزات قريبة مسجد جامع وحديقة العوالي"
+        },
+        {
+            "role": "customer",
+            "text": "للإيجار شقق بمكة المكرمة حي العوالي مجددة غير مفروشة ( دفعة او دفعتين )\nالشقة الاولى :\nالسعر 17 الف ريال\n2 غرف نوم\n1 دورة مياه \nومطبخ\nتجهز بعد اسبوعين تقريبا  ولامانع من الحجز\n\nالشقة الثانية :\nالسعر 23 الف ريال\n3 غرف نوم\n2 دورة مياه\nصالة واحدة\nوسطح خاص\nومطبخ\nجاهزة حاليا\nالشقة الثالثة :\nالسعر 17 الف ريال\n2 غرف نوم\n1 دورة مياه\nومطبخ\n\nتجهز بعد اسبوعين  لامانع من الحجز\nالشقة الرابعة :\nالسعر 20 الف \n2 غرف وصالة ودورتين مياه\nتجهز بعد اسبوعين\n\nالشقة 5\nغرفة واحدة بدورة مياه \nمدخل مستقل  \nعائلة صغيرة فقط\nجاهزة حاليا \n\n\n\nالمميزات قريبة مسجد جامع وحديقة العوالي"
+        },
+        {
+            "role": "customer",
+            "text": "اضفنا غرفة واحدة"
+        },
+        {
+            "role": "customer",
+            "text": "لو احد جاك"
+        },
+        {
+            "role": "customer",
+            "text": "12"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "الفيدو حقها"
+        },
+        {
+            "role": "customer",
+            "text": "هذا رقمي"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

@@ -1,0 +1,579 @@
+{
+    "type": "real_conversation",
+    "id": "conv_1305",
+    "tenant_id": 1478,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "مؤسسة ادوار المعمار للمقاولات Estimate QUO-000230.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "تمام يا كبير"
+        },
+        {
+            "role": "customer",
+            "text": "هلا ج"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "للحين ما تواصل معي احد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هلاااا"
+        },
+        {
+            "role": "customer",
+            "text": "معليش بس كنت بذكرك"
+        },
+        {
+            "role": "customer",
+            "text": "🙏"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمة الله وبركاتة"
+        },
+        {
+            "role": "customer",
+            "text": "متواصل مع اليمني من الصباح"
+        },
+        {
+            "role": "customer",
+            "text": "الساعة 4 إن شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ارفع الطلب"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "كنت بذكر حضرتك للحين ما تواصل معي بخصوص المصعد"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "🌹"
+        },
+        {
+            "role": "customer",
+            "text": "هلااااا"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام ع خير إن شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمة الله وبركاتة"
+        },
+        {
+            "role": "customer",
+            "text": "حاضر"
+        },
+        {
+            "role": "customer",
+            "text": "اليوم بنمر عليه إن شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا استاذ محمد"
+        },
+        {
+            "role": "customer",
+            "text": "نوع المروحة ال عند حضرتك اسمها مروحه شندلر"
+        },
+        {
+            "role": "customer",
+            "text": "450 سعرها \nو50 للفني تركيبها"
+        },
+        {
+            "role": "customer",
+            "text": "اي جديده تمام"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "👆"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "اذا حولت ارسلي صورة التحويل"
+        },
+        {
+            "role": "customer",
+            "text": "وبالله لا تنسانا ف عقد عثمان"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "🌹"
+        },
+        {
+            "role": "customer",
+            "text": "طيب \nصباح الخير بردو"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص تمام"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمة الله وبركاتة"
+        },
+        {
+            "role": "customer",
+            "text": "حاضر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "هلا استاذ محمد"
+        },
+        {
+            "role": "customer",
+            "text": "ازي حضرتك"
+        },
+        {
+            "role": "customer",
+            "text": "كنت بذكر حضرتك بعقد صيانة عمارة طريق عثمان"
+        },
+        {
+            "role": "customer",
+            "text": "لا انتهينا"
+        },
+        {
+            "role": "customer",
+            "text": "حضرتك مش بترفقه"
+        },
+        {
+            "role": "customer",
+            "text": "احنا ال لاازم نرفقه"
+        },
+        {
+            "role": "customer",
+            "text": "تاني"
+        },
+        {
+            "role": "customer",
+            "text": "بعد ثاني مرة"
+        },
+        {
+            "role": "customer",
+            "text": "طيب اي مشكلته"
+        },
+        {
+            "role": "customer",
+            "text": "وقع وختم على العقد ده"
+        },
+        {
+            "role": "customer",
+            "text": "عشان نفعل تاني وتمشي المعامله"
+        },
+        {
+            "role": "customer",
+            "text": "وارسلي العقد بعد الختم"
+        },
+        {
+            "role": "customer",
+            "text": "بيحمل بس"
+        },
+        {
+            "role": "customer",
+            "text": "MAINTENANCE VIEW POINT 10342 مؤسسة ادوار المعمار للمقاولات.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "هلااا"
+        },
+        {
+            "role": "customer",
+            "text": "بالله لو تكرمت تقدر توقع وترسلنا العقد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "👆"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص تمام تم الرفع"
+        },
+        {
+            "role": "customer",
+            "text": "يا ريت حضرتك تشيك وعلمني"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اخونا الغالي"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص لا تشيل هم\n\nاليوم موضعك منتهي بأذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "تم التفعيل"
+        },
+        {
+            "role": "customer",
+            "text": "معليش يا كبير \nادخل شيك وعرفني"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "بشر"
+        },
+        {
+            "role": "customer",
+            "text": "هلا حياك"
+        },
+        {
+            "role": "customer",
+            "text": "دخلت"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "عقد صيانة ورشةادوار المعمار.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "أرسلي رقم اليماني"
+        },
+        {
+            "role": "customer",
+            "text": "متشكر جدآ"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "إن شاءالله اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اي يا كبير"
+        },
+        {
+            "role": "customer",
+            "text": "منتظرك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "طمنا يكون خير إن شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "إن شاءالله تكون الأمور تمام"
+        },
+        {
+            "role": "customer",
+            "text": "اخويا الغالي"
+        },
+        {
+            "role": "customer",
+            "text": "كيفك"
+        },
+        {
+            "role": "customer",
+            "text": "طيب الحمد لله"
+        },
+        {
+            "role": "customer",
+            "text": "متنسناش بقه في تجديد العقود أبو بكر او عثمان"
+        },
+        {
+            "role": "customer",
+            "text": "محتاجين دعمكم عالشان العييد بقه"
+        },
+        {
+            "role": "customer",
+            "text": "تمام ع خير إن شاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "متشكر جدآ والله"
+        },
+        {
+            "role": "customer",
+            "text": "هو تقريبآ ابو بكر منتهي"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "🌹"
+        },
+        {
+            "role": "customer",
+            "text": "اخونا الغالي"
+        },
+        {
+            "role": "customer",
+            "text": "يا كبير \nاخبارك طمنا عنك"
+        },
+        {
+            "role": "customer",
+            "text": "متنسناش بقة"
+        },
+        {
+            "role": "customer",
+            "text": "لو كان في فرصة للتعميد قبل العيد"
+        },
+        {
+            "role": "customer",
+            "text": "🙏"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ربنا يتقبل منا ومنكم صالح الأعمال \n\nعيدكم مبارك"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "صبحك الله بالخير"
+        },
+        {
+            "role": "customer",
+            "text": "صبحك الله بالخير"
+        },
+        {
+            "role": "customer",
+            "text": "اخونا الغالي \nكيفك يا طيب"
+        },
+        {
+            "role": "customer",
+            "text": "معليش يا كبير كنت بذكرك لو لينا فرصة معكم بالنسبة لعقد عمارة ابو بكر"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

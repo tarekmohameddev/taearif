@@ -1,0 +1,15 @@
+{
+    "type": "bug_regression",
+    "id": "bug_39_budget_not_exhausted",
+    "description": "A normal buyer inquiry with tool calls must not hit budget_exhausted — completion tokens are tracked separately from prompt tokens",
+    "turns": [
+        {
+            "role": "customer",
+            "text": "أبحث عن فيلا في حي الملقا بالرياض بميزانية حتى أربعة ملايين ريال"
+        }
+    ],
+    "invariants": [
+        "no_budget_exhausted",
+        "no_availability_claim_without_search"
+    ]
+}

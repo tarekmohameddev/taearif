@@ -160,6 +160,10 @@
                             <input type="checkbox" name="permissions[]" value="Location Management" class="selectgroup-input" @if(is_array($permissions) && in_array('Location Management', $permissions)) checked @endif>
                             <span class="selectgroup-button">{{__('Location Management')}}</span>
                         </label>
+                        <label class="selectgroup-item">
+                            <input type="checkbox" name="permissions[]" value="Calling" class="selectgroup-input" @if(is_array($permissions) && in_array('Calling', $permissions)) checked @endif>
+                            <span class="selectgroup-button">{{__('Calling')}}</span>
+                        </label>
                 	</div>
                 </div>
               </form>

@@ -78,6 +78,9 @@ class PropertyResource extends JsonResource
             'category_id' => $property->category_id,
             'size' => $property->size ?? null,
             'faqs' => $property->faqs ?? [],
+            'external_links' => $property->relationLoaded('externalLinks')
+                ? $property->externalLinks->map(fn ($l) => ['id' => $l->id, 'platform' => $l->platform, 'url' => $l->url, 'label' => $l->label, 'active' => $l->active])->values()->toArray()
+                : [],
             'building' => $property->building,
             'water_meter_number' => $property->water_meter_number,
             'electricity_meter_number' => $property->electricity_meter_number,

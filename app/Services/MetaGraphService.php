@@ -206,7 +206,8 @@ class MetaGraphService
             'message_deliveries',
             'message_reads',
             'message_reactions',
-            'message_echo',
+            'message_echoes',
+            'smb_message_echoes',
         ]);
 
         // Meta expects subscribed_fields as a query string on this POST endpoint.

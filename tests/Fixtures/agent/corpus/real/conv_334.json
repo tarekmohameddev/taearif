@@ -1,0 +1,891 @@
+{
+    "type": "real_conversation",
+    "id": "conv_334",
+    "tenant_id": 1558,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "اسعد الله مساك بكل خير"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/PZzyLoSsM2eR1qyM7?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "المساحه 2000 متر على طريق الملك سلمان بين العليا والملك عبدالعزيز تفتح شمال وشرق"
+        },
+        {
+            "role": "customer",
+            "text": "في موقع سهيل والبوابة المكانية طالعه كذا 2198 متر مساحتها \nلكن كلام المالك يقول مساحتها بالضبط 1998 متر"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "المساحه نفسك الي فوق 2198 متر"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح"
+        },
+        {
+            "role": "customer",
+            "text": "اهم شي احرص على عدم النشر لعلنا نخلصها بدري"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "هذي الأرض"
+        },
+        {
+            "role": "customer",
+            "text": "ثلاث شوارع"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "أسأل الله العظيم رب العرش العظيم في هذه الساعة المباركة من هذا اليوم العظيم أن يجعلكم من عباده المتقين وان يحفظكم بحفظه ويحرسكم بعينه التي لا تنام ويلبسكم لباس الستر والعافية..بلغكم الله المراد وحقق لكم الرجاء.. وأصلح لكم ماتحت رعايتكم من أهل وولد.وبارك فيهم وجعلهم قرة عين لكم ونفع بهم..وغفر لموتانا وموتاكم وموتي المسلمين جميعا..بلغكم الله الشهر الكريم واعانكم علي صيامه وقيامه.وختم لكم بالعتق من النار..اللهم آمين وصلي الله على نبينا محمد وعلى آله وصحبه أجمعين"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "ما فيه جديد بخصوص ارض الملك سلمان"
+        },
+        {
+            "role": "customer",
+            "text": "ارض في حي الصناعيه الجديده  تجاري سكني على ثلاث شوارع في طريق الخرج المساحه 12300 السوم 2700"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.google.com\/?q=24.549059,46.865395"
+        },
+        {
+            "role": "customer",
+            "text": "هلا وغلا"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عرض جديد ارض تجاريه موقع ذهبي بلك على أربع شوارع \n\nمساحة الارض : 19.800 م\n*على طريق الملك عبدالله*\n\nالسوم : 13 الف ريال للمتر \n \n\nhttps:\/\/maps.app.goo.gl\/XcDAmq2zaLvkDM2v9?g_st=ic"
+        },
+        {
+            "role": "customer",
+            "text": "هلا وغلا"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "هلا بك"
+        },
+        {
+            "role": "customer",
+            "text": "اعتقد مفتوح الي جنبه الان يبني برج حول 8 ادوار"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير \nعندي طلب سكني في حي الملز إذا عندك عروض"
+        },
+        {
+            "role": "customer",
+            "text": "تمام تسلم"
+        },
+        {
+            "role": "customer",
+            "text": "أنا وصلني عرض فيللا فخمة في الملقا مساحتها 990 شارعين 20"
+        },
+        {
+            "role": "customer",
+            "text": "إذا عندك طلب جديده"
+        },
+        {
+            "role": "customer",
+            "text": "18 مليون السوم"
+        },
+        {
+            "role": "customer",
+            "text": "فيلا ترى ما هي ارض"
+        },
+        {
+            "role": "customer",
+            "text": "الأرض هناك ب 12 الف المتر"
+        },
+        {
+            "role": "customer",
+            "text": "ممتعا"
+        },
+        {
+            "role": "customer",
+            "text": "الموقع"
+        },
+        {
+            "role": "customer",
+            "text": "وكم بينك وبين المشتري"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "وانا كذلك"
+        },
+        {
+            "role": "customer",
+            "text": "يعني انت و 2 معك غيري"
+        },
+        {
+            "role": "customer",
+            "text": "شف لي ارض المترو الي معك مباشره"
+        },
+        {
+            "role": "customer",
+            "text": "اها"
+        },
+        {
+            "role": "customer",
+            "text": "اخاف انه يجفل من كثر الوسطاء بيننا وبينهم"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح"
+        },
+        {
+            "role": "customer",
+            "text": "يعني أقول له اثنين : انت والوسيط الي مع البائع \nوهو الثالث وانا سعيي يصير عن طريقكم نتقاسمه وش رايك"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/vPxcqgvXgbQ8vjvW9?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "المساحه 625\nالاطوال 25 * 25\nالعقود سنويه\nالسوم 10000\nالحد 11500"
+        },
+        {
+            "role": "customer",
+            "text": "عماره دورين في السليمانية شارع الثلاثين العليا ( الأمير سلطان ) \nالبيع قيمة ارض"
+        },
+        {
+            "role": "customer",
+            "text": "👆"
+        },
+        {
+            "role": "customer",
+            "text": "مسيت بالخير"
+        },
+        {
+            "role": "customer",
+            "text": "هذي تصلح للطلب الي عندك في السليمانية"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح لكن صاحبها بيبيعها بسعر الأرض"
+        },
+        {
+            "role": "customer",
+            "text": "بيطلع المستأجرين خلاص"
+        },
+        {
+            "role": "customer",
+            "text": "ممتاز"
+        },
+        {
+            "role": "customer",
+            "text": "مسيت بالخير"
+        },
+        {
+            "role": "customer",
+            "text": "👆"
+        },
+        {
+            "role": "customer",
+            "text": "ما ردوا عليك"
+        },
+        {
+            "role": "customer",
+            "text": "👍"
+        },
+        {
+            "role": "customer",
+            "text": "ماعليها شي عماره قائمة دورين"
+        },
+        {
+            "role": "customer",
+            "text": "لا هذي خارج موقع المحفزات"
+        },
+        {
+            "role": "customer",
+            "text": "ارض ولد العم الاولى قريبة مره من الحديقة"
+        },
+        {
+            "role": "customer",
+            "text": "والقطار"
+        },
+        {
+            "role": "customer",
+            "text": "لكن مشكلتها فيها مستأجرين عقودهم تنتهي بعد 4 شهور"
+        },
+        {
+            "role": "customer",
+            "text": "فيه ارض ثانيه قريب منها"
+        },
+        {
+            "role": "customer",
+            "text": "بكره اتأكد من رفيقي الي معروضه عنده"
+        },
+        {
+            "role": "customer",
+            "text": "للبيع \nارض على الثلاثين \n624 م\nفسح 13 شقة مع قبو\n\nhttps:\/\/maps.app.goo.gl\/NnpgZeTzKrTcMz5x8?g_st=ic"
+        },
+        {
+            "role": "customer",
+            "text": "البيع 11500"
+        },
+        {
+            "role": "customer",
+            "text": "للبيع \nارض على الثلاثين العليا\n624 م\nفسح 13 شقة مع قبو\n\nhttps:\/\/maps.app.goo.gl\/NnpgZeTzKrTcMz5x8?g_st=ic"
+        },
+        {
+            "role": "customer",
+            "text": "العمارة السليمانية \nيوجد فيهأ بس عقدين ساريه الباقي منتهي\n\nمحل ينتهي في 2026\/10\/31\nمحل ينتهي في 2026\/9\/26"
+        },
+        {
+            "role": "customer",
+            "text": "عمارة السليمانية \nيوجد فيهأ بس عقدين ساريه الباقي منتهي\n\nمحل ينتهي في 2026\/10\/31\nمحل ينتهي في 2026\/9\/26"
+        },
+        {
+            "role": "customer",
+            "text": "واحد 30 الف والثاني 60 الف"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبنا"
+        },
+        {
+            "role": "customer",
+            "text": "عندك عروض فنادق للبيع"
+        },
+        {
+            "role": "customer",
+            "text": "أرض سكنية زاوية حي الملقا مساحة 3,025.5 م²\nزاوية على شارعين\n• شارع عرض 20م \n• شارع عرض 18م\n\nالسوم 8000 \nالبيع قريب \n\nhttps:\/\/maps.app.goo.gl\/cYZAn72s1f51WuM56?g_st=ic"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/ZF8fzPkFgjYJydzF7?g_st=iw\nللبيع فيلا بقيمة ارض بحي الياسمين\n1425م \nالاطوال57 في عمق25\nشرقي 14 شمالي 14\nالبيع 7500"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هاذي موقع الارض.\nالاطوال 35 في 30\nالمساحه 1050 متر\nشارع 20 جنوبي\nالغدير المربع الذهبي\n\nhttps:\/\/maps.google.com\/?q=24.769051,46.648899"
+        },
+        {
+            "role": "customer",
+            "text": "الحد 11 الف"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/cy7PUgfq2kMASHNG6?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "فيلا بقيمة ارض حي الغدير زاوية\n\nمساحة 1600\nالاطوال 40*40\n\nشوارع \n20 غربي\n 20 جنوبي\n\nالبيع  11500 للمتر\nو 11  على الشور\n\nhttps:\/\/maps.app.goo.gl\/FnABcvGZWjdKLE8h7?g_st=awb"
+        },
+        {
+            "role": "customer",
+            "text": "ارض في حي الازدهار \nطولها على الشارع 28 في 30 شارع 20 غربي\nالمساحة 840\nالحد 8000"
+        },
+        {
+            "role": "customer",
+            "text": "☝️"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح مع شخص ثقة"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام 👍"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "موجوده عماره دخلها فوق 10٪"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/L7UxNFMRL9FKdg4o6?g_st=iw\n\n *الدخل فوق 10%*\nللبيع عمارة تجاري سكني \nحي العارض \nمساحة 783 م \nزاويه شمالي 36\n15  غربي \nالدخل مليون 500 الف \nعقد 5 سنوات \nالبيع 14 مليون على شور"
+        },
+        {
+            "role": "customer",
+            "text": "العقد بدا 5 سبتمبر 2025 ينتهي 5 سبتمبر 2030"
+        },
+        {
+            "role": "customer",
+            "text": "العقد واحد لكامل العقار \nكل ست شهور 750 ألف"
+        },
+        {
+            "role": "customer",
+            "text": "معي فيها 2 بعد"
+        },
+        {
+            "role": "customer",
+            "text": "حدثت معه موجوده"
+        },
+        {
+            "role": "customer",
+            "text": "فيه نفس الدخل لكن في حي الخالديه"
+        },
+        {
+            "role": "customer",
+            "text": "تمام 👌"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبنا"
+        },
+        {
+            "role": "customer",
+            "text": "عندي طلب فندق إذا عندك عروض فنادق قريبه منك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "14 شقه مؤجره على شركه"
+        },
+        {
+            "role": "customer",
+            "text": "مطابقة لرخصة البناء"
+        },
+        {
+            "role": "customer",
+            "text": "هلا بك"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ووجهك ياغالي الله يسعدك ويحفظك"
+        },
+        {
+            "role": "customer",
+            "text": "احرص عليها ترى الرجال محتد بالحيل ولا راح تجلس ذي دخلها ممتاز وموقعها كذلك"
+        },
+        {
+            "role": "customer",
+            "text": "وترى الي عارضها بعقار من الربع رفيقي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "موجوده عند مكتب صديق مباشر مع المالك"
+        },
+        {
+            "role": "customer",
+            "text": "الان باكلمه"
+        },
+        {
+            "role": "customer",
+            "text": "ما اعتقد ينزل كذا"
+        },
+        {
+            "role": "customer",
+            "text": "يقول 7000 الاف لنا محاولة تحتها صعب جدا لأنها فيللا قائمة"
+        },
+        {
+            "role": "customer",
+            "text": "لا ما هو حد"
+        },
+        {
+            "role": "customer",
+            "text": "قل على الشور"
+        },
+        {
+            "role": "customer",
+            "text": "للبيع حي العارض مخطط بدر أ 1350 متر تجاري سكني 3 ادوار ونص \nشارع 30 جنوبي\n54 في 25\nقطعتين\nالسوم 6700 للمتر والبيع بنفس السوم \n https:\/\/maps.app.goo.gl\/oaTauC7zLJYmLx8s8?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السعاه 4"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "نفسها بالضبط 👍"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "اللهم انا نسالك في هذا اليوم المبارك أن تشفي مرضانا وان تعافي مبتلانا وأن ترحم موتانا وأن تجعلنا من عبادك الصالحين\nاللهم اغفر لنا ولوالدينا والمسلمين والمسلمات الأحياء منهم والأموات \nاللهم اغفر لنا ما قدمنا وما أخرنا وما اسررنا وما اعلنا، انك انت علام الغيوب\nاللهم صل وسلم على نبينا محمد وعلى آله وصحبه ."
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/nRcW77hCwEe8R4Vi7?g_st=awb\n\nللبيع تجارية بحي النرجس  شمال سلمان \nنظام البناء ثلاث ادور ونصف \nمساحه 750م \nالاطوال  30×25\nشارع 30 غربي \nعليها رخصة 16 شقة\nالسوم 9500 للمتر \nالحد 10.000 للمتر"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح لكن هذا الي وصلني"
+        },
+        {
+            "role": "customer",
+            "text": "موقعها حلو بداية النرجس والمنطقة مطلوبه"
+        },
+        {
+            "role": "customer",
+            "text": "فيه جديد على عمارة العارض"
+        },
+        {
+            "role": "customer",
+            "text": "وكذلك الأراضي هذي"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 24.84849357605, 46.835826873779]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عماره للبيع في حي الرمال ثلاث ادوار ونص \nالمساحه 925 شارع 30 جنوبي"
+        },
+        {
+            "role": "customer",
+            "text": "جديده"
+        },
+        {
+            "role": "customer",
+            "text": "10 شقق كل شقه خمس غرف ومطبخ وثلاث دورات مياه"
+        },
+        {
+            "role": "customer",
+            "text": "10 شقق كل شقه خمس غرف وصالة ومطبخ وثلاث دورات مياه"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/nRcW77hCwEe8R4Vi7?g_st=awb\n\nللبيع تجارية بحي النرجس  شمال سلمان \nنظام البناء ثلاث ادور ونصف \nمساحه 750م \nالاطوال  30×25\nشارع 30 غربي \nعليها رخصة 16 شقة\nالسوم 9500 للمتر \nالحد 10.000 للمتر"
+        },
+        {
+            "role": "customer",
+            "text": "ارض في حي الملقا \nشمال انس شرق الخير \n\n زاويه غربيه جنوبيه شوارع 15 \nعباره عن 3 قطع \nاول قطعه مقيمه عليها فيلا 345ثاني 345 الثالثه 360متر\nالمساحة الاجمالي 1050متر\n\nالطوال35في30\n\nالسوم9200\n\nحد البيع 10150ريال\n\n\nhttps:\/\/goo.gl\/maps\/anwQSip69SahVRKB8?g_st=awb"
+        },
+        {
+            "role": "customer",
+            "text": "للبيع قطعة ارض زاويه تجارية ( الصحافة)\n\nالمساحة 925متر\n\nشارع40م غربي(العليا العام) \nشـٓــٓـارع: 10م شمالي \n\nالاطوال: 37×25م عمق \n\nقـطـعـة:(1919)\nمخطط:(1863\/اب)\n\nالـبيـع : على السوم  \n  \n                                        \nhttps:\/\/maps.app.goo.gl\/UMdLFQnENe9NDmoR8"
+        },
+        {
+            "role": "customer",
+            "text": "ما سيمت للان ولا حد المالك"
+        },
+        {
+            "role": "customer",
+            "text": "إذا تناسب طلباتك خلهم يسومون"
+        },
+        {
+            "role": "customer",
+            "text": "استراحه في الصحافه \nالمساحه 1407 م \nالاطوال 42 فى 33\n\nزاويه 15 جنوبي وممر غربي \nفيها بير وقريبه لمترو الحبيب \n\nالبيع 8000 للمتر على الشور\nhttps:\/\/maps.app.goo.gl\/kBddKrArNQG8KboY8?g_st=ic"
+        },
+        {
+            "role": "customer",
+            "text": "هذي ما تناسب الطلب نحاول في السعر ينزل شوي"
+        },
+        {
+            "role": "customer",
+            "text": "زاويه وموقعها ممتاز"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/JGw1qShL9a2YxQyu7"
+        },
+        {
+            "role": "customer",
+            "text": "هذي شيخة لكن راعيها متمسك"
+        },
+        {
+            "role": "customer",
+            "text": "يمكن ب 11 الف يبيع"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح حده على البلك كامل من 4 شهور 12500 أرسله لي رفيقي التويجري مباشر معه هو الي معي من فتره"
+        },
+        {
+            "role": "customer",
+            "text": "لكن لعلنا نحاول فيه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "شف متى هو مرسل لي البلك كامل من بداية العرض بشهر 8 ميلادي"
+        },
+        {
+            "role": "customer",
+            "text": "ما بقى إلا هذي"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "حاولت فيه الان وهذا رده"
+        },
+        {
+            "role": "customer",
+            "text": "لكن تراها شيخه"
+        },
+        {
+            "role": "customer",
+            "text": "وتراه من الربع ابن عم لنا \nونعم الرجل التويجري واضح ومع المالك في هذي وفي كل عقاراته عندهم بلكات غيرها شمال"
+        },
+        {
+            "role": "customer",
+            "text": "هذي لي 6 شهور أنا وإياه مع المالك بعنا الخمس بقت هذي رفض ينزل كل بيعه من 12500 وفوق \nتراها تستأهل ملقا الزامل منطقة قصور وقريب البوليفارد"
+        },
+        {
+            "role": "customer",
+            "text": "للبـــيــــــع  أرض مميزة  في حي المونسية  شارع 36 م نظام شقق تمليك \nالأرض متظاهرة شارع 36 م شمالي وشارع 18 جنوبي  \nالمساحة  : 2.875 م \nالاطوال  : 43 م  × 66.86 م \n\nعلى السوم  \nالموقع  : \nhttps:\/\/maps.app.goo.gl\/FpBNt7JqsDocajKQA"
+        },
+        {
+            "role": "customer",
+            "text": "اراضي النرجس.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "هلا بك"
+        },
+        {
+            "role": "customer",
+            "text": "ماهي بنفسها هذي اراضي عيال قيران"
+        },
+        {
+            "role": "customer",
+            "text": "فيه اراضي العنقري وفيه اراضي مساهمات غيرها نفس المخطط"
+        },
+        {
+            "role": "customer",
+            "text": "هذي لهم هم فقط صكوكها مستقله"
+        },
+        {
+            "role": "customer",
+            "text": "هذي الي باقي أرسلها لي سلطان قيران قبل أسبوع بيعت وحده قبل شهر"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هذي تفاصيلها الاربعه لكن اسألك بالله ما تطلع إلا للمشتري"
+        },
+        {
+            "role": "customer",
+            "text": "بيعت اصغر وحده فقط"
+        },
+        {
+            "role": "customer",
+            "text": "عموما الآن أنا معهم تبينا نرتب نجلس مع سلطان ابشر \nتبي تشوف لها زبون لو على قطعه قطعه ابشر نخلص مباشر \nترى سعرها الحالي فرصه من صالح المشتري اكثر من البائع"
+        },
+        {
+            "role": "customer",
+            "text": "شف أسم المالك على القرار المساحي \nاخوهم الكبير حامد الله يرحمه \nوزوجته مشغلتهم رافضه التطوير هي الي مصره على البيع كاش فقط"
+        },
+        {
+            "role": "customer",
+            "text": "اوك 👍"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم مبنى تجاري حديث للاستثمار . طويل الاجل من 5سنوات 10 سنوات \n\n8مليون دفعتين او \n\nكاش 7مليون \n\nمع المالك مباشره"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/v74hyPrTQakzdrEL7?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم مبنى تجاري حديث للاستثمار . طويل الاجل من 5سنوات 10 سنوات \n\n8مليون دفعتين او \n\nكاش 7مليون \n\nمع مباشر المالك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته \nتقبل الله طاعاتكم\n\nبخصوص ارض طريق الملك سلمان \nالرجال بيبيع حول 25 الف المتر لنا محاوله ان شاء الله \nإذا عندك احد مهتم"
+        },
+        {
+            "role": "customer",
+            "text": "👆"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "المساحه 625\nالاطوال 25 * 25\nالعقود سنويه\nالسوم 11300\nالحد 11500\n\nالمحلات : اربعه (ثلاث مؤجره عقدين )\nو الشقتين الي فوق فاضية"
+        },
+        {
+            "role": "customer",
+            "text": "20813545552.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "20960035925.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "20213937774.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عمارة السليمانية \nيوجد فيهأ بس عقدين ساريه الباقي منتهي\n\nمحل ينتهي في 2026\/10\/31\nمحل ينتهي في 2026\/9\/26"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "👍"
+        },
+        {
+            "role": "customer",
+            "text": "تقبل الله طاعتكم واعاده الله علينا وعليكم بالخير واليمن والبركات 🌹🌹\n\nوكل عام وأنتم بخير 🌙"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "كيف الحال بشرني عنك"
+        },
+        {
+            "role": "customer",
+            "text": "فيه جديد على العروض والطلبات الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "📢 للبيع – فيلا  قديمة سكنيه بسعر الأرض \n\n📍 الموقع: حي الربوة – الرياض\n📏 المساحة: 625 م²\n🏗️ عمر العقار: أكثر من 30 سنة\n🌇 الواجهة: جنوبية شرقية\n🚗 الشوارع: على شارعين 16م و12م\n📍 قريبة من جميع الخدمات والمواقع الحيوية\n\nالمواصفات:\n• العمارة قديمة وتُباع على حالتها الحالية.\n• مناسبة للهدم وإعادة البناء\n• موقع استثماري مميز داخل حي الربوة\nالسوم 3مليون و 100 ألف"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/8sCqLJp5zutmdoW18?g_st=iw"
+        },
+        {
+            "role": "customer",
+            "text": "📢 للبيع – فيلا في حي غرناطة 🏡\n\n📍 الموقع: حي غرناطة – الرياض\n📏 المساحة: 675 م²\n📐 الأبعاد: 27 م على الشارع × 25 م عمق\n🧭 الواجهة: شمالية\n🏗️ عمر العقار: 29 سنة\nشارع 20\nالسوم: 4,500,000 ريال\n الحد: 5,000,000 ريال"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/3Bb6ArQb1iQWok5q7?g_st=iwb"
+        },
+        {
+            "role": "customer",
+            "text": "تمام الحمد لله"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

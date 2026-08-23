@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Communication\WhatsApp\Services\SyncWhatsappUserToWaNumberService;
 use App\Http\Controllers\Controller;
 use App\Models\WhatsappUser;
 use App\Models\User;
@@ -11,6 +12,9 @@ use Illuminate\Support\Facades\Log;
 
 class WhatsappNumberController extends Controller
 {
+    public function __construct(
+        private readonly SyncWhatsappUserToWaNumberService $syncWaNumber,
+    ) {}
     public function edit($id)
     {
         $whatsappNumber = WhatsappUser::with(['user', 'employee'])->findOrFail($id);
@@ -65,6 +69,7 @@ class WhatsappNumberController extends Controller
             $oldStatus = $whatsappNumber->status;
             $newStatus = $oldStatus === 'active' ? 'inactive' : 'active';
             $whatsappNumber->update(['status' => $newStatus]);
+            $this->syncWaNumber->syncQuietly($whatsappNumber->fresh());
 
             // Log audit
             \App\Models\WhatsappAddonAudit::create([
@@ -127,6 +132,10 @@ class WhatsappNumberController extends Controller
 
                 return back()->with('error', 'لا يمكن حذف الرقم لوجود إضافات مرتبطة به');
             }
+
+            // Deactivate matching wa_numbers before deleting whatsapp_users.
+            $whatsappNumber->status = 'inactive';
+            $this->syncWaNumber->syncQuietly($whatsappNumber);
             
             $whatsappNumber->delete();
 

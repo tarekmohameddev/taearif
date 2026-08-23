@@ -53,11 +53,14 @@ class ContactMessagesController extends Controller
 
     public function unreadCount(): JsonResponse
     {
-        $count = ContactMessage::query()
-            ->where('tenant_id', $this->tenantId())
-            ->where('is_read', false)
-            ->where('status', 'active')
-            ->count();
+        $tenantId = $this->tenantId();
+        $count = Cache::remember("contact_messages:unread:{$tenantId}", 15, function () use ($tenantId) {
+            return ContactMessage::query()
+                ->where('tenant_id', $tenantId)
+                ->where('is_read', false)
+                ->where('status', 'active')
+                ->count();
+        });
 
         return response()->json([
             'success' => true,
@@ -65,6 +68,11 @@ class ContactMessagesController extends Controller
                 'unread_count' => $count,
             ],
         ]);
+    }
+
+    protected function forgetUnreadCountCache(): void
+    {
+        Cache::forget("contact_messages:unread:{$this->tenantId()}");
     }
 
     public function stats(Request $request): JsonResponse
@@ -118,6 +126,7 @@ class ContactMessagesController extends Controller
                 'read_at' => now(),
             ]);
             $message->refresh();
+            $this->forgetUnreadCountCache();
         }
 
         return response()->json([
@@ -137,6 +146,7 @@ class ContactMessagesController extends Controller
             'is_read' => false,
             'read_at' => null,
         ]);
+        $this->forgetUnreadCountCache();
 
         return response()->json([
             'success' => true,
@@ -163,6 +173,8 @@ class ContactMessagesController extends Controller
             'is_read' => true,
             'read_at' => now(),
         ]);
+
+        $this->forgetUnreadCountCache();
 
         return response()->json([
             'success' => true,
@@ -230,6 +242,8 @@ class ContactMessagesController extends Controller
             $updatedCount++;
         }
 
+        $this->forgetUnreadCountCache();
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -250,6 +264,7 @@ class ContactMessagesController extends Controller
             ]),
         ]);
         $message->refresh();
+        $this->forgetUnreadCountCache();
 
         return response()->json([
             'success' => true,
@@ -268,6 +283,7 @@ class ContactMessagesController extends Controller
             ]),
         ]);
         $message->refresh();
+        $this->forgetUnreadCountCache();
 
         return response()->json([
             'success' => true,
@@ -279,6 +295,7 @@ class ContactMessagesController extends Controller
     {
         $message = $this->findForTenant($id);
         $message->delete();
+        $this->forgetUnreadCountCache();
 
         return response()->json([
             'success' => true,

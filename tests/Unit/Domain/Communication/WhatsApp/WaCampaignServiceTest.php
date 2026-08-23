@@ -30,15 +30,35 @@ class WaCampaignServiceTest extends TestCase
 
     private function requireWhatsAppPricing(): void
     {
+        // Seed a 'marketing' category row so existing call sites keep working
         MarketingChannelPricing::updateOrCreate(
-            ['channel_type' => 'whatsapp'],
+            ['channel_type' => 'whatsapp', 'message_category' => 'marketing'],
             [
-                'credits_per_message' => 1,
-                'price_per_credit' => 0.05,
+                'credits_per_message'         => 10,
+                'price_per_credit'            => 0.005,
                 'effective_price_per_message' => 0.05,
-                'currency' => 'SAR',
-                'is_active' => true,
-                'description' => 'WhatsApp (test)',
+                'currency'                    => 'SAR',
+                'is_active'                   => true,
+                'is_billable'                 => true,
+                'description'                 => 'WhatsApp Marketing (test)',
+            ]
+        );
+    }
+
+    private function requireWhatsAppCategoryPricing(): void
+    {
+        $this->requireWhatsAppPricing();
+
+        MarketingChannelPricing::updateOrCreate(
+            ['channel_type' => 'whatsapp', 'message_category' => 'utility'],
+            [
+                'credits_per_message'         => 2,
+                'price_per_credit'            => 0.005,
+                'effective_price_per_message' => 0.01,
+                'currency'                    => 'SAR',
+                'is_active'                   => true,
+                'is_billable'                 => true,
+                'description'                 => 'WhatsApp Utility (test)',
             ]
         );
     }
@@ -198,5 +218,41 @@ class WaCampaignServiceTest extends TestCase
 
         $this->assertSame(1, $paginator->total());
         $this->assertSame('A', $paginator->items()[0]->name);
+    }
+
+    /** @test */
+    public function utility_template_campaign_reserves_fewer_credits_than_marketing(): void
+    {
+        $this->requireTables();
+        $this->requireWhatsAppCategoryPricing();
+
+        // Marketing: 10 credits/msg, Utility: 2 credits/msg
+        $marketingCredits = \App\Models\Api\marketing\UserCredit::getCostForMessageType('whatsapp', 'marketing');
+        $utilityCredits   = \App\Models\Api\marketing\UserCredit::getCostForMessageType('whatsapp', 'utility');
+
+        $this->assertSame(10, $marketingCredits);
+        $this->assertSame(2, $utilityCredits);
+        $this->assertLessThan($marketingCredits, $utilityCredits);
+    }
+
+    /** @test */
+    public function service_category_returns_zero_credits(): void
+    {
+        $this->requireTables();
+
+        MarketingChannelPricing::updateOrCreate(
+            ['channel_type' => 'whatsapp', 'message_category' => 'service'],
+            [
+                'credits_per_message'         => 0,
+                'price_per_credit'            => 0,
+                'effective_price_per_message' => 0,
+                'currency'                    => 'SAR',
+                'is_active'                   => true,
+                'is_billable'                 => false,
+            ]
+        );
+
+        $credits = \App\Models\Api\marketing\UserCredit::getCostForMessageType('whatsapp', 'service');
+        $this->assertSame(0, $credits);
     }
 }

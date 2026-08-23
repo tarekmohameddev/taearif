@@ -1,0 +1,923 @@
+{
+    "type": "real_conversation",
+    "id": "conv_5353",
+    "tenant_id": 1243,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "مطلوب فندق في مكة المكرمة دخل السنوي لايقل عن 6.5%  مؤجر ولايتجاوز السعر عن 220 مليون \nالطلبات إرسال صورة الصك وصورة عقد الإيجار والموقع وصورة من خارج الفندق المشتري بنك كاش"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل بروفايل المستأجر"
+        },
+        {
+            "role": "customer",
+            "text": "عندكم أرض بحي الشاطيء 2 للبيع مساحة 2500 متر"
+        },
+        {
+            "role": "customer",
+            "text": "لبناء فلة"
+        },
+        {
+            "role": "customer",
+            "text": "شوف أرض مساحة مايتجاوز ألفين متر حي الفيصلية وعرض الواجهة 50 متر وأكثر ومايتجاوز سعر المتر عن 3500 ريال زبون مباشر معاي مع حفظ حقوق الي وصلني له منطقة عمائر.."
+        },
+        {
+            "role": "customer",
+            "text": "عمارة للبيع في حي السلامة\nشارع عبدالرحمن السديري\nالمساحة 660 م\n15 شقة\n4 محلات تجاريه\nالدخل 750 لف"
+        },
+        {
+            "role": "customer",
+            "text": "الدور 1 + 2 + 3 نفس التقسيمة \nشقتين من غرفتين وحمامين وصالة ومطبخ \nوعدد 7 غرف \n الدور 4 \n عدد 4 شقق وحده من غرفتين وباقي الشقق من غرفة \nالملحق الدور 5 \nشقه 3 غرف وصاله 3 حمامات ومطبخ و شقتين من غرفة بخدماتها \nالسطح غرفة خارجية \nالسطح الرئيسي برج stc"
+        },
+        {
+            "role": "customer",
+            "text": "16  شقه"
+        },
+        {
+            "role": "customer",
+            "text": "المطلوب 8،5"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ندعوكم للمشاركة في فعالية كزدورة  \n 🌙🌴\nفعالية تجمع بين الترفيه والتسوق 🛍️وسط اجواء موسميه بتفاصيل اغنى ومتعتها اكبر ✨\n\nبمشيئة الله \nتقام في اليو ووك مول - جده📍\nبتاريخ 7-20 رمضان \n\nاحجز مساحتك الان  \n\n\nنشوفكم في كزدورة 🤩"
+        },
+        {
+            "role": "customer",
+            "text": "متطلبات التسجيل في كزدورة🔥\n\n- الأسم الثلاثي \n- رقم الجوال \n- الايميل\n- اسم المؤسسة او الشركة\n- رقم السجل التجاري او رخصة العمل الحر او الهوية الوطنية\n- الرقم الضريبي\n- المدينة\n\n- التحويل على الحساب المرفق \nمركز نيكسس ايفينتس للترفية \n\nبنك الراجحي \n\nرقم الحساب \n 544000010006086113287\n\nرقم الايبان \n\nSA308000544608016113287\n\nيرجى إرسال إيصال تحويل بالمبلغ المدفوع\n*ملاحظه العربون لا يسترد"
+        },
+        {
+            "role": "customer",
+            "text": "CZDORA.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هات"
+        },
+        {
+            "role": "customer",
+            "text": "عمارة للبيع في حي السلامة\nشارع عبدالرحمن السديري\nالمساحة 660 م\n15 شقة\n4 محلات تجاريه\nالدخل 750 لف"
+        },
+        {
+            "role": "customer",
+            "text": "الدور 1 + 2 + 3 نفس التقسيمة \nشقتين من غرفتين وحمامين وصالة ومطبخ \nوعدد 7 غرف \n الدور 4 \n عدد 4 شقق وحده من غرفتين وباقي الشقق من غرفة \nالملحق الدور 5 \nشقه 3 غرف وصاله 3 حمامات ومطبخ و شقتين من غرفة بخدماتها \nالسطح غرفة خارجية \nالسطح الرئيسي برج stc"
+        },
+        {
+            "role": "customer",
+            "text": "المطلوب 8،5"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مؤجرة وحدات سكنية مفروشة شهري وسنوي \nسوبرماركت 350 ألف \nوحدات سكنية 350 ألف \nوبرج الاتصالات ب50 ألف"
+        },
+        {
+            "role": "customer",
+            "text": "هاذا العرض،ممتاز"
+        },
+        {
+            "role": "customer",
+            "text": "للبيع فندق او  للايجار بالكامل \nفى حي البساتين مطل ع طريقة المدينه المساحة 720\nعدد الوحدات 45 وحدة\nمسبح متوفر مطعم متوفر مسبح متوفركوفي شوب متوفر\nتشغيل زاتي عدد المصاعد 2\nمواقف ارضيه وامامية أكثر من 20 موقف عمر المبني 8 سنوات\nمغسلة متوفر مطلوب للايجار مليون وخمسمائه الف قابله للتفاوض بيع 15مليون"
+        },
+        {
+            "role": "customer",
+            "text": "هاذا مباشر مع مكتب المالك"
+        },
+        {
+            "role": "customer",
+            "text": "هاذا غير مباشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "جبت لهم 8 شامل رفض"
+        },
+        {
+            "role": "customer",
+            "text": "عندك مستودع للإيجار"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 21.6134195, 39.1791964]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "ب9 مليون اقفلها لك"
+        },
+        {
+            "role": "customer",
+            "text": "موقع تجاري على شارع المكرونة \nمكون من 7 محلات تجاريه \nمساحة الارض 1490 متر \nالدخل السنوي الحالي 730 ألف ريال \nمطلوب 9 مليون ريال \nيعتبر السعر لقطة"
+        },
+        {
+            "role": "customer",
+            "text": "معاي شخص للمالك"
+        },
+        {
+            "role": "customer",
+            "text": "حرك السلاحف ياابو أنس فيه زبائن يبغو...العقار زبونك صامل"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "أبشر بكلمه"
+        },
+        {
+            "role": "customer",
+            "text": "خليني اشاورهم بسعر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "282125001954 (1).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "هاذا الصك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "أبشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "0555467750"
+        },
+        {
+            "role": "customer",
+            "text": "ابو محمد جاره المالك .."
+        },
+        {
+            "role": "customer",
+            "text": "قوله وصلني لك ابو بدر .."
+        },
+        {
+            "role": "customer",
+            "text": "كلمه الآن"
+        },
+        {
+            "role": "customer",
+            "text": "تمام يارب تتم على خير"
+        },
+        {
+            "role": "customer",
+            "text": "SKM_C654e26011116181.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "SKM_C654e26011116170.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "SKM_C654e26011116181.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "SKM_C654e26011116170.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "SKM_C654e26011116171.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "SKM_C654e26011116180.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ايش اتفقت مع ابو محمد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "انا وابو بدر وهاذا ابو محمد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "رتب المناسب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "بشر الأمور طيبه.."
+        },
+        {
+            "role": "customer",
+            "text": "متى المشتري حيصدق الشيك"
+        },
+        {
+            "role": "customer",
+            "text": "تمام نسأل الله العلي القدير التيسير.."
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "كفو"
+        },
+        {
+            "role": "customer",
+            "text": "والله يارب يسر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "فندق في موقع مميز جداً في حي النسيم \/ جدة \nمساحة الارض 4500 متر يتكون من بدروم  على المساحة كاملة الدور الأرضي 17 معرض  على الشارع العام بمساحات مختلفة اعلا مساحة  95 م وأقل مساحة  55 م.            \nالدور الميزانين  مفتوح بالكامل  وله عدة استثمارات \nالدور الأول 30 غرفة وجناح  الدور الثاني 32 غرفة وجناح  مكرر حتى الدور الخامس.\nإجمالي عدد الوحدات 154  غرفة وجناح"
+        },
+        {
+            "role": "customer",
+            "text": "الفندق حلو جداً ومجهز ومفروش بالكامل"
+        },
+        {
+            "role": "customer",
+            "text": "مطلوب 5 مليون بسنة جديد بدون المحلات معاي واحد مع المالك"
+        },
+        {
+            "role": "customer",
+            "text": "للاستثمار من 5 الي 10 سنوات... فندق ( 3 نجوم )الفندق عبارة عن \/ 5 ادوار ومصعدين وقسم مكاتب ادارية ومطبخ صغير ومطعم بالاضافة لقاعتين اجتماعات ونادي رياضي وغرفة اطفال ومواقف سيارات بالاضافة لمدخل رئيسي ومدخل جانبي، مكاتب ادارية وغرف غسيل في كل دور وبزنس سنتر* 68 سويت مكون من (غرفتين وصالةمختلفة الاحجام - 3 فئات)* ⁠على شارع الامير سلطان تقاطع حراء."
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "شارع الأمير سلطان معاي الوكيل مباشره..."
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ب3 مليون ريال سنويا ممكن ينزل ل2 مليون و800"
+        },
+        {
+            "role": "customer",
+            "text": "العرض الي بعده......"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "يارب"
+        },
+        {
+            "role": "customer",
+            "text": "هاذا"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/nJr6KEt4XuF3UfPj8?g_st=aw"
+        },
+        {
+            "role": "customer",
+            "text": "الدور الاول 4شقق \nالدور الثاني 6 شقق\nالدور الثالث 8شقق \nالدور الرابع 8شقق\nالدور الخامس 8شقق\nالدور السادس 8شقق\nالدور السابع 3شقق"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "هاذا معاي واحد مع المالك ...يبغ مليون ريال الدفعة كاملة سنويا او مليون و200 ألف دفعتين التصاريح منتهية"
+        },
+        {
+            "role": "customer",
+            "text": "45 شقة"
+        },
+        {
+            "role": "customer",
+            "text": "الله يبارك لهم"
+        },
+        {
+            "role": "customer",
+            "text": "مافي"
+        },
+        {
+            "role": "customer",
+            "text": "لاتدور"
+        },
+        {
+            "role": "customer",
+            "text": "عنده هوه أرسل"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 21.649188995361, 39.139747619629]"
+        },
+        {
+            "role": "customer",
+            "text": "المساحه 1500\nطريق المدينه حي المحمديه\n25 مليون"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "صباح النور"
+        },
+        {
+            "role": "customer",
+            "text": "هات ياغالي"
+        },
+        {
+            "role": "customer",
+            "text": "أبشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "عماره للبيع حي الصفا \nالمساحه 750 متر\nوجهه رخام \n20 شقه \nمن 4 غرف وصاله ومطبخ وحمامين \nالدخل السنوي 600 الف\nالمطلوب 7 مليون و500 تفاوض"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "انسامت ب7 مليون و300 ألف ب7 ونص بياع"
+        },
+        {
+            "role": "customer",
+            "text": "عماره للبيع حي الصفا \nالمساحه 750 متر\nوجهه رخام \n20 شقه \nمن 4 غرف وصاله ومطبخ وحمامين \nالدخل السنوي 600 الف و50 ألف \nالمطلوب 7 مليون و500 نهائي \nاندفع 7 مليون و300 ألف"
+        },
+        {
+            "role": "customer",
+            "text": "معاي الوكيل مباشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 21.582092285156, 39.225818634033]"
+        },
+        {
+            "role": "customer",
+            "text": "خلص ياابو انس"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل لك رقم الوكيل"
+        },
+        {
+            "role": "customer",
+            "text": "ابو انس أرسلي رخصة الفال والايبان عندي موعد مع جماعة بيعة أرض بحط اسمك"
+        },
+        {
+            "role": "customer",
+            "text": "يوم الإثنين القادم"
+        },
+        {
+            "role": "customer",
+            "text": "دعواتك"
+        },
+        {
+            "role": "customer",
+            "text": "الله يبشرك بالخير والجنه"
+        },
+        {
+            "role": "customer",
+            "text": "مثل مااتفقنا سابقا 15% لك والله يبارك لك فيها وانا بلغت الي معاي انك رجال كفو ومضمون"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "للبيع في جدة  حي الفيحاء\n\nعمارة تجارية سكنية\n\n*على شارع عبد الله السليمان التجاري\n\n*المساحة: 875 م2\n\n**إجمالي عدد الشقق 16 شقة كالتالي\/*\n\n13 شقق من 4 غرف\n\n3 شقق استديو\n\n4 محلات تجارية مع الميزانين\n\n\n*●الدخل الحالي: 700 ألف ريال*\n\n\n*⬅️المبلغ المطلوب\/ 9 مليون ريال صافي ونهائي*\n\nhttps:\/\/maps.app.goo.gl\/tADEUitHifKqF1JAA"
+        },
+        {
+            "role": "customer",
+            "text": "كم احاول معاه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "معاي ثلاثة أشخاص"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "16 عداد\nالعمر\/ 17سنه\nالدخل\/ 700 الف ريال \nبموجب العقود الالكترونيه"
+        },
+        {
+            "role": "customer",
+            "text": "مؤجره بالكامل"
+        },
+        {
+            "role": "customer",
+            "text": "السعر 9 مليون نهائي \nغير قابل لتفاوض"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "المحلات الفتحة من 50 ألف ريال 4 محلات \nوالشقق 16 شقة \nدخل الشقق 500 ألف ريال"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "17 سنة"
+        },
+        {
+            "role": "customer",
+            "text": "يبغو صافي 9 مليون نهايتهم"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/ADYBiSjkAyRw33Ve6?g_st=aw"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ب35 مليون"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "معاي ولد المالك عن طريق شخص عرفني عليه يعني احنا اثنين"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "8،5 مليون صافي للمالك \nاخر سومة امس 8،300 مليون \n\nيستلم العقار خالي \nالدخل الحالي 930 الف \n\nالعدادات مطابقة"
+        },
+        {
+            "role": "customer",
+            "text": "مباشر عندي"
+        },
+        {
+            "role": "customer",
+            "text": "عمارة تجارية للبيع حي السلامة \nشارع عبدالرحمن السديري \nمساحه 660 م \n16 شقة \n4 محلات \nالعدادات مطابقة \nمطلوب 8،5 مليون نهائي \nالدخل حدود 900 الف \n\nمباشر القباني للعقارات"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 21.588830947876, 39.157413482666]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/3cg4i4HUs8RXCoj8A?g_st=aw"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هاذي الأرض طال عمرك الي يبغاها المطور"
+        },
+        {
+            "role": "customer",
+            "text": "تعرف مالك هاذي الأرض"
+        },
+        {
+            "role": "customer",
+            "text": "هاذي ب8 مليون ونص"
+        },
+        {
+            "role": "customer",
+            "text": "معاي رجال مع المالك مباشرة"
+        },
+        {
+            "role": "customer",
+            "text": "أبشر"
+        },
+        {
+            "role": "customer",
+            "text": "بتأكد وارد خبر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/ADYBiSjkAyRw33Ve6?g_st=aw"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "أبشر الان"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته \nلدينا فندق في جدة مطل على البحر \n📍الموقع ابحر الجنوبية\n🏫 الفندق مساحته 2500 متر\nعدد الوحدات 98 وحدة + مكاتب و مستودعات \nالوحدات متنوعة من غرفة وغرفة وصاله وغرفتين \nعدد الادوار 5 ادوار وبدروم مواقف \nالفندق يحتوي على :\nنادي رياضي \nحمام تركي\nساونا\nسبا مساج\nصالون حلاقة\nمسبح \nمطعم\nغرفتين لإنشاء مغسلة ملابس\nرخصة لاونج على السطح\nمستودعات\n\n$$$$$\nومقابل مشروع سفن الترفيهي أكبر نادي يخوت"
+        },
+        {
+            "role": "customer",
+            "text": "35 مليون ..ممكن يتفاوض لصامل"
+        },
+        {
+            "role": "customer",
+            "text": "اقولك اذا عندك اراضي في السلامه الروضه حولها ارسلها علي"
+        },
+        {
+            "role": "customer",
+            "text": "1000"
+        },
+        {
+            "role": "customer",
+            "text": "800"
+        },
+        {
+            "role": "customer",
+            "text": "عندك شي ارسلي"
+        },
+        {
+            "role": "customer",
+            "text": "منطقه عماير"
+        },
+        {
+            "role": "customer",
+            "text": "ياابو أنس طلب الرجال من 800 متر إلى 1000 متر"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/wJnFNNXGRAYwYAu47?g_st=iw\n\nللبيع عمارة هدد موقع مميز منطقة عمائر حي الفيصلية  \nخلف مستشفى باقدو عرفان \nالمساحة 423 متر \n18 متر × 22 متر \nمطلوب 3 مليون \nعليها تصريح هدد جاهز من أمانة جدة \nمباشر مع المالك"
+        },
+        {
+            "role": "customer",
+            "text": "كلهم كذابين محد بشتري"
+        },
+        {
+            "role": "customer",
+            "text": "عمارة فندقية للبيع في حي الصفا، جدة:\n- *المميزات:*\n    - دخل ممتاز ( مليون ومائه وخمسون الف سنويا ) بنسبة 10% أو أكثر\n    - 3 محلات تجارية مؤجرة بإجمالي 100,000 ريال سنويًا دخل آخر \n    - بدروم كمستودع وسكن للعاملين ومغسلة ملابس\n    - 19 عداد كهرباء\n    -  التراخيص سياحه ،، دفاع مدني ،، البلديه  ساريه المفعول ومجدده جميعها  \n    - تسليم العمارة بكامل الموظفين\n- *الوحدات السكنية:*\n    - 20 وحدة سكنية متنوعة( غرفه ومطبخ وحمام 4 ،، غرفه وصاله ومطبخ وحمام 6 ،، غرفتين وصاله ومطبخ وحمام 9 ،، ثلاث غرف ومجلس وصاله وثلاثه حمامات :*      \n- *السعر المطلوب:*\n    8,500,000 ريال ( قابل للتفاوض للجادين )   \n \n- *الموقع:*\n    - على شارعين 30م و20م \n    - مساحة الأرض 400 متر مربع مساحه المباني \n640 \nمتر مربع \nعمر المبنى 7 سنوات"
+        },
+        {
+            "role": "customer",
+            "text": "هاذا مع المالك مباشرة"
+        },
+        {
+            "role": "customer",
+            "text": "موجود"
+        },
+        {
+            "role": "customer",
+            "text": "ان مارد عليك كلمني"
+        },
+        {
+            "role": "customer",
+            "text": "ختم الله صيامكم بالقبول\n و جعل الله عيدكم فرحة وسعادة لا تزول\nعيدكم مبارك \n‏ནྱཾ༩ྀ༄  *و كل عام وأنتم بخير*  ༄ནྱཾ༩‏"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

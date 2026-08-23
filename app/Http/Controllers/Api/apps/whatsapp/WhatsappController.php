@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use App\Http\Requests\Api\Apps\Whatsapp\WhatsappStoreRequest;
 use App\Http\Requests\Api\Apps\Whatsapp\WhatsappUpdateEmployeeRequest;
+use App\Domain\Communication\WhatsApp\Services\SyncWhatsappUserToWaNumberService;
 
 class WhatsappController extends Controller
 {
@@ -22,6 +23,10 @@ class WhatsappController extends Controller
     const STATUS_REJECTED = 'rejected';
     const STATUS_NOT_LINKED = 'not_linked';
     const STATUS_LINKED = 'linked';
+
+    public function __construct(
+        private readonly SyncWhatsappUserToWaNumberService $syncWaNumber,
+    ) {}
 
     public function store(WhatsappStoreRequest $request)
     {
@@ -222,6 +227,9 @@ class WhatsappController extends Controller
         $tenantId = $this->tenantId();
         $whatsappUser = WhatsappUser::where('user_id', $tenantId)->findOrFail($id);
 
+        $whatsappUser->status = self::STATUS_NOT_LINKED;
+        $this->syncWaNumber->syncQuietly($whatsappUser);
+
         $whatsappUser->delete();
 
         return response()->json([
@@ -237,6 +245,7 @@ class WhatsappController extends Controller
 
         $whatsappUser->status = self::STATUS_NOT_LINKED;
         $whatsappUser->save();
+        $this->syncWaNumber->syncQuietly($whatsappUser);
 
         return response()->json([
             'success' => true,
@@ -258,6 +267,7 @@ class WhatsappController extends Controller
 
         $whatsappUser->status = self::STATUS_ACTIVE;
         $whatsappUser->save();
+        $this->syncWaNumber->syncQuietly($whatsappUser);
 
         return response()->json([
             'success' => true,

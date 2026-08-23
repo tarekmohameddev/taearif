@@ -1,0 +1,195 @@
+{
+    "type": "real_conversation",
+    "id": "conv_276",
+    "tenant_id": 1557,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/app.metricool.com\/evolution?blogId=5715517&userId=4429832"
+        },
+        {
+            "role": "customer",
+            "text": "Comp 1.mp4"
+        },
+        {
+            "role": "customer",
+            "text": "يي-01.jpg"
+        },
+        {
+            "role": "customer",
+            "text": "يي-02.jpg"
+        },
+        {
+            "role": "customer",
+            "text": "يي-03.jpg"
+        },
+        {
+            "role": "customer",
+            "text": "سسسسس-01.jpg"
+        },
+        {
+            "role": "customer",
+            "text": "سسسسس-02.jpg"
+        },
+        {
+            "role": "customer",
+            "text": "سسسسس-03.jpg"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "تقرير موظف.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "yanieahrealestate@gmail.com"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/drive.google.com\/drive\/folders\/1bbaPryu2srenQyGaWpHyyqZHkLcPdbp_"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "اي وحدة راحت"
+        },
+        {
+            "role": "customer",
+            "text": "خطة.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "خطاب الهيئة العامة للعقار .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/docs.google.com\/spreadsheets\/d\/1H2QWrNslBmDgNx4zyI79lxEOwUhpj510J13RWqy1Y7c\/edit?usp=sharing"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/barcode.tec-it.com\/en\/QRCode?data=https%3A%2F%2Fmaps.app.goo.gl%2Frgrt1eTikHESWkum9"
+        },
+        {
+            "role": "customer",
+            "text": "barcode (7).gif"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "barcode (8).gif"
+        },
+        {
+            "role": "customer",
+            "text": "الدور الأرضي مكون من : 2 غرف و صالة و مطبخ و 2 دورات مياه .\nالدور الأول مكون من : 3 غرف و 3 دورات مياه .\nالملحق العلوي مكون من : غرفة و صالة و غرفة غسيل و غرفة خادمة و دورة مياه .\nالمحلق الأرضي مكون من : غرفة و دورة مياه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "barcode (9).gif"
+        },
+        {
+            "role": "customer",
+            "text": "‏‪‪056 179 8271‬‬‏"
+        },
+        {
+            "role": "customer",
+            "text": "+966565131633"
+        },
+        {
+            "role": "customer",
+            "text": "مهتم في أرض سكنية أحد"
+        },
+        {
+            "role": "customer",
+            "text": "أرض سكنية بمساحة 387متر بحي أحد ضمن مزاد هامات الرياض\n\nللمشاركة في المزاد \nhttps:\/\/re.mobasher.sa\/auctions\/t-container-details\/3988\n\n\n@infath_sa\n@infathAuctions\n#إنفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "بيت شعبي بمساحة 326.12متر بحي عتيقةضمن مزاد هامات الرياض\n\nللمشاركة في المزاد \nhttps:\/\/re.mobasher.sa\/auctions\/t-container-details\/3988\n\n\n@infath_sa\n@infathAuctions\n#إنفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "شقةسكنية بمساحة 123.58متر بحي الدار البيضاء ضمن مزاد هامات الرياض\n\nللمشاركة في المزاد \nhttps:\/\/re.mobasher.sa\/auctions\/t-container-details\/3988\n\n\n@infath_sa\n@infathAuctions\n#إنفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "أرض سكنية بمساحة 450متر بحي الغنامية ضمن مزاد هامات الرياض\n\nللمشاركة في المزاد \nhttps:\/\/re.mobasher.sa\/auctions\/t-container-details\/3988\n\n\n@infath_sa\n@infathAuctions\n#إنفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "أرض سكنية بمساحة 425متر بحي عريض ضمن مزاد هامات الرياض\n\nللمشاركة في المزاد \nhttps:\/\/re.mobasher.sa\/auctions\/t-container-details\/3988\n\n\n@infath_sa\n@infathAuctions\n#إنفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "فيلا سكنية بمساحة 225متر بحي بدر ضمن مزاد هامات الرياض\n\nللمشاركة في المزاد \nhttps:\/\/re.mobasher.sa\/auctions\/t-container-details\/3988\n\n\n@infath_sa\n@infathAuctions\n#إنفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "أرض سكنية بمساحة 640متر بحي الغنامية ضمن مزاد هامات الرياض\n\nللمشاركة في المزاد \nhttps:\/\/re.mobasher.sa\/auctions\/t-container-details\/3988\n\n\n@infath_sa\n@infathAuctions\n#إنفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "أرض سكنية تجارية بمساحة 810متر بحي أحد ضمن مزاد هامات الرياض\n\nللمشاركة في المزاد \nhttps:\/\/re.mobasher.sa\/auctions\/t-container-details\/3988\n\n\n@infath_sa\n@infathAuctions\n#إنفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "أرض سكنية تجارية بمساحة 810متر بحي أحد ضمن مزاد هامات الرياض\n\nللمشاركة في المزاد \nhttps:\/\/re.mobasher.sa\/auctions\/t-container-details\/3988\n\n\n@infath_sa\n@infathAuctions\n#إنفاذ"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/GJXRGGd3Sq2pxUQs6?g_st=aw"
+        },
+        {
+            "role": "customer",
+            "text": "موقع البقالة"
+        },
+        {
+            "role": "customer",
+            "text": "عند السوداني عامل البقاله"
+        },
+        {
+            "role": "customer",
+            "text": "اسم السوداني صلاح"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

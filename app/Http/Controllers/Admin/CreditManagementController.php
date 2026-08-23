@@ -24,20 +24,21 @@ class CreditManagementController extends Controller
         // Get total counts (unfiltered) for statistics cards
         $totalPackages = CreditPackage::count();
         $activePackagesCount = CreditPackage::where('is_active', true)->count();
-        $totalChannels = MarketingChannelPricing::count();
-        $activeChannelsCount = MarketingChannelPricing::where('is_active', true)->count();
-        
+        $totalChannels = MarketingChannelPricing::distinct('channel_type')->count('channel_type');
+        $activeChannelsCount = MarketingChannelPricing::where('is_active', true)->distinct('channel_type')->count('channel_type');
+        $waCategoriesConfigured = MarketingChannelPricing::where('channel_type', 'whatsapp')->where('is_active', true)->count();
+
         // Get credit packages with filters
         $packagesQuery = CreditPackage::query();
-        
+
         if ($request->filled('package_status')) {
             $packagesQuery->where('is_active', $request->package_status === 'active');
         }
-        
+
         if ($request->filled('marketing_support')) {
             $packagesQuery->where('supports_marketing_channels', $request->marketing_support === 'yes');
         }
-        
+
         if ($request->filled('package_search')) {
             $search = $request->package_search;
             $packagesQuery->where(function ($q) use ($search) {
@@ -45,56 +46,75 @@ class CreditManagementController extends Controller
                   ->orWhere('name_ar', 'like', "%{$search}%");
             });
         }
-        
+
         $packages = $packagesQuery->ordered()->paginate(10, ['*'], 'packages_page');
-        
-        // Get channel pricing with filters
+
+        // Get all pricing rows and group by channel_type for the new per-channel view
         $pricingQuery = MarketingChannelPricing::query();
-        
+
         if ($request->filled('channel_status')) {
             $pricingQuery->where('is_active', $request->channel_status === 'active');
         }
-        
+
         if ($request->filled('channel_search')) {
             $search = $request->channel_search;
             $pricingQuery->where('channel_type', 'like', "%{$search}%");
         }
-        
-        // Order channels with SMS below WhatsApp, then others alphabetically
-        $channelPricing = $pricingQuery->orderByRaw("
-            CASE channel_type 
+
+        // Order: WhatsApp first, then others alphabetically; within a channel order by category importance
+        $allPricingRows = $pricingQuery->orderByRaw("
+            CASE channel_type
                 WHEN 'whatsapp' THEN 1
                 WHEN 'sms' THEN 2
                 WHEN 'facebook' THEN 3
                 WHEN 'telegram' THEN 4
                 WHEN 'instagram' THEN 5
                 ELSE 6
+            END,
+            CASE message_category
+                WHEN 'marketing'       THEN 1
+                WHEN 'utility'         THEN 2
+                WHEN 'authentication'  THEN 3
+                WHEN 'ai_bot'          THEN 4
+                WHEN 'service'         THEN 5
+                WHEN 'default'         THEN 6
+                ELSE 7
             END
-        ")->paginate(10, ['*'], 'pricing_page');
-        
-        // Get channel types for dropdowns
+        ")->get();
+
+        // Group by channel_type for the view
+        $channelPricingGrouped = $allPricingRows->groupBy('channel_type');
+
+        // Keep paginated flat list for backward compat (used nowhere else now but kept for potential reuse)
+        $channelPricing = $allPricingRows;
+
+        // Get channel types and message categories for dropdowns
         $channelTypes = MarketingChannelPricing::getChannelTypes();
-        
+        $messageCategories = MarketingChannelPricing::getMessageCategories();
+
         // Calculate package estimates for active channels
         $packageEstimates = [];
         $activeChannels = MarketingChannelPricing::active()->get();
-        
+
         foreach ($packages as $package) {
             if ($package->supports_marketing_channels) {
                 $packageEstimates[$package->id] = $package->getEstimatedMessagesPerChannel();
             }
         }
-        
+
         return view('admin.credit_management.dashboard', compact(
-            'packages', 
-            'channelPricing', 
-            'channelTypes', 
+            'packages',
+            'channelPricing',
+            'channelPricingGrouped',
+            'channelTypes',
+            'messageCategories',
             'packageEstimates',
             'activeChannels',
             'totalPackages',
             'activePackagesCount',
             'totalChannels',
-            'activeChannelsCount'
+            'activeChannelsCount',
+            'waCategoriesConfigured'
         ));
     }
 
@@ -151,12 +171,17 @@ class CreditManagementController extends Controller
      */
     public function quickCreatePricing(Request $request)
     {
+        $knownCategories = array_keys(MarketingChannelPricing::getMessageCategories());
+
         $validator = Validator::make($request->all(), [
-            'channel_type' => 'required|string|max:50|alpha_dash',
-            'credits_per_message' => 'required|integer|min:1',
-            'price_per_credit' => 'required|numeric|min:0',
-            'currency' => 'required|string|max:3',
-            'description_ar' => 'nullable|string',
+            'channel_type'       => 'required|string|max:50|alpha_dash',
+            'message_category'   => 'required|string|in:' . implode(',', $knownCategories),
+            'credits_per_message' => 'required|integer|min:0',
+            'price_per_credit'   => 'required|numeric|min:0',
+            'currency'           => 'required|string|max:3',
+            'is_billable'        => 'boolean',
+            'description_ar'     => 'nullable|string',
+            'label_ar'           => 'nullable|string|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -167,18 +192,22 @@ class CreditManagementController extends Controller
             ], 422);
         }
 
-        // Check if channel pricing already exists
-        $existingPricing = MarketingChannelPricing::where('channel_type', $request->channel_type)->first();
-        
+        // Composite uniqueness check
+        $existingPricing = MarketingChannelPricing::where('channel_type', $request->channel_type)
+            ->where('message_category', $request->message_category)
+            ->first();
+
         if ($existingPricing) {
             // Update existing pricing
             $existingPricing->update([
-                'credits_per_message' => $request->credits_per_message,
-                'price_per_credit' => $request->price_per_credit,
-                'effective_price_per_message' => $request->credits_per_message * $request->price_per_credit,
-                'currency' => $request->currency,
-                'description_ar' => $request->description_ar,
-                'is_active' => true,
+                'credits_per_message'          => $request->credits_per_message,
+                'price_per_credit'             => $request->price_per_credit,
+                'effective_price_per_message'  => $request->credits_per_message * $request->price_per_credit,
+                'currency'                     => $request->currency,
+                'is_billable'                  => $request->boolean('is_billable', true),
+                'description_ar'               => $request->description_ar,
+                'label_ar'                     => $request->label_ar,
+                'is_active'                    => true,
             ]);
 
             return response()->json([
@@ -190,13 +219,16 @@ class CreditManagementController extends Controller
 
         // Create new pricing
         $pricing = MarketingChannelPricing::create([
-            'channel_type' => $request->channel_type,
-            'credits_per_message' => $request->credits_per_message,
-            'price_per_credit' => $request->price_per_credit,
+            'channel_type'                => $request->channel_type,
+            'message_category'            => $request->message_category,
+            'credits_per_message'         => $request->credits_per_message,
+            'price_per_credit'            => $request->price_per_credit,
             'effective_price_per_message' => $request->credits_per_message * $request->price_per_credit,
-            'currency' => $request->currency,
-            'description_ar' => $request->description_ar,
-            'is_active' => true,
+            'currency'                    => $request->currency,
+            'is_billable'                 => $request->boolean('is_billable', true),
+            'description_ar'              => $request->description_ar,
+            'label_ar'                    => $request->label_ar,
+            'is_active'                   => true,
         ]);
 
         return response()->json([
@@ -212,7 +244,7 @@ class CreditManagementController extends Controller
     public function quickUpdatePackage(Request $request, $id)
     {
         $package = CreditPackage::findOrFail($id);
-        
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'name_ar' => 'required|string|max:255',
@@ -258,13 +290,15 @@ class CreditManagementController extends Controller
     public function quickUpdatePricing(Request $request, $id)
     {
         $pricing = MarketingChannelPricing::findOrFail($id);
-        
+
         $validator = Validator::make($request->all(), [
-            'credits_per_message' => 'required|integer|min:1',
-            'price_per_credit' => 'required|numeric|min:0',
-            'currency' => 'required|string|max:3',
-            'description_ar' => 'nullable|string',
-            'is_active' => 'boolean',
+            'credits_per_message' => 'required|integer|min:0',
+            'price_per_credit'    => 'required|numeric|min:0',
+            'currency'            => 'required|string|max:3',
+            'is_billable'         => 'boolean',
+            'description_ar'      => 'nullable|string',
+            'label_ar'            => 'nullable|string|max:100',
+            'is_active'           => 'boolean',
         ]);
 
         if ($validator->fails()) {
@@ -276,12 +310,14 @@ class CreditManagementController extends Controller
         }
 
         $pricing->update([
-            'credits_per_message' => $request->credits_per_message,
-            'price_per_credit' => $request->price_per_credit,
+            'credits_per_message'         => $request->credits_per_message,
+            'price_per_credit'            => $request->price_per_credit,
             'effective_price_per_message' => $request->credits_per_message * $request->price_per_credit,
-            'currency' => $request->currency,
-            'description_ar' => $request->description_ar,
-            'is_active' => $request->boolean('is_active'),
+            'currency'                    => $request->currency,
+            'is_billable'                 => $request->boolean('is_billable', $pricing->is_billable),
+            'description_ar'              => $request->description_ar,
+            'label_ar'                    => $request->label_ar,
+            'is_active'                   => $request->boolean('is_active'),
         ]);
 
         return response()->json([
@@ -329,6 +365,22 @@ class CreditManagementController extends Controller
     }
 
     /**
+     * Toggle channel pricing billable flag (AJAX)
+     */
+    public function toggleBillable($id)
+    {
+        $pricing = MarketingChannelPricing::findOrFail($id);
+        $pricing->is_billable = !$pricing->is_billable;
+        $pricing->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Billable status updated!',
+            'is_billable' => $pricing->is_billable
+        ]);
+    }
+
+    /**
      * Delete package (AJAX)
      */
     public function deletePackage($id)
@@ -369,7 +421,7 @@ class CreditManagementController extends Controller
     {
         $package = CreditPackage::findOrFail($packageId);
         $estimates = $package->getEstimatedMessagesPerChannel();
-        
+
         return response()->json([
             'status' => 'success',
             'estimates' => $estimates
@@ -392,7 +444,8 @@ class CreditManagementController extends Controller
     {
         $pricing = MarketingChannelPricing::findOrFail($id);
         $channelTypes = MarketingChannelPricing::getChannelTypes();
-        return view('admin.credit_management.edit_pricing', compact('pricing', 'channelTypes'));
+        $messageCategories = MarketingChannelPricing::getMessageCategories();
+        return view('admin.credit_management.edit_pricing', compact('pricing', 'channelTypes', 'messageCategories'));
     }
 
     /**
@@ -401,7 +454,7 @@ class CreditManagementController extends Controller
     public function updatePackage(Request $request, $id)
     {
         $package = CreditPackage::findOrFail($id);
-        
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'name_ar' => 'required|string|max:255',
@@ -444,12 +497,15 @@ class CreditManagementController extends Controller
     public function updatePricing(Request $request, $id)
     {
         $pricing = MarketingChannelPricing::findOrFail($id);
-        
+        $knownCategories = array_keys(MarketingChannelPricing::getMessageCategories());
+
         $validator = Validator::make($request->all(), [
-            'credits_per_message' => 'required|integer|min:1',
-            'price_per_credit' => 'required|numeric|min:0',
-            'currency' => 'required|string|max:3',
-            'description_ar' => 'nullable|string',
+            'credits_per_message' => 'required|integer|min:0',
+            'price_per_credit'    => 'required|numeric|min:0',
+            'currency'            => 'required|string|max:3',
+            'is_billable'         => 'boolean',
+            'label_ar'            => 'nullable|string|max:100',
+            'description_ar'      => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -457,12 +513,14 @@ class CreditManagementController extends Controller
         }
 
         $pricing->update([
-            'credits_per_message' => $request->credits_per_message,
-            'price_per_credit' => $request->price_per_credit,
+            'credits_per_message'         => $request->credits_per_message,
+            'price_per_credit'            => $request->price_per_credit,
             'effective_price_per_message' => $request->credits_per_message * $request->price_per_credit,
-            'currency' => $request->currency,
-            'description_ar' => $request->description_ar,
-            'is_active' => $request->boolean('is_active'),
+            'currency'                    => $request->currency,
+            'is_billable'                 => $request->boolean('is_billable', $pricing->is_billable),
+            'label_ar'                    => $request->label_ar,
+            'description_ar'              => $request->description_ar,
+            'is_active'                   => $request->boolean('is_active', $pricing->is_active),
         ]);
 
         Session::flash('success', 'Channel pricing updated successfully!');
@@ -470,7 +528,8 @@ class CreditManagementController extends Controller
     }
 
     /**
-     * Auto-sync channel pricing (helper method)
+     * Auto-sync channel pricing (helper method).
+     * Skips non-billable rows since price_per_credit is irrelevant when credits = 0.
      */
     private function autoSyncChannelPricing()
     {
@@ -482,21 +541,24 @@ class CreditManagementController extends Controller
         if ($packages->count() > 0) {
             $totalPricePerCredit = 0;
             $count = 0;
-            
+
             foreach ($packages as $package) {
                 if ($package->credits > 0) {
                     $totalPricePerCredit += ($package->price / $package->credits);
                     $count++;
                 }
             }
-            
+
             if ($count > 0) {
                 $avgPricePerCredit = $totalPricePerCredit / $count;
-                
-                MarketingChannelPricing::active()->get()->each(function ($pricing) use ($avgPricePerCredit) {
-                    $pricing->price_per_credit = round($avgPricePerCredit, 4);
-                    $pricing->updateEffectivePrice();
-                });
+
+                MarketingChannelPricing::active()
+                    ->where('is_billable', true)
+                    ->get()
+                    ->each(function ($pricing) use ($avgPricePerCredit) {
+                        $pricing->price_per_credit = round($avgPricePerCredit, 4);
+                        $pricing->updateEffectivePrice();
+                    });
             }
         }
     }
@@ -515,21 +577,24 @@ class CreditManagementController extends Controller
             // Calculate average manually since price_per_credit is a computed attribute
             $totalPricePerCredit = 0;
             $count = 0;
-            
+
             foreach ($packages as $package) {
                 if ($package->credits > 0) {
                     $totalPricePerCredit += ($package->price / $package->credits);
                     $count++;
                 }
             }
-            
+
             if ($count > 0) {
                 $avgPricePerCredit = $totalPricePerCredit / $count;
-                
-                MarketingChannelPricing::active()->get()->each(function ($pricing) use ($avgPricePerCredit) {
-                    $pricing->price_per_credit = round($avgPricePerCredit, 4);
-                    $pricing->updateEffectivePrice();
-                });
+
+                MarketingChannelPricing::active()
+                    ->where('is_billable', true)
+                    ->get()
+                    ->each(function ($pricing) use ($avgPricePerCredit) {
+                        $pricing->price_per_credit = round($avgPricePerCredit, 4);
+                        $pricing->updateEffectivePrice();
+                    });
 
                 Session::flash('success', 'All channel pricing synced from credit packages! Average: ' . number_format($avgPricePerCredit, 4) . ' SAR/credit');
             } else {

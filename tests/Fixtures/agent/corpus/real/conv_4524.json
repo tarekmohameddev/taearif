@@ -1,0 +1,383 @@
+{
+    "type": "real_conversation",
+    "id": "conv_4524",
+    "tenant_id": 1243,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا ملايين"
+        },
+        {
+            "role": "customer",
+            "text": "مناسب"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/aljebaan.com\/play.php?catsmktba=863"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا ملايين"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "بالنسبه للسياره \nخذ راحتك"
+        },
+        {
+            "role": "customer",
+            "text": "ودك استقبلك"
+        },
+        {
+            "role": "customer",
+            "text": "ودك تستأجر"
+        },
+        {
+            "role": "customer",
+            "text": "شف الأريح لك"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "‏اجل أول ما تطلع من المطار راسلني"
+        },
+        {
+            "role": "customer",
+            "text": "‏ودي و الله براحتك"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 18.330905914307, 42.778942108154]"
+        },
+        {
+            "role": "customer",
+            "text": "صلاة الفجر"
+        },
+        {
+            "role": "customer",
+            "text": "انت جاهز"
+        },
+        {
+            "role": "customer",
+            "text": "مافهمت"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "انا"
+        },
+        {
+            "role": "customer",
+            "text": "تحت"
+        },
+        {
+            "role": "customer",
+            "text": "انتظرك"
+        },
+        {
+            "role": "customer",
+            "text": "✅"
+        },
+        {
+            "role": "customer",
+            "text": "قمتوا"
+        },
+        {
+            "role": "customer",
+            "text": "العشاء"
+        },
+        {
+            "role": "customer",
+            "text": "جعل كل شى"
+        },
+        {
+            "role": "customer",
+            "text": "فداك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "مناسب"
+        },
+        {
+            "role": "customer",
+            "text": "ايش رأيك"
+        },
+        {
+            "role": "customer",
+            "text": "انت"
+        },
+        {
+            "role": "customer",
+            "text": "أنا ي ادارة الأملاك"
+        },
+        {
+            "role": "customer",
+            "text": "نم"
+        },
+        {
+            "role": "customer",
+            "text": "ارحب ملايين"
+        },
+        {
+            "role": "customer",
+            "text": "جاهز"
+        },
+        {
+            "role": "customer",
+            "text": "+966 53 580 8662"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "احد جاكم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "كلمتهم"
+        },
+        {
+            "role": "customer",
+            "text": "وانتظرهم"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم يالغالي"
+        },
+        {
+            "role": "customer",
+            "text": "جاي جده"
+        },
+        {
+            "role": "customer",
+            "text": "وباملمك"
+        },
+        {
+            "role": "customer",
+            "text": "بأعطيك العلم"
+        },
+        {
+            "role": "customer",
+            "text": "لالا"
+        },
+        {
+            "role": "customer",
+            "text": "يمكن الاسبوع الجاي"
+        },
+        {
+            "role": "customer",
+            "text": "تواصل"
+        },
+        {
+            "role": "customer",
+            "text": "معها"
+        },
+        {
+            "role": "customer",
+            "text": "تعطيك الارقام"
+        },
+        {
+            "role": "customer",
+            "text": "إذاتم"
+        },
+        {
+            "role": "customer",
+            "text": "البيع"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "توي الان"
+        },
+        {
+            "role": "customer",
+            "text": "دخلت الشقه"
+        },
+        {
+            "role": "customer",
+            "text": "جاي من مكه"
+        },
+        {
+            "role": "customer",
+            "text": "بكره باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "بينا تواصل"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 21.352125167847, 39.835052490234]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "خذ راحتك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيبين لك الطيب"
+        },
+        {
+            "role": "customer",
+            "text": "في تندحه"
+        },
+        {
+            "role": "customer",
+            "text": "يومين ثلاثه"
+        },
+        {
+            "role": "customer",
+            "text": "اكون في جده"
+        },
+        {
+            "role": "customer",
+            "text": "تقضل"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا ملايين"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "مكه"
+        },
+        {
+            "role": "customer",
+            "text": "باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "نازل جده"
+        },
+        {
+            "role": "customer",
+            "text": "واكلمك"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن بكره"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

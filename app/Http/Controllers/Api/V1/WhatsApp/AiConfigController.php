@@ -58,10 +58,22 @@ class AiConfigController extends BaseApiController
         return $this->ok(['data' => $config]);
     }
 
-    public function stats(): JsonResponse
+    public function stats(Request $request): JsonResponse
     {
         $userId = (int) auth()->user()->tenantOwnerId();
-        $stats = $this->statsService->aiStatsForUser($userId);
+
+        $filters = [
+            'wa_number_id' => $request->input('wa_number_id') ? (int) $request->input('wa_number_id') : null,
+            'period'       => $request->input('period', 'this_month'),
+        ];
+
+        if (! is_null($filters['wa_number_id'])) {
+            if (! WaNumber::where('id', $filters['wa_number_id'])->where('user_id', $userId)->exists()) {
+                return response()->json(['status' => 'error', 'code' => 'WA_NUMBER_NOT_FOUND', 'message' => 'WhatsApp number not found.'], 404);
+            }
+        }
+
+        $stats = $this->statsService->aiStatsForUser($userId, $filters);
 
         return $this->ok(['data' => $stats]);
     }

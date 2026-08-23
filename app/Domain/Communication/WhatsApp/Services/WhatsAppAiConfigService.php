@@ -9,6 +9,7 @@ class WhatsAppAiConfigService
     public function findForNumber(int $userId, int $waNumberId): ?WaAiConfig
     {
         return WaAiConfig::query()
+            ->with('excludedPhones')
             ->where('user_id', $userId)
             ->where('wa_number_id', $waNumberId)
             ->first();
@@ -18,6 +19,16 @@ class WhatsAppAiConfigService
     {
         $data['user_id'] = $userId;
         $data['wa_number_id'] = $waNumberId;
+
+        // `scenarios` is NOT NULL with no DB default; clients often omit it on first save.
+        $exists = WaAiConfig::query()
+            ->where('user_id', $userId)
+            ->where('wa_number_id', $waNumberId)
+            ->exists();
+
+        if (! $exists && ! array_key_exists('scenarios', $data)) {
+            $data['scenarios'] = [];
+        }
 
         return WaAiConfig::updateOrCreate(
             ['user_id' => $userId, 'wa_number_id' => $waNumberId],

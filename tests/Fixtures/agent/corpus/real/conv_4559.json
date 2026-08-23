@@ -1,0 +1,451 @@
+{
+    "type": "real_conversation",
+    "id": "conv_4559",
+    "tenant_id": 1243,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "فينك"
+        },
+        {
+            "role": "customer",
+            "text": "!؟"
+        },
+        {
+            "role": "customer",
+            "text": "سهم أسمنت ينبع"
+        },
+        {
+            "role": "customer",
+            "text": "ايش رأيك فيه"
+        },
+        {
+            "role": "customer",
+            "text": "توزيعاته مرتين في السنة"
+        },
+        {
+            "role": "customer",
+            "text": "الحين 15"
+        },
+        {
+            "role": "customer",
+            "text": "كان 14 قبل فترة"
+        },
+        {
+            "role": "customer",
+            "text": "أقابلك بالليل"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "فينك"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "فينك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا"
+        },
+        {
+            "role": "customer",
+            "text": "ايش هذا"
+        },
+        {
+            "role": "customer",
+            "text": "اكتب تخطي"
+        },
+        {
+            "role": "customer",
+            "text": "هذا هو يقص لك البوردنق"
+        },
+        {
+            "role": "customer",
+            "text": "اليا"
+        },
+        {
+            "role": "customer",
+            "text": "عدد المحلات التجارية : 3\nعدد الشقق :22 وغرفتين حارس فالمواقف\nعدد الادوار : 3\nاجمالي دخل الشقق في السنة : 400-500الف\nاجمالي دخل المحلات التجارية في السنة :150الف ايجار البريد"
+        },
+        {
+            "role": "customer",
+            "text": "المساحة 600"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "هذي تصاميم الغرف الموجوده"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "ايوا مع المالك"
+        },
+        {
+            "role": "customer",
+            "text": "7 مليون"
+        },
+        {
+            "role": "customer",
+            "text": "باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "كلمني"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هل الشراء هنا مازال مناسب"
+        },
+        {
+            "role": "customer",
+            "text": "سهم أديس وصل 19"
+        },
+        {
+            "role": "customer",
+            "text": "متى أبيع"
+        },
+        {
+            "role": "customer",
+            "text": "!؟"
+        },
+        {
+            "role": "customer",
+            "text": "الهدف كم"
+        },
+        {
+            "role": "customer",
+            "text": "ايش أسهم ثانية ؟"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم يا حبيبنا"
+        },
+        {
+            "role": "customer",
+            "text": "اخبارك طيب"
+        },
+        {
+            "role": "customer",
+            "text": "تنصح بشراء الذهب !؟"
+        },
+        {
+            "role": "customer",
+            "text": "الآن"
+        },
+        {
+            "role": "customer",
+            "text": "في جدة"
+        },
+        {
+            "role": "customer",
+            "text": "شويات رحلتي"
+        },
+        {
+            "role": "customer",
+            "text": "على 4 الفجر"
+        },
+        {
+            "role": "customer",
+            "text": "باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "امين \nومعذور \nعسى الله يوفقك يارب 🙏"
+        },
+        {
+            "role": "customer",
+            "text": "طيب ليش ما تنصح بشراء الذهب"
+        },
+        {
+            "role": "customer",
+            "text": "باقي"
+        },
+        {
+            "role": "customer",
+            "text": "عندي متاخر"
+        },
+        {
+            "role": "customer",
+            "text": "كم الحين"
+        },
+        {
+            "role": "customer",
+            "text": "الحين 3.78"
+        },
+        {
+            "role": "customer",
+            "text": "مناسب للشراء"
+        },
+        {
+            "role": "customer",
+            "text": "!؟"
+        },
+        {
+            "role": "customer",
+            "text": "انت مشترك"
+        },
+        {
+            "role": "customer",
+            "text": "!؟"
+        },
+        {
+            "role": "customer",
+            "text": "سهم الأصيل كم الحين"
+        },
+        {
+            "role": "customer",
+            "text": "!؟"
+        },
+        {
+            "role": "customer",
+            "text": "ياخي الأسعار عندي متاخرة"
+        },
+        {
+            "role": "customer",
+            "text": "وحطيت السعر حقك ما زبط معايا"
+        },
+        {
+            "role": "customer",
+            "text": "وين"
+        },
+        {
+            "role": "customer",
+            "text": "الاشتراك"
+        },
+        {
+            "role": "customer",
+            "text": "في الراجحي ومنصة سهم"
+        },
+        {
+            "role": "customer",
+            "text": "3.85"
+        },
+        {
+            "role": "customer",
+            "text": "مناسب"
+        },
+        {
+            "role": "customer",
+            "text": "للشراء"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا"
+        },
+        {
+            "role": "customer",
+            "text": "يالحبيب"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "يحتاج له تنظيف"
+        },
+        {
+            "role": "customer",
+            "text": "ويصير جديد"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ووجهك"
+        },
+        {
+            "role": "customer",
+            "text": "اللهم امين"
+        },
+        {
+            "role": "customer",
+            "text": "مكيف واحد"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "سعر طيب"
+        },
+        {
+            "role": "customer",
+            "text": "خلصه"
+        },
+        {
+            "role": "customer",
+            "text": "اللي عندي يقول 75"
+        },
+        {
+            "role": "customer",
+            "text": "ووجهك"
+        },
+        {
+            "role": "customer",
+            "text": "👍"
+        },
+        {
+            "role": "customer",
+            "text": "صح"
+        },
+        {
+            "role": "customer",
+            "text": "تحتاج تعبئة فريون"
+        },
+        {
+            "role": "customer",
+            "text": "ايوا"
+        },
+        {
+            "role": "customer",
+            "text": "توديك مصر وتجيبك  إذا حجزت من بدري"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/vt.tiktok.com\/ZSufAefSP\/"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 21.771183013916, 39.183525085449]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ابو انس"
+        },
+        {
+            "role": "customer",
+            "text": "أسواق العثيم نزل"
+        },
+        {
+            "role": "customer",
+            "text": "وكسر"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "أختي إبتهال الغالية،\n\nأنا غلطت عليك، وآسف من كل  قلبي. ما كان لي حق أبدًا اللي صار.\n\nأدري جرحتك، وخذي وقتك براحتك. ترى زعلنا من بعض كل هالسنين مؤلمني ، بس متفهمك.\n\nوأتمنى نصلّح اللي بيننا\n\nالله يحفظك ويرعاكِ"
+        },
+        {
+            "role": "customer",
+            "text": "ذي رسالة بسيطة من غير كلام كثير"
+        },
+        {
+            "role": "customer",
+            "text": "أختي إبتهال الغالية،\n\nأنا غلطت عليك، وآسف من كل  قلبي. ما كان لي حق أبدًا اللي صار.\n\nأدري جرحتك، وخذي وقتك براحتك. ترى زعلنا من بعض كل هالسنين مؤلمني ، بس متفهمك.\n\nوأتمنى نصلّح اللي بيننا\n\nالله يحفظكِ ويرعاكِ❤️"
+        },
+        {
+            "role": "customer",
+            "text": "نعم مسوية بلوك"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

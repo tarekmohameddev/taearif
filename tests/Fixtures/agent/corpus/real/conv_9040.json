@@ -1,0 +1,867 @@
+{
+    "type": "real_conversation",
+    "id": "conv_9040",
+    "tenant_id": 1708,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "مرحبًا سيف،\r\nرمز التحقق 0841 لإتمام العملية.\r\n\r\nيرجى عدم مشاركة الرمز مع الآخرين.\r\n\r\nيومك سعيد."
+        },
+        {
+            "role": "customer",
+            "text": "Fund Transfer Credited\nFrom: 882 منصة ايجار\nTo: **001\nVia: RJHISARI\nAmount: SAR 69,202.00\nOn: 2026-02-08 09:20:29"
+        },
+        {
+            "role": "customer",
+            "text": "وصل من البنك"
+        },
+        {
+            "role": "customer",
+            "text": "ماوصلت"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبًا سيف،\r\nرمز التحقق 9151 لإتمام العملية.\r\n\r\nيرجى عدم مشاركة الرمز مع الآخرين.\r\n\r\nيومك سعيد."
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا سيف،\n\nتم إنشاء طلب برقم 1018262760 لإضافة الحساب رقم 010101518305\n\nوبخدمتك في أي وقت من خلال تطبيق الكهرباء باستخدام الرابط التالي:\nhttps:\/\/www.se.com.sa\/app\n\nيومك سعيد."
+        },
+        {
+            "role": "customer",
+            "text": "مشتركنا العزيز،\nتم إعادة الخدمة الكهربائية للطلب رقم 724868298    على حسابك.\n\nوبخدمتك في أي وقت عبر تطبيق الكهرباء من خلال الرابط أدناه:\nhttps:\/\/www.se.com.sa\/app\n\nيومك سعيد."
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا سيف،\n\nتم اكتمال الطلب رقم 1018262760 لخدمة إضافة الحساب.ورقم الحساب الجديد هو 30155837010 بدلًا من الرقم 10101518305\nعلمًا انه نقل المبلغ 0.00  ريال من الحساب القديم الى الحساب الجديد.\n\nوبخدمتك في أي وقت من خلال تطبيق الكهرباء باستخدام الرابط التالي:\nhttps:\/\/www.se.com.sa\/app\n\nيومك سعيد."
+        },
+        {
+            "role": "customer",
+            "text": "عندك ولا عند حموده"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تم قيد مخالفة:\r\nعدم الالتزام بحدود المسارات المحددة على الطريق - رصد آلي\r\nرقم المخالفة:\r\n6612693885\r\nرقم الهوية:\r\n1562***\r\nالتاريخ:\r\n2026-02-04\r\nالوقت:\r\n13:24\r\nالمدينة:\r\nالرياض\r\nالسيارة:\r\nر ر ع 3941\r\nالقيمة:\r\n225 ريال\r\nويمكنكم الاعتراض خلال مدة أقصاها (30) يوماً من خلال منصة أبشر.\r\nنأمل المبادرة بالسداد للاستفادة من تخفيض قيمة المخالفة بنسبة 25%\r\nللاطلاع على تفاصيل المخالفة وسدادها يرجى زيارة منصة إيفاء: Efaa.sa ، كما يمكنك السداد من خلال القنوات الرسمية المعتمدة"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "رمز التحقق: 1313\nمشاركة رمز التحقق يعرضك للاحتيال"
+        },
+        {
+            "role": "customer",
+            "text": "ايه"
+        },
+        {
+            "role": "customer",
+            "text": "فيه صوره والوقت"
+        },
+        {
+            "role": "customer",
+            "text": "شكرا كافي"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:5272\nلـ:الدخول - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:3592\nلـ:المدفوعات الحكومية - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:6529\nلـ:المدفوعات الحكومية - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "مافيه استعجال"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "انتهت بويه وتنظيف"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "فيها حارس"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبًا سيف،\nنود تذكيرك بصدور فاتورتك للحساب رقم 30133440189 بمبلغ 595.26 ريال.\n\nيمكنك الاطلاع على تفاصيل الفاتورة وسدادها من خلال تطبيق الكهرباء عبر الرابط التالي:\nhttps:\/\/www.se.com.sa\/app\n\nيومك سعيد."
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبًا سيف،\r\nرمز التحقق 3380 لإتمام العملية.\r\n\r\nيرجى عدم مشاركة الرمز مع الآخرين.\r\n\r\nيومك سعيد."
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:3324\nلـ:الدخول - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:5532\nلـ:اضافة المستفيد - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "غلطت مارديت على الاتصال"
+        },
+        {
+            "role": "customer",
+            "text": "اعد"
+        },
+        {
+            "role": "customer",
+            "text": "اوكي"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:9957\nلـ:الدخول - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:6953\nلـ:تحويل داخلي - المباشر للأفراد\nمبلغ:SAR 30,000.00"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الصرف موجود"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "عميلنا العزيز:\nنفيدك بقبول طلب رقم 9670345722 لإيصال خدمة الصرف الصحي للحساب رقم 9566199523. ونأمل منك سداد تكلفة الخدمة بمبلغ 10925.00 ريال للفاتورة رقم 956130375505 قبل 20\/05\/2026 عن طريق القنوات الرقمية أو خدمة سداد باستخدام الرمز 138 .ولمزيد من التفاصيل حول الفاتورة، الرجاء الضغط على الرابط التالي : https:\/\/ebranch.nwc.com.sa\/Arabic\/Pages\/OrderDetails.aspx?casid=9670345722"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المؤجر:\nنفيدك بأن عقد الإيجار رقم #20138210555 للمستأجر (عواد محمد عواد العمراني) سينتهي بتاريخ 2026-03-23، ويمكنك تجديد العقد عبر الرابط السريع: (https:\/\/eservices.ejar.sa\/r\/KPADX8XV) أو عبر حسابك في إيجار.\nوفي حال عدم رغبتك في تجديد العقد تأكد من تعبئة نموذج التسليم عند انتهاء العقد.\nنسعد بخدمتك\nمركز الاتصال الموحّد: 199011"
+        },
+        {
+            "role": "customer",
+            "text": "إيداع حوالة واردة\nمن: MOHAMED SABER HAMOUDA RASLAN\nإلى: **5001\nآيبان: **1974\nمصرف الراجحي\nمبلغ: SAR 5270.83\nفي: 2026-02-21 15:21:42"
+        },
+        {
+            "role": "customer",
+            "text": "لاتنسى هذه"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:2178\nلـ:الدخول - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:9640\nلـ:تنشيط الفواتير -المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "فاتوره بيت اخوي"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:9640\nلـ:تنشيط الفواتير -المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "One time Payment bill\nFrom: ***001\nBiller: 138 National Water Company\nService: UTIL\nInvoice Number: 956130375505\nAmount: SAR 10,925.00\nDate: 2026-02-22 15:27:49"
+        },
+        {
+            "role": "customer",
+            "text": "سددها ولا عطني رقم سداد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:5545\nلـ:الدخول - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:9822\nلـ:تنشيط الفواتير -المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "كهربا المخيم كم"
+        },
+        {
+            "role": "customer",
+            "text": "نود تذكير صاحب الهوية رقم ***1562 بأنه متبقٍ (15) يوماً من المدة المقررة للاعتراض على المخالفة رقم: 6612693885. \r\nنأمل المبادرة بالسداد للاستفادة من تخفيض قيمة المخالفة بنسبة 25%\r\nللاطلاع على تفاصيل المخالفة وسدادها يرجى زيارة منصة إيفاء: Efaa.sa, كما يمكنك السداد من خلال القنوات الرسمية المعتمدة"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبنا\nحول لنجد"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "اوكي"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام"
+        },
+        {
+            "role": "customer",
+            "text": "5512"
+        },
+        {
+            "role": "customer",
+            "text": "نجد 4 الاف"
+        },
+        {
+            "role": "customer",
+            "text": "وخمس ميه خالد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:5584\nلـ:تحويل داخلي - المباشر للأفراد\nمبلغ:SAR 4,000.00"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:9733\nلـ:تحويل داخلي - المباشر للأفراد\nمبلغ:SAR 500.00"
+        },
+        {
+            "role": "customer",
+            "text": "فيه فوتير"
+        },
+        {
+            "role": "customer",
+            "text": "وهذه"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:6150\nلـ:المدفوعات الحكومية - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:8219\nلـ:المدفوعات الحكومية - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:2088\nلـ:المدفوعات الحكومية - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "بنك الراجحي"
+        },
+        {
+            "role": "customer",
+            "text": "SA12 8000 0389 6080 1000 6675"
+        },
+        {
+            "role": "customer",
+            "text": "حول له 1500"
+        },
+        {
+            "role": "customer",
+            "text": "منصور القريشي"
+        },
+        {
+            "role": "customer",
+            "text": "حول له 3000"
+        },
+        {
+            "role": "customer",
+            "text": "رقم حسابك الدولي - آيبان - هو SA2680000511608010313148"
+        },
+        {
+            "role": "customer",
+            "text": "وهذ عبدالله القريشي حول له 4000"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:7650\nلـ:الدخول - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:2503\nلـ:اضافة المستفيد - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:5249\nلـ:اضافة المستفيد - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:2283\nلـ:تحويل داخلي - المباشر للأفراد\nمبلغ:SAR 4,000.00"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:6042\nلـ:تحويل داخلي - المباشر للأفراد\nمبلغ:SAR 3,000.00"
+        },
+        {
+            "role": "customer",
+            "text": "إيداع حوالة واردة\nمن: MOHAMED SABER HAMOUDA RASLAN\nإلى: **5001\nآيبان: **1974\nمصرف الراجحي\nمبلغ: SAR 5270.83\nفي: 2026-03-07 17:41:19"
+        },
+        {
+            "role": "customer",
+            "text": "Fund Transfer Credited\nTo: **001\nAmount: SAR 46,402.50\nOn: 2026-03-08 15:00:13"
+        },
+        {
+            "role": "customer",
+            "text": "من هذا"
+        },
+        {
+            "role": "customer",
+            "text": "عميلنا العزيز SAIF ABDULRAHMAN ALQARAISHI نود تذكيركم بأن وثيقتكم رقم 175340615 للمركبة _ تنتهي بتاريخ 08-FEB-24 بادر بتجديدها للحصول على خصم الولاء بالإضافة الى الخصومات الأخرى المتاحة من خلال خدماتنا الالكترونية \nعلما بأن تجديد الوثيقة سيبدأ بعد انتهاء الوثيقة الحالية . https:\/\/malath.page.link\/muUh"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا العميل نشعركم باستحقاقكم لفائض عمليات التأمين لعام 2024م يمكنك زيارة الرابط:\n\nhttps:\/\/eservices.malath.com.sa\/EServices\/ar\/motor-insurance-surplus"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "368608012010159\nعلي مصطفى حسين\nبنك الراجحي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبنا حول له 1500 ريال"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:7164\nلـ:الدخول - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:6346\nلـ:اضافة المستفيد - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "بعد شوي"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:8563\nلـ:المدفوعات الحكومية - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:2770\nلـ:المدفوعات الحكومية - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "حول له جرب"
+        },
+        {
+            "role": "customer",
+            "text": "بعد 2"
+        },
+        {
+            "role": "customer",
+            "text": "اوكي"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:3319\nلـ:الدخول - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:9214\nلـ:تحويل داخلي - المباشر للأفراد\nمبلغ:SAR 1,500.00"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعافيك ويبارك فيك"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبنا\nحول له 15000\nعائلي الغرض"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "وهذا محمد القريشي\nحول له 15000 \nنفس الغرض"
+        },
+        {
+            "role": "customer",
+            "text": "بكره بعد الساعه 2 ظهراً"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "بتدخل الحساب"
+        },
+        {
+            "role": "customer",
+            "text": "انشاء الله"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:6254\nلـ:الدخول - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:4982\nلـ:اضافة المستفيد - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:1908\nلـ:تحويل محلي - المباشر للأفراد\nمبلغ:SAR 15,000.00"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:3633\nلـ:اضافة المستفيد - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:1132\nلـ:تحويل داخلي - المباشر للأفراد\nمبلغ:SAR 15,000.00"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا  سيف\" تبقى 15 يوم على إنتهاء وثيقة تأمينك. لا يفوتك خصم التجديد، \nجدد معنا الآن !\nوثيقة رقم:\"45135770\nأمن شامل واستفد من خدمات \"دروب \"المجانية وبرنامج \"درايف\" للقيادة الآمنة واسترد حتى 1500 ريال كاش باك والعديد من المكافئات الأخرى\nhttps:\/\/tawn.me\/2wq1ul"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "document_1769184723658.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "حول له 3000"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:8968\nلـ:الدخول - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:4942\nلـ:اضافة المستفيد - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:2978\nلـ:تحويل داخلي - المباشر للأفراد\nمبلغ:SAR 3,000.00"
+        },
+        {
+            "role": "customer",
+            "text": "رمز التحقق 5619 لتجديد الوثيقة، مشاركة رمز التحقق مع الآخرين يعرضك للاحتيال."
+        },
+        {
+            "role": "customer",
+            "text": "زين"
+        },
+        {
+            "role": "customer",
+            "text": "هذه فاتوره مين"
+        },
+        {
+            "role": "customer",
+            "text": "والمخيم كم"
+        },
+        {
+            "role": "customer",
+            "text": "document_1769184723658.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "حول له 2000"
+        },
+        {
+            "role": "customer",
+            "text": "بكره"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "كانك منت رايح بكره  وتقدر الان مافيه مشكله"
+        },
+        {
+            "role": "customer",
+            "text": "وابو ساره حول له 1000"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:3974\nلـ:الدخول - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:7976\nلـ:تحويل داخلي - المباشر للأفراد\nمبلغ:SAR 1,000.00"
+        },
+        {
+            "role": "customer",
+            "text": "لابوساره"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:7435\nلـ:تحويل داخلي - المباشر للأفراد\nمبلغ:SAR 2,000.00"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المستفيد،نفيدك بأن عقد الإيجار رقم 20138210555 سينتهي بتاريخ 2026-03-23 نسعد بخدمتكم،"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم"
+        },
+        {
+            "role": "customer",
+            "text": "9671"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:7270\nلـ:تحويل محلي - المباشر للأفراد\nمبلغ:SAR 30,000.00"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزي المؤجر: سيف عبدالرحمن رشيد القريشي\n\nيرجى تعبئة نموذج تسليم الوحدة للعقد رقم 20138210555 عبر شبكة إيجار خلال سبعة أيام، مع الأخذ بالاعتبار بأنه في حال عدم الرد خلال المدة المحددة سيتم اعتبار حالة تسليم الوحدة جيدة. وبناء عليه سيقوم النظام بإلغاء حجز مبلغ الضمان واسترداده إلى محفظة المستأجر، حتى في حال وجود بعض الأضرار في الوحدة.\n\nنسعد بخدمتك"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المؤجر:\nنفيدك بانتهاء عقد الإيجار رقم #20138210555 للمستأجر (عواد محمد عواد العمراني) ويمكنك تجديده عبر الرابط السريع: (https:\/\/eservices.ejar.sa\/r\/UP4G9YN7) أو عبر حسابك في إيجار، وفي حال عدم رغبتك في تجديد العقد تأكد من تعبئة نموذج التسليم، وعند عدم تعبئة النموذج خلال 7 أيام سيتم اعتبار أن حالة تسليم الوحدة جيدة\nنأمل مشاركتنا تجربتك وتقييم الأطراف الإيجارية من خلال الرابط التالي:\nhttps:\/\/eservices.ejar.sa\/ar\/rental-questionnaires\n\nنسعد بخدمتك\nمركز الاتصال الموحّد: 199011"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبنا تحويل لنجد وخالد"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:3519\nلـ:الدخول - المباشر للأفراد"
+        },
+        {
+            "role": "customer",
+            "text": "4000"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:7900\nلـ:تحويل داخلي - المباشر للأفراد\nمبلغ:SAR 4,000.00"
+        },
+        {
+            "role": "customer",
+            "text": "رمز مؤقت:7371\nلـ:تحويل داخلي - المباشر للأفراد\nمبلغ:SAR 500.00"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا،\nصدرت فاتورة حسابك 10101525079 بمبلغ 5821.92 ريال.\r\nللاطلاع والسداد عبر تطبيق السعودية للطاقة:\nhttps:\/\/www.se.com.sa\/app\r\nحسابك بحاجة إلى توثيق وذلك لضمان استمرارية الخدمة، وثقه الآن عبر التطبيق."
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ينتهي تأمين مركبتك فورد تيريتوري (ر ر ع 3941) في 12\/05\/2026، قارن بين 23 شركة تأمين وجدد بضغطة زر https:\/\/bcare.com.sa\/?eid=d5d9f1bf62ba473&r=1&re=92ddaa6cbacd0d9"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المؤجر:\nيمكنك الموافقة على طلب تجديد عقد الإيجار رقم #20932002349 خلال مهلة 7 أيام عبر الرابط: (https:\/\/eservices.ejar.sa\/r\/2JA6XQQB) أو عبر حسابك في منصة ايجار.\nنسعد بخدمتك"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "اعد"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المستفيد:\r\nنفيدك بإصدار فاتورة شحن رقم 2604026148615 بقيمة  200.00 ريال\r\nنسعد بخدمتكم."
+        },
+        {
+            "role": "customer",
+            "text": "حبيبنا فيه اخبار عن هيئه العقر"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المستفيد:\r\nنفيدك بإضافة مبلغ بقيمة 200 ريال إلى محفظتك عن الفاتورة رقم  2604026148615\r\nنسعد بخدمتك."
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "كلمة مرور لمرة واحدة\nرمز التحقق: 3395\nلـ : منصة إيجار  \n\n@eservices.ejar.sa #3395"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزنا المستفيد:\nنفيدك أن العقد #20932002349، جدد بنجاح. ويمكنك الاطلاع عليه من خلال حسابك في منصة ايجار\nنسعد بخدمتك"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

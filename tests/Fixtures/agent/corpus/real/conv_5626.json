@@ -1,0 +1,443 @@
+{
+    "type": "real_conversation",
+    "id": "conv_5626",
+    "tenant_id": 1507,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "وعليكم السلام"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله"
+        },
+        {
+            "role": "customer",
+            "text": "بس ي غالي بلغونا ان الايجار راح يكون 1800 ريال"
+        },
+        {
+            "role": "customer",
+            "text": "راح ينزلونه"
+        },
+        {
+            "role": "customer",
+            "text": "قبل لا ترسل العقد اتمنى منكم مراجعة الاسعار"
+        },
+        {
+            "role": "customer",
+            "text": "انا عندي عقد معاكم"
+        },
+        {
+            "role": "customer",
+            "text": "قديم"
+        },
+        {
+            "role": "customer",
+            "text": "برسل لك نسخة منه"
+        },
+        {
+            "role": "customer",
+            "text": "عقد عبدالعزيز العنزي شقة 15 شهر12.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "جاني علم"
+        },
+        {
+            "role": "customer",
+            "text": "ان الاسعار راح تنزل وانا اولى النزلاء"
+        },
+        {
+            "role": "customer",
+            "text": "زبون دايم"
+        },
+        {
+            "role": "customer",
+            "text": "وكلمت مصطفى ممكن ابقى معاكم سنين ان شاءاللع"
+        },
+        {
+            "role": "customer",
+            "text": "الله"
+        },
+        {
+            "role": "customer",
+            "text": "ايه فيه غرفتين وصالة بعد"
+        },
+        {
+            "role": "customer",
+            "text": "بس اذا فيه غرفتين وصالة عشان الشيف عندي ابيها له ولعياله"
+        },
+        {
+            "role": "customer",
+            "text": "ونلغي هذي"
+        },
+        {
+            "role": "customer",
+            "text": "الشيف يبي له شقة كبيرة واللي فيها صغيره على اسرته"
+        },
+        {
+            "role": "customer",
+            "text": "اوك الف شكر"
+        },
+        {
+            "role": "customer",
+            "text": "استاذنك للصلاة ي غالي"
+        },
+        {
+            "role": "customer",
+            "text": "مع السلامة"
+        },
+        {
+            "role": "customer",
+            "text": "اللي يحل ايجارها اليوم بسددها بعد كم يوم ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "قبل الراتب حسددها"
+        },
+        {
+            "role": "customer",
+            "text": "والله حالياً لقينا شقق بالخلف\nاسعارها كويسة عند مروم"
+        },
+        {
+            "role": "customer",
+            "text": "بشوف الشهر هذا"
+        },
+        {
+            "role": "customer",
+            "text": "واتواصل معاكم"
+        },
+        {
+            "role": "customer",
+            "text": "اذا بنلغي العقد بكلمك ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "اي كلمتك امس"
+        },
+        {
+            "role": "customer",
+            "text": "."
+        },
+        {
+            "role": "customer",
+            "text": "قلت لي تمام"
+        },
+        {
+            "role": "customer",
+            "text": "قبل الراتب بسددها"
+        },
+        {
+            "role": "customer",
+            "text": "او خلال هالثلاث ايام ذي"
+        },
+        {
+            "role": "customer",
+            "text": "لا تشيل هم"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "ابد كل شي جاهز"
+        },
+        {
+            "role": "customer",
+            "text": "موجوود"
+        },
+        {
+            "role": "customer",
+            "text": "العمران"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مقدر ي غالي"
+        },
+        {
+            "role": "customer",
+            "text": "مالقيت"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "طلعت لي فاتورة 15 الف"
+        },
+        {
+            "role": "customer",
+            "text": "مش عارف هي تبع الشقق والا المطعم"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ابشرو\nبس اصبر علي الايام ذي وتوصل لكم ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام علينا وعليك يارب\nاي والله مو ناسي\n\nابشرو كم يوم ان شاءالله ويكون بحسابكم واعتذر على التاخير"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "ي غالي عندنا ضعف بالمبيعات بالمطعم\nوزين نلحق نسدد حق الايجار ورواتب العمال\n\n\nاجل خلاص انا بكلم ابو يوسف محمد خلف يسوي لنا عداد مويا"
+        },
+        {
+            "role": "customer",
+            "text": "انا بكلمه الان واخليه يكلمكم"
+        },
+        {
+            "role": "customer",
+            "text": "انا والله مقدر ادفع اكثر من 150 \nوحتى 150 والله كثير علينا"
+        },
+        {
+            "role": "customer",
+            "text": "انا بكلم محمد يسوي لنا عداد م عليك"
+        },
+        {
+            "role": "customer",
+            "text": "👍🏻"
+        },
+        {
+            "role": "customer",
+            "text": "او فيه طريقة انا بكلمك الحين"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "يالغالي 120 ريال بدفعها من الشهر الجاي"
+        },
+        {
+            "role": "customer",
+            "text": "اذا يبغى"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل له وبلغه"
+        },
+        {
+            "role": "customer",
+            "text": "وانا بلغت ابو يوسف قلت بدفع 120 ريال وقال بكلمه واحل الموضوع"
+        },
+        {
+            "role": "customer",
+            "text": "ويعطيكم العافية اتعبناكم معنا ❤️"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام حياك الله\nانا وافقت وبعدها راعي المكتب اتصل على المؤجر والمؤجر زعلان قال الله لا يهينه يحول 200 ريال"
+        },
+        {
+            "role": "customer",
+            "text": "هذا اللي حصل وانا اخوك"
+        },
+        {
+            "role": "customer",
+            "text": "المحادثة موجودة ارسلتها فوق امس الصوتية"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "انا والله الحين مشغول ي خوي\nاتواصل معاك بعدين"
+        },
+        {
+            "role": "customer",
+            "text": "انا صرفي بالمطعم قليل \nمساحة المطعم 80 متر\n\n150 والله كثير على مطعم مساحته 80 متو"
+        },
+        {
+            "role": "customer",
+            "text": "متر"
+        },
+        {
+            "role": "customer",
+            "text": "مو معقولة ادفع هالمبلغ على محل مساحته صغيره"
+        },
+        {
+            "role": "customer",
+            "text": "خلنا نتفاهم بعدين نفطر ويصير خير"
+        },
+        {
+            "role": "customer",
+            "text": "نعم وانا اخوك كنت متفهم\nبس بعد ما رفض وقلت لي انه زعل وقام يطالبني بالفواتير الماضية\nوحط لي مبلغ 200 \n\nهنا صار الخلاف وتراجع بالاتفاق الاول"
+        },
+        {
+            "role": "customer",
+            "text": "الليلة نشوف لنا حل وسط وان شاءالله تزين الامور"
+        },
+        {
+            "role": "customer",
+            "text": "150 وريال والله كثير حيل بالنسبة لمطعم مساحته 80 متر\nويفتح 10 ساعات بس"
+        },
+        {
+            "role": "customer",
+            "text": "بس الليلة نتفاهم ونشوف لنا حل"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام والله وانا اخوك الشهر هذا الالتزامات عندي عالية"
+        },
+        {
+            "role": "customer",
+            "text": "زين نلحق سداد فواتيرنا ورواتب العمال"
+        },
+        {
+            "role": "customer",
+            "text": "يصير خير"
+        },
+        {
+            "role": "customer",
+            "text": "نسدد الفواتير اللي علينا الحين وربك يفرجها"
+        },
+        {
+            "role": "customer",
+            "text": "ابشرووو ولا يهمكم"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم مسا الخير اخوي\nاخوي عندي شقة تاريخ 19 يحل عليها الايجار\n\nاحتمال قبلها نبي نطلع منهااا وانا راح اتواصل معاك في حال الاستمرار معكم والا اننا نعزل منها"
+        },
+        {
+            "role": "customer",
+            "text": "اللي ايجار 2000 ريال"
+        },
+        {
+            "role": "customer",
+            "text": "ايجارها *"
+        },
+        {
+            "role": "customer",
+            "text": "بنسق معاك على الواتس 🌹"
+        },
+        {
+            "role": "customer",
+            "text": "والشقة رقم 5 بعد\n\nبكل الحالات اي شي جديد راح اخبرك فيه ع الواتس قبل لا يحل علينا الايجار"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام\nبرسل لك رقم مدير حسابي عنده السداد وبخليه يتواصل معامم"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام\nبرسل لك رقم مدير حسابي عنده السداد وبخليه يتواصل معاكم"
+        },
+        {
+            "role": "customer",
+            "text": "الحين اكلمه"
+        },
+        {
+            "role": "customer",
+            "text": "يقول الان يتصل عليك"
+        },
+        {
+            "role": "customer",
+            "text": "انا مسافر برى ي غالي\nتواصلوا معاه \n\nوانا بوضح له ترى علينا فاتورة 120"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: contacts]"
+        },
+        {
+            "role": "customer",
+            "text": "انا مسافر برى ي غالي\nتواصلوا معاه \n\nوانا بوضح له كل شهر فاتورة 120"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "3 ايام وبحسابكم ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "التمسووو لنا العذر واعتذر والله على التأخير اللي حصل وانا اسف والله"
+        },
+        {
+            "role": "customer",
+            "text": "تم التحويل ي غالي 👍🏻"
+        },
+        {
+            "role": "customer",
+            "text": "ونعتذر عن التأخير"
+        },
+        {
+            "role": "customer",
+            "text": "التحويل عن طريق الصراف الالي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هذي العملية بالتطبيق"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

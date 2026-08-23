@@ -1,0 +1,507 @@
+{
+    "type": "real_conversation",
+    "id": "conv_2210",
+    "tenant_id": 1021,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله"
+        },
+        {
+            "role": "customer",
+            "text": "فى اى مشكله بتواجهك"
+        },
+        {
+            "role": "customer",
+            "text": "اقدر اساعدك فيها"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن تبعتلى اليه حابب تعدله"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "هاد مشكله وتنحل قريبا هخبرك اول لما تتحل"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "الحمد لله"
+        },
+        {
+            "role": "customer",
+            "text": "اى بعرف شغالين عليها اليوم بالكثير تنحل"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر ولا يهمك"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "اذا تبغى ارسلك كيف طريقة الاشتراك بالمنصة استاذى"
+        },
+        {
+            "role": "customer",
+            "text": "حضرتك اشتركت 999ريال"
+        },
+        {
+            "role": "customer",
+            "text": "بقصد دفعت"
+        },
+        {
+            "role": "customer",
+            "text": "انا ازعجتك بشئ"
+        },
+        {
+            "role": "customer",
+            "text": "الان فترة تجريبية مشترك بس فترة تجريبية مجانية"
+        },
+        {
+            "role": "customer",
+            "text": "الحقيقة ماعنده خبر"
+        },
+        {
+            "role": "customer",
+            "text": "اتواصلت معك وما اعرف ايش دار بينكم فى اى اتفاق او شئ"
+        },
+        {
+            "role": "customer",
+            "text": "انا اتواصلت مع العملاء كلهم وقولت اخبرهم اذا اساعدهم بالاشتراك او شئ زى كده"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "بعتذر منك جدااا عن تاخير التعديل بسبب تطورات فى المنصة التعديلات تمت وعدلتلك كل شئ اذا ممكن تطلع واذا فى شئ اخر انا بخدمتك اخ عبد الله"
+        },
+        {
+            "role": "customer",
+            "text": "يعطيك العافية وبكرر اعتذارى مره اخرى"
+        },
+        {
+            "role": "customer",
+            "text": "يعطيك الف عافية"
+        },
+        {
+            "role": "customer",
+            "text": "ع راسى"
+        },
+        {
+            "role": "customer",
+            "text": "تبغى صورة حضرتك ف الاسفل ايضا ؟"
+        },
+        {
+            "role": "customer",
+            "text": "ولا اغير فقط عبدالله الموسى"
+        },
+        {
+            "role": "customer",
+            "text": "تحب نجرب كل واحده وتجرب"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن تطلع"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "ما يصير بدون صورة"
+        },
+        {
+            "role": "customer",
+            "text": "تحب نرجع الشعار"
+        },
+        {
+            "role": "customer",
+            "text": "كفاية بالاول"
+        },
+        {
+            "role": "customer",
+            "text": "والاسفل الشعار"
+        },
+        {
+            "role": "customer",
+            "text": "ويش رايك انت"
+        },
+        {
+            "role": "customer",
+            "text": "تقصد اتركها فاضيه"
+        },
+        {
+            "role": "customer",
+            "text": "ماينفع او بجرب بس هتاخد وقت معك"
+        },
+        {
+            "role": "customer",
+            "text": "اى"
+        },
+        {
+            "role": "customer",
+            "text": "ولو يشرفنى خدمتك"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن تطلع"
+        },
+        {
+            "role": "customer",
+            "text": "بامرك اى وقت"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن طلب فضلا منك وليس امرا"
+        },
+        {
+            "role": "customer",
+            "text": "احنا بنتواصل مع العملاء المشتركين معنا وجربوا المنصة وتقيمهم عنا جيد اذا ممكن يرشحوا تعاريف او يزودونا برقم شخص ممكن نتواصل معه يكون بحاجه منصة تعاريف"
+        },
+        {
+            "role": "customer",
+            "text": "اذا ممكن اكون شاكره فضلك جدا اذا تفضل تكون التجربة لحضرتك فقط ما اضغط عليك جدا وانا ممتنه جدا لوجودك ضمن اسرة تعاريف"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعطيك الف عافية"
+        },
+        {
+            "role": "customer",
+            "text": "شكرا جدا جدا"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر ولا يهمك"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "لاحظت مشكلتك وشغاله لحلها اذا تبغى توضح اى شئ اخر انا بخدمتك"
+        },
+        {
+            "role": "customer",
+            "text": "ع راسى"
+        },
+        {
+            "role": "customer",
+            "text": "بنحلها واخبرك"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر لسه نشتغل عليهم"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن تطلع تم حل المشكلة"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن ندخل ميتنج اذا لسه ما انحلت"
+        },
+        {
+            "role": "customer",
+            "text": "يناسبك ميتنج الان"
+        },
+        {
+            "role": "customer",
+            "text": "بانتظارك"
+        },
+        {
+            "role": "customer",
+            "text": "يسعدنى خدمتك"
+        },
+        {
+            "role": "customer",
+            "text": "مرحبا"
+        },
+        {
+            "role": "customer",
+            "text": "طبعا"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/meet.google.com\/vpg-zijt-wjt"
+        },
+        {
+            "role": "customer",
+            "text": "حاضر"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم \nشغالين عليها بس تخلص بخبرك"
+        },
+        {
+            "role": "customer",
+            "text": "بعتذر عن التاخير"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "التعديلات تمت اذا ممكن تطلع عليها"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "هى بس بتاخد وقت تحمل موقعك"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر ولا يهمك"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعافيك استاذ عبدالله"
+        },
+        {
+            "role": "customer",
+            "text": "بعتذر منك على الرد متاخر"
+        },
+        {
+            "role": "customer",
+            "text": "اطّلعت على موقعك ولقيت أمورك تمام \nإذا فيه أي شي أو مشكلة أخرى، أبشر أنا بخدمتك."
+        },
+        {
+            "role": "customer",
+            "text": "بخدمتك"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر بشتغل عليها واخبرك"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم حياك الله"
+        },
+        {
+            "role": "customer",
+            "text": "ان شاء الله تنحل المشكله واخبرك ابشر ولا يهمك"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "حياك وابقاك"
+        },
+        {
+            "role": "customer",
+            "text": "تم حل مشكله طلب العميل ممكن تطلع لو فى اى شئ اخر يسعدنى خدمتك"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "🌙 كل عام وأنتم بخير بمناسبة شهر رمضان المبارك 🌙\nتتقدم منصة تعاريف العقارية الإلكترونية بأجمل التهاني والتبريكات لكم، سائلين الله أن يجعله شهر خير وبركة عليكم، وأن يكتب لكم فيه الصحة والتوفيق والنجاح.شاكرين ثقتكم الغالية دائمًا، ويسعدنا نكون معكم ونخدمكم بكل وقت.\nرمضان مبارك عليكم وعلى أحبابكم 🌸"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله استاذ عبدالله وابقاك"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن ننشر هاد المقطع عنا"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/www.tiktok.com\/@almousa_an\/video\/7569726599105400072?q=%D8%AA%D8%B9%D8%A7%D8%B1%D9%8A%D9%81%20%D8%A7%D9%84%D8%B9%D9%82%D8%A7%D8%B1%D9%8A%D8%A9&t=1771502011451"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن ؟"
+        },
+        {
+            "role": "customer",
+            "text": "يشرفنا رائ حضرتك ف المنصة"
+        },
+        {
+            "role": "customer",
+            "text": "على حاله الواتس"
+        },
+        {
+            "role": "customer",
+            "text": "وننشره ع صفحة منصة تعاريف"
+        },
+        {
+            "role": "customer",
+            "text": "راى عملائنا فى المنصة وننشر الفيديو"
+        },
+        {
+            "role": "customer",
+            "text": "اذا يضايقك ما فى مشكله"
+        },
+        {
+            "role": "customer",
+            "text": "كلك ذوق"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسعدك يارب"
+        },
+        {
+            "role": "customer",
+            "text": "عنيا حاضر ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله وابقاك"
+        },
+        {
+            "role": "customer",
+            "text": "عائشة خبرتنى ان بتواجهك مشكله فى الربط الخاص بالواتس"
+        },
+        {
+            "role": "customer",
+            "text": "تم حلها"
+        },
+        {
+            "role": "customer",
+            "text": "اذا ممكن تتاكد بارسال رساله عقارية من جوال اخر واذا فى اى شئ اخر يسعدنى خدمتك"
+        },
+        {
+            "role": "customer",
+            "text": "اضفت الفيديو الخاص فيك حاله للواتس ممكن تطلع عليه لانك خبرتنى من قبل اذا نشرت اخبرك"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "كلك ذوق الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/www.tiktok.com\/@taearif"
+        },
+        {
+            "role": "customer",
+            "text": "لا نزل حاله ع الواتس مانزل ع التيك بس ينزل اخبرك ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسعدك يارب"
+        },
+        {
+            "role": "customer",
+            "text": "اى بالظبط خاصة بشركة ميتا"
+        },
+        {
+            "role": "customer",
+            "text": "اى مربو ط الواتس ويعمل بشكل جيد"
+        },
+        {
+            "role": "customer",
+            "text": "بس انت جربت الرسائل او الطلبات العقاريه اليه تجيك عن طريق الواتس توصلك ؟"
+        },
+        {
+            "role": "customer",
+            "text": "انتظرك لانها امامى تعمل"
+        },
+        {
+            "role": "customer",
+            "text": "اشكرك"
+        },
+        {
+            "role": "customer",
+            "text": "مرحباً"
+        },
+        {
+            "role": "customer",
+            "text": "هلا حياك الله"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر بغيرهم لك وبراجع مع الفريق التقنى المشكله"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير"
+        },
+        {
+            "role": "customer",
+            "text": "بيتواصل معهم اول لما يحلون المشكله بخبرك"
+        },
+        {
+            "role": "customer",
+            "text": "بنعتذر عن اى تاخير"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسعدك ويبقيك"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

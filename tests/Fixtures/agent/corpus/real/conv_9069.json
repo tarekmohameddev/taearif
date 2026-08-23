@@ -1,0 +1,575 @@
+{
+    "type": "real_conversation",
+    "id": "conv_9069",
+    "tenant_id": 1508,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "حياك الله"
+        },
+        {
+            "role": "customer",
+            "text": "هذي اللي قبل فترة"
+        },
+        {
+            "role": "customer",
+            "text": "كم يبي فيها"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر بشوف وردلك"
+        },
+        {
+            "role": "customer",
+            "text": "اخبارك"
+        },
+        {
+            "role": "customer",
+            "text": "عندي زبون ب 320 يسوم"
+        },
+        {
+            "role": "customer",
+            "text": "واذا المالك عنده حد يبلغنا"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن 350"
+        },
+        {
+            "role": "customer",
+            "text": "بس 380 لا"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر بشوف الامور بكرة لاني والله منشغل بالمعرض"
+        },
+        {
+            "role": "customer",
+            "text": "للاسف يابو احمد الزبون ماهو منتظر ومستعجل وخلصت له وحده ثانيه بالامني"
+        },
+        {
+            "role": "customer",
+            "text": "هذا بخصوص االي سام ب 320"
+        },
+        {
+            "role": "customer",
+            "text": "ولكن بكرر اليوم عرضها ثانيه والله يكتب الصالح"
+        },
+        {
+            "role": "customer",
+            "text": "320 صافي للمالك نخلص بكره بمشية الله"
+        },
+        {
+            "role": "customer",
+            "text": "شوف المالك"
+        },
+        {
+            "role": "customer",
+            "text": "اذا باع نستلم العربون"
+        },
+        {
+            "role": "customer",
+            "text": "ومعي والله وسيط الزبون عن طريقه السعي على 3"
+        },
+        {
+            "role": "customer",
+            "text": "م الخير"
+        },
+        {
+            "role": "customer",
+            "text": "وش صار معك"
+        },
+        {
+            "role": "customer",
+            "text": "رد عليك و لا باقي"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله"
+        },
+        {
+            "role": "customer",
+            "text": "اللي عندي ب 325 الف ينزلون عربونهم الان لو تبون"
+        },
+        {
+            "role": "customer",
+            "text": "فابد شوف اللي كلمك اذا ماهم صاملين"
+        },
+        {
+            "role": "customer",
+            "text": "نخلصها واذا خذوها الله يبارك لكم جميع"
+        },
+        {
+            "role": "customer",
+            "text": "الان بشوفهم"
+        },
+        {
+            "role": "customer",
+            "text": "الرجال او رد علي الام يقول الحين عنده ضيوف و شوي بيكلمني"
+        },
+        {
+            "role": "customer",
+            "text": "ممتظرهم هذا رد الوسيط اللي قدامي"
+        },
+        {
+            "role": "customer",
+            "text": "325 صافي للمالك يخلص اليوم بمشية الله"
+        },
+        {
+            "role": "customer",
+            "text": "ص الخير"
+        },
+        {
+            "role": "customer",
+            "text": "."
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر والله يكتب مافيه الخير للجميع"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الصامل اليوم قليل"
+        },
+        {
+            "role": "customer",
+            "text": "5000 لا ترده"
+        },
+        {
+            "role": "customer",
+            "text": "خله يتوكل ع الله ونخلصها"
+        },
+        {
+            "role": "customer",
+            "text": "والله حاولت 330 بس مرا رافضين"
+        },
+        {
+            "role": "customer",
+            "text": "واللي يسوم اليوم قليل جدا الصامل"
+        },
+        {
+            "role": "customer",
+            "text": "اصلي وارحع لك"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الارض باقي موجوده ؟"
+        },
+        {
+            "role": "customer",
+            "text": "اللي بالامني"
+        },
+        {
+            "role": "customer",
+            "text": "320\nصامل وبيخلص بكرة"
+        },
+        {
+            "role": "customer",
+            "text": "هذا واحد عن طريق مكتب يسومها"
+        },
+        {
+            "role": "customer",
+            "text": "تبي اخليه يستلم عربون اول و بعده تكلم المالك"
+        },
+        {
+            "role": "customer",
+            "text": "عشان ما ننحرج معك و مع المالك"
+        },
+        {
+            "role": "customer",
+            "text": "330 ما تجيبها اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "هذا صامل ب 320"
+        },
+        {
+            "role": "customer",
+            "text": "والسوق ركود"
+        },
+        {
+            "role": "customer",
+            "text": "والقرار لكم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "كلم المالك"
+        },
+        {
+            "role": "customer",
+            "text": "320"
+        },
+        {
+            "role": "customer",
+            "text": "يخلصون الليله"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الرجال موجود بالمكتب"
+        },
+        {
+            "role": "customer",
+            "text": "ينتظرون الرد"
+        },
+        {
+            "role": "customer",
+            "text": "اصدر الضريبه"
+        },
+        {
+            "role": "customer",
+            "text": "وارسل لي الصك كامل"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الحوال عادي حط رقمي والاغلب ما يطلع رقم جوال"
+        },
+        {
+            "role": "customer",
+            "text": "الاثبات والميلاد فقط"
+        },
+        {
+            "role": "customer",
+            "text": "حاول تصدرون الضريبه الان عشان يسدد"
+        },
+        {
+            "role": "customer",
+            "text": "ويترفعون الطلب مباشره"
+        },
+        {
+            "role": "customer",
+            "text": "ونخلص الليله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هذي من الوسيط اللي قدامي الان مرسله"
+        },
+        {
+            "role": "customer",
+            "text": "االسعي 6000 لكل واحد 2000 ريال"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل الصك"
+        },
+        {
+            "role": "customer",
+            "text": "ارفع الطلب"
+        },
+        {
+            "role": "customer",
+            "text": "بالنظام"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "بس ترا عادي ترفعون الطلب واصلا ما يتم الافراغ الين يسدد"
+        },
+        {
+            "role": "customer",
+            "text": "توكل على الله وارفع الطلب"
+        },
+        {
+            "role": "customer",
+            "text": "يصير من جهة المالك خالصين"
+        },
+        {
+            "role": "customer",
+            "text": "باقي هم يقبولون ويسددون"
+        },
+        {
+            "role": "customer",
+            "text": "لا غير صحيح ع طول الافراغ"
+        },
+        {
+            "role": "customer",
+            "text": "المالك حسب افادتك خارج الرياض"
+        },
+        {
+            "role": "customer",
+            "text": "ولو قلنا له تعال عندنا بعريض مرح يجي"
+        },
+        {
+            "role": "customer",
+            "text": "ارفعو بالبورصه افضل واسهل للجميع واختصار للوقا"
+        },
+        {
+            "role": "customer",
+            "text": "ارفعو بالبورصه افضل واسهل للجميع واختصار للوقت"
+        },
+        {
+            "role": "customer",
+            "text": "وانت شاور فيها"
+        },
+        {
+            "role": "customer",
+            "text": "الموثق ممكن 500 ريال ولا راح يدفعها المشتري وهو خاصم من السعي عشان يكمل فلوسه"
+        },
+        {
+            "role": "customer",
+            "text": "فانت حرص ع المالك اولاين كل شي افضل واسهل"
+        },
+        {
+            "role": "customer",
+            "text": "هذي"
+        },
+        {
+            "role": "customer",
+            "text": "الطلبات"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "سدد"
+        },
+        {
+            "role": "customer",
+            "text": "ارفعو الطلب له ببي يخلص"
+        },
+        {
+            "role": "customer",
+            "text": "وش صار بترفعون له"
+        },
+        {
+            "role": "customer",
+            "text": "لانه منتظرنا يبي يخلص"
+        },
+        {
+            "role": "customer",
+            "text": "ص الخير"
+        },
+        {
+            "role": "customer",
+            "text": "؟!؟"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله"
+        },
+        {
+            "role": "customer",
+            "text": "والله يسرها بس تابع معه وحرص عليه ينجز ودنا نخلصهم ونقفل موضوعهم"
+        },
+        {
+            "role": "customer",
+            "text": "رد عليك ؟"
+        },
+        {
+            "role": "customer",
+            "text": "اتصل عليه شوفه"
+        },
+        {
+            "role": "customer",
+            "text": "رد عليك ؟"
+        },
+        {
+            "role": "customer",
+            "text": "+966 54 776 6628"
+        },
+        {
+            "role": "customer",
+            "text": "هذا جواله"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "اول مايقبل ويتم الافراغ مباشره يوصلني السعي وحوله لك على طول"
+        },
+        {
+            "role": "customer",
+            "text": "وارسل حسابك"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/haraj.com.sa\/users\/%D9%85%D8%AD%D9%85%D8%AF%20%D8%A7%D9%84%D8%B3%D9%84%D9%85%D9%89%D9%8A\/rate تفضل بتقييم متجري على موقع حراج"
+        },
+        {
+            "role": "customer",
+            "text": "يهمني تقيمك"
+        },
+        {
+            "role": "customer",
+            "text": "الله يبارك للجميع"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله"
+        },
+        {
+            "role": "customer",
+            "text": "الله يبارك للجميع ابشر الان"
+        },
+        {
+            "role": "customer",
+            "text": "باركود مافيه"
+        },
+        {
+            "role": "customer",
+            "text": "العالم تطورو"
+        },
+        {
+            "role": "customer",
+            "text": "😉😉"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "528608010548553"
+        },
+        {
+            "role": "customer",
+            "text": "حوالة داخلية صادرة\nمن5423\nبـSAR 2500\nلـ8553;مكتب معالم المسكن للعقارات\n26\/2\/26 12:19"
+        },
+        {
+            "role": "customer",
+            "text": "والله يبارك للجميع"
+        },
+        {
+            "role": "customer",
+            "text": "تمت الاضافة خلاص 😉😉"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "لا تنسى التقييم"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "حياك الله"
+        },
+        {
+            "role": "customer",
+            "text": "كم البيع"
+        },
+        {
+            "role": "customer",
+            "text": "البيع النهايي"
+        },
+        {
+            "role": "customer",
+            "text": "فيه تفاوض و لا لا"
+        },
+        {
+            "role": "customer",
+            "text": "وانت ومباشر معه يعني انت الثاني"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "هذي بالسوق لها كم يوم ب 370 محدوده"
+        },
+        {
+            "role": "customer",
+            "text": "لكن بنشوف اذا احد يسوم"
+        },
+        {
+            "role": "customer",
+            "text": "والله يسرها"
+        },
+        {
+            "role": "customer",
+            "text": "بمشية الله"
+        },
+        {
+            "role": "customer",
+            "text": "بشوف الامور"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخير"
+        },
+        {
+            "role": "customer",
+            "text": "موجوده"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

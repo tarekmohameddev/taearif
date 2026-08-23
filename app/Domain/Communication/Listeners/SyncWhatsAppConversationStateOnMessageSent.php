@@ -42,7 +42,7 @@ class SyncWhatsAppConversationStateOnMessageSent implements ShouldQueue
                 'is_starred' => false,
                 'unread_count' => 0,
             ]);
-            Log::info('communication.whatsapp.wa_number_mapping', [
+            Log::debug('communication.whatsapp.wa_number_mapping', [
                 'outcome' => $incomingWaNumberId === null ? 'unresolved' : 'resolved',
                 'conversation_id' => (int) $message->conversation_id,
                 'user_id' => (int) $message->user_id,
@@ -52,7 +52,7 @@ class SyncWhatsAppConversationStateOnMessageSent implements ShouldQueue
         } else {
             $existingWaNumberId = $state->wa_number_id !== null ? (int) $state->wa_number_id : null;
             if ($incomingWaNumberId === null) {
-                Log::info('communication.whatsapp.wa_number_mapping', [
+                Log::debug('communication.whatsapp.wa_number_mapping', [
                     'outcome' => 'unresolved',
                     'conversation_id' => (int) $message->conversation_id,
                     'user_id' => (int) $message->user_id,
@@ -61,7 +61,7 @@ class SyncWhatsAppConversationStateOnMessageSent implements ShouldQueue
                 ]);
             } elseif ($existingWaNumberId === null) {
                 $state->update(['wa_number_id' => $incomingWaNumberId]);
-                Log::info('communication.whatsapp.wa_number_mapping', [
+                Log::debug('communication.whatsapp.wa_number_mapping', [
                     'outcome' => 'backfilled',
                     'conversation_id' => (int) $message->conversation_id,
                     'user_id' => (int) $message->user_id,
@@ -78,7 +78,7 @@ class SyncWhatsAppConversationStateOnMessageSent implements ShouldQueue
                     'source' => 'message_sent_listener',
                 ]);
             } else {
-                Log::info('communication.whatsapp.wa_number_mapping', [
+                Log::debug('communication.whatsapp.wa_number_mapping', [
                     'outcome' => 'resolved',
                     'conversation_id' => (int) $message->conversation_id,
                     'user_id' => (int) $message->user_id,

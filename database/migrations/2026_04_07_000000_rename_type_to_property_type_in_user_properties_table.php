@@ -8,13 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // If the table rebuild fails due to legacy oversized values in features_text (VARCHAR),
-        // widen it to TEXT first so subsequent ALTER operations can succeed.
+        // features_text is a VIRTUAL GENERATED VARCHAR(255). Any table rebuild (CHANGE/MODIFY)
+        // fails when features JSON exceeds 255 chars. Drop it first; the next migration recreates
+        // it as VARCHAR(2048) with LEFT(..., 2048) truncation.
         if (Schema::hasTable('user_properties') && Schema::hasColumn('user_properties', 'features_text')) {
             try {
-                DB::statement("ALTER TABLE `user_properties` MODIFY `features_text` TEXT NULL");
+                DB::statement('ALTER TABLE `user_properties` DROP COLUMN `features_text`');
             } catch (\Throwable $e) {
-                // ignore (column might already be TEXT or engine may not support MODIFY)
+                // ignore if already dropped
             }
         }
 

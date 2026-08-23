@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\WhatsApp;
 
+use App\Domain\Communication\WhatsApp\Bot\HandoffService;
 use App\Domain\Communication\WhatsApp\Services\WhatsAppConversationService;
 use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\Api\V1\WhatsApp\StoreConversationRequest;
@@ -12,7 +13,10 @@ use Illuminate\Http\Request;
 
 class ConversationController extends BaseApiController
 {
-    public function __construct(private readonly WhatsAppConversationService $conversationService) {}
+    public function __construct(
+        private readonly WhatsAppConversationService $conversationService,
+        private readonly HandoffService $handoffService,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -24,6 +28,7 @@ class ConversationController extends BaseApiController
             'search' => $request->input('search'),
             'sort_by' => $request->input('sort_by'),
             'sort_dir' => $request->input('sort_dir'),
+            'needs_attention' => $request->input('needs_attention'),
         ], $perPage);
 
         return $this->ok([
@@ -112,6 +117,45 @@ class ConversationController extends BaseApiController
         $this->conversationService->toggleStarred($state);
 
         return $this->ok(['data' => $state->refresh()]);
+    }
+
+    /**
+     * Resume the AI bot for a conversation that was paused due to an agent takeover.
+     * Only `agent_takeover` pauses may be cleared here; safety/compliance pauses are excluded.
+     */
+    public function resumeBot(int $id): JsonResponse
+    {
+        $userId = (int) auth()->user()->tenantOwnerId();
+        $state  = $this->conversationService->findForUserByConversationOrStateId($userId, $id);
+
+        if (! $state) {
+            return response()->json(['status' => 'error', 'code' => 'WA_CONVERSATION_NOT_FOUND', 'message' => 'Conversation not found.'], 404);
+        }
+
+        $aiState = $state->aiState()->first();
+
+        if ($aiState === null) {
+            return response()->json(['status' => 'error', 'code' => 'BOT_STATE_NOT_FOUND', 'message' => 'No AI bot state found for this conversation.'], 404);
+        }
+
+        // Guard: only allow resuming agent_takeover pauses; other reasons (compliance, etc.) must not be bypassed.
+        if ($aiState->isBotPaused() && $aiState->handoff_reason !== 'agent_takeover') {
+            return response()->json([
+                'status'  => 'error',
+                'code'    => 'BOT_PAUSE_NOT_RESUMABLE',
+                'message' => 'The bot cannot be manually resumed while paused for: ' . $aiState->handoff_reason . '.',
+            ], 422);
+        }
+
+        $this->handoffService->resumeBot($aiState);
+
+        $state->unsetRelation('aiState');
+
+        return $this->ok([
+            'bot_paused_until' => null,
+            'handoff_reason'   => null,
+            'needs_attention'  => false,
+        ]);
     }
 
     private function normalizeIdentifier(string $value): string

@@ -1,0 +1,487 @@
+{
+    "type": "real_conversation",
+    "id": "conv_3583",
+    "tenant_id": 1589,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "كلم ناصر بالله شف من عنده"
+        },
+        {
+            "role": "customer",
+            "text": "👌"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الخير ابو حمد \nلعلي رتبت اموري واذا ماعليك أمر ببلغ السواق يطلع من الغرفة يوم الاثنين الجاي على العصر ان شاءالله \n\nشكرا لك وأنا أخوك واعتذر على ازعاجك"
+        },
+        {
+            "role": "customer",
+            "text": "شف لنا احد ثاني"
+        },
+        {
+            "role": "customer",
+            "text": "وش صار ع ايجار"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "اي والله لاهنت"
+        },
+        {
+            "role": "customer",
+            "text": "عندك جدول جاهز"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا حبيبنا"
+        },
+        {
+            "role": "customer",
+            "text": "اخبارك"
+        },
+        {
+            "role": "customer",
+            "text": "نبي نحط اعلان"
+        },
+        {
+            "role": "customer",
+            "text": "الغرفه"
+        },
+        {
+            "role": "customer",
+            "text": "اعلن"
+        },
+        {
+            "role": "customer",
+            "text": "ما عليك"
+        },
+        {
+            "role": "customer",
+            "text": "نمشي شهري"
+        },
+        {
+            "role": "customer",
+            "text": "أعلنت عنها"
+        },
+        {
+            "role": "customer",
+            "text": "مدير ما"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "هلا اخبارك"
+        },
+        {
+            "role": "customer",
+            "text": "حصلت احد ولا"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "08135d8c-1217-454e-bb06-f033717b8d83.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "وش صار معك"
+        },
+        {
+            "role": "customer",
+            "text": "شرايك"
+        },
+        {
+            "role": "customer",
+            "text": "تاكدت من المعلومه"
+        },
+        {
+            "role": "customer",
+            "text": "كلم ابو ابراهيم نخلص بالله"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "ادخل الان"
+        },
+        {
+            "role": "customer",
+            "text": "نخلص يرجال"
+        },
+        {
+            "role": "customer",
+            "text": "اتوقع ما يحتاج ما قد طلب منا وكاله اللي يسويها لنا"
+        },
+        {
+            "role": "customer",
+            "text": "والله ما عندي"
+        },
+        {
+            "role": "customer",
+            "text": "ادخل نسويها"
+        },
+        {
+            "role": "customer",
+            "text": "اعطيك كود"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "كذا وش باقي"
+        },
+        {
+            "role": "customer",
+            "text": "عشان نخلص الان"
+        },
+        {
+            "role": "customer",
+            "text": "ونسوي العقد للمستأجر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ايجار 45"
+        },
+        {
+            "role": "customer",
+            "text": "دفعتين"
+        },
+        {
+            "role": "customer",
+            "text": "عادي إلى 5"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل العقد الجديد"
+        },
+        {
+            "role": "customer",
+            "text": "ابن كلب هو"
+        },
+        {
+            "role": "customer",
+            "text": "يستهبل"
+        },
+        {
+            "role": "customer",
+            "text": "بشوفه"
+        },
+        {
+            "role": "customer",
+            "text": "عطنا عقد إيجار عشان نطلع ترخيص حفر"
+        },
+        {
+            "role": "customer",
+            "text": "وش صار"
+        },
+        {
+            "role": "customer",
+            "text": "سويت شي"
+        },
+        {
+            "role": "customer",
+            "text": "وش صار معك فيصل"
+        },
+        {
+            "role": "customer",
+            "text": "بكره لازم نخلص بالله عليك"
+        },
+        {
+            "role": "customer",
+            "text": "أخذنا نص الايجار كاش"
+        },
+        {
+            "role": "customer",
+            "text": "لازم بالله بكره اخلص العقود"
+        },
+        {
+            "role": "customer",
+            "text": "فيه واحد توه طالع"
+        },
+        {
+            "role": "customer",
+            "text": "فاضي موجود"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص خله يجي ونعطيه سنه ما فيه مشكله"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "وش سويت"
+        },
+        {
+            "role": "customer",
+            "text": "العقد بيكون باسم الشركه"
+        },
+        {
+            "role": "customer",
+            "text": "السجل التجارى شركة ال طاوى.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مين ذا"
+        },
+        {
+            "role": "customer",
+            "text": "أرض الجماز"
+        },
+        {
+            "role": "customer",
+            "text": "20572911756.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ارض الجماز الخير_ناصر-سيف.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "هذا"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "بشر"
+        },
+        {
+            "role": "customer",
+            "text": "عندك حق ديكور تي في كويس بديل رخام او كذا"
+        },
+        {
+            "role": "customer",
+            "text": "وش صار معك فيصل"
+        },
+        {
+            "role": "customer",
+            "text": "وش صار"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "كيف الأمور"
+        },
+        {
+            "role": "customer",
+            "text": "جربت"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "وافقو"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم بشر وش سوينا"
+        },
+        {
+            "role": "customer",
+            "text": "كلمه"
+        },
+        {
+            "role": "customer",
+            "text": "ادخل"
+        },
+        {
+            "role": "customer",
+            "text": "+966 55 203 0092"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "موضوع الجماز"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/xKGCiYPEPkSxdDedA?g_st=iwb"
+        },
+        {
+            "role": "customer",
+            "text": "وش صار علمك ابو إبراهيم"
+        },
+        {
+            "role": "customer",
+            "text": "رفعت ؟"
+        },
+        {
+            "role": "customer",
+            "text": "المفروض انك اليوم رايح مع ابو ابراهيم كلمت ابو ابراهيم قلت لازم نروح"
+        },
+        {
+            "role": "customer",
+            "text": "عقد مده 11 سنه \nقيمه 90 الف دفعتين \nيبدا من 1\/4\/2025 \nارض في الخير"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ابي نسوي العقد هذا بكره بنسوي عليه استراحه"
+        },
+        {
+            "role": "customer",
+            "text": "الله يعافيك انا ادور على مكتب تجاري مساحته 500 م"
+        },
+        {
+            "role": "customer",
+            "text": "كم الحد ممكن"
+        },
+        {
+            "role": "customer",
+            "text": "1000 للمتر"
+        },
+        {
+            "role": "customer",
+            "text": "وممكن النرجس"
+        },
+        {
+            "role": "customer",
+            "text": "وش صار ردو عليك الجماعه ؟؟"
+        },
+        {
+            "role": "customer",
+            "text": "نبي فلوسنا"
+        },
+        {
+            "role": "customer",
+            "text": "تمام يبوي انت معنا"
+        },
+        {
+            "role": "customer",
+            "text": "صاحب الهوية:\n******6620\nنبلغكم بصدور وكالة إلكترونية برقم:\n46540514\nبصفتكم موكل.\nويمكنكم الاطلاع على كامل التفاصيل عبر بوابة ناجز:\nhttps:\/\/s.moj.gov.sa\/563533w6"
+        },
+        {
+            "role": "customer",
+            "text": "صك الوكالة.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "رقم"
+        },
+        {
+            "role": "customer",
+            "text": "سنه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "سلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "ايجار المقاولات حط زياده 10٪؜ زياده سنوي"
+        },
+        {
+            "role": "customer",
+            "text": "ما وافقو هم"
+        },
+        {
+            "role": "customer",
+            "text": "45 سنوي"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "الثانين خلصتهم"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

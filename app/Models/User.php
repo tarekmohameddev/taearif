@@ -154,6 +154,33 @@ class User extends Authenticatable
      */
     public function tenantOwnerId(): int{return $this->isEmployee() ? (int) ($this->tenant_id ?? 0) : (int) $this->id;}
 
+    /**
+     * Avoid Spatie hydrating all roles/permissions (66k+ pivots) on every can() check.
+     * Delegates to LightweightPermissionChecker which resolves from a small SQL+Redis name list.
+     */
+    public function checkPermissionTo($permission, $guardName = null): bool
+    {
+        try {
+            return $this->hasPermissionTo($permission, $guardName);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    public function hasPermissionTo($permission, $guardName = null): bool
+    {
+        $name = $permission;
+        if (is_object($permission) && isset($permission->name)) {
+            $name = $permission->name;
+        }
+        if (! is_string($name) || $name === '') {
+            return false;
+        }
+
+        return app(\App\Services\Rbac\LightweightPermissionChecker::class)
+            ->userHasPermission($this, $name);
+    }
+
     public function isPhoneVerified(): bool
     {
         return $this->phone_verified_at !== null;
@@ -723,5 +750,29 @@ class User extends Authenticatable
     public function employeeAddons()
     {
         return $this->hasMany(EmployeeAddon::class, 'user_id');
+    }
+
+    // -----------------------------------------------------------------
+    // Calling module relationships
+    // -----------------------------------------------------------------
+
+    public function callSetting()
+    {
+        return $this->hasOne(\App\Domain\Calling\Models\CallSetting::class, 'tenant_id');
+    }
+
+    public function callTrunks()
+    {
+        return $this->hasMany(\App\Domain\Calling\Models\CallTrunk::class, 'tenant_id');
+    }
+
+    public function callSimLines()
+    {
+        return $this->hasMany(\App\Domain\Calling\Models\CallSimLine::class, 'tenant_id');
+    }
+
+    public function callAgentExtension()
+    {
+        return $this->hasOne(\App\Domain\Calling\Models\CallAgentExtension::class, 'user_id');
     }
 }

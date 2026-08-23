@@ -81,12 +81,52 @@ class CreditController extends BaseApiController
                 'average_cost_per_credit' => $userCredit->average_cost_per_credit,
                 'reset_date' => $userCredit->reset_date,
                 'is_active' => $userCredit->is_active,
+                'shared_pool' => true,
+                'usage_breakdown' => $this->getMonthlyUsageBreakdown(Auth::id()),
             ];
 
             return $this->ok($balance, 'Credit balance retrieved successfully');
         } catch (\Exception $e) {
             return $this->fail('Failed to retrieve credit balance: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Break down this month's credit usage by category (ai_bot vs campaign_messages).
+     *
+     * Credit transactions written by the communication layer embed the reference
+     * type in the description as "communication_message:{type}:{id}".
+     * Bot replies use reference type "wa_bot_reply"; campaign messages use
+     * "wa_message_log" (per-recipient) or "wa_campaign" (reservation flow).
+     */
+    private function getMonthlyUsageBreakdown(int $userId): array
+    {
+        $rows = CreditTransaction::where('user_id', $userId)
+            ->where('transaction_type', 'usage')
+            ->where('status', 'completed')
+            ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->selectRaw('description, count(*) as cnt, sum(abs(credits_amount)) as credits_used')
+            ->groupBy('description')
+            ->get();
+
+        $aiBot            = ['credits_used' => 0, 'count' => 0];
+        $campaignMessages = ['credits_used' => 0, 'count' => 0];
+
+        foreach ($rows as $row) {
+            $desc = (string) ($row->description ?? '');
+            if (str_contains($desc, ':wa_bot_reply:')) {
+                $aiBot['credits_used'] += (int) $row->credits_used;
+                $aiBot['count']        += (int) $row->cnt;
+            } else {
+                $campaignMessages['credits_used'] += (int) $row->credits_used;
+                $campaignMessages['count']        += (int) $row->cnt;
+            }
+        }
+
+        return [
+            'campaign_messages' => $campaignMessages,
+            'ai_bot'            => $aiBot,
+        ];
     }
 
     /**

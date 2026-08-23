@@ -25,6 +25,11 @@ class WaNumber extends Model
         'meta',
     ];
 
+    /** @var list<string> */
+    protected $appends = [
+        'bot_enabled',
+    ];
+
     /** @var array<string, string> */
     protected $casts = [
         'meta' => 'array',
@@ -55,5 +60,15 @@ class WaNumber extends Model
     public function aiResponseLogs(): HasMany
     {
         return $this->hasMany(WaAiResponseLog::class, 'wa_number_id');
+    }
+
+    /**
+     * Whether the AI bot is currently enabled for this number.
+     * Returns true only when an aiConfig row exists and its `enabled` flag is true.
+     * Safe to call even when the aiConfig relation is not eager-loaded (will lazy-load once).
+     */
+    public function getBotEnabledAttribute(): bool
+    {
+        return (bool) ($this->aiConfig?->enabled ?? false);
     }
 }

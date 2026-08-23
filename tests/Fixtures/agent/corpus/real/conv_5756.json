@@ -1,0 +1,535 @@
+{
+    "type": "real_conversation",
+    "id": "conv_5756",
+    "tenant_id": 1569,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "عندكم شقة في العارض ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "مرة حلوة"
+        },
+        {
+            "role": "customer",
+            "text": "باذن الله مناسب"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن اللوكيشن"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "بكرا حفل أسس"
+        },
+        {
+            "role": "customer",
+            "text": "السوداني حق دور الشهداء رد علي"
+        },
+        {
+            "role": "customer",
+            "text": "قال انه محصل دور قديم شوي في حي غرناطة\nويفكر ياخذه \nطلب من المالك تعديلات ويمكن يرفضون \nالخيار الثاني عنده دور الشهداء حقنا"
+        },
+        {
+            "role": "customer",
+            "text": "المهم يقول يوم الاثنين العصر اتصل بي واعطيك القرار"
+        },
+        {
+            "role": "customer",
+            "text": "لذلك اعتمدي تذكيري يوم الاثنين"
+        },
+        {
+            "role": "customer",
+            "text": "الان اكلمه ؟"
+        },
+        {
+            "role": "customer",
+            "text": "طلب اللوكيشن"
+        },
+        {
+            "role": "customer",
+            "text": "وش الرأي ؟"
+        },
+        {
+            "role": "customer",
+            "text": "ما يرد"
+        },
+        {
+            "role": "customer",
+            "text": "موقفة البحث حالياً تبي في الياسمين والصحافة"
+        },
+        {
+            "role": "customer",
+            "text": "ما يرد"
+        },
+        {
+            "role": "customer",
+            "text": "مغلق"
+        },
+        {
+            "role": "customer",
+            "text": "هذا اللي ردت علي حرمة"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/v3kdSzqTAS9R48NU7?g_st=ipc"
+        },
+        {
+            "role": "customer",
+            "text": "RHA AL-Nargis .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "👆"
+        },
+        {
+            "role": "customer",
+            "text": "شوفي معاها"
+        },
+        {
+            "role": "customer",
+            "text": "اسعار  رهـا RHA النرجس .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ما يرد"
+        },
+        {
+            "role": "customer",
+            "text": "."
+        },
+        {
+            "role": "customer",
+            "text": "هذي"
+        },
+        {
+            "role": "customer",
+            "text": "إذا حابة نشوفها ونصورها افضل"
+        },
+        {
+            "role": "customer",
+            "text": "برجع افتح معاه الموضوع مرة ثانية"
+        },
+        {
+            "role": "customer",
+            "text": "عنده تاون هاوس"
+        },
+        {
+            "role": "customer",
+            "text": "وعنده ادوار"
+        },
+        {
+            "role": "customer",
+            "text": "كلها في الصحيان"
+        },
+        {
+            "role": "customer",
+            "text": "باذن الله متفاءل بنتفق معه \nبس مشكلته ما يعطي سعي"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح مو مشكلة كبيرة"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "800 رقم صعب يتكرر 🤷‍♂️"
+        },
+        {
+            "role": "customer",
+            "text": "السوري تبينه يبيع ؟"
+        },
+        {
+            "role": "customer",
+            "text": "او وش"
+        },
+        {
+            "role": "customer",
+            "text": "اهااا"
+        },
+        {
+            "role": "customer",
+            "text": "الساعة كم"
+        },
+        {
+            "role": "customer",
+            "text": "لازم نرتب مع سارة"
+        },
+        {
+            "role": "customer",
+            "text": "وقبل كل شيء نتأكد انه عارف وفاهم لا يفشلنا"
+        },
+        {
+            "role": "customer",
+            "text": "وش صار الساعة 4 الحين 😂"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل للمهنا ؟"
+        },
+        {
+            "role": "customer",
+            "text": "الحارس موجود بالموقع"
+        },
+        {
+            "role": "customer",
+            "text": "أنا برا عندي اجتماع"
+        },
+        {
+            "role": "customer",
+            "text": "حلووو"
+        },
+        {
+            "role": "customer",
+            "text": "نقابله هناك"
+        },
+        {
+            "role": "customer",
+            "text": "فهمت"
+        },
+        {
+            "role": "customer",
+            "text": "بكلمه الان"
+        },
+        {
+            "role": "customer",
+            "text": "ايه ابشري"
+        },
+        {
+            "role": "customer",
+            "text": "الطبيشي اجل قرار الشراء سنة \nلانه حصلت له بعض الظروف"
+        },
+        {
+            "role": "customer",
+            "text": "هذا شكله معطيني بلوك 🤔"
+        },
+        {
+            "role": "customer",
+            "text": "فلة او تاون هاوس \nالماستر لازم غرفة الملابس ودورة المياه كبيرة\nالمساحة لازم واسعة وضروري حوش ومدخل مستقل ومواقف المكيفات افضل تكون مخفية \nالأحياء\nشمال غرب \n\nإلى 3 مليون حد أقصى"
+        },
+        {
+            "role": "customer",
+            "text": "لازم صك مستقل"
+        },
+        {
+            "role": "customer",
+            "text": "تم تعديل الطلب إلى فيلا عرضت عليه فلة المروج ( صمود ) قال بشوفها"
+        },
+        {
+            "role": "customer",
+            "text": "لو نكلم كل عملاءنا ونتواصل صح"
+        },
+        {
+            "role": "customer",
+            "text": "كان علوم"
+        },
+        {
+            "role": "customer",
+            "text": "جاي بس مسكت معي اغسل السيارة قبل اجي المكتب 😂\nشوي وأخلص"
+        },
+        {
+            "role": "customer",
+            "text": "ضروري حسيت بتقصير 😏"
+        },
+        {
+            "role": "customer",
+            "text": "5 دقايق واحرك للمكتب"
+        },
+        {
+            "role": "customer",
+            "text": "هذا هو يمسح"
+        },
+        {
+            "role": "customer",
+            "text": "الطلب فيلا 350 متر \nالعارض القيروان الياسمين \nاول كيلو شمال سلمان"
+        },
+        {
+            "role": "customer",
+            "text": "فيلا 300 متر \nالاحياء شمال غرب الرياض او وسط حطين قيروان رحاب الدرعية \nالميزانية 5 \nمحمد الشعيبي"
+        },
+        {
+            "role": "customer",
+            "text": "ممكن"
+        },
+        {
+            "role": "customer",
+            "text": "رسوخ 😤"
+        },
+        {
+            "role": "customer",
+            "text": "🤷‍♂️"
+        },
+        {
+            "role": "customer",
+            "text": "اليوم بالذات لا 😂"
+        },
+        {
+            "role": "customer",
+            "text": "محتاج نرتب زيارات عملاء المحمدية"
+        },
+        {
+            "role": "customer",
+            "text": "+966554473509"
+        },
+        {
+            "role": "customer",
+            "text": "+966564038298"
+        },
+        {
+            "role": "customer",
+            "text": "+966505666410"
+        },
+        {
+            "role": "customer",
+            "text": "+966558133637"
+        },
+        {
+            "role": "customer",
+            "text": "+966558212058"
+        },
+        {
+            "role": "customer",
+            "text": "+966596177975"
+        },
+        {
+            "role": "customer",
+            "text": "+966598016861"
+        },
+        {
+            "role": "customer",
+            "text": "+966507779555"
+        },
+        {
+            "role": "customer",
+            "text": "+966553345160"
+        },
+        {
+            "role": "customer",
+            "text": "+966551309247"
+        },
+        {
+            "role": "customer",
+            "text": "+966552322902"
+        },
+        {
+            "role": "customer",
+            "text": "+966504177111"
+        },
+        {
+            "role": "customer",
+            "text": "+966504834155"
+        },
+        {
+            "role": "customer",
+            "text": "+966536444603"
+        },
+        {
+            "role": "customer",
+            "text": "+966554028503"
+        },
+        {
+            "role": "customer",
+            "text": "+966555651555"
+        },
+        {
+            "role": "customer",
+            "text": "+966507871814"
+        },
+        {
+            "role": "customer",
+            "text": "+966509193939"
+        },
+        {
+            "role": "customer",
+            "text": "+966500581581"
+        },
+        {
+            "role": "customer",
+            "text": "+966553828869"
+        },
+        {
+            "role": "customer",
+            "text": "+966115185757"
+        },
+        {
+            "role": "customer",
+            "text": "+966504261132"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "يا ربيت كريم"
+        },
+        {
+            "role": "customer",
+            "text": "يا رب كريم"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "صحيح"
+        },
+        {
+            "role": "customer",
+            "text": "كم اقل شقة عندنا ؟"
+        },
+        {
+            "role": "customer",
+            "text": "طيب حلو"
+        },
+        {
+            "role": "customer",
+            "text": "قولي له كامل التفاصيل عند الموظف اللي تواصل معك"
+        },
+        {
+            "role": "customer",
+            "text": "عشان ما يتصل كل شوي"
+        },
+        {
+            "role": "customer",
+            "text": "الساعة كم"
+        },
+        {
+            "role": "customer",
+            "text": "ووين"
+        },
+        {
+            "role": "customer",
+            "text": "يبدو أن مستوى التركيز عندي منخفض جدا"
+        },
+        {
+            "role": "customer",
+            "text": "عطيني العلم بالتفصيل"
+        },
+        {
+            "role": "customer",
+            "text": "اي فلل"
+        },
+        {
+            "role": "customer",
+            "text": "لااااازم"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "وش رايك ؟"
+        },
+        {
+            "role": "customer",
+            "text": "قد شفتها عندك غيرها"
+        },
+        {
+            "role": "customer",
+            "text": "يقول شفتها"
+        },
+        {
+            "role": "customer",
+            "text": "بسلامته"
+        },
+        {
+            "role": "customer",
+            "text": "يجيب الله غيره"
+        },
+        {
+            "role": "customer",
+            "text": "هو اللي يطلب لوكيشنااااات"
+        },
+        {
+            "role": "customer",
+            "text": "ايه اسحب على أبوه بعد"
+        },
+        {
+            "role": "customer",
+            "text": "• تركي الشنيفي \/ يبي القصور الي في النخيل الغربي\n• تركي الشنيفي\/سلطان بن تركي\n• تركي الشنافي اخو نواف\n• ابو محمد تركي الشنيفي\n• Turki Shenaifi from Thenaian W Buy Casa\n• تركي الشنيفي الفرنسي\n• ابومحمد تركي الشنيفي\n• تركي الشنيفي\/الفرنسي\n• تركي الشنيفي الفرنس\n• Turki Shenaifi htc EYAS SAYYARI vip\n• تركي البنك الفرنسي\n• تركي الشنيفي بنك\n• الشنيفي موسسه ا\n• عرقةتركي شنيفي\n• عبدالرحمن خريف\n• تركي علي الشن\n• Turkey Al shinafi bassma\n• محمد ابو تركي\n• تركي الفرنسي\n• Turki Shenaifi THENAIAN\n• تركي الشنيفي\n• تركي الشنفي\n• Franci turki shemisi\n• Turki Al Al-Shenifi\n• تركي شنيفي\n• شنيفي تركي\n• Turki A Alshenaifi\n• Turki Shunaifi-Al\n• TURKEY ASHENAIFEI\n• Turki Al Shenifi\n• أبو محمد تركي الورود\n• تركي الشنيفي محاسب الامير\n• تركي الشريفي الفرنسي والعربي 10\n• ف4 سلمان الشنيفي والده\n• تركي الشنفي\n• Sheikh Al Saoud\n• ز تركي الشنيفي\n• ابومحمدعرقه تناوي\n• تركي الشنيفي\n• تركي بن علي\n• Turki Al-Shnaifi \/ Casaba\n• محمد ابو تركي\n• Turki Alshnaife\n• تركي بن علي بن صالح الشنيفي\n• تركي شنيفي\n• مسوق 1\n• الشيخ تركي\n• تركي الشنيفي. ابومحمد. عند سمو الامير فيصل\n• 47017921156\n• Shinifi Turki"
+        },
+        {
+            "role": "customer",
+            "text": "مسوق"
+        },
+        {
+            "role": "customer",
+            "text": "موظف بنك ( شكله قروض عقاري )"
+        },
+        {
+            "role": "customer",
+            "text": "اشغلنا وبس"
+        },
+        {
+            "role": "customer",
+            "text": "خله يشتري لعلها تطيح من خاطره 😂"
+        },
+        {
+            "role": "customer",
+            "text": "يمكن موقفه عشان نفسهم فيها"
+        },
+        {
+            "role": "customer",
+            "text": "ناشبة 😂"
+        },
+        {
+            "role": "customer",
+            "text": "يا رب ويرزقنا البيعات اللي ما توقف"
+        },
+        {
+            "role": "customer",
+            "text": "بكرا اجتماع الفور سيزون"
+        },
+        {
+            "role": "customer",
+            "text": "عصام"
+        },
+        {
+            "role": "customer",
+            "text": "."
+        },
+        {
+            "role": "customer",
+            "text": "."
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

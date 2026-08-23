@@ -622,6 +622,7 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::put('/credit-management/pricing/{id}/quick-update', 'Admin\CreditManagementController@quickUpdatePricing')->name('credit-management.pricing.quick-update');
         Route::post('/credit-management/packages/{id}/toggle-status', 'Admin\CreditManagementController@togglePackageStatus')->name('credit-management.packages.toggle-status');
         Route::post('/credit-management/pricing/{id}/toggle-status', 'Admin\CreditManagementController@togglePricingStatus')->name('credit-management.pricing.toggle-status');
+        Route::post('/credit-management/pricing/{id}/toggle-billable', 'Admin\CreditManagementController@toggleBillable')->name('credit-management.pricing.toggle-billable');
         Route::delete('/credit-management/packages/{id}', 'Admin\CreditManagementController@deletePackage')->name('credit-management.packages.delete');
         Route::delete('/credit-management/pricing/{id}', 'Admin\CreditManagementController@deletePricing')->name('credit-management.pricing.delete');
         Route::get('/credit-management/packages/{id}/estimates', 'Admin\CreditManagementController@getPackageEstimates')->name('credit-management.packages.estimates');
@@ -677,6 +678,38 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::get('/isthara', 'Admin\AdminIstharaController@index')->name('isthara.index');
         Route::get('/isthara/{id}/show', 'Admin\AdminIstharaController@show')->name('isthara.show');
         Route::post('/isthara/update', 'Admin\AdminIstharaController@markAsRead')->name('isthara.update');
+    });
+
+    // Calling module (tenant settings, trunks, phone numbers)
+    Route::group(['middleware' => 'checkpermission:Calling'], function () {
+        Route::get('/calling', function () {
+            return redirect()->route('admin.calling.tenants.index');
+        })->name('calling.index');
+
+        Route::get('/calling/tenants', 'Admin\CallingTenantController@index')
+            ->name('calling.tenants.index');
+        Route::get('/calling/tenants/{id}', 'Admin\CallingTenantController@show')
+            ->name('calling.tenants.show');
+        Route::post('/calling/tenants/{id}/settings', 'Admin\CallingTenantController@updateSettings')
+            ->name('calling.tenants.settings.update');
+        Route::delete('/calling/tenants/{id}/extensions/{extensionId}', 'Admin\CallingTenantController@deactivateExtension')
+            ->name('calling.tenants.extensions.destroy');
+
+        Route::post('/calling/tenants/{tenantId}/trunks', 'Admin\CallingTrunkController@store')
+            ->name('calling.trunks.store');
+        Route::delete('/calling/tenants/{tenantId}/trunks/{trunkId}', 'Admin\CallingTrunkController@destroy')
+            ->name('calling.trunks.destroy');
+        Route::post('/calling/tenants/{tenantId}/trunks/{trunkId}/provision-gsm-port', 'Admin\CallingTrunkController@provisionGsmPort')
+            ->name('calling.trunks.provision-gsm');
+        Route::post('/calling/tenants/{tenantId}/trunks/{trunkId}/provision-stc', 'Admin\CallingTrunkController@provisionStc')
+            ->name('calling.trunks.provision-stc');
+
+        Route::get('/calling/sim-lines', 'Admin\CallingSimLineController@index')
+            ->name('calling.sim-lines.index');
+        Route::put('/calling/sim-lines/{id}', 'Admin\CallingSimLineController@update')
+            ->name('calling.sim-lines.update');
+        Route::post('/calling/sim-lines/{id}/toggle', 'Admin\CallingSimLineController@toggle')
+            ->name('calling.sim-lines.toggle');
     });
 
     // affiliate

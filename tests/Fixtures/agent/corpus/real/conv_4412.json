@@ -1,0 +1,1055 @@
+{
+    "type": "real_conversation",
+    "id": "conv_4412",
+    "tenant_id": 1243,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "اكد لي"
+        },
+        {
+            "role": "customer",
+            "text": "باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "نتعشى في حاشي الوفاء 9.30"
+        },
+        {
+            "role": "customer",
+            "text": "اش رايك"
+        },
+        {
+            "role": "customer",
+            "text": "اذا تم عطني خير"
+        },
+        {
+            "role": "customer",
+            "text": "توصل بالسلامة"
+        },
+        {
+            "role": "customer",
+            "text": "ابشرك بخير ونعمةً"
+        },
+        {
+            "role": "customer",
+            "text": "لاتشتري بورسلان"
+        },
+        {
+            "role": "customer",
+            "text": "خليك على السيراميك افضل واجود"
+        },
+        {
+            "role": "customer",
+            "text": "يفك مع الحراره"
+        },
+        {
+            "role": "customer",
+            "text": "كيلو 14 افضل اسعار"
+        },
+        {
+            "role": "customer",
+            "text": "لان المستودعات عندهم هناك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/maps.app.goo.gl\/YrrgPSG2c3imW4Y59?g_st=iwb"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 21.427335739136, 39.395080566406]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "روح لعماد قوله انا من طرف ابوماجد"
+        },
+        {
+            "role": "customer",
+            "text": "روح لهذا الموقع افضل"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "بالتوفيق يارب"
+        },
+        {
+            "role": "customer",
+            "text": "بكره نتقابل نتعشى مع بعض"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "الساعة 9ونص حكون قريب"
+        },
+        {
+            "role": "customer",
+            "text": "لاتتعشى"
+        },
+        {
+            "role": "customer",
+            "text": "نتعشى مع بعض"
+        },
+        {
+            "role": "customer",
+            "text": "انا متجه للوفاء"
+        },
+        {
+            "role": "customer",
+            "text": "ودك نتعشى بحاشي الوفاء"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "الو"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الرجال يدور قطعة في طيبه الفرعيه"
+        },
+        {
+            "role": "customer",
+            "text": "المخططات اللي قريبه من خط المدينه"
+        },
+        {
+            "role": "customer",
+            "text": "اش العلم"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "ابوانس نبغى قريب من الخط"
+        },
+        {
+            "role": "customer",
+            "text": "610 و611"
+        },
+        {
+            "role": "customer",
+            "text": "اش سويت"
+        },
+        {
+            "role": "customer",
+            "text": "بعيد هذي جوا زياده"
+        },
+        {
+            "role": "customer",
+            "text": "لوعرضت عماره البوادي تحيب لي فوق 7 مليون"
+        },
+        {
+            "role": "customer",
+            "text": "بس ماعندي شهاده اشغال \nالدخل حدود 600"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "شي عملي ورخيص السرو \nواذا تبغى شكل وجوده روح عند عبدالبديع \nنوادر للسباكة والكهرباء"
+        },
+        {
+            "role": "customer",
+            "text": "انت موجود"
+        },
+        {
+            "role": "customer",
+            "text": "انا موجود"
+        },
+        {
+            "role": "customer",
+            "text": "جايك ثانيه وحده"
+        },
+        {
+            "role": "customer",
+            "text": "بعييد مره"
+        },
+        {
+            "role": "customer",
+            "text": "شوف قريب \n610 \n611"
+        },
+        {
+            "role": "customer",
+            "text": "هل شقة رقم 5 غرفه وصاله حط تامين 1000 او 500"
+        },
+        {
+            "role": "customer",
+            "text": "بالمنصه ؟"
+        },
+        {
+            "role": "customer",
+            "text": "او استلمناها"
+        },
+        {
+            "role": "customer",
+            "text": "انتظرك"
+        },
+        {
+            "role": "customer",
+            "text": "كيفها"
+        },
+        {
+            "role": "customer",
+            "text": "ابغى نحيفة"
+        },
+        {
+            "role": "customer",
+            "text": "احية"
+        },
+        {
+            "role": "customer",
+            "text": "ان شاءالله نهاية شهر 2 احاول ادبر لك مبلغ باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل صورتها وكم تبغى"
+        },
+        {
+            "role": "customer",
+            "text": "باقي لها سباكة"
+        },
+        {
+            "role": "customer",
+            "text": "ابشششر"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "غرفتين وحمامين وصاله \nشامل الكهرباء \nبدون موقف 28 الى 26 تفاوض معه"
+        },
+        {
+            "role": "customer",
+            "text": "غرفه وصاله وحمام  ومطبخ راكب \nبدون موقف \n18 الى 17 تفاوض معه"
+        },
+        {
+            "role": "customer",
+            "text": "شامل نعم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "بدون موقف"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 21.834873199463, 39.124973297119]"
+        },
+        {
+            "role": "customer",
+            "text": "توي فتحت الجوال"
+        },
+        {
+            "role": "customer",
+            "text": "عندي اختبار"
+        },
+        {
+            "role": "customer",
+            "text": "غرفتين"
+        },
+        {
+            "role": "customer",
+            "text": "او غرفه"
+        },
+        {
+            "role": "customer",
+            "text": "بخصوص الغرفتين كيف"
+        },
+        {
+            "role": "customer",
+            "text": "اوك"
+        },
+        {
+            "role": "customer",
+            "text": "4 دفعات وليس شهري"
+        },
+        {
+            "role": "customer",
+            "text": "شامل الماء والكهرباء الفواتير فقط"
+        },
+        {
+            "role": "customer",
+            "text": "بدون موقف"
+        },
+        {
+            "role": "customer",
+            "text": "التامين يحول لي وليس المنصه"
+        },
+        {
+            "role": "customer",
+            "text": "العقد المسوده  جاتني شهري"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "لاتكسر هههههه"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "يخرج ويطلع صعبه"
+        },
+        {
+            "role": "customer",
+            "text": "اي"
+        },
+        {
+            "role": "customer",
+            "text": "بعد الصلاه بتصل عليك"
+        },
+        {
+            "role": "customer",
+            "text": "مافي شهري"
+        },
+        {
+            "role": "customer",
+            "text": "4 دفعات"
+        },
+        {
+            "role": "customer",
+            "text": "اعرض الشقق بموقع حراج"
+        },
+        {
+            "role": "customer",
+            "text": "صح"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "في كاميرات\nوهذا موحل"
+        },
+        {
+            "role": "customer",
+            "text": "اذا خلصت من شغلك اتصل"
+        },
+        {
+            "role": "customer",
+            "text": "🔴 إشعار إخلاء \nنظرآ لانتهاء العقد بتاريخ 30\/4\/2026\nالمستأجر حلا ايمن هاشم عقد إيجار (10552790219) نفيدكم بوجوب إخلاء الشقة وتسليمها كما تم استلامها وفي حال وجود أي أضرار في الشقة تتحمل قيمة إصلاحها لعدم رغبة تجديد العقد المبرم \nإلى تاريخ29 \/ 4\/ 2026م\nعلماً في حال عدم الاتزام بتسليم الشقة في الفترة المحددة سيتم اتخاذ الإجراءات القانونية بحقك"
+        },
+        {
+            "role": "customer",
+            "text": "عطني رايك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر انا اعطيتة العلم وقلي استخير"
+        },
+        {
+            "role": "customer",
+            "text": "ان شاءالله تتيسر"
+        },
+        {
+            "role": "customer",
+            "text": "نتعشى مع بعض"
+        },
+        {
+            "role": "customer",
+            "text": "مارأيك"
+        },
+        {
+            "role": "customer",
+            "text": "خلصت ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "النزهه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "🔴 إشعار إخلاء \nنظرآ لانتهاء العقد بتاريخ 30\/4\/2026\nالمستأجر حلا ايمن هاشم عقد إيجار (10552790219) نفيدكم بوجوب إخلاء الشقة وتسليمها كما تم استلامها وفي حال وجود أي أضرار في الشقة تتحمل قيمة إصلاحها لعدم رغبة تجديد العقد المبرم \nإلى تاريخ29 \/ 4\/ 2026م\nعلماً في حال عدم الاتزام بتسليم الشقة في الفترة المحددة سيتم اتخاذ الإجراءات القانونية بحقك"
+        },
+        {
+            "role": "customer",
+            "text": "الموضوع عندك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الحمدلله الذي بنعمته تتم الصالحات \nرزقني الله بمولود اسأل الله ان يجعله مواليد السعاده وان يجعله من الصالحين \n🌹"
+        },
+        {
+            "role": "customer",
+            "text": "رد علي ضروري"
+        },
+        {
+            "role": "customer",
+            "text": "ولاريال"
+        },
+        {
+            "role": "customer",
+            "text": "26 مع الكهرباء بدون موقف"
+        },
+        {
+            "role": "customer",
+            "text": "26"
+        },
+        {
+            "role": "customer",
+            "text": "ههههههههه الكريم الله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "شقة 1"
+        },
+        {
+            "role": "customer",
+            "text": "ممتاز"
+        },
+        {
+            "role": "customer",
+            "text": "البنت اللي امس اتصلت عليك"
+        },
+        {
+            "role": "customer",
+            "text": "؟"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلتها على حلا"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "بدون موقف \nشقة رقم 1"
+        },
+        {
+            "role": "customer",
+            "text": "خليه يدخل"
+        },
+        {
+            "role": "customer",
+            "text": "1012771976"
+        },
+        {
+            "role": "customer",
+            "text": "المغرب"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "اتصلت عليك"
+        },
+        {
+            "role": "customer",
+            "text": "البنت"
+        },
+        {
+            "role": "customer",
+            "text": "الان تتصل"
+        },
+        {
+            "role": "customer",
+            "text": "اذا اتصلت عليك قولها تاجرت من زمان"
+        },
+        {
+            "role": "customer",
+            "text": "هيا ادخل موقع ايجار"
+        },
+        {
+            "role": "customer",
+            "text": "من اول ننتظر"
+        },
+        {
+            "role": "customer",
+            "text": "خلي السوداني يدخل"
+        },
+        {
+            "role": "customer",
+            "text": "دام انه داخل المنصة خله يوافق عن رشيد"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل العقد للمستاجر عشان يوافق"
+        },
+        {
+            "role": "customer",
+            "text": "نفس حساب رشيد الاول"
+        },
+        {
+            "role": "customer",
+            "text": "اي رجال"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "رشيد"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "ليش"
+        },
+        {
+            "role": "customer",
+            "text": "ايبان جميل .pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "سلم عليهم"
+        },
+        {
+            "role": "customer",
+            "text": "انا لسى بمستشفى شرق جده"
+        },
+        {
+            "role": "customer",
+            "text": "اتصل عليك احد من شقة 18 ؟"
+        },
+        {
+            "role": "customer",
+            "text": "اش سويت مع الرجال ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "اش سويت مع الرجال"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلت له واتس انت ؟"
+        },
+        {
+            "role": "customer",
+            "text": "رد عليك"
+        },
+        {
+            "role": "customer",
+            "text": "🔴 إشعار إخلاء \nنظرآ لانتهاء العقد بتاريخ 30\/4\/2026\nالمستأجر حلا ايمن هاشم عقد إيجار (10552790219) نفيدكم بوجوب إخلاء الشقة وتسليمها كما تم استلامها وفي حال وجود أي أضرار في الشقة تتحمل قيمة إصلاحها لعدم رغبة تجديد العقد المبرم \nإلى تاريخ29 \/ 4\/ 2026م\nعلماً في حال عدم الاتزام بتسليم الشقة في الفترة المحددة سيتم اتخاذ الإجراءات القانونية بحقك"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلت ؟"
+        },
+        {
+            "role": "customer",
+            "text": "5"
+        },
+        {
+            "role": "customer",
+            "text": "ع البركة"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "ادخل ع حساب اخوي"
+        },
+        {
+            "role": "customer",
+            "text": "1012771976"
+        },
+        {
+            "role": "customer",
+            "text": "الف سلامة عليك ماتشوف شر"
+        },
+        {
+            "role": "customer",
+            "text": "لابأس طهور ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلها وانت منسدح \nعلى حلا"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "سدد المكتب"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "كيفك الان عساك طيب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "انهي الموضوع لحلا"
+        },
+        {
+            "role": "customer",
+            "text": "ليش مارديت على عادل"
+        },
+        {
+            "role": "customer",
+            "text": "تعال لنا اذا مناسب"
+        },
+        {
+            "role": "customer",
+            "text": "وافق اخوي ع العقد"
+        },
+        {
+            "role": "customer",
+            "text": "وافق من امس"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل رسائل المحامي ؟"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته \nكيف حالك ؟\n\nجاتني هذي الرساله وماعرف اش اسوي بالضبط"
+        },
+        {
+            "role": "customer",
+            "text": "ماعاد فيه وقت"
+        },
+        {
+            "role": "customer",
+            "text": "الراشدي يقولي لازم رامي يعطيني خبر"
+        },
+        {
+            "role": "customer",
+            "text": "انت فهمة"
+        },
+        {
+            "role": "customer",
+            "text": "والمحامي يسوق امها يماطل"
+        },
+        {
+            "role": "customer",
+            "text": "هو رده ايش ؟"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "التجديد بفلوس ابوانس"
+        },
+        {
+            "role": "customer",
+            "text": "؟"
+        },
+        {
+            "role": "customer",
+            "text": "رد ضروري بكلمك"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل رقم عقد اسحاق"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبي اليوم انا بنزل وعازمك ع سحور"
+        },
+        {
+            "role": "customer",
+            "text": "لاترتبط مع احد"
+        },
+        {
+            "role": "customer",
+            "text": "سويت عقد جديد من عند السوداني"
+        },
+        {
+            "role": "customer",
+            "text": "باذن الله نتقابل 11 اش رايك"
+        },
+        {
+            "role": "customer",
+            "text": "باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "الفلبيني حول الايجار ؟"
+        },
+        {
+            "role": "customer",
+            "text": "وافق المغرب اليوم"
+        },
+        {
+            "role": "customer",
+            "text": "هذي"
+        },
+        {
+            "role": "customer",
+            "text": "وينك ؟"
+        },
+        {
+            "role": "customer",
+            "text": "وين نتقابل"
+        },
+        {
+            "role": "customer",
+            "text": "اي شي"
+        },
+        {
+            "role": "customer",
+            "text": "شبك المطار وجاي عليك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ديوانيه الصفوه اش رايك"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "دقيقتين"
+        },
+        {
+            "role": "customer",
+            "text": "برا"
+        },
+        {
+            "role": "customer",
+            "text": "اسمع حول المبلغ 600 ضررروري"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "الفلبيني ماحول ولا وش وضعة"
+        },
+        {
+            "role": "customer",
+            "text": "لا مو من بكره الرجال حاجز الشقة قبل اسبوع"
+        },
+        {
+            "role": "customer",
+            "text": "علمته موراضي"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "حول ياعسل"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "اسمع 👆"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هذا مايرد ولاحاسب الدفعة اش الطريقة معه"
+        },
+        {
+            "role": "customer",
+            "text": "الغينا التجديد التلقائي"
+        },
+        {
+            "role": "customer",
+            "text": "نعم"
+        },
+        {
+            "role": "customer",
+            "text": "حول التامين حق الفلبيني"
+        },
+        {
+            "role": "customer",
+            "text": "انا رايح له الان عشان اتحاسب معه"
+        },
+        {
+            "role": "customer",
+            "text": "بعطيه فرق المبلغ"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "ههههههه مزيون"
+        },
+        {
+            "role": "customer",
+            "text": "هههههههههههه بالتشهد الاخير"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "الكنق رامي \nكل عام وانتم بخير"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "متى تكون عند علي"
+        },
+        {
+            "role": "customer",
+            "text": "Transaction-Receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبي حول 500 عربون الفلبيني"
+        },
+        {
+            "role": "customer",
+            "text": "حبيبي حول عربون الفلبيني"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "ههههههه حاسبتك بفلوس العسل من اول"
+        },
+        {
+            "role": "customer",
+            "text": "بعدين نبغى نجلس ونجدد العقود كامله للمستاجرين"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "لازم نتقابل ونجدد عقود العماره بالكامل"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "الرجال يبغى الارض اللي في طيبه الفرعيه"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "شوف وقت"
+        },
+        {
+            "role": "customer",
+            "text": "متى"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "لي 22 الف"
+        },
+        {
+            "role": "customer",
+            "text": "500 تامين الفلبيني"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام الله يسعدك ابوانس"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

@@ -102,6 +102,7 @@ my-skill/agents/openai.yaml
 _misc_files/db/*
 scripts/git-hooks/
 .cursor/
+phpunit.xml
 scripts/copy-test-db.ps1
 /phpunit.local.xml
 dump.rdb

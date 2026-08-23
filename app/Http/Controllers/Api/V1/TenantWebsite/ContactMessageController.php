@@ -8,6 +8,7 @@ use App\Http\Requests\TenantWebsite\ContactMessage\StoreRequest;
 use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
 use App\Models\ContactMessage;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 
 class ContactMessageController extends Controller
 {
@@ -59,6 +60,9 @@ class ContactMessageController extends Controller
             'status' => 'active',
             'metadata' => $metadata,
         ]);
+
+        // New unread message — invalidate the dashboard badge cache immediately.
+        Cache::forget("contact_messages:unread:{$tenant->id}");
 
         ContactMessageReceived::dispatch($contactMessage);
 

@@ -32,6 +32,20 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\ProcessScheduledWaCampaigns::class,
         \App\Console\Commands\BackfillRbacNewPermissions::class,
         \App\Console\Commands\RbacHealthCheck::class,
+        \App\Console\Commands\SyncWhatsappUsersToWaNumbers::class,
+        \App\Console\Commands\ExportBotGoldenCorpus::class,
+        \App\Console\Commands\ReproduceBotKnownIssues::class,
+        \App\Console\Commands\ScanWhatsappMessagesForBotEnhancements::class,
+        \App\Console\Commands\DebugBotPropertySearch::class,
+        \App\Console\Commands\BackfillWaConversationWaNumber::class,
+        \App\Console\Commands\ResubscribeWabaToEchoes::class,
+        \App\Console\Commands\MineBotHistory::class,
+        \App\Domain\Ai\Evaluation\EvaluateBotCommand::class,
+        \App\Console\Commands\EvaluateAgentCommand::class,
+        \App\Console\Commands\RecordAgentCassettes::class,
+        \App\Console\Commands\ExportAgentCorpus::class,
+        \App\Console\Commands\ReconcileAgentDeliveries::class,
+        \App\Console\Commands\EvaluateConversationsCommand::class,
     ];
 
     /**
@@ -121,6 +135,71 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // ---------------------------------------------------------------
+        // Calling module
+        // ---------------------------------------------------------------
+        $schedule->command('calling:reconcile-calls')
+            ->everyThirtyMinutes()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        $schedule->command('calling:sync-trunks')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        $schedule->command('calling:prune-events')
+            ->daily()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        // ── WhatsApp AI Bot nightly jobs ─────────────────────────────────────
+        // Mine historical conversations for aliases and FAQ candidates (runs nightly at 02:30 KSA).
+        $schedule->command('ai:mine-history --incremental')
+            ->dailyAt('02:30')
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onOneServer();
+
+        // Export + enrich golden corpus (runs weekly on Sunday at 03:00 KSA).
+        $schedule->command('ai:export-golden-corpus --limit=1000 --include-faq-candidates --include-agent-edits')
+            ->weeklyOn(0, '03:00')
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onOneServer();
+
+        // Evaluate bot quality against the latest golden corpus (weekly on Sunday at 04:00 KSA).
+        $schedule->command('ai:evaluate-bot --fail-on-regression')
+            ->weeklyOn(0, '04:00')
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onOneServer();
+
+        // ── AI Employee v2 jobs ──────────────────────────────────────────────
+        // Nightly live judge: runs real conversations against live LLMs.
+        $schedule->command('ai:agent:evaluate --live')
+            ->dailyAt('03:30')
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onOneServer();
+
+        // Reconcile stuck delivery records every minute.
+        $schedule->command('ai:agent:reconcile-deliveries')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        // Export corpus weekly (Sunday 02:00) — keeps fixtures fresh.
+        $schedule->command('ai:agent:export-corpus')
+            ->weeklyOn(0, '02:00')
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onOneServer();
         $schedule->command('domains:sync-vercel-status')
             ->hourly()
             ->timezone('Asia/Riyadh')

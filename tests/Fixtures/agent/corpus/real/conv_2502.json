@@ -1,0 +1,1055 @@
+{
+    "type": "real_conversation",
+    "id": "conv_2502",
+    "tenant_id": 1587,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "I think you guys are off on Saturdays?"
+        },
+        {
+            "role": "customer",
+            "text": "31st of January 2026"
+        },
+        {
+            "role": "customer",
+            "text": "Please set a meeting on 31 Jan 2026 at 10 am"
+        },
+        {
+            "role": "customer",
+            "text": "Your company owner must also be there"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "Please share with us your office location"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "Please"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "Salam"
+        },
+        {
+            "role": "customer",
+            "text": "Omar how are you"
+        },
+        {
+            "role": "customer",
+            "text": "Please share your email address"
+        },
+        {
+            "role": "customer",
+            "text": "Is there is any company email address brother"
+        },
+        {
+            "role": "customer",
+            "text": "Because I have to send an email for meeting confirmation email"
+        },
+        {
+            "role": "customer",
+            "text": "I am waiting"
+        },
+        {
+            "role": "customer",
+            "text": "Thanks"
+        },
+        {
+            "role": "customer",
+            "text": "Salam, omar you will receive my email in few minutes for the confirmation of meeting at your office with your management on 31 Jan 2026 at 1PM"
+        },
+        {
+            "role": "customer",
+            "text": "i have sent email to this email"
+        },
+        {
+            "role": "customer",
+            "text": "Salam"
+        },
+        {
+            "role": "customer",
+            "text": "i am good and you"
+        },
+        {
+            "role": "customer",
+            "text": "yes"
+        },
+        {
+            "role": "customer",
+            "text": "will see you at your office at 1 pm"
+        },
+        {
+            "role": "customer",
+            "text": "Salam brother, there has been a slight change in the schedule. Mr. Zeeshan is currently busy in a meeting, so we would like to kindly request rescheduling the meeting to 01:30 PM"
+        },
+        {
+            "role": "customer",
+            "text": "See you at 9pm"
+        },
+        {
+            "role": "customer",
+            "text": "Salam, Thank you brother so much for having us on the dinner it was great Alhamdulillah"
+        },
+        {
+            "role": "customer",
+            "text": "right"
+        },
+        {
+            "role": "customer",
+            "text": "private entrance ground floor - 4 rooms \nregular ( middle floor ) - 3 rooms \nPenthouse - 4 rooms"
+        },
+        {
+            "role": "customer",
+            "text": "Please send me the pictures for Amlak - 10 Apartments"
+        },
+        {
+            "role": "customer",
+            "text": "and you haven't send me the price sheet for 60 studio apartments"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Building A which Mr Zeeshan visited"
+        },
+        {
+            "role": "customer",
+            "text": "A"
+        },
+        {
+            "role": "customer",
+            "text": "Ok"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Please send me the drawings"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "yes brother"
+        },
+        {
+            "role": "customer",
+            "text": "sure"
+        },
+        {
+            "role": "customer",
+            "text": "i have a person Abdul Rehman he is expert in this"
+        },
+        {
+            "role": "customer",
+            "text": "i will ask him also for you if you need any help with this"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "Salam"
+        },
+        {
+            "role": "customer",
+            "text": "Pls brother send me the pictures"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "Thank you"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "I am sorry for the delay"
+        },
+        {
+            "role": "customer",
+            "text": "I will call you as soon as I can"
+        },
+        {
+            "role": "customer",
+            "text": "Salam brother\nHow are you"
+        },
+        {
+            "role": "customer",
+            "text": "You haven't send the excel sheet ?"
+        },
+        {
+            "role": "customer",
+            "text": "I am writing it"
+        },
+        {
+            "role": "customer",
+            "text": "You will receive the detail message"
+        },
+        {
+            "role": "customer",
+            "text": "Mr. Zeeshan has shown strong interest in purchasing the entire Building A. He has requested that I meet Mr. Abu Zayad and obtain a written confirmation regarding the initial draft.\n\nAdditionally, we will require a draft Sale & Purchase Agreement between your company and Luxakari, issued on your official letterhead. This draft should include full details of the building, including:\n\nTotal number of units\n\nNumber of floors\n\nUnits per floor\n\nSize of each unit\n\nSpecifications and type of materials used\n\nApplicable warranties, including construction warranties\n\nThis document will be shared with Mr. Zeeshan for his review.\n\nPlease note that Mr. Zeeshan is seeking a competitive \/ attractive discount in case of purchasing the entire building.\n\nFurthermore, he has requested that Building A not be marketed at this stage until further notice.\n\nPlease let me know your availability so we may proceed accordingly."
+        },
+        {
+            "role": "customer",
+            "text": "or any detail you think helpful for the draft add it"
+        },
+        {
+            "role": "customer",
+            "text": "ok"
+        },
+        {
+            "role": "customer",
+            "text": "Omar location ?"
+        },
+        {
+            "role": "customer",
+            "text": "When are you coming?"
+        },
+        {
+            "role": "customer",
+            "text": "Ok 👍"
+        },
+        {
+            "role": "customer",
+            "text": "Luxakari Hospitality Group - Corporate Profile (2).pdf"
+        },
+        {
+            "role": "customer",
+            "text": "ZS Iqama_250415.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Luxakari_ CR_ 2025.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "I think it ok, but we will send it to Mr Zeeshan and see what he says, send this as an word file in the email"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "Call me"
+        },
+        {
+            "role": "customer",
+            "text": "Omar send the email to Mr. Zeeshan if he want to add anything he will let you know"
+        },
+        {
+            "role": "customer",
+            "text": "And pls cc me"
+        },
+        {
+            "role": "customer",
+            "text": "Jahanzaib@luxakari.com"
+        },
+        {
+            "role": "customer",
+            "text": "Sarhansarhan@shaikh-tech.com"
+        },
+        {
+            "role": "customer",
+            "text": "This email also add it"
+        },
+        {
+            "role": "customer",
+            "text": "Salam"
+        },
+        {
+            "role": "customer",
+            "text": "You were calling?"
+        },
+        {
+            "role": "customer",
+            "text": "And forward me the mou in the email"
+        },
+        {
+            "role": "customer",
+            "text": "Salam"
+        },
+        {
+            "role": "customer",
+            "text": "how are you"
+        },
+        {
+            "role": "customer",
+            "text": "Salam"
+        },
+        {
+            "role": "customer",
+            "text": "How are you"
+        },
+        {
+            "role": "customer",
+            "text": "Alhamdulillah good"
+        },
+        {
+            "role": "customer",
+            "text": "Omar what is the payment procedure you guys have for purchasing these units?"
+        },
+        {
+            "role": "customer",
+            "text": "We need a break down"
+        },
+        {
+            "role": "customer",
+            "text": "And one more question if we purchase the whole building from you we will pay 5 percent to the company"
+        },
+        {
+            "role": "customer",
+            "text": "And after 5 years or 10 years we want to sale it we again have to pay 5 percent govt tax"
+        },
+        {
+            "role": "customer",
+            "text": "5 % tax on the property"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 24.4826834, 39.6423279]"
+        },
+        {
+            "role": "customer",
+            "text": "Is there is any rega fee"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "Brother can you please share the complete inventory list of Amlak property do you have in excel sheet"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "This is the penthouse top floor?"
+        },
+        {
+            "role": "customer",
+            "text": "Omar i am sorry to text you late"
+        },
+        {
+            "role": "customer",
+            "text": "can you please share the drawings for Amlak 10 Project"
+        },
+        {
+            "role": "customer",
+            "text": "We are unable to see the penthouse both floors ?"
+        },
+        {
+            "role": "customer",
+            "text": "Please send me penthouse floor plans its kind of urgent"
+        },
+        {
+            "role": "customer",
+            "text": "Are you all right ?"
+        },
+        {
+            "role": "customer",
+            "text": "I am calling you since 2 days"
+        },
+        {
+            "role": "customer",
+            "text": "May Allah give you a good health Ameen"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "Omar pls takk with Ahmed about amlak 10 drawings we need the exact drawings"
+        },
+        {
+            "role": "customer",
+            "text": "Omar pls talk with Ahmed about amlak 10 drawings we need the exact drawings"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "Code"
+        },
+        {
+            "role": "customer",
+            "text": "Thank you we are done leaving"
+        },
+        {
+            "role": "customer",
+            "text": "Salam brother"
+        },
+        {
+            "role": "customer",
+            "text": "I was soo tired just woke up"
+        },
+        {
+            "role": "customer",
+            "text": "Everything all right?"
+        },
+        {
+            "role": "customer",
+            "text": "Salam brother"
+        },
+        {
+            "role": "customer",
+            "text": "how are you"
+        },
+        {
+            "role": "customer",
+            "text": "omar my phone s24 ultra went black"
+        },
+        {
+            "role": "customer",
+            "text": "do you know someone who can fix it :("
+        },
+        {
+            "role": "customer",
+            "text": "Salam"
+        },
+        {
+            "role": "customer",
+            "text": "brother"
+        },
+        {
+            "role": "customer",
+            "text": "please send me the designer number"
+        },
+        {
+            "role": "customer",
+            "text": "Brother please get the exact drawings from ahmed for amlak 8"
+        },
+        {
+            "role": "customer",
+            "text": "this is very important"
+        },
+        {
+            "role": "customer",
+            "text": "i just saw your message brother"
+        },
+        {
+            "role": "customer",
+            "text": "what does it mean \nInsurance\nLatent defects insurance covering the entire building for ten (10) years – Al-Takaful Cooperative Insurance Company."
+        },
+        {
+            "role": "customer",
+            "text": "does it cover FF&E for the entire building ?"
+        },
+        {
+            "role": "customer",
+            "text": "Salam boss"
+        },
+        {
+            "role": "customer",
+            "text": "i need help from you"
+        },
+        {
+            "role": "customer",
+            "text": "i need \" Amlak Taiba - Inventory List \" Projects"
+        },
+        {
+            "role": "customer",
+            "text": "i have to send it to Mr. Zeeshan"
+        },
+        {
+            "role": "customer",
+            "text": "Please share with me the location"
+        },
+        {
+            "role": "customer",
+            "text": "Salam brother"
+        },
+        {
+            "role": "customer",
+            "text": "I was calling you brother"
+        },
+        {
+            "role": "customer",
+            "text": "Are you sleeping"
+        },
+        {
+            "role": "customer",
+            "text": "الـ Saudi Digital ID (الهوية الرقمية السعودية) هو نظام حكومي رقمي في المملكة العربية السعودية يتيح للمواطنين والمقيمين (وفي بعض التحديثات الأخيرة حتى غير المقيمين) امتلاك نسخة رقمية من بطاقات الهوية الرسمية مثل: بطاقة الهوية الوطنية، الإقامة (الإقامة الرقمية\/الهوية الرقمية)، وغيرها، يمكن استخدامها بدلًا من الوثائق البلاستيكية في العديد من المعاملات الحكومية والخاصة عبر الإنترنت أو عبر الهاتف الذكي."
+        },
+        {
+            "role": "customer",
+            "text": "Thank you so much"
+        },
+        {
+            "role": "customer",
+            "text": "For everything brother 🥰"
+        },
+        {
+            "role": "customer",
+            "text": "Dear Mr. Omar Al Harbi, Mr. Faisal Al Harbi, and Mr. Soud,\n\nIt would be a great honor for me to host you for Iftar. I kindly request you to accept this invitation.\n\nVenue: Al Khan Restaurant\nLocation: https:\/\/maps.app.goo.gl\/3P8kC4bLfhreAv2y5\n\nDate & Time: Saturday at 5:45 PM\n\nLooking forward to your gracious presence."
+        },
+        {
+            "role": "customer",
+            "text": "Please send this to Soud and Faisal"
+        },
+        {
+            "role": "customer",
+            "text": "For what my love"
+        },
+        {
+            "role": "customer",
+            "text": "Brother what about the drawings for Amlak 8 apartments"
+        },
+        {
+            "role": "customer",
+            "text": "Two (2) penthouse units with private rooftops, each with a built-up area of 169.45 sqm, including private areas of 53.2 sqm, with a total area of 223.35 sqm per unit, Units No. (A7 & A8)."
+        },
+        {
+            "role": "customer",
+            "text": "222.65"
+        },
+        {
+            "role": "customer",
+            "text": "169.45  + 53.2"
+        },
+        {
+            "role": "customer",
+            "text": "Can you tell her to put discount on Al-Ula as well and where are the rate for ALA KHUTAH"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/my.matterport.com\/show\/?m=cJ6VBEG2xnd"
+        },
+        {
+            "role": "customer",
+            "text": "Yes"
+        },
+        {
+            "role": "customer",
+            "text": "Sure brother"
+        },
+        {
+            "role": "customer",
+            "text": "Wa alikum as salam"
+        },
+        {
+            "role": "customer",
+            "text": "I am at home"
+        },
+        {
+            "role": "customer",
+            "text": "At what time I have to be there"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "Where are you?"
+        },
+        {
+            "role": "customer",
+            "text": "Omar once you are free can you please send me the price for Amlak 11 project and also please tell how many apartments are on each floor ( Left side and Right side )"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "and please also the location"
+        },
+        {
+            "role": "customer",
+            "text": "for amlak 11"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "https:\/\/www.junaidjamshed.com\/mens\/kameez-shalwar.html"
+        },
+        {
+            "role": "customer",
+            "text": "Please select your color and style and let me know asap"
+        },
+        {
+            "role": "customer",
+            "text": "For all"
+        },
+        {
+            "role": "customer",
+            "text": "For soud, faisal and doctor"
+        },
+        {
+            "role": "customer",
+            "text": "Black ?"
+        },
+        {
+            "role": "customer",
+            "text": "OK done"
+        },
+        {
+            "role": "customer",
+            "text": "I am at Amlak 11"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "Sir, could you please propose one additional design option?\n\nIn this proposal, we would like the main office and meeting room to be located at Number 1, along with a two-seater sofa arrangement.\n\nAt Number 8, you may consider creating additional office spaces.\n\nWe would appreciate your professional input and expertise in preparing a strong second proposal for our review."
+        },
+        {
+            "role": "customer",
+            "text": "I sent to adil designer before he make this design"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "0930 ?"
+        },
+        {
+            "role": "customer",
+            "text": "Ok I will be there"
+        },
+        {
+            "role": "customer",
+            "text": "Jahanzaib - Luxakari Business Card.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "Quotation for Amlak 10 FF&E please send me"
+        },
+        {
+            "role": "customer",
+            "text": "and Quottaion for Amlak 11 FF&E you can send it to Mr. Zeeshan"
+        },
+        {
+            "role": "customer",
+            "text": "Salam Omar can you please share Amlak 11 cad drawings"
+        },
+        {
+            "role": "customer",
+            "text": "Thank you so much brother we will talk about it soon"
+        },
+        {
+            "role": "customer",
+            "text": "and please send Amlak 11 quotation to me and Mr. Zeeshan as well but before sending him the quotation just review it with me"
+        },
+        {
+            "role": "customer",
+            "text": "and have you performed your Umrah"
+        },
+        {
+            "role": "customer",
+            "text": "Omar also ask soud to revise the office design as discussed during Iftar"
+        },
+        {
+            "role": "customer",
+            "text": "Pls share the drawings for amlak 11 and cc me"
+        },
+        {
+            "role": "customer",
+            "text": "Pls send me the updated price for ziyara company"
+        },
+        {
+            "role": "customer",
+            "text": "Pls tell Soud to send you complete price for ff&e for amlak 11"
+        },
+        {
+            "role": "customer",
+            "text": "059 305 1093"
+        },
+        {
+            "role": "customer",
+            "text": "Zohaib"
+        },
+        {
+            "role": "customer",
+            "text": "For hotel"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "Salam brother how are you"
+        },
+        {
+            "role": "customer",
+            "text": "reminder to share with me the drawings for Amlak 11"
+        },
+        {
+            "role": "customer",
+            "text": "and pls also share with the Ziyara company contact details and discounts they are offering have they finalize the MoU"
+        },
+        {
+            "role": "customer",
+            "text": "As discussed in our meeting today, let’s get a detailed items quote from them on cost. How long will they take to do up the 8 units?"
+        },
+        {
+            "role": "customer",
+            "text": "Message from Mr. Zeeshan"
+        },
+        {
+            "role": "customer",
+            "text": "Hi"
+        },
+        {
+            "role": "customer",
+            "text": "Make iftar plan for Thursday"
+        },
+        {
+            "role": "customer",
+            "text": "I am sorry my guest are coming i totally forgot"
+        },
+        {
+            "role": "customer",
+            "text": "Omar pls send me the drawings for amlak 11"
+        },
+        {
+            "role": "customer",
+            "text": "I am working on the presentation for this project"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: ❤️]"
+        },
+        {
+            "role": "customer",
+            "text": "Salam Omar please share the contact detail for Ziyara company CEO"
+        },
+        {
+            "role": "customer",
+            "text": "Ok boss"
+        },
+        {
+            "role": "customer",
+            "text": "No problem"
+        },
+        {
+            "role": "customer",
+            "text": "We can make it on Saturday"
+        },
+        {
+            "role": "customer",
+            "text": "الثابتة والمتنقلة أخبر سود أن يرسل انهيار هذا الاقتباس والسيد زيشان يحتاج إلى الوصف الكامل"
+        },
+        {
+            "role": "customer",
+            "text": "متى ستشارك الاقتباس لمشروع Amlak 11 ل FF&E"
+        },
+        {
+            "role": "customer",
+            "text": "أيضا أخي يرجى مشاركة تفاصيل الاتصال لشركة Ziyara في أقرب وقت لك مع هناك CR"
+        },
+        {
+            "role": "customer",
+            "text": "Salam"
+        },
+        {
+            "role": "customer",
+            "text": "Brother"
+        },
+        {
+            "role": "customer",
+            "text": "Waiting"
+        },
+        {
+            "role": "customer",
+            "text": "Salam brother"
+        },
+        {
+            "role": "customer",
+            "text": "i am sorry i got soo sick"
+        },
+        {
+            "role": "customer",
+            "text": "i didnt even fast 😢"
+        },
+        {
+            "role": "customer",
+            "text": "we will meet Inshah Allah tonight"
+        },
+        {
+            "role": "customer",
+            "text": "Salam"
+        },
+        {
+            "role": "customer",
+            "text": "Where are you"
+        },
+        {
+            "role": "customer",
+            "text": "I called you brother"
+        },
+        {
+            "role": "customer",
+            "text": "lots of things are missing"
+        },
+        {
+            "role": "customer",
+            "text": "مواصفات.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Things Missing - Amlak 10 Project.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "i will also check tomorrow morning"
+        },
+        {
+            "role": "customer",
+            "text": "Salam brother"
+        },
+        {
+            "role": "customer",
+            "text": "can you please share with me the Ahmed number"
+        },
+        {
+            "role": "customer",
+            "text": "Omer you promise me the prices are good for Amlak 10"
+        },
+        {
+            "role": "customer",
+            "text": "today we found out for GF the price they are offering is Sar 550,000 and they send us the price Sar 590,000"
+        },
+        {
+            "role": "customer",
+            "text": "also for the penthouse there is no discount Sar 730,000 is on Rakez"
+        },
+        {
+            "role": "customer",
+            "text": "Rakez Pricing.JPG"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "Salam eid mubarak to you and to your family"
+        },
+        {
+            "role": "customer",
+            "text": "Eid Mubarak Omar🌙✨\n\nWishing you and your family a joyful and peaceful Eid. May Allah accept all your good deeds and fill your day wi happiness and blessings.\n\nMay this Eid bring peace and happiness to the whole world InshaAllah 🤲🏻\nStay Blessed Stay Safe 🥰\nJazzy"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "Hey, check out this awesome property I found on Bayut\nAmlak Tayyiba Studios (11) in Al-Qasr district\n https:\/\/www.bayut.sa\/l\/FqSHiyPq"
+        },
+        {
+            "role": "customer",
+            "text": "Discount Requested.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "Salam"
+        },
+        {
+            "role": "customer",
+            "text": "where are you ?"
+        },
+        {
+            "role": "customer",
+            "text": "i am trying to call you but no reply ?"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: revoke]"
+        },
+        {
+            "role": "customer",
+            "text": "Please ask Omar to send us an email from his company email address confirming that this project AMLAK Taiba project 10 is inside the haram boundary. Ask him to attach a screenshot of where the project is and where the haram boundary marker is."
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "salam brother"
+        },
+        {
+            "role": "customer",
+            "text": "how are you"
+        },
+        {
+            "role": "customer",
+            "text": "Please note that the attached warranty certificates within the draft agreement currently correspond to Unit A1 only.\nAdditionally, the 10-year structural warranty certificate is not include.\nAccordingly, it is recommended to request:\nThe warranty certificates for the remaining units\nThe missing structural warranty certificate (10 years)"
+        },
+        {
+            "role": "customer",
+            "text": "we didn't include these in the sales draft ?"
+        },
+        {
+            "role": "customer",
+            "text": "ZS : today please get the costing from furniture supplier for each unit so we have a firm cost"
+        },
+        {
+            "role": "customer",
+            "text": "Serviced Offices Madinah, Madinah Serviced Offices - Servcorp https:\/\/share.google\/dA4pZqyAI0edGhavy"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "This"
+        },
+        {
+            "role": "customer",
+            "text": "260329 Sale and Purchase Agreement - Amlak Taiba and Purchasers (ZS and RP) - Apt A-8 (Tower A, Project 10).docx"
+        },
+        {
+            "role": "customer",
+            "text": "Salam how are you"
+        },
+        {
+            "role": "customer",
+            "text": "Can you send me Abu ziyad number"
+        },
+        {
+            "role": "customer",
+            "text": "Sheikh wants to talk with him directly"
+        },
+        {
+            "role": "customer",
+            "text": "this"
+        },
+        {
+            "role": "customer",
+            "text": "Salam how are you ?"
+        },
+        {
+            "role": "customer",
+            "text": "This is the correct version as requested"
+        },
+        {
+            "role": "customer",
+            "text": "Dear Mr. Zeeshan,\n\nWith reference to your comments communicated through Mr. Jazzy, we confirm that a meeting was held with Abu Ziyad wherein a request was formally presented for a grace period of up to fifteen (15) days for completion of the payment transfer. In addition, upon Mr. Jazzy’s personal request, Abu Ziyad has agreed to extend a price concession in the amount of SAR 30,000, which has been duly acknowledged and accepted.\n\nPlease find attached the draft Sale Agreement for your review and consideration. You are kindly requested to examine the same and provide any comments, revisions, or reservations at your earliest convenience. Upon execution of the Agreement, we shall furnish all relevant warranties and structural documentation in line with the requirements outlined by your civil engineer.\nWe further draw your attention to the condition set by Abu Ziyad that a deposit is required by tomorrow in order to secure and reserve the property. Accordingly upon your acceptance and signing of the Sale Agreement we request you to proceed with the initial deposit without delay to avoid any risk of the property being released."
+        },
+        {
+            "role": "customer",
+            "text": "We would like to seek your professional guidance regarding the establishment of a Special Purpose Vehicle (SPV) company in the Kingdom of Saudi Arabia for a real estate investment structure.\nOur intended structure is as follows:\nOne SPV company will be established to own a single residential building.\nEight (8) individual investors will participate as shareholders in the SPV.\nEach investor will hold shares proportionate to their ownership stake in the property.\nIn this regard, we kindly request your advice on the following:\nThe complete legal procedure for establishing an SPV in Saudi Arabia under the above structure.\nThe regulatory requirements and approvals involved (including any requirements from relevant authorities such as the Ministry of Commerce or other governing bodies).\nWhether this structure is compliant with current real estate ownership laws in the Kingdom, particularly in relation to multi-investor ownership under a single entity.\nThe documentation required from each investor (local and\/or foreign investors, if applicable).\nThe estimated timeline for incorporation and readiness of the SPV.\nA detailed breakdown of all associated costs, including:\nCompany registration fees\nLegal and professional fees\nGovernment charges\nAny ongoing compliance or annual maintenance costs\nAny tax implications or Zakat considerations applicable to the SPV structure.\nYour recommendation on the most suitable legal form for such an SPV (e.g., LLC or other structure).\nWe would appreciate it if you could also advise whether a separate SPV is required per property, or if a single SPV can be structured to accommodate multiple assets in the future.\nKindly share your proposal, including your professional fees and scope of services, at your earliest convenience."
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

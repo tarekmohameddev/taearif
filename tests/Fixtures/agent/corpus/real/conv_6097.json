@@ -1,0 +1,383 @@
+{
+    "type": "real_conversation",
+    "id": "conv_6097",
+    "tenant_id": 1587,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "ممكن فديو لها"
+        },
+        {
+            "role": "customer",
+            "text": "تحت 3 غرف صح"
+        },
+        {
+            "role": "customer",
+            "text": "ومجلس مفتوح ع الصاله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا اتصلت كم مره مارد خلاص تدخل قسم النساء اشوف"
+        },
+        {
+            "role": "customer",
+            "text": "رحت البنك وانتظر كمان بنك تاني لسا اخلص واكلمك باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "الصك\nرخصة البناء \nهوية العميل \nالتعريف \nصورة سجل الاسره \nالاعفاء الضريبي \nشهادة اطلاق التيار الكهربائي\nشهادة الاشغال"
+        },
+        {
+            "role": "customer",
+            "text": "الصك ورخصة البناء احتاج"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "بشر جهزت الاوراق"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "الموقع"
+        },
+        {
+            "role": "customer",
+            "text": "موقع المكتب عشان العربون"
+        },
+        {
+            "role": "customer",
+            "text": "نصف ساعه ونكون عندك باذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "بالموقع"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "في انتظار المخطط"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "بشر"
+        },
+        {
+            "role": "customer",
+            "text": "ايش صار"
+        },
+        {
+            "role": "customer",
+            "text": "وفين المخطط"
+        },
+        {
+            "role": "customer",
+            "text": "🙄"
+        },
+        {
+            "role": "customer",
+            "text": "والمخطط😢"
+        },
+        {
+            "role": "customer",
+            "text": "الصك\nرخصة البناء \nشهادة اطلاق التيار الكهربائي\nشهادة الاشغال"
+        },
+        {
+            "role": "customer",
+            "text": "في انتظارك 😢"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "😬"
+        },
+        {
+            "role": "customer",
+            "text": "مكتوب لا يوجد"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "اها"
+        },
+        {
+            "role": "customer",
+            "text": "فهمت"
+        },
+        {
+            "role": "customer",
+            "text": "شوفه صوته مني فاهمه عليه"
+        },
+        {
+            "role": "customer",
+            "text": "وردلي بالله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هل يطلب وحودي اجيكم"
+        },
+        {
+            "role": "customer",
+            "text": "طيب طمني بالله"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله وبركاته امس طلعت نتيجه التقييم ولله الحمد"
+        },
+        {
+            "role": "customer",
+            "text": "باقي الافراغ والنقل وزي الاشياء الاسبوع القادم"
+        },
+        {
+            "role": "customer",
+            "text": "عزيزي العميل, تم اصدار نتيجة التقييم لتمويلكم العقاري رقم 660000028126 وبإمكانكم معرفة نتيجة التقييم من خلال التواصل مع الهاتف التسويقي على الرقم 8001241222 او زيارة اقرب فرع"
+        },
+        {
+            "role": "customer",
+            "text": "راجعتهم وكدا قالو ولله الحمد"
+        },
+        {
+            "role": "customer",
+            "text": "تمام باذن الله استناه يرد عليا قال اسبوع"
+        },
+        {
+            "role": "customer",
+            "text": "تم"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلك ورقة البيع وقعها عشان النقل"
+        },
+        {
+            "role": "customer",
+            "text": "نقل الملكية"
+        },
+        {
+            "role": "customer",
+            "text": "كلمني البنك"
+        },
+        {
+            "role": "customer",
+            "text": "تمام دقايق"
+        },
+        {
+            "role": "customer",
+            "text": "خيار الشرط. حديث.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "المالك يوقع هنا وارسليه لي"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام في انتظارك"
+        },
+        {
+            "role": "customer",
+            "text": "??"
+        },
+        {
+            "role": "customer",
+            "text": "والشهود"
+        },
+        {
+            "role": "customer",
+            "text": "PDF.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "انتهى كل شي باقي المالك ونقل الملكية"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله"
+        },
+        {
+            "role": "customer",
+            "text": "بشر"
+        },
+        {
+            "role": "customer",
+            "text": "نزلت المديونية بحسابي معناته تمت الامور صح"
+        },
+        {
+            "role": "customer",
+            "text": "مع الملك ممكن"
+        },
+        {
+            "role": "customer",
+            "text": "المالك"
+        },
+        {
+            "role": "customer",
+            "text": "اجيكم استلم المفتاح"
+        },
+        {
+            "role": "customer",
+            "text": "?"
+        },
+        {
+            "role": "customer",
+            "text": "رجعلي العربون"
+        },
+        {
+            "role": "customer",
+            "text": "🤣🤣🤣"
+        },
+        {
+            "role": "customer",
+            "text": "دبل"
+        },
+        {
+            "role": "customer",
+            "text": "ايوة"
+        },
+        {
+            "role": "customer",
+            "text": "الله يسعدك"
+        },
+        {
+            "role": "customer",
+            "text": "مايؤمر عدو"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "PDF.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "تقصد دي"
+        },
+        {
+            "role": "customer",
+            "text": "اجيكم باذن الله قبل 3 الظهر"
+        },
+        {
+            "role": "customer",
+            "text": "احتاج مخططات الكهرباء والسباكة عشان اعرف التوزيع"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "بالموقع انا"
+        },
+        {
+            "role": "customer",
+            "text": "اعطينا رقمه ولا شي مافي احد"
+        },
+        {
+            "role": "customer",
+            "text": "🌙 مبارك عليكم الشهر 🌙\n\nاللهم اجعلنا وإياكم\nمن صوّام رمضان وقوّامه 🤲🏻\nوممّن تقبّلت أعمالهم\n\nاللهم بارك لنا فيه،\nواكتب لنا فيه الأجر والمغفرة\nوالعتق من النار ✨"
+        },
+        {
+            "role": "customer",
+            "text": "ترا ماجاني تحويل المبلغ"
+        },
+        {
+            "role": "customer",
+            "text": "360002421639.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "مافي غيرها"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "استعلمت بس دا مافي  غيره"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ماوصل شي واليوم خميس"
+        },
+        {
+            "role": "customer",
+            "text": "??"
+        },
+        {
+            "role": "customer",
+            "text": "شكرا وصل المبلغ"
+        },
+        {
+            "role": "customer",
+            "text": "لو سمحت ابغا رقم المهندس الي اعطيته الملاحظات"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم ورحمة الله"
+        },
+        {
+            "role": "customer",
+            "text": "مداومين"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

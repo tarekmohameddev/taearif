@@ -10,6 +10,7 @@ use App\Models\Api\marketing\UserCredit;
 use App\Models\WaCampaign;
 use App\Models\WaMessageLog;
 use App\Models\WaNumber;
+use App\Models\WaTemplate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -17,7 +18,8 @@ class WaDispatcherService implements WaDispatcher
 {
     public function __construct(
         private readonly WhatsAppChannelSender $channelSender,
-        private readonly CreditService $creditService
+        private readonly CreditService $creditService,
+        private readonly WaPricingResolver $pricingResolver
     ) {}
 
     public function dispatchCampaign(int $campaignId): void
@@ -137,11 +139,24 @@ class WaDispatcherService implements WaDispatcher
         }
 
         try {
-            $result = $this->channelSender->send(
-                $waNumber,
-                $log->recipient_phone,
-                $log->message
-            );
+            $logMeta = is_array($log->meta) ? $log->meta : [];
+            $isTemplate = ! empty($logMeta['is_template']);
+
+            if ($isTemplate) {
+                $result = $this->channelSender->sendTemplate(
+                    $waNumber,
+                    $log->recipient_phone,
+                    (string) ($logMeta['template_name'] ?? ''),
+                    (string) ($logMeta['template_language'] ?? 'en'),
+                    is_array($logMeta['template_components'] ?? null) ? $logMeta['template_components'] : []
+                );
+            } else {
+                $result = $this->channelSender->send(
+                    $waNumber,
+                    $log->recipient_phone,
+                    $log->message
+                );
+            }
         } catch (ProviderSendFailedException $e) {
             $result = null;
             Log::error('WaDispatcherService: ProviderSendFailedException', [
@@ -164,9 +179,11 @@ class WaDispatcherService implements WaDispatcher
                 ]);
 
             if ($affected === 1 && $log->campaign_id !== null) {
-                $this->creditService->consumeReserved((int) $log->user_id, $creditsPerMessage, 'wa_message_log', (string) $log->id);
+                if ($creditsPerMessage > 0) {
+                    $this->creditService->consumeReserved((int) $log->user_id, $creditsPerMessage, 'wa_message_log', (string) $log->id);
+                    WaCampaign::query()->where('id', $log->campaign_id)->decrement('reserved_credits', $creditsPerMessage);
+                }
                 WaCampaign::query()->where('id', $log->campaign_id)->increment('sent_count');
-                WaCampaign::query()->where('id', $log->campaign_id)->decrement('reserved_credits', $creditsPerMessage);
             }
             return;
         }
@@ -190,16 +207,22 @@ class WaDispatcherService implements WaDispatcher
 
         if ($log->campaign_id !== null) {
             WaCampaign::query()->where('id', $log->campaign_id)->increment('failed_count');
-            $this->creditService->releaseReserved((int) $log->user_id, $creditsPerMessage, 'wa_message_log_failed', (string) $log->id);
-            WaCampaign::query()->where('id', $log->campaign_id)->decrement('reserved_credits', $creditsPerMessage);
+            if ($creditsPerMessage > 0) {
+                $this->creditService->releaseReserved((int) $log->user_id, $creditsPerMessage, 'wa_message_log_failed', (string) $log->id);
+                WaCampaign::query()->where('id', $log->campaign_id)->decrement('reserved_credits', $creditsPerMessage);
+            }
         } else {
-            $this->refundIfNeeded((int) $log->id);
+            $this->refundIfNeeded((int) $log->id, $creditsPerMessage);
         }
     }
 
-    private function refundIfNeeded(int $logId): void
+    private function refundIfNeeded(int $logId, int $creditsPerMessage = 1): void
     {
-        DB::transaction(function () use ($logId): void {
+        if ($creditsPerMessage <= 0) {
+            return;
+        }
+
+        DB::transaction(function () use ($logId, $creditsPerMessage): void {
             $log = WaMessageLog::query()
                 ->where('id', $logId)
                 ->lockForUpdate()
@@ -209,7 +232,7 @@ class WaDispatcherService implements WaDispatcher
                 return;
             }
 
-            $this->creditService->refund((int) $log->user_id, 1, 'wa_message_log', (string) $log->id);
+            $this->creditService->refund((int) $log->user_id, $creditsPerMessage, 'wa_message_log', (string) $log->id);
 
             $log->update([
                 'refund_processed_at' => now(),
@@ -240,12 +263,14 @@ class WaDispatcherService implements WaDispatcher
                 ]);
 
             if ($pendingCount > 0) {
-                $this->creditService->releaseReserved(
-                    (int) $campaign->user_id,
-                    $pendingCount * $creditsPerMessage,
-                    'wa_campaign_fail_safe',
-                    (string) $campaign->id
-                );
+                if ($creditsPerMessage > 0) {
+                    $this->creditService->releaseReserved(
+                        (int) $campaign->user_id,
+                        $pendingCount * $creditsPerMessage,
+                        'wa_campaign_fail_safe',
+                        (string) $campaign->id
+                    );
+                }
                 WaCampaign::query()->where('id', $campaign->id)->increment('failed_count', $pendingCount);
             }
 
@@ -294,10 +319,12 @@ class WaDispatcherService implements WaDispatcher
 
         if ($campaign) {
             WaCampaign::query()->where('id', $campaign->id)->increment('failed_count');
-            $this->creditService->releaseReserved((int) $log->user_id, $creditsPerMessage, 'wa_message_log_policy_failed', (string) $log->id);
-            WaCampaign::query()->where('id', $campaign->id)->decrement('reserved_credits', $creditsPerMessage);
+            if ($creditsPerMessage > 0) {
+                $this->creditService->releaseReserved((int) $log->user_id, $creditsPerMessage, 'wa_message_log_policy_failed', (string) $log->id);
+                WaCampaign::query()->where('id', $campaign->id)->decrement('reserved_credits', $creditsPerMessage);
+            }
         } else {
-            $this->refundIfNeeded((int) $log->id);
+            $this->refundIfNeeded((int) $log->id, $creditsPerMessage);
         }
 
         Log::warning('WaDispatcherService.fail_single_log_for_policy', [
@@ -313,9 +340,16 @@ class WaDispatcherService implements WaDispatcher
     {
         $meta = is_array($campaign->meta) ? $campaign->meta : [];
         if (isset($meta['credits_per_message']) && is_numeric($meta['credits_per_message'])) {
-            return max(1, (int) $meta['credits_per_message']);
+            return max(0, (int) $meta['credits_per_message']);
         }
 
-        return max(1, (int) UserCredit::getCostForMessageType('whatsapp'));
+        // Resolve by template category when the meta rate is not yet set
+        $metaCategory = null;
+        if ($campaign->template_id) {
+            $template = WaTemplate::query()->find((int) $campaign->template_id);
+            $metaCategory = $template?->category;
+        }
+
+        return max(0, $this->pricingResolver->creditsForTemplateCategory($metaCategory));
     }
 }

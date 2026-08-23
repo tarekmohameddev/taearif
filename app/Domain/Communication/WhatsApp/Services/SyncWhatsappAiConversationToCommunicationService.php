@@ -18,6 +18,7 @@ class SyncWhatsappAiConversationToCommunicationService
     public function __construct(
         private readonly CommunicationService $communicationService,
         private readonly WhatsAppWebhookService $webhookService,
+        private readonly SyncWhatsappUserToWaNumberService $syncWaNumber,
     ) {}
 
     /**
@@ -50,6 +51,8 @@ class SyncWhatsappAiConversationToCommunicationService
 
         $meta = [
             'source' => 'whatsapp_ai_webhook',
+            'from' => $externalParty,
+            'customer_phone' => $externalParty,
             'whatsapp_ai_conversation_id' => (int) $aiConversation->id,
             'whatsapp_ai_message_id' => (int) $aiMessage->id,
             'whatsapp_message_type' => (string) $aiMessage->message_type,
@@ -58,6 +61,14 @@ class SyncWhatsappAiConversationToCommunicationService
         ];
         if ($waNumberId !== null) {
             $meta['wa_number_id'] = $waNumberId;
+        }
+        if (is_array($webhookMetadata)) {
+            if (! empty($webhookMetadata['phone_number_id'])) {
+                $meta['phone_number_id'] = (string) $webhookMetadata['phone_number_id'];
+            }
+            if (! empty($webhookMetadata['display_phone_number'])) {
+                $meta['display_phone_number'] = (string) $webhookMetadata['display_phone_number'];
+            }
         }
         $customerName = is_string($aiConversation->customer_name)
             ? trim($aiConversation->customer_name)
@@ -104,12 +115,110 @@ class SyncWhatsappAiConversationToCommunicationService
             $this->applyHistoricalTimestamps($message, Carbon::parse($aiMessage->created_at));
         }
 
-        Log::info('whatsapp_ai.communication_sync.completed', [
+        Log::debug('whatsapp_ai.communication_sync.completed', [
             'whatsapp_conversation_id' => $aiConversation->id,
             'whatsapp_message_id' => $aiMessage->id,
             'communication_message_id' => $message->id,
             'communication_conversation_id' => $message->conversation_id,
             'was_new' => $wasNew,
+            'wa_number_id' => $waNumberId,
+        ]);
+
+        return $message->fresh();
+    }
+
+    /**
+     * Mirror an outbound echo (message sent from WhatsApp Business App) into Communication v1 tables.
+     *
+     * @param  array<string, mixed>|null  $webhookMetadata  Meta webhook metadata (phone_number_id, display_phone_number)
+     */
+    public function syncOutbound(
+        WhatsappConversation $aiConversation,
+        WhatsappMessage $aiMessage,
+        ?array $webhookMetadata = null,
+    ): ?Message {
+        $userId = (int) $aiConversation->user_id;
+        if ($userId <= 0) {
+            Log::warning('whatsapp_ai.communication_sync_outbound.skipped', [
+                'reason' => 'missing_user_id',
+                'whatsapp_conversation_id' => $aiConversation->id,
+                'whatsapp_message_id' => $aiMessage->id,
+            ]);
+
+            return null;
+        }
+
+        $externalParty = $this->normalizePhone((string) $aiConversation->customer_phone);
+        $content = $this->resolveContent($aiMessage);
+        $providerMessageId = $this->resolveProviderMessageId($aiMessage);
+
+        $waNumberId = $this->resolveWaNumberId($aiConversation, $webhookMetadata);
+
+        $meta = [
+            'source' => 'whatsapp_echo',
+            'whatsapp_ai_conversation_id' => (int) $aiConversation->id,
+            'whatsapp_ai_message_id' => (int) $aiMessage->id,
+            'whatsapp_message_type' => (string) $aiMessage->message_type,
+            'media_url' => $aiMessage->media_url,
+            'raw_payload' => $aiMessage->raw_payload,
+        ];
+        if ($waNumberId !== null) {
+            $meta['wa_number_id'] = $waNumberId;
+        }
+        if (is_array($webhookMetadata)) {
+            if (! empty($webhookMetadata['phone_number_id'])) {
+                $meta['phone_number_id'] = (string) $webhookMetadata['phone_number_id'];
+            }
+            if (! empty($webhookMetadata['display_phone_number'])) {
+                $meta['display_phone_number'] = (string) $webhookMetadata['display_phone_number'];
+            }
+        }
+
+        // Check if message already exists (e.g., sent via API)
+        $existing = Message::query()
+            ->where('user_id', $userId)
+            ->where('provider_message_id', $providerMessageId)
+            ->first();
+
+        if ($existing !== null) {
+            Log::debug('whatsapp_ai.communication_sync_outbound.already_exists', [
+                'whatsapp_conversation_id' => $aiConversation->id,
+                'whatsapp_message_id' => $aiMessage->id,
+                'existing_message_id' => $existing->id,
+            ]);
+
+            return $existing;
+        }
+
+        $message = $this->communicationService->recordOutboundFromEcho(
+            $userId,
+            $externalParty,
+            $content,
+            'whatsapp',
+            $providerMessageId,
+            $meta,
+            $aiMessage->created_at ? Carbon::parse($aiMessage->created_at) : null,
+        );
+
+        if ($message === null) {
+            Log::warning('whatsapp_ai.communication_sync_outbound.failed', [
+                'whatsapp_conversation_id' => $aiConversation->id,
+                'whatsapp_message_id' => $aiMessage->id,
+                'user_id' => $userId,
+            ]);
+
+            return null;
+        }
+
+        if ($aiMessage->created_at !== null) {
+            $this->applyHistoricalTimestamps($message, Carbon::parse($aiMessage->created_at));
+        }
+
+        Log::debug('whatsapp_ai.communication_sync_outbound.completed', [
+            'whatsapp_conversation_id' => $aiConversation->id,
+            'whatsapp_message_id' => $aiMessage->id,
+            'communication_message_id' => $message->id,
+            'communication_conversation_id' => $message->conversation_id,
             'wa_number_id' => $waNumberId,
         ]);
 
@@ -138,14 +247,11 @@ class SyncWhatsappAiConversationToCommunicationService
             'display_phone_number' => $webhookMetadata['display_phone_number'] ?? null,
         ], 'meta');
 
-        if ($tenant === null || (int) ($tenant['user_id'] ?? 0) !== $userId) {
-            return null;
-        }
-
-        $waNumberId = (int) ($tenant['wa_number_id'] ?? 0);
-
-        if ($waNumberId > 0) {
-            return $waNumberId;
+        if ($tenant !== null && (int) ($tenant['user_id'] ?? 0) === $userId) {
+            $waNumberId = (int) ($tenant['wa_number_id'] ?? 0);
+            if ($waNumberId > 0) {
+                return $waNumberId;
+            }
         }
 
         return $this->resolveWaNumberIdFromWhatsappUser($aiConversation);
@@ -176,12 +282,26 @@ class SyncWhatsappAiConversationToCommunicationService
 
         if (! empty($whatsappUser->number)) {
             $normalized = $this->normalizePhone((string) $whatsappUser->number);
+            $digits = preg_replace('/\D+/', '', $normalized) ?? '';
             $waNumber = (clone $query)
-                ->where('phone_number', $normalized)
+                ->where(function ($q) use ($normalized, $digits) {
+                    $q->where('phone_number', $normalized);
+                    if ($digits !== '') {
+                        $q->orWhereRaw(
+                            "REPLACE(REPLACE(REPLACE(REPLACE(phone_number, ' ', ''), '-', ''), '+', ''), '.', '') = ?",
+                            [$digits]
+                        );
+                    }
+                })
                 ->first();
             if ($waNumber) {
                 return (int) $waNumber->id;
             }
+        }
+
+        $synced = $this->syncWaNumber->syncQuietly($whatsappUser, 'meta');
+        if ($synced !== null && (int) $synced->user_id === (int) $aiConversation->user_id) {
+            return (int) $synced->id;
         }
 
         return null;

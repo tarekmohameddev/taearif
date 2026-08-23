@@ -1,0 +1,507 @@
+{
+    "type": "real_conversation",
+    "id": "conv_10987",
+    "tenant_id": 1732,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "سالنورارسل"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مجدي👆"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ناصر حملة التخفيض 👆"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "بدون حملة"
+        },
+        {
+            "role": "customer",
+            "text": "جهز مشهد مجدي"
+        },
+        {
+            "role": "customer",
+            "text": "الجديد"
+        },
+        {
+            "role": "customer",
+            "text": "صباح النور"
+        },
+        {
+            "role": "customer",
+            "text": "مجدي راتبه نزل وجهزت الطلب نحتاج المشهد ونبغى يوقع نرفعه تقييم"
+        },
+        {
+            "role": "customer",
+            "text": "اقرب  فرع"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه"
+        },
+        {
+            "role": "customer",
+            "text": "خله يرد عليه"
+        },
+        {
+            "role": "customer",
+            "text": "ويقولي اي فرع بيروح عشان ارسل ايميل قبل يدخل الفرع"
+        },
+        {
+            "role": "customer",
+            "text": "تمام ✔️"
+        },
+        {
+            "role": "customer",
+            "text": "ازهل"
+        },
+        {
+            "role": "customer",
+            "text": "جوال المالك احط جوالك"
+        },
+        {
+            "role": "customer",
+            "text": "وهل فيه شيك دلاله"
+        },
+        {
+            "role": "customer",
+            "text": "ارسل السجل  والكود"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Location: 16.958633422852, 42.836318969727]"
+        },
+        {
+            "role": "customer",
+            "text": "ارحب"
+        },
+        {
+            "role": "customer",
+            "text": "معايه ع الخط"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هذي مو اعتزاز"
+        },
+        {
+            "role": "customer",
+            "text": "كل المنتجات شراء وحدة من السوق"
+        },
+        {
+            "role": "customer",
+            "text": "كلها جديدة 🫡🫡"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل التقييم \nشفته الحين مو كويس الله المستعان\nبارجعه اعتراض قفل الشقة"
+        },
+        {
+            "role": "customer",
+            "text": "وخلك ع الحوال بكرة"
+        },
+        {
+            "role": "customer",
+            "text": "جاء 491,625"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "تم كلمته وجاري عمل اللازم"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "الخارطة بنفس السعر حق الوحدات الجاهزة\nالا مشاريع الوزارة بالرياض"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل المشهد قديم مرة   \nخله يدخل منصة اعتماد ويصور الشاشة"
+        },
+        {
+            "role": "customer",
+            "text": "زي كذا"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عقاري"
+        },
+        {
+            "role": "customer",
+            "text": "مع اعتزاز 776000   على نظام اعتزاز"
+        },
+        {
+            "role": "customer",
+            "text": "خارطة 2.99"
+        },
+        {
+            "role": "customer",
+            "text": "شراء المديونية"
+        },
+        {
+            "role": "customer",
+            "text": "427,500.00"
+        },
+        {
+            "role": "customer",
+            "text": "هذا التقييم من الشركة قله"
+        },
+        {
+            "role": "customer",
+            "text": "بعد التفاوت 491,625"
+        },
+        {
+            "role": "customer",
+            "text": "مررره تعبان  وايضا خطاء  يقدر يغير التقرير كامل قله ويغير السعر"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي جواله كمان باكلمه انا"
+        },
+        {
+            "role": "customer",
+            "text": "نفسه اللي عندي مارد"
+        },
+        {
+            "role": "customer",
+            "text": "رد عليك هو الليله"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "صباح الورد\nامس طلع تقييم  \nومتابعه صاحبي في الادارة اول ماتحمله الشركة بيسحبه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "متابعين لسى ماتحمل"
+        },
+        {
+            "role": "customer",
+            "text": "😰😰   530 الف"
+        },
+        {
+            "role": "customer",
+            "text": "مجدي طميحي\nالتقييم 479143\nبعد التفاوت 551014"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "النسبة : 3.65"
+        },
+        {
+            "role": "customer",
+            "text": "المدة : 220 شهر"
+        },
+        {
+            "role": "customer",
+            "text": "المبلغ : 813000   الحد الاعلى  مدعوم اعتزاز"
+        },
+        {
+            "role": "customer",
+            "text": "شراء المديونية  عرض ينتهى شهر مارس"
+        },
+        {
+            "role": "customer",
+            "text": "اموه تمام"
+        },
+        {
+            "role": "customer",
+            "text": "يسدد منها المبكر حق الراجحي والباقي ينزل بحسابه 👍"
+        },
+        {
+            "role": "customer",
+            "text": "تم الاحتساب على الراتب 9931"
+        },
+        {
+            "role": "customer",
+            "text": "الصافي بعد خصم التقاعد"
+        },
+        {
+            "role": "customer",
+            "text": "🫡🫡"
+        },
+        {
+            "role": "customer",
+            "text": "عمو زبطني معاك في طلب مجدي الي من خاطرك اذا انت اودعت حولي ربي يسعدك 🙏🏼"
+        },
+        {
+            "role": "customer",
+            "text": "تسلم وصلت وبيض الله وجهك 🙏🏼"
+        },
+        {
+            "role": "customer",
+            "text": "✔️"
+        },
+        {
+            "role": "customer",
+            "text": "فيصل التقرير هذا ناقص الالتزامات الحاليه"
+        },
+        {
+            "role": "customer",
+            "text": "ابغى اعرف كم يقسط"
+        },
+        {
+            "role": "customer",
+            "text": "كمان عنده بنك التسليف اعتقد كافل"
+        },
+        {
+            "role": "customer",
+            "text": "مدعوم من غير اعتزاز صح"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عنده تسليف"
+        },
+        {
+            "role": "customer",
+            "text": "1000"
+        },
+        {
+            "role": "customer",
+            "text": "ايه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مايخصم بس مسجل في سما"
+        },
+        {
+            "role": "customer",
+            "text": "سداده 37000"
+        },
+        {
+            "role": "customer",
+            "text": "مافيه خلاف"
+        },
+        {
+            "role": "customer",
+            "text": "هذي الحسبه"
+        },
+        {
+            "role": "customer",
+            "text": "على 254 شهر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "بنداوم 2026\/03\/24"
+        },
+        {
+            "role": "customer",
+            "text": "الثلثاء لازم نرفعه ع طول الصبح"
+        },
+        {
+            "role": "customer",
+            "text": "ووقتها راح اعلمك ياثر التسليف او لا قبل نرفعه تقييم"
+        },
+        {
+            "role": "customer",
+            "text": "اهم شي عقاره تتوقع يوصل 700"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "وهذي الحسبه الافضل تنقص 3 الاف من الشيك\nوتنقص من الارباح 50 الف"
+        },
+        {
+            "role": "customer",
+            "text": "هذي الافضل 👌"
+        },
+        {
+            "role": "customer",
+            "text": "والمدة اقل"
+        },
+        {
+            "role": "customer",
+            "text": "وجعت للايميل الان \nالحملة اسمها حملة شهر مضان \nومو مسجلين تاريخ انتهاء\nاخاف تنتهي بكرة"
+        },
+        {
+            "role": "customer",
+            "text": "باكلمه ونشوف"
+        },
+        {
+            "role": "customer",
+            "text": "اخاف نتوهق تنتهي الحملة"
+        },
+        {
+            "role": "customer",
+            "text": "بشوف مديرنا"
+        },
+        {
+            "role": "customer",
+            "text": "دوبي قفلت منه هو متردد لكن اقنعته واعطيته الحسبه  697000"
+        },
+        {
+            "role": "customer",
+            "text": "بس لازم يسدد بنك التسليف 37000\nتاكدت وعندي عميل دوبي افرغت له \nماتخصم منه وينزل الراتب كامل بس مسجله في سما كالتزام وهو مقتنع وماعنده مشكله"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مساء الخيرات"
+        },
+        {
+            "role": "customer",
+            "text": "كيفك"
+        },
+        {
+            "role": "customer",
+            "text": "هذي حسبت نواف بعد تحديث النسب"
+        },
+        {
+            "role": "customer",
+            "text": "ولازم يسدد بنك التسليف"
+        },
+        {
+            "role": "customer",
+            "text": "شوف الوضع معاه 🫡"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

@@ -1,0 +1,587 @@
+{
+    "type": "real_conversation",
+    "id": "conv_11997",
+    "tenant_id": 1478,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "عليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "."
+        },
+        {
+            "role": "customer",
+            "text": "اصيل جديد.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "هوية مقيم_16-02-2026.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "شركة رواد الشرق المتكاملة الدولية المحدودة.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام"
+        },
+        {
+            "role": "customer",
+            "text": "ليش ما يجي على هذا"
+        },
+        {
+            "role": "customer",
+            "text": "زي ما قلت لك دخل رقم السجل الرئيسي"
+        },
+        {
+            "role": "customer",
+            "text": "عقد تاسيس شركة رواد الشرق النهائي.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "ظبط معك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "ولا يهمك يا غالي خذ راحتك"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "لازم اصيل الرافدين"
+        },
+        {
+            "role": "customer",
+            "text": "لا ياغالي"
+        },
+        {
+            "role": "customer",
+            "text": "اقول لك زي ما صار معنا من شهرين"
+        },
+        {
+            "role": "customer",
+            "text": "حط رقم السجل الاول بل خانه الاوله"
+        },
+        {
+            "role": "customer",
+            "text": "ولثاني الرافدين"
+        },
+        {
+            "role": "customer",
+            "text": "الحين ارسلك صوره زيه"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "20242028931.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "الحين اجيب لك الطريقه"
+        },
+        {
+            "role": "customer",
+            "text": "تمام مشت على عقد التأسيس"
+        },
+        {
+            "role": "customer",
+            "text": "عقد تاسيس شركة رواد الشرق النهائي.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "لا ياحبيبي على سجلك الثاني اصيل"
+        },
+        {
+            "role": "customer",
+            "text": "اي المستاجر وممثل المستاجر حط السجل"
+        },
+        {
+            "role": "customer",
+            "text": "الرجال قالي لحين ادخل ع نظام وعلمك الطريقه الصح"
+        },
+        {
+            "role": "customer",
+            "text": "لا حبيبي عندي اكثر من 4 سجلات"
+        },
+        {
+            "role": "customer",
+            "text": "لا عقد واحد مايصير اكثر من عقد"
+        },
+        {
+            "role": "customer",
+            "text": "👍"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هذا"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "عطيني شويات اخذ الفكرة كامله هو المعقب تبعنا  اليوم احل الموضوع"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "او اسوي وكاله وخلص"
+        },
+        {
+            "role": "customer",
+            "text": "الحين يكلمك الاخ شهاب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "سم"
+        },
+        {
+            "role": "customer",
+            "text": "خلص سوي الي يتاسب"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هلا وغلا حبيبي شوف الي يناسب معك ياحبيبي \n\nتبي نسوي الوكاله \nوابد جماعه الصلال عندي العم ابو باسل"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "رد لي خبر عشان نخلص ياغالي"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "سوي"
+        },
+        {
+            "role": "customer",
+            "text": "وكاله"
+        },
+        {
+            "role": "customer",
+            "text": "وخلص"
+        },
+        {
+            "role": "customer",
+            "text": "عندك"
+        },
+        {
+            "role": "customer",
+            "text": "حدا"
+        },
+        {
+            "role": "customer",
+            "text": "اكلمو"
+        },
+        {
+            "role": "customer",
+            "text": "اي والله تكفى"
+        },
+        {
+            "role": "customer",
+            "text": "ردلي خبر"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "كلمهم تكفى شف الطريقه"
+        },
+        {
+            "role": "customer",
+            "text": "اكلم هذا"
+        },
+        {
+            "role": "customer",
+            "text": "ولا هذا"
+        },
+        {
+            "role": "customer",
+            "text": "سم الحين اكلهم"
+        },
+        {
+            "role": "customer",
+            "text": "هذي كلمتت المكتب"
+        },
+        {
+            "role": "customer",
+            "text": "الوكله"
+        },
+        {
+            "role": "customer",
+            "text": "لمين موجها"
+        },
+        {
+            "role": "customer",
+            "text": "ارسلي الايبان"
+        },
+        {
+            "role": "customer",
+            "text": "حقكم"
+        },
+        {
+            "role": "customer",
+            "text": "احول"
+        },
+        {
+            "role": "customer",
+            "text": "لان من بنك الرياض ابغى احول"
+        },
+        {
+            "role": "customer",
+            "text": "الاسم"
+        },
+        {
+            "role": "customer",
+            "text": "في الحساب"
+        },
+        {
+            "role": "customer",
+            "text": "اش هو"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "1772658551440.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "تكفى شوف لي حل عشان العقد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "هذي بكرا ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "معقول يظبط ؟"
+        },
+        {
+            "role": "customer",
+            "text": "عشان ما نتكلف بفلوس الثانيه"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "قصدي ع تقبيل ؟"
+        },
+        {
+            "role": "customer",
+            "text": "اهم شي تظبط"
+        },
+        {
+            "role": "customer",
+            "text": "سم"
+        },
+        {
+            "role": "customer",
+            "text": "على خير ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "ما وصلك الاجار ؟"
+        },
+        {
+            "role": "customer",
+            "text": "ااي ابشز"
+        },
+        {
+            "role": "customer",
+            "text": "ااي ابشر"
+        },
+        {
+            "role": "customer",
+            "text": "ولحل الي قلت علي ؟"
+        },
+        {
+            "role": "customer",
+            "text": "يالله يارب"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام \nدقايق ويوصلك الايداع ان شاءالله"
+        },
+        {
+            "role": "customer",
+            "text": "لا"
+        },
+        {
+            "role": "customer",
+            "text": "transfer-receipt.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "لا ما وصل شي"
+        },
+        {
+            "role": "customer",
+            "text": "وصلك ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "لاحولله وبعدين مع هل قصه 😞"
+        },
+        {
+            "role": "customer",
+            "text": "شوفلي حل الله يسعدك عمي محمد"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "وبل نسبه لجدار خلص ؟"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "لم يتم تسكير الجدار"
+        },
+        {
+            "role": "customer",
+            "text": "طمن"
+        },
+        {
+            "role": "customer",
+            "text": "وش الجديد"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "عليكم السلام ورحمة الله وبركاته"
+        },
+        {
+            "role": "customer",
+            "text": "هلا والله وغلا"
+        },
+        {
+            "role": "customer",
+            "text": "هذي اخوي جي من السافر هل يومين وسوي له تفويض"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

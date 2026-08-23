@@ -1,0 +1,479 @@
+{
+    "type": "real_conversation",
+    "id": "conv_14147",
+    "tenant_id": 1243,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "يامرحبا بالامير"
+        },
+        {
+            "role": "customer",
+            "text": "عيدك مبارك وكل عام وانت بخير وسلام"
+        },
+        {
+            "role": "customer",
+            "text": "وينك مختفي ياولد"
+        },
+        {
+            "role": "customer",
+            "text": "خلينا نتقابل"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "نعم."
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "سكراب المدينة"
+        },
+        {
+            "role": "customer",
+            "text": "مقدر ب 5000 طن تقريبا"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "حوش يحتوي على تقريبا 70٪؜سكراب \n30٪؜صوالح \nكما هو موضح فالصور \nالسوم وصل 80 مليون\nالبيع قرييب في احتمال بالبيع دفعتين\nموقعه الرياض"
+        },
+        {
+            "role": "customer",
+            "text": "[Video]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        },
+        {
+            "role": "customer",
+            "text": "ايش"
+        },
+        {
+            "role": "customer",
+            "text": "صباحكم سعيد"
+        },
+        {
+            "role": "customer",
+            "text": "رامي ابو الاماني"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: unsupported]"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "وينك"
+        },
+        {
+            "role": "customer",
+            "text": "مختفي"
+        },
+        {
+            "role": "customer",
+            "text": "الحضرية تبغى زوج"
+        },
+        {
+            "role": "customer",
+            "text": "مسيار"
+        },
+        {
+            "role": "customer",
+            "text": "أنت جاهز"
+        },
+        {
+            "role": "customer",
+            "text": "تبغى مسيار"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام ورحمة الله"
+        },
+        {
+            "role": "customer",
+            "text": "اهلا رامي"
+        },
+        {
+            "role": "customer",
+            "text": "اعطيك جوالها"
+        },
+        {
+            "role": "customer",
+            "text": "واتواصل معها واتس"
+        },
+        {
+            "role": "customer",
+            "text": "ورتب الامور"
+        },
+        {
+            "role": "customer",
+            "text": "ياسلام"
+        },
+        {
+            "role": "customer",
+            "text": "على الابداع في التعليم"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: contacts]"
+        },
+        {
+            "role": "customer",
+            "text": "اسمها سمية"
+        },
+        {
+            "role": "customer",
+            "text": "لعلمك هذه تتعلق بسرعة"
+        },
+        {
+            "role": "customer",
+            "text": "خليك ثقيل"
+        },
+        {
+            "role": "customer",
+            "text": "وعاد لأتنسى الوسيط"
+        },
+        {
+            "role": "customer",
+            "text": "يبغاله حلاوة"
+        },
+        {
+            "role": "customer",
+            "text": "تمام"
+        },
+        {
+            "role": "customer",
+            "text": "علوم واخبار"
+        },
+        {
+            "role": "customer",
+            "text": "[Unsupported message type: sticker]"
+        },
+        {
+            "role": "customer",
+            "text": "[Audio message]"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}

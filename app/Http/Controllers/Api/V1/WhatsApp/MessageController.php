@@ -12,6 +12,7 @@ use App\Domain\Communication\Exceptions\UnsupportedChannelException;
 use App\Domain\Communication\Exceptions\WaNumberNotActiveException;
 use App\Domain\Communication\Exceptions\WaNumberNotFoundException;
 use App\Domain\Communication\Support\CommunicationEndpoints;
+use App\Domain\Communication\WhatsApp\Bot\HandoffService;
 use App\Domain\Communication\WhatsApp\Services\WhatsAppConversationService;
 use App\Domain\Communication\WhatsApp\Services\WhatsAppTemplateService;
 use App\Http\Controllers\Api\BaseApiController;
@@ -27,7 +28,8 @@ class MessageController extends BaseApiController
     public function __construct(
         private readonly CommunicationService $communicationService,
         private readonly WhatsAppConversationService $conversationService,
-        private readonly WhatsAppTemplateService $templateService
+        private readonly WhatsAppTemplateService $templateService,
+        private readonly HandoffService $handoffService,
     ) {}
 
     public function index(Request $request, int $id): JsonResponse
@@ -114,6 +116,13 @@ class MessageController extends BaseApiController
             return response()->json(['status' => 'error', 'code' => 'PROVIDER_SEND_FAILED', 'message' => $e->getMessage()], 502);
         }
 
+        // Human agent sent via CRM — pause the bot according to tenant config.
+        $this->handoffService->pauseAfterHumanSend(
+            (int) $state->conversation_id,
+            (int) $validated['wa_number_id'],
+            $tenantOwnerId,
+        );
+
         return $this->ok([
             'data' => [
                 'message' => [
@@ -174,6 +183,13 @@ class MessageController extends BaseApiController
         } catch (ProviderSendFailedException $e) {
             return response()->json(['status' => 'error', 'code' => 'PROVIDER_SEND_FAILED', 'message' => $e->getMessage()], 502);
         }
+
+        // Human agent sent template via CRM — pause the bot according to tenant config.
+        $this->handoffService->pauseAfterHumanSend(
+            (int) $state->conversation_id,
+            (int) $validated['wa_number_id'],
+            $tenantOwnerId,
+        );
 
         return $this->ok([
             'data' => [

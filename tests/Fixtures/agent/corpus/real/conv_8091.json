@@ -1,0 +1,459 @@
+{
+    "type": "real_conversation",
+    "id": "conv_8091",
+    "tenant_id": 1589,
+    "turns": [
+        {
+            "role": "customer",
+            "text": "وعليكم السلام"
+        },
+        {
+            "role": "customer",
+            "text": "طيب انا ما بستخدم الغاز"
+        },
+        {
+            "role": "customer",
+            "text": "مدري اذا في مجال تخفيض الاجار"
+        },
+        {
+            "role": "customer",
+            "text": "خلاص ماعندك مشكلة"
+        },
+        {
+            "role": "customer",
+            "text": "المكيفات والمطبخ بيركبهم خلال شهر ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "ماعندك مشكلة"
+        },
+        {
+            "role": "customer",
+            "text": "لو اجلنا العقد ل 6 مارس بيكون افضل"
+        },
+        {
+            "role": "customer",
+            "text": "علشان يكون نهاية اسبوع"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "اقدر اسلمهم لك بعد نهاية الدوام ؟"
+        },
+        {
+            "role": "customer",
+            "text": "الاوراق ماتقدر تحصلهم من منصة ايجار ؟"
+        },
+        {
+            "role": "customer",
+            "text": "عندي حساب بالمنصه"
+        },
+        {
+            "role": "customer",
+            "text": "بالعادة المعلومات تكون جاهزه بالمنصة برقم الهوية"
+        },
+        {
+            "role": "customer",
+            "text": "تو دخلت المنصة وكل المعلومات موجوده هناك"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه اي يطلبون بطاقة الهوية فقط"
+        },
+        {
+            "role": "customer",
+            "text": "بدون تعريف العمل وكرت العائلة"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "بس الله يعافيك عطني وقت اخلص الدوام"
+        },
+        {
+            "role": "customer",
+            "text": "وارسل لك رقم الهويه مع تعريف العمل"
+        },
+        {
+            "role": "customer",
+            "text": "رقم الهوية : 1095131239"
+        },
+        {
+            "role": "customer",
+            "text": "رقم الجوال : 0580666037"
+        },
+        {
+            "role": "customer",
+            "text": "17\/05\/1997"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "صاحب الييت رد؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "المبلغ اللي بدفعه حاليا شامل الايجار والتأمين والسعي والماء حوالي 49300 ودفعة واحده فقط"
+        },
+        {
+            "role": "customer",
+            "text": "رفع الايجار ل 50 الف غير مناسب لميزانيتي"
+        },
+        {
+            "role": "customer",
+            "text": "خصوصا اني الان بدفع الاجار دفعه وحده ولسى المطبخ والمكيفات مو راكبه وهذا جزء من التنازل من طرفي"
+        },
+        {
+            "role": "customer",
+            "text": "اقدر ازيد على ال45 الف ، 500 ريال فقط"
+        },
+        {
+            "role": "customer",
+            "text": "اقدر ازيد على الاجار 1000ريال كحد اقصى"
+        },
+        {
+            "role": "customer",
+            "text": "46500 كحل وسط"
+        },
+        {
+            "role": "customer",
+            "text": "وتوكلنا على الله"
+        },
+        {
+            "role": "customer",
+            "text": "زياده على الاتفاق السابق 1500 في الايجار"
+        },
+        {
+            "role": "customer",
+            "text": "ودفعة وحده"
+        },
+        {
+            "role": "customer",
+            "text": "طيب التأمين مره وحده"
+        },
+        {
+            "role": "customer",
+            "text": "هالزياده بالايجار بتضرني انا السنه الجايه"
+        },
+        {
+            "role": "customer",
+            "text": "وخصوصا اني بكتب بالعقد دفعه وحده"
+        },
+        {
+            "role": "customer",
+            "text": "الشقه مافيها مصعد ولا حتى مواقف مضلله"
+        },
+        {
+            "role": "customer",
+            "text": "هذي الاشياء ايضا تقلل من السعر"
+        },
+        {
+            "role": "customer",
+            "text": "طيب يخلي الايجار حقي شامل المويه"
+        },
+        {
+            "role": "customer",
+            "text": "وللمستأجرين للسنوات الجايه يقدر يخليه بنفس القيمه بدون الموية"
+        },
+        {
+            "role": "customer",
+            "text": "طيب ابشري كذا يعني يصير \nتفاصيل الايجار : \n\n46,500 الف دفعه شامل الغاز والمياه\nالتامين 1,500 في منصة ايجار \nالمكتب 2,000 شامل قيمة العقد"
+        },
+        {
+            "role": "customer",
+            "text": "كذا ماعندي اي اشكاليه"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب نقدر نضيف في العقد وقت تركيب المطبخ والمكيفات؟"
+        },
+        {
+            "role": "customer",
+            "text": "اذا ماعليك امر ترفع الطلب بإبحار"
+        },
+        {
+            "role": "customer",
+            "text": "وبحول لك نفس الوقت"
+        },
+        {
+            "role": "customer",
+            "text": "بس اذا ممكن ترفع الطلب بكره الصباح"
+        },
+        {
+            "role": "customer",
+            "text": "علشان يمدي اراجعه"
+        },
+        {
+            "role": "customer",
+            "text": "الليله مايمديني"
+        },
+        {
+            "role": "customer",
+            "text": "شكرا لتفهمك"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه اكيد بإذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "يعطيك العافيه"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم \nفي تحديث على العقد ؟"
+        },
+        {
+            "role": "customer",
+            "text": "او بترسله بكرة ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم \nفي اي تحديث ؟ علشان اقدر اعطي صاحب سكني الحالي خبر اني طالعه"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "كيف الفترة الايجاريه يوم ؟"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "هنا مكتوب يوم"
+        },
+        {
+            "role": "customer",
+            "text": "هذي مدة الايجار"
+        },
+        {
+            "role": "customer",
+            "text": "مفروض تعدل الى سنه"
+        },
+        {
+            "role": "customer",
+            "text": "اذا ممكن ترسل لي شهادة الايبان"
+        },
+        {
+            "role": "customer",
+            "text": "علشان اسوي لها سكان"
+        },
+        {
+            "role": "customer",
+            "text": "ايوه اي"
+        },
+        {
+            "role": "customer",
+            "text": "ابشر اعطيني دقايق وبحول لك"
+        },
+        {
+            "role": "customer",
+            "text": "تم التحوييييل"
+        },
+        {
+            "role": "customer",
+            "text": "حوالة صادرة داخلية\nمبلغ 2000.00 ريال\nلـ mwssh afaq aljbl llaqarat\nلحساب *8000\nفي 26-02-07 15:00"
+        },
+        {
+            "role": "customer",
+            "text": "اليوم بترسل لي العقد الاساسي ؟"
+        },
+        {
+            "role": "customer",
+            "text": "ايضا تاكدت من عقد الايجار الحالي مكتوب 264 يوم"
+        },
+        {
+            "role": "customer",
+            "text": "وليس فقط يوم"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "شكرا لك \nبس عطيني وقت اراجعه لو ماعليك امر"
+        },
+        {
+            "role": "customer",
+            "text": "المطبخ مو مكتوب بالعقد اذا مركب او لا"
+        },
+        {
+            "role": "customer",
+            "text": "[Image]"
+        },
+        {
+            "role": "customer",
+            "text": "مافي هالمعلومه"
+        },
+        {
+            "role": "customer",
+            "text": "هذا من عقدي الحالي ومكتوب"
+        },
+        {
+            "role": "customer",
+            "text": "هذا من شقتي الحاليه"
+        },
+        {
+            "role": "customer",
+            "text": "مو اللي بستاجرها"
+        },
+        {
+            "role": "customer",
+            "text": "المسوده نفسها هذي"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "تمام وافقت على العقد"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "لسى ماجاتني الموافقه اذا وافقوا عليه بلغني لو ماعليك امر"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "شكرا يعطيك العافيه"
+        },
+        {
+            "role": "customer",
+            "text": "هل في مشكلة ؟"
+        },
+        {
+            "role": "customer",
+            "text": "اوكي لان لسى ماجاتني المواققه"
+        },
+        {
+            "role": "customer",
+            "text": "وعليكم السلام"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم \nالان في ايجار الايجار يطلع لي مستحق بتاريخ 1\/3"
+        },
+        {
+            "role": "customer",
+            "text": "والدفع مو الان"
+        },
+        {
+            "role": "customer",
+            "text": "طيب"
+        },
+        {
+            "role": "customer",
+            "text": "بدفعه بكره بإذن الله"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم تم دفع الايجار عن طريق سداد"
+        },
+        {
+            "role": "customer",
+            "text": "receipt_voucher_36506531.pdf"
+        },
+        {
+            "role": "customer",
+            "text": "في حال تم تركيب المطبخ والمكيفات ممكن تعطيني خبر ؟"
+        },
+        {
+            "role": "customer",
+            "text": "تم التحويل"
+        },
+        {
+            "role": "customer",
+            "text": "اوكي لان لسى ماجاتني الموافقه"
+        },
+        {
+            "role": "customer",
+            "text": "المسوده مو نفسها هذي"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم \nكيف اقدر استلم مفاتيح الشقه ؟"
+        },
+        {
+            "role": "customer",
+            "text": "ايضا اذا ممكن تصوير فيديو للشقه بحيث اقدر اعبي نموذج التسليم"
+        },
+        {
+            "role": "customer",
+            "text": "اذا ممكن مشاركة رقم صاحب العقار"
+        },
+        {
+            "role": "customer",
+            "text": "ماعندك مشكلة"
+        },
+        {
+            "role": "customer",
+            "text": "[Reaction: 👍]"
+        },
+        {
+            "role": "customer",
+            "text": "بإذن الله \nايش النواقص ؟"
+        },
+        {
+            "role": "customer",
+            "text": "السلام عليكم \nهل في مجال تعديل تاريخ الاستلام ؟ \nحسب التاريخ اللي بتجهز فيه الشقه"
+        },
+        {
+            "role": "customer",
+            "text": "نعدل في العقد نفسه"
+        }
+    ],
+    "invariants": [
+        "no_bare_number_in_reply",
+        "no_availability_claim_on_empty_ledger"
+    ]
+}
