@@ -50,8 +50,6 @@
     </div>
 @endif
 
-@include('admin.partials.import-result', ['importResult' => session('import_result')])
-
 <div class="alert alert-secondary" role="alert">
     <div>{{ __('ملفات الوسائط (صور ومسارات) تُحفظ كمسارات/روابط فقط وتعمل على نفس الخادم أو نظام الملفات؛ لا يتم تنزيل الملفات الثنائية تلقائياً بين البيئات.') }}</div>
     <div class="mt-1">{{ __('Media files (images/paths) are stored as paths/URLs only and resolve on the same server/filesystem; binary media is not downloaded across environments.') }}</div>

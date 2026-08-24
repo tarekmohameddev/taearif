@@ -43,9 +43,10 @@ use App\Models\User\BasicSetting as UserBasicSetting;
 use App\Services\MembershipService;
 use App\Domain\User\Services\UserManagementService;
 use App\Domain\DataExport\Services\TenantDataExportService;
-use App\Domain\DataExport\Services\TenantDataImportService;
 use App\Domain\DataExport\Services\DataExportImportLogger;
+use App\Domain\DataExport\Services\TenantDataImportQueueService;
 use App\Domain\DataExport\Models\DataExportImportLog;
+use App\Domain\DataExport\Models\TenantDataImportBatch;
 
 
 class RegisterUserController extends Controller
@@ -300,7 +301,9 @@ class RegisterUserController extends Controller
 
         $pipedriveBaseUrl = rtrim((string) optional(BasicSetting::first())->pipedrive_base_url, '/');
 
-        return view('admin.register_user.details', compact('user', 'packages', 'gateways', 'memberships', 'pipedriveBaseUrl'));
+        $recentImportBatches = TenantDataImportBatch::where('owner_id', $user->id)->latest()->limit(5)->get();
+
+        return view('admin.register_user.details', compact('user', 'packages', 'gateways', 'memberships', 'pipedriveBaseUrl', 'recentImportBatches'));
     }
 
     public function dataExportImportIndex(Request $request)
@@ -371,6 +374,39 @@ class RegisterUserController extends Controller
         }
     }
 
+    public function showImportBatch(TenantDataImportBatch $batch)
+    {
+        try {
+            $admin = Auth::guard('admin')->user();
+            if ($admin) {
+                $admin->notifications()
+                    ->where('data->batch_id', $batch->id)
+                    ->whereNull('read_at')
+                    ->get()
+                    ->each->markAsRead();
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Failed to mark import batch notification as read', [
+                'batch_id' => $batch->id,
+                'message' => $e->getMessage(),
+            ]);
+        }
+
+        $batch->load(['owner.basic_setting', 'admin']);
+
+        return view('admin.register_user.import_batch', compact('batch'));
+    }
+
+    public function markNotificationsRead()
+    {
+        $admin = Auth::guard('admin')->user();
+        if ($admin) {
+            $admin->unreadNotifications->markAsRead();
+        }
+
+        return back();
+    }
+
     public function import(Request $request, $id)
     {
         $request->validate([
@@ -380,73 +416,33 @@ class RegisterUserController extends Controller
 
         try {
             $tenant = app(UserManagementService::class)->getUserById((int) $id);
+            $queueService = app(TenantDataImportQueueService::class);
+            $uploadedFile = $request->file('file');
+            $updateExisting = $request->boolean('update_existing');
 
-            $result = app(TenantDataImportService::class)
-                ->import((int) $tenant->id, $request->file('file'), $request->boolean('update_existing'));
+            $filePath = $queueService->storeUploadedFile($uploadedFile);
 
-            app(DataExportImportLogger::class)->recordImport(
+            $batch = $queueService->createBatch(
                 (int) $tenant->id,
-                $result,
-                $request->boolean('update_existing')
+                Auth::guard('admin')->id(),
+                $filePath,
+                $uploadedFile->getClientOriginalName(),
+                $updateExisting,
             );
 
-            $sheetResults = collect($result)->only([
-                'crm_settings',
-                'projects',
-                'customers',
-                'properties',
-                'requests',
+            $queueService->dispatchImport($batch);
+
+            return back()->with([
+                'success' => 'تمت جدولة الاستيراد — سيتم معالجة الملف في الخلفية.',
+                'import_batch_id' => $batch->id,
             ]);
-
-            $importedTotal = $sheetResults->sum(fn ($sheet) => (int) ($sheet['imported'] ?? 0));
-            $updatedTotal = $sheetResults->sum(fn ($sheet) => (int) ($sheet['updated'] ?? 0));
-            $skippedTotal = $sheetResults->sum(fn ($sheet) => (int) ($sheet['skipped'] ?? 0));
-
-            $hasRowErrors = $sheetResults->contains(function ($sheet) {
-                return is_array($sheet) && !empty($sheet['errors']);
-            });
-            $hasWarnings = $sheetResults->contains(function ($sheet) {
-                return is_array($sheet) && !empty($sheet['warnings']);
-            });
-
-            $summaryBits = [];
-            if ($importedTotal > 0) {
-                $summaryBits[] = "تم إنشاء {$importedTotal}";
-            }
-            if ($updatedTotal > 0) {
-                $summaryBits[] = "تم تحديث {$updatedTotal}";
-            }
-            if ($skippedTotal > 0) {
-                $summaryBits[] = "تم تخطي {$skippedTotal}";
-            }
-            $totalsText = empty($summaryBits)
-                ? 'لا توجد سجلات مستوردة.'
-                : implode('، ', $summaryBits) . '.';
-
-            if ($hasRowErrors) {
-                $successMessage = "اكتمل الاستيراد مع بعض الأخطاء — {$totalsText} راجع التفاصيل أدناه.";
-            } elseif ($hasWarnings) {
-                $successMessage = "اكتمل الاستيراد مع بعض التحذيرات — {$totalsText} راجع التفاصيل أدناه.";
-            } else {
-                $successMessage = "تم استيراد البيانات بنجاح — {$totalsText}";
-            }
-
-            return back()
-                ->with('success', $successMessage)
-                ->with('import_result', $result);
         } catch (\App\Exceptions\ResourceNotFoundException $e) {
             abort(404);
         } catch (\Throwable $e) {
-            Log::error('Tenant data import failed', [
+            Log::error('Tenant data import scheduling failed', [
                 'user_id' => $id,
                 'message' => $e->getMessage(),
             ]);
-
-            app(DataExportImportLogger::class)->recordImportFailure(
-                (int) $id,
-                $e->getMessage(),
-                $request->boolean('update_existing')
-            );
 
             return back()->with(
                 'error',

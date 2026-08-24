@@ -39,8 +39,14 @@ class DataExportImportLogger
      *
      * @param  array<string, mixed>  $result
      */
-    public function recordImport(?int $userId, array $result, bool $updateExisting): void
-    {
+    public function recordImport(
+        ?int $userId,
+        array $result,
+        bool $updateExisting,
+        ?int $adminId = null,
+        ?string $ipAddress = null,
+        ?string $userAgent = null,
+    ): void {
         $imported = $this->sumKey($result, 'imported');
         $updated = $this->sumKey($result, 'updated');
         $skipped = $this->sumKey($result, 'skipped');
@@ -65,12 +71,18 @@ class DataExportImportLogger
             'skipped_count' => $skipped,
             'message' => $result['note'] ?? null,
             'metadata' => $this->buildMetadata($result),
-        ]);
+        ], $adminId, $ipAddress, $userAgent);
     }
 
     /** Record an import that threw before producing a result. */
-    public function recordImportFailure(?int $userId, string $message, bool $updateExisting): void
-    {
+    public function recordImportFailure(
+        ?int $userId,
+        string $message,
+        bool $updateExisting,
+        ?int $adminId = null,
+        ?string $ipAddress = null,
+        ?string $userAgent = null,
+    ): void {
         $this->write([
             'operation' => DataExportImportLog::OPERATION_IMPORT,
             'user_id' => $userId,
@@ -78,19 +90,23 @@ class DataExportImportLogger
             'status' => DataExportImportLog::STATUS_FAILED,
             'update_existing' => $updateExisting,
             'message' => $message,
-        ]);
+        ], $adminId, $ipAddress, $userAgent);
     }
 
     /**
      * @param  array<string, mixed>  $attributes
      */
-    private function write(array $attributes): void
-    {
+    private function write(
+        array $attributes,
+        ?int $adminId = null,
+        ?string $ipAddress = null,
+        ?string $userAgent = null,
+    ): void {
         try {
             DataExportImportLog::create(array_merge([
-                'admin_id' => Auth::guard('admin')->id(),
-                'ip_address' => $this->request->ip(),
-                'user_agent' => substr((string) $this->request->userAgent(), 0, 1000),
+                'admin_id' => $adminId ?? Auth::guard('admin')->id(),
+                'ip_address' => $ipAddress ?? $this->request->ip(),
+                'user_agent' => substr((string) ($userAgent ?? $this->request->userAgent()), 0, 1000),
                 'created_at' => now(),
             ], $attributes));
         } catch (Throwable $e) {
