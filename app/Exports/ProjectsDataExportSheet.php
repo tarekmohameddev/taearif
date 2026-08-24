@@ -2,20 +2,23 @@
 
 namespace App\Exports;
 
+use App\Exports\Concerns\PreservesNumericStringsBinder;
 use App\Models\User\RealestateManagement\Project;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class ProjectsDataExportSheet implements FromQuery, WithChunkReading, WithHeadings, WithMapping, WithTitle, WithEvents
+class ProjectsDataExportSheet implements FromQuery, WithChunkReading, WithHeadings, WithMapping, WithTitle, WithEvents, WithCustomValueBinder
 {
     public function __construct(
         private array $allowedUserIds,
@@ -131,6 +134,14 @@ class ProjectsDataExportSheet implements FromQuery, WithChunkReading, WithHeadin
             $project->created_at?->toDateTimeString() ?? '',
             $project->updated_at?->toDateTimeString() ?? '',
         ];
+    }
+
+    /**
+     * @param  mixed  $value
+     */
+    public function bindValue(Cell $cell, $value)
+    {
+        return (new PreservesNumericStringsBinder())->bindValue($cell, $value);
     }
 
     public function registerEvents(): array

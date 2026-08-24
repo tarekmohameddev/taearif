@@ -2,17 +2,21 @@
 
 namespace App\Exports;
 
+use App\Exports\Concerns\PreservesNumericStringsBinder;
 use App\Models\ApiCustomer;
 use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
 use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class CrmCustomersExport implements FromQuery, WithHeadings, WithMapping, WithTitle, WithEvents
+class CrmCustomersExport implements FromQuery, WithHeadings, WithMapping, WithTitle, WithEvents, WithStrictNullComparison, WithCustomValueBinder
 {
     protected $userId;
     protected $filters;
@@ -104,6 +108,7 @@ class CrmCustomersExport implements FromQuery, WithHeadings, WithMapping, WithTi
             'responsible_employee_name',
             'responsible_employee_email',
             'responsible_employee_whatsapp',
+            'customers_hub_stage_id',
             'created_at',
             'updated_at',
         ];
@@ -133,6 +138,7 @@ class CrmCustomersExport implements FromQuery, WithHeadings, WithMapping, WithTi
             $employeeName,
             $employeeEmail,
             $employeeWhatsapp,
+            $customer->customers_hub_stage_id ?? '',
             $customer->created_at?->toDateTimeString() ?? '',
             $customer->updated_at?->toDateTimeString() ?? '',
         ];
@@ -141,6 +147,14 @@ class CrmCustomersExport implements FromQuery, WithHeadings, WithMapping, WithTi
     public function title(): string
     {
         return 'CRM Customers';
+    }
+
+    /**
+     * @param  mixed  $value
+     */
+    public function bindValue(Cell $cell, $value)
+    {
+        return (new PreservesNumericStringsBinder())->bindValue($cell, $value);
     }
 
     public function registerEvents(): array
@@ -168,8 +182,8 @@ class CrmCustomersExport implements FromQuery, WithHeadings, WithMapping, WithTi
 
                 $sheet->getRowDimension(1)->setRowHeight(25);
 
-                // Auto-size columns (A to R for 18 columns)
-                foreach (range('A', 'R') as $col) {
+                // Auto-size columns (A to S for 19 columns)
+                foreach (range('A', 'S') as $col) {
                     $sheet->getColumnDimension($col)->setAutoSize(true);
                 }
             },

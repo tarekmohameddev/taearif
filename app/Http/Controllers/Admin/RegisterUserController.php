@@ -43,6 +43,9 @@ use App\Models\User\BasicSetting as UserBasicSetting;
 use App\Services\MembershipService;
 use App\Domain\User\Services\UserManagementService;
 use App\Domain\DataExport\Services\TenantDataExportService;
+use App\Domain\DataExport\Services\TenantDataImportService;
+use App\Domain\DataExport\Services\DataExportImportLogger;
+use App\Domain\DataExport\Models\DataExportImportLog;
 
 
 class RegisterUserController extends Controller
@@ -300,7 +303,7 @@ class RegisterUserController extends Controller
         return view('admin.register_user.details', compact('user', 'packages', 'gateways', 'memberships', 'pipedriveBaseUrl'));
     }
 
-    public function exportIndex(Request $request)
+    public function dataExportImportIndex(Request $request)
     {
         $term = $request->term;
 
@@ -317,14 +320,175 @@ class RegisterUserController extends Controller
             ->paginate(20)
             ->appends($request->only('term'));
 
-        return view('admin.data_export.index', compact('users'));
+        return view('admin.data_export_import.index', compact('users'));
+    }
+
+    /** @deprecated Use dataExportImportIndex(); old URLs redirect via routes. */
+    public function exportIndex(Request $request)
+    {
+        return redirect()->route('admin.data-export-import.index', $request->only('term'));
+    }
+
+    /** @deprecated Use dataExportImportIndex(); old URLs redirect via routes. */
+    public function importIndex(Request $request)
+    {
+        return redirect()->route('admin.data-export-import.index', $request->only('term'));
     }
 
     public function export($id)
     {
-        $tenant = app(UserManagementService::class)->getUserById((int) $id);
+        try {
+            $tenant = app(UserManagementService::class)->getUserById((int) $id);
 
-        return app(TenantDataExportService::class)->download((int) $tenant->id);
+            $response = app(TenantDataExportService::class)->download((int) $tenant->id);
+
+            app(DataExportImportLogger::class)->recordExport(
+                (int) $tenant->id,
+                $response->getFile()->getFilename(),
+                DataExportImportLog::STATUS_SUCCESS
+            );
+
+            return $response;
+        } catch (\App\Exceptions\ResourceNotFoundException $e) {
+            abort(404);
+        } catch (\Throwable $e) {
+            Log::error('Tenant data export failed', [
+                'user_id' => $id,
+                'message' => $e->getMessage(),
+            ]);
+
+            app(DataExportImportLogger::class)->recordExport(
+                (int) $id,
+                null,
+                DataExportImportLog::STATUS_FAILED,
+                $e->getMessage()
+            );
+
+            return back()->with(
+                'error',
+                __('فشل تصدير البيانات') . ': ' . $e->getMessage()
+            );
+        }
+    }
+
+    public function import(Request $request, $id)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,zip', 'max:20480'],
+            'update_existing' => ['sometimes', 'boolean'],
+        ]);
+
+        try {
+            $tenant = app(UserManagementService::class)->getUserById((int) $id);
+
+            $result = app(TenantDataImportService::class)
+                ->import((int) $tenant->id, $request->file('file'), $request->boolean('update_existing'));
+
+            app(DataExportImportLogger::class)->recordImport(
+                (int) $tenant->id,
+                $result,
+                $request->boolean('update_existing')
+            );
+
+            $sheetResults = collect($result)->only([
+                'crm_settings',
+                'projects',
+                'customers',
+                'properties',
+                'requests',
+            ]);
+
+            $importedTotal = $sheetResults->sum(fn ($sheet) => (int) ($sheet['imported'] ?? 0));
+            $updatedTotal = $sheetResults->sum(fn ($sheet) => (int) ($sheet['updated'] ?? 0));
+            $skippedTotal = $sheetResults->sum(fn ($sheet) => (int) ($sheet['skipped'] ?? 0));
+
+            $hasRowErrors = $sheetResults->contains(function ($sheet) {
+                return is_array($sheet) && !empty($sheet['errors']);
+            });
+            $hasWarnings = $sheetResults->contains(function ($sheet) {
+                return is_array($sheet) && !empty($sheet['warnings']);
+            });
+
+            $summaryBits = [];
+            if ($importedTotal > 0) {
+                $summaryBits[] = "تم إنشاء {$importedTotal}";
+            }
+            if ($updatedTotal > 0) {
+                $summaryBits[] = "تم تحديث {$updatedTotal}";
+            }
+            if ($skippedTotal > 0) {
+                $summaryBits[] = "تم تخطي {$skippedTotal}";
+            }
+            $totalsText = empty($summaryBits)
+                ? 'لا توجد سجلات مستوردة.'
+                : implode('، ', $summaryBits) . '.';
+
+            if ($hasRowErrors) {
+                $successMessage = "اكتمل الاستيراد مع بعض الأخطاء — {$totalsText} راجع التفاصيل أدناه.";
+            } elseif ($hasWarnings) {
+                $successMessage = "اكتمل الاستيراد مع بعض التحذيرات — {$totalsText} راجع التفاصيل أدناه.";
+            } else {
+                $successMessage = "تم استيراد البيانات بنجاح — {$totalsText}";
+            }
+
+            return back()
+                ->with('success', $successMessage)
+                ->with('import_result', $result);
+        } catch (\App\Exceptions\ResourceNotFoundException $e) {
+            abort(404);
+        } catch (\Throwable $e) {
+            Log::error('Tenant data import failed', [
+                'user_id' => $id,
+                'message' => $e->getMessage(),
+            ]);
+
+            app(DataExportImportLogger::class)->recordImportFailure(
+                (int) $id,
+                $e->getMessage(),
+                $request->boolean('update_existing')
+            );
+
+            return back()->with(
+                'error',
+                __('فشل استيراد البيانات') . ': ' . $e->getMessage()
+            );
+        }
+    }
+
+    /**
+     * Audit report: who exported/imported what tenant data, and the outcome.
+     */
+    public function dataExportImportLogs(Request $request)
+    {
+        $term = $request->input('term');
+        $operation = $request->input('operation');
+        $status = $request->input('status');
+
+        $logs = DataExportImportLog::query()
+            ->with(['admin', 'user.basic_setting'])
+            ->when($operation, fn ($q, $operation) => $q->where('operation', $operation))
+            ->when($status, fn ($q, $status) => $q->where('status', $status))
+            ->when($term, function ($query, $term) {
+                $query->where(function ($q) use ($term) {
+                    $q->where('affected_username', 'like', "%$term%")
+                      ->orWhereHas('user', function ($u) use ($term) {
+                          $u->where('username', 'like', "%$term%")
+                            ->orWhere('email', 'like', "%$term%")
+                            ->orWhere('phone', 'like', "%$term%");
+                      })
+                      ->orWhereHas('admin', function ($a) use ($term) {
+                          $a->where('username', 'like', "%$term%")
+                            ->orWhere('first_name', 'like', "%$term%")
+                            ->orWhere('last_name', 'like', "%$term%")
+                            ->orWhere('email', 'like', "%$term%");
+                      });
+                });
+            })
+            ->orderByDesc('id')
+            ->paginate(20)
+            ->appends($request->only(['term', 'operation', 'status']));
+
+        return view('admin.data_export_import.logs', compact('logs', 'term', 'operation', 'status'));
     }
 
     public function store(Request $request)

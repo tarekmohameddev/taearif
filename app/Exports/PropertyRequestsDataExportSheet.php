@@ -2,19 +2,23 @@
 
 namespace App\Exports;
 
+use App\Exports\Concerns\PreservesNumericStringsBinder;
 use App\Models\Api\UserPropertyRequest;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class PropertyRequestsDataExportSheet implements FromQuery, WithChunkReading, WithHeadings, WithMapping, WithTitle, WithEvents
+class PropertyRequestsDataExportSheet implements FromQuery, WithChunkReading, WithHeadings, WithMapping, WithTitle, WithEvents, WithStrictNullComparison, WithCustomValueBinder
 {
     public function __construct(
         private int $ownerId,
@@ -181,6 +185,14 @@ class PropertyRequestsDataExportSheet implements FromQuery, WithChunkReading, Wi
             $request->created_at?->toDateTimeString() ?? '',
             $request->updated_at?->toDateTimeString() ?? '',
         ];
+    }
+
+    /**
+     * @param  mixed  $value
+     */
+    public function bindValue(Cell $cell, $value)
+    {
+        return (new PreservesNumericStringsBinder())->bindValue($cell, $value);
     }
 
     public function registerEvents(): array

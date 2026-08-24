@@ -24,6 +24,138 @@
 
    <a href="{{route('admin.register.user')}}" class="btn-md btn btn-primary ml-auto">{{ __('Back') }}</a>
 </div>
+
+<div class="row mb-3">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body d-flex flex-wrap align-items-center">
+                <button type="button" class="btn btn-primary mr-2 mb-2" data-toggle="modal"
+                    data-target="#exportModal-details">
+                    <i data-lucide="download"></i>
+                    {{ __('تصدير') }}
+                </button>
+                <button type="button" class="btn btn-secondary mr-2 mb-2" data-toggle="modal"
+                    data-target="#importModal-details">
+                    <i data-lucide="upload"></i>
+                    {{ __('استيراد') }}
+                </button>
+                <a href="{{ route('admin.data-export-import.index') }}" class="btn btn-link mb-2">
+                    {{ __('تصدير واستيراد البيانات') }}
+                </a>
+                <p class="w-100 mb-0 mt-1 text-muted small">
+                    {{ __('ملفات الوسائط تُحفظ كمسارات/روابط فقط وتعمل على نفس الخادم؛ لا يتم تنزيل الملفات الثنائية بين البيئات.') }}
+                    <br>
+                    {{ __('Media is stored as paths/URLs only and resolves on the same server; binary files are not transferred across environments.') }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ session('success') }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+@endif
+
+@if (session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ session('error') }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+@endif
+
+@if ($errors->any())
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>{{ __('خطأ في التحقق') }}</strong>
+        <ul class="mb-0 mt-2">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+@endif
+
+@include('admin.partials.import-result', ['importResult' => session('import_result')])
+
+{{-- Export confirmation modal --}}
+<div class="modal fade" id="exportModal-details" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ __('تصدير البيانات') }} — {{ $user->username }}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>{{ __('هل تريد تصدير بيانات هذا الحساب؟ سيتم تنزيل ملف Excel.') }}</p>
+                <p class="mb-0 text-muted small">
+                    {{ __('ملفات الوسائط تُصدَّر كمسارات/روابط فقط وتعمل على نفس الخادم؛ لا يتم تنزيل الملفات الثنائية تلقائياً.') }}
+                    <br>
+                    {{ __('Media is exported as paths/URLs only and works on the same server; binary files are not downloaded automatically.') }}
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('إلغاء') }}</button>
+                <a class="btn btn-primary" href="{{ route('admin.register.user.export', $user->id) }}">
+                    {{ __('تصدير') }}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Import upload modal --}}
+<div class="modal fade" id="importModal-details" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <form action="{{ route('admin.register.user.import', $user->id) }}" method="POST"
+                enctype="multipart/form-data">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ __('استيراد البيانات') }} — {{ $user->username }}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">
+                        {{ __('مسارات الوسائط في الملف تعمل فقط على نفس الخادم/نظام الملفات؛ لا يتم جلب الصور تلقائياً من بيئة أخرى.') }}
+                        <br>
+                        {{ __('Media paths in the file resolve only on the same server/filesystem; images are not fetched from another environment.') }}
+                    </p>
+                    <div class="form-group">
+                        <label>{{ __('ملف Excel') }} (.xlsx) **</label>
+                        <input type="file" name="file" class="form-control-file" accept=".xlsx" required>
+                    </div>
+                    <div class="form-group mb-0">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" name="update_existing"
+                                value="1" id="updateExisting-details">
+                            <label class="custom-control-label" for="updateExisting-details">
+                                {{ __('تحديث السجلات الموجودة') }}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('إلغاء') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('استيراد') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-md-3">
         <div class="card">
