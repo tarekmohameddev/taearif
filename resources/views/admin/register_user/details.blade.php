@@ -52,9 +52,61 @@
     </div>
 </div>
 
+@php
+    $recentImportBatches = $recentImportBatches ?? collect();
+    $importStatusBadges = [
+        'pending' => 'badge-secondary',
+        'processing' => 'badge-info',
+        'done' => 'badge-success',
+        'failed' => 'badge-danger',
+    ];
+@endphp
+<div class="row mb-3">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">{{ __('عمليات الاستيراد الأخيرة') }}</h4>
+            </div>
+            <div class="card-body py-2">
+                @if ($recentImportBatches->isEmpty())
+                    <p class="text-muted mb-0">{{ __('لا توجد عمليات استيراد بعد') }}</p>
+                @else
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                                @foreach ($recentImportBatches as $batch)
+                                    @php
+                                        $badgeClass = $importStatusBadges[$batch->status] ?? 'badge-secondary';
+                                    @endphp
+                                    <tr>
+                                        <td>
+                                            <span class="badge {{ $badgeClass }}">{{ $batch->status }}</span>
+                                        </td>
+                                        <td class="text-muted">{{ $batch->created_at->diffForHumans() }}</td>
+                                        <td class="text-right">
+                                            <a href="{{ route('admin.register.user.import-batch', $batch->id) }}">
+                                                {{ __('عرض حالة الاستيراد') }}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+
 @if (session('success'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">
         {{ session('success') }}
+        @if (session('import_batch_id'))
+            <a href="{{ route('admin.register.user.import-batch', session('import_batch_id')) }}" class="alert-link ml-2">
+                {{ __('عرض حالة الاستيراد') }}
+            </a>
+        @endif
         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
             <span aria-hidden="true">&times;</span>
         </button>
@@ -83,8 +135,6 @@
         </button>
     </div>
 @endif
-
-@include('admin.partials.import-result', ['importResult' => session('import_result')])
 
 {{-- Export confirmation modal --}}
 <div class="modal fade" id="exportModal-details" tabindex="-1" role="dialog" aria-hidden="true">

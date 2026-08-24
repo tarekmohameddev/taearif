@@ -44,6 +44,61 @@
 
         <div class="container-fluid">
             <ul class="navbar-nav topbar-nav ml-md-auto align-items-center">
+
+                {{-- Admin notifications bell --}}
+                @auth('admin')
+                    @php
+                        $adminNotificationItems = collect();
+                        $adminUnreadCount = 0;
+                        try {
+                            $adminUser = Auth::guard('admin')->user();
+                            if ($adminUser && \Illuminate\Support\Facades\Schema::hasTable('notifications')) {
+                                $adminUnreadCount = $adminUser->unreadNotifications()->count();
+                                $adminNotificationItems = $adminUser->notifications()->latest()->limit(8)->get();
+                            }
+                        } catch (\Throwable $e) {
+                            $adminNotificationItems = collect();
+                            $adminUnreadCount = 0;
+                        }
+                    @endphp
+                    <li class="nav-item dropdown hidden-caret">
+                        <a class="nav-link dropdown-toggle position-relative" data-toggle="dropdown" href="#" aria-expanded="false" title="{{ __('Notifications') }}">
+                            <i class="fas fa-bell"></i>
+                            @if ($adminUnreadCount > 0)
+                                <span class="badge badge-danger badge-counter position-absolute" style="top: 2px; right: 0; font-size: 0.65rem;">{{ $adminUnreadCount > 99 ? '99+' : $adminUnreadCount }}</span>
+                            @endif
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-right animated fadeIn" style="min-width: 320px; max-width: 380px;">
+                            <li class="dropdown-header px-3 py-2 font-weight-bold border-bottom">{{ __('Notifications') }}</li>
+                            @forelse ($adminNotificationItems as $notification)
+                                @php
+                                    $data = is_array($notification->data) ? $notification->data : [];
+                                    $itemTitle = $data['title'] ?? ($data['message'] ?? __('Notification'));
+                                    $itemUrl = $data['url'] ?? (isset($data['batch_id']) ? route('admin.register.user.import-batch', $data['batch_id']) : '#');
+                                @endphp
+                                <li>
+                                    <a class="dropdown-item py-2 {{ $notification->read_at ? '' : 'font-weight-bold' }}" href="{{ $itemUrl }}">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <span class="pr-2">{{ $itemTitle }}</span>
+                                            <small class="text-muted text-nowrap">{{ $notification->created_at?->diffForHumans() }}</small>
+                                        </div>
+                                    </a>
+                                </li>
+                            @empty
+                                <li class="dropdown-item text-muted py-3 text-center">{{ __('No notifications') }}</li>
+                            @endforelse
+                            @if ($adminNotificationItems->isNotEmpty())
+                                <li class="dropdown-divider mb-0"></li>
+                                <li class="px-3 py-2">
+                                    <form action="{{ route('admin.register.user.notifications.read-all') }}" method="POST" class="mb-0">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-link btn-block p-0">{{ __('Mark all as read') }}</button>
+                                    </form>
+                                </li>
+                            @endif
+                        </ul>
+                    </li>
+                @endauth
                 
                 {{-- Language Dropdown --}}
                 @if(isset($adminLanguages) && $adminLanguages->isNotEmpty())

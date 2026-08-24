@@ -247,6 +247,8 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::get('register/user/details/{id}', 'Admin\RegisterUserController@view')->name('register.user.view');
         Route::get('register/user/details/{id}/export', 'Admin\RegisterUserController@export')->name('register.user.export');
         Route::post('register/user/details/{id}/import', 'Admin\RegisterUserController@import')->name('register.user.import');
+        Route::get('register/user/import-batch/{batch}', 'Admin\RegisterUserController@showImportBatch')->name('register.user.import-batch');
+        Route::post('register/user/notifications/read-all', 'Admin\RegisterUserController@markNotificationsRead')->name('register.user.notifications.read-all');
         Route::get('data-export-import', 'Admin\RegisterUserController@dataExportImportIndex')->name('data-export-import.index');
         Route::get('data-export-import/logs', 'Admin\RegisterUserController@dataExportImportLogs')->name('data-export-import.logs');
         Route::get('data-export', function () {
