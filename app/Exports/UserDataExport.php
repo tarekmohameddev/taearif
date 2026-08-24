@@ -18,6 +18,8 @@ class UserDataExport implements WithMultipleSheets
             new ProjectsDataExportSheet($this->allowedUserIds),
             new CrmCustomersExport($this->ownerId, []),
             new PropertyRequestsDataExportSheet($this->ownerId),
+            new CrmSettingsExportSheet($this->ownerId), // index 4
+            new AmenitiesExportSheet($this->ownerId), // index 5
         ];
     }
 }
