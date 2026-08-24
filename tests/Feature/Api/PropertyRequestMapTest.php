@@ -140,6 +140,17 @@ class PropertyRequestMapTest extends TestCase
         ], $overrides));
     }
 
+    /**
+     * Seed occupancy that Property::saving would rewrite (rented/sold/junk).
+     * Bypass the observer so interest tests can hit the raw DB values.
+     */
+    private function seedStaleOccupancy(Property $property, array $columns): Property
+    {
+        DB::table('user_properties')->where('id', $property->id)->update($columns);
+
+        return $property->refresh();
+    }
+
     private function createRequest(User $tenant, array $overrides = []): UserPropertyRequest
     {
         $defaults = [
@@ -405,6 +416,124 @@ class PropertyRequestMapTest extends TestCase
             'property_request_id' => $requestId,
             'project_id' => $inherited->id,
         ]);
+    }
+
+    public function test_store_from_interest_normalizes_rented_purpose_to_rent(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = $this->createTenant();
+        $property = $this->createProperty($tenant);
+        $this->seedStaleOccupancy($property, [
+            'purpose' => 'rented',
+            'listing_purpose' => null,
+            'property_status' => 'available',
+        ]);
+
+        $response = $this->postJson('/api/v1/property-requests/interest', [
+            'tenant_username' => $tenant->username,
+            'property_id' => $property->id,
+            'full_name' => 'Interest Rented Purpose',
+            'phone' => '+966501112271',
+        ]);
+
+        $response->assertCreated();
+
+        $requestId = (int) $response->json('data.request_id');
+        $this->assertDatabaseHas('users_property_requests', [
+            'id' => $requestId,
+            'purpose' => 'rent',
+            'source' => 'property_interest',
+        ]);
+    }
+
+    public function test_store_from_interest_normalizes_sold_purpose_to_sale(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = $this->createTenant();
+        $property = $this->createProperty($tenant);
+        $this->seedStaleOccupancy($property, [
+            'purpose' => 'sold',
+            'listing_purpose' => null,
+            'property_status' => 'available',
+        ]);
+
+        $response = $this->postJson('/api/v1/property-requests/interest', [
+            'tenant_username' => $tenant->username,
+            'property_id' => $property->id,
+            'full_name' => 'Interest Sold Purpose',
+            'phone' => '+966501112272',
+        ]);
+
+        $response->assertCreated();
+
+        $requestId = (int) $response->json('data.request_id');
+        $this->assertDatabaseHas('users_property_requests', [
+            'id' => $requestId,
+            'purpose' => 'sale',
+            'source' => 'property_interest',
+        ]);
+    }
+
+    public function test_store_from_interest_prefers_valid_listing_purpose_over_rented(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = $this->createTenant();
+        $property = $this->createProperty($tenant);
+        $this->seedStaleOccupancy($property, [
+            'purpose' => 'rented',
+            'listing_purpose' => 'rent',
+            'property_status' => 'available',
+        ]);
+
+        $response = $this->postJson('/api/v1/property-requests/interest', [
+            'tenant_username' => $tenant->username,
+            'property_id' => $property->id,
+            'full_name' => 'Interest Listing Purpose',
+            'phone' => '+966501112273',
+        ]);
+
+        $response->assertCreated();
+
+        $requestId = (int) $response->json('data.request_id');
+        $this->assertDatabaseHas('users_property_requests', [
+            'id' => $requestId,
+            'purpose' => 'rent',
+            'source' => 'property_interest',
+        ]);
+    }
+
+    public function test_store_from_interest_stores_null_purpose_for_junk_legacy_value(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = $this->createTenant();
+        $property = $this->createProperty($tenant);
+        $this->seedStaleOccupancy($property, [
+            'purpose' => 'House',
+            'listing_purpose' => null,
+            'property_status' => 'available',
+        ]);
+
+        $response = $this->postJson('/api/v1/property-requests/interest', [
+            'tenant_username' => $tenant->username,
+            'property_id' => $property->id,
+            'full_name' => 'Interest Junk Purpose',
+            'phone' => '+966501112274',
+        ]);
+
+        $response->assertCreated();
+
+        $requestId = (int) $response->json('data.request_id');
+        $this->assertDatabaseHas('users_property_requests', [
+            'id' => $requestId,
+            'source' => 'property_interest',
+        ]);
+        $this->assertNull(
+            DB::table('users_property_requests')->where('id', $requestId)->value('purpose')
+        );
     }
 
     public function test_public_store_with_valid_project_id_persists(): void
