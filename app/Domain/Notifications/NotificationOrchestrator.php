@@ -24,8 +24,10 @@ class NotificationOrchestrator
             'tenant_user_id' => $tenantId,
             'type' => self::PROPERTY_REQUEST_CREATED,
             'category' => 'PROPERTY_REQUEST',
-            'title' => 'New property request',
-            'body' => $name !== '' ? "A new property request was submitted by {$name}." : 'A new property request was submitted.',
+            'title' => MobileNotificationCopy::t('property_request_created.title'),
+            'body' => $name !== ''
+                ? MobileNotificationCopy::t('property_request_created.body_with_name', ['name' => $name])
+                : MobileNotificationCopy::t('property_request_created.body'),
             'source_type' => 'property_request',
             'source_id' => (int) $propertyRequest->id,
             'request_id' => 'property_request_'.$propertyRequest->id,
@@ -43,8 +45,10 @@ class NotificationOrchestrator
             'tenant_user_id' => $tenantId,
             'type' => self::CONTACT_MESSAGE_CREATED,
             'category' => 'CONTACT_MESSAGE',
-            'title' => 'New contact message',
-            'body' => $name !== '' ? "A new contact message was received from {$name}." : 'A new contact message was received.',
+            'title' => MobileNotificationCopy::t('contact_message_created.title'),
+            'body' => $name !== ''
+                ? MobileNotificationCopy::t('contact_message_created.body_with_name', ['name' => $name])
+                : MobileNotificationCopy::t('contact_message_created.body'),
             'source_type' => 'contact_message',
             'source_id' => (int) $contactMessage->id,
             'request_id' => 'contact_message_'.$contactMessage->id,
