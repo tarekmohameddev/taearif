@@ -69,6 +69,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Loopback (no Yeastar) — second leg dials a SIP extension instead of PSTN
+    |--------------------------------------------------------------------------
+    |
+    | Tenant IDs in CALLING_LOOPBACK_TENANTS skip the GSM trunk and pass
+    | TAEARIF_TRUNK=<trunk_sentinel> + TAEARIF_DEST=<dest_endpoint> to AMI.
+    | Asterisk dialplan must Dial(PJSIP/${TAEARIF_DEST}) when the sentinel matches.
+    | Leave CALLING_LOOPBACK_TENANTS empty once the Yeastar device is connected.
+    */
+    'loopback' => [
+        'tenant_ids' => array_values(array_filter(array_map(
+            static fn (string $id): int => (int) trim($id),
+            explode(',', (string) env('CALLING_LOOPBACK_TENANTS', ''))
+        ), static fn (int $id): bool => $id > 0)),
+        'dest_endpoint'  => env('CALLING_LOOPBACK_DEST', 'agent_1002'),
+        'trunk_sentinel' => env('CALLING_LOOPBACK_TRUNK', 'loopback'),
+        'from_e164'      => env('CALLING_LOOPBACK_FROM', '+966500000002'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Reconcile stuck calls after this many minutes
     |--------------------------------------------------------------------------
     */
