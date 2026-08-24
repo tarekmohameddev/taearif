@@ -2,8 +2,6 @@
 
 namespace App\Domain\DataExport\Services;
 
-use App\Imports\AmenitiesImportSheet;
-use App\Imports\CrmSettingsImportSheet;
 use App\Imports\CustomersDataImportSheet;
 use App\Imports\ProjectsDataImportSheet;
 use App\Imports\PropertiesDataImportSheet;
@@ -69,8 +67,6 @@ class TenantDataImportService
                 }
 
                 $result = [
-                    'crm_settings' => $summaries['crm_settings'],
-                    'amenities' => $summaries['amenities'],
                     'projects' => $summaries['projects'],
                     'customers' => $summaries['customers'],
                     'properties' => $summaries['properties'],
@@ -97,30 +93,6 @@ class TenantDataImportService
     private function sheetPasses(): array
     {
         return [
-            [
-                'key' => 'crm_settings',
-                'index' => 4,
-                'optional' => true, // older export files won't have this sheet
-                'required_headers' => ['kind', 'name'],
-                'factory' => fn (int $ownerId, IdRemapper $remap, bool $updateExisting) => new CrmSettingsImportSheet(
-                    $ownerId,
-                    $remap,
-                    $updateExisting,
-                    self::ROW_LIMIT
-                ),
-            ],
-            [
-                'key' => 'amenities',
-                'index' => 5,
-                'optional' => true, // older export files won't have this sheet
-                'required_headers' => ['name'],
-                'factory' => fn (int $ownerId, IdRemapper $remap, bool $updateExisting) => new AmenitiesImportSheet(
-                    $ownerId,
-                    $remap,
-                    $updateExisting,
-                    self::ROW_LIMIT
-                ),
-            ],
             [
                 'key' => 'projects',
                 'index' => 1,
