@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'navbar_title' => 'Notifications',
+    'item_fallback_title' => 'Notification',
+
     'property_request_created' => [
         'title' => 'New property request',
         'body_with_name' => 'A new property request was submitted by :name.',

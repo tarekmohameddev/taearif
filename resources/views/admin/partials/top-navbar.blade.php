@@ -62,18 +62,18 @@
                         }
                     @endphp
                     <li class="nav-item dropdown hidden-caret">
-                        <a class="nav-link dropdown-toggle position-relative" data-toggle="dropdown" href="#" aria-expanded="false" title="{{ __('Notifications') }}">
+                        <a class="nav-link dropdown-toggle position-relative" data-toggle="dropdown" href="#" aria-expanded="false" title="{{ __('notifications.navbar_title') }}">
                             <i class="fas fa-bell"></i>
                             @if ($adminUnreadCount > 0)
                                 <span class="badge badge-danger badge-counter position-absolute" style="top: 2px; right: 0; font-size: 0.65rem;">{{ $adminUnreadCount > 99 ? '99+' : $adminUnreadCount }}</span>
                             @endif
                         </a>
                         <ul class="dropdown-menu dropdown-menu-right animated fadeIn" style="min-width: 320px; max-width: 380px;">
-                            <li class="dropdown-header px-3 py-2 font-weight-bold border-bottom">{{ __('Notifications') }}</li>
+                            <li class="dropdown-header px-3 py-2 font-weight-bold border-bottom">{{ __('notifications.navbar_title') }}</li>
                             @forelse ($adminNotificationItems as $notification)
                                 @php
                                     $data = is_array($notification->data) ? $notification->data : [];
-                                    $itemTitle = $data['title'] ?? ($data['message'] ?? __('Notification'));
+                                    $itemTitle = $data['title'] ?? ($data['message'] ?? __('notifications.item_fallback_title'));
                                     $itemUrl = $data['url'] ?? (isset($data['batch_id']) ? route('admin.register.user.import-batch', $data['batch_id']) : '#');
                                 @endphp
                                 <li>
