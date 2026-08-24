@@ -14,7 +14,6 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
@@ -168,9 +167,9 @@ class ProjectsDataExportSheet implements FromQuery, WithChunkReading, WithHeadin
 
                 $sheet->getRowDimension(1)->setRowHeight(25);
 
-                $lastColumn = Coordinate::stringFromColumnIndex(count($this->headings()));
-                foreach (range('A', $lastColumn) as $col) {
-                    $sheet->getColumnDimension($col)->setAutoSize(true);
+                $lastColumnIndex = count($this->headings());
+                for ($i = 1; $i <= $lastColumnIndex; $i++) {
+                    $sheet->getColumnDimensionByColumn($i)->setAutoSize(true);
                 }
             },
         ];
