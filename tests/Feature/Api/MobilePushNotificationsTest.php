@@ -138,7 +138,14 @@ class MobilePushNotificationsTest extends TestCase
             'phone' => '+966500000003',
         ])->assertCreated();
         $this->assertDatabaseHas('app_notifications', [
-            'source_id' => $public->json('data.id'), 'type' => NotificationOrchestrator::PROPERTY_REQUEST_CREATED,
+            'source_id' => $public->json('data.id'),
+            'type' => NotificationOrchestrator::PROPERTY_REQUEST_CREATED,
+            'title' => 'طلب عقار جديد',
+            'body' => 'تم إرسال طلب عقار جديد بواسطة Public Lead.',
+        ]);
+        $this->assertDatabaseMissing('app_notifications', [
+            'source_id' => $public->json('data.id'),
+            'title' => 'New property request',
         ]);
 
         if (! Schema::hasTable('user_properties')) {
@@ -154,7 +161,10 @@ class MobilePushNotificationsTest extends TestCase
             'full_name' => 'Interest Lead', 'phone' => '+966500000004',
         ])->assertCreated();
         $this->assertDatabaseHas('app_notifications', [
-            'source_id' => $interest->json('data.request_id'), 'type' => NotificationOrchestrator::PROPERTY_REQUEST_CREATED,
+            'source_id' => $interest->json('data.request_id'),
+            'type' => NotificationOrchestrator::PROPERTY_REQUEST_CREATED,
+            'title' => 'طلب عقار جديد',
+            'body' => 'تم إرسال طلب عقار جديد بواسطة Interest Lead.',
         ]);
 
         $contact = $this->postJson("/api/v1/tenant-website/{$tenant->username}/contact-messages", [
@@ -162,10 +172,28 @@ class MobilePushNotificationsTest extends TestCase
             'message' => 'Please contact me about a property.',
         ])->assertCreated();
         $this->assertDatabaseHas('app_notifications', [
-            'source_type' => 'contact_message', 'source_id' => $contact->json('data.id'),
+            'source_type' => 'contact_message',
+            'source_id' => $contact->json('data.id'),
             'request_id' => 'contact_message_'.$contact->json('data.id'),
+            'title' => 'رسالة تواصل جديدة',
+            'body' => 'تم استلام رسالة تواصل جديدة من Contact Lead.',
+        ]);
+        $this->assertDatabaseMissing('app_notifications', [
+            'source_id' => $contact->json('data.id'),
+            'title' => 'New contact message',
         ]);
         Queue::assertPushed(SendPushNotificationJob::class, 3);
+
+        Sanctum::actingAs($tenant);
+        $inbox = $this->getJson('/api/v1/notifications')->assertOk();
+        $titles = collect($inbox->json('data.items') ?? [])->pluck('title')->all();
+        $this->assertContains('طلب عقار جديد', $titles);
+        $this->assertContains('رسالة تواصل جديدة', $titles);
+        $this->assertNotContains('New property request', $titles);
+        $this->assertNotContains('New contact message', $titles);
+        $bodies = collect($inbox->json('data.items') ?? [])->pluck('body')->implode(' ');
+        $this->assertStringNotContainsString('A new property request', $bodies);
+        $this->assertStringNotContainsString('A new contact message', $bodies);
     }
 
     public function test_invalid_provider_token_is_deactivated(): void
