@@ -39,6 +39,7 @@ use App\Domain\PropertyRequests\Services\PropertyRequestMapPinResolver;
 use App\Domain\PropertyRequests\Services\PropertyRequestLinkSync;
 use App\Domain\Notifications\NotificationOrchestrator;
 use App\Http\Requests\Api\Property\MapPropertyRequestsRequest;
+use App\Services\Property\PropertyStatusSyncService;
 
 class ApiPropertyRequestController extends Controller
 {
@@ -255,7 +256,12 @@ class ApiPropertyRequestController extends Controller
             'city_id' => $cityId,
             'districts_id' => $districtsId,
             'region' => $city ? $city->name_ar : null,
-            'purpose' => $property->purpose ?? null,
+            'purpose' => PropertyStatusSyncService::resolveListingPurposeFromLegacy(
+                (in_array($property->listing_purpose, ['sale', 'rent'], true)
+                    ? $property->listing_purpose
+                    : ($property->purpose ?? null)),
+                $property->property_status ?? null
+            ),
             'source' => 'property_interest',
             'referral_source' => null,
             'is_read' => false,
