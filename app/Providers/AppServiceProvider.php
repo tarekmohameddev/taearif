@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Menu;
+use App\Domain\Admin\Models\Admin;
 use App\Models\User;
 use App\Models\Social;
 use App\Models\Language;
@@ -145,6 +146,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Relation::enforceMorphMap([
             User::class => User::class,
+            Admin::class => Admin::class,
             'message' => Message::class,
             'email_message_log' => EmailMessageLog::class,
             'sms_message_log' => SmsMessageLog::class,

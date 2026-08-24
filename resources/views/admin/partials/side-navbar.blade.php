@@ -326,6 +326,7 @@
                         class="nav-item
                     @if (request()->path() == 'admin/register/users') active
                     @elseif(request()->is('admin/register/user/details/*')) active
+                    @elseif(request()->is('admin/data-export-import*')) active
                     @elseif(request()->routeIs('admin.register.user.vcards')) active
                     @elseif (request()->routeIs('admin.register.user.changePass')) active @endif">
 
@@ -336,6 +337,7 @@
                         </a>
                         <div class="collapse @if (request()->path() == 'admin/register/users') show
                     @elseif(request()->is('admin/register/user/details/*')) show
+                    @elseif(request()->is('admin/data-export-import*')) show
                     @elseif(request()->routeIs('admin.register.user.vcards')) show
                     @elseif (request()->routeIs('admin.register.user.changePass')) show @endif"
                             id="users">
@@ -345,6 +347,18 @@
                                         <span class="sub-item">{{ __('Registered Users') }}</span>
                                     </a>
                                 </li>
+                                <li class="@if (request()->is('admin/data-export-import') || request()->is('admin/data-export') || request()->is('admin/data-import')) active @endif">
+                                    <a href="{{ Route::has('admin.data-export-import.index') ? route('admin.data-export-import.index') : url('admin/data-export-import') }}">
+                                        <span class="sub-item">{{ __('تصدير واستيراد البيانات') }}</span>
+                                    </a>
+                                </li>
+                                @if (Route::has('admin.data-export-import.logs'))
+                                    <li class="@if (request()->routeIs('admin.data-export-import.logs')) active @endif">
+                                        <a href="{{ route('admin.data-export-import.logs') }}">
+                                            <span class="sub-item">{{ __('سجل التصدير والاستيراد') }}</span>
+                                        </a>
+                                    </li>
+                                @endif
                             </ul>
                         </div>
                     </li>

@@ -41,6 +41,12 @@ use App\Http\Helpers\UserPermissionHelper;
 use PhpOffice\PhpSpreadsheet\Calculation\Web;
 use App\Models\User\BasicSetting as UserBasicSetting;
 use App\Services\MembershipService;
+use App\Domain\User\Services\UserManagementService;
+use App\Domain\DataExport\Services\TenantDataExportService;
+use App\Domain\DataExport\Services\DataExportImportLogger;
+use App\Domain\DataExport\Services\TenantDataImportQueueService;
+use App\Domain\DataExport\Models\DataExportImportLog;
+use App\Domain\DataExport\Models\TenantDataImportBatch;
 
 
 class RegisterUserController extends Controller
@@ -295,7 +301,190 @@ class RegisterUserController extends Controller
 
         $pipedriveBaseUrl = rtrim((string) optional(BasicSetting::first())->pipedrive_base_url, '/');
 
-        return view('admin.register_user.details', compact('user', 'packages', 'gateways', 'memberships', 'pipedriveBaseUrl'));
+        $recentImportBatches = TenantDataImportBatch::where('owner_id', $user->id)->latest()->limit(5)->get();
+
+        return view('admin.register_user.details', compact('user', 'packages', 'gateways', 'memberships', 'pipedriveBaseUrl', 'recentImportBatches'));
+    }
+
+    public function dataExportImportIndex(Request $request)
+    {
+        $term = $request->term;
+
+        $users = User::where('account_type', 'tenant')
+            ->with('basic_setting')
+            ->when($term, function ($query, $term) {
+                $query->where(function ($q) use ($term) {
+                    $q->where('username', 'like', "%$term%")
+                      ->orWhere('email', 'like', "%$term%")
+                      ->orWhere('phone', 'like', "%$term%");
+                });
+            })
+            ->orderByDesc('id')
+            ->paginate(20)
+            ->appends($request->only('term'));
+
+        return view('admin.data_export_import.index', compact('users'));
+    }
+
+    /** @deprecated Use dataExportImportIndex(); old URLs redirect via routes. */
+    public function exportIndex(Request $request)
+    {
+        return redirect()->route('admin.data-export-import.index', $request->only('term'));
+    }
+
+    /** @deprecated Use dataExportImportIndex(); old URLs redirect via routes. */
+    public function importIndex(Request $request)
+    {
+        return redirect()->route('admin.data-export-import.index', $request->only('term'));
+    }
+
+    public function export($id)
+    {
+        try {
+            $tenant = app(UserManagementService::class)->getUserById((int) $id);
+
+            $response = app(TenantDataExportService::class)->download((int) $tenant->id);
+
+            app(DataExportImportLogger::class)->recordExport(
+                (int) $tenant->id,
+                $response->getFile()->getFilename(),
+                DataExportImportLog::STATUS_SUCCESS
+            );
+
+            return $response;
+        } catch (\App\Exceptions\ResourceNotFoundException $e) {
+            abort(404);
+        } catch (\Throwable $e) {
+            Log::error('Tenant data export failed', [
+                'user_id' => $id,
+                'message' => $e->getMessage(),
+            ]);
+
+            app(DataExportImportLogger::class)->recordExport(
+                (int) $id,
+                null,
+                DataExportImportLog::STATUS_FAILED,
+                $e->getMessage()
+            );
+
+            return back()->with(
+                'error',
+                __('فشل تصدير البيانات') . ': ' . $e->getMessage()
+            );
+        }
+    }
+
+    public function showImportBatch(TenantDataImportBatch $batch)
+    {
+        try {
+            $admin = Auth::guard('admin')->user();
+            if ($admin) {
+                $admin->notifications()
+                    ->where('data->batch_id', $batch->id)
+                    ->whereNull('read_at')
+                    ->get()
+                    ->each->markAsRead();
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Failed to mark import batch notification as read', [
+                'batch_id' => $batch->id,
+                'message' => $e->getMessage(),
+            ]);
+        }
+
+        $batch->load(['owner.basic_setting', 'admin']);
+
+        return view('admin.register_user.import_batch', compact('batch'));
+    }
+
+    public function markNotificationsRead()
+    {
+        $admin = Auth::guard('admin')->user();
+        if ($admin) {
+            $admin->unreadNotifications->markAsRead();
+        }
+
+        return back();
+    }
+
+    public function import(Request $request, $id)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,zip', 'max:20480'],
+            'update_existing' => ['sometimes', 'boolean'],
+        ]);
+
+        try {
+            $tenant = app(UserManagementService::class)->getUserById((int) $id);
+            $queueService = app(TenantDataImportQueueService::class);
+            $uploadedFile = $request->file('file');
+            $updateExisting = $request->boolean('update_existing');
+
+            $filePath = $queueService->storeUploadedFile($uploadedFile);
+
+            $batch = $queueService->createBatch(
+                (int) $tenant->id,
+                Auth::guard('admin')->id(),
+                $filePath,
+                $uploadedFile->getClientOriginalName(),
+                $updateExisting,
+            );
+
+            $queueService->dispatchImport($batch);
+
+            return back()->with([
+                'success' => 'تمت جدولة الاستيراد — سيتم معالجة الملف في الخلفية.',
+                'import_batch_id' => $batch->id,
+            ]);
+        } catch (\App\Exceptions\ResourceNotFoundException $e) {
+            abort(404);
+        } catch (\Throwable $e) {
+            Log::error('Tenant data import scheduling failed', [
+                'user_id' => $id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return back()->with(
+                'error',
+                __('فشل استيراد البيانات') . ': ' . $e->getMessage()
+            );
+        }
+    }
+
+    /**
+     * Audit report: who exported/imported what tenant data, and the outcome.
+     */
+    public function dataExportImportLogs(Request $request)
+    {
+        $term = $request->input('term');
+        $operation = $request->input('operation');
+        $status = $request->input('status');
+
+        $logs = DataExportImportLog::query()
+            ->with(['admin', 'user.basic_setting'])
+            ->when($operation, fn ($q, $operation) => $q->where('operation', $operation))
+            ->when($status, fn ($q, $status) => $q->where('status', $status))
+            ->when($term, function ($query, $term) {
+                $query->where(function ($q) use ($term) {
+                    $q->where('affected_username', 'like', "%$term%")
+                      ->orWhereHas('user', function ($u) use ($term) {
+                          $u->where('username', 'like', "%$term%")
+                            ->orWhere('email', 'like', "%$term%")
+                            ->orWhere('phone', 'like', "%$term%");
+                      })
+                      ->orWhereHas('admin', function ($a) use ($term) {
+                          $a->where('username', 'like', "%$term%")
+                            ->orWhere('first_name', 'like', "%$term%")
+                            ->orWhere('last_name', 'like', "%$term%")
+                            ->orWhere('email', 'like', "%$term%");
+                      });
+                });
+            })
+            ->orderByDesc('id')
+            ->paginate(20)
+            ->appends($request->only(['term', 'operation', 'status']));
+
+        return view('admin.data_export_import.logs', compact('logs', 'term', 'operation', 'status'));
     }
 
     public function store(Request $request)
