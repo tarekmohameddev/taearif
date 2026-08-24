@@ -17,7 +17,7 @@ use Throwable;
  */
 class DataExportImportLogger
 {
-    private const SHEET_KEYS = ['crm_settings', 'projects', 'customers', 'properties', 'requests'];
+    private const SHEET_KEYS = ['projects', 'customers', 'properties', 'requests'];
 
     public function __construct(private Request $request) {}
 

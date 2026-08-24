@@ -9,8 +9,6 @@ use Illuminate\Notifications\Notification;
 class TenantDataImportProcessed extends Notification
 {
     private const SHEET_KEYS = [
-        'crm_settings',
-        'amenities',
         'projects',
         'customers',
         'properties',
