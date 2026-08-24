@@ -19,6 +19,7 @@ use App\Domain\CustomersHub\Services\ActionsAggregatorService;
 use App\Domain\CustomersHub\Services\CustomersHubCacheVersion;
 use App\Domain\CustomersHub\Services\CustomersHubNotificationService;
 use App\Domain\CustomersHub\Services\CustomersHubPropertyRequestNotifier;
+use App\Domain\Notifications\MobileNotificationCopy;
 use App\Domain\CustomersHub\Services\PropertyRequestDetailBuilder;
 use App\Domain\PropertyRequests\Services\PropertyRequestLocationNormalizer;
 use App\Domain\PropertyRequests\Services\PropertyRequestLinkSync;
@@ -754,8 +755,8 @@ class RequestsController extends ApiController
             $userId,
             $requestId,
             CustomersHubNotificationService::TYPE_COMPLETED,
-            'Property request completed',
-            'A property request was marked as completed',
+            MobileNotificationCopy::t('customers_hub.completed.title'),
+            MobileNotificationCopy::t('customers_hub.completed.body'),
             (int) $request->user()->id
         );
 
@@ -791,8 +792,8 @@ class RequestsController extends ApiController
             $userId,
             $requestId,
             CustomersHubNotificationService::TYPE_DISMISSED,
-            'Property request dismissed',
-            'A property request was dismissed',
+            MobileNotificationCopy::t('customers_hub.dismissed.title'),
+            MobileNotificationCopy::t('customers_hub.dismissed.body'),
             (int) $request->user()->id,
             ['reason' => $validated['reason'] ?? null]
         );
@@ -831,8 +832,8 @@ class RequestsController extends ApiController
             $userId,
             $requestId,
             CustomersHubNotificationService::TYPE_SNOOZED,
-            'Property request snoozed',
-            'A property request was snoozed',
+            MobileNotificationCopy::t('customers_hub.snoozed.title'),
+            MobileNotificationCopy::t('customers_hub.snoozed.body'),
             (int) $snoozedBy,
             [
                 'snoozedUntil' => $validated['snoozedUntil'],
@@ -1889,16 +1890,16 @@ class RequestsController extends ApiController
                     $tenantUserId,
                     $actionId,
                     CustomersHubNotificationService::TYPE_COMPLETED,
-                    'Property request completed',
-                    'A property request was marked as completed',
+                    MobileNotificationCopy::t('customers_hub.completed.title'),
+                    MobileNotificationCopy::t('customers_hub.completed.body'),
                     $actorUserId
                 ),
                 'dismiss' => $this->dispatchPropertyRequestNotificationFromAction(
                     $tenantUserId,
                     $actionId,
                     CustomersHubNotificationService::TYPE_DISMISSED,
-                    'Property request dismissed',
-                    'A property request was dismissed',
+                    MobileNotificationCopy::t('customers_hub.dismissed.title'),
+                    MobileNotificationCopy::t('customers_hub.dismissed.body'),
                     $actorUserId,
                     ['reason' => $data['reason'] ?? null]
                 ),
@@ -1906,8 +1907,8 @@ class RequestsController extends ApiController
                     $tenantUserId,
                     $actionId,
                     CustomersHubNotificationService::TYPE_SNOOZED,
-                    'Property request snoozed',
-                    'A property request was snoozed',
+                    MobileNotificationCopy::t('customers_hub.snoozed.title'),
+                    MobileNotificationCopy::t('customers_hub.snoozed.body'),
                     $actorUserId,
                     [
                         'snoozedUntil' => $data['snoozedUntil'] ?? null,
