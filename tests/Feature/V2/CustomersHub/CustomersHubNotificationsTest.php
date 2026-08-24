@@ -114,6 +114,21 @@ class CustomersHubNotificationsTest extends TestCase
         $notifier = app(CustomersHubPropertyRequestNotifier::class);
         $notifier->notifyStageChanged($tenant->id, $propertyRequestId, 'new_lead', 'follow_up', $tenant->id);
 
+        $this->assertDatabaseHas('app_notifications', [
+            'source_id' => $propertyRequestId,
+            'type' => CustomersHubNotificationService::TYPE_STAGE_CHANGED,
+            'title' => 'تم تحديث مرحلة الطلب',
+        ]);
+        $stageRow = DB::table('app_notifications')
+            ->where('source_id', $propertyRequestId)
+            ->where('type', CustomersHubNotificationService::TYPE_STAGE_CHANGED)
+            ->orderByDesc('id')
+            ->first();
+        $this->assertNotNull($stageRow);
+        $this->assertStringContainsString('تم نقل طلب', (string) $stageRow->body);
+        $this->assertStringNotContainsString('Property request stage updated', (string) $stageRow->title);
+        $this->assertStringNotContainsString('Request for', (string) $stageRow->body);
+
         Sanctum::actingAs($employee1);
         $res1 = $this->getJson('/api/v2/customers-hub/notifications/unread?sourceType=property_request');
         $res1->assertOk();
@@ -166,6 +181,14 @@ class CustomersHubNotificationsTest extends TestCase
 
         $notificationId = (int) DB::table('app_notifications')->orderByDesc('id')->value('id');
 
+        $this->assertDatabaseHas('app_notifications', [
+            'id' => $notificationId,
+            'title' => 'تحديث طلب العقار',
+        ]);
+        $updatedBody = (string) DB::table('app_notifications')->where('id', $notificationId)->value('body');
+        $this->assertStringContainsString('تم تحديث طلب', $updatedBody);
+        $this->assertStringNotContainsString('Property request updated', (string) DB::table('app_notifications')->where('id', $notificationId)->value('title'));
+
         $this->assertTrue(
             DB::table('app_notification_recipients')
                 ->where('notification_id', $notificationId)
@@ -213,7 +236,16 @@ class CustomersHubNotificationsTest extends TestCase
             'type' => CustomersHubNotificationService::TYPE_APPOINTMENT_CREATED,
             'source_type' => 'property_request',
             'source_id' => $prId,
+            'title' => 'موعد مجدول',
         ]);
+        $appointmentRow = DB::table('app_notifications')
+            ->where('source_id', $prId)
+            ->where('type', CustomersHubNotificationService::TYPE_APPOINTMENT_CREATED)
+            ->orderByDesc('id')
+            ->first();
+        $this->assertNotNull($appointmentRow);
+        $this->assertStringContainsString('تمت جدولة الموعد', (string) $appointmentRow->body);
+        $this->assertStringNotContainsString('Appointment scheduled', (string) $appointmentRow->title);
     }
 
     /** @test */
@@ -251,6 +283,11 @@ class CustomersHubNotificationsTest extends TestCase
         $this->assertDatabaseHas('app_notifications', [
             'type' => CustomersHubNotificationService::TYPE_STAGE_CHANGED,
             'source_id' => $prId,
+            'title' => 'تم تحديث مرحلة الطلب',
+        ]);
+        $this->assertDatabaseMissing('app_notifications', [
+            'source_id' => $prId,
+            'title' => 'Property request stage updated',
         ]);
     }
 
@@ -289,6 +326,15 @@ class CustomersHubNotificationsTest extends TestCase
             ->where('type', CustomersHubNotificationService::TYPE_REMINDER_DUE)
             ->whereJsonContains('payload->reminderId', $reminderId)
             ->count();
+
+        $dueRow = DB::table('app_notifications')
+            ->where('type', CustomersHubNotificationService::TYPE_REMINDER_DUE)
+            ->whereJsonContains('payload->reminderId', $reminderId)
+            ->first();
+        $this->assertNotNull($dueRow);
+        $this->assertSame('تذكير مستحق قريباً', $dueRow->title);
+        $this->assertStringContainsString('مستحق قريباً', (string) $dueRow->body);
+        $this->assertStringNotContainsString('Reminder due soon', (string) $dueRow->title);
 
         Artisan::call('customers-hub:notify-due-reminders');
         $countAfterSecond = DB::table('app_notifications')

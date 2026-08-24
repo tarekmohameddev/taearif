@@ -2,6 +2,8 @@
 
 namespace App\Domain\CustomersHub\Services;
 
+use App\Domain\Notifications\MobileNotificationCopy;
+
 /**
  * Builds and dispatches property-request notifications for Customers Hub events.
  */
@@ -25,12 +27,17 @@ class CustomersHubPropertyRequestNotifier
         }
 
         $name = $ctx->full_name ?? ('#' . $propertyRequestId);
+        $unassigned = MobileNotificationCopy::t('customers_hub.fallbacks.unassigned');
         $this->notifications->notifyPropertyRequestEvent(
             $tenantUserId,
             $propertyRequestId,
             CustomersHubNotificationService::TYPE_STAGE_CHANGED,
-            'Property request stage updated',
-            sprintf('Request for %s moved from %s to %s', $name, $oldStage ?? 'Unassigned', $newStage ?? 'Unassigned'),
+            MobileNotificationCopy::t('customers_hub.stage_updated.title'),
+            MobileNotificationCopy::t('customers_hub.stage_updated.body', [
+                'name' => $name,
+                'from' => $oldStage ?? $unassigned,
+                'to' => $newStage ?? $unassigned,
+            ]),
             [
                 'oldStage' => $oldStage,
                 'newStage' => $newStage,
@@ -53,12 +60,17 @@ class CustomersHubPropertyRequestNotifier
         }
 
         $name = $ctx->full_name ?? ('#' . $propertyRequestId);
+        $unknown = MobileNotificationCopy::t('customers_hub.fallbacks.unknown');
         $this->notifications->notifyPropertyRequestEvent(
             $tenantUserId,
             $propertyRequestId,
             CustomersHubNotificationService::TYPE_PRIORITY_CHANGED,
-            'Property request priority updated',
-            sprintf('Priority for %s changed from %s to %s', $name, $oldPriority ?? 'Unknown', $newPriority ?? 'Unknown'),
+            MobileNotificationCopy::t('customers_hub.priority_updated.title'),
+            MobileNotificationCopy::t('customers_hub.priority_updated.body', [
+                'name' => $name,
+                'from' => $oldPriority ?? $unknown,
+                'to' => $newPriority ?? $unknown,
+            ]),
             [
                 'oldPriority' => $oldPriority,
                 'newPriority' => $newPriority,
@@ -84,8 +96,11 @@ class CustomersHubPropertyRequestNotifier
             $tenantUserId,
             $propertyRequestId,
             CustomersHubNotificationService::TYPE_ASSIGNED,
-            'Property request assigned',
-            sprintf('Request for %s was assigned to employee #%d', $name, $assignedTo ?? 0),
+            MobileNotificationCopy::t('customers_hub.assigned.title'),
+            MobileNotificationCopy::t('customers_hub.assigned.body', [
+                'name' => $name,
+                'id' => $assignedTo ?? 0,
+            ]),
             ['assignedTo' => $assignedTo],
             $actorUserId,
             $ctx->customer_id !== null ? (int) $ctx->customer_id : null
@@ -138,8 +153,8 @@ class CustomersHubPropertyRequestNotifier
             $tenantUserId,
             $propertyRequestId,
             CustomersHubNotificationService::TYPE_UPDATED,
-            'Property request updated',
-            sprintf('Request for %s was updated', $name),
+            MobileNotificationCopy::t('customers_hub.updated.title'),
+            MobileNotificationCopy::t('customers_hub.updated.body', ['name' => $name]),
             ['changedFields' => $changedFields],
             $actorUserId,
             $ctx->customer_id !== null ? (int) $ctx->customer_id : null
@@ -159,13 +174,15 @@ class CustomersHubPropertyRequestNotifier
             return;
         }
 
-        $name = $ctx->full_name ?? ('#' . $propertyRequestId);
         $this->notifications->notifyPropertyRequestEvent(
             $tenantUserId,
             $propertyRequestId,
             CustomersHubNotificationService::TYPE_APPOINTMENT_CREATED,
-            'Appointment scheduled',
-            sprintf('Appointment "%s" scheduled for %s', $appointmentTitle, $name),
+            MobileNotificationCopy::t('customers_hub.appointment_scheduled.title'),
+            MobileNotificationCopy::t('customers_hub.appointment_scheduled.body', [
+                'title' => $appointmentTitle,
+                'when' => $datetime ?? '',
+            ]),
             [
                 'appointmentId' => $appointmentId,
                 'datetime' => $datetime,
@@ -193,8 +210,11 @@ class CustomersHubPropertyRequestNotifier
             $tenantUserId,
             $propertyRequestId,
             CustomersHubNotificationService::TYPE_REMINDER_CREATED,
-            'Reminder created',
-            sprintf('Reminder "%s" created for %s', $reminderTitle, $name),
+            MobileNotificationCopy::t('customers_hub.reminder_created.title'),
+            MobileNotificationCopy::t('customers_hub.reminder_created.body', [
+                'title' => $reminderTitle,
+                'name' => $name,
+            ]),
             [
                 'reminderId' => $reminderId,
                 'datetime' => $datetime,
@@ -225,17 +245,19 @@ class CustomersHubPropertyRequestNotifier
             . $reminderId . ':' . substr($datetime, 0, 16);
 
         $name = $ctx->full_name ?? ('#' . $propertyRequestId);
-        $title = $overdue ? 'Reminder overdue' : 'Reminder due soon';
-        $body = $overdue
-            ? sprintf('Reminder "%s" for %s is overdue', $reminderTitle, $name)
-            : sprintf('Reminder "%s" for %s is due soon', $reminderTitle, $name);
+        $keyPrefix = $overdue
+            ? 'customers_hub.reminder_overdue'
+            : 'customers_hub.reminder_due_soon';
 
         $this->notifications->notifyPropertyRequestEvent(
             $tenantUserId,
             $propertyRequestId,
             $type,
-            $title,
-            $body,
+            MobileNotificationCopy::t($keyPrefix.'.title'),
+            MobileNotificationCopy::t($keyPrefix.'.body', [
+                'title' => $reminderTitle,
+                'name' => $name,
+            ]),
             [
                 'reminderId' => $reminderId,
                 'datetime' => $datetime,
