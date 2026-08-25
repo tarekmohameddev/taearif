@@ -15,7 +15,7 @@ class SimLineResource extends JsonResource
             'port_index'         => $this->port_index,
             'is_active'          => $this->is_active,
             'dedicated_agent_id' => $this->user_id,
-            'trunk'              => $this->when($this->relationLoaded('trunk'), fn() => [
+            'trunk'              => $this->when($this->relationLoaded('trunk') && $this->trunk, fn() => [
                 'id'     => $this->trunk->id,
                 'name'   => $this->trunk->name,
                 'type'   => $this->trunk->type,

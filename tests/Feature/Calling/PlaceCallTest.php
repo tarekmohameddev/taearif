@@ -157,6 +157,52 @@ class PlaceCallTest extends TestCase
             ->assertJsonPath('data.0.trunk.status', 'registered');
     }
 
+    /** @test */
+    public function test_it_lists_sim_line_when_trunk_is_soft_deleted(): void
+    {
+        [$tenant, $employee, $gsmTrunk] = $this->seedCallingFixtures();
+
+        $loopbackTrunk = CallTrunk::create([
+            'tenant_id'                => $tenant->id,
+            'name'                     => 'Loopback',
+            'type'                     => 'sip',
+            'ownership'                => 'company_hosted',
+            'registration_mode'        => 'register',
+            'asterisk_endpoint_prefix' => 'loopback',
+            'status'                   => 'registered',
+        ]);
+
+        CallSimLine::create([
+            'tenant_id'         => $tenant->id,
+            'trunk_id'          => $loopbackTrunk->id,
+            'label'             => 'Loopback test',
+            'msisdn'            => '+966500000002',
+            'asterisk_endpoint' => 'loopback_' . $tenant->id,
+            'port_index'        => 2,
+            'is_active'         => true,
+        ]);
+
+        $gsmTrunk->delete();
+
+        $response = $this->actingAs($employee, 'sanctum')
+            ->getJson('/api/v1/calling/sim-lines')
+            ->assertOk();
+
+        $lines = collect($response->json('data'));
+        $this->assertCount(2, $lines);
+
+        $gsmLine = $lines->firstWhere('label', 'GSM Port 1');
+        $this->assertNotNull($gsmLine);
+        $this->assertArrayNotHasKey('trunk', $gsmLine);
+
+        $loopbackLine = $lines->firstWhere('label', 'Loopback test');
+        $this->assertNotNull($loopbackLine);
+        $this->assertSame($loopbackTrunk->id, $loopbackLine['trunk']['id']);
+        $this->assertSame('Loopback', $loopbackLine['trunk']['name']);
+        $this->assertSame('sip', $loopbackLine['trunk']['type']);
+        $this->assertSame('registered', $loopbackLine['trunk']['status']);
+    }
+
     // -----------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------

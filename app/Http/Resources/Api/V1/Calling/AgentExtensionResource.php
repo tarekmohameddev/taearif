@@ -14,7 +14,7 @@ class AgentExtensionResource extends JsonResource
             'sip_username' => $this->sip_username,
             'extension'    => $this->extension,
             'is_active'    => $this->is_active,
-            'user'         => $this->when($this->relationLoaded('user'), fn() => [
+            'user'         => $this->when($this->relationLoaded('user') && $this->user, fn() => [
                 'id'       => $this->user->id,
                 'name'     => trim(($this->user->first_name ?? '') . ' ' . ($this->user->last_name ?? ''))
                     ?: ($this->user->company_name ?? $this->user->username),
