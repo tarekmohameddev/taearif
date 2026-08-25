@@ -416,7 +416,7 @@ final class PlatformReportService
     {
         try {
             return (float) round(
-                DB::table('rm_expenses')
+                (float) DB::table('rm_expenses')
                     ->where('user_id', $userId)
                     ->whereBetween('created_at', [$start, $end])
                     ->sum('amount_value'),
