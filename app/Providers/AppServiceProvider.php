@@ -50,6 +50,12 @@ use App\Models\Api\UserApiCustomerReminder;
 use App\Observers\Matching\UsersPropertyRequestObserver;
 use App\Observers\Matching\ApiCustomerInquiryObserver;
 use App\Observers\UserApiCustomerReminderObserver;
+use App\Domain\Ai\Contracts\TenantLlmFactory;
+use App\Domain\Ai\Services\DefaultTenantLlmFactory;
+use App\Domain\Ai\Location\Contracts\LocationCandidateRetrieval;
+use App\Domain\Ai\Location\Contracts\LocationRerankService;
+use App\Domain\Ai\Location\Services\LocationCandidateRetriever;
+use App\Domain\Ai\Location\Services\LocationLlmReranker;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -79,6 +85,11 @@ class AppServiceProvider extends ServiceProvider
             \App\Domain\Communication\Contracts\CommunicationService::class,
             \App\Domain\Communication\Services\CommunicationServiceImpl::class
         );
+
+        // AI: allow clean stubbing in tests while keeping tenant provider selection.
+        $this->app->bind(TenantLlmFactory::class, DefaultTenantLlmFactory::class);
+        $this->app->bind(LocationCandidateRetrieval::class, LocationCandidateRetriever::class);
+        $this->app->bind(LocationRerankService::class, LocationLlmReranker::class);
         $this->app->bind(
             \App\Domain\Communication\Contracts\MessageDispatcher::class,
             \App\Domain\Communication\Services\MessageDispatcherImpl::class
