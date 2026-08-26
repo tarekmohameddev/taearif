@@ -6,6 +6,7 @@ use App\Domain\Calling\Models\CallLog;
 use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Resources\Api\V1\Calling\CallLogResource;
 use App\Models\ApiCustomer;
+use App\Services\AlibabaOssService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -106,9 +107,11 @@ class CallHistoryController extends BaseApiController
             return $this->errorResponse('Recording is not yet available.', 422);
         }
 
-        $ttl = config('calling.recordings.url_ttl_minutes', 30);
-        $url = \Illuminate\Support\Facades\Storage::disk($log->recording->disk)
-            ->temporaryUrl($log->recording->path, now()->addMinutes($ttl));
+        $ttl = (int) config('calling.recordings.url_ttl_minutes', 30);
+        $url = app(AlibabaOssService::class)->signedUrl(
+            $log->recording->path,
+            $ttl * 60
+        );
 
         return $this->successResponse([
             'url'        => $url,
