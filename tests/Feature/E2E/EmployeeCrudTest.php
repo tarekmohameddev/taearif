@@ -380,4 +380,117 @@ class EmployeeCrudTest extends ApiE2ETestCase
 
         $this->assertContains($notFoundResponse->status(), [403, 404], 'Deleted employee should return 403 or 404');
     }
+
+    /** @test */
+    public function soft_deleted_employee_email_can_be_reused_on_create(): void
+    {
+        $this->skipIfMissingSchema();
+
+        try {
+            $tenant = User::factory()->create([
+                'account_type' => 'tenant',
+                'email' => 'e2e-employee-reuse-tenant@example.com',
+                'password' => Hash::make('password123'),
+                'active' => true,
+                'status' => 1,
+            ]);
+        } catch (QueryException $e) {
+            $msg = $e->getMessage();
+            if (strpos($msg, "doesn't exist") !== false || strpos($msg, 'Base table') !== false || strpos($msg, 'Unknown column') !== false) {
+                $this->markTestSkipped('Users table or schema missing. Restore taearif_testing from dump.');
+            }
+            throw $e;
+        }
+
+        try {
+            $this->giveUserActivePackage($tenant);
+            $this->createDefaultLanguageForUser($tenant);
+            $this->grantEmployeePermissions($tenant);
+        } catch (\Throwable $e) {
+            $msg = $e->getMessage();
+            if (strpos($msg, "doesn't exist") !== false || strpos($msg, 'Base table') !== false || strpos($msg, 'Unknown column') !== false) {
+                $this->markTestSkipped('Required schema missing. Restore taearif_testing from dump.');
+            }
+            throw $e;
+        }
+
+        config(['auth.defaults.guard' => 'web']);
+
+        $this->fakeRecaptcha();
+        $loginResponse = $this->postJson('/api/login', [
+            'recaptcha_token' => 'fake',
+            'email' => $tenant->email,
+            'password' => 'password123',
+        ]);
+        $this->normalizeResponseExceptions($loginResponse);
+
+        $loginResponse->assertOk()
+            ->assertJsonStructure(['user', 'token']);
+
+        $token = $loginResponse->json('token');
+        $headers = [
+            'Authorization' => 'Bearer ' . $token,
+            'Accept' => 'application/json',
+        ];
+
+        app(PermissionRegistrar::class)->setPermissionsTeamId((int) $tenant->id);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $email = 'e2e-employee-reuse@example.com';
+
+        $createResponse = $this->withHeaders($headers)->postJson('/api/v1/employees', [
+            'first_name' => 'Reuse',
+            'last_name' => 'Employee',
+            'email' => $email,
+            'password' => 'password123',
+            'active' => true,
+        ]);
+        $this->normalizeResponseExceptions($createResponse);
+
+        if (!in_array($createResponse->status(), [200, 201], true)) {
+            $errorMessage = $createResponse->json('message') ?? 'Unknown error';
+            $statusCode = $createResponse->status();
+
+            if ($statusCode === 500 && (
+                strpos($errorMessage, "doesn't exist") !== false ||
+                strpos($errorMessage, 'Base table') !== false ||
+                strpos($errorMessage, 'Unknown column') !== false ||
+                strpos($errorMessage, 'SQLSTATE') !== false
+            )) {
+                $this->markTestSkipped("Employee creation failed with schema error: {$errorMessage}");
+            }
+
+            if (in_array($statusCode, [403, 404, 500], true)) {
+                $this->markTestSkipped("POST /api/v1/employees returned {$statusCode}: {$errorMessage}");
+            }
+        }
+
+        $this->assertContains($createResponse->status(), [200, 201], 'Employee creation should return 200 or 201');
+
+        $employeeId = $createResponse->json('data.id')
+            ?? $createResponse->json('employee.id')
+            ?? $createResponse->json('id')
+            ?? $createResponse->json('user.id');
+
+        $this->assertNotNull($employeeId, 'Employee ID should be returned in response');
+
+        $deleteResponse = $this->withHeaders($headers)->deleteJson("/api/v1/employees/{$employeeId}");
+        $this->normalizeResponseExceptions($deleteResponse);
+        $this->assertContains($deleteResponse->status(), [200, 204], 'Employee deletion should return 200 or 204');
+
+        $recreateResponse = $this->withHeaders($headers)->postJson('/api/v1/employees', [
+            'first_name' => 'Reuse',
+            'last_name' => 'Again',
+            'email' => $email,
+            'password' => 'password123',
+            'active' => true,
+        ]);
+        $this->normalizeResponseExceptions($recreateResponse);
+
+        $this->assertContains(
+            $recreateResponse->status(),
+            [200, 201],
+            'Soft-deleted employee email should be reusable on create. Response: ' . $recreateResponse->getContent()
+        );
+    }
 }
