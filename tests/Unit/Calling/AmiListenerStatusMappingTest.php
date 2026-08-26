@@ -78,4 +78,21 @@ class AmiListenerStatusMappingTest extends TestCase
         $result = $this->callPrivate('mapHangupEvent', ['Cause' => '19'], 'ringing_agent');
         $this->assertSame('no_answer', $result);
     }
+
+    /** @test */
+    public function test_extract_call_id_from_top_level_and_inherited_vars(): void
+    {
+        $uuid = '7f100dd3-4591-4253-8ac1-f033dfb03f15';
+
+        $this->assertSame($uuid, $this->callPrivate('extractCallId', ['TAEARIF_CALL_ID' => $uuid]));
+        $this->assertSame($uuid, $this->callPrivate('extractCallId', ['__TAEARIF_CALL_ID' => $uuid]));
+        $this->assertSame($uuid, $this->callPrivate('extractCallId', [
+            'Variable' => 'TAEARIF_CALL_ID',
+            'Value'    => $uuid,
+        ]));
+        $this->assertSame($uuid, $this->callPrivate('extractCallId', [
+            'Variable' => "TAEARIF_DEST=foo,__TAEARIF_CALL_ID={$uuid}",
+        ]));
+        $this->assertNull($this->callPrivate('extractCallId', ['Uniqueid' => '1787700790.33']));
+    }
 }

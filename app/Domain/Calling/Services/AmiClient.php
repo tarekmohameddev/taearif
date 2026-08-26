@@ -43,6 +43,8 @@ final class AmiClient implements AmiClientInterface
 
         $variables = implode(',', [
             "TAEARIF_CALL_ID={$dto->callId}",
+            // Two-underscore prefix inherits onto Dial() B-leg channels.
+            "__TAEARIF_CALL_ID={$dto->callId}",
             "TAEARIF_DEST={$dto->destDialString}",
             "TAEARIF_TRUNK={$dto->trunkEndpoint}",
             "TAEARIF_CALLERID={$dto->callerIdE164}",
@@ -142,11 +144,49 @@ final class AmiClient implements AmiClientInterface
                 break; // blank line terminates an AMI event block
             }
 
-            [$key, $value] = array_pad(explode(': ', $line, 2), 2, '');
-            $block[$key] = $value;
+            self::applyEventLine($block, $line);
         }
 
         return $block; // may be empty on a bare blank line (Asterisk keepalive)
+    }
+
+    /**
+     * Parse one AMI "Key: value" line into $block.
+     *
+     * ChanVariable is repeated once per channel var; last-write-wins on the
+     * ChanVariable key would drop TAEARIF_CALL_ID. Flatten each var onto the
+     * event so listeners can read $event['TAEARIF_CALL_ID'].
+     *
+     * @param  array<string, string>  $block
+     */
+    public static function applyEventLine(array &$block, string $line): void
+    {
+        [$key, $value] = array_pad(explode(': ', $line, 2), 2, '');
+
+        if ($key === 'ChanVariable' || str_starts_with($key, 'ChanVariable(')) {
+            [$varName, $varValue] = array_pad(explode('=', $value, 2), 2, '');
+            if ($varName !== '') {
+                $block[$varName] = $varValue;
+            }
+            return;
+        }
+
+        $block[$key] = $value;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function parseEventBlock(string $raw): array
+    {
+        $block = [];
+        foreach (preg_split("/\r\n|\n|\r/", $raw) ?: [] as $line) {
+            if ($line === '') {
+                continue;
+            }
+            self::applyEventLine($block, $line);
+        }
+        return $block;
     }
 
     // -----------------------------------------------------------------
@@ -154,6 +194,23 @@ final class AmiClient implements AmiClientInterface
     // -----------------------------------------------------------------
 
     public function connect(): void
+    {
+        $this->openSocket();
+        $this->sendLogin(false);
+    }
+
+    /**
+     * Login once with events enabled. A second Login on the same socket does
+     * not reliably flip the event mask (Asterisk keeps the first Events: off).
+     */
+    public function connectWithEvents(): void
+    {
+        $this->openSocket();
+        $this->sendLogin(true);
+        $this->enableEvents();
+    }
+
+    private function openSocket(): void
     {
         $errno  = 0;
         $errstr = '';
@@ -166,17 +223,19 @@ final class AmiClient implements AmiClientInterface
         stream_set_timeout($socket, $this->timeout);
         $this->socket = $socket;
 
-        // Read AMI banner
-        fgets($this->socket, 4096);
-
-        $this->sendLogin();
+        fgets($this->socket, 4096); // AMI banner
     }
 
-    public function connectWithEvents(): void
+    private function enableEvents(): void
     {
-        $this->connect();
-        // Re-login requesting all events
-        $this->sendLogin(true);
+        $this->write(implode("\r\n", [
+            'Action: Events',
+            'EventMask: on',
+            'ActionID: events-on',
+            '',
+            '',
+        ]));
+        $this->readResponse();
     }
 
     public function disconnect(): void
