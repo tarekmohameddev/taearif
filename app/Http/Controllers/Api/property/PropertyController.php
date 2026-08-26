@@ -3178,7 +3178,10 @@ class PropertyController extends Controller
     }
 
     /**
-     * Get available units (units without active or draft rentals)
+     * Get available units (complete units without active or draft rentals)
+     *
+     * Default: complete units only (completion_status = complete). Does not filter by publish_status.
+     * Optional: all=1 (or all=true) returns an unpaginated list capped at 10000.
      *
      * @param Request $request
      * @return JsonResponse
@@ -3194,14 +3197,16 @@ class PropertyController extends Controller
                 'building_id' => 'nullable|integer',
                 'per_page' => 'nullable|integer|min:1|max:100',
                 'search' => 'nullable|string|max:255',
+                'all' => 'nullable',
             ]);
 
+            $returnAll = $request->boolean('all');
             $perPage = $request->get('per_page', 50);
             $search = $request->get('search');
             $projectId = $request->get('project_id');
             $buildingId = $request->get('building_id');
 
-            // Get properties (units) that don't have active or draft rentals
+            // Get complete properties (units) that don't have active or draft rentals
             $query = Property::with([
                 'project.contents',
                 'building' => function($q) {
@@ -3210,6 +3215,7 @@ class PropertyController extends Controller
                 'contents'
             ])
                 ->where('user_id', $userId)
+                ->complete()
                 ->whereDoesntHave('rentals', function ($q) use ($userId) {
                     $q->where('user_id', $userId)
                       ->whereIn('status', ['active', 'draft']);
@@ -3238,10 +3244,7 @@ class PropertyController extends Controller
                 });
             }
 
-            $properties = $query->orderBy('created_at', 'desc')->paginate($perPage);
-
-            // Format response
-            $formattedProperties = $properties->map(function ($property) {
+            $formatProperty = function ($property) {
                 $content = optional($property->contents)->first();
                 $projectContent = optional(optional($property->project)->contents)->first();
 
@@ -3280,7 +3283,21 @@ class PropertyController extends Controller
                     'show_reservations' => (bool) $property->show_reservations,
                     'is_available' => true,
                 ];
-            });
+            };
+
+            if ($returnAll) {
+                $properties = $query->orderBy('created_at', 'desc')->limit(10000)->get();
+                $formattedProperties = $properties->map($formatProperty)->values();
+
+                return response()->json([
+                    'status' => true,
+                    'data' => $formattedProperties,
+                    'pagination' => null,
+                ]);
+            }
+
+            $properties = $query->orderBy('created_at', 'desc')->paginate($perPage);
+            $formattedProperties = $properties->map($formatProperty);
 
             return response()->json([
                 'status' => true,
