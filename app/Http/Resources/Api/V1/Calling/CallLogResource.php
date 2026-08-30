@@ -18,6 +18,9 @@ class CallLogResource extends JsonResource
             'answered_at'      => $this->answered_at?->toIso8601String(),
             'ended_at'         => $this->ended_at?->toIso8601String(),
             'duration_seconds' => $this->duration_seconds,
+            // Asterisk identifiers — filled by calling:ami-listen (PJSIP/agent_1430_1430-00000021)
+            'asterisk_channel'  => $this->asterisk_channel,
+            'asterisk_uniqueid' => $this->asterisk_uniqueid,
             'customer'         => $this->when($this->relationLoaded('customer') && $this->customer, fn() => [
                 'id'           => $this->customer->id,
                 'name'         => $this->customer->name,

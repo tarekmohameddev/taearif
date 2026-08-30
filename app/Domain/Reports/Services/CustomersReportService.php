@@ -93,9 +93,10 @@ final class CustomersReportService
             $avgDaysToClose = DB::table('api_customers')
                 ->where('user_id', $userId)
                 ->whereIn('customers_hub_stage_id', $closingStageIds)
+                ->whereBetween('updated_at', [$start, $end])
                 ->avg(DB::raw('DATEDIFF(NOW(), created_at)'));
             if ($avgDaysToClose !== null) {
-                $avgDaysToClose = (float) round($avgDaysToClose, 1);
+                $avgDaysToClose = (float) round((float) $avgDaysToClose, 1);
             }
         } catch (\Exception $e) {
             $avgDaysToClose = null;

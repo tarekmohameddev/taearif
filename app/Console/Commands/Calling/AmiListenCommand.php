@@ -24,7 +24,8 @@ use Illuminate\Support\Facades\Log;
  *   Hangup on agent channel before answer           -> (depends on cause)
  *   Hangup on call after answered                   -> completed / failed / busy / no_answer / canceled
  *
- * We correlate by the TAEARIF_CALL_ID channel variable present in every event.
+ * We correlate by TAEARIF_CALL_ID (top-level, ChanVariable, or inherited
+ * __TAEARIF_CALL_ID), then by Uniqueid / Linkedid once stored.
  */
 class AmiListenCommand extends Command
 {
@@ -34,6 +35,14 @@ class AmiListenCommand extends Command
     private const HEARTBEAT_KEY    = 'calling:ami-listen:heartbeat';
     private const HEARTBEAT_EVERY  = 15; // seconds
     private const RECONNECT_DELAYS = [2, 4, 8, 16, 30, 60]; // backoff
+    private const PENDING_TTL      = 120; // seconds to hold Hangup until OriginateResponse maps Uniqueid
+    private const BUFFERED_EVENTS  = [
+        'Hangup', 'Dial', 'DialBegin', 'DialEnd',
+        'BridgeEnter', 'Newchannel', 'Newstate', 'OriginateResponse',
+    ];
+
+    /** @var array<string, list<array{at:int, event:array<string, string>}>> */
+    private array $pendingByUniqueid = [];
 
     public function handle(): int
     {
@@ -101,6 +110,13 @@ class AmiListenCommand extends Command
     private function processEvent(array $event): void
     {
         $eventName = $event['Event'] ?? '';
+        if ($eventName === '') {
+            return;
+        }
+
+        if (in_array($eventName, self::BUFFERED_EVENTS, true)) {
+            $this->logAmi($event, 'received');
+        }
 
         // OriginateResponse carries the channel name but its call ID is in ActionID,
         // not in a channel variable. Extract it separately before the main flow.
@@ -109,24 +125,33 @@ class AmiListenCommand extends Command
             return;
         }
 
-        $callId = $event['TAEARIF_CALL_ID']
-               ?? $event['Variable'] // some events put custom vars here
-               ?? null;
-
-        // Try to extract TAEARIF_CALL_ID from the Variable field in CDR/UserEvent events
-        if (!$callId && isset($event['UserField'])) {
-            $callId = $event['UserField'];
-        }
-
-        if (!$callId || strlen($callId) !== 36) {
-            return; // Not a Taearif call event
-        }
-
-        $log = CallLog::find($callId);
-        if (!$log || $log->isTerminal()) {
+        // PBX filters VarSet (`eventfilter=!Event: VarSet`) — keep handler if that changes.
+        if ($eventName === 'VarSet') {
+            $this->handleVarSet($event);
             return;
         }
 
+        $log = $this->resolveCallLog($event);
+        if (!$log) {
+            $this->rememberPending($event);
+            return;
+        }
+
+        if ($log->isTerminal()) {
+            return;
+        }
+
+        $this->applyCallEvent($log, $event);
+    }
+
+    /**
+     * @param  array<string, string>  $event
+     */
+    private function applyCallEvent(CallLog $log, array $event): void
+    {
+        $eventName = $event['Event'] ?? '';
+
+        $this->persistAsteriskIdentifiers($log, $event);
         $this->appendEvent($log, $eventName, $event);
 
         $newStatus = $this->mapEventToStatus($eventName, $event, $log);
@@ -136,28 +161,285 @@ class AmiListenCommand extends Command
     }
 
     /**
-     * Capture the Asterisk channel name from the OriginateResponse AMI event.
+     * Capture channel + Uniqueid from the OriginateResponse AMI event.
      *
      * ActionID format: "orig-{uuid}" (set in AmiClient::originate()).
-     * The Channel field contains the full PJSIP channel name we need for targeted hangup.
+     * Channel is the originated PJSIP name used for targeted hangup.
+     * Uniqueid is Asterisk's stable call id (e.g. 1787700790.33).
      */
     private function handleOriginateResponse(array $event): void
     {
         $actionId = $event['ActionID'] ?? '';
         if (!str_starts_with($actionId, 'orig-')) {
+            $this->rememberPending($event);
             return;
         }
 
-        $callId  = substr($actionId, 5); // strip "orig-" prefix
-        $channel = $event['Channel'] ?? null;
-
-        if (!$channel || strlen($callId) !== 36) {
+        $callId = substr($actionId, 5); // strip "orig-" prefix
+        if (strlen($callId) !== 36) {
             return;
         }
 
-        CallLog::where('id', $callId)
-            ->whereNull('asterisk_channel')
-            ->update(['asterisk_channel' => $channel]);
+        $log = CallLog::find($callId);
+        if (!$log) {
+            $this->rememberPending($event);
+            return;
+        }
+
+        $this->persistAsteriskIdentifiers($log, $event, captureChannel: true);
+
+        if (!$log->isTerminal()) {
+            $this->appendEvent($log, 'OriginateResponse', $event);
+        }
+
+        $this->replayPending($log->fresh() ?? $log);
+    }
+
+    private function handleVarSet(array $event): void
+    {
+        $callId = $this->extractCallId($event);
+        if (!$callId) {
+            return;
+        }
+
+        $log = CallLog::find($callId);
+        if (!$log || $log->isTerminal()) {
+            return;
+        }
+
+        $this->persistAsteriskIdentifiers($log, $event);
+    }
+
+    /**
+     * @param  array<string, string>  $event
+     */
+    private function resolveCallLog(array $event): ?CallLog
+    {
+        $callId = $this->extractCallId($event);
+        if ($callId) {
+            $log = CallLog::find($callId);
+            if ($log) {
+                return $log;
+            }
+        }
+
+        $ids = array_values(array_unique(array_filter([
+            $event['Uniqueid'] ?? null,
+            $event['Linkedid'] ?? null,
+        ], fn ($id) => is_string($id) && $id !== '')));
+
+        if ($ids === []) {
+            return null;
+        }
+
+        return CallLog::query()
+            ->whereIn('asterisk_uniqueid', $ids)
+            ->orderByDesc('created_at')
+            ->first();
+    }
+
+    /**
+     * @param  array<string, string>  $event
+     */
+    private function extractCallId(array $event): ?string
+    {
+        foreach (['TAEARIF_CALL_ID', '__TAEARIF_CALL_ID', '_TAEARIF_CALL_ID'] as $key) {
+            $value = $this->trimAmi($event[$key] ?? null);
+            if ($this->isUuid($value)) {
+                return $value;
+            }
+        }
+
+        $userField = $this->trimAmi($event['UserField'] ?? null);
+        if ($this->isUuid($userField)) {
+            return $userField;
+        }
+
+        $variable = $event['Variable'] ?? null;
+        if (!is_string($variable) || $variable === '') {
+            return null;
+        }
+
+        if ($this->isUuid($variable)) {
+            return $variable;
+        }
+
+        // VarSet: Variable is the name, Value is the UUID.
+        if (in_array($variable, ['TAEARIF_CALL_ID', '__TAEARIF_CALL_ID', '_TAEARIF_CALL_ID'], true)
+            && $this->isUuid($event['Value'] ?? null)
+        ) {
+            return $event['Value'];
+        }
+
+        // Originate Variable: TAEARIF_CALL_ID=uuid,__TAEARIF_CALL_ID=uuid,...
+        if (str_contains($variable, '=')) {
+            foreach (explode(',', $variable) as $pair) {
+                [$k, $v] = array_pad(explode('=', $pair, 2), 2, '');
+                if (in_array($k, ['TAEARIF_CALL_ID', '__TAEARIF_CALL_ID', '_TAEARIF_CALL_ID'], true)
+                    && $this->isUuid($v)
+                ) {
+                    return $v;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function trimAmi(mixed $value): ?string
+    {
+        if (!is_string($value)) {
+            return null;
+        }
+        $value = trim($value, " \t\"'");
+        return $value === '' ? null : $value;
+    }
+
+    private function isUuid(mixed $value): bool
+    {
+        $value = $this->trimAmi($value);
+        return $value !== null && strlen($value) === 36;
+    }
+
+    /**
+     * Persist Uniqueid and Channel once. Never overwrite with a B-leg Uniqueid.
+     *
+     * Channel example: PJSIP/agent_1430_1430-00000021
+     *
+     * @param  array<string, string>  $event
+     */
+    private function persistAsteriskIdentifiers(CallLog $log, array $event, bool $captureChannel = false): void
+    {
+        $updates = [];
+
+        $uniqueid = $this->trimAmi($event['Uniqueid'] ?? null) ?? '';
+        $linkedid = $this->trimAmi($event['Linkedid'] ?? null) ?? '';
+        $isMasterLeg = $uniqueid !== '' && ($linkedid === '' || $linkedid === $uniqueid);
+        $hasALegCallId = $this->isUuid($event['TAEARIF_CALL_ID'] ?? null);
+
+        $channel = $this->trimAmi($event['Channel'] ?? null);
+        if (!$log->asterisk_channel && $channel
+            && ($captureChannel || $hasALegCallId || $isMasterLeg)
+        ) {
+            $updates['asterisk_channel'] = $channel;
+        }
+
+        if (!$log->asterisk_uniqueid) {
+            if ($isMasterLeg) {
+                $updates['asterisk_uniqueid'] = $uniqueid;
+            } elseif ($linkedid !== '') {
+                $updates['asterisk_uniqueid'] = $linkedid;
+            } elseif ($uniqueid !== '') {
+                $updates['asterisk_uniqueid'] = $uniqueid;
+            }
+        }
+
+        if ($updates === []) {
+            return;
+        }
+
+        $log->update($updates);
+
+        $message = sprintf(
+            '[ami-listen] mapped call %s uniqueid=%s channel=%s',
+            $log->id,
+            $log->asterisk_uniqueid ?? '-',
+            $log->asterisk_channel ?? '-'
+        );
+        $this->emit($message);
+    }
+
+    /**
+     * Hangup often arrives before OriginateResponse. Hold it until Uniqueid is mapped.
+     *
+     * @param  array<string, string>  $event
+     */
+    private function rememberPending(array $event): void
+    {
+        $name = $event['Event'] ?? '';
+        if (!in_array($name, self::BUFFERED_EVENTS, true)) {
+            return;
+        }
+
+        $this->logAmi($event, 'unmapped');
+
+        foreach ([$event['Uniqueid'] ?? null, $event['Linkedid'] ?? null] as $id) {
+            $id = $this->trimAmi($id);
+            if ($id === null) {
+                continue;
+            }
+            $this->pendingByUniqueid[$id][] = ['at' => time(), 'event' => $event];
+        }
+
+        $this->prunePending();
+    }
+
+    private function replayPending(CallLog $log): void
+    {
+        $keys = array_values(array_filter([
+            $this->trimAmi($log->asterisk_uniqueid),
+        ]));
+
+        $queue = [];
+        foreach ($keys as $key) {
+            if (!empty($this->pendingByUniqueid[$key])) {
+                foreach ($this->pendingByUniqueid[$key] as $item) {
+                    $queue[] = $item['event'];
+                }
+                unset($this->pendingByUniqueid[$key]);
+            }
+        }
+
+        foreach ($queue as $event) {
+            $name = $event['Event'] ?? '';
+            if ($name === '' || $name === 'OriginateResponse' || $name === 'VarSet') {
+                continue;
+            }
+            $log->refresh();
+            if ($log->isTerminal()) {
+                return;
+            }
+            $this->applyCallEvent($log, $event);
+        }
+    }
+
+    private function prunePending(): void
+    {
+        $cutoff = time() - self::PENDING_TTL;
+        foreach ($this->pendingByUniqueid as $id => $items) {
+            $kept = array_values(array_filter($items, fn ($item) => $item['at'] >= $cutoff));
+            if ($kept === []) {
+                unset($this->pendingByUniqueid[$id]);
+            } else {
+                $this->pendingByUniqueid[$id] = $kept;
+            }
+        }
+    }
+
+    /**
+     * @param  array<string, string>  $event
+     */
+    private function logAmi(array $event, string $tag): void
+    {
+        $this->emit(sprintf(
+            '[ami-listen] %s Event=%s Uniqueid=%s Linkedid=%s Channel=%s ActionID=%s Cause=%s TAEARIF_CALL_ID=%s',
+            $tag,
+            $event['Event'] ?? '-',
+            $event['Uniqueid'] ?? '-',
+            $event['Linkedid'] ?? '-',
+            $event['Channel'] ?? '-',
+            $event['ActionID'] ?? '-',
+            $event['Cause'] ?? '-',
+            $event['TAEARIF_CALL_ID'] ?? $event['__TAEARIF_CALL_ID'] ?? '-'
+        ));
+    }
+
+    private function emit(string $message): void
+    {
+        if ($this->output) {
+            $this->info($message);
+        }
+        Log::channel('daily')->info($message);
     }
 
     private function mapEventToStatus(string $eventName, array $event, CallLog $log): ?string

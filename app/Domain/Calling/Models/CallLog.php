@@ -27,6 +27,7 @@ final class CallLog extends Model
         'trunk_id',
         'sim_line_id',
         'asterisk_channel',
+        'asterisk_uniqueid',
         'direction',
         'to_e164',
         'from_e164',

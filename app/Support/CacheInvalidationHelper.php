@@ -25,7 +25,7 @@ class CacheInvalidationHelper
     public static function clearUserProfileCache(int $userId, ?int $ownerId = null): void
     {
         $ownerId = $ownerId ?? $userId;
-        Cache::forget("user:profile:{$userId}:{$ownerId}");
+        Cache::forget("user:profile:v2:{$userId}:{$ownerId}");
     }
 
     /**

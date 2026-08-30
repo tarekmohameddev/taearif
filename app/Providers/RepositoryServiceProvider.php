@@ -164,6 +164,10 @@ class RepositoryServiceProvider extends ServiceProvider
         );
 
         $this->app->singleton(
+            \App\Domain\Calling\Services\CallingLoopbackService::class
+        );
+
+        $this->app->singleton(
             \App\Domain\Calling\Services\CallOriginationService::class
         );
 
