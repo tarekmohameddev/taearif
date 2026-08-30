@@ -79,6 +79,8 @@ final class ReplyRenderer
         if ($ledger->locationRelaxed() && $propertiesRendered) {
             $location = $ledger->requestedLocation() ?? '';
             if ($location !== '') {
+                // Keep the disclosure fully evidence-based: locationRelaxed is only set
+                // when returned listings are outside the requested canonical scope.
                 $rendered = "ما لقيت في {$location} حالياً، لكن هذي نتائج قريبة قد تناسبك:\n\n" . $rendered;
             }
         }

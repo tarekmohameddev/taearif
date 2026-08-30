@@ -183,7 +183,7 @@ class OnboardingController extends Controller
             // Clear user profile cache to ensure GET /user returns updated onboarding_completed status
             // Cache key format matches AuthController::getUserProfile()
             $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
-            $cacheKey = "user:profile:{$user->id}:{$owner->id}";
+            $cacheKey = "user:profile:v2:{$user->id}:{$owner->id}";
             Cache::forget($cacheKey);
 
                 try {

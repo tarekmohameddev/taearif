@@ -165,6 +165,39 @@ class AlibabaOssService
     }
 
     /**
+     * Time-limited download URL for a private object (used by call recordings).
+     */
+    public function signedUrl(string $path, int $ttlSeconds = 1800): string
+    {
+        $this->initializeClient();
+
+        try {
+            return $this->client->signUrl($this->bucket, $this->normalizeObjectKey($path), $ttlSeconds);
+        } catch (OssException $e) {
+            throw new \Exception('Failed to sign OSS URL: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Accept object keys, or oss://bucket/key URIs from the PBX uploader.
+     */
+    public function normalizeObjectKey(string $path): string
+    {
+        $path = ltrim($path, '/');
+
+        if (str_starts_with($path, 'oss://')) {
+            $withoutScheme = substr($path, 6);
+            $prefix = $this->bucket . '/';
+            if (str_starts_with($withoutScheme, $prefix)) {
+                return substr($withoutScheme, strlen($prefix));
+            }
+            return $withoutScheme;
+        }
+
+        return $path;
+    }
+
+    /**
      * Get public URL for file (updated to use third-level domain)
      */
     public function getPublicUrl(string $filename): string

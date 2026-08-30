@@ -9,6 +9,7 @@ use App\Domain\Calling\Models\CallTrunk;
 use App\Domain\Calling\Services\SipProvisioningService;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\CacheInvalidationHelper;
 use Illuminate\Http\Request;
 use Throwable;
 
@@ -121,6 +122,8 @@ class CallingTenantController extends Controller
             'play_recording_announcement' => $request->boolean('play_recording_announcement'),
             'max_channels'                => (int) $validated['max_channels'],
         ]);
+
+        CacheInvalidationHelper::clearTenantProfileCachesAuto($tenant->id);
 
         return back()->with('success', __('Calling settings updated.'));
     }

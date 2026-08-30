@@ -267,6 +267,9 @@ final class ReplayRunner
                         hasResults:       !empty($output['results']),
                         locationRelaxed:  (bool) ($output['location_relaxed'] ?? false),
                         requestedLocation:(string) ($output['requested_location'] ?? ''),
+                        relaxScope:       (string) ($output['relax_scope'] ?? 'none'),
+                        requestedCityId:  isset($output['requested_city_id']) ? (int) $output['requested_city_id'] : null,
+                        requestedDistrictId: isset($output['requested_district_id']) ? (int) $output['requested_district_id'] : null,
                     );
                     if (!empty($output['results'])) {
                         $ledger->addProperties($output['results']);

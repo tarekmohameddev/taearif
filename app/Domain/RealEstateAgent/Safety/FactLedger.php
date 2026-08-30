@@ -38,8 +38,20 @@ final class FactLedger
     /** @var bool Set when search returned location_relaxed = true */
     private bool $locationRelaxed = false;
 
+    /**
+     * @var string Relaxation scope from the inventory tool.
+     * Values: none|district|city
+     */
+    private string $relaxScope = 'none';
+
     /** @var string|null The requested location text (for disclosure) */
     private ?string $requestedLocation = null;
+
+    /** @var int|null Canonical requested city id (if resolved) */
+    private ?int $requestedCityId = null;
+
+    /** @var int|null Canonical requested district id (if resolved) */
+    private ?int $requestedDistrictId = null;
 
     /**
      * Register all properties returned by search_inventory or get_property_details.
@@ -81,12 +93,22 @@ final class FactLedger
         $this->escalationReason    = null;
     }
 
-    public function recordSearchRun(bool $hasResults, bool $locationRelaxed = false, ?string $requestedLocation = null): void
+    public function recordSearchRun(
+        bool $hasResults,
+        bool $locationRelaxed = false,
+        ?string $requestedLocation = null,
+        string $relaxScope = 'none',
+        ?int $requestedCityId = null,
+        ?int $requestedDistrictId = null,
+    ): void
     {
         $this->searchWasRun          = true;
         $this->searchRunWithNoResults = !$hasResults;
         $this->locationRelaxed        = $locationRelaxed;
         $this->requestedLocation      = $requestedLocation;
+        $this->relaxScope             = $relaxScope;
+        $this->requestedCityId        = $requestedCityId;
+        $this->requestedDistrictId    = $requestedDistrictId;
     }
 
     public function addRecordedFacts(array $facts): void
@@ -123,7 +145,10 @@ final class FactLedger
     public function searchWasRun(): bool          { return $this->searchWasRun; }
     public function searchReturnedNoResults(): bool { return $this->searchRunWithNoResults; }
     public function locationRelaxed(): bool       { return $this->locationRelaxed; }
+    public function relaxScope(): string          { return $this->relaxScope; }
     public function requestedLocation(): ?string  { return $this->requestedLocation; }
+    public function requestedCityId(): ?int       { return $this->requestedCityId; }
+    public function requestedDistrictId(): ?int   { return $this->requestedDistrictId; }
     public function propertyCount(): int          { return count($this->properties); }
 
     /** @return array<string, mixed>[] */

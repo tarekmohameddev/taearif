@@ -13,7 +13,7 @@ class Cors
 
         $response->headers->set('Access-Control-Allow-Origin', '*');
         $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Idempotency-Key');
+        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Idempotency-Key, X-Requested-With, X-CSRF-TOKEN, Accept');
 
         if ($request->getMethod() === 'OPTIONS') {
             $response->setStatusCode(204);

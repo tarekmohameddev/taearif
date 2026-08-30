@@ -25,6 +25,7 @@ final class CallOriginationService
     public function __construct(
         private readonly AmiClientInterface $ami,
         private readonly PhoneNumberService $phone,
+        private readonly CallingLoopbackService $loopback,
     ) {}
 
     /**
@@ -122,12 +123,14 @@ final class CallOriginationService
                 'status'     => 'initiated',
             ]);
 
+            $loopback = $this->loopback->isEnabledForTenant($tenantId);
+
             $dto = new AmiOriginateDto(
                 callId:          $callId,
                 sipUsername:     $ext->sip_username,
                 context:         $ext->asterisk_context,
-                destDialString:  $this->phone->toDialString($e164),
-                trunkEndpoint:   $line->asterisk_endpoint,
+                destDialString:  $loopback ? $this->loopback->destEndpoint() : $this->phone->toDialString($e164),
+                trunkEndpoint:   $loopback ? $this->loopback->trunkSentinel() : $line->asterisk_endpoint,
                 callerIdE164:    $line->msisdn,
                 record:          $lockedSettings->record_by_default,
                 ringTimeoutMs:   config('calling.originate.ring_timeout_ms', 30000),
@@ -217,10 +220,14 @@ final class CallOriginationService
             ->orderByRaw('user_id = ? DESC', [$agentId])
             ->first();
 
-        if (!$line) {
-            throw new NoAvailableLineException();
+        if ($line) {
+            return $line;
         }
 
-        return $line;
+        if ($this->loopback->isEnabledForTenant($tenantId)) {
+            return $this->loopback->ensureDummyLine($tenantId);
+        }
+
+        throw new NoAvailableLineException();
     }
 }
