@@ -157,7 +157,11 @@ $selLang = request()->filled('language')
                                 <tbody>
                                     @foreach ($memberships as $key => $membership)
                                     <tr>
-                                        <td>{{ !empty($membership->user) ? $membership->user->username : '-' }}</td>
+                                        @if (!empty($membership->user))
+                                        <td><a href="{{ route('admin.register.user.view', $membership->user->id) }}" target="_blank">{{ $membership->user->username }}</a></td>
+                                        @else
+                                        <td>-</td>
+                                        @endif
                                         <td>{{strlen($membership->transaction_id) > 30 ? mb_substr($membership->transaction_id, 0, 30, 'UTF-8') . '...' : $membership->transaction_id}}</td>
 
                                         @php

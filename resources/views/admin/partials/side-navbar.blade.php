@@ -29,6 +29,61 @@
                         <p>{{ __('Dashboard') }}</p>
                     </a>
                 </li>
+
+                {{-- Registered Users --}}
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Registered Users', $permissions)))
+                    <li
+                        class="nav-item
+                    @if (request()->path() == 'admin/register/users') active
+                    @elseif(request()->is('admin/register/user/details/*')) active
+                    @elseif(request()->is('admin/data-export-import*')) active
+                    @elseif(request()->routeIs('admin.register.user.vcards')) active
+                    @elseif (request()->routeIs('admin.register.user.changePass')) active @endif">
+
+                        <a data-toggle="collapse" href="#users">
+                            <i data-lucide="users"></i>
+                            <p>{{ __('User Management') }}</p>
+                            <i data-lucide="chevron-down" class="caret"></i>
+                        </a>
+                        <div class="collapse @if (request()->path() == 'admin/register/users') show
+                    @elseif(request()->is('admin/register/user/details/*')) show
+                    @elseif(request()->is('admin/data-export-import*')) show
+                    @elseif(request()->routeIs('admin.register.user.vcards')) show
+                    @elseif (request()->routeIs('admin.register.user.changePass')) show @endif"
+                            id="users">
+                            <ul class="nav nav-collapse">
+                                <li class=" @if (request()->routeIs('admin.register.user')) active @endif">
+                                    <a href="{{ route('admin.register.user') }}">
+                                        <span class="sub-item">{{ __('Registered Users') }}</span>
+                                    </a>
+                                </li>
+                                <li class="@if (request()->is('admin/data-export-import') || request()->is('admin/data-export') || request()->is('admin/data-import')) active @endif">
+                                    <a href="{{ Route::has('admin.data-export-import.index') ? route('admin.data-export-import.index') : url('admin/data-export-import') }}">
+                                        <span class="sub-item">{{ __('تصدير واستيراد البيانات') }}</span>
+                                    </a>
+                                </li>
+                                @if (Route::has('admin.data-export-import.logs'))
+                                    <li class="@if (request()->routeIs('admin.data-export-import.logs')) active @endif">
+                                        <a href="{{ route('admin.data-export-import.logs') }}">
+                                            <span class="sub-item">{{ __('سجل التصدير والاستيراد') }}</span>
+                                        </a>
+                                    </li>
+                                @endif
+                            </ul>
+                        </div>
+                    </li>
+                @endif
+
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Payment Log', $permissions)))
+                    <li class="nav-item
+                    @if (request()->path() == 'admin/payment-log') active @endif">
+                        <a href="{{ route('admin.payment-log.index') }}">
+                            <i data-lucide="file-text"></i>
+                            <p>{{ __('Payment Log') }}</p>
+                        </a>
+                    </li>
+                @endif
+
                 <!-- //admin.isthara.index -->
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Isthara Consultations', $permissions)))
                     <li class="nav-item @if (request()->path() == 'admin/isthara') active @endif">
@@ -45,16 +100,6 @@
                         <a href="{{ route('admin.themes.index') }}">
                             <i data-lucide="palette"></i>
                             <p>{{ __('Themes Management') }}</p>
-                        </a>
-                    </li>
-                @endif
-
-                @if (empty($admin->role) || (!empty($permissions) && in_array('Payment Log', $permissions)))
-                    <li class="nav-item
-                    @if (request()->path() == 'admin/payment-log') active @endif">
-                        <a href="{{ route('admin.payment-log.index') }}">
-                            <i data-lucide="file-text"></i>
-                            <p>{{ __('Payment Log') }}</p>
                         </a>
                     </li>
                 @endif
@@ -314,51 +359,6 @@
                                         <span class="sub-item">{{ __('Connected Subdomains') }}</span>
                                     </a>
                                 </li>
-                            </ul>
-                        </div>
-                    </li>
-                @endif
-
-
-                {{-- Registered Users --}}
-                @if (empty($admin->role) || (!empty($permissions) && in_array('Registered Users', $permissions)))
-                    <li
-                        class="nav-item
-                    @if (request()->path() == 'admin/register/users') active
-                    @elseif(request()->is('admin/register/user/details/*')) active
-                    @elseif(request()->is('admin/data-export-import*')) active
-                    @elseif(request()->routeIs('admin.register.user.vcards')) active
-                    @elseif (request()->routeIs('admin.register.user.changePass')) active @endif">
-
-                        <a data-toggle="collapse" href="#users">
-                            <i data-lucide="users"></i>
-                            <p>{{ __('User Management') }}</p>
-                            <i data-lucide="chevron-down" class="caret"></i>
-                        </a>
-                        <div class="collapse @if (request()->path() == 'admin/register/users') show
-                    @elseif(request()->is('admin/register/user/details/*')) show
-                    @elseif(request()->is('admin/data-export-import*')) show
-                    @elseif(request()->routeIs('admin.register.user.vcards')) show
-                    @elseif (request()->routeIs('admin.register.user.changePass')) show @endif"
-                            id="users">
-                            <ul class="nav nav-collapse">
-                                <li class=" @if (request()->routeIs('admin.register.user')) active @endif">
-                                    <a href="{{ route('admin.register.user') }}">
-                                        <span class="sub-item">{{ __('Registered Users') }}</span>
-                                    </a>
-                                </li>
-                                <li class="@if (request()->is('admin/data-export-import') || request()->is('admin/data-export') || request()->is('admin/data-import')) active @endif">
-                                    <a href="{{ Route::has('admin.data-export-import.index') ? route('admin.data-export-import.index') : url('admin/data-export-import') }}">
-                                        <span class="sub-item">{{ __('تصدير واستيراد البيانات') }}</span>
-                                    </a>
-                                </li>
-                                @if (Route::has('admin.data-export-import.logs'))
-                                    <li class="@if (request()->routeIs('admin.data-export-import.logs')) active @endif">
-                                        <a href="{{ route('admin.data-export-import.logs') }}">
-                                            <span class="sub-item">{{ __('سجل التصدير والاستيراد') }}</span>
-                                        </a>
-                                    </li>
-                                @endif
                             </ul>
                         </div>
                     </li>
