@@ -2,8 +2,10 @@
 
 namespace Tests\Unit;
 
+use App\Models\Membership;
 use App\Models\Package;
 use App\Services\MembershipService;
+use Carbon\Carbon;
 use Tests\TestCase;
 
 class PackageDisplayTest extends TestCase
@@ -133,5 +135,78 @@ class PackageDisplayTest extends TestCase
 
         $this->assertSame('الباقة المميزة سنوية', $package->getDisplayTitle('ar'));
         $this->assertSame('Premium Annual Package', $package->getDisplayTitleEn());
+    }
+
+    public function test_is_free_package_by_configured_id(): void
+    {
+        $package = new Package([
+            'term' => MembershipService::TERM_YEARLY,
+            'title' => 'الباقة المجانية',
+        ]);
+        $package->id = MembershipService::FREE_PACKAGE_ID;
+
+        $this->assertTrue($package->isFreePackage());
+    }
+
+    public function test_free_package_without_membership_keeps_plain_title(): void
+    {
+        $package = new Package([
+            'term' => MembershipService::TERM_YEARLY,
+            'title' => 'الباقة المجانية',
+            'title_en' => 'Free Package',
+        ]);
+        $package->id = MembershipService::FREE_PACKAGE_ID;
+
+        $this->assertSame('الباقة المجانية', $package->getDisplayTitle('ar'));
+        $this->assertSame('Free Package', $package->getDisplayTitleEn());
+    }
+
+    public function test_free_package_with_active_membership_shows_elapsed_days(): void
+    {
+        Carbon::setTestNow('2026-08-31');
+
+        $package = new Package([
+            'term' => MembershipService::TERM_YEARLY,
+            'title' => 'الباقة المجانية',
+            'title_en' => 'Free Package',
+        ]);
+        $package->id = MembershipService::FREE_PACKAGE_ID;
+
+        $membership = new Membership([
+            'status' => 1,
+            'start_date' => '2026-07-17',
+        ]);
+
+        $this->assertSame(45, $membership->getDaysOnPackage());
+        $this->assertSame('الباقة المجانية (45 يوماً)', $package->getDisplayTitle('ar', $membership));
+        $this->assertSame('Free Package (45 days)', $package->getDisplayTitleEn($membership));
+        $this->assertSame('Free Package (45 days)', $package->getDisplayTitle('en', $membership));
+
+        Carbon::setTestNow();
+    }
+
+    public function test_free_package_with_pending_membership_keeps_plain_title(): void
+    {
+        $package = new Package([
+            'term' => MembershipService::TERM_YEARLY,
+            'title' => 'الباقة المجانية',
+            'title_en' => 'Free Package',
+        ]);
+        $package->id = MembershipService::FREE_PACKAGE_ID;
+
+        $membership = new Membership([
+            'status' => 0,
+            'start_date' => '2026-07-17',
+        ]);
+
+        $this->assertSame('الباقة المجانية', $package->getDisplayTitle('ar', $membership));
+        $this->assertSame('Free Package', $package->getDisplayTitleEn($membership));
+    }
+
+    public function test_membership_get_days_on_package_returns_zero_without_start_date(): void
+    {
+        $membership = new Membership(['status' => 1]);
+
+        $this->assertSame(0, $membership->getDaysOnPackage());
     }
 }

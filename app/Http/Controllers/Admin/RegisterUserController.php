@@ -83,6 +83,11 @@ class RegisterUserController extends Controller
         $activeMembership = $request->input('active_membership');
         $paidMember = $request->input('paid_member');
 
+        // Needed to decide whether the package_id filter is a trial filter.
+        $filteredPackage = $request->filled('package_id')
+            ? Package::find((int) $request->package_id)
+            : null;
+
         $activeUsers = User::where('account_type', 'tenant')
             ->whereHas('memberships', function ($q) {
                 $q->where('status', 1) // active membership
@@ -146,9 +151,18 @@ class RegisterUserController extends Controller
                 });
             });
         })
-        ->when($request->filled('package_id'), function ($q) use ($request) {
-            $q->whereHas('currentMembership', function ($m) use ($request) {
+        ->when($request->filled('package_id'), function ($q) use ($request, $filteredPackage) {
+            $q->whereHas('currentMembership', function ($m) use ($request, $filteredPackage) {
                 $m->where('package_id', (int) $request->package_id);
+
+                // A trial whose expire_date is today is already rendered as
+                // "منتهي" in the Subscription column, because the badge treats
+                // the expire date as exclusive while currentMembership treats
+                // it as inclusive (whereDate expire_date >= today). Keep the
+                // trial filters to trials that are actually still running.
+                if ($filteredPackage && $filteredPackage->isTrialPackage()) {
+                    $m->whereDate('expire_date', '>', now()->toDateString());
+                }
             });
         })
         ->when($membershipStartFrom || $membershipStartTo, function ($q) use ($membershipStartFrom, $membershipStartTo) {

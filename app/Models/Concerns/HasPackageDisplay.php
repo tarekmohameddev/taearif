@@ -2,6 +2,7 @@
 
 namespace App\Models\Concerns;
 
+use App\Models\Membership;
 use App\Services\MembershipService;
 
 trait HasPackageDisplay
@@ -27,7 +28,14 @@ trait HasPackageDisplay
             || (int) $this->id === $trialPackageId;
     }
 
-    public function getDisplayTitle(?string $locale = null): string
+    public function isFreePackage(): bool
+    {
+        $freePackageId = (int) config('membership.free_package_id', MembershipService::FREE_PACKAGE_ID);
+
+        return (int) $this->id === $freePackageId;
+    }
+
+    public function getDisplayTitle(?string $locale = null, ?Membership $membership = null): string
     {
         $locale = $locale ?? app()->getLocale();
 
@@ -41,16 +49,37 @@ trait HasPackageDisplay
             return ($this->title ?? '') . " ({$days} أيام)";
         }
 
+        if ($this->isFreePackage() && $this->shouldShowFreePackageDays($membership)) {
+            $days = $membership->getDaysOnPackage();
+
+            if ($locale === 'en' || str_starts_with($locale, 'en')) {
+                return ($this->title_en ?: ($this->title ?? '')) . " ({$days} days)";
+            }
+
+            return ($this->title ?? '') . " ({$days} يوماً)";
+        }
+
         return $this->title ?? '';
     }
 
-    public function getDisplayTitleEn(): string
+    public function getDisplayTitleEn(?Membership $membership = null): string
     {
         if ($this->isTrialPackage()) {
             return 'Trial (' . $this->getEffectiveTrialDays() . ' days)';
         }
 
+        if ($this->isFreePackage() && $this->shouldShowFreePackageDays($membership)) {
+            return ($this->title_en ?: ($this->title ?? '')) . ' (' . $membership->getDaysOnPackage() . ' days)';
+        }
+
         return $this->title_en ?: ($this->title ?? '');
+    }
+
+    protected function shouldShowFreePackageDays(?Membership $membership): bool
+    {
+        return $membership !== null
+            && (int) $membership->status === 1
+            && ! empty($membership->start_date);
     }
 
     protected function getEffectiveTrialDays(): int

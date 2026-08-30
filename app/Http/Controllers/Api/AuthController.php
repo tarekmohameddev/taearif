@@ -953,9 +953,9 @@ class AuthController extends Controller
 
                     if ($package) {
                         $membershipDetails['package'] = [
-                            'title' => $package->getDisplayTitle('ar'),
-                            'title_ar' => $package->getDisplayTitle('ar'),
-                            'title_en' => $package->getDisplayTitleEn(),
+                            'title' => $package->getDisplayTitle('ar', $membership),
+                            'title_ar' => $package->getDisplayTitle('ar', $membership),
+                            'title_en' => $package->getDisplayTitleEn($membership),
                             'video_size_limit' => $package->video_size_limit,
                             'file_size_limit' => $package->file_size_limit,
                             'number_of_vcards' => $package->number_of_vcards,

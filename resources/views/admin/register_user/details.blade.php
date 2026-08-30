@@ -291,7 +291,7 @@
                     </div>
                     <div class="col-lg-6">
                         @if ($currPackage)
-                            <a target="_blank" href="{{route('admin.package.edit', $currPackage->id)}}">{{ $currPackage->getDisplayTitle('ar') }}</a>
+                            <a target="_blank" href="{{route('admin.package.edit', $currPackage->id)}}">{{ $currPackage->getDisplayTitle('ar', $currMemb) }}</a>
                             @unless($currPackage->isTrialPackage())
                             <span class="badge badge-secondary badge-xs mr-2">{{ __($currPackage->term) }}</span>
                             @endunless

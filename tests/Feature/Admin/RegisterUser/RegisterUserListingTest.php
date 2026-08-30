@@ -445,6 +445,51 @@ class RegisterUserListingTest extends AdminApiTestCase
     }
 
     /** @test */
+    public function trial_package_filter_excludes_trials_that_expire_today(): void
+    {
+        $this->signInWebAdmin();
+
+        $packages = $this->createPackageFilterPackages();
+
+        $runningTrial = $this->createTenantUser('trial-still-running');
+        $this->createCurrentMembership($runningTrial, $packages[26], [
+            'expire_date' => now()->addDay()->toDateString(),
+        ]);
+
+        // currentMembership matches expire_date >= today, so this user is still
+        // "current", but the Subscription column badges it منتهي. It must not
+        // be listed under the trial filter.
+        $expiringToday = $this->createTenantUser('trial-expiring-today');
+        $this->createCurrentMembership($expiringToday, $packages[26], [
+            'expire_date' => now()->toDateString(),
+        ]);
+
+        $response = $this->get(route('admin.register.user', ['package_id' => 26]));
+
+        $response->assertOk();
+        $this->assertUserListed($response, $runningTrial);
+        $this->assertUserNotListed($response, $expiringToday);
+    }
+
+    /** @test */
+    public function non_trial_package_filter_still_lists_memberships_expiring_today(): void
+    {
+        $this->signInWebAdmin();
+
+        $packages = $this->createPackageFilterPackages();
+
+        $expiringToday = $this->createTenantUser('paid-expiring-today');
+        $this->createCurrentMembership($expiringToday, $packages[25], [
+            'expire_date' => now()->toDateString(),
+        ]);
+
+        $response = $this->get(route('admin.register.user', ['package_id' => 25]));
+
+        $response->assertOk();
+        $this->assertUserListed($response, $expiringToday);
+    }
+
+    /** @test */
     public function package_filter_buttons_show_a_day_suffix_for_every_trial_package(): void
     {
         $this->signInWebAdmin();

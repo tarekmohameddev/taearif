@@ -455,7 +455,7 @@
                                             @switch($subState)
                                                 @case('expired_free')
                                                     <span class="badge badge-danger">{{ __('Subscription Expired') }}</span>
-                                                    <div class="small text-muted">{{ __('Free Package') }}</div>
+                                                    <div class="small text-muted">{{ $currPackage->getDisplayTitle('ar', $currMemb) }}</div>
                                                     @break
                                                 @case('expired')
                                                     <span class="badge badge-danger">{{ __('Subscription Expired') }}</span>
@@ -484,7 +484,7 @@
                                         </td>
                                         <td>
                                             @if ($currPackage)
-                                            <a target="_blank" href="{{route('admin.package.edit', $currPackage->id)}}">{{ $currPackage->getDisplayTitle('ar') }}</a>
+                                            <a target="_blank" href="{{route('admin.package.edit', $currPackage->id)}}">{{ $currPackage->getDisplayTitle('ar', $currMemb) }}</a>
                                             @if (!$currPackage->isTrialPackage())
                                             <span class="badge badge-secondary badge-xs mr-2">{{ __($currPackage->term) }}</span>
                                             @endif
