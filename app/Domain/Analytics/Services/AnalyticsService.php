@@ -3,6 +3,7 @@
 namespace App\Domain\Analytics\Services;
 
 use App\Domain\Shared\Services\BaseService;
+use App\Models\Package;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -256,6 +257,9 @@ class AnalyticsService extends BaseService
 
         // Calculate conversion rates
         $plansWithMetrics = $plans->map(function ($plan) {
+            $package = new Package();
+            $package->setRawAttributes((array) $plan, true);
+
             // Trial to paid conversion
             $trialSubscriptions = DB::table('memberships')
                 ->where('package_id', $plan->id)
@@ -281,7 +285,7 @@ class AnalyticsService extends BaseService
 
             return [
                 'plan_id' => $plan->id,
-                'plan_name' => $plan->title,
+                'plan_name' => $package->getDisplayTitle('ar'),
                 'plan_price' => (float) $plan->price,
                 'plan_term' => $plan->term,
                 'total_subscriptions' => $plan->total_subscriptions,
@@ -384,7 +388,12 @@ class AnalyticsService extends BaseService
         // CLV by plan
         $clvByPlan = DB::table('packages')
             ->select(
+                'packages.id',
                 'packages.title',
+                'packages.title_en',
+                'packages.term',
+                'packages.is_trial',
+                'packages.trial_days',
                 DB::raw('AVG(user_spending.total_spent) as avg_clv'),
                 DB::raw('COUNT(DISTINCT user_spending.user_id) as customer_count')
             )
@@ -405,8 +414,11 @@ class AnalyticsService extends BaseService
             'max_clv' => round($customerMetrics->max_clv ?? 0, 2),
             'min_clv' => round($customerMetrics->min_clv ?? 0, 2),
             'clv_by_plan' => $clvByPlan->map(function ($item) {
+                $package = new Package();
+                $package->setRawAttributes((array) $item, true);
+
                 return [
-                    'plan_name' => $item->title,
+                    'plan_name' => $package->getDisplayTitle('ar'),
                     'average_clv' => round($item->avg_clv, 2),
                     'customer_count' => $item->customer_count,
                 ];

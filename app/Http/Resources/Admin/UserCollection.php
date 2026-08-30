@@ -40,7 +40,7 @@ class UserCollection extends ResourceCollection
                         'name' => $user->referrer->full_name,
                     ] : null,
                     'active_membership' => $user->activeMembership ? [
-                        'package_title' => $user->activeMembership->package?->title,
+                        'package_title' => $user->activeMembership->package?->getDisplayTitle('ar'),
                         'expire_date' => $user->activeMembership->expire_date,
                         'is_trial' => $user->activeMembership->is_trial,
                     ] : null,

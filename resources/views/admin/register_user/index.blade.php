@@ -458,8 +458,8 @@
                                         </td>
                                         <td>
                                             @if ($currPackage)
-                                            <a target="_blank" href="{{route('admin.package.edit', $currPackage->id)}}">{{$currPackage->title}}</a>
-                                            @if ($currPackage->term !== 'trial' && $currPackage->is_trial != 1 && $currPackage->id !== 26)
+                                            <a target="_blank" href="{{route('admin.package.edit', $currPackage->id)}}">{{ $currPackage->getDisplayTitle('ar') }}</a>
+                                            @if (!$currPackage->isTrialPackage())
                                             <span class="badge badge-secondary badge-xs mr-2">{{ __($currPackage->term) }}</span>
                                             @endif
 
@@ -473,9 +473,6 @@
                                                 {{ $currPackage->term === 'lifetime'
                                                     ? __('Lifetime')
                                                     : ($currMemb->expire_date ? \Carbon\Carbon::parse($currMemb->expire_date)->format('M-d-Y') : '—') }})
-                                                @if ($currMemb->is_trial == 1)
-                                                    <span class="badge badge-primary">تجريبية</span>
-                                                @endif
                                             </div>
                                             @if ($currMemb->status == 0)
                                             <form id="statusForm{{$currMemb->id}}" class="d-inline-block" action="{{route('admin.payment-log.update')}}" method="post">
@@ -604,7 +601,7 @@
                         <select name="package_id" class="form-control">
                             @if (!empty($packages))
                             @foreach ($packages as $package)
-                            <option value="{{ $package->id }}">@if ($package->term === 'trial' || $package->is_trial == 1 || $package->id === 26){{ $package->title }}@else{{ $package->title }} ({{ __($package->term) }})@endif</option>
+                            <option value="{{ $package->id }}">{{ $package->getDisplayTitle('ar') }}@unless($package->isTrialPackage()) ({{ __($package->term) }})@endunless</option>
                             @endforeach
                             @endif
                         </select>

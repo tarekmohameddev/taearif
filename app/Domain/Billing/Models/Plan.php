@@ -5,6 +5,7 @@ namespace App\Domain\Billing\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Models\Concerns\HasPackageDisplay;
 use App\Models\Membership;
 
 /**
@@ -16,6 +17,7 @@ use App\Models\Membership;
 class Plan extends Model
 {
     use HasFactory;
+    use HasPackageDisplay;
 
     /**
      * The primary key associated with the table.

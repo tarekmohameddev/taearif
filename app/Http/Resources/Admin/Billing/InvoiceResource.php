@@ -48,7 +48,7 @@ class InvoiceResource extends JsonResource
             ],
             'package' => [
                 'id' => $this->package->id,
-                'title' => $this->package->title,
+                'title' => $this->package->getDisplayTitle('ar'),
                 'slug' => $this->package->slug,
                 'term' => $this->package->term,
                 'price' => (float) $this->package->price,

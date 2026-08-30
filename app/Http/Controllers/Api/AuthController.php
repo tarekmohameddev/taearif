@@ -480,11 +480,7 @@ class AuthController extends Controller
             $price               = $package->price;
 
             // Define welcome message before create_website call
-            $trialPeriod = $package->trial_days == 1 ? 'يوم واحد' :
-                           ($package->trial_days == 7 ? '7 أيام' :
-                           ($package->trial_days == 30 ? 'شهر' :
-                           $package->trial_days . ' أيام'));
-            $welcome_message = 'شكراً على التسجيل في منصة تعاريف انت الآن على الباقة المميزة لمدة ' . $trialPeriod;
+            $welcome_message = 'شكراً على التسجيل في منصة تعاريف انت الآن على ' . $package->getDisplayTitle('ar');
 
             $user = $this->create_website(
                 request()->all(),
@@ -951,9 +947,9 @@ class AuthController extends Controller
 
                     if ($package) {
                         $membershipDetails['package'] = [
-                            'title' => $package->title,
-                            'title_ar' => $package->title,
-                            'title_en' => $package->title_en,
+                            'title' => $package->getDisplayTitle('ar'),
+                            'title_ar' => $package->getDisplayTitle('ar'),
+                            'title_en' => $package->getDisplayTitleEn(),
                             'video_size_limit' => $package->video_size_limit,
                             'file_size_limit' => $package->file_size_limit,
                             'number_of_vcards' => $package->number_of_vcards,

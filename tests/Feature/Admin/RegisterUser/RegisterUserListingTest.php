@@ -362,7 +362,7 @@ class RegisterUserListingTest extends AdminApiTestCase
         $response->assertSee(__('NO USER FOUND'), false);
         $response->assertSee('الباقة المميزة سنوية', false);
         $response->assertSee('الباقة المميزة الشهرية', false);
-        $response->assertSee('الباقة التجريبية', false);
+        $response->assertSee('الباقة التجريبية (7 أيام)', false);
         $response->assertSee('الباقة المجانية', false);
         $response->assertSee(__('Show All'), false);
     }
@@ -531,6 +531,8 @@ class RegisterUserListingTest extends AdminApiTestCase
             26 => $this->createPackage(MembershipService::TERM_TRIAL, [
                 'id' => 26,
                 'title' => 'الباقة التجريبية',
+                'trial_days' => 7,
+                'is_trial' => 1,
             ]),
             16 => $this->createPackage(MembershipService::TERM_YEARLY, [
                 'id' => 16,

@@ -270,8 +270,8 @@ $selLang = request()->filled('language')
                                                         </div>
                                                         <div class="owner-details-section">
                                                             <h3>{{__('Package Details')}}</h3>
-                                                            <div class="owner-details-row"><span class="label">{{__('Title')}}</span><span class="value">{{ !empty($membership->package) ? $membership->package->title : '-' }}</span></div>
-                                                            <div class="owner-details-row"><span class="label">{{__('Term')}}</span><span class="value">@if($membership->is_trial == 1 || (!empty($membership->package) && ($membership->package->term === 'trial' || $membership->package->is_trial == 1 || $membership->package->id === 26))){{ __('trial') }}@elseif (!empty($membership->package)){{ __($membership->package->term) }}@else-@endif</span></div>
+                                                            <div class="owner-details-row"><span class="label">{{__('Title')}}</span><span class="value">{{ !empty($membership->package) ? $membership->package->getDisplayTitle('ar') : '-' }}</span></div>
+                                                            <div class="owner-details-row"><span class="label">{{__('Term')}}</span><span class="value">@if(!empty($membership->package) && $membership->package->isTrialPackage())-@elseif (!empty($membership->package)){{ __($membership->package->term) }}@else-@endif</span></div>
                                                             <div class="owner-details-row">
                                                                 <span class="label">{{__('Start Date')}}</span>
                                                                 <span class="value">

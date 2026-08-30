@@ -93,11 +93,12 @@
                                                         <input type="checkbox" class="bulk-check"
                                                             data-val="{{ $package->id }}">
                                                     </td>
-                                                    <td>{{ strlen($package->title) > 30 ? mb_substr($package->title, 0, 30, 'UTF-8') . '...' : $package->title }}
-                                                        @if ($package->term !== 'trial' && $package->is_trial != 1 && $package->id !== 26)
+                                                    @php $displayTitle = $package->getDisplayTitle('ar'); @endphp
+                                                    <td>{{ strlen($displayTitle) > 30 ? mb_substr($displayTitle, 0, 30, 'UTF-8') . '...' : $displayTitle }}
+                                                        @unless($package->isTrialPackage())
                                                         <span
                                                             class="badge text-capitalize @if ($package->term == 'monthly') badge-info @elseif($package->term == 'yearly')badge-primary @else badge-success @endif nav-pills ">{{ __($package->term) }}</span>
-                                                        @endif
+                                                        @endunless
                                                     </td>
                                                     <td>
                                                         @if ($package->price == 0)

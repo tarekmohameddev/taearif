@@ -21,8 +21,8 @@ class PlanResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'title' => $this->title,
-            'title_en' => $this->title_en,
+            'title' => $this->getDisplayTitle('ar'),
+            'title_en' => $this->getDisplayTitleEn(),
             'subtitle' => $this->subtitle,
             'slug' => $this->slug,
             'price' => (float) $this->price,

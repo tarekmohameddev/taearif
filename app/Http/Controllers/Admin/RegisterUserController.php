@@ -275,9 +275,24 @@ class RegisterUserController extends Controller
         return collect($orderedIds)->map(function (int $id) use ($packagesById, $fallbacks) {
             $package = $packagesById->get($id);
 
+            if ($package) {
+                return (object) [
+                    'id' => $id,
+                    'title' => $package->getDisplayTitle('ar'),
+                ];
+            }
+
+            $fallbackPackage = new Package([
+                'id' => $id,
+                'title' => $fallbacks[$id],
+                'term' => $id === MembershipService::TRIAL_PACKAGE_ID ? MembershipService::TERM_TRIAL : MembershipService::TERM_YEARLY,
+                'trial_days' => $id === MembershipService::TRIAL_PACKAGE_ID ? MembershipService::DEFAULT_TRIAL_DAYS : 0,
+                'is_trial' => $id === MembershipService::TRIAL_PACKAGE_ID ? 1 : 0,
+            ]);
+
             return (object) [
                 'id' => $id,
-                'title' => ($package && filled($package->title)) ? $package->title : $fallbacks[$id],
+                'title' => $fallbackPackage->getDisplayTitle('ar'),
             ];
         });
     }
