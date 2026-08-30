@@ -431,7 +431,7 @@ class RegisterUserListingTest extends AdminApiTestCase
 
         $withPackageId->assertOk();
         $this->assertSame(
-            2,
+            3,
             substr_count($withPackageId->getContent(), '<input type="hidden" name="package_id" value="25">')
         );
 
@@ -442,6 +442,68 @@ class RegisterUserListingTest extends AdminApiTestCase
             0,
             substr_count($withoutPackageId->getContent(), '<input type="hidden" name="package_id"')
         );
+    }
+
+    /** @test */
+    public function package_filter_buttons_show_a_day_suffix_for_every_trial_package(): void
+    {
+        $this->signInWebAdmin();
+
+        // Mirrors production: the paid and free packages carry a leftover
+        // trial_days but no is_trial flag, so they must stay plain. Both trials
+        // are flagged and each shows its own duration.
+        $packages = $this->createPackageFilterPackages();
+        $packages[24]->update(['is_trial' => '0', 'trial_days' => 360]);
+        $packages[25]->update(['is_trial' => '0', 'trial_days' => 30]);
+        $packages[16]->update(['is_trial' => '0', 'trial_days' => 360]);
+
+        $response = $this->get(route('admin.register.user'));
+
+        $response->assertOk();
+
+        $response->assertSee('الباقة التجريبية (7 أيام)', false);
+        $response->assertSee('الباقة الشهرية للتجربة (30 أيام)', false);
+
+        $response->assertSee('الباقة المميزة سنوية', false);
+        $response->assertSee('الباقة المميزة الشهرية', false);
+        $response->assertSee('الباقة المجانية', false);
+        $response->assertDontSee('الباقة المميزة سنوية (360 أيام)', false);
+        $response->assertDontSee('الباقة المميزة الشهرية (30 أيام)', false);
+        $response->assertDontSee('الباقة المجانية (360 أيام)', false);
+    }
+
+    /** @test */
+    public function registered_users_table_renders_valid_actions_dropdown_markup(): void
+    {
+        $this->signInWebAdmin();
+
+        $packages = $this->createPackageFilterPackages();
+        $user = $this->createTenantUser('actions-dropdown-user');
+        $this->createCurrentMembership($user, $packages[25]);
+
+        $response = $this->get(route('admin.register.user', [
+            'term' => 'actions-dropdown-user',
+        ]));
+
+        $response->assertOk();
+        $content = $response->getContent();
+
+        $this->assertSame(7, substr_count($content, '<th scope="col">'));
+        $this->assertStringContainsString('id="dropdownMenuButton-' . $user->id . '"', $content);
+        $this->assertStringContainsString('aria-labelledby="dropdownMenuButton-' . $user->id . '"', $content);
+
+        preg_match('/<tbody\b[^>]*>(.*?)<\/tbody>/s', $content, $tbodyMatches);
+        $this->assertNotEmpty($tbodyMatches[1]);
+        $this->assertStringNotContainsString('<div class="modal', $tbodyMatches[1]);
+
+        // The next-package modals emit a hardcoded id once per row, and nothing on
+        // this page can open them — they belong to details.blade.php.
+        $this->assertStringNotContainsString('id="editNextPackage"', $content);
+        $this->assertStringNotContainsString('id="addNextPackage"', $content);
+
+        // Same for the vcard template modals, triggered only from vcards.blade.php.
+        $this->assertStringNotContainsString('id="templateModal' . $user->id . '"', $content);
+        $this->assertStringNotContainsString('id="templateImgModal' . $user->id . '"', $content);
     }
 
     protected function signInWebAdmin(): Admin
@@ -532,7 +594,13 @@ class RegisterUserListingTest extends AdminApiTestCase
                 'id' => 26,
                 'title' => 'الباقة التجريبية',
                 'trial_days' => 7,
-                'is_trial' => 1,
+                'is_trial' => '1',
+            ]),
+            28 => $this->createPackage(MembershipService::TERM_MONTHLY, [
+                'id' => 28,
+                'title' => 'الباقة الشهرية للتجربة',
+                'trial_days' => 30,
+                'is_trial' => '1',
             ]),
             16 => $this->createPackage(MembershipService::TERM_YEARLY, [
                 'id' => 16,

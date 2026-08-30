@@ -6,6 +6,18 @@ use App\Services\MembershipService;
 
 trait HasPackageDisplay
 {
+    /**
+     * Whether this package is a trial, and so renders a "(N أيام)" day count.
+     *
+     * There is more than one trial package: 26 (7 days) and 28 (30 days) at the
+     * time of writing, so this cannot key on the canonical trial id alone.
+     * packages.is_trial marks them, and only them.
+     *
+     * NOTE: is_trial has previously been used to mean "this package is not
+     * paid" and was set on the free package (16), which put a phantom day count
+     * on it. If that ever recurs, fix the data — do not narrow this method,
+     * or genuine trials like 28 silently lose their day count.
+     */
     public function isTrialPackage(): bool
     {
         $trialPackageId = (int) config('membership.trial_package_id', MembershipService::TRIAL_PACKAGE_ID);

@@ -263,12 +263,19 @@ class RegisterUserController extends Controller
 
     private function packageFilterButtons($packages)
     {
-        $orderedIds = [24, 25, 26, 16];
+        // Both trials (26 and 28) get their own button, each labelled with its
+        // own day count by getDisplayTitle().
+        $orderedIds = [24, 25, 26, 28, 16];
         $fallbacks = [
-            24 => 'الباقة المميزة سنوية',
-            25 => 'الباقة المميزة الشهرية',
-            26 => 'الباقة التجريبية',
-            16 => 'الباقة المجانية',
+            // is_trial is enum('0','1') on packages — keep these as strings so
+            // the values stay valid if a fallback is ever persisted. MySQL
+            // reads an integer written to an ENUM as a 1-based index, so a
+            // literal 1 would store '0'.
+            24 => ['title' => 'الباقة المميزة سنوية', 'term' => MembershipService::TERM_YEARLY, 'is_trial' => '0', 'trial_days' => 0],
+            25 => ['title' => 'الباقة المميزة الشهرية', 'term' => MembershipService::TERM_MONTHLY, 'is_trial' => '0', 'trial_days' => 0],
+            26 => ['title' => 'الباقة التجريبية', 'term' => MembershipService::TERM_TRIAL, 'is_trial' => '1', 'trial_days' => MembershipService::DEFAULT_TRIAL_DAYS],
+            28 => ['title' => 'الباقة الشهرية للتجربة', 'term' => MembershipService::TERM_MONTHLY, 'is_trial' => '1', 'trial_days' => 30],
+            16 => ['title' => 'الباقة المجانية', 'term' => MembershipService::TERM_YEARLY, 'is_trial' => '0', 'trial_days' => 0],
         ];
         $packagesById = $packages->keyBy('id');
 
@@ -282,13 +289,7 @@ class RegisterUserController extends Controller
                 ];
             }
 
-            $fallbackPackage = new Package([
-                'id' => $id,
-                'title' => $fallbacks[$id],
-                'term' => $id === MembershipService::TRIAL_PACKAGE_ID ? MembershipService::TERM_TRIAL : MembershipService::TERM_YEARLY,
-                'trial_days' => $id === MembershipService::TRIAL_PACKAGE_ID ? MembershipService::DEFAULT_TRIAL_DAYS : 0,
-                'is_trial' => $id === MembershipService::TRIAL_PACKAGE_ID ? 1 : 0,
-            ]);
+            $fallbackPackage = new Package(['id' => $id] + $fallbacks[$id]);
 
             return (object) [
                 'id' => $id,

@@ -163,6 +163,32 @@
         padding: 0.15em 0.4em;
         font-size: 10px;
     }
+
+    /* The Actions dropdown is clipped twice over:
+       1. `.table-responsive` own overflow (Bootstrap + atlantis.css:6456).
+       2. The theme's `.main-panel > .content { overflow: hidden }`
+          (atlantis.css:1281), which hard-clips with no scrollbar. This is the
+          one that cuts the menu on the last rows, where it would extend past
+          the bottom of the content box.
+       `overflow-y: visible` fixes neither — per the CSS overflow spec a
+       `visible` value computes to `auto` when the other axis is not visible.
+
+       (2) is unconditional: releasing it cannot cause horizontal page overflow,
+       because the table is still contained by `.table-responsive`.
+       (1) is gated to xl, where the table already fits without horizontal
+       scrolling — below that the scroll container is kept.
+
+       This <style> only ships on this page, so `.content` is untouched
+       everywhere else in the admin. */
+    .main-panel > .content {
+        overflow: visible;
+    }
+
+    @media (min-width: 1200px) {
+        .register-users-table-wrapper.table-responsive {
+            overflow: visible;
+        }
+    }
 </style>
 
 
@@ -365,7 +391,7 @@
                         @if ($users->total() == 0)
                         <h3 class="text-center">{{ __('NO USER FOUND') }}</h3>
                         @else
-                        <div class="table-responsive">
+                        <div class="table-responsive register-users-table-wrapper">
                             <table class="table table-striped table-sm mt-3 register-users-table">
                                 <thead>
                                     <tr>
@@ -377,7 +403,7 @@
                                         <th scope="col">{{ __('Web site') }}</th>
                                         <th scope="col">{{ __('Subscription') }}</th>
                                         <th scope="col">{{ __('Package') }}</th>
-                                        <td scope="col">{{ __('Action') }}</td>
+                                        <th scope="col">{{ __('Action') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -492,13 +518,7 @@
 
                                         </td>
 
-                                        @includeIf('admin.register_user.template-modal')
-                                        @includeIf('admin.register_user.template-image-modal')
-                                        @includeIf('admin.register_user.edit-current-package')
-                                        @includeIf('admin.register_user.add-current-package')
-                                        @includeIf('admin.register_user.edit-next-package')
-                                        @includeIf('admin.register_user.add-next-package')
-                                        <td>
+                                        <td class="actions-cell">
                                             @if ($currPackage)
                                             <form id="remove-package-form-{{ $user->id }}" action="{{ route('admin.user.currPackage.remove') }}" class="deleteform d-none" method="POST">
                                                 @csrf
@@ -516,10 +536,10 @@
                                                 <input type="hidden" name="user_id" value="{{ $user->id }}">
                                             </form>
                                             <div class="dropdown">
-                                                <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="dropdownMenuButton-{{ $user->id }}" data-toggle="dropdown" data-boundary="viewport" aria-haspopup="true" aria-expanded="false">
                                                     {{ __('Actions') }}
                                                 </button>
-                                                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton-{{ $user->id }}">
                                                     <a href="{{ route('admin.register.user.secretLogin', $user) }}" target="_blank" class="dropdown-item">
                                                         {{ __('Secret Login') }}
                                                     </a>
@@ -545,6 +565,18 @@
                                 </tbody>
                             </table>
                         </div>
+                        @foreach ($users as $user)
+                            @php
+                                $currMemb = $user->currentMembership ?? $user->pendingMembership;
+                                $currPackage = $currMemb?->package;
+                            @endphp
+                            {{-- Only the two modals this page can actually open. The
+                                 template / next-package modals are triggered from
+                                 vcards.blade.php and details.blade.php respectively, and
+                                 the next-package pair emits a hardcoded id per row. --}}
+                            @includeIf('admin.register_user.edit-current-package')
+                            @includeIf('admin.register_user.add-current-package')
+                        @endforeach
                         @endif
                     </div>
                 </div>
@@ -634,4 +666,37 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Open the Actions menu upward when it would not fit below.
+    //
+    // Popper will not do this for us: with data-boundary="viewport" it only
+    // flips when the menu would leave the *viewport*, and on the lower rows
+    // there is still viewport room — the menu is cut by an ancestor's overflow
+    // long before that. So decide the direction against the card box instead.
+    //
+    // Bootstrap 4 reads the .dropup class off the toggle's parent inside
+    // Dropdown._getPlacement(), which runs after show.bs.dropdown fires, so
+    // setting it here is picked up for the very same open.
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof jQuery === 'undefined') {
+            return;
+        }
+
+        jQuery(document).on('show.bs.dropdown', '.register-users-table .dropdown', function () {
+            var $dropdown = jQuery(this);
+            var $menu = $dropdown.find('.dropdown-menu');
+            var $card = $dropdown.closest('.card');
+
+            if (!$menu.length || !$card.length) {
+                return;
+            }
+
+            var toggleBottom = $dropdown[0].getBoundingClientRect().bottom;
+            var limit = Math.min($card[0].getBoundingClientRect().bottom, window.innerHeight);
+
+            $dropdown.toggleClass('dropup', (toggleBottom + $menu.outerHeight()) > limit);
+        });
+    });
+</script>
 @endsection

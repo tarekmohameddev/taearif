@@ -18,15 +18,42 @@ class PackageDisplayTest extends TestCase
         $this->assertTrue($package->isTrialPackage());
     }
 
-    public function test_is_trial_package_by_is_trial_flag(): void
+    /**
+     * Package 28 — a 30-day trial on a monthly term. It is a trial only by the
+     * is_trial flag, so this is what keeps that clause in isTrialPackage().
+     */
+    public function test_is_trial_flag_marks_a_monthly_term_package_as_trial(): void
     {
         $package = new Package([
+            'id' => 28,
             'term' => MembershipService::TERM_MONTHLY,
             'is_trial' => 1,
-            'trial_days' => 14,
+            'trial_days' => 30,
+            'title' => 'الباقة الشهرية للتجربة',
         ]);
 
         $this->assertTrue($package->isTrialPackage());
+        $this->assertSame('الباقة الشهرية للتجربة (30 أيام)', $package->getDisplayTitle('ar'));
+    }
+
+    /**
+     * Package 16 — free, not a trial, but carries a leftover trial_days of 360.
+     * A day count must not appear on it: trial_days alone is not the trigger.
+     */
+    public function test_trial_days_without_the_flag_keeps_plain_title(): void
+    {
+        $package = new Package([
+            'id' => MembershipService::FREE_PACKAGE_ID,
+            'term' => MembershipService::TERM_YEARLY,
+            'is_trial' => 0,
+            'trial_days' => 360,
+            'title' => 'الباقة المجانية',
+            'title_en' => 'Free Package',
+        ]);
+
+        $this->assertFalse($package->isTrialPackage());
+        $this->assertSame('الباقة المجانية', $package->getDisplayTitle('ar'));
+        $this->assertSame('Free Package', $package->getDisplayTitleEn());
     }
 
     public function test_is_trial_package_by_configured_id(): void
