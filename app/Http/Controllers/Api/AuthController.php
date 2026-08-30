@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use Carbon\Carbon;
 use App\Models\Api;
 use App\Models\User;
+use App\Domain\Calling\Models\CallSetting;
 use App\Models\Coupon;
 use App\Models\Package;
 use App\Models\Language;
@@ -810,7 +811,7 @@ class AuthController extends Controller
                 $ownerId = (int) $user->id;
             }
 
-            $cacheKey = "user:profile:{$user->id}:{$ownerId}";
+            $cacheKey = "user:profile:v2:{$user->id}:{$ownerId}";
             $cacheTtl = 3600; // 60 minutes
 
             if ($useOptimizations) {
@@ -830,6 +831,11 @@ class AuthController extends Controller
                 $user->load('tenant');
             }
             $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+
+            $callingEnabled = CallSetting::query()
+                ->where('tenant_id', (int) $owner->id)
+                ->where('enabled', true)
+                ->exists();
 
             // Get current date for comparing with membership expiration
             $currentDate = now();
@@ -1057,6 +1063,7 @@ class AuthController extends Controller
                   'updated_at' => $user->updated_at,
                   'domain' => $domain ? $domain->custom_name : "https://{$owner->username}.taearif.com/",
                   'onboarding_completed' => $user->onboarding_completed ?? false,
+                  'calling_enabled' => $callingEnabled,
                   'company_name' => $companyName,
                   'valLicense' => $valLicense,
                   'whatsapp' => [

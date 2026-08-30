@@ -11,6 +11,7 @@ use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Calling\UpdateTenantCallingSettingsRequest;
 use App\Http\Resources\Admin\Calling\TenantCallingSettingsResource;
 use App\Models\User;
+use App\Support\CacheInvalidationHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Throwable;
@@ -90,6 +91,8 @@ class CallingTenantController extends BaseController
         $settings = CallSetting::firstOrCreate(['tenant_id' => $tenant->id]);
 
         $settings->update($request->validated());
+
+        CacheInvalidationHelper::clearTenantProfileCachesAuto($tenant->id);
 
         return $this->successResponse(new TenantCallingSettingsResource($settings), 'Settings updated.');
     }
