@@ -107,6 +107,10 @@ class RegisterUserController extends Controller
 
         $statsService = app(RegisterUserStatsService::class);
 
+        // The headline the totals row is labelled with. $users->total() is the
+        // filtered count, so the unfiltered one needs its own query.
+        $tenantsTotal = User::query()->where('account_type', 'tenant')->count();
+
         $statsTotal = $statsService->counts(
             fn () => User::query()->where('account_type', 'tenant')
         );
@@ -124,6 +128,7 @@ class RegisterUserController extends Controller
             'packages',
             'statsTotal',
             'statsFiltered',
+            'tenantsTotal',
             'affiliateUsers',
             'activeMembership',
             'paidMember',
@@ -252,8 +257,15 @@ class RegisterUserController extends Controller
      * back to the current month. Only the filtered row passes this — the totals
      * row always reports the current month.
      *
-     * Reads the same start_date/end_date the advanced filter uses, so the two
-     * can never drift apart.
+     * Either date filter drives it, in priority order:
+     *   1. start_date/end_date  — the advanced filter, on users.created_at
+     *   2. btn_start_date/btn_end_date — the subscription-start filter that is
+     *      visible on the page without opening فلتر متقدم, and the one admins
+     *      actually reach for when they want "registrations in month X"
+     *   3. no date filter — the current month
+     *
+     * Reads the same request keys applyUserFilters() does, so the window and
+     * the filter it describes can never drift apart.
      *
      * @return array{from: ?Carbon, to: ?Carbon, title: string}
      */
@@ -265,6 +277,23 @@ class RegisterUserController extends Controller
         $to = $request->filled('end_date')
             ? Carbon::createFromFormat('Y-m-d', $request->end_date)->endOfDay()
             : null;
+
+        // applyUserFilters() swallows malformed btn_* dates rather than failing
+        // the request, so this has to swallow them too — otherwise a bad date
+        // would start 500ing a page that until now just ignored the filter.
+        if (! $from && ! $to) {
+            try {
+                $from = $request->filled('btn_start_date')
+                    ? Carbon::createFromFormat('Y-m-d', $request->btn_start_date)->startOfDay()
+                    : null;
+                $to = $request->filled('btn_end_date')
+                    ? Carbon::createFromFormat('Y-m-d', $request->btn_end_date)->endOfDay()
+                    : null;
+            } catch (\Throwable $e) {
+                $from = null;
+                $to = null;
+            }
+        }
 
         if ($from || $to) {
             return ['from' => $from, 'to' => $to, 'title' => 'المسجلون خلال الفترة المحددة'];

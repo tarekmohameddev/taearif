@@ -115,7 +115,10 @@
             <div class="card-body ru-stats-body">
 
                 {{-- Top: global totals, never affected by filters --}}
-                <div class="ru-stats-label">{{ __('Total') }} — كل المستخدمين</div>
+                <div class="ru-stats-label">
+                    كل المستخدمين
+                    <span class="badge badge-dark">{{ $tenantsTotal }} مستخدم</span>
+                </div>
                 <div class="ru-stats-grid">
                     @foreach ($statsTotal as $stat)
                         <div class="ru-stat-tile">

@@ -97,6 +97,89 @@ class RegisterUserStatsTest extends AdminApiTestCase
     }
 
     /** @test */
+    public function subscription_start_filter_also_drives_the_registrations_tile(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-31 12:00:00', 'UTC'));
+
+        $this->signInWebAdmin();
+
+        $packages = $this->createPackageFilterPackages();
+
+        // Registered AND subscribed in May.
+        $mayUser = $this->createTenantUserAt('btn-may-user', Carbon::parse('2026-05-10 09:00:00', 'UTC'));
+        $this->createCurrentMembership($mayUser, $packages[24], [
+            'start_date' => '2026-05-12',
+            'expire_date' => '2027-05-12',
+        ]);
+
+        // Subscribed in May but registered long before — must not be counted.
+        $oldUser = $this->createTenantUserAt('btn-old-user', Carbon::parse('2025-04-10 09:00:00', 'UTC'));
+        $this->createCurrentMembership($oldUser, $packages[24], [
+            'start_date' => '2026-05-20',
+            'expire_date' => '2027-05-20',
+        ]);
+
+        $response = $this->get(route('admin.register.user', [
+            'btn_start_date' => '2026-05-01',
+            'btn_end_date' => '2026-05-31',
+        ]));
+
+        $response->assertOk();
+
+        // Both users match the subscription-start filter...
+        $this->assertSame(2, $this->statCount($response, 'paid_yearly', 'statsFiltered'));
+        // ...but only one of them registered inside that window.
+        $this->assertSame(1, $this->statCount($response, 'registrations', 'statsFiltered'));
+        $response->assertSee('المسجلون خلال الفترة المحددة', false);
+    }
+
+    /** @test */
+    public function registration_filter_wins_over_the_subscription_start_filter(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-31 12:00:00', 'UTC'));
+
+        $this->signInWebAdmin();
+
+        $packages = $this->createPackageFilterPackages();
+
+        // Subscribed in May so the btn_* filter keeps this user in the set,
+        // but registered in June so only the June window can count them.
+        $user = $this->createTenantUserAt('btn-precedence-june', Carbon::parse('2026-06-10 09:00:00', 'UTC'));
+        $this->createCurrentMembership($user, $packages[24], [
+            'start_date' => '2026-05-20',
+            'expire_date' => '2027-05-20',
+        ]);
+
+        $response = $this->get(route('admin.register.user', [
+            'start_date' => '2026-06-01',
+            'end_date' => '2026-06-30',
+            'btn_start_date' => '2026-05-01',
+            'btn_end_date' => '2026-05-31',
+        ]));
+
+        $response->assertOk();
+        // June window (start_date/end_date) applies, not the May btn_* window.
+        $this->assertSame(1, $this->statCount($response, 'registrations', 'statsFiltered'));
+    }
+
+    /** @test */
+    public function malformed_subscription_start_filter_falls_back_to_the_current_month(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-31 12:00:00', 'UTC'));
+
+        $this->signInWebAdmin();
+
+        $this->createTenantUserAt('btn-bad-date-user', Carbon::parse('2026-08-05 09:00:00', 'UTC'));
+
+        // applyUserFilters() ignores unparseable btn_* dates; the tile must not 500.
+        $response = $this->get(route('admin.register.user', ['btn_start_date' => 'not-a-date']));
+
+        $response->assertOk();
+        $this->assertSame(1, $this->statCount($response, 'registrations', 'statsFiltered'));
+        $response->assertSee('المسجلون الجدد هذا الشهر', false);
+    }
+
+    /** @test */
     public function registrations_tile_keeps_the_month_title_when_no_date_filter_is_set(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-08-31 12:00:00', 'UTC'));
@@ -111,6 +194,27 @@ class RegisterUserStatsTest extends AdminApiTestCase
         $response->assertOk();
         $this->assertSame(1, $this->statCount($response, 'registrations', 'statsFiltered'));
         $response->assertDontSee('المسجلون خلال الفترة المحددة', false);
+    }
+
+    /** @test */
+    public function totals_row_headline_counts_every_tenant_regardless_of_filters(): void
+    {
+        $this->signInWebAdmin();
+
+        $packages = $this->createPackageFilterPackages();
+
+        $yearlyUser = $this->createTenantUser('headline-yearly');
+        $this->createCurrentMembership($yearlyUser, $packages[24]);
+        $this->createTenantUser('headline-no-package-a');
+        $this->createTenantUser('headline-no-package-b');
+
+        $response = $this->get(route('admin.register.user', ['package_id' => 24]));
+
+        $response->assertOk();
+
+        // Filter matches one user, but the headline still reports all three.
+        $this->assertSame(1, $response->viewData('users')->total());
+        $this->assertSame(3, $response->viewData('tenantsTotal'));
     }
 
     /** @test */
