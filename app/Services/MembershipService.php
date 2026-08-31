@@ -24,6 +24,15 @@ class MembershipService
     const PAID_MONTHLY_PACKAGE_ID = 25;
     const TRIAL_PACKAGE_ID = 26;
 
+    /**
+     * The 30-day trial package, distinct from TRIAL_PACKAGE_ID (26, 7 days).
+     *
+     * NOTE: its packages.term is 'monthly', not 'trial'. Never classify it as
+     * paid monthly — packages.is_trial = '1' is what marks it as a trial.
+     */
+    const TRIAL_MONTHLY_PACKAGE_ID = 28;
+    const TRIAL_MONTHLY_DAYS = 30;
+
     // Package terms
     const TERM_MONTHLY = 'monthly';
     const TERM_YEARLY = 'yearly';

@@ -19,7 +19,8 @@ return [
     */
     'free_package_id' => env('FREE_PACKAGE_ID', 16),
     'trial_package_id' => env('TRIAL_PACKAGE_ID', 26),
-    
+    'trial_monthly_package_id' => env('TRIAL_MONTHLY_PACKAGE_ID', 28),
+
     /*
     |--------------------------------------------------------------------------
     | Package Terms

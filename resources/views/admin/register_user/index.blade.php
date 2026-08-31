@@ -10,6 +10,29 @@
         padding-left: 0.2rem !important;
         padding-right: 0.2rem !important;
     }
+
+    .ru-stats-card { border-radius: 12px; border: none; box-shadow: 0 4px 10px rgba(0, 0, 0, .07); overflow: hidden; }
+    .ru-stats-header { padding: .6rem 1.1rem; background: linear-gradient(45deg, #000, #333); }
+    .ru-stats-header h5 { font-size: 1rem; font-weight: 600; }
+    .ru-stats-body { padding: .85rem 1.1rem; }
+
+    .ru-stats-label { font-size: .78rem; font-weight: 600; color: #6c757d; margin-bottom: .4rem; }
+    .ru-stats-hint { font-size: .72rem; font-weight: 400; }
+    .ru-stats-divider { margin: .85rem 0 .7rem; border-top: 1px dashed #dee2e6; }
+
+    .ru-stats-grid { display: flex; flex-wrap: wrap; gap: .45rem; }
+    .ru-stat-tile {
+        flex: 1 1 118px; min-width: 118px;
+        padding: .45rem .5rem;
+        border-radius: 9px;
+        background-color: rgba(0, 0, 0, .045);
+        text-align: center;
+    }
+    .ru-stat-tile-filtered { background-color: rgba(13, 110, 253, .08); border: 1px solid rgba(13, 110, 253, .18); }
+
+    .ru-stat-title { font-size: .72rem; color: #6c757d; line-height: 1.25; min-height: 2.5em; }
+    .ru-stat-count { font-size: 1.35rem; font-weight: 700; color: #000; line-height: 1.2; }
+    .ru-stat-unit  { font-size: .68rem; color: #adb5bd; }
 </style>
 @endsection
 
@@ -78,24 +101,51 @@
 @endif
 
 
-<div class="row mb-4">
+@php
+    $hasActiveFilters = collect(Arr::except($userListQuery, ['page']))
+        ->filter(fn ($v) => $v !== '' && $v !== null)
+        ->isNotEmpty();
+@endphp
+<div class="row mb-3">
     <div class="col-12">
-        <div class="card" style="border-radius: 20px; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); overflow: hidden; border: none;">
-            <div class="card-header text-white" style="padding: 1.5rem 2rem; background: linear-gradient(45deg, #000000, #333333);">
-                <h5 class="mb-0" style="font-size: 1.5rem; font-weight: 600;">إحصائيات عامة</h5>
+        <div class="card ru-stats-card">
+            <div class="card-header ru-stats-header text-white">
+                <h5 class="mb-0">إحصائيات عامة</h5>
             </div>
-            <div class="card-body" style="padding: 2rem;">
-                <div class="row g-5">
-                    @foreach($stats as $stat)
-                    <div class="col-md">
-                        <div class="p-4" style="background-color: rgba(0, 0, 0, 0.05); border-radius: 15px; transition: all 0.3s ease; height: 100%;">
-                            <h6 class="mb-2" style="font-size: 1.1rem; color: #6c757d;">{{ $stat['title'] }}</h6>
-                            <p class="mb-0" style="font-size: 2rem; font-weight: bold; color: #000000;">{{ $stat['count'] }}</p>
-                            <p class="mb-0" style="font-size: 1rem; color: #6c757d;">موقع</p>
+            <div class="card-body ru-stats-body">
+
+                {{-- Top: global totals, never affected by filters --}}
+                <div class="ru-stats-label">{{ __('Total') }} — كل المستخدمين</div>
+                <div class="ru-stats-grid">
+                    @foreach ($statsTotal as $stat)
+                        <div class="ru-stat-tile">
+                            <div class="ru-stat-title">{{ $stat['title'] }}</div>
+                            <div class="ru-stat-count">{{ $stat['count'] }}</div>
+                            <div class="ru-stat-unit">{{ $stat['unit'] }}</div>
                         </div>
-                    </div>
                     @endforeach
                 </div>
+
+                <hr class="ru-stats-divider">
+
+                {{-- Bottom: recomputed against every active filter --}}
+                <div class="ru-stats-label">
+                    ضمن الفلترة الحالية
+                    <span class="badge badge-primary">{{ $users->total() }} مستخدم</span>
+                    @unless ($hasActiveFilters)
+                        <span class="text-muted ru-stats-hint">(لا توجد فلاتر مفعّلة — مطابق للإجمالي)</span>
+                    @endunless
+                </div>
+                <div class="ru-stats-grid">
+                    @foreach ($statsFiltered as $stat)
+                        <div class="ru-stat-tile ru-stat-tile-filtered">
+                            <div class="ru-stat-title">{{ $stat['title'] }}</div>
+                            <div class="ru-stat-count">{{ $stat['count'] }}</div>
+                            <div class="ru-stat-unit">{{ $stat['unit'] }}</div>
+                        </div>
+                    @endforeach
+                </div>
+
             </div>
         </div>
     </div>
@@ -104,16 +154,6 @@
 <style>
     :root {
         --primary: #000000;
-    }
-
-    @media (max-width: 767.98px) {
-        .card-body .row>div:not(:last-child) {
-            margin-bottom: 1rem;
-        }
-    }
-
-    .card-body .row>div>div {
-        cursor: pointer;
     }
 
     .register-users-table {

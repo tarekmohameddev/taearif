@@ -9,7 +9,6 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Package;
 use App\Models\Api\GeneralSetting;
-use App\Models\UserStep;
 use App\Models\User\Menu;
 use App\Models\Membership;
 use App\Constants\Constant;
@@ -41,6 +40,7 @@ use App\Http\Helpers\UserPermissionHelper;
 use PhpOffice\PhpSpreadsheet\Calculation\Web;
 use App\Models\User\BasicSetting as UserBasicSetting;
 use App\Services\MembershipService;
+use App\Services\RegisterUserStatsService;
 use App\Domain\User\Services\UserManagementService;
 use App\Domain\DataExport\Services\TenantDataExportService;
 use App\Domain\DataExport\Services\DataExportImportLogger;
@@ -61,6 +61,74 @@ class RegisterUserController extends Controller
     public function index(Request $request)
     {
         $userListQuery = $this->userListQuery($request);
+        $activeMembership = $request->input('active_membership');
+        $paidMember = $request->input('paid_member');
+
+        $users = $this->applyUserFilters(
+            User::where('account_type', 'tenant')->with([
+                'referrer',
+                'basic_setting',
+                'currentMembership.package',
+                'pendingMembership.package',
+            ]),
+            $request
+        )->orderBy('id', 'DESC')->paginate(10);
+
+        if ($userListQuery !== []) {
+            $users->appends($userListQuery);
+        }
+
+        if ($users->total() > 0 && $users->count() === 0) {
+            return redirect()->route('admin.register.user', $userListQuery);
+        }
+
+        $maintenanceFlags = GeneralSetting::whereIn('user_id', $users->pluck('id'))->pluck('maintenance_mode', 'user_id');
+
+        // $affiliateUsers = User::whereNotNull('referral_code')->get(['id','username','email']);
+        $affiliateUsers = User::where('account_type', 'tenant')
+            ->whereHas('referrals')->get(['id','username','email']);
+
+        $online = PaymentGateway::query()->where('status', 1)->get();
+        $offline = OfflineGateway::where('status', 1)->get();
+        $gateways = $online->merge($offline);
+        $packages = Package::query()->where('status', '1')->get();
+        $packageFilterButtons = $this->packageFilterButtons($packages);
+
+        $statsService = app(RegisterUserStatsService::class);
+
+        $statsTotal = $statsService->counts(
+            fn () => User::query()->where('account_type', 'tenant')
+        );
+        $statsFiltered = $statsService->counts(
+            fn () => $this->applyUserFilters(
+                User::query()->where('account_type', 'tenant'),
+                $request
+            )
+        );
+
+        return view('admin.register_user.index', compact(
+            'users',
+            'gateways',
+            'packages',
+            'statsTotal',
+            'statsFiltered',
+            'affiliateUsers',
+            'activeMembership',
+            'paidMember',
+            'userListQuery',
+            'packageFilterButtons',
+            'maintenanceFlags'
+        ));
+    }
+
+    /**
+     * The filter set shared by the paginated listing and the filtered stats row,
+     * so the bottom row of cards always describes the users in the table.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     */
+    private function applyUserFilters($query, Request $request)
+    {
         $term = $request->term;
         $startDate = $request->filled('start_date') ? Carbon::createFromFormat('Y-m-d', $request->start_date)->startOfDay() : null;
         $endDate   = $request->filled('end_date') ? Carbon::createFromFormat('Y-m-d', $request->end_date)->endOfDay() : null;
@@ -88,19 +156,7 @@ class RegisterUserController extends Controller
             ? Package::find((int) $request->package_id)
             : null;
 
-        $activeUsers = User::where('account_type', 'tenant')
-            ->whereHas('memberships', function ($q) {
-                $q->where('status', 1) // active membership
-                  ->where('expire_date', '>=', now()); // not expired
-            })->get();
-
-        $users = User::where('account_type', 'tenant')
-            ->with([
-                'referrer',
-                'basic_setting',
-                'currentMembership.package',
-                'pendingMembership.package',
-            ])->when($term, function ($query, $term) {
+        return $query->when($term, function ($query, $term) {
                 $query->where(function ($q) use ($term) {
                     $q->where('username', 'like', "%$term%")
                       ->orWhere('email', 'like', "%$term%")
@@ -174,67 +230,7 @@ class RegisterUserController extends Controller
                     $m->where('start_date', '<=', $membershipStartTo);
                 }
             });
-        })
-        ->orderBy('id', 'DESC')
-        ->paginate(10);
-
-        if ($userListQuery !== []) {
-            $users->appends($userListQuery);
-        }
-
-        if ($users->total() > 0 && $users->count() === 0) {
-            return redirect()->route('admin.register.user', $userListQuery);
-        }
-
-        $maintenanceFlags = GeneralSetting::whereIn('user_id', $users->pluck('id'))->pluck('maintenance_mode', 'user_id');
-
-        // $affiliateUsers = User::whereNotNull('referral_code')->get(['id','username','email']);
-        $affiliateUsers = User::where('account_type', 'tenant')
-            ->whereHas('referrals')->get(['id','username','email']);
-
-        $online = PaymentGateway::query()->where('status', 1)->get();
-        $offline = OfflineGateway::where('status', 1)->get();
-        $gateways = $online->merge($offline);
-        $packages = Package::query()->where('status', '1')->get();
-        $packageFilterButtons = $this->packageFilterButtons($packages);
-
-        $logoUploads = UserStep::where('logo_uploaded', true)->count();
-        $faviconUploads = UserStep::where('favicon_uploaded', true)->count();
-        $websiteNames = UserStep::where('website_named', true)->count();
-        $homepageUpdates = UserStep::where('homepage_updated', true)->count();
-        $newUsersThisMonth = User::where('account_type', 'tenant')
-            ->whereBetween('created_at', [
-                now()->startOfMonth(),
-                now()->endOfMonth()
-            ])->count();
-        $newUsersThisWeek = User::where('account_type', 'tenant')
-            ->whereBetween('created_at', [
-                now()->startOfWeek(Carbon::SUNDAY),
-                now()->endOfWeek(Carbon::SUNDAY)
-            ])->count();
-
-
-        $stats = [
-            ['title' => 'رفع شعار', 'count' => $logoUploads ?? 0],
-            ['title' => 'تحميل أيقونة المفضلة', 'count' => $faviconUploads ?? 0],
-            ['title' => 'تحديث الاسم', 'count' => $websiteNames ?? 0],
-            ['title' => 'تحديث الصفحة الرئيسية', 'count' => $homepageUpdates ?? 0],
-            ['title' => 'المسجلين الجديد في هذا الشهر', 'count' => $newUsersThisMonth ?? 0],
-            ['title' => 'المسجلين الجديد في هذا الاسبوع', 'count' => $newUsersThisWeek ?? 0],
-        ];
-
-        return view('admin.register_user.index', compact(
-            'users',
-            'gateways',
-            'packages','stats',
-            'affiliateUsers',
-            'activeMembership',
-            'paidMember',
-            'activeUsers',
-            'userListQuery',
-            'packageFilterButtons',
-            'maintenanceFlags'
-        ));
+        });
     }
 
     private function userListQuery(Request $request): array
