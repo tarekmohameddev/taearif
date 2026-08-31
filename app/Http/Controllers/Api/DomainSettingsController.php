@@ -238,7 +238,7 @@ class DomainSettingsController extends Controller
         if ($domain->primary) {
             $anotherDomain = ApiDomainSetting::where('user_id', $user->id)
                 ->where('id', '!=', $domain->id)
-                ->where('status', 'active')
+                ->preferredActive()
                 ->first();
 
             if ($anotherDomain) {

@@ -149,6 +149,27 @@ class AdminCustomDomainDeleteTest extends AdminApiTestCase
     }
 
     /** @test */
+    public function delete_picks_the_preferred_active_domain_deterministically(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->mockVercel();
+        $this->signInWebAdmin();
+        $user = $this->tenant();
+
+        $primary = $this->makeDomain($user, 'primary', true);
+        $older = $this->makeDomain($user, 'older', false, 'active');
+        $newer = $this->makeDomain($user, 'newer', false, 'active');
+
+        $this->post(route('admin.custom-domain.delete'), ['domain_id' => $primary->id])
+            ->assertRedirect();
+
+        // preferredActive() orders by primary desc, id desc — the newest wins,
+        // rather than whatever an unordered first() happened to return.
+        $this->assertDatabaseHas('api_domains_settings', ['id' => $newer->id, 'primary' => 1]);
+        $this->assertDatabaseHas('api_domains_settings', ['id' => $older->id, 'primary' => 0]);
+    }
+
+    /** @test */
     public function delete_keeps_the_row_when_vercel_removal_fails(): void
     {
         $this->skipIfMissingSchema();

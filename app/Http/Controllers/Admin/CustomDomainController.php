@@ -335,6 +335,10 @@ class CustomDomainController extends Controller
 
     /**
      * Hand the primary flag to another active domain of the same tenant.
+     *
+     * Uses preferredActive() so the choice is deterministic and matches
+     * DomainSettingsController::destroy(); an unordered first() picked an
+     * arbitrary row when a tenant had several active domains.
      */
     private function reassignPrimary(ApiDomainSetting $domain): void
     {
@@ -344,7 +348,7 @@ class CustomDomainController extends Controller
 
         $another = ApiDomainSetting::where('user_id', $domain->user_id)
             ->where('id', '!=', $domain->id)
-            ->where('status', 'active')
+            ->preferredActive()
             ->first();
 
         if ($another) {
