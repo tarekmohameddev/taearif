@@ -280,6 +280,109 @@ class DomainSettingsVercelTest extends TestCase
         ]);
     }
 
+    public function test_store_returns_clear_message_when_vercel_project_domain_limit_reached(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $tenant = $this->actingTenant();
+
+        // Closure-based, not a flat fake: a flat fake also answers the follow-up
+        // GET, so the assertion would pass off the wrong exception even if the
+        // early throw in addDomain() were missing.
+        Http::fake(function (\Illuminate\Http\Client\Request $request) {
+            if ($request->method() === 'POST' && str_contains($request->url(), '/domains')) {
+                return Http::response([
+                    'error' => [
+                        'code' => 'project_domain_limit_reached',
+                        'message' => 'Unable to add the domain. The project taearif-v2 contains maximum allowed number of domains (50). If you would like to lift this constraint, please contact sales.',
+                        'link' => 'https://vercel.com/contact/sales',
+                    ],
+                ], 400);
+            }
+
+            return Http::response(['error' => ['message' => 'unexpected call']], 500);
+        });
+
+        $response = $this->postJson('/api/settings/domain', [
+            'custom_name' => 'khnas.sa.net',
+        ]);
+
+        $response->assertStatus(503)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('code', 'HOSTING_CAPACITY_REACHED')
+            ->assertJsonPath('message', 'We cannot add more domains right now because the hosting limit has been reached. Please contact support.');
+        $body = json_encode($response->json());
+        $this->assertStringNotContainsString('taearif-v2', $body);
+        $this->assertStringNotContainsString('project_domain_limit_reached', $body);
+        $this->assertStringNotContainsString('vercel.com', $body);
+        $this->assertDatabaseMissing('api_domains_settings', [
+            'user_id' => $tenant->id,
+            'custom_name' => 'khnas.sa.net',
+        ]);
+
+        // The limit error must not trigger the "already attached?" lookup.
+        Http::assertNotSent(fn ($request) => $request->method() === 'GET');
+    }
+
+    public function test_store_falls_back_to_502_for_an_unmapped_vercel_error_code(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $tenant = $this->actingTenant();
+
+        Http::fake([
+            'api.vercel.com/*' => Http::response([
+                'error' => ['code' => 'some_other_error', 'message' => 'nope'],
+            ], 500),
+        ]);
+
+        $response = $this->postJson('/api/settings/domain', [
+            'custom_name' => 'unmapped.example.com',
+        ]);
+
+        $response->assertStatus(502)
+            ->assertJsonPath('message', 'Failed to register domain with hosting provider. Please try again later.')
+            ->assertJsonMissingPath('code');
+        $this->assertDatabaseMissing('api_domains_settings', [
+            'user_id' => $tenant->id,
+            'custom_name' => 'unmapped.example.com',
+        ]);
+    }
+
+    public function test_store_success_response_does_not_leak_vercel_internals(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(false);
+        $tenant = $this->actingTenant();
+
+        // Attach succeeds, then the verify/get calls fail with upstream detail.
+        Http::fake(function (\Illuminate\Http\Client\Request $request) {
+            if ($request->method() === 'POST' && ! str_contains($request->url(), '/verify')) {
+                return Http::response(['name' => 'leaky.example.com', 'verified' => false], 200);
+            }
+
+            return Http::response([
+                'error' => [
+                    'code' => 'forbidden',
+                    'message' => 'The project taearif-v2 rejected this request.',
+                ],
+            ], 500);
+        });
+
+        $response = $this->postJson('/api/settings/domain', [
+            'custom_name' => 'leaky.example.com',
+        ]);
+
+        $response->assertCreated();
+
+        // The leak lives on the SUCCESS path: verification.message is built from
+        // the sync service, which used to pass the raw exception text straight out.
+        $body = json_encode($response->json());
+        $this->assertStringNotContainsString('taearif-v2', $body);
+        $this->assertNotEmpty($response->json('verification.message'));
+    }
+
     public function test_store_rejects_domain_owned_by_another_tenant(): void
     {
         $this->skipIfMissingSchema();

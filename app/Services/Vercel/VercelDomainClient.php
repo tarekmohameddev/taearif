@@ -46,6 +46,14 @@ class VercelDomainClient
             return $response->json() ?? [];
         }
 
+        // A project domain-limit rejection arrives as a 400, but it is never an
+        // "already attached" case. Without this short-circuit the lookup below
+        // replaces this response — and its error code — with whatever the
+        // follow-up GET returns, so callers lose the reason for the failure.
+        if ($response->json('error.code') === 'project_domain_limit_reached') {
+            $this->throwFromResponse('Failed to add domain to Vercel', $response);
+        }
+
         // Idempotent: domain already on project
         if (in_array($response->status(), [400, 409], true)) {
             $existing = $this->getDomain($name);
