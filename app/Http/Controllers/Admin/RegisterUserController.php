@@ -51,6 +51,17 @@ use App\Domain\DataExport\Models\TenantDataImportBatch;
 
 class RegisterUserController extends Controller
 {
+    /**
+     * Packages already resolved for the package_id filter, keyed by id.
+     *
+     * applyUserFilters() runs once for the listing and once per stats bucket,
+     * so without this the same package row is fetched nine times per page
+     * load. The controller lives one request, so does this cache.
+     *
+     * @var array<int, \App\Models\Package|null>
+     */
+    private array $filteredPackageCache = [];
+
     public function __construct()
     {
         $abs = BasicSetting::first();
@@ -103,7 +114,8 @@ class RegisterUserController extends Controller
             fn () => $this->applyUserFilters(
                 User::query()->where('account_type', 'tenant'),
                 $request
-            )
+            ),
+            $this->registrationWindow($request)
         );
 
         return view('admin.register_user.index', compact(
@@ -152,9 +164,7 @@ class RegisterUserController extends Controller
         $paidMember = $request->input('paid_member');
 
         // Needed to decide whether the package_id filter is a trial filter.
-        $filteredPackage = $request->filled('package_id')
-            ? Package::find((int) $request->package_id)
-            : null;
+        $filteredPackage = $this->resolveFilteredPackage($request);
 
         return $query->when($term, function ($query, $term) {
                 $query->where(function ($q) use ($term) {
@@ -231,6 +241,61 @@ class RegisterUserController extends Controller
                 }
             });
         });
+    }
+
+    /**
+     * The window the filtered row's registrations tile reports on.
+     *
+     * Without this the tile ANDs the current month onto whatever registration
+     * date filter is active, so any window not overlapping today reads 0. With
+     * a From/To filter set it reports that window instead; with none it falls
+     * back to the current month. Only the filtered row passes this — the totals
+     * row always reports the current month.
+     *
+     * Reads the same start_date/end_date the advanced filter uses, so the two
+     * can never drift apart.
+     *
+     * @return array{from: ?Carbon, to: ?Carbon, title: string}
+     */
+    private function registrationWindow(Request $request): array
+    {
+        $from = $request->filled('start_date')
+            ? Carbon::createFromFormat('Y-m-d', $request->start_date)->startOfDay()
+            : null;
+        $to = $request->filled('end_date')
+            ? Carbon::createFromFormat('Y-m-d', $request->end_date)->endOfDay()
+            : null;
+
+        if ($from || $to) {
+            return ['from' => $from, 'to' => $to, 'title' => 'المسجلون خلال الفترة المحددة'];
+        }
+
+        return [
+            'from'  => now()->startOfMonth(),
+            'to'    => now(),
+            'title' => 'المسجلون الجدد هذا الشهر',
+        ];
+    }
+
+    /**
+     * The package behind the package_id filter, fetched at most once per id.
+     *
+     * array_key_exists rather than isset/??: a package_id that matches no row
+     * caches a null, and that miss should stay cached too.
+     */
+    private function resolveFilteredPackage(Request $request): ?Package
+    {
+        if (! $request->filled('package_id')) {
+            return null;
+        }
+
+        $packageId = (int) $request->package_id;
+
+        if (! array_key_exists($packageId, $this->filteredPackageCache)) {
+            $this->filteredPackageCache[$packageId] = Package::find($packageId);
+        }
+
+        return $this->filteredPackageCache[$packageId];
     }
 
     private function userListQuery(Request $request): array

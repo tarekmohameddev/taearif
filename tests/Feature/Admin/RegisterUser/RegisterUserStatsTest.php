@@ -47,7 +47,70 @@ class RegisterUserStatsTest extends AdminApiTestCase
         $response = $this->get(route('admin.register.user'));
 
         $response->assertOk();
-        $this->assertSame(2, $this->statCount($response, 'new_this_month'));
+        $this->assertSame(2, $this->statCount($response, 'registrations'));
+    }
+
+    /** @test */
+    public function filtered_registrations_tile_follows_the_date_filter_not_the_current_month(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-31 12:00:00', 'UTC'));
+
+        $this->signInWebAdmin();
+
+        $this->createTenantUserAt('reg-window-may-a', Carbon::parse('2026-05-10 09:00:00', 'UTC'));
+        $this->createTenantUserAt('reg-window-may-b', Carbon::parse('2026-05-20 09:00:00', 'UTC'));
+        $this->createTenantUserAt('reg-window-august', Carbon::parse('2026-08-05 09:00:00', 'UTC'));
+
+        $response = $this->get(route('admin.register.user', [
+            'start_date' => '2026-05-01',
+            'end_date' => '2026-05-31',
+        ]));
+
+        $response->assertOk();
+
+        // The selected window, not the current month ANDed onto it (which is 0).
+        $this->assertSame(2, $this->statCount($response, 'registrations', 'statsFiltered'));
+
+        // The totals row is never filtered: still the current month, globally.
+        $this->assertSame(1, $this->statCount($response, 'registrations', 'statsTotal'));
+
+        $response->assertSee('المسجلون خلال الفترة المحددة', false);
+        $response->assertSee('المسجلون الجدد هذا الشهر', false);
+    }
+
+    /** @test */
+    public function filtered_registrations_tile_honours_a_half_open_date_filter(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-31 12:00:00', 'UTC'));
+
+        $this->signInWebAdmin();
+
+        $this->createTenantUserAt('reg-half-old', Carbon::parse('2026-03-01 09:00:00', 'UTC'));
+        $this->createTenantUserAt('reg-half-mid', Carbon::parse('2026-06-01 09:00:00', 'UTC'));
+        $this->createTenantUserAt('reg-half-new', Carbon::parse('2026-08-05 09:00:00', 'UTC'));
+
+        // Only a From date: no upper bound should be invented.
+        $response = $this->get(route('admin.register.user', ['start_date' => '2026-05-01']));
+
+        $response->assertOk();
+        $this->assertSame(2, $this->statCount($response, 'registrations', 'statsFiltered'));
+    }
+
+    /** @test */
+    public function registrations_tile_keeps_the_month_title_when_no_date_filter_is_set(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-31 12:00:00', 'UTC'));
+
+        $this->signInWebAdmin();
+
+        $this->createTenantUserAt('reg-title-august', Carbon::parse('2026-08-05 09:00:00', 'UTC'));
+
+        // A non-date filter must not switch the tile away from the month window.
+        $response = $this->get(route('admin.register.user', ['term' => 'reg-title-august']));
+
+        $response->assertOk();
+        $this->assertSame(1, $this->statCount($response, 'registrations', 'statsFiltered'));
+        $response->assertDontSee('المسجلون خلال الفترة المحددة', false);
     }
 
     /** @test */
@@ -97,7 +160,7 @@ class RegisterUserStatsTest extends AdminApiTestCase
         $response = $this->get(route('admin.register.user'));
 
         $response->assertOk();
-        $this->assertSame(1, $this->statCount($response, 'new_this_month'));
+        $this->assertSame(1, $this->statCount($response, 'registrations'));
         $this->assertSame(1, $this->statCount($response, 'paid_yearly'));
         $this->assertSame(1, $this->statCount($response, 'paid_monthly'));
         $this->assertSame(1, $this->statCount($response, 'trial_7_active'));

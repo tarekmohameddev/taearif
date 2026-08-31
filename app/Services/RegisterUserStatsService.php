@@ -23,10 +23,14 @@ class RegisterUserStatsService
     /**
      * @param  Closure():\Illuminate\Database\Eloquent\Builder  $base
      *         Factory returning a fresh tenant-scoped User builder.
+     * @param  array{from: ?\Carbon\Carbon, to: ?\Carbon\Carbon, title: string}|null  $registrationWindow
+     *         Window the registrations bucket reports on. Defaults to the
+     *         current month, counted from the 1st up to now.
      * @return array<int, array{key: string, title: string, unit: string, count: int}>
      */
-    public function counts(Closure $base): array
+    public function counts(Closure $base, ?array $registrationWindow = null): array
     {
+        $window  = $registrationWindow ?? $this->currentMonthWindow();
         $today   = now()->toDateString();
         $free    = (int) config('membership.free_package_id', MembershipService::FREE_PACKAGE_ID);
         $yearly  = MembershipService::PAID_YEARLY_PACKAGE_ID;
@@ -37,12 +41,10 @@ class RegisterUserStatsService
 
         return [
             [
-                'key'   => 'new_this_month',
-                'title' => 'المسجلون الجدد هذا الشهر',
+                'key'   => 'registrations',
+                'title' => $window['title'],
                 'unit'  => 'مستخدم',
-                'count' => $base()
-                    ->whereBetween('created_at', [now()->startOfMonth(), now()])
-                    ->count(),
+                'count' => $this->registrationCount($base, $window),
             ],
             [
                 'key'   => 'paid_yearly',
@@ -91,6 +93,39 @@ class RegisterUserStatsService
                 'count' => $this->expiredCount($base, $free, $today),
             ],
         ];
+    }
+
+    /**
+     * The default window: the 1st of the current month up to now.
+     *
+     * @return array{from: \Carbon\Carbon, to: \Carbon\Carbon, title: string}
+     */
+    private function currentMonthWindow(): array
+    {
+        return [
+            'from'  => now()->startOfMonth(),
+            'to'    => now(),
+            'title' => 'المسجلون الجدد هذا الشهر',
+        ];
+    }
+
+    /**
+     * Bounds are applied separately, not via whereBetween, so a half-open
+     * filter (only a From date, or only a To date) still works.
+     */
+    private function registrationCount(Closure $base, array $window): int
+    {
+        $query = $base();
+
+        if (! empty($window['from'])) {
+            $query->where('created_at', '>=', $window['from']);
+        }
+
+        if (! empty($window['to'])) {
+            $query->where('created_at', '<=', $window['to']);
+        }
+
+        return $query->count();
     }
 
     /**
