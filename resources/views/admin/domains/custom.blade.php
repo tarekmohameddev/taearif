@@ -102,7 +102,7 @@
                     </div>
                     <div class="col-8 col-stats">
                         <div class="numbers">
-                            <p class="card-category text-muted mb-1">{{ __('Room for') }}</p>
+                            <p class="card-category text-muted mb-1">{{ __('Can still add') }}</p>
                             <h4 class="card-title font-weight-bold mb-0" style="color: {{ $capHex }};">{{ $vercelCapacity['customer_domains_remaining'] }}</h4>
                         </div>
                     </div>
