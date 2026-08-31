@@ -13,9 +13,17 @@ use PHPMailer\PHPMailer\PHPMailer;
 use App\Http\Controllers\Controller;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User\UserCustomDomain;
+use App\Services\Vercel\VercelDomainClient;
+use App\Services\Vercel\VercelDomainException;
+use Illuminate\Support\Facades\Log;
 
 class CustomDomainController extends Controller
 {
+    public function __construct(
+        private readonly VercelDomainClient $vercel
+    ) {
+    }
+
     public function texts()
     {
         $data['abe'] = BasicExtended::select('domain_request_success_message', 'cname_record_section_title', 'cname_record_section_text')->first();
@@ -235,19 +243,113 @@ class CustomDomainController extends Controller
 
     public function delete(Request $request)
     {
-        UserCustomDomain::findOrFail($request->domain_id)->delete();
+        // index() lists ApiDomainSetting rows, so domain_id is an api_domains_settings id.
+        $domain = ApiDomainSetting::findOrFail($request->domain_id);
+
+        if (! $this->detachFromVercel($domain)) {
+            $request->session()->flash('error', 'Could not remove the domain from the hosting provider. Nothing was deleted — please try again.');
+            return redirect()->back();
+        }
+
+        $this->reassignPrimary($domain);
+        $this->deleteAndRecord($request, $domain);
+
         $request->session()->flash('success', 'Custom domain deleted successfully!');
         return redirect()->back();
     }
 
     public function bulkDelete(Request $request)
     {
-        $ids = $request->ids;
+        $ids = (array) $request->ids;
 
-        foreach ($ids as $id) {
-            UserCustomDomain::findOrFail($id)->delete();
+        // Resolve everything first: an unknown id aborts the whole batch before
+        // anything is detached, rather than leaving it half applied.
+        $domains = ApiDomainSetting::whereIn('id', $ids)->get();
+        if ($domains->count() !== count(array_unique($ids))) {
+            $request->session()->flash('error', 'Some selected domains no longer exist. Nothing was deleted — please refresh and try again.');
+            return "error";
         }
+
+        // Deliberately not wrapped in a transaction: Vercel removal cannot be
+        // rolled back, so a DB rollback after a successful detach would leave
+        // rows pointing at domains the project no longer serves. Each domain is
+        // detached and deleted independently instead.
+        $failed = [];
+        foreach ($domains as $domain) {
+            if (! $this->detachFromVercel($domain)) {
+                $failed[] = $domain->custom_name;
+                continue;
+            }
+
+            $this->reassignPrimary($domain);
+            $this->deleteAndRecord($request, $domain);
+        }
+
+        if ($failed !== []) {
+            $request->session()->flash('error', 'Some domains could not be removed from the hosting provider and were kept: ' . implode(', ', $failed));
+            return "error";
+        }
+
         $request->session()->flash('success', 'Custom domains deleted successfully!');
         return "success";
+    }
+
+    /**
+     * Delete the row and record the activity, capturing its state beforehand.
+     */
+    private function deleteAndRecord(Request $request, ApiDomainSetting $domain): void
+    {
+        $before = $domain->only(['custom_name', 'status', 'primary', 'ssl']);
+        $id = $domain->id;
+
+        $domain->delete();
+
+        TenantActivity::emit($request, 'domain.deleted', 'api_domains_settings', $id, $before, null);
+    }
+
+    /**
+     * Detach apex + www from Vercel. Fails closed: returns false so the caller
+     * keeps the row rather than orphaning the domain on the Vercel project.
+     */
+    private function detachFromVercel(ApiDomainSetting $domain): bool
+    {
+        if (! (bool) config('services.vercel.auto_attach_custom_domain', true) || ! $this->vercel->isConfigured()) {
+            return true;
+        }
+
+        try {
+            $this->vercel->removeApexAndWww((string) $domain->custom_name);
+        } catch (VercelDomainException $e) {
+            Log::warning('Failed to remove domain from Vercel during admin delete', [
+                'domain_id' => $domain->id,
+                'domain' => $domain->custom_name,
+                'error' => $e->getMessage(),
+                'status' => $e->statusCode,
+            ]);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Hand the primary flag to another active domain of the same tenant.
+     */
+    private function reassignPrimary(ApiDomainSetting $domain): void
+    {
+        if (! $domain->primary) {
+            return;
+        }
+
+        $another = ApiDomainSetting::where('user_id', $domain->user_id)
+            ->where('id', '!=', $domain->id)
+            ->where('status', 'active')
+            ->first();
+
+        if ($another) {
+            $another->primary = true;
+            $another->save();
+        }
     }
 }

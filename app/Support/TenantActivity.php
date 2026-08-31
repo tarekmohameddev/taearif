@@ -20,9 +20,15 @@ final class TenantActivity
     ): void {
         $u = $request->user();
 
-        // Resolve tenant & actor robustly (user table holds both tenant & employee)
-        $tenantId  = $u ? ($u->isTenant() ? (int)$u->id : (int)$u->tenant_id) : null;
-        $actorType = $u && method_exists($u, 'isTenant') && !$u->isTenant() ? 'employee' : 'user';
+        // Resolve tenant & actor robustly (user table holds both tenant & employee).
+        // The actor is not always tenant-aware: `auth:admin` web routes call
+        // shouldUse('admin'), so $request->user() can be an Admin, which has no
+        // isTenant(). Guard the call the same way the actor line already does.
+        $hasTenancy = $u && method_exists($u, 'isTenant');
+        $isTenant   = $hasTenancy && $u->isTenant();
+
+        $tenantId  = $hasTenancy ? ($isTenant ? (int)$u->id : (int)$u->tenant_id) : null;
+        $actorType = $hasTenancy && !$isTenant ? 'employee' : 'user';
         $actorId   = $u ? (int)$u->id : null;
 
         // If we can’t resolve tenant, don’t explode; just skip persisting.
