@@ -89,7 +89,14 @@ class DomainStatusSyncService
                     } catch (VercelDomainException $e) {
                         $vercelDomain = $this->vercel->getDomain($apex);
                         if ($vercelDomain === null) {
-                            $message = $e->getMessage();
+                            // $message reaches the client. Never derive it from
+                            // getMessage(), which embeds the raw upstream text.
+                            Log::warning('DomainStatusSyncService verify failed', [
+                                'domain_id' => $domain->id,
+                                'error' => $e->getMessage(),
+                                'vercel_error_code' => $e->getErrorCode(),
+                            ]);
+                            $message = 'Domain could not be verified with the hosting provider yet.';
                         }
                     }
                 } else {
@@ -108,8 +115,11 @@ class DomainStatusSyncService
                 Log::warning('DomainStatusSyncService Vercel error', [
                     'domain_id' => $domain->id,
                     'error' => $e->getMessage(),
+                    'vercel_error_code' => $e->getErrorCode(),
                 ]);
-                $message = $e->getMessage();
+                // Client-facing: the raw upstream message names the Vercel project
+                // and, with no error.message field, serialises the whole body.
+                $message = 'Could not reach the hosting provider to check this domain.';
                 $vercelVerified = false;
             }
         } else {

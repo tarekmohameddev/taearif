@@ -93,6 +93,7 @@ class DomainSettingsController extends Controller
         if ($autoAttach && ! $this->vercel->isConfigured()) {
             return response()->json([
                 'success' => false,
+                'code' => 'HOSTING_NOT_CONFIGURED',
                 'message' => 'Domain hosting is not configured. Please contact support.',
             ], 503);
         }
@@ -126,12 +127,41 @@ class DomainSettingsController extends Controller
             try {
                 $this->vercel->addApexWithWwwRedirect($customName);
             } catch (VercelDomainException $e) {
+                // The apex may already be attached when the www call is what failed.
+                // Best effort: a cleanup failure must never mask the original error.
+                try {
+                    $this->vercel->removeApexAndWww($customName);
+                } catch (VercelDomainException $cleanupError) {
+                    Log::warning('Could not detach partially attached domain after a failed add', [
+                        'domain' => $customName,
+                        'error' => $cleanupError->getMessage(),
+                    ]);
+                }
+
                 $domain->delete();
                 Log::error('Failed to attach domain to Vercel', [
                     'domain' => $customName,
                     'error' => $e->getMessage(),
                     'status' => $e->statusCode,
+                    'vercel_error_code' => $e->getErrorCode(),
                 ]);
+
+                $mapped = match ($e->getErrorCode()) {
+                    'project_domain_limit_reached' => [
+                        'status' => 503,
+                        'code' => 'HOSTING_CAPACITY_REACHED',
+                        'message' => 'We cannot add more domains right now because the hosting limit has been reached. Please contact support.',
+                    ],
+                    default => null,
+                };
+
+                if ($mapped !== null) {
+                    return response()->json([
+                        'success' => false,
+                        'code' => $mapped['code'],
+                        'message' => $mapped['message'],
+                    ], $mapped['status']);
+                }
 
                 return response()->json([
                     'success' => false,
