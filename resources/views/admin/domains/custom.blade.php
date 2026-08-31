@@ -33,29 +33,129 @@
     </ul>
 </div>
 @if ($vercelCapacity ?? null)
+@php
+    $capColors = [
+        'success' => '16, 185, 129',
+        'warning' => '245, 158, 11',
+        'danger'  => '239, 68, 68',
+    ];
+    $capState = $vercelCapacity['alert_class'];
+    $capRgb = $capColors[$capState] ?? $capColors['success'];
+    $capHex = ['success' => '#10b981', 'warning' => '#f59e0b', 'danger' => '#ef4444'][$capState] ?? '#10b981';
+    $capPercent = min(100, round($vercelCapacity['usage_percent']));
+@endphp
 <div class="row">
-    <div class="col-md-12">
-        <div class="alert alert-{{ $vercelCapacity['alert_class'] }} mb-3">
-            <strong>{{ __('Vercel domain capacity') }}</strong>
-            <p class="mb-1">
-                {{ __('Vercel entries: :used / :total', ['used' => $vercelCapacity['entries_used'], 'total' => $vercelCapacity['entries_total']]) }}
-            </p>
-            @if ($vercelCapacity['is_lower_bound'])
-                <p class="mb-1 text-muted">
-                    <small>{{ __('Count capped at 1,000 entries; the real total may be higher.') }}</small>
-                </p>
-            @endif
-            <p class="mb-1">
-                {{ __(':count customer domains in use', ['count' => $vercelCapacity['customer_domains_in_use']]) }}
-            </p>
-            <p class="mb-1">
-                {{ __('Room for about :count more customer domains', ['count' => $vercelCapacity['customer_domains_remaining']]) }}
-            </p>
-            <small class="text-muted">
-                {{ __('Each customer domain uses two Vercel entries (apex and www).') }}
-            </small>
+
+    {{-- Entries consumed on the Vercel project --}}
+    <div class="col-sm-6 col-md-3">
+        <div class="card card-stats card-round">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-4">
+                        <div class="icon-big text-center" style="background: rgba({{ $capRgb }}, 0.1); color: {{ $capHex }}; border-radius: 12px; padding: 10px;">
+                            <i data-lucide="layers"></i>
+                        </div>
+                    </div>
+                    <div class="col-8 col-stats">
+                        <div class="numbers">
+                            <p class="card-category text-muted mb-1">{{ __('Vercel entries') }}</p>
+                            <h4 class="card-title font-weight-bold mb-0">
+                                {{ $vercelCapacity['entries_used'] }} / {{ $vercelCapacity['entries_total'] }}
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+    {{-- Actual customer domains, which is entries minus platform, halved --}}
+    <div class="col-sm-6 col-md-3">
+        <div class="card card-stats card-round">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-4">
+                        <div class="icon-big text-center" style="background: rgba(79, 70, 229, 0.1); color: #4f46e5; border-radius: 12px; padding: 10px;">
+                            <i data-lucide="globe"></i>
+                        </div>
+                    </div>
+                    <div class="col-8 col-stats">
+                        <div class="numbers">
+                            <p class="card-category text-muted mb-1">{{ __('Customer domains') }}</p>
+                            <h4 class="card-title font-weight-bold mb-0">{{ $vercelCapacity['customer_domains_in_use'] }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Headroom in whole customer domains --}}
+    <div class="col-sm-6 col-md-3">
+        <div class="card card-stats card-round">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-4">
+                        <div class="icon-big text-center" style="background: rgba({{ $capRgb }}, 0.1); color: {{ $capHex }}; border-radius: 12px; padding: 10px;">
+                            <i data-lucide="plus-circle"></i>
+                        </div>
+                    </div>
+                    <div class="col-8 col-stats">
+                        <div class="numbers">
+                            <p class="card-category text-muted mb-1">{{ __('Room for') }}</p>
+                            <h4 class="card-title font-weight-bold mb-0" style="color: {{ $capHex }};">{{ $vercelCapacity['customer_domains_remaining'] }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Percentage of the project cap consumed --}}
+    <div class="col-sm-6 col-md-3">
+        <div class="card card-stats card-round">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-4">
+                        <div class="icon-big text-center" style="background: rgba({{ $capRgb }}, 0.1); color: {{ $capHex }}; border-radius: 12px; padding: 10px;">
+                            <i data-lucide="gauge"></i>
+                        </div>
+                    </div>
+                    <div class="col-8 col-stats">
+                        <div class="numbers">
+                            <p class="card-category text-muted mb-1">{{ __('Capacity used') }}</p>
+                            <h4 class="card-title font-weight-bold mb-0" style="color: {{ $capHex }};">{{ $capPercent }}%</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Context bar: the numbers above are meaningless without the 2-entries-per-domain rule --}}
+    <div class="col-md-12">
+        <div class="card card-round mb-3">
+            <div class="card-body py-3">
+                <div class="progress mb-2" style="height: 8px; border-radius: 4px;">
+                    <div class="progress-bar" role="progressbar"
+                         style="width: {{ $capPercent }}%; background-color: {{ $capHex }};"
+                         aria-valuenow="{{ $capPercent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <small class="text-muted">
+                    {{ __('Each customer domain uses two Vercel entries (apex and www).') }}
+                    @if ($vercelCapacity['customer_domains_remaining'] === 0)
+                        <strong style="color: {{ $capHex }};">
+                            {{ __('The project is at its limit — new customer domains will fail until capacity is increased.') }}
+                        </strong>
+                    @endif
+                    @if ($vercelCapacity['is_lower_bound'])
+                        {{ __('Count capped at 1,000 entries; the real total may be higher.') }}
+                    @endif
+                </small>
+            </div>
+        </div>
+    </div>
+
 </div>
 @endif
 <div class="row">

@@ -50,10 +50,14 @@ class CustomDomainCapacityTest extends AdminApiTestCase
         $response = $this->get(route('admin.custom-domain.index'));
 
         $response->assertOk();
-        $response->assertSee('Vercel domain capacity', false);
+        $response->assertSee('Vercel entries', false);
         $response->assertSee('46 / 50', false);
-        $response->assertSee('21 customer domains in use', false);
-        $response->assertSee('Room for about 2 more customer domains', false);
+        // Card values: 21 customer domains in use, room for 2 more, 92% of cap.
+        $response->assertSee('Customer domains', false);
+        $response->assertSee('>21<', false);
+        $response->assertSee('Room for', false);
+        $response->assertSee('>2</h4>', false);
+        $response->assertSee('92%', false);
         $response->assertSee($domain->custom_name, false);
     }
 
@@ -154,8 +158,11 @@ class CustomDomainCapacityTest extends AdminApiTestCase
 
         $response->assertOk();
         $response->assertSee('48 / 50', false);
-        $response->assertSee('22 customer domains in use', false);
-        $response->assertSee('Room for about 1 more customer domains', false);
+        // (48 - 4 platform) / 2 = 22 in use; (50 - 48) / 2 = 1 remaining.
+        $response->assertSee('>22<', false);
+        $response->assertSee('Room for', false);
+        $response->assertSee('>1</h4>', false);
+        $response->assertSee('96%', false);
     }
 
     private function skipIfMissingSchema(): void
