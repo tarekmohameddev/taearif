@@ -50,13 +50,12 @@ class CustomDomainCapacityTest extends AdminApiTestCase
         $response = $this->get(route('admin.custom-domain.index'));
 
         $response->assertOk();
-        $response->assertSee('Vercel entries', false);
+        // Anchor on values and structure, not copy: the admin layout renders in
+        // Arabic, so asserting labels couples this test to the translation files.
+        $response->assertSee('data-lucide="gauge"', false);
         $response->assertSee('46 / 50', false);
-        // Card values: 21 customer domains in use, room for 2 more, 92% of cap.
-        $response->assertSee('Customer domains', false);
-        $response->assertSee('>21<', false);
-        $response->assertSee('Can still add', false);
-        $response->assertSee('>2</h4>', false);
+        $response->assertSee('>21<', false);   // customer domains in use
+        $response->assertSee('>2</h4>', false); // can still add
         $response->assertSee('92%', false);
         $response->assertSee($domain->custom_name, false);
     }
@@ -77,7 +76,7 @@ class CustomDomainCapacityTest extends AdminApiTestCase
         $response = $this->get(route('admin.custom-domain.index'));
 
         $response->assertOk();
-        $response->assertDontSee('Vercel domain capacity', false);
+        $response->assertDontSee('data-lucide="gauge"', false);
         $response->assertSee($domain->custom_name, false);
     }
 
@@ -97,7 +96,7 @@ class CustomDomainCapacityTest extends AdminApiTestCase
         $response = $this->get(route('admin.custom-domain.index'));
 
         $response->assertOk();
-        $response->assertDontSee('Vercel domain capacity', false);
+        $response->assertDontSee('data-lucide="gauge"', false);
         $response->assertSee($domain->custom_name, false);
     }
 
@@ -159,9 +158,8 @@ class CustomDomainCapacityTest extends AdminApiTestCase
         $response->assertOk();
         $response->assertSee('48 / 50', false);
         // (48 - 4 platform) / 2 = 22 in use; (50 - 48) / 2 = 1 remaining.
-        $response->assertSee('>22<', false);
-        $response->assertSee('Can still add', false);
-        $response->assertSee('>1</h4>', false);
+        $response->assertSee('>22<', false);    // (48 - 4 platform) / 2
+        $response->assertSee('>1</h4>', false); // (50 - 48) / 2
         $response->assertSee('96%', false);
     }
 

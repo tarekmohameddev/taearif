@@ -59,9 +59,9 @@
                     <div class="col-8 col-stats">
                         <div class="numbers">
                             <p class="card-category text-muted mb-1">{{ __('Vercel entries') }}</p>
-                            <h4 class="card-title font-weight-bold mb-0">
-                                {{ $vercelCapacity['entries_used'] }} / {{ $vercelCapacity['entries_total'] }}
-                            </h4>
+                            {{-- bdi + dir=ltr: without isolation the RTL layout renders
+                                 "49 / 50" as "50 / 49", which reads as nonsense. --}}
+                            <h4 class="card-title font-weight-bold mb-0"><bdi dir="ltr">{{ $vercelCapacity['entries_used'] }} / {{ $vercelCapacity['entries_total'] }}</bdi></h4>
                         </div>
                     </div>
                 </div>
