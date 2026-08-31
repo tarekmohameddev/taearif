@@ -15,6 +15,7 @@ use App\Models\Api\ApiDomainSetting;
 use App\Models\User\UserCustomDomain;
 use App\Services\Vercel\VercelDomainClient;
 use App\Services\Vercel\VercelDomainException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class CustomDomainController extends Controller
@@ -74,8 +75,69 @@ class CustomDomainController extends Controller
         }
 
         $data['rcDomains'] = $rcDomains;
+        $data['vercelCapacity'] = $this->resolveVercelCapacity();
 
         return view('admin.domains.custom', $data);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function resolveVercelCapacity(): ?array
+    {
+        if (! $this->vercel->isConfigured()) {
+            return null;
+        }
+
+        // Cache the upstream count only. A failure is cached briefly under the same
+        // key as `false`, so an outage does not turn every page load into a timeout.
+        $counted = Cache::remember('vercel.project_domain_count', now()->addMinutes(5), function () {
+            try {
+                return $this->vercel->countProjectDomains();
+            } catch (\Throwable $e) {
+                Log::warning('Vercel domain capacity unavailable', ['exception' => $e->getMessage()]);
+
+                return false;
+            }
+        });
+
+        if ($counted === false) {
+            Cache::put('vercel.project_domain_count', false, now()->addSeconds(60));
+
+            return null;
+        }
+
+        return $this->buildCapacity($counted);
+    }
+
+    /**
+     * @param  array{count: int, is_lower_bound: bool}  $counted
+     * @return array<string, mixed>
+     */
+    private function buildCapacity(array $counted): array
+    {
+        $entriesUsed = $counted['count'];
+        $entriesTotal = (int) config('services.vercel.max_project_domains');
+        $platformCount = (int) config('services.vercel.platform_domain_count');
+
+        // Each customer domain consumes 2 Vercel entries (apex + www).
+        $customerInUse = max(0, (int) floor(($entriesUsed - $platformCount) / 2));
+        $customerRemaining = max(0, (int) floor(($entriesTotal - $entriesUsed) / 2));
+        $usagePercent = $entriesTotal > 0 ? ($entriesUsed / $entriesTotal) * 100 : 0;
+
+        $alertClass = $customerRemaining === 0 || $usagePercent >= 95
+            ? 'danger'
+            : ($usagePercent >= 80 ? 'warning' : 'success');
+
+        return [
+            'entries_used' => $entriesUsed,
+            'entries_total' => $entriesTotal,
+            'is_lower_bound' => $counted['is_lower_bound'],
+            'customer_domains_in_use' => $customerInUse,
+            'customer_domains_remaining' => $customerRemaining,
+            'usage_percent' => $usagePercent,
+            'alert_class' => $alertClass,
+        ];
     }
 
     // public function index(Request $request)

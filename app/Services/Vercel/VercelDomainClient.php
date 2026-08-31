@@ -149,6 +149,52 @@ class VercelDomainClient
         $this->removeDomain('www.' . $apex);
     }
 
+    /**
+     * Count all domains attached to the Vercel project (paginated).
+     *
+     * @return array{count: int, is_lower_bound: bool}
+     */
+    public function countProjectDomains(): array
+    {
+        $this->assertConfigured();
+
+        $total = 0;
+        $until = null;
+        $maxPages = 10;
+
+        for ($page = 0; $page < $maxPages; $page++) {
+            $path = '/domains?limit=100';
+            if ($until !== null) {
+                $path .= '&until=' . rawurlencode((string) $until);
+            }
+
+            $response = $this->http()->get($this->projectUrl($path, 'v9'));
+
+            if (! $response->successful()) {
+                $this->throwFromResponse('Failed to list project domains from Vercel', $response);
+            }
+
+            $body = $response->json() ?? [];
+            $domains = $body['domains'] ?? [];
+            $total += count($domains);
+
+            $next = $body['pagination']['next'] ?? null;
+            if ($next === null) {
+                return [
+                    'count' => $total,
+                    'is_lower_bound' => false,
+                ];
+            }
+
+            $until = $next;
+        }
+
+        return [
+            'count' => $total,
+            'is_lower_bound' => true,
+        ];
+    }
+
     public function normalizeApex(string $domain): string
     {
         $domain = strtolower(trim($domain));

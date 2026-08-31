@@ -32,6 +32,32 @@
         </li>
     </ul>
 </div>
+@if ($vercelCapacity ?? null)
+<div class="row">
+    <div class="col-md-12">
+        <div class="alert alert-{{ $vercelCapacity['alert_class'] }} mb-3">
+            <strong>{{ __('Vercel domain capacity') }}</strong>
+            <p class="mb-1">
+                {{ __('Vercel entries: :used / :total', ['used' => $vercelCapacity['entries_used'], 'total' => $vercelCapacity['entries_total']]) }}
+            </p>
+            @if ($vercelCapacity['is_lower_bound'])
+                <p class="mb-1 text-muted">
+                    <small>{{ __('Count capped at 1,000 entries; the real total may be higher.') }}</small>
+                </p>
+            @endif
+            <p class="mb-1">
+                {{ __(':count customer domains in use', ['count' => $vercelCapacity['customer_domains_in_use']]) }}
+            </p>
+            <p class="mb-1">
+                {{ __('Room for about :count more customer domains', ['count' => $vercelCapacity['customer_domains_remaining']]) }}
+            </p>
+            <small class="text-muted">
+                {{ __('Each customer domain uses two Vercel entries (apex and www).') }}
+            </small>
+        </div>
+    </div>
+</div>
+@endif
 <div class="row">
     <div class="col-md-12">
         <div class="card">
