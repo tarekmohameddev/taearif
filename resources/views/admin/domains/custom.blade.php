@@ -116,7 +116,6 @@
                         <div class="numbers">
                             <p class="card-category text-muted mb-1">{{ __('Customer domains') }}</p>
                             <h4 class="card-title font-weight-bold mb-0">{{ $vercelCapacity['customer_domains_in_use'] }}</h4>
-                            <small class="text-muted">{{ __('vercel_capacity.customer_card_hint') }}</small>
                         </div>
                     </div>
                 </div>
@@ -166,143 +165,28 @@
         </div>
     </div>
 
-    @if ($domainHealthCounts ?? null)
-    {{-- Whole-table link health: linked vs issues --}}
-    <div class="col-sm-6 col-md-3">
-        <div class="card card-stats card-round">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-4">
-                        <div class="icon-big text-center" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 12px; padding: 10px;">
-                            <i data-lucide="heart-pulse"></i>
-                        </div>
-                    </div>
-                    <div class="col-8 col-stats">
-                        <div class="numbers">
-                            <p class="card-category text-muted mb-1">{{ __('domain_health.counters_title') }}</p>
-                            {{-- bdi + dir=ltr: keep "linked / issues" order in RTL layouts --}}
-                            <h4 class="card-title font-weight-bold mb-0">
-                                <bdi dir="ltr">
-                                    <a href="{{ route('admin.custom-domain.index', array_merge($healthFilterParams, ['health' => 'linked'])) }}" class="text-success">{{ $domainHealthCounts['linked'] ?? 0 }}</a>
-                                    /
-                                    <a href="{{ route('admin.custom-domain.index', array_merge($healthFilterParams, ['health' => 'issues'])) }}" class="text-danger">{{ $domainHealthCounts['confirmed_issues'] ?? 0 }}</a>
-                                </bdi>
-                            </h4>
-                            <small class="text-muted">{{ __('domain_health.linked_label') }} / {{ __('domain_health.confirmed_issues_label') }}</small>
-                            @if ($confirmedIssuesCount > 0 || $uncheckedCount > 0)
-                                <small class="text-muted d-block mt-1">{{ __('domain_health.breakdown_summary', ['confirmed' => $confirmedIssuesCount, 'unchecked' => $uncheckedCount]) }}</small>
-                            @endif
-                            @if (! empty($domainHealthCounts['by_code']))
-                                <div class="mt-2">
-                                    @foreach ($issueHealthCodes as $code)
-                                        @if (($domainHealthCounts['by_code'][$code] ?? 0) > 0)
-                                            <a href="{{ route('admin.custom-domain.index', array_merge($healthFilterParams, ['health' => $code])) }}"
-                                               class="{{ $healthCodeBadgeClass($code) }} mr-1 mb-1">
-                                                {{ __("domain_health.{$code}") }}: {{ $domainHealthCounts['by_code'][$code] }}
-                                            </a>
-                                        @endif
-                                    @endforeach
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endif
-
-    {{-- Context bar: explain entries vs customer domains and DB vs Vercel --}}
-    <div class="col-md-12">
-        <div class="card card-round mb-3">
-            <div class="card-body py-3">
-                <div class="progress mb-2" style="height: 8px; border-radius: 4px;">
-                    <div class="progress-bar" role="progressbar"
-                         style="width: {{ $capPercent }}%; background-color: {{ $capHex }};"
-                         aria-valuenow="{{ $capPercent }}" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-                <small class="text-muted d-block mb-2">
-                    {{ __('Each customer domain uses two Vercel entries (apex and www).') }}
-                </small>
-                <small class="text-muted d-block mb-2">
-                    <bdi dir="ltr">{{ __('vercel_capacity.breakdown', [
-                        'platform' => $vercelCapacity['platform_entries'],
-                        'customer_entries' => $vercelCapacity['customer_entries_used'],
-                        'customer_domains' => $vercelCapacity['customer_domains_in_use'],
-                        'used' => $vercelCapacity['entries_used'],
-                        'total' => $vercelCapacity['entries_total'],
-                    ]) }}</bdi>
-                </small>
-                @php
-                    $dbDomainCount = $domainHealthCounts['db_domain_count'] ?? null;
-                    $vercelCustomerCount = $vercelCapacity['customer_domains_in_use'];
-                @endphp
-                @if ($dbDomainCount !== null && $dbDomainCount !== $vercelCustomerCount)
-                    <div class="alert alert-warning py-2 px-3 mb-2 small">
-                        <strong>{{ __('vercel_capacity.db_mismatch_title') }}</strong>
-                        {{ __('vercel_capacity.db_mismatch_body', ['db' => $dbDomainCount, 'vercel' => $vercelCustomerCount]) }}
-                        <ul class="mb-0 mt-2 pl-3">
-                            <li><code>php artisan domains:reconcile-vercel</code> — {{ __('vercel_capacity.reconcile_hint') }}</li>
-                            <li><code>php artisan domains:sync-vercel-status</code> — {{ __('vercel_capacity.sync_hint') }}</li>
-                        </ul>
-                    </div>
-                @endif
-                @if ($vercelCapacity['customer_domains_remaining'] === 0)
-                    <small class="d-block" style="color: {{ $capHex }};">
-                        <strong>{{ __('The project is at its limit — new customer domains will fail until capacity is increased.') }}</strong>
-                    </small>
-                @endif
-                @if ($vercelCapacity['is_lower_bound'])
-                    <small class="text-muted d-block mt-1">{{ __('Count capped at 1,000 entries; the real total may be higher.') }}</small>
-                @endif
-            </div>
-        </div>
-    </div>
-
+</div>
+@if ($domainHealthCounts ?? null)
+<div class="row">
+    @include('admin.domains.partials.health-panel')
+</div>
+@endif
+@php
+    $dbDomainCount = ($domainHealthCounts ?? null) ? ($domainHealthCounts['db_domain_count'] ?? null) : null;
+    $vercelCustomerCount = $vercelCapacity['customer_domains_in_use'];
+@endphp
+<div class="row">
+    @include('admin.domains.partials.capacity-context', [
+        'vercelCapacity' => $vercelCapacity,
+        'capPercent' => $capPercent,
+        'capHex' => $capHex,
+        'dbDomainCount' => $dbDomainCount,
+        'vercelCustomerCount' => $vercelCustomerCount,
+    ])
 </div>
 @elseif ($domainHealthCounts ?? null)
 <div class="row">
-    <div class="col-sm-6 col-md-3">
-        <div class="card card-stats card-round">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-4">
-                        <div class="icon-big text-center" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 12px; padding: 10px;">
-                            <i data-lucide="heart-pulse"></i>
-                        </div>
-                    </div>
-                    <div class="col-8 col-stats">
-                        <div class="numbers">
-                            <p class="card-category text-muted mb-1">{{ __('domain_health.counters_title') }}</p>
-                            <h4 class="card-title font-weight-bold mb-0">
-                                <bdi dir="ltr">
-                                    <a href="{{ route('admin.custom-domain.index', array_merge($healthFilterParams, ['health' => 'linked'])) }}" class="text-success">{{ $domainHealthCounts['linked'] ?? 0 }}</a>
-                                    /
-                                    <a href="{{ route('admin.custom-domain.index', array_merge($healthFilterParams, ['health' => 'issues'])) }}" class="text-danger">{{ $domainHealthCounts['confirmed_issues'] ?? 0 }}</a>
-                                </bdi>
-                            </h4>
-                            <small class="text-muted">{{ __('domain_health.linked_label') }} / {{ __('domain_health.confirmed_issues_label') }}</small>
-                            @if ($confirmedIssuesCount > 0 || $uncheckedCount > 0)
-                                <small class="text-muted d-block mt-1">{{ __('domain_health.breakdown_summary', ['confirmed' => $confirmedIssuesCount, 'unchecked' => $uncheckedCount]) }}</small>
-                            @endif
-                            @if (! empty($domainHealthCounts['by_code']))
-                                <div class="mt-2">
-                                    @foreach ($issueHealthCodes as $code)
-                                        @if (($domainHealthCounts['by_code'][$code] ?? 0) > 0)
-                                            <a href="{{ route('admin.custom-domain.index', array_merge($healthFilterParams, ['health' => $code])) }}"
-                                               class="{{ $healthCodeBadgeClass($code) }} mr-1 mb-1">
-                                                {{ __("domain_health.{$code}") }}: {{ $domainHealthCounts['by_code'][$code] }}
-                                            </a>
-                                        @endif
-                                    @endforeach
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    @include('admin.domains.partials.health-panel')
 </div>
 @endif
 <div class="row">
@@ -323,7 +207,7 @@
                         @endif
                     </div>
                     <div class="col-lg-8 mt-2 mt-lg-0">
-                        <div class="float-right d-flex flex-wrap align-items-center justify-content-end">
+                        <div class="float-lg-right d-flex flex-wrap align-items-center justify-content-lg-end domain-domains-toolbar">
                         <div class="btn-group btn-group-sm mr-2">
                             @if ($isLinkedFilter)
                                 <span class="btn btn-success disabled">{{ __('domain_health.show_working_only_count', ['count' => $linkedCount]) }}</span>
@@ -523,6 +407,67 @@
         </div>
     </div>
 </div>
+
+<style>
+    .domain-health-panel__icon {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+        border-radius: 12px;
+        padding: 12px;
+        min-width: 52px;
+    }
+    .domain-health-stat {
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: #fafafa;
+    }
+    .domain-health-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: normal;
+        text-align: start;
+        max-width: 100%;
+        padding: 6px 10px;
+        font-size: 0.8rem;
+        line-height: 1.35;
+        text-decoration: none;
+    }
+    .domain-health-badge:hover {
+        text-decoration: none;
+        opacity: 0.92;
+    }
+    .domain-health-badge__count {
+        font-weight: 700;
+        font-size: 0.95rem;
+        min-width: 1.25rem;
+    }
+    .domain-health-badge__label {
+        flex: 1;
+        min-width: 0;
+    }
+    .domain-capacity-context--full {
+        border-top: 3px solid #ef4444;
+    }
+    .domain-capacity-ops summary {
+        cursor: pointer;
+        user-select: none;
+    }
+    .domain-capacity-context code {
+        font-size: 0.85em;
+        word-break: break-all;
+    }
+    @media (max-width: 991.98px) {
+        .domain-domains-toolbar {
+            justify-content: flex-start !important;
+            margin-top: 0.75rem;
+        }
+        .domain-domains-toolbar .btn-group {
+            margin-bottom: 0.5rem;
+        }
+    }
+</style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
