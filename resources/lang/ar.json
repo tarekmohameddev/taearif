@@ -1347,6 +1347,7 @@
     "domain_health.column": "حالة الربط",
     "domain_health.linked": "مرتبط",
     "domain_health.ns_mismatch": "عدم تطابق NS",
+    "domain_health.ns_not_pointing": "لا يشير إلى NS الخاص بـ Vercel",
     "domain_health.not_on_vercel": "غير موجود على Vercel",
     "domain_health.unverified": "غير موثّق",
     "domain_health.expired": "منتهي",

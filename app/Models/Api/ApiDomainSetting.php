@@ -137,14 +137,14 @@ class ApiDomainSetting extends Model
             return $this->healthState('linked', $lastCheck);
         }
 
-        if ($vercelVerified && ! $nameserversOk) {
-            return $this->healthState('ns_mismatch', $lastCheck);
-        }
-
         $storedAttached = $lastCheck['vercel_attached'] ?? null;
         $attached = $storedAttached ?? $vercelAttached;
         if ($attached === false) {
             return $this->healthState('not_on_vercel', $lastCheck);
+        }
+
+        if ($nsCheckEnabled && ! $nameserversOk) {
+            return $this->healthState('ns_not_pointing', $lastCheck);
         }
 
         return $this->healthState('unverified', $lastCheck);
@@ -173,6 +173,7 @@ class ApiDomainSetting extends Model
         $classes = [
             'linked' => 'success',
             'ns_mismatch' => 'warning',
+            'ns_not_pointing' => 'warning',
             'not_on_vercel' => 'danger',
             'unverified' => 'warning',
             'expired' => 'danger',

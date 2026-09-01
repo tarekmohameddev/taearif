@@ -27,13 +27,13 @@
         'username' => request()->input('username'),
         'domain' => request()->input('domain'),
     ]);
-    $issueHealthCodes = ['unchecked', 'ns_mismatch', 'not_on_vercel', 'unverified', 'expired', 'provider_error'];
+    $issueHealthCodes = ['unchecked', 'ns_not_pointing', 'not_on_vercel', 'unverified', 'expired', 'provider_error'];
     $linkedCount = $domainHealthCounts['linked'] ?? 0;
     $confirmedIssuesCount = $domainHealthCounts['confirmed_issues'] ?? 0;
     $uncheckedCount = $domainHealthCounts['unchecked'] ?? ($domainHealthCounts['by_code']['unchecked'] ?? 0);
     $healthCodeBadgeClass = function (string $code): string {
         return match ($code) {
-            'ns_mismatch', 'unverified' => 'badge badge-warning text-dark',
+            'ns_mismatch', 'ns_not_pointing', 'unverified' => 'badge badge-warning text-dark',
             'provider_error', 'unchecked', 'checks_disabled' => 'badge badge-secondary',
             default => 'badge badge-danger',
         };

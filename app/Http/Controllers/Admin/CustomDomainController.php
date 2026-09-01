@@ -190,7 +190,7 @@ class CustomDomainController extends Controller
                 if (! in_array($code, ['linked', 'checks_disabled', 'unchecked'], true)) {
                     $ids[] = $row->id;
                 }
-            } elseif ($code === $healthFilter) {
+            } elseif ($code === $healthFilter || ($healthFilter === 'ns_mismatch' && $code === 'ns_not_pointing')) {
                 $ids[] = $row->id;
             }
         }

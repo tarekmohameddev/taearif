@@ -95,16 +95,49 @@ class ApiDomainSettingHealthTest extends TestCase
     }
 
     /** @test */
-    public function health_is_ns_mismatch_when_vercel_verified_but_nameservers_fail(): void
+    public function health_is_ns_not_pointing_when_nameserver_check_fails(): void
     {
         $domain = $this->domainWithLastCheck([
             'auto_attach_custom_domain' => true,
             'nameserver_check_enabled' => true,
             'vercel_verified' => true,
             'nameservers_ok' => false,
+            'message' => 'Nameservers are not pointing to Vercel yet.',
         ]);
 
-        $this->assertSame('ns_mismatch', $domain->health()['code']);
+        $health = $domain->health();
+
+        $this->assertSame('ns_not_pointing', $health['code']);
+        $this->assertSame('warning', $health['class']);
+        $this->assertStringContainsString('Nameservers are not pointing', $health['reason']);
+    }
+
+    /** @test */
+    public function health_is_ns_not_pointing_when_on_vercel_but_nameservers_fail(): void
+    {
+        $domain = $this->domainWithLastCheck([
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'vercel_verified' => false,
+            'nameservers_ok' => false,
+            'vercel_attached' => true,
+        ]);
+
+        $this->assertSame('ns_not_pointing', $domain->health(true)['code']);
+    }
+
+    /** @test */
+    public function health_is_unverified_when_on_vercel_with_correct_nameservers_but_not_verified(): void
+    {
+        $domain = $this->domainWithLastCheck([
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'vercel_verified' => false,
+            'nameservers_ok' => true,
+            'vercel_attached' => true,
+        ]);
+
+        $this->assertSame('unverified', $domain->health(true)['code']);
     }
 
     /** @test */
@@ -127,7 +160,7 @@ class ApiDomainSettingHealthTest extends TestCase
             'auto_attach_custom_domain' => true,
             'nameserver_check_enabled' => true,
             'vercel_verified' => false,
-            'nameservers_ok' => false,
+            'nameservers_ok' => true,
         ]);
 
         $this->assertSame('unverified', $domain->health(true)['code']);
@@ -135,6 +168,20 @@ class ApiDomainSettingHealthTest extends TestCase
 
     /** @test */
     public function health_prefers_stored_vercel_attached_false_over_external_true_hint(): void
+    {
+        $domain = $this->domainWithLastCheck([
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'vercel_verified' => false,
+            'nameservers_ok' => false,
+            'vercel_attached' => false,
+        ]);
+
+        $this->assertSame('not_on_vercel', $domain->health(true)['code']);
+    }
+
+    /** @test */
+    public function health_prefers_not_on_vercel_over_ns_not_pointing_when_not_attached(): void
     {
         $domain = $this->domainWithLastCheck([
             'auto_attach_custom_domain' => true,
@@ -158,7 +205,7 @@ class ApiDomainSettingHealthTest extends TestCase
             'vercel_attached' => true,
         ]);
 
-        $this->assertSame('unverified', $domain->health(false)['code']);
+        $this->assertSame('ns_not_pointing', $domain->health(false)['code']);
     }
 
     /**

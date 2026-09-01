@@ -2793,6 +2793,7 @@
     "domain_health.column": "Link status",
     "domain_health.linked": "Linked",
     "domain_health.ns_mismatch": "NS mismatch",
+    "domain_health.ns_not_pointing": "Not pointing to Vercel NS",
     "domain_health.not_on_vercel": "Not on Vercel",
     "domain_health.unverified": "Unverified",
     "domain_health.expired": "Expired",
