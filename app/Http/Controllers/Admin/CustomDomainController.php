@@ -8,6 +8,7 @@ use App\Models\BasicSetting;
 use Illuminate\Http\Request;
 use App\Models\BasicExtended;
 use App\Support\DomainHealthMessages;
+use App\Support\TenantActivity;
 use App\Http\Helpers\MegaMailer;
 use PHPMailer\PHPMailer\PHPMailer;
 use App\Http\Controllers\Controller;
