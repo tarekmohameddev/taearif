@@ -287,7 +287,7 @@
                                             -
                                             @endif
                                         </td>
-                                        <td>
+                                        <td class="domain-health-cell">
                                             @php
                                                 $health = $rcDomain->health;
                                                 $healthTooltip = $health['reason'] ?? '';
@@ -300,13 +300,15 @@
                                                     $badgeClass .= ' text-dark';
                                                 }
                                             @endphp
-                                            <span class="{{ $badgeClass }}"
-                                                  title="{{ $healthTooltip }}">{{ $health['label'] }}</span>
-                                            @if (! empty($health['reason']))
-                                                <small class="text-muted d-block mt-1" style="max-width: 240px; line-height: 1.3;">{{ $health['reason'] }}</small>
-                                            @elseif ($health['code'] === 'unchecked')
-                                                <small class="text-muted d-block mt-1">{{ __('domain_health.unchecked_hint') }}</small>
-                                            @endif
+                                            <div class="domain-health-cell__inner">
+                                                <span class="{{ $badgeClass }}"
+                                                      title="{{ $healthTooltip }}">{{ $health['label'] }}</span>
+                                                @if (! empty($health['reason']))
+                                                    <div class="domain-health-cell__reason" dir="auto">{{ $health['reason'] }}</div>
+                                                @elseif ($health['code'] === 'unchecked')
+                                                    <div class="domain-health-cell__reason">{{ __('domain_health.unchecked_hint') }}</div>
+                                                @endif
+                                            </div>
                                         </td>
                                         <td>
                                             @if ($rcDomain->ssl)
@@ -334,23 +336,23 @@
                                                 </select>
                                             </form>
                                         </td>
-                                        <td>
+                                        <td class="domain-actions-cell">
+                                            <div class="domain-actions-wrap">
                                             <button class="btn btn-secondary btn-sm editbtn" data-toggle="modal" data-target="#mailModal" data-email="{{!empty($rcDomain->user) ? $rcDomain->user->email : ''}}">{{__('Mail')}}</button>
-                                            <form class="d-inline-block" action="{{ route('admin.custom-domain.recheck') }}" method="POST">
+                                            <form class="domain-action-form" action="{{ route('admin.custom-domain.recheck') }}" method="POST">
                                                 @csrf
                                                 <input type="hidden" name="domain_id" value="{{ $rcDomain->id }}">
-                                                <button type="submit" class="btn btn-info btn-sm">{{ __('domain_health.recheck') }}</button>
+                                                <button type="submit" class="btn btn-info btn-sm btn-block-sm">{{ __('domain_health.recheck') }}</button>
                                             </form>
-                                            <form class="d-inline-block deleteform" action="{{route('admin.custom-domain.delete')}}" method="post">
+                                            <form class="domain-action-form deleteform" action="{{route('admin.custom-domain.delete')}}" method="post">
                                                 @csrf
                                                 <input type="hidden" name="domain_id" value="{{$rcDomain->id}}">
-                                                <button type="submit" class="btn btn-danger btn-sm domain-deletebtn" data-domain="{{ $rcDomain->custom_name }}">
-                                                <span class="btn-label">
+                                                <button type="submit" class="btn btn-danger btn-sm domain-deletebtn btn-block-sm" data-domain="{{ $rcDomain->custom_name }}" title="{{ __('Delete') }}">
                                                 <i class="fas fa-trash"></i>
-                                                </span>
-                                                {{__('Delete')}}
+                                                <span class="domain-delete-label">{{__('Delete')}}</span>
                                                 </button>
                                             </form>
+                                            </div>
                                         </td>
                                     </tr>
                                     @endforeach
@@ -465,6 +467,66 @@
         }
         .domain-domains-toolbar .btn-group {
             margin-bottom: 0.5rem;
+        }
+    }
+    .domain-health-cell {
+        min-width: 11rem;
+        max-width: 20rem;
+        vertical-align: middle !important;
+    }
+    .domain-health-cell__inner {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.35rem;
+        max-width: 100%;
+    }
+    [dir="rtl"] .domain-health-cell__inner {
+        align-items: flex-end;
+        text-align: right;
+    }
+    .domain-health-cell__reason {
+        font-size: 0.8rem;
+        line-height: 1.45;
+        color: #6c757d;
+        word-break: normal;
+        overflow-wrap: break-word;
+        max-width: 100%;
+    }
+    .domain-actions-cell {
+        min-width: 8.5rem;
+        vertical-align: middle !important;
+    }
+    .domain-actions-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.35rem;
+    }
+    .domain-action-form {
+        display: block;
+        margin: 0;
+    }
+  @media (min-width: 768px) {
+        .domain-actions-wrap {
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .domain-action-form {
+            display: inline-block;
+        }
+    }
+    .domain-deletebtn .domain-delete-label {
+        margin-left: 0.25rem;
+    }
+    [dir="rtl"] .domain-deletebtn .domain-delete-label {
+        margin-left: 0;
+        margin-right: 0.25rem;
+    }
+    @media (max-width: 575.98px) {
+        .domain-deletebtn .domain-delete-label {
+            display: none;
         }
     }
 </style>

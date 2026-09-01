@@ -4,6 +4,7 @@ namespace App\Models\Api;
 
 use App\Domain\Domain\Models\CustomDomain;
 use App\Models\User;
+use App\Support\DomainHealthMessages;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -186,7 +187,7 @@ class ApiDomainSetting extends Model
             'code' => $code,
             'class' => $classes[$code] ?? 'secondary',
             'label' => __("domain_health.{$code}"),
-            'reason' => (string) ($lastCheck['message'] ?? ''),
+            'reason' => DomainHealthMessages::translate((string) ($lastCheck['message'] ?? '')),
             'checked_at' => isset($lastCheck['last_check_at']) ? (string) $lastCheck['last_check_at'] : null,
         ];
     }
