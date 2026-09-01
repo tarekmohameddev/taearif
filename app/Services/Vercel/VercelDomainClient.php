@@ -158,6 +158,22 @@ class VercelDomainClient
     }
 
     /**
+     * @return array{names: list<string>, count: int, is_lower_bound: bool}
+     */
+    public function listProjectDomains(): array
+    {
+        $this->assertConfigured();
+
+        $result = $this->fetchProjectDomainPages();
+
+        return [
+            'names' => $result['names'],
+            'count' => count($result['names']),
+            'is_lower_bound' => $result['is_lower_bound'],
+        ];
+    }
+
+    /**
      * Count all domains attached to the Vercel project (paginated).
      *
      * @return array{count: int, is_lower_bound: bool}
@@ -166,7 +182,30 @@ class VercelDomainClient
     {
         $this->assertConfigured();
 
-        $total = 0;
+        $result = $this->fetchProjectDomainPages();
+
+        return [
+            'count' => count($result['names']),
+            'is_lower_bound' => $result['is_lower_bound'],
+        ];
+    }
+
+    /**
+     * @return list<string> lowercased domain names attached to the project
+     */
+    public function listProjectDomainNames(): array
+    {
+        $this->assertConfigured();
+
+        return $this->fetchProjectDomainPages()['names'];
+    }
+
+    /**
+     * @return array{names: list<string>, is_lower_bound: bool}
+     */
+    private function fetchProjectDomainPages(): array
+    {
+        $names = [];
         $until = null;
         $maxPages = 10;
 
@@ -184,12 +223,17 @@ class VercelDomainClient
 
             $body = $response->json() ?? [];
             $domains = $body['domains'] ?? [];
-            $total += count($domains);
+
+            foreach ($domains as $domain) {
+                if (isset($domain['name'])) {
+                    $names[] = strtolower((string) $domain['name']);
+                }
+            }
 
             $next = $body['pagination']['next'] ?? null;
             if ($next === null) {
                 return [
-                    'count' => $total,
+                    'names' => $names,
                     'is_lower_bound' => false,
                 ];
             }
@@ -198,7 +242,7 @@ class VercelDomainClient
         }
 
         return [
-            'count' => $total,
+            'names' => $names,
             'is_lower_bound' => true,
         ];
     }

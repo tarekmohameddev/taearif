@@ -322,8 +322,8 @@
                                         <span class="sub-item">{{ __('Connected Requests') }}</span>
                                     </a>
                                 </li>
-                                <li class="@if (request()->path() == 'admin/domains' && request()->input('type') == 'rejected') active @endif">
-                                    <a href="{{ route('admin.custom-domain.index', ['type' => 'rejected']) }}">
+                                <li class="@if (request()->path() == 'admin/domains' && in_array(request()->input('type'), ['failed', 'rejected'], true)) active @endif">
+                                    <a href="{{ route('admin.custom-domain.index', ['type' => 'failed']) }}">
                                         <span class="sub-item">{{ __('Rejected Requests') }}</span>
                                     </a>
                                 </li>

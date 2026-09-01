@@ -6,6 +6,7 @@ use App\Models\Api\ApiDomainSetting;
 use App\Services\Vercel\DomainStatusSyncService;
 use App\Services\Vercel\VercelDomainClient;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -70,6 +71,11 @@ class SyncVercelDomainStatusCommand extends Command
                     usleep(50_000);
                 }
             });
+
+        Cache::forget('admin.domain_health_counts');
+        Cache::forget('vercel.project_domains');
+        Cache::forget('vercel.project_domain_count');
+        Cache::forget('vercel.project_domain_names');
 
         $summary = compact('checked', 'activated', 'failed', 'unchanged', 'errors');
         $this->info('Domain sync complete: ' . json_encode($summary));

@@ -570,6 +570,7 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/domain/delete', 'Admin\CustomDomainController@delete')->name('custom-domain.delete');
         Route::post('/domain/bulk-delete', 'Admin\CustomDomainController@bulkDelete')->name('custom-domain.bulk.delete');
         Route::post('/domain/ssl-status', 'Admin\CustomDomainController@updateSslStatus')->name('custom-domain.ssl-status');
+        Route::post('/domain/recheck', 'Admin\CustomDomainController@recheck')->name('custom-domain.recheck');
     });
 
     // Subdomains

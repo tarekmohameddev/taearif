@@ -13,6 +13,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 use App\Http\Controllers\Controller;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User\UserCustomDomain;
+use App\Services\Vercel\DomainStatusSyncService;
 use App\Services\Vercel\VercelDomainClient;
 use App\Services\Vercel\VercelDomainException;
 use Illuminate\Support\Facades\Cache;
@@ -52,7 +53,7 @@ class CustomDomainController extends Controller
 
     public function index(Request $request)
     {
-        $rcDomains = ApiDomainSetting::with('user')->orderBy('id', 'DESC')
+        $baseQuery = ApiDomainSetting::query()
             ->when($request->domain, function ($query) use ($request) {
                 $query->where('custom_name', 'LIKE', '%' . $request->domain . '%');
             })
@@ -63,51 +64,189 @@ class CustomDomainController extends Controller
             });
 
         if (empty($request->type)) {
-            $rcDomains = $rcDomains->paginate(10);
-        } elseif ($request->type == 'pending') {
-            $rcDomains = $rcDomains->where('status', 'pending')->paginate(10);
-        } elseif ($request->type == 'connected') {
-            $rcDomains = $rcDomains->where('status', 'active')->paginate(10);
-        } elseif ($request->type == 'rejected') {
-            $rcDomains = $rcDomains->where('status', 'rejected')->paginate(10);
+            // no status filter
+        } elseif ($request->type === 'pending') {
+            $baseQuery->where('status', 'pending');
+        } elseif ($request->type === 'connected') {
+            $baseQuery->where('status', 'active');
+        } elseif (in_array($request->type, ['failed', 'rejected'], true)) {
+            $baseQuery->whereIn('status', ['failed', 'rejected']);
         } else {
             return view('errors.404');
         }
 
+        $healthFilter = $request->filled('health') ? (string) $request->health : null;
+        $vercelProjectDomains = $this->resolveVercelProjectDomains();
+        $vercelNames = $vercelProjectDomains['names'] ?? null;
+
+        if ($healthFilter !== null) {
+            $matchingIds = $this->filterDomainIdsByHealth(
+                (clone $baseQuery)->select(['id', 'custom_name', 'dns_records', 'expires_at'])->get(),
+                $healthFilter,
+                $vercelNames
+            );
+
+            $rcDomains = ApiDomainSetting::with('user')
+                ->whereIn('id', $matchingIds)
+                ->orderBy('id', 'DESC')
+                ->paginate(10);
+        } else {
+            $rcDomains = (clone $baseQuery)
+                ->with('user')
+                ->orderBy('id', 'DESC')
+                ->paginate(10);
+        }
+
+        if ($vercelNames !== null) {
+            $rcDomains->getCollection()->transform(function (ApiDomainSetting $domain) use ($vercelNames) {
+                $apex = $this->vercel->normalizeApex((string) $domain->custom_name);
+
+                return $domain->setVercelAttachedHint(in_array($apex, $vercelNames, true));
+            });
+        }
+
         $data['rcDomains'] = $rcDomains;
-        $data['vercelCapacity'] = $this->resolveVercelCapacity();
+        $data['vercelCapacity'] = $vercelProjectDomains !== null
+            ? $this->buildCapacity([
+                'count' => $vercelProjectDomains['count'],
+                'is_lower_bound' => $vercelProjectDomains['is_lower_bound'],
+            ])
+            : null;
+        $data['domainHealthCounts'] = $this->resolveDomainHealthCounts();
+        $data['healthFilter'] = $healthFilter;
 
         return view('admin.domains.custom', $data);
     }
 
+    public function recheck(Request $request, DomainStatusSyncService $sync)
+    {
+        $domain = ApiDomainSetting::findOrFail($request->domain_id);
+        $result = $sync->sync($domain, true, $request);
+
+        $this->clearVercelProjectDomainsCache();
+        Cache::forget('admin.domain_health_counts');
+
+        $request->session()->flash('success', $this->translateSyncMessage($result['message']));
+
+        return back();
+    }
+
     /**
-     * @return array<string, mixed>|null
+     * @return array{names: list<string>, count: int, is_lower_bound: bool}|null
      */
-    private function resolveVercelCapacity(): ?array
+    private function resolveVercelProjectDomains(): ?array
     {
         if (! $this->vercel->isConfigured()) {
             return null;
         }
 
-        // Cache the upstream count only. A failure is cached briefly under the same
-        // key as `false`, so an outage does not turn every page load into a timeout.
-        $counted = Cache::remember('vercel.project_domain_count', now()->addMinutes(5), function () {
+        // Single paginated fetch shared by capacity cards and orphan hints.
+        // Failures are cached briefly as `false` so an outage does not retry on every page load.
+        $cached = Cache::remember('vercel.project_domains', now()->addMinutes(5), function () {
             try {
-                return $this->vercel->countProjectDomains();
+                return $this->vercel->listProjectDomains();
             } catch (\Throwable $e) {
-                Log::warning('Vercel domain capacity unavailable', ['exception' => $e->getMessage()]);
+                Log::warning('Vercel project domains unavailable', ['exception' => $e->getMessage()]);
 
                 return false;
             }
         });
 
-        if ($counted === false) {
-            Cache::put('vercel.project_domain_count', false, now()->addSeconds(60));
+        if ($cached === false) {
+            Cache::put('vercel.project_domains', false, now()->addSeconds(60));
 
             return null;
         }
 
-        return $this->buildCapacity($counted);
+        return $cached;
+    }
+
+    private function clearVercelProjectDomainsCache(): void
+    {
+        Cache::forget('vercel.project_domains');
+        Cache::forget('vercel.project_domain_count');
+        Cache::forget('vercel.project_domain_names');
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, ApiDomainSetting>  $rows
+     * @param  list<string>|null  $vercelNames
+     * @return list<int>
+     */
+    private function filterDomainIdsByHealth($rows, string $healthFilter, ?array $vercelNames): array
+    {
+        $ids = [];
+
+        foreach ($rows as $row) {
+            $hint = null;
+            if ($vercelNames !== null) {
+                $apex = $this->vercel->normalizeApex((string) $row->custom_name);
+                $hint = in_array($apex, $vercelNames, true);
+            }
+
+            $code = $row->health($hint)['code'];
+
+            if ($healthFilter === 'issues') {
+                if (! in_array($code, ['linked', 'checks_disabled', 'unchecked'], true)) {
+                    $ids[] = $row->id;
+                }
+            } elseif ($code === $healthFilter) {
+                $ids[] = $row->id;
+            }
+        }
+
+        if ($ids === []) {
+            return [0];
+        }
+
+        return $ids;
+    }
+
+    /**
+     * @return array{linked: int, confirmed_issues: int, unchecked: int, db_domain_count: int, by_code: array<string, int>}
+     */
+    private function resolveDomainHealthCounts(): array
+    {
+        return Cache::remember('admin.domain_health_counts', now()->addMinutes(5), function () {
+            $vercelProjectDomains = $this->resolveVercelProjectDomains();
+            $vercelNames = $vercelProjectDomains['names'] ?? null;
+
+            $rows = ApiDomainSetting::query()
+                ->select(['id', 'custom_name', 'status', 'dns_records', 'expires_at'])
+                ->get();
+
+            $linked = 0;
+            $confirmedIssues = 0;
+            $byCode = [];
+
+            foreach ($rows as $row) {
+                $hint = null;
+                if ($vercelNames !== null) {
+                    $apex = $this->vercel->normalizeApex((string) $row->custom_name);
+                    $hint = in_array($apex, $vercelNames, true);
+                }
+
+                $health = $row->health($hint);
+                $code = $health['code'];
+                $byCode[$code] = ($byCode[$code] ?? 0) + 1;
+
+                if ($code === 'linked') {
+                    $linked++;
+                } elseif ($code !== 'checks_disabled' && $code !== 'unchecked') {
+                    $confirmedIssues++;
+                }
+            }
+
+            ksort($byCode);
+
+            return [
+                'linked' => $linked,
+                'confirmed_issues' => $confirmedIssues,
+                'unchecked' => $byCode['unchecked'] ?? 0,
+                'db_domain_count' => $rows->count(),
+                'by_code' => $byCode,
+            ];
+        });
     }
 
     /**
@@ -133,6 +272,8 @@ class CustomDomainController extends Controller
             'entries_used' => $entriesUsed,
             'entries_total' => $entriesTotal,
             'is_lower_bound' => $counted['is_lower_bound'],
+            'platform_entries' => $platformCount,
+            'customer_entries_used' => $customerInUse * 2,
             'customer_domains_in_use' => $customerInUse,
             'customer_domains_remaining' => $customerRemaining,
             'usage_percent' => $usagePercent,
@@ -182,16 +323,26 @@ class CustomDomainController extends Controller
         return back();
     }
 
-    public function status(Request $request)
+    public function status(Request $request, DomainStatusSyncService $sync)
     {
         $rcDomain = ApiDomainSetting::findOrFail($request->domain_id);
-        $rcDomain->status = $request->status;
+        $oldStatus = $rcDomain->status;
+        $newStatus = $request->status === 'rejected' ? 'failed' : $request->status;
+        $rcDomain->status = $newStatus;
         $rcDomain->save();
 
-        // if the requested domain is connected
-        if ($request->status == 1) {
-            if (!empty($rcDomain->user)) {
+        if ($newStatus === 'active' && $oldStatus !== 'active') {
+            if ($this->vercel->isConfigured()) {
+                $sync->sync($rcDomain->fresh(), true, $request);
+            }
+
+            if (! empty($rcDomain->user)) {
                 $user = $rcDomain->user;
+                $previousDomain = $user->domains()
+                    ->where('status', 'active')
+                    ->where('id', '!=', $rcDomain->id)
+                    ->orderByDesc('id')
+                    ->value('custom_name');
 
                 $bs = BasicSetting::firstOrFail();
                 $mailer = new MegaMailer();
@@ -199,21 +350,21 @@ class CustomDomainController extends Controller
                     'toMail' => $user->email,
                     'toName' => $user->fname,
                     'username' => $user->username,
-                    'requested_domain' => $rcDomain->requested_domain,
-                    'previous_domain' => !empty($rcDomain->current_domain) ? $rcDomain->current_domain : 'Not Available',
+                    'requested_domain' => $rcDomain->custom_name,
+                    'previous_domain' => $previousDomain ?: 'Not Available',
                     'website_title' => $bs->website_title,
                     'templateType' => 'custom_domain_connected',
-                    'type' => 'customDomainConnected'
+                    'type' => 'customDomainConnected',
                 ];
                 $mailer->mailFromAdmin($data);
             }
-        } elseif ($request->status == 2) {
-            if (!empty($rcDomain->user)) {
+        } elseif ($newStatus === 'failed' && ! in_array($oldStatus, ['failed', 'rejected'], true)) {
+            if (! empty($rcDomain->user)) {
                 $user = $rcDomain->user;
-                $currDomCount = $user->custom_domains()->where('status', 1)->count();
-                if ($currDomCount > 0) {
-                    $currDom = $user->custom_domains()->where('status', 1)->orderBy('id', 'DESC')->first()->requested_domain;
-                }
+                $currentDomain = $user->domains()
+                    ->where('status', 'active')
+                    ->orderByDesc('id')
+                    ->value('custom_name');
 
                 $bs = BasicSetting::firstOrFail();
                 $mailer = new MegaMailer();
@@ -221,18 +372,43 @@ class CustomDomainController extends Controller
                     'toMail' => $user->email,
                     'toName' => $user->fname,
                     'username' => $user->username,
-                    'requested_domain' => $rcDomain->requested_domain,
-                    'current_domain' => !empty($currDom) ? $currDom : 'Not Available',
+                    'requested_domain' => $rcDomain->custom_name,
+                    'current_domain' => $currentDomain ?: 'Not Available',
                     'website_title' => $bs->website_title,
                     'templateType' => 'custom_domain_rejected',
-                    'type' => 'customDomainRejected'
+                    'type' => 'customDomainRejected',
                 ];
                 $mailer->mailFromAdmin($data);
             }
         }
 
         $request->session()->flash('success', 'Status updated successfully');
+
         return back();
+    }
+
+    private function translateSyncMessage(string $message): string
+    {
+        $keys = [
+            'Domain registration has expired.' => 'domain_health.sync.expired',
+            'Verification checks are disabled (VERCEL_AUTO_ATTACH_CUSTOM_DOMAIN and VERCEL_CHECK_NAMESERVERS are false).' => 'domain_health.sync.checks_disabled',
+            'Vercel domain integration is not configured.' => 'domain_health.sync.not_configured',
+            'Domain could not be verified with the hosting provider yet.' => 'domain_health.sync.verify_failed',
+            'Domain is not attached to the Vercel project.' => 'domain_health.sync.not_attached',
+            'Domain is on Vercel but not verified yet. Ensure nameservers have propagated.' => 'domain_health.sync.not_verified',
+            'Could not reach the hosting provider to check this domain.' => 'domain_health.sync.provider_unreachable',
+            'Nameservers are not pointing to Vercel yet.' => 'domain_health.sync.ns_not_pointing',
+            'Unable to resolve domain nameservers.' => 'domain_health.sync.ns_resolve_failed',
+            'Domain is verified and nameservers are correct.' => 'domain_health.sync.verified_and_ns_ok',
+            'Domain is verified on Vercel.' => 'domain_health.sync.verified_on_vercel',
+            'Nameservers are correct.' => 'domain_health.sync.ns_ok',
+            'Domain is no longer verified or nameservers changed.' => 'domain_health.sync.no_longer_verified',
+            'Domain verification is still pending.' => 'domain_health.sync.still_pending',
+        ];
+
+        $key = $keys[$message] ?? null;
+
+        return $key !== null ? __($key) : $message;
     }
 
 

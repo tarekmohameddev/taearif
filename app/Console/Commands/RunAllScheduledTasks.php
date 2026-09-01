@@ -18,7 +18,7 @@ class RunAllScheduledTasks extends Command
      *
      * @var string
      */
-    protected $description = 'Run all scheduled commands immediately (for testing)';
+    protected $description = 'Run hardcoded scheduled commands (includes domains:sync-vercel-status; not a substitute for schedule:run)';
 
     /**
      * Execute the console command.
@@ -36,6 +36,7 @@ class RunAllScheduledTasks extends Command
             ['command' => 'reminders:process', 'args' => []],
             ['command' => 'health:check', 'args' => ['--auto' => true]],
             ['command' => 'subscription:send-expiration-reminders', 'args' => []],
+            ['command' => 'domains:sync-vercel-status', 'args' => []],
         ];
 
         foreach ($commands as $cmd) {

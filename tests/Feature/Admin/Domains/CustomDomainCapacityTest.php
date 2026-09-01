@@ -21,11 +21,13 @@ class CustomDomainCapacityTest extends AdminApiTestCase
         parent::setUp();
 
         $this->ensureAdminViewData();
+        Cache::forget('vercel.project_domains');
         Cache::forget('vercel.project_domain_count');
     }
 
     protected function tearDown(): void
     {
+        Cache::forget('vercel.project_domains');
         Cache::forget('vercel.project_domain_count');
 
         parent::tearDown();

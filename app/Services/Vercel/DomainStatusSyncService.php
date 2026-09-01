@@ -39,6 +39,8 @@ class DomainStatusSyncService
         $vercelVerified = false;
         $nameserversOk = false;
         $message = '';
+        $vercelDomain = null;
+        $providerError = false;
 
         if ($domain->expires_at && $domain->expires_at->isPast()) {
             $newStatus = 'failed';
@@ -82,7 +84,6 @@ class DomainStatusSyncService
             }
 
             try {
-                $vercelDomain = null;
                 if ($attemptVerify) {
                     try {
                         $vercelDomain = $this->vercel->verifyDomain($apex);
@@ -121,6 +122,7 @@ class DomainStatusSyncService
                 // and, with no error.message field, serialises the whole body.
                 $message = 'Could not reach the hosting provider to check this domain.';
                 $vercelVerified = false;
+                $providerError = true;
             }
         } else {
             // Not attaching to Vercel — do not block activation on Vercel status.
@@ -169,14 +171,22 @@ class DomainStatusSyncService
             }
         }
 
-        $this->persist($domain, $newStatus, $ssl, [
+        $checkSummary = [
             'last_check_at' => now()->toIso8601String(),
             'vercel_verified' => $vercelVerified,
             'nameservers_ok' => $nameserversOk,
             'auto_attach_custom_domain' => $autoAttach,
             'nameserver_check_enabled' => $checkNameservers,
             'message' => $message,
-        ], $oldStatus, $request);
+        ];
+
+        if ($providerError) {
+            $checkSummary['reason'] = 'provider_error';
+        } elseif ($autoAttach) {
+            $checkSummary['vercel_attached'] = $vercelDomain !== null;
+        }
+
+        $this->persist($domain, $newStatus, $ssl, $checkSummary, $oldStatus, $request);
 
         return $this->result($oldStatus, $newStatus, $ssl, $message, $vercelVerified, $nameserversOk);
     }
