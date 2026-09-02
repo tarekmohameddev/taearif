@@ -31,6 +31,8 @@
                                         {{ $item['name'] }}
                                     @elseif (! empty($item['vercel_name']))
                                         {{ $item['vercel_name'] }} → {{ $item['missing'] ?? '' }}
+                                    @elseif (! empty($item['apex']))
+                                        {{ $item['apex'] }}
                                     @endif
                                 </li>
                             @endforeach
