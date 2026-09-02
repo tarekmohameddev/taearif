@@ -271,7 +271,7 @@ class CustomDomainController extends Controller
 
             return $this->withProjectLock(function () use ($request, $domain, $apex) {
                 $before = $this->domainActivitySnapshot($domain);
-                $this->vercel->removeDomain('www.' . $apex);
+                $this->vercel->removeWwwHostname($apex);
                 $this->domainCache->invalidateAdminCaches();
 
                 \App\Support\TenantActivity::emit(

@@ -157,6 +157,45 @@ class VercelDomainClient
         $this->throwFromResponse('Failed to remove domain from Vercel', $response);
     }
 
+    public function clearDomainRedirect(string $name): void
+    {
+        $this->assertConfigured();
+        $name = strtolower(trim($name));
+
+        $response = $this->sendRequest(fn () => $this->http()->patch(
+            $this->projectUrl('/domains/' . rawurlencode($name), 'v9'),
+            [
+                'redirect' => null,
+                'redirectStatusCode' => null,
+            ]
+        ));
+
+        if ($response->successful()) {
+            return;
+        }
+
+        $this->throwFromResponse('Failed to clear domain redirect on Vercel', $response);
+    }
+
+    public function removeWwwHostname(string $apex): void
+    {
+        $apex = $this->normalizeApex($apex);
+        $www = 'www.' . $apex;
+
+        $apexRecord = $this->getDomain($apex);
+        if ($apexRecord !== null) {
+            $redirectTarget = isset($apexRecord['redirect'])
+                ? strtolower((string) $apexRecord['redirect'])
+                : null;
+
+            if ($redirectTarget === $www) {
+                $this->clearDomainRedirect($apex);
+            }
+        }
+
+        $this->removeDomain($www);
+    }
+
     public function removeDomainWithRedirects(string $apex): void
     {
         $this->assertConfigured();

@@ -410,14 +410,61 @@ class CustomDomainCapacityTest extends AdminApiTestCase
 
         Http::assertSent(fn ($request) => $request->method() === 'DELETE'
             && str_contains($request->url(), 'www.' . rawurlencode($apex)));
+
+        Http::assertNotSent(fn ($request) => $request->method() === 'PATCH'
+            && str_contains($request->url(), '/domains/'));
+    }
+
+    /** @test */
+    public function disable_www_clears_apex_redirect_before_removing_www(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $user = User::factory()->tenant()->create([
+            'email' => 'www-legacy-' . uniqid('', true) . '@example.com',
+        ]);
+        $apex = 'www-legacy-' . uniqid('', false) . '.example.com';
+        $domain = ApiDomainSetting::create([
+            'user_id' => $user->id,
+            'custom_name' => $apex,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+        ]);
+
+        $this->fakeVercelAdminDomains([
+            ['name' => $apex, 'verified' => true, 'redirect' => 'www.' . $apex, 'redirectStatusCode' => 301],
+            ['name' => 'www.' . $apex, 'verified' => true],
+        ], allowDelete: true);
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.www.disable'), [
+                'domain_id' => $domain->id,
+                'confirm_domain' => $apex,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        Http::assertSent(fn ($request) => $request->method() === 'PATCH'
+            && str_contains($request->url(), '/domains/' . rawurlencode($apex))
+            && str_contains($request->body(), '"redirect":null')
+            && str_contains($request->body(), '"redirectStatusCode":null'));
+
+        Http::assertSent(fn ($request) => $request->method() === 'DELETE'
+            && str_contains($request->url(), 'www.' . rawurlencode($apex)));
     }
 
     /**
      * @param  list<array<string, mixed>>  $domains
      */
-    private function fakeVercelAdminDomains(array $domains, bool $allowDelete = false): void
+    private function fakeVercelAdminDomains(array $domains, bool $allowDelete = false, bool $allowPatch = false): void
     {
-        Http::fake(function (\Illuminate\Http\Client\Request $request) use ($domains, $allowDelete) {
+        $allowMutations = $allowDelete || $allowPatch;
+
+        Http::fake(function (\Illuminate\Http\Client\Request $request) use ($domains, $allowDelete, $allowMutations) {
             $url = $request->url();
             $method = $request->method();
 
@@ -433,6 +480,21 @@ class CustomDomainCapacityTest extends AdminApiTestCase
                     'domains' => $domains,
                     'pagination' => ['count' => count($domains), 'next' => null],
                 ], 200);
+            }
+
+            if ($allowMutations && $method === 'GET' && preg_match('#/v9/projects/prj_test/domains/([^/?]+)#', $url, $matches)) {
+                $name = strtolower(rawurldecode($matches[1]));
+                foreach ($domains as $domain) {
+                    if (strtolower((string) ($domain['name'] ?? '')) === $name) {
+                        return Http::response($domain, 200);
+                    }
+                }
+
+                return Http::response(['error' => 'not found'], 404);
+            }
+
+            if ($allowMutations && $method === 'PATCH' && str_contains($url, '/domains/')) {
+                return Http::response(null, 200);
             }
 
             if ($allowDelete && $method === 'DELETE' && str_contains($url, '/domains/')) {
