@@ -374,6 +374,41 @@ class VercelDomainClientTest extends TestCase
         }
     }
 
+    /** @test */
+    public function certificate_pretest_failure_maps_to_pending_and_does_not_leak_raw_json(): void
+    {
+        Http::fake([
+            'api.vercel.com/v8/certs*' => function ($request) {
+                if ($request->method() === 'GET') {
+                    return Http::response(['certs' => [], 'pagination' => ['next' => null]], 200);
+                }
+
+                return Http::response([
+                    'error' => [
+                        'cns' => ['fesal-1998-site.taearif'],
+                        'code' => 'http_pretest_domain_not_resolving_to_vercel_error',
+                        'statusCode' => 449,
+                        'name' => 'HttpPretestDomainNotResolvingToVercelError',
+                        'domain' => 'fesal-1998-site.taearif',
+                    ],
+                ], 449);
+            },
+        ]);
+
+        try {
+            $this->client->issueCertificate('fesal-1998-site.taearif');
+            $this->fail('Expected a VercelDomainException for the certificate pretest failure.');
+        } catch (VercelDomainException $exception) {
+            // Classified as pending (not a fatal provider_error) so the run can
+            // resolve the domain's true health.
+            $this->assertSame(VercelDomainException::CODE_VERIFICATION_PENDING, $exception->internalCode);
+            $this->assertSame(449, $exception->statusCode);
+            // The raw provider JSON must not leak into the surfaced message.
+            $this->assertStringNotContainsString('{', $exception->getMessage());
+            $this->assertStringNotContainsString('statusCode', $exception->getMessage());
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */

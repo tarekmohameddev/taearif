@@ -72,13 +72,27 @@ class VercelDomainException extends RuntimeException
                 'domain_transfer_conflict',
                 'domain_is_being_transferred' => self::CODE_TRANSFER_CONFLICT,
                 'verification_pending',
-                'missing_verification' => self::CODE_VERIFICATION_PENDING,
+                'missing_verification',
+                // Vercel's certificate HTTP/DNS "pretest": the domain doesn't
+                // resolve to Vercel yet (nameservers not propagated, or the
+                // domain isn't a real/resolvable name). Not a hard failure —
+                // treat as pending so the run resolves the true health instead
+                // of a misleading provider_error.
+                'http_pretest_domain_not_resolving_to_vercel_error',
+                'dns_pretest_domain_not_resolving_to_vercel_error',
+                'cert_pretest_failed' => self::CODE_VERIFICATION_PENDING,
                 default => null,
             };
         }
 
         if ($status === 429) {
             return self::CODE_RATE_LIMITED;
+        }
+
+        // 449 "Retry With" is what Vercel returns for certificate pretest
+        // failures — the domain isn't resolving to Vercel yet. Retryable/pending.
+        if ($status === 449) {
+            return self::CODE_VERIFICATION_PENDING;
         }
 
         if ($status === 401 || $status === 403) {

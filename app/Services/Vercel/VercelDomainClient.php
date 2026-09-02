@@ -1266,7 +1266,7 @@ class VercelDomainClient
         );
 
         $detail = is_array($body)
-            ? ($body['error']['message'] ?? $body['message'] ?? json_encode($body))
+            ? ($body['error']['message'] ?? $body['message'] ?? $body['error']['code'] ?? $body['error']['name'] ?? 'unknown_error')
             : (string) $body;
 
         throw new VercelDomainException(
