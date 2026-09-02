@@ -41,6 +41,34 @@
             <p class="small mb-3" dir="auto">{{ $d['message'] }}</p>
         @endif
 
+        @php
+            $healthCode = $d['health_code'] ?? ($health['code'] ?? 'unchecked');
+            $meaningKey = "domain_diagnostics.meaning.{$healthCode}";
+            $actionKey = "domain_diagnostics.action.{$healthCode}";
+            $meaningText = __($meaningKey);
+            if ($meaningText === $meaningKey) {
+                $meaningText = __('domain_diagnostics.meaning.default');
+            }
+            $actionText = __($actionKey);
+            if ($actionText === $actionKey) {
+                $actionText = __('domain_diagnostics.action.default');
+            }
+            $meaningAlertClass = 'alert-' . ($health['class'] ?? 'secondary');
+            if (($health['class'] ?? '') === 'warning') {
+                $meaningAlertClass = 'alert-warning';
+            }
+        @endphp
+        <div class="alert {{ $meaningAlertClass }} domain-diagnostics-meaning" dir="auto">
+            <div class="mb-1">
+                <strong>{{ __('domain_diagnostics.meaning_title') }}:</strong>
+                <span>{{ $meaningText }}</span>
+            </div>
+            <div>
+                <strong>{{ __('domain_diagnostics.action_title') }}:</strong>
+                <span>{{ $actionText }}</span>
+            </div>
+        </div>
+
         <table class="table table-sm table-striped mb-3 domain-diagnostics-table">
             <tbody>
                 <tr>

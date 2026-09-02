@@ -151,6 +151,29 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
     }
 
     /**
+     * Health re-derived strictly from the persisted diagnostic fields, ignoring any
+     * stored `health_code`. Use this where the fields themselves are displayed (e.g.
+     * the diagnostics drawer) so the badge can never contradict the rows — a stale
+     * record whose stored code predates the zone/SSL fields resolves honestly here.
+     *
+     * @return array{code: string, class: string, label: string, reason: string, checked_at: string|null}
+     */
+    public function resolvedHealth(): array
+    {
+        $dnsRecords = is_array($this->dns_records) ? $this->dns_records : [];
+        $lastCheck = $dnsRecords['last_check'] ?? null;
+
+        if (! is_array($lastCheck) || $lastCheck === []) {
+            return $this->healthState('unchecked', []);
+        }
+
+        $attached = $this->resolveAttachment($lastCheck, null);
+        $code = self::resolveHealthCode($lastCheck, $attached);
+
+        return $this->healthState($code, $lastCheck);
+    }
+
+    /**
      * Deterministic, mutually exclusive health code from diagnostic fields.
      *
      * @param  array<string, mixed>  $lastCheck

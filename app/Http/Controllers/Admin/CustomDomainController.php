@@ -1064,7 +1064,9 @@ class CustomDomainController extends Controller
         $observedNs = array_values((array) ($lastCheck['observed_nameservers'] ?? []));
         $recommendedDns = ApiDomainSetting::nameserverInstructions();
         $ownershipChallenge = $lastCheck['ownership_challenge'] ?? null;
-        $health = $domain->health();
+        // Re-derive from the fields shown below so the badge cannot contradict the
+        // rows when a stored health_code is stale (e.g. predates zone/SSL tracking).
+        $health = $domain->resolvedHealth();
 
         return [
             'domain_id' => $domain->id,
@@ -1098,7 +1100,7 @@ class CustomDomainController extends Controller
             'first_failure_at' => $lastCheck['first_failure_at'] ?? null,
             'failure_threshold' => max(1, (int) config('services.vercel.health_failure_threshold', 3)),
             'outcome' => $lastCheck['outcome'] ?? null,
-            'health_code' => $lastCheck['health_code'] ?? $health['code'],
+            'health_code' => $health['code'],
             'message' => DomainHealthMessages::translate((string) ($lastCheck['message'] ?? $health['reason'] ?? '')),
             'has_last_check' => $lastCheck !== [],
         ];
