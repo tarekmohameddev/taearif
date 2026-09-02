@@ -69,6 +69,42 @@
             </div>
         </div>
 
+        @php
+            // Issues we can act on from here. Repair & Verify re-runs the guarded
+            // orchestration (enable zone, attach, issue cert, re-check); the claim
+            // button posts the ownership claim. Healthy/config states need nothing.
+            $repairCodes = ['zone_disabled', 'certificate_pending', 'certificate_error', 'unverified', 'not_on_vercel', 'dns_misconfigured', 'ns_not_pointing', 'ns_mismatch', 'provider_error', 'unchecked'];
+            $showRepair = in_array($healthCode, $repairCodes, true);
+            $showClaim = $healthCode === 'ownership_required';
+            $noActionCodes = ['linked', 'apex_only', 'checks_disabled'];
+            $domainId = $d['domain_id'] ?? ($domain->id ?? null);
+        @endphp
+        @if (($showRepair || $showClaim) && $domainId)
+            <div class="domain-diagnostics-actions mb-3 d-flex flex-wrap align-items-center">
+                @if ($showRepair)
+                    <form action="{{ route('admin.custom-domain.repair-verify') }}" method="POST" class="mr-2 mb-1">
+                        @csrf
+                        <input type="hidden" name="domain_id" value="{{ $domainId }}">
+                        <button type="submit" class="btn btn-info btn-sm">
+                            <i class="fas fa-wrench mr-1"></i>{{ __('domain_health.repair_verify') }}
+                        </button>
+                    </form>
+                @endif
+                @if ($showClaim)
+                    <form action="{{ route('admin.custom-domain.claim-ownership') }}" method="POST" class="mr-2 mb-1">
+                        @csrf
+                        <input type="hidden" name="domain_id" value="{{ $domainId }}">
+                        <button type="submit" class="btn btn-warning btn-sm">
+                            <i class="fas fa-key mr-1"></i>{{ __('domain_admin.claim_ownership') }}
+                        </button>
+                    </form>
+                @endif
+                <span class="small text-muted mb-1">{{ __('domain_diagnostics.action_hint') }}</span>
+            </div>
+        @elseif (in_array($healthCode, $noActionCodes, true))
+            <p class="text-success small mb-3"><i class="fas fa-check-circle mr-1"></i>{{ __('domain_diagnostics.no_action_needed') }}</p>
+        @endif
+
         <table class="table table-sm table-striped mb-3 domain-diagnostics-table">
             <thead>
                 <tr>
@@ -127,9 +163,14 @@
                     <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_ssl_ready') }}</td>
                 </tr>
                 @if (! empty($d['certificate_readiness']))
+                @php
+                    $cr = (string) $d['certificate_readiness'];
+                    $crClass = $cr === 'issued' ? 'success' : ($cr === 'certificate_error' ? 'danger' : 'warning');
+                    if ($crClass === 'warning') { $crClass .= ' text-dark'; }
+                @endphp
                 <tr>
                     <th scope="row">{{ __('domain_diagnostics.certificate_readiness') }}</th>
-                    <td><code>{{ $d['certificate_readiness'] }}</code></td>
+                    <td><span class="badge badge-{{ $crClass }}">{{ $cr }}</span></td>
                     <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_certificate_readiness') }}</td>
                 </tr>
                 @endif
@@ -181,6 +222,8 @@
                 @endif
             </div>
         </div>
+
+        <p class="small text-muted mb-3" dir="auto"><i class="fas fa-info-circle mr-1"></i>{{ __('domain_diagnostics.ns_order_note') }}</p>
 
         @if (($d['dns_misconfigured'] ?? false) && ($recommendedIpv4 !== [] || $recommendedCname !== []))
             <h6>{{ __('domain_diagnostics.recommended_records') }}</h6>
