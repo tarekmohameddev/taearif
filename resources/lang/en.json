@@ -2903,7 +2903,7 @@
     "domain_mutation.type_domain_to_confirm": "Type the exact apex domain to confirm.",
     "domain_mutation.lock_timeout": "Could not acquire the Vercel project lock. Try again shortly.",
     "domain_www.column": "www",
-    "domain_www.apex_only": "Apex only",
+    "domain_www.apex_only": "No www",
     "domain_www.apex_and_www": "Apex + www",
     "domain_www.enable": "Enable www",
     "domain_www.disable": "Disable www",

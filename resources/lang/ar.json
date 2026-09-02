@@ -1457,7 +1457,7 @@
     "domain_mutation.type_domain_to_confirm": "اكتب النطاق الأساسي بالضبط للتأكيد.",
     "domain_mutation.lock_timeout": "تعذّر الحصول على قفل مشروع Vercel. حاول مرة أخرى.",
     "domain_www.column": "www",
-    "domain_www.apex_only": "النطاق الأساسي فقط",
+    "domain_www.apex_only": "بدون www",
     "domain_www.apex_and_www": "النطاق الأساسي + www",
     "domain_www.enable": "تفعيل www",
     "domain_www.disable": "إلغاء www",
