@@ -612,6 +612,64 @@ class ApiDomainSettingHealthTest extends TestCase
     /**
      * @param  array<string, mixed>  $lastCheck
      */
+    /** @test */
+    public function resolved_health_re_derives_from_fields_ignoring_stale_stored_code(): void
+    {
+        // A record written by older logic: stored code says apex_only, but the
+        // zone/SSL fields (defaulting false) say otherwise. health() trusts the
+        // stored code; resolvedHealth() must re-derive from the fields.
+        $domain = $this->domainWithLastCheck([
+            'health_code' => 'apex_only',
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
+            'account_domain_present' => true,
+            'zone_enabled' => false,
+            'nameservers_ok' => true,
+            'dns_misconfigured' => false,
+            'ssl_ready' => false,
+        ]);
+
+        $this->assertSame('apex_only', $domain->health()['code']);
+        $this->assertSame('zone_disabled', $domain->resolvedHealth()['code']);
+        $this->assertSame('warning', $domain->resolvedHealth()['class']);
+    }
+
+    /** @test */
+    public function resolved_health_matches_stored_code_for_a_consistent_record(): void
+    {
+        // When the stored code already agrees with the fields, re-deriving is a no-op.
+        $domain = $this->domainWithLastCheck([
+            'health_code' => 'apex_only',
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
+            'account_domain_present' => true,
+            'zone_enabled' => true,
+            'nameservers_ok' => true,
+            'dns_misconfigured' => false,
+            'ssl_ready' => true,
+            'certificate_readiness' => 'issued',
+            'www_present' => false,
+            'www_redirect_correct' => false,
+        ]);
+
+        $this->assertSame('apex_only', $domain->resolvedHealth()['code']);
+    }
+
+    /** @test */
+    public function resolved_health_is_unchecked_without_last_check(): void
+    {
+        $domain = new ApiDomainSetting([
+            'custom_name' => 'no-check.example.com',
+            'dns_records' => [],
+        ]);
+
+        $this->assertSame('unchecked', $domain->resolvedHealth()['code']);
+    }
+
     private function domainWithLastCheck(array $lastCheck, ?Carbon $expiresAt = null): ApiDomainSetting
     {
         $domain = new ApiDomainSetting([

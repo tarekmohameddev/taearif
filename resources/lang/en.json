@@ -2819,6 +2819,8 @@
     "domain_health.repair_active": "Domain repair completed and the domain is active.",
     "domain_health.repair_pending": "Domain repair completed; verification is still pending.",
     "domain_health.repair_failed": "Domain repair could not complete successfully.",
+    "domain_health.repair_attach_title": "Attach :domain at full capacity?",
+    "domain_health.repair_attach_body": "The Vercel project is full. Attaching :domain will use the last free slot and may fail if inventory changes.",
     "domain_health.checked_ago": "Checked :time",
     "domain_health.delete_title": "Delete :domain?",
     "domain_health.delete_body": "This will permanently delete the domain record and remove :domain (apex and www) from the Vercel project. This cannot be undone.",
