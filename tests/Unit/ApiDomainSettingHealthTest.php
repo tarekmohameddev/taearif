@@ -613,6 +613,32 @@ class ApiDomainSettingHealthTest extends TestCase
      * @param  array<string, mixed>  $lastCheck
      */
     /** @test */
+    public function live_www_inventory_hint_overrides_stale_last_check_for_linked_vs_apex_only(): void
+    {
+        $domain = $this->domainWithLastCheck([
+            'health_code' => 'apex_only',
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
+            'account_domain_present' => true,
+            'zone_enabled' => true,
+            'nameservers_ok' => true,
+            'dns_misconfigured' => false,
+            'ssl_ready' => true,
+            'certificate_readiness' => 'issued',
+            'www_present' => false,
+            'www_redirect_correct' => false,
+        ]);
+
+        $this->assertSame('apex_only', $domain->health()['code']);
+
+        $domain->setWwwStateHint(true, true);
+
+        $this->assertSame('linked', $domain->health()['code']);
+    }
+
+    /** @test */
     public function resolved_health_re_derives_from_fields_ignoring_stale_stored_code(): void
     {
         // A record written by older logic: stored code says apex_only, but the

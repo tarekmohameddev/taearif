@@ -91,6 +91,81 @@ class CustomDomainHealthFilterTest extends AdminApiTestCase
         $response->assertSee($linked->custom_name, false);
         $response->assertDontSee($issue->custom_name, false);
         $response->assertSee(__('domain_health.filter_linked'), false);
+        $response->assertSee(__('domain_www.apex_and_www'), false);
+    }
+
+    /** @test */
+    public function enable_www_promotes_apex_only_to_linked_and_updates_counters(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $apexOnly = $this->seedDomainWithHealth($this->apexOnlyLastCheck());
+        $apex = $apexOnly->custom_name;
+
+        $this->fakeInventoryMutations([
+            ['name' => $apex, 'verified' => true],
+        ], afterPostDomains: [
+            ['name' => $apex, 'verified' => true],
+            ['name' => 'www.' . $apex, 'verified' => true, 'redirect' => $apex, 'redirectStatusCode' => 301],
+        ]);
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.www.enable'), [
+                'domain_id' => $apexOnly->id,
+                'confirm_domain' => $apex,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $apexOnly->refresh();
+        $this->assertTrue($apexOnly->dns_records['last_check']['www_present'] ?? false);
+        $this->assertTrue($apexOnly->dns_records['last_check']['www_redirect_correct'] ?? false);
+        $this->assertSame('linked', $apexOnly->health()['code']);
+
+        $index = $this->get(route('admin.custom-domain.index'));
+        $index->assertOk();
+        $index->assertSee(__('domain_health.show_apex_and_www_count', ['count' => 1]), false);
+        $index->assertSee(__('domain_health.show_apex_only_count', ['count' => 0]), false);
+        $index->assertSee(__('domain_www.apex_and_www'), false);
+    }
+
+    /** @test */
+    public function disable_www_demotes_linked_to_apex_only_and_updates_counters(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $linked = $this->seedDomainWithHealth($this->linkedLastCheck());
+        $apex = $linked->custom_name;
+
+        $this->fakeInventoryMutations([
+            ['name' => $apex, 'verified' => true],
+            ['name' => 'www.' . $apex, 'verified' => true, 'redirect' => $apex, 'redirectStatusCode' => 301],
+        ], afterDeleteDomains: [
+            ['name' => $apex, 'verified' => true],
+        ], allowDelete: true);
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.www.disable'), [
+                'domain_id' => $linked->id,
+                'confirm_domain' => $apex,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $linked->refresh();
+        $this->assertFalse($linked->dns_records['last_check']['www_present'] ?? true);
+        $this->assertFalse($linked->dns_records['last_check']['www_redirect_correct'] ?? true);
+        $this->assertSame('apex_only', $linked->health()['code']);
+
+        $index = $this->get(route('admin.custom-domain.index'));
+        $index->assertOk();
+        $index->assertSee(__('domain_health.show_apex_and_www_count', ['count' => 0]), false);
+        $index->assertSee(__('domain_health.show_apex_only_count', ['count' => 1]), false);
+        $index->assertSee(__('domain_www.apex_only'), false);
     }
 
     /** @test */
@@ -265,6 +340,9 @@ class CustomDomainHealthFilterTest extends AdminApiTestCase
             'services.vercel.token' => 'test-token',
             'services.vercel.project_id' => 'prj_test',
             'services.vercel.team_id' => 'team_test',
+            'services.vercel.expected_project_id' => 'prj_test',
+            'services.vercel.expected_team_id' => 'team_test',
+            'services.vercel.allow_shared_project_mutations' => true,
             'services.vercel.base_url' => 'https://api.vercel.com',
             'services.vercel.max_project_domains' => 50,
         ]);
@@ -295,6 +373,28 @@ class CustomDomainHealthFilterTest extends AdminApiTestCase
     /**
      * @return array<string, mixed>
      */
+    private function apexOnlyLastCheck(): array
+    {
+        return [
+            'health_code' => 'apex_only',
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
+            'account_domain_present' => true,
+            'zone_enabled' => true,
+            'nameservers_ok' => true,
+            'dns_misconfigured' => false,
+            'ssl_ready' => true,
+            'certificate_readiness' => 'issued',
+            'www_present' => false,
+            'www_redirect_correct' => false,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     private function nsIssueLastCheck(): array
     {
         return [
@@ -312,10 +412,19 @@ class CustomDomainHealthFilterTest extends AdminApiTestCase
      */
     private function fakeInventory(array $names): void
     {
-        $domains = array_map(
-            static fn (string $name): array => ['name' => $name, 'verified' => true],
-            $names
-        );
+        $domains = [];
+
+        foreach ($names as $name) {
+            $entry = ['name' => $name, 'verified' => true];
+
+            if (str_starts_with($name, 'www.')) {
+                $apex = substr($name, 4);
+                $entry['redirect'] = $apex;
+                $entry['redirectStatusCode'] = 301;
+            }
+
+            $domains[] = $entry;
+        }
 
         Http::fake([
             'api.vercel.com/*' => Http::response([
@@ -323,6 +432,72 @@ class CustomDomainHealthFilterTest extends AdminApiTestCase
                 'pagination' => ['count' => count($domains), 'next' => null, 'prev' => null],
             ], 200),
         ]);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $domains
+     * @param  list<array<string, mixed>>|null  $afterPostDomains
+     * @param  list<array<string, mixed>>|null  $afterDeleteDomains
+     */
+    private function fakeInventoryMutations(
+        array $domains,
+        ?array $afterPostDomains = null,
+        ?array $afterDeleteDomains = null,
+        bool $allowDelete = false
+    ): void {
+        $state = ['domains' => $domains];
+
+        Http::fake(function (\Illuminate\Http\Client\Request $request) use (&$state, $afterPostDomains, $afterDeleteDomains, $allowDelete) {
+            $url = $request->url();
+            $method = $request->method();
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test') && ! str_contains($url, '/domains')) {
+                return Http::response([
+                    'id' => 'prj_test',
+                    'accountId' => 'team_test',
+                ], 200);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test/domains') && ! str_contains($url, '/domains/')) {
+                return Http::response([
+                    'domains' => $state['domains'],
+                    'pagination' => ['count' => count($state['domains']), 'next' => null, 'prev' => null],
+                ], 200);
+            }
+
+            if ($allowDelete && $method === 'GET' && preg_match('#/v9/projects/prj_test/domains/([^/?]+)#', $url, $matches)) {
+                $name = strtolower(rawurldecode($matches[1]));
+                foreach ($state['domains'] as $domain) {
+                    if (strtolower((string) ($domain['name'] ?? '')) === $name) {
+                        return Http::response($domain, 200);
+                    }
+                }
+
+                return Http::response(['error' => 'not found'], 404);
+            }
+
+            if ($allowDelete && $method === 'PATCH' && str_contains($url, '/domains/')) {
+                return Http::response(null, 200);
+            }
+
+            if ($allowDelete && $method === 'DELETE' && str_contains($url, '/domains/')) {
+                if ($afterDeleteDomains !== null) {
+                    $state['domains'] = $afterDeleteDomains;
+                }
+
+                return Http::response(null, 200);
+            }
+
+            if ($method === 'POST' && str_contains($url, '/domains')) {
+                if ($afterPostDomains !== null) {
+                    $state['domains'] = $afterPostDomains;
+                }
+
+                return Http::response(['name' => 'www.example.com', 'verified' => true], 200);
+            }
+
+            return Http::response(['error' => 'unexpected', 'url' => $url, 'method' => $method], 500);
+        });
     }
 
     /**

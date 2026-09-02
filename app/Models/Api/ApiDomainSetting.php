@@ -41,6 +41,12 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
 
     protected ?bool $vercelAttachedHint = null;
 
+    protected bool $hasWwwStateHint = false;
+
+    protected ?bool $wwwPresentHint = null;
+
+    protected ?bool $wwwRedirectCorrectHint = null;
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -105,6 +111,19 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
     }
 
     /**
+     * Live Vercel inventory www state used to classify linked vs apex_only
+     * without waiting for a full status sync to rewrite last_check.
+     */
+    public function setWwwStateHint(bool $present, bool $redirectCorrect): self
+    {
+        $this->hasWwwStateHint = true;
+        $this->wwwPresentHint = $present;
+        $this->wwwRedirectCorrectHint = $redirectCorrect;
+
+        return $this;
+    }
+
+    /**
      * @return array{code: string, class: string, label: string, reason: string, checked_at: string|null}
      */
     public function getHealthAttribute(): array
@@ -124,6 +143,11 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
             return $this->healthState('unchecked', []);
         }
 
+        if ($this->hasWwwStateHint) {
+            $lastCheck['www_present'] = (bool) $this->wwwPresentHint;
+            $lastCheck['www_redirect_correct'] = (bool) $this->wwwRedirectCorrectHint;
+        }
+
         if (isset($lastCheck['health_code']) && is_string($lastCheck['health_code']) && $lastCheck['health_code'] !== '') {
             $code = $lastCheck['health_code'];
 
@@ -139,6 +163,11 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
                 'certificate_error',
             ], true)) {
                 $code = self::resolveHealthCode($lastCheck, $vercelAttached);
+            } elseif ($this->hasWwwStateHint && in_array($code, ['linked', 'apex_only'], true)) {
+                $code = self::resolveHealthCode(
+                    $lastCheck,
+                    $this->resolveAttachment($lastCheck, $vercelAttached)
+                );
             }
 
             return $this->healthState($code, $lastCheck);

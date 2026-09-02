@@ -119,14 +119,13 @@ class CustomDomainController extends Controller
         }
 
         $inventorySnapshot = $this->domainCache->cached();
-        $vercelNames = $inventorySnapshot['names'] ?? null;
         $inventoryUnreliable = $this->isInventoryUnreliable($inventorySnapshot);
 
         if ($healthFilter !== null) {
             $matchingIds = $this->filterDomainIdsByHealth(
                 (clone $baseQuery)->select(['id', 'custom_name', 'dns_records', 'expires_at'])->get(),
                 $healthFilter,
-                $vercelNames
+                $inventorySnapshot
             );
 
             $rcDomains = ApiDomainSetting::with('user')
@@ -148,13 +147,9 @@ class CustomDomainController extends Controller
             $inventoryUnreliable
         );
 
-        if ($vercelNames !== null) {
-            $rcDomains->getCollection()->transform(function (ApiDomainSetting $domain) use ($vercelNames) {
-                $apex = $this->vercel->normalizeApex((string) $domain->custom_name);
-
-                return $domain->setVercelAttachedHint(in_array($apex, $vercelNames, true));
-            });
-        }
+        $rcDomains->getCollection()->transform(
+            fn (ApiDomainSetting $domain) => $this->applyInventoryHealthHints($domain, $inventorySnapshot)
+        );
 
         $data['rcDomains'] = $rcDomains;
         $data['vercelCapacity'] = $capacity;
@@ -690,6 +685,7 @@ class CustomDomainController extends Controller
 
                 $before = $this->domainActivitySnapshot($domain);
                 $this->vercel->addDomain('www.' . $apex, $apex, 301);
+                $this->syncWwwFlagsInLastCheck($domain, true, true);
                 $this->domainCache->invalidateAdminCaches();
 
                 \App\Support\TenantActivity::emit(
@@ -771,6 +767,7 @@ class CustomDomainController extends Controller
 
                 $before = $this->domainActivitySnapshot($domain);
                 $this->vercel->addDomain('www.' . $apex, $apex, 301);
+                $this->syncWwwFlagsInLastCheck($domain, true, true);
                 $this->domainCache->invalidateAdminCaches();
 
                 \App\Support\TenantActivity::emit(
@@ -809,6 +806,7 @@ class CustomDomainController extends Controller
             return $this->withProjectLock(function () use ($request, $domain, $apex) {
                 $before = $this->domainActivitySnapshot($domain);
                 $this->vercel->removeWwwHostname($apex);
+                $this->syncWwwFlagsInLastCheck($domain, false, false);
                 $this->domainCache->invalidateAdminCaches();
 
                 \App\Support\TenantActivity::emit(
@@ -869,21 +867,16 @@ class CustomDomainController extends Controller
 
     /**
      * @param  \Illuminate\Support\Collection<int, ApiDomainSetting>  $rows
-     * @param  list<string>|null  $vercelNames
+     * @param  array<string, mixed>|null  $inventorySnapshot
      * @return list<int>
      */
-    private function filterDomainIdsByHealth($rows, string $healthFilter, ?array $vercelNames): array
+    private function filterDomainIdsByHealth($rows, string $healthFilter, ?array $inventorySnapshot): array
     {
         $ids = [];
 
         foreach ($rows as $row) {
-            $hint = null;
-            if ($vercelNames !== null) {
-                $apex = $this->vercel->normalizeApex((string) $row->custom_name);
-                $hint = in_array($apex, $vercelNames, true);
-            }
-
-            $code = $row->health($hint)['code'];
+            $this->applyInventoryHealthHints($row, $inventorySnapshot);
+            $code = $row->health['code'];
 
             if ($healthFilter === 'issues') {
                 if (! in_array($code, ['linked', 'checks_disabled', 'unchecked', 'apex_only'], true)) {
@@ -909,8 +902,6 @@ class CustomDomainController extends Controller
         $cacheKey = $this->domainCache->healthCountersKey();
 
         return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($inventorySnapshot) {
-            $vercelNames = $inventorySnapshot['names'] ?? null;
-
             $rows = ApiDomainSetting::query()
                 ->select(['id', 'custom_name', 'status', 'dns_records', 'expires_at'])
                 ->get();
@@ -921,13 +912,8 @@ class CustomDomainController extends Controller
             $byCode = [];
 
             foreach ($rows as $row) {
-                $hint = null;
-                if ($vercelNames !== null) {
-                    $apex = $this->vercel->normalizeApex((string) $row->custom_name);
-                    $hint = in_array($apex, $vercelNames, true);
-                }
-
-                $health = $row->health($hint);
+                $this->applyInventoryHealthHints($row, $inventorySnapshot);
+                $health = $row->health;
                 $code = $health['code'];
                 $byCode[$code] = ($byCode[$code] ?? 0) + 1;
 
@@ -1136,6 +1122,69 @@ class CustomDomainController extends Controller
         }
 
         return $states;
+    }
+
+    /**
+     * Align persisted last_check www flags (and linked/apex_only health_code) with a
+     * successful www mutation. Does not touch status/ssl.
+     */
+    private function syncWwwFlagsInLastCheck(
+        ApiDomainSetting $domain,
+        bool $wwwPresent,
+        bool $wwwRedirectCorrect
+    ): void {
+        $dnsRecords = is_array($domain->dns_records) ? $domain->dns_records : [];
+        $lastCheck = is_array($dnsRecords['last_check'] ?? null) ? $dnsRecords['last_check'] : null;
+
+        if ($lastCheck === null) {
+            return;
+        }
+
+        $lastCheck['www_present'] = $wwwPresent;
+        $lastCheck['www_redirect_correct'] = $wwwRedirectCorrect;
+
+        $attached = array_key_exists('apex_attached', $lastCheck)
+            ? (bool) $lastCheck['apex_attached']
+            : (array_key_exists('vercel_attached', $lastCheck) ? (bool) $lastCheck['vercel_attached'] : null);
+
+        $resolved = ApiDomainSetting::resolveHealthCode($lastCheck, $attached);
+        $storedCode = $lastCheck['health_code'] ?? null;
+
+        if ($storedCode === null
+            || in_array($storedCode, ['linked', 'apex_only'], true)
+            || in_array($resolved, ['linked', 'apex_only'], true)
+        ) {
+            $lastCheck['health_code'] = $resolved;
+        }
+
+        $domain->dns_records = array_merge($dnsRecords, ['last_check' => $lastCheck]);
+        $domain->save();
+    }
+
+    /**
+     * Apply live inventory attachment + www hints so listing/count health matches WWW badges.
+     *
+     * @param  array<string, mixed>|null  $inventorySnapshot
+     */
+    private function applyInventoryHealthHints(ApiDomainSetting $domain, ?array $inventorySnapshot): ApiDomainSetting
+    {
+        if ($inventorySnapshot === null) {
+            return $domain;
+        }
+
+        $apex = $this->vercel->normalizeApex((string) $domain->custom_name);
+        $names = $inventorySnapshot['names'] ?? [];
+
+        if (is_array($names)) {
+            $domain->setVercelAttachedHint(in_array($apex, $names, true));
+        }
+
+        if (isset($inventorySnapshot['domains']) && is_array($inventorySnapshot['domains'])) {
+            $wwwState = $this->resolveWwwStateForApex($inventorySnapshot, $apex);
+            $domain->setWwwStateHint($wwwState['present'], $wwwState['valid']);
+        }
+
+        return $domain;
     }
 
     /**
