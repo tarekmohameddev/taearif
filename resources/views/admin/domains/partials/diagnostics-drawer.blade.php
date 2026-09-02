@@ -70,22 +70,33 @@
         </div>
 
         <table class="table table-sm table-striped mb-3 domain-diagnostics-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ __('domain_diagnostics.col_check') }}</th>
+                    <th scope="col">{{ __('domain_diagnostics.col_value') }}</th>
+                    <th scope="col">{{ __('domain_diagnostics.col_meaning') }}</th>
+                </tr>
+            </thead>
             <tbody>
                 <tr>
                     <th scope="row">{{ __('domain_diagnostics.provider_reachable') }}</th>
                     <td>{!! $boolBadge($d['provider_reachable'] ?? null) !!}</td>
+                    <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_provider_reachable') }}</td>
                 </tr>
                 <tr>
                     <th scope="row">{{ __('domain_diagnostics.apex_attached') }}</th>
                     <td>{!! $boolBadge($d['apex_attached'] ?? false) !!}</td>
+                    <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_apex_attached') }}</td>
                 </tr>
                 <tr>
                     <th scope="row">{{ __('domain_diagnostics.apex_verified') }}</th>
                     <td>{!! $boolBadge($d['apex_verified'] ?? false) !!}</td>
+                    <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_apex_verified') }}</td>
                 </tr>
                 <tr>
                     <th scope="row">{{ __('domain_diagnostics.zone_enabled') }}</th>
                     <td>{!! $boolBadge($d['zone_enabled'] ?? false) !!}</td>
+                    <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_zone_enabled') }}</td>
                 </tr>
                 <tr>
                     <th scope="row">{{ __('domain_diagnostics.nameservers_ok') }}</th>
@@ -96,31 +107,37 @@
                             {!! $boolBadge($d['nameservers_ok'] ?? false) !!}
                         @endif
                     </td>
+                    <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_nameservers_ok') }}</td>
                 </tr>
                 <tr>
                     <th scope="row">{{ __('domain_diagnostics.dns_misconfigured') }}</th>
-                    <td>{!! $boolBadge(! ($d['dns_misconfigured'] ?? false), __('No'), __('Yes')) !!}</td>
+                    <td>{!! $boolBadge(! ($d['dns_misconfigured'] ?? false), __('Yes'), __('No')) !!}</td>
+                    <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_dns_misconfigured') }}</td>
                 </tr>
                 @if (! empty($d['configured_by']))
                 <tr>
                     <th scope="row">{{ __('domain_diagnostics.configured_by') }}</th>
                     <td><code>{{ $d['configured_by'] }}</code></td>
+                    <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_configured_by') }}</td>
                 </tr>
                 @endif
                 <tr>
                     <th scope="row">{{ __('domain_diagnostics.ssl_ready') }}</th>
                     <td>{!! $boolBadge($d['ssl_ready'] ?? false) !!}</td>
+                    <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_ssl_ready') }}</td>
                 </tr>
                 @if (! empty($d['certificate_readiness']))
                 <tr>
                     <th scope="row">{{ __('domain_diagnostics.certificate_readiness') }}</th>
                     <td><code>{{ $d['certificate_readiness'] }}</code></td>
+                    <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_certificate_readiness') }}</td>
                 </tr>
                 @endif
                 @if (! empty($d['certificate_id']))
                 <tr>
                     <th scope="row">{{ __('domain_diagnostics.certificate_id') }}</th>
                     <td><code>{{ $d['certificate_id'] }}</code></td>
+                    <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_certificate_id') }}</td>
                 </tr>
                 @endif
                 <tr>
@@ -132,6 +149,7 @@
                             <small class="text-muted d-block">{{ __('domain_diagnostics.first_failure_at') }}: {{ $d['first_failure_at'] }}</small>
                         @endif
                     </td>
+                    <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_consecutive_failures') }}</td>
                 </tr>
             </tbody>
         </table>
@@ -222,13 +240,54 @@
 
         @if ($provisioning !== [])
             <h6 class="mt-3">{{ __('domain_diagnostics.provisioning_ledger') }}</h6>
-            <table class="table table-sm table-striped mb-0">
+            <p class="small text-muted mb-2" dir="auto">{{ __('domain_diagnostics.provisioning_ledger_hint') }}</p>
+            <table class="table table-sm table-striped mb-0 domain-diagnostics-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ __('domain_diagnostics.col_check') }}</th>
+                        <th scope="col">{{ __('domain_diagnostics.col_value') }}</th>
+                        <th scope="col">{{ __('domain_diagnostics.col_meaning') }}</th>
+                    </tr>
+                </thead>
                 <tbody>
                     @foreach ($provisioning as $key => $value)
                         @if (is_scalar($value) || $value === null)
+                            @php
+                                $labelKey = "domain_diagnostics.ledger_label.{$key}";
+                                $fieldLabel = __($labelKey);
+                                if ($fieldLabel === $labelKey) { $fieldLabel = $key; }
+
+                                $meaningKey = "domain_diagnostics.ledger_meaning.{$key}";
+                                $fieldMeaning = __($meaningKey);
+                                if ($fieldMeaning === $meaningKey) { $fieldMeaning = ''; }
+
+                                if ($value === null || $value === '') {
+                                    $displayValue = '—';
+                                } elseif ($value === true) {
+                                    $displayValue = __('Yes');
+                                } elseif ($value === false) {
+                                    $displayValue = __('No');
+                                } else {
+                                    $displayValue = (string) $value;
+                                }
+
+                                // Plain-language gloss for known tokens (created / pre_existing / modes …).
+                                $valueGloss = '';
+                                if (is_string($value) && $value !== '') {
+                                    $valueKey = "domain_diagnostics.ledger_value.{$value}";
+                                    $translated = __($valueKey);
+                                    if ($translated !== $valueKey) { $valueGloss = $translated; }
+                                }
+                            @endphp
                             <tr>
-                                <th scope="row"><code>{{ $key }}</code></th>
-                                <td>{{ $value === null ? '—' : $value }}</td>
+                                <th scope="row">{{ $fieldLabel }}</th>
+                                <td>
+                                    <code>{{ $displayValue }}</code>
+                                    @if ($valueGloss !== '')
+                                        <span class="small text-muted d-block" dir="auto">{{ $valueGloss }}</span>
+                                    @endif
+                                </td>
+                                <td class="small text-muted" dir="auto">{{ $fieldMeaning }}</td>
                             </tr>
                         @endif
                     @endforeach
