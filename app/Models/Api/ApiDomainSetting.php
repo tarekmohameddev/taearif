@@ -129,7 +129,15 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
 
             if ($code === 'expired' && (! $this->expires_at || ! $this->expires_at->isPast())) {
                 $code = self::resolveHealthCode($lastCheck, $this->resolveAttachment($lastCheck, $vercelAttached));
-            } elseif ($vercelAttached !== null && in_array($code, ['not_on_vercel', 'unverified', 'linked', 'apex_only'], true)) {
+            } elseif ($vercelAttached !== null && in_array($code, [
+                'not_on_vercel',
+                'unverified',
+                'linked',
+                'apex_only',
+                'zone_disabled',
+                'certificate_pending',
+                'certificate_error',
+            ], true)) {
                 $code = self::resolveHealthCode($lastCheck, $vercelAttached);
             }
 
@@ -178,6 +186,13 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
             return 'ownership_required';
         }
 
+        $accountDomainPresent = (bool) ($lastCheck['account_domain_present'] ?? false);
+        $zoneEnabled = (bool) ($lastCheck['zone_enabled'] ?? false);
+
+        if ($accountDomainPresent && ! $zoneEnabled) {
+            return 'zone_disabled';
+        }
+
         if ($misconfigured) {
             return 'dns_misconfigured';
         }
@@ -188,6 +203,16 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
 
         if (! $verified) {
             return 'unverified';
+        }
+
+        $readiness = (string) ($lastCheck['certificate_readiness'] ?? '');
+
+        if ($readiness === 'certificate_error') {
+            return 'certificate_error';
+        }
+
+        if (($lastCheck['ssl_ready'] ?? false) !== true) {
+            return 'certificate_pending';
         }
 
         $wwwPresent = (bool) ($lastCheck['www_present'] ?? false);
@@ -254,6 +279,9 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
             'ns_not_pointing' => 'warning',
             'not_on_vercel' => 'danger',
             'unverified' => 'warning',
+            'zone_disabled' => 'warning',
+            'certificate_pending' => 'warning',
+            'certificate_error' => 'danger',
             'expired' => 'danger',
             'provider_error' => 'secondary',
             'checks_disabled' => 'secondary',

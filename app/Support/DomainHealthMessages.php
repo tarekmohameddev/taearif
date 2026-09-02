@@ -26,6 +26,9 @@ final class DomainHealthMessages
         'Apex domain is linked; optional www redirect is not configured.' => 'domain_health.sync.apex_only',
         'Add the ownership TXT record at your DNS provider to verify this domain.' => 'domain_health.sync.ownership_required',
         'DNS records are misconfigured according to the hosting provider.' => 'domain_health.sync.dns_misconfigured',
+        'The account domain exists but its DNS zone is disabled.' => 'domain_health.sync.zone_disabled',
+        'Certificate issuance or validation is still in progress.' => 'domain_health.sync.certificate_pending',
+        'Certificate coverage is invalid or expired.' => 'domain_health.sync.certificate_error',
     ];
 
     public static function translate(string $message): string

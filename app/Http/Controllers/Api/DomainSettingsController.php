@@ -8,6 +8,7 @@ use App\Http\Requests\Api\Domain\StoreDomainSettingRequest;
 use App\Http\Requests\Api\Domain\VerifyDomainRequest;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User;
+use App\Services\Vercel\DomainProvisioningService;
 use App\Services\Vercel\DomainStatusSyncService;
 use App\Services\Vercel\VercelDomainCache;
 use App\Services\Vercel\VercelDomainClient;
@@ -29,6 +30,7 @@ class DomainSettingsController extends Controller
 {
     public function __construct(
         private readonly VercelDomainClient $vercel,
+        private readonly DomainProvisioningService $provisioningService,
         private readonly DomainStatusSyncService $domainSync,
         private readonly VercelDomainCache $vercelCache,
         private readonly VercelDomainInventoryService $vercelInventory,
@@ -108,13 +110,11 @@ class DomainSettingsController extends Controller
                 return $domain;
             }
 
-            return $this->finalizeStoreResponse($request, $domain, null, 'skipped');
+            return $this->finalizeStoreResponse($request, $domain, null, [], 'skipped');
         }
 
         try {
-            $provisioned = $this->vercelCache->withMutationLock(function () use ($user, $customName) {
-                return $this->provisionDomainWithVercel($user, $customName);
-            });
+            $provisioned = $this->provisionDomainWithVercel($user, $customName);
         } catch (LockTimeoutException $exception) {
             Log::warning('Timed out waiting for Vercel domain mutation lock', [
                 'domain' => $customName,
@@ -136,13 +136,19 @@ class DomainSettingsController extends Controller
         return $this->finalizeStoreResponse(
             $request,
             $provisioned['domain'],
-            $provisioned['attach'] ?? null,
+            $provisioned['provisionResult'] ?? null,
+            $provisioned['syncResult'] ?? [],
             $provisioned['apex_attachment'] ?? 'unknown'
         );
     }
 
     /**
-     * @return array{domain: ApiDomainSetting, attach: ?array<string, mixed>, apex_attachment: string}|JsonResponse
+     * @return array{
+     *     domain: ApiDomainSetting,
+     *     provisionResult: array<string, mixed>,
+     *     syncResult: array<string, mixed>,
+     *     apex_attachment: string
+     * }|JsonResponse
      */
     private function provisionDomainWithVercel(User $user, string $customName): array|JsonResponse
     {
@@ -164,24 +170,44 @@ class DomainSettingsController extends Controller
             return $domain;
         }
 
-        $apexCreated = false;
-        $attachResult = ['apex' => null];
-
         try {
-            $apexResult = $this->vercel->addDomain($customName);
-            $apexCreated = (bool) ($apexResult['was_created'] ?? false);
-            $attachResult['apex'] = $apexResult;
-            $apexAttachment = ($apexResult['was_adopted'] ?? false) ? 'adopted' : 'created';
-            $this->vercelCache->invalidateAdminCaches();
+            $provisionResult = $this->provisioningService->run(
+                $customName,
+                DomainProvisioningService::MODE_INITIAL
+            );
+        } catch (LockTimeoutException $exception) {
+            Log::warning('Timed out waiting for Vercel domain mutation lock', [
+                'domain' => $customName,
+                'user_id' => $user->id,
+                'error' => $exception->getMessage(),
+            ]);
 
-            return [
-                'domain' => $domain,
-                'attach' => $attachResult,
-                'apex_attachment' => $apexAttachment,
-            ];
-        } catch (VercelDomainException $exception) {
-            return $this->handleVercelAttachFailure($domain, $customName, $apexCreated, $exception);
+            return response()->json([
+                'success' => false,
+                'code' => 'HOSTING_BUSY',
+                'message' => 'Domain hosting is busy right now. Please try again shortly.',
+            ], 503);
         }
+
+        if (($provisionResult['outcome'] ?? '') === 'failed') {
+            return $this->handleProvisioningStoreFailure($domain, $customName, $provisionResult);
+        }
+
+        $syncResult = $this->domainSync->applyProvisioningResult(
+            $domain,
+            $provisionResult,
+            request(),
+            applyFailureThreshold: false
+        );
+        $domain->refresh();
+        $this->vercelCache->invalidateAdminCaches();
+
+        return [
+            'domain' => $domain,
+            'provisionResult' => $provisionResult,
+            'syncResult' => $syncResult,
+            'apex_attachment' => (string) ($provisionResult['provisioning']['apex_attachment'] ?? 'unknown'),
+        ];
     }
 
     private function insertPendingDomainRow(User $user, string $customName): ApiDomainSetting|JsonResponse
@@ -244,17 +270,21 @@ class DomainSettingsController extends Controller
     }
 
     /**
-     * @param  array<string, mixed>|null  $attachResult
+     * @param  array<string, mixed>|null  $provisionResult
+     * @param  array<string, mixed>  $syncResult
      */
     private function finalizeStoreResponse(
         Request $request,
         ApiDomainSetting $domain,
-        ?array $attachResult,
+        ?array $provisionResult,
+        array $syncResult,
         string $apexAttachment
     ): JsonResponse {
-        $syncResult = $this->domainSync->sync($domain, true, $request);
-        $domain->refresh();
-        $this->vercelCache->invalidateAdminCaches();
+        if ($provisionResult === null) {
+            $syncResult = $this->domainSync->sync($domain, true, $request);
+            $domain->refresh();
+            $this->vercelCache->invalidateAdminCaches();
+        }
 
         TenantActivity::emit(
             $request,
@@ -272,14 +302,15 @@ class DomainSettingsController extends Controller
                 'domain.verified',
                 'api_domains_settings',
                 $domain->id,
-                ['old_status' => $syncResult['old_status']],
+                ['old_status' => $syncResult['old_status'] ?? 'pending'],
                 ['new_status' => 'active']
             );
         }
 
         $verified = $domain->status === 'active';
+        $outcomePayload = $this->buildOutcomePayload($provisionResult, $syncResult);
 
-        return response()->json([
+        return response()->json(array_merge([
             'success' => true,
             'message' => 'Domain added successfully',
             'data' => [
@@ -301,18 +332,18 @@ class DomainSettingsController extends Controller
                 ),
             ],
             'dnsInstructions' => ApiDomainSetting::nameserverInstructions(),
-            'diagnostics' => $this->buildDiagnostics($domain, $attachResult, $syncResult, $apexAttachment),
-        ], 201);
+            'diagnostics' => $this->buildDiagnostics($domain, $provisionResult, $syncResult, $apexAttachment),
+        ], $outcomePayload), 201);
     }
 
     /**
-     * @param  array<string, mixed>|null  $attachResult
+     * @param  array<string, mixed>|null  $provisionResult
      * @param  array<string, mixed>  $syncResult
      * @return array<string, mixed>
      */
     private function buildDiagnostics(
         ApiDomainSetting $domain,
-        ?array $attachResult,
+        ?array $provisionResult,
         array $syncResult,
         string $apexAttachment
     ): array {
@@ -320,9 +351,10 @@ class DomainSettingsController extends Controller
         $provisioning = is_array($dnsRecords['provisioning'] ?? null) ? $dnsRecords['provisioning'] : [];
         $resolvedAttachment = $provisioning['apex_attachment'] ?? $apexAttachment;
 
-        $apexAttach = is_array($attachResult) ? ($attachResult['apex'] ?? $attachResult) : null;
+        $lastCheck = is_array($dnsRecords['last_check'] ?? null) ? $dnsRecords['last_check'] : [];
+        $ownershipChallenge = $lastCheck['ownership_challenge'] ?? null;
         $verificationRecords = $this->sanitizeVerificationRecords(
-            is_array($apexAttach) ? ($apexAttach['verification'] ?? []) : []
+            is_array($ownershipChallenge) ? [$ownershipChallenge] : []
         );
         $verificationState = match (true) {
             (bool) ($syncResult['vercel_verified'] ?? false) && $domain->status === 'active' => 'verified',
@@ -336,6 +368,40 @@ class DomainSettingsController extends Controller
             'verification_state' => $verificationState,
             'recommended_dns' => ApiDomainSetting::nameserverInstructions(),
             'ownership_txt' => $verificationRecords,
+            'outcome' => $provisionResult['outcome'] ?? ($syncResult['outcome'] ?? null),
+            'health' => $provisionResult['health'] ?? ($syncResult['health_code'] ?? null),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $provisionResult
+     * @param  array<string, mixed>  $syncResult
+     * @return array{outcome: string, health: string, ssl: bool, retryable: bool, message: string}
+     */
+    private function buildOutcomePayload(?array $provisionResult, array $syncResult): array
+    {
+        if ($provisionResult !== null) {
+            return [
+                'outcome' => (string) ($provisionResult['outcome'] ?? 'pending'),
+                'health' => (string) ($provisionResult['health'] ?? 'unchecked'),
+                'ssl' => (bool) ($provisionResult['ssl'] ?? false),
+                'retryable' => (bool) ($provisionResult['retryable'] ?? false),
+                'message' => (string) ($provisionResult['message'] ?? ''),
+            ];
+        }
+
+        $outcome = match ($syncResult['new_status'] ?? 'pending') {
+            'active' => 'active',
+            'failed' => 'failed',
+            default => 'pending',
+        };
+
+        return [
+            'outcome' => $outcome,
+            'health' => (string) ($syncResult['health_code'] ?? 'unchecked'),
+            'ssl' => (bool) ($syncResult['ssl'] ?? false),
+            'retryable' => $outcome === 'pending' && ($syncResult['health_code'] ?? '') === 'provider_error',
+            'message' => (string) ($syncResult['message'] ?? ''),
         ];
     }
 
@@ -372,35 +438,56 @@ class DomainSettingsController extends Controller
         return $sanitized;
     }
 
-    private function handleVercelAttachFailure(
+    /**
+     * @param  array<string, mixed>  $provisionResult
+     */
+    private function handleProvisioningStoreFailure(
         ApiDomainSetting $domain,
         string $customName,
-        bool $apexCreated,
-        VercelDomainException $exception
+        array $provisionResult
     ): JsonResponse {
-        if ($apexCreated) {
-            try {
-                $this->vercel->removeDomain($customName);
-            } catch (VercelDomainException|ConnectionException $cleanupError) {
-                Log::warning('Could not detach Vercel apex domain created during a failed add', [
-                    'domain' => $customName,
-                    'error' => $cleanupError->getMessage(),
-                ]);
-            }
+        $health = (string) ($provisionResult['health'] ?? 'provider_error');
+        $provisioning = is_array($provisionResult['provisioning'] ?? null)
+            ? $provisionResult['provisioning']
+            : [];
+        $retryable = (bool) ($provisionResult['retryable'] ?? false);
+
+        if ($retryable && $health === 'provider_error') {
+            $pendingResult = array_merge($provisionResult, [
+                'outcome' => 'pending',
+                'message' => 'Hosting provider state is uncertain. Retry verification shortly.',
+            ]);
+            $syncResult = $this->domainSync->applyProvisioningResult(
+                $domain,
+                $pendingResult,
+                request(),
+                applyFailureThreshold: false
+            );
+            $domain->refresh();
+            $this->vercelCache->invalidateAdminCaches();
+
+            return $this->finalizeStoreResponse(
+                request(),
+                $domain,
+                $pendingResult,
+                $syncResult,
+                (string) ($provisioning['apex_attachment'] ?? 'uncertain')
+            );
         }
 
         $this->vercelCache->invalidateAdminCaches();
 
-        Log::error('Failed to attach domain to Vercel', [
+        Log::error('Failed to provision domain with hosting provider', [
             'domain' => $customName,
             'domain_id' => $domain->id,
-            'error' => $exception->getMessage(),
-            'status' => $exception->statusCode,
-            'internal_code' => $exception->internalCode,
-            'vercel_error_code' => $exception->getErrorCode(),
+            'health' => $health,
+            'provisioning' => $provisioning,
         ]);
 
-        if ($this->isCapacityError($exception)) {
+        $capacityReason = $provisioning['capacity_reason'] ?? null;
+        $internalCode = $provisioning['internal_code'] ?? null;
+        if ($capacityReason === 'capacity_reached'
+            || $internalCode === VercelDomainException::CODE_CAPACITY_REACHED) {
             $domain->delete();
             $this->vercelCache->invalidateAdminCaches();
 
@@ -411,21 +498,19 @@ class DomainSettingsController extends Controller
             ], 503);
         }
 
-        if ($this->isTransportAmbiguity($exception)) {
-            $this->persistProvisioningDiagnostics($domain, 'uncertain', $exception);
+        if ($health === 'ownership_required') {
+            $domain->delete();
+            $this->vercelCache->invalidateAdminCaches();
 
-            return $this->finalizeStoreResponse(request(), $domain, null, 'uncertain');
-        }
-
-        $domain->delete();
-        $this->vercelCache->invalidateAdminCaches();
-
-        $mapped = match ($exception->internalCode) {
-            VercelDomainException::CODE_OWNERSHIP_REQUIRED => [
-                'status' => 409,
+            return response()->json([
+                'success' => false,
                 'code' => 'DOMAIN_OWNERSHIP_REQUIRED',
                 'message' => 'This domain is already registered elsewhere. Complete the ownership verification steps and try again.',
-            ],
+            ], 409);
+        }
+
+        $internalCode = $provisioning['internal_code'] ?? null;
+        $mapped = match ($internalCode) {
             VercelDomainException::CODE_MUTATION_BLOCKED,
             VercelDomainException::CODE_NOT_CONFIGURED,
             VercelDomainException::CODE_PROJECT_IDENTITY_MISMATCH => [
@@ -435,6 +520,9 @@ class DomainSettingsController extends Controller
             ],
             default => null,
         };
+
+        $domain->delete();
+        $this->vercelCache->invalidateAdminCaches();
 
         if ($mapped !== null) {
             return response()->json([
@@ -448,41 +536,6 @@ class DomainSettingsController extends Controller
             'success' => false,
             'message' => 'Failed to register domain with hosting provider. Please try again later.',
         ], 502);
-    }
-
-    private function isCapacityError(VercelDomainException $exception): bool
-    {
-        return $exception->internalCode === VercelDomainException::CODE_CAPACITY_REACHED
-            || $exception->getErrorCode() === 'project_domain_limit_reached';
-    }
-
-    private function isTransportAmbiguity(VercelDomainException $exception): bool
-    {
-        if ($exception->internalCode === VercelDomainException::CODE_RATE_LIMITED) {
-            return true;
-        }
-
-        return $exception->internalCode === VercelDomainException::CODE_PROVIDER_UNAVAILABLE
-            && $exception->getPrevious() instanceof ConnectionException;
-    }
-
-    private function persistProvisioningDiagnostics(
-        ApiDomainSetting $domain,
-        string $apexAttachment,
-        VercelDomainException $exception
-    ): void {
-        $dnsRecords = is_array($domain->dns_records) ? $domain->dns_records : [];
-        $dnsRecords['provisioning'] = [
-            'state' => 'uncertain',
-            'apex_attachment' => $apexAttachment,
-            'internal_code' => $exception->internalCode,
-            'checked_at' => now()->toIso8601String(),
-            'message' => 'Hosting provider state is uncertain. Retry verification shortly.',
-        ];
-
-        $domain->dns_records = $dnsRecords;
-        $domain->save();
-        $this->vercelCache->invalidateAdminCaches();
     }
 
     private function capacityRejectedResponse(?string $reason): JsonResponse
@@ -600,9 +653,37 @@ class DomainSettingsController extends Controller
             ], 503);
         }
 
-        $result = $this->domainSync->sync($domain, true, $request);
+        $apex = $this->vercel->normalizeApex((string) $domain->custom_name);
+        $mode = in_array($domain->status, ['pending', 'failed'], true)
+            ? DomainProvisioningService::MODE_SCHEDULED
+            : null;
+
+        try {
+            $provisionResult = $this->provisioningService->run($apex, $mode);
+        } catch (LockTimeoutException $exception) {
+            Log::warning('Timed out waiting for Vercel domain mutation lock during verify', [
+                'domain' => $apex,
+                'domain_id' => $domain->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'code' => 'HOSTING_BUSY',
+                'message' => 'Domain hosting is busy right now. Please try again shortly.',
+            ], 503);
+        }
+
+        $result = $this->domainSync->applyProvisioningResult(
+            $domain,
+            $provisionResult,
+            $request,
+            applyFailureThreshold: false
+        );
         $domain->refresh();
         $this->vercelCache->invalidateAdminCaches();
+
+        $outcomePayload = $this->buildOutcomePayload($provisionResult, $result);
 
         if ($result['new_status'] === 'active') {
             if ($result['changed'] || $result['old_status'] !== 'active') {
@@ -618,7 +699,7 @@ class DomainSettingsController extends Controller
                 ['new_status' => 'active']
             );
 
-            return response()->json([
+            return response()->json(array_merge([
                 'success' => true,
                 'message' => 'Domain verified successfully',
                 'data' => [
@@ -629,11 +710,11 @@ class DomainSettingsController extends Controller
                     'verificationStatus' => 'verified',
                     'message' => $result['message'],
                 ],
-            ]);
+            ], $outcomePayload));
         }
 
         if ($result['new_status'] === 'failed') {
-            return response()->json([
+            return response()->json(array_merge([
                 'success' => false,
                 'message' => $result['message'] ?: 'Domain verification failed',
                 'data' => [
@@ -643,10 +724,10 @@ class DomainSettingsController extends Controller
                     'verificationStatus' => 'failed',
                     'message' => $result['message'],
                 ],
-            ], 422);
+            ], $outcomePayload), 422);
         }
 
-        return response()->json([
+        return response()->json(array_merge([
             'success' => false,
             'message' => $result['message'] ?: 'Domain verification is still pending',
             'data' => [
@@ -657,7 +738,7 @@ class DomainSettingsController extends Controller
                 'message' => $result['message'],
                 'dnsInstructions' => ApiDomainSetting::nameserverInstructions(),
             ],
-        ], 422);
+        ], $outcomePayload), 422);
     }
 
     public function setPrimary(SetPrimaryDomainRequest $request)

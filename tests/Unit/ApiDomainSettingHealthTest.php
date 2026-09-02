@@ -98,8 +98,12 @@ class ApiDomainSettingHealthTest extends TestCase
             'nameserver_check_enabled' => true,
             'apex_attached' => true,
             'apex_verified' => true,
+            'account_domain_present' => true,
+            'zone_enabled' => true,
             'nameservers_ok' => true,
             'dns_misconfigured' => false,
+            'ssl_ready' => true,
+            'certificate_readiness' => 'issued',
             'www_present' => true,
             'www_redirect_correct' => true,
         ]);
@@ -117,8 +121,12 @@ class ApiDomainSettingHealthTest extends TestCase
             'nameserver_check_enabled' => true,
             'apex_attached' => true,
             'apex_verified' => true,
+            'account_domain_present' => true,
+            'zone_enabled' => true,
             'nameservers_ok' => true,
             'dns_misconfigured' => false,
+            'ssl_ready' => true,
+            'certificate_readiness' => 'issued',
             'www_present' => false,
             'www_redirect_correct' => false,
         ]);
@@ -425,6 +433,25 @@ class ApiDomainSettingHealthTest extends TestCase
             $mock->shouldReceive('normalizeApex')->andReturn('sync-reset.example.com');
             $mock->shouldReceive('getDomainVerification')->andReturn([]);
             $mock->shouldReceive('getDomainConfig')->andReturn(['misconfigured' => false]);
+            $mock->shouldReceive('getAccountDomain')->andReturn([
+                'name' => 'sync-reset.example.com',
+                'zone' => true,
+                'verified' => true,
+                'nameservers' => [],
+                'intendedNameservers' => [],
+            ]);
+            $issuedCert = [
+                'id' => 'cert_sync_reset',
+                'cns' => ['sync-reset.example.com'],
+                'expiresAt' => time() + 86400 * 90,
+                'readiness' => 'issued',
+            ];
+            $mock->shouldReceive('listCertificates')->andReturn([
+                'certificates' => [$issuedCert],
+                'is_lower_bound' => false,
+            ]);
+            $mock->shouldReceive('findCoveringCertificate')->andReturn($issuedCert);
+            $mock->shouldReceive('isCertificateReady')->andReturn(true);
         });
 
         $this->mock(DnsNameserverChecker::class, function ($mock) {
@@ -456,6 +483,130 @@ class ApiDomainSettingHealthTest extends TestCase
         $lastCheck = $domain->dns_records['last_check'] ?? [];
         $this->assertSame(0, $lastCheck['consecutive_failures'] ?? -1);
         $this->assertSame('linked', $lastCheck['health_code'] ?? null);
+    }
+
+    /** @test */
+    public function health_is_zone_disabled_when_account_domain_zone_is_off(): void
+    {
+        $domain = $this->domainWithLastCheck([
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
+            'account_domain_present' => true,
+            'zone_enabled' => false,
+            'nameservers_ok' => true,
+            'dns_misconfigured' => false,
+            'ssl_ready' => true,
+        ]);
+
+        $this->assertSame('zone_disabled', $domain->health()['code']);
+        $this->assertSame('warning', $domain->health()['class']);
+    }
+
+    /** @test */
+    public function health_is_certificate_pending_when_ssl_is_not_ready(): void
+    {
+        $domain = $this->domainWithLastCheck([
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
+            'account_domain_present' => true,
+            'zone_enabled' => true,
+            'nameservers_ok' => true,
+            'dns_misconfigured' => false,
+            'ssl_ready' => false,
+            'certificate_readiness' => 'pending',
+        ]);
+
+        $this->assertSame('certificate_pending', $domain->health()['code']);
+        $this->assertSame('warning', $domain->health()['class']);
+    }
+
+    /** @test */
+    public function health_is_certificate_error_when_certificate_readiness_is_terminal(): void
+    {
+        $domain = $this->domainWithLastCheck([
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
+            'account_domain_present' => true,
+            'zone_enabled' => true,
+            'nameservers_ok' => true,
+            'dns_misconfigured' => false,
+            'ssl_ready' => false,
+            'certificate_readiness' => 'certificate_error',
+        ]);
+
+        $this->assertSame('certificate_error', $domain->health()['code']);
+        $this->assertSame('danger', $domain->health()['class']);
+    }
+
+    /** @test */
+    public function sync_keeps_domain_inactive_when_verified_but_zone_disabled(): void
+    {
+        if (! Schema::hasTable('api_domains_settings') || ! Schema::hasTable('users')) {
+            $this->fail('Required domain tables are missing.');
+        }
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => User::factory()->tenant()->create()->id,
+            'custom_name' => 'zone-off.example.com',
+            'status' => 'pending',
+            'ssl' => false,
+            'primary' => true,
+            'added_date' => now(),
+        ]);
+
+        $this->mock(VercelDomainClient::class, function ($mock) {
+            $mock->shouldReceive('isConfigured')->andReturn(true);
+            $mock->shouldReceive('normalizeApex')->andReturn('zone-off.example.com');
+            $mock->shouldReceive('getDomainVerification')->andReturn([]);
+            $mock->shouldReceive('getDomainConfig')->andReturn(['misconfigured' => false]);
+            $mock->shouldReceive('getAccountDomain')->andReturn([
+                'name' => 'zone-off.example.com',
+                'zone' => false,
+                'verified' => true,
+                'nameservers' => [],
+                'intendedNameservers' => [],
+            ]);
+            $mock->shouldReceive('listCertificates')->andReturn(['certificates' => [], 'is_lower_bound' => false]);
+            $mock->shouldReceive('findCoveringCertificate')->andReturn(null);
+        });
+
+        $this->mock(DnsNameserverChecker::class, function ($mock) {
+            $mock->shouldReceive('hasExpectedNameservers')->andReturn(true);
+            $mock->shouldReceive('getObservedNameservers')->andReturn(['ns1.vercel-dns.com', 'ns2.vercel-dns.com']);
+        });
+
+        config([
+            'services.vercel.auto_attach_custom_domain' => true,
+            'services.vercel.check_nameservers' => true,
+            'services.vercel.health_failure_threshold' => 3,
+        ]);
+
+        $inventory = [
+            'domains' => [
+                ['name' => 'zone-off.example.com', 'verified' => true],
+            ],
+        ];
+
+        $result = app(DomainStatusSyncService::class)->sync(
+            $domain,
+            attemptVerify: false,
+            applyFailureThreshold: true,
+            projectInventory: $inventory
+        );
+
+        $domain->refresh();
+
+        $this->assertSame('pending', $result['new_status']);
+        $this->assertSame('zone_disabled', $result['health_code']);
+        $this->assertFalse($result['ssl']);
+        $this->assertSame('zone_disabled', $domain->dns_records['last_check']['health_code'] ?? null);
+        $this->assertFalse($domain->dns_records['last_check']['zone_enabled'] ?? true);
     }
 
     /**

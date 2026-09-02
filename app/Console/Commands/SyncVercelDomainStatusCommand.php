@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Api\ApiDomainSetting;
+use App\Services\Vercel\DomainProvisioningService;
 use App\Services\Vercel\DomainStatusSyncService;
 use App\Services\Vercel\VercelDomainCache;
 use App\Services\Vercel\VercelDomainClient;
@@ -18,6 +19,7 @@ class SyncVercelDomainStatusCommand extends Command
 
     public function handle(
         DomainStatusSyncService $sync,
+        DomainProvisioningService $provisioning,
         VercelDomainClient $vercel,
         VercelDomainCache $domainCache
     ): int {
@@ -62,6 +64,8 @@ class SyncVercelDomainStatusCommand extends Command
             ->orderBy('id')
             ->chunkById($chunk, function ($domains) use (
                 $sync,
+                $provisioning,
+                $vercel,
                 &$checked,
                 &$activated,
                 &$failed,
@@ -73,14 +77,28 @@ class SyncVercelDomainStatusCommand extends Command
             ) {
                 foreach ($domains as $domain) {
                     $checked++;
+                    $attemptVerify = $domain->status === 'pending';
+
                     try {
-                        $attemptVerify = $domain->status === 'pending';
-                        $result = $sync->sync(
-                            $domain,
-                            $attemptVerify,
-                            applyFailureThreshold: true,
-                            projectInventory: $projectInventory
-                        );
+                        if ($attemptVerify) {
+                            $apex = $vercel->normalizeApex((string) $domain->custom_name);
+                            $provisionResult = $provisioning->run(
+                                $apex,
+                                DomainProvisioningService::MODE_SCHEDULED
+                            );
+                            $result = $sync->applyProvisioningResult(
+                                $domain,
+                                $provisionResult,
+                                applyFailureThreshold: true
+                            );
+                        } else {
+                            $result = $sync->sync(
+                                $domain,
+                                false,
+                                applyFailureThreshold: true,
+                                projectInventory: $projectInventory
+                            );
+                        }
 
                         if (! $result['changed']) {
                             $unchanged++;
@@ -95,6 +113,7 @@ class SyncVercelDomainStatusCommand extends Command
                         $errors++;
                         Log::error('domains:sync-vercel-status failed for domain', [
                             'domain_id' => $domain->id,
+                            'custom_name' => $domain->custom_name,
                             'error' => $e->getMessage(),
                         ]);
                     }

@@ -290,6 +290,365 @@ class VercelDomainClient
     }
 
     /**
+     * @return array{
+     *     name: string,
+     *     zone: bool,
+     *     verified: bool,
+     *     serviceType: ?string,
+     *     nameservers: list<string>,
+     *     intendedNameservers: list<string>,
+     *     id: ?string,
+     *     raw: array<string, mixed>
+     * }|null
+     */
+    public function getAccountDomain(string $apex): ?array
+    {
+        $this->assertConfigured();
+        $apex = $this->normalizeApex($apex);
+
+        $response = $this->sendRequest(fn () => $this->http()->get(
+            $this->accountDomainUrl($apex, 'v5')
+        ));
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        if (! $response->successful()) {
+            $this->throwFromResponse('Failed to fetch account domain from Vercel', $response);
+        }
+
+        return $this->normalizeAccountDomain($response->json() ?? []);
+    }
+
+    /**
+     * Create an account-level apex domain with Vercel DNS zone enabled.
+     *
+     * @return array{
+     *     name: string,
+     *     zone: bool,
+     *     verified: bool,
+     *     serviceType: ?string,
+     *     nameservers: list<string>,
+     *     intendedNameservers: list<string>,
+     *     id: ?string,
+     *     was_created: bool,
+     *     was_adopted: bool,
+     *     raw: array<string, mixed>
+     * }
+     */
+    public function createAccountDomain(string $apex): array
+    {
+        $this->assertConfigured();
+        $apex = $this->normalizeApex($apex);
+
+        $response = $this->sendRequest(fn () => $this->http()->post(
+            $this->accountDomainsCollectionUrl('/v7/domains'),
+            [
+                'method' => 'add',
+                'name' => $apex,
+                'zone' => true,
+            ]
+        ));
+
+        if ($response->successful()) {
+            $normalized = $this->normalizeAccountDomain($response->json() ?? []);
+
+            return $this->attachAccountDomainMutationMeta($normalized, wasCreated: true, wasAdopted: false);
+        }
+
+        if (in_array($response->status(), [400, 409], true)) {
+            $existing = $this->getAccountDomain($apex);
+            if ($existing !== null) {
+                if (! $existing['zone']) {
+                    return $this->enableAccountDomainZone($apex, adoptExisting: true);
+                }
+
+                return $this->attachAccountDomainMutationMeta($existing, wasCreated: false, wasAdopted: true);
+            }
+        }
+
+        $this->throwFromResponse('Failed to create account domain on Vercel', $response);
+    }
+
+    /**
+     * Enable the Vercel DNS zone for an existing account apex domain.
+     *
+     * @return array{
+     *     name: string,
+     *     zone: bool,
+     *     verified: bool,
+     *     serviceType: ?string,
+     *     nameservers: list<string>,
+     *     intendedNameservers: list<string>,
+     *     id: ?string,
+     *     was_created: bool,
+     *     was_adopted: bool,
+     *     raw: array<string, mixed>
+     * }
+     */
+    public function enableAccountDomainZone(string $apex, bool $adoptExisting = false): array
+    {
+        $this->assertConfigured();
+        $apex = $this->normalizeApex($apex);
+
+        if (! $adoptExisting) {
+            $existing = $this->getAccountDomain($apex);
+            if ($existing !== null && $existing['zone']) {
+                return $this->attachAccountDomainMutationMeta($existing, wasCreated: false, wasAdopted: true);
+            }
+        }
+
+        $response = $this->sendRequest(fn () => $this->http()->patch(
+            $this->accountDomainUrl($apex, 'v3'),
+            [
+                'op' => 'update',
+                'zone' => true,
+            ]
+        ));
+
+        if ($response->successful()) {
+            $refreshed = $this->getAccountDomain($apex);
+            $normalized = $refreshed ?? $this->normalizeAccountDomain([
+                'domain' => ['name' => $apex, 'zone' => true],
+            ]);
+
+            return $this->attachAccountDomainMutationMeta($normalized, wasCreated: false, wasAdopted: false);
+        }
+
+        if (in_array($response->status(), [400, 409], true)) {
+            $existing = $this->getAccountDomain($apex);
+            if ($existing !== null && $existing['zone']) {
+                return $this->attachAccountDomainMutationMeta($existing, wasCreated: false, wasAdopted: true);
+            }
+        }
+
+        $this->throwFromResponse('Failed to enable account domain zone on Vercel', $response);
+    }
+
+    /**
+     * @return array{
+     *     certificates: list<array{
+     *         id: string,
+     *         cns: list<string>,
+     *         createdAt: ?int,
+     *         expiresAt: ?int,
+     *         autoRenew: bool,
+     *         readiness: string,
+     *         raw: array<string, mixed>
+     *     }>,
+     *     is_lower_bound: bool
+     * }
+     */
+    public function listCertificates(): array
+    {
+        $this->assertConfigured();
+
+        $certificates = [];
+        $until = null;
+        $maxPages = 10;
+        $isLowerBound = false;
+
+        for ($page = 0; $page < $maxPages; $page++) {
+            $path = '/v8/certs?limit=100';
+            if ($until !== null) {
+                $path .= '&until=' . rawurlencode((string) $until);
+            }
+            $path = $this->appendTeamId($path);
+
+            $response = $this->sendRequest(fn () => $this->http()->get($path));
+
+            if (! $response->successful()) {
+                $this->throwFromResponse('Failed to list certificates from Vercel', $response);
+            }
+
+            $body = $response->json() ?? [];
+            foreach ($body['certs'] ?? [] as $cert) {
+                if (! is_array($cert)) {
+                    continue;
+                }
+
+                $certificates[] = $this->normalizeCertificate($cert);
+            }
+
+            $next = $body['pagination']['next'] ?? null;
+            if ($next === null) {
+                return [
+                    'certificates' => $certificates,
+                    'is_lower_bound' => false,
+                ];
+            }
+
+            $until = $next;
+            if ($page === $maxPages - 1) {
+                $isLowerBound = true;
+            }
+        }
+
+        return [
+            'certificates' => $certificates,
+            'is_lower_bound' => $isLowerBound,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     id: string,
+     *     cns: list<string>,
+     *     createdAt: ?int,
+     *     expiresAt: ?int,
+     *     autoRenew: bool,
+     *     readiness: string,
+     *     raw: array<string, mixed>
+     * }
+     */
+    public function getCertificate(string $certId): array
+    {
+        $this->assertConfigured();
+        $certId = trim($certId);
+
+        $response = $this->sendRequest(fn () => $this->http()->get(
+            $this->appendTeamId('/v8/certs/' . rawurlencode($certId))
+        ));
+
+        if ($response->status() === 404) {
+            throw new VercelDomainException(
+                'Certificate not found on Vercel',
+                404,
+                $response->json(),
+                VercelDomainException::CODE_INVALID_DOMAIN
+            );
+        }
+
+        if (! $response->successful()) {
+            $this->throwFromResponse('Failed to fetch certificate from Vercel', $response);
+        }
+
+        return $this->normalizeCertificate($response->json() ?? []);
+    }
+
+    /**
+     * @param  list<string>|string  $cns
+     * @return array{
+     *     id: string,
+     *     cns: list<string>,
+     *     createdAt: ?int,
+     *     expiresAt: ?int,
+     *     autoRenew: bool,
+     *     readiness: string,
+     *     was_created: bool,
+     *     was_adopted: bool,
+     *     raw: array<string, mixed>
+     * }
+     */
+    public function issueCertificate(array|string $cns): array
+    {
+        $this->assertConfigured();
+        $normalizedCns = $this->normalizeCertificateNames($cns);
+
+        foreach ($normalizedCns as $cn) {
+            $existing = $this->findCoveringCertificate($cn);
+            if ($existing !== null && $this->isCertificateReady($existing)) {
+                return $this->attachCertificateMutationMeta($existing, wasCreated: false, wasAdopted: true);
+            }
+        }
+
+        $response = $this->sendRequest(fn () => $this->http()->post(
+            $this->accountDomainsCollectionUrl('/v8/certs'),
+            ['cns' => $normalizedCns]
+        ));
+
+        if ($response->successful()) {
+            $normalized = $this->normalizeCertificate($response->json() ?? []);
+
+            return $this->attachCertificateMutationMeta($normalized, wasCreated: true, wasAdopted: false);
+        }
+
+        if (in_array($response->status(), [400, 409], true)) {
+            foreach ($normalizedCns as $cn) {
+                $existing = $this->findCoveringCertificate($cn);
+                if ($existing !== null) {
+                    return $this->attachCertificateMutationMeta($existing, wasCreated: false, wasAdopted: true);
+                }
+            }
+        }
+
+        $this->throwFromResponse('Failed to issue certificate on Vercel', $response);
+    }
+
+    /**
+     * @param  array{
+     *     cns?: list<string>|mixed,
+     *     expiresAt?: int|null,
+     *     readiness?: string
+     * }  $certificate
+     */
+    public function certificateCoversHost(string $host, array $certificate): bool
+    {
+        $host = strtolower(trim($host));
+        $cns = $certificate['cns'] ?? [];
+        if (! is_array($cns) || $cns === []) {
+            return false;
+        }
+
+        if ($this->isCertificateExpired($certificate)) {
+            return false;
+        }
+
+        foreach ($cns as $san) {
+            if (! is_string($san)) {
+                continue;
+            }
+
+            if ($this->sanCoversHost($san, $host)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array{
+     *     certificates?: list<array<string, mixed>>
+     * }|null  $inventory
+     * @return array{
+     *     id: string,
+     *     cns: list<string>,
+     *     createdAt: ?int,
+     *     expiresAt: ?int,
+     *     autoRenew: bool,
+     *     readiness: string,
+     *     raw: array<string, mixed>
+     * }|null
+     */
+    public function findCoveringCertificate(string $host, ?array $inventory = null): ?array
+    {
+        $host = strtolower(trim($host));
+        $certificates = $inventory['certificates'] ?? null;
+        if ($certificates === null) {
+            $certificates = $this->listCertificates()['certificates'];
+        }
+
+        foreach ($certificates as $certificate) {
+            if (! is_array($certificate)) {
+                continue;
+            }
+
+            if ($this->certificateCoversHost($host, $certificate)) {
+                return $certificate;
+            }
+        }
+
+        return null;
+    }
+
+    public function isCertificateReady(array $certificate): bool
+    {
+        return ($certificate['readiness'] ?? '') === 'issued';
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function getDomainConfig(string $domain): array
@@ -571,6 +930,270 @@ class VercelDomainClient
     private function domainConfigUrl(string $domain): string
     {
         return $this->appendTeamId('/v6/domains/' . rawurlencode($domain) . '/config');
+    }
+
+    private function accountDomainUrl(string $domain, string $version): string
+    {
+        return $this->appendTeamId('/' . $version . '/domains/' . rawurlencode($domain));
+    }
+
+    private function accountDomainsCollectionUrl(string $path): string
+    {
+        if (str_starts_with($path, '/')) {
+            return $this->appendTeamId($path);
+        }
+
+        return $this->appendTeamId('/' . $path);
+    }
+
+    /**
+     * @param  array<string, mixed>  $body
+     * @return array{
+     *     name: string,
+     *     zone: bool,
+     *     verified: bool,
+     *     serviceType: ?string,
+     *     nameservers: list<string>,
+     *     intendedNameservers: list<string>,
+     *     id: ?string,
+     *     raw: array<string, mixed>
+     * }
+     */
+    private function normalizeAccountDomain(array $body): array
+    {
+        $domain = is_array($body['domain'] ?? null) ? $body['domain'] : $body;
+        $name = strtolower((string) ($domain['name'] ?? ''));
+        $serviceType = $this->normalizeNullableString($domain['serviceType'] ?? null);
+        $zone = $this->resolveAccountDomainZone($domain, $serviceType);
+
+        return [
+            'name' => $name,
+            'zone' => $zone,
+            'verified' => (bool) ($domain['verified'] ?? false),
+            'serviceType' => $serviceType,
+            'nameservers' => $this->normalizeStringList($domain['nameservers'] ?? []),
+            'intendedNameservers' => $this->normalizeStringList($domain['intendedNameservers'] ?? []),
+            'id' => $this->normalizeNullableString($domain['id'] ?? null),
+            'raw' => $domain,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $domain
+     */
+    private function resolveAccountDomainZone(array $domain, ?string $serviceType): bool
+    {
+        if (array_key_exists('zone', $domain)) {
+            return (bool) $domain['zone'];
+        }
+
+        return $serviceType === 'zeit.world';
+    }
+
+    /**
+     * @param  array{
+     *     name: string,
+     *     zone: bool,
+     *     verified: bool,
+     *     serviceType: ?string,
+     *     nameservers: list<string>,
+     *     intendedNameservers: list<string>,
+     *     id: ?string,
+     *     raw: array<string, mixed>
+     * }  $normalized
+     * @return array{
+     *     name: string,
+     *     zone: bool,
+     *     verified: bool,
+     *     serviceType: ?string,
+     *     nameservers: list<string>,
+     *     intendedNameservers: list<string>,
+     *     id: ?string,
+     *     was_created: bool,
+     *     was_adopted: bool,
+     *     raw: array<string, mixed>
+     * }
+     */
+    private function attachAccountDomainMutationMeta(array $normalized, bool $wasCreated, bool $wasAdopted): array
+    {
+        $normalized['was_created'] = $wasCreated;
+        $normalized['was_adopted'] = $wasAdopted;
+
+        return $normalized;
+    }
+
+    /**
+     * @param  array<string, mixed>  $body
+     * @return array{
+     *     id: string,
+     *     cns: list<string>,
+     *     createdAt: ?int,
+     *     expiresAt: ?int,
+     *     autoRenew: bool,
+     *     readiness: string,
+     *     raw: array<string, mixed>
+     * }
+     */
+    private function normalizeCertificate(array $body): array
+    {
+        $id = (string) ($body['id'] ?? '');
+        $normalized = [
+            'id' => $id,
+            'cns' => $this->normalizeCertificateNames($body['cns'] ?? []),
+            'createdAt' => isset($body['createdAt']) ? (int) $body['createdAt'] : null,
+            'expiresAt' => isset($body['expiresAt']) ? (int) $body['expiresAt'] : null,
+            'autoRenew' => (bool) ($body['autoRenew'] ?? false),
+            'raw' => $body,
+        ];
+        $normalized['readiness'] = $this->classifyCertificateReadiness($normalized);
+
+        return $normalized;
+    }
+
+    /**
+     * @param  array{
+     *     id: string,
+     *     cns: list<string>,
+     *     createdAt: ?int,
+     *     expiresAt: ?int,
+     *     autoRenew: bool,
+     *     readiness: string,
+     *     raw: array<string, mixed>
+     * }  $normalized
+     * @return array{
+     *     id: string,
+     *     cns: list<string>,
+     *     createdAt: ?int,
+     *     expiresAt: ?int,
+     *     autoRenew: bool,
+     *     readiness: string,
+     *     was_created: bool,
+     *     was_adopted: bool,
+     *     raw: array<string, mixed>
+     * }
+     */
+    private function attachCertificateMutationMeta(array $normalized, bool $wasCreated, bool $wasAdopted): array
+    {
+        $normalized['was_created'] = $wasCreated;
+        $normalized['was_adopted'] = $wasAdopted;
+
+        return $normalized;
+    }
+
+    /**
+     * @param  array{expiresAt?: ?int, cns?: list<string>}  $certificate
+     */
+    private function classifyCertificateReadiness(array $certificate): string
+    {
+        if ($this->isCertificateExpired($certificate)) {
+            return 'certificate_error';
+        }
+
+        $expiresAt = $certificate['expiresAt'] ?? null;
+        $cns = $certificate['cns'] ?? [];
+
+        if ($expiresAt !== null && $expiresAt > 0 && $cns !== []) {
+            return 'issued';
+        }
+
+        if ($cns !== []) {
+            return 'pending';
+        }
+
+        return 'pending';
+    }
+
+    /**
+     * @param  array{expiresAt?: ?int}  $certificate
+     */
+    private function isCertificateExpired(array $certificate): bool
+    {
+        $expiresAt = $certificate['expiresAt'] ?? null;
+        if ($expiresAt === null || $expiresAt <= 0) {
+            return false;
+        }
+
+        return $expiresAt <= (int) (microtime(true) * 1000);
+    }
+
+    private function sanCoversHost(string $san, string $host): bool
+    {
+        $san = strtolower(trim($san));
+        $host = strtolower(trim($host));
+
+        if ($san === $host) {
+            return true;
+        }
+
+        if (! str_starts_with($san, '*.')) {
+            return false;
+        }
+
+        $base = substr($san, 2);
+        if ($base === '' || $host === $base) {
+            return false;
+        }
+
+        if (! str_ends_with($host, '.' . $base)) {
+            return false;
+        }
+
+        $prefix = substr($host, 0, -(strlen($base) + 1));
+
+        return $prefix !== '' && ! str_contains($prefix, '.');
+    }
+
+    /**
+     * @param  list<string>|string|mixed  $cns
+     * @return list<string>
+     */
+    private function normalizeCertificateNames(mixed $cns): array
+    {
+        if (is_string($cns)) {
+            $cns = [$cns];
+        }
+
+        if (! is_array($cns)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($cns as $cn) {
+            if (! is_string($cn)) {
+                continue;
+            }
+
+            $cn = strtolower(trim($cn));
+            if ($cn !== '') {
+                $normalized[] = $cn;
+            }
+        }
+
+        return array_values(array_unique($normalized));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function normalizeStringList(mixed $values): array
+    {
+        if (! is_array($values)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($values as $value) {
+            if (! is_string($value)) {
+                continue;
+            }
+
+            $value = strtolower(trim($value));
+            if ($value !== '') {
+                $normalized[] = $value;
+            }
+        }
+
+        return $normalized;
     }
 
     private function appendTeamId(string $url): string

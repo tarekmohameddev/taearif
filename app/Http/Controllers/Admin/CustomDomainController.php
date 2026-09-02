@@ -4,15 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use Session;
 use Validator;
-use App\Models\BasicSetting;
 use Illuminate\Http\Request;
 use App\Models\BasicExtended;
 use App\Support\DomainHealthMessages;
-use App\Http\Helpers\MegaMailer;
 use PHPMailer\PHPMailer\PHPMailer;
 use App\Http\Controllers\Controller;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User\UserCustomDomain;
+use App\Services\Vercel\DomainProvisioningService;
 use App\Services\Vercel\DomainReconciliationService;
 use App\Services\Vercel\DomainStatusSyncService;
 use App\Services\Vercel\VercelDomainCache;
@@ -37,6 +36,9 @@ class CustomDomainController extends Controller
         'ns_mismatch',
         'not_on_vercel',
         'unverified',
+        'zone_disabled',
+        'certificate_pending',
+        'certificate_error',
         'expired',
         'provider_error',
         'checks_disabled',
@@ -53,6 +55,8 @@ class CustomDomainController extends Controller
         private readonly VercelDomainInventoryService $inventory,
         private readonly VercelMutationGuard $mutationGuard,
         private readonly DomainReconciliationService $reconciliationService,
+        private readonly DomainProvisioningService $provisioningService,
+        private readonly DomainStatusSyncService $domainSyncService,
     ) {
     }
 
@@ -161,18 +165,55 @@ class CustomDomainController extends Controller
         return view('admin.domains.custom', $data);
     }
 
-    public function recheck(Request $request, DomainStatusSyncService $sync)
+    public function repairVerify(Request $request)
     {
         $validated = $request->validate([
             'domain_id' => ['required', 'integer', 'exists:api_domains_settings,id'],
         ]);
 
         $domain = ApiDomainSetting::findOrFail($validated['domain_id']);
-        $result = $sync->sync($domain, true, $request, applyFailureThreshold: false);
+        $apex = $this->vercel->normalizeApex((string) $domain->custom_name);
+        $before = $this->domainActivitySnapshot($domain);
 
+        try {
+            $provisionResult = $this->provisioningService->run(
+                $apex,
+                DomainProvisioningService::MODE_ADMIN_REPAIR
+            );
+        } catch (LockTimeoutException $exception) {
+            $request->session()->flash('error', __('domain_mutation.lock_timeout'));
+
+            return back();
+        }
+
+        $this->domainSyncService->applyProvisioningResult(
+            $domain,
+            $provisionResult,
+            $request,
+            applyFailureThreshold: false
+        );
+        $domain->refresh();
         $this->domainCache->invalidateAdminCaches();
 
-        $request->session()->flash('success', DomainHealthMessages::translate($result['message']));
+        \App\Support\TenantActivity::emit(
+            $request,
+            'domain.repair_verify',
+            'api_domains_settings',
+            $domain->id,
+            $before,
+            $this->domainActivitySnapshot($domain)
+        );
+
+        $message = DomainHealthMessages::translate((string) ($provisionResult['message'] ?? ''));
+        $outcome = (string) ($provisionResult['outcome'] ?? 'pending');
+
+        if ($outcome === 'active') {
+            $request->session()->flash('success', $message !== '' ? $message : __('domain_health.repair_active'));
+        } elseif ($outcome === 'failed') {
+            $request->session()->flash('error', $message !== '' ? $message : __('domain_health.repair_failed'));
+        } else {
+            $request->session()->flash('success', $message !== '' ? $message : __('domain_health.repair_pending'));
+        }
 
         return back();
     }
@@ -655,118 +696,6 @@ class CustomDomainController extends Controller
     //     dd($data);
     //     return view('admin.domains.custom', $data);
     // }
-    public function updateSslStatus(Request $request)
-    {
-        $validated = $request->validate([
-            'domain_id' => ['required', 'integer', 'exists:api_domains_settings,id'],
-            'status' => ['required', 'boolean'],
-        ]);
-
-        $domain = ApiDomainSetting::findOrFail($validated['domain_id']);
-        $before = $this->domainActivitySnapshot($domain);
-        $domain->ssl = $validated['status'];
-        $domain->save();
-
-        \App\Support\TenantActivity::emit(
-            $request,
-            'domain.ssl_updated',
-            'api_domains_settings',
-            $domain->id,
-            $before,
-            $this->domainActivitySnapshot($domain)
-        );
-
-        $this->domainCache->invalidateAdminCaches();
-
-        $request->session()->flash('success', __('domain_admin.ssl_updated'));
-        return back();
-    }
-
-    public function status(Request $request, DomainStatusSyncService $sync)
-    {
-        $validated = $request->validate([
-            'domain_id' => ['required', 'integer', 'exists:api_domains_settings,id'],
-            'status' => ['required', 'in:pending,active,failed,rejected'],
-        ]);
-
-        $rcDomain = ApiDomainSetting::findOrFail($validated['domain_id']);
-        $before = $this->domainActivitySnapshot($rcDomain);
-        $oldStatus = $rcDomain->status;
-        $newStatus = $validated['status'] === 'rejected' ? 'failed' : $validated['status'];
-        $rcDomain->status = $newStatus;
-        $rcDomain->save();
-
-        if ($newStatus === 'active' && $oldStatus !== 'active' && $this->vercel->isConfigured()) {
-            $sync->sync($rcDomain->fresh(), true, $request);
-        }
-
-        $rcDomain->refresh();
-        $persistedStatus = $rcDomain->status;
-
-        if ($persistedStatus === 'active' && $oldStatus !== 'active') {
-            if (! empty($rcDomain->user)) {
-                $user = $rcDomain->user;
-                $previousDomain = $user->domains()
-                    ->where('status', 'active')
-                    ->where('id', '!=', $rcDomain->id)
-                    ->orderByDesc('id')
-                    ->value('custom_name');
-
-                $bs = BasicSetting::firstOrFail();
-                $mailer = new MegaMailer();
-                $data = [
-                    'toMail' => $user->email,
-                    'toName' => $user->fname,
-                    'username' => $user->username,
-                    'requested_domain' => $rcDomain->custom_name,
-                    'previous_domain' => $previousDomain ?: 'Not Available',
-                    'website_title' => $bs->website_title,
-                    'templateType' => 'custom_domain_connected',
-                    'type' => 'customDomainConnected',
-                ];
-                $mailer->mailFromAdmin($data);
-            }
-        } elseif ($persistedStatus === 'failed' && ! in_array($oldStatus, ['failed', 'rejected'], true)) {
-            if (! empty($rcDomain->user)) {
-                $user = $rcDomain->user;
-                $currentDomain = $user->domains()
-                    ->where('status', 'active')
-                    ->orderByDesc('id')
-                    ->value('custom_name');
-
-                $bs = BasicSetting::firstOrFail();
-                $mailer = new MegaMailer();
-                $data = [
-                    'toMail' => $user->email,
-                    'toName' => $user->fname,
-                    'username' => $user->username,
-                    'requested_domain' => $rcDomain->custom_name,
-                    'current_domain' => $currentDomain ?: 'Not Available',
-                    'website_title' => $bs->website_title,
-                    'templateType' => 'custom_domain_rejected',
-                    'type' => 'customDomainRejected',
-                ];
-                $mailer->mailFromAdmin($data);
-            }
-        }
-
-        \App\Support\TenantActivity::emit(
-            $request,
-            'domain.status_updated',
-            'api_domains_settings',
-            $rcDomain->id,
-            $before,
-            $this->domainActivitySnapshot($rcDomain)
-        );
-
-        $this->domainCache->invalidateAdminCaches();
-
-        $request->session()->flash('success', __('domain_admin.status_updated'));
-
-        return back();
-    }
-
-
     public function mail(Request $request)
     {
         $rules = [

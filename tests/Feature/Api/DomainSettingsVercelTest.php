@@ -114,6 +114,75 @@ class DomainSettingsVercelTest extends TestCase
     /**
      * @param  list<string>  $domainNames
      */
+    private function respondToAccountDomainAndCertificates(\Illuminate\Http\Client\Request $request, array $domainNames)
+    {
+        $url = $request->url();
+        $method = $request->method();
+
+        if ($method === 'GET' && str_contains($url, '/v8/certs') && ! preg_match('#/v8/certs/[^/?]#', $url)) {
+            $certs = [];
+            foreach ($domainNames as $name) {
+                $certs[] = [
+                    'id' => 'cert_' . md5($name),
+                    'cns' => [$name],
+                    'expiresAt' => ((int) (microtime(true) * 1000)) + (90 * 86400 * 1000),
+                    'autoRenew' => true,
+                ];
+            }
+
+            return Http::response([
+                'certs' => $certs,
+                'pagination' => ['next' => null],
+            ], 200);
+        }
+
+        if ($method === 'GET'
+            && preg_match('#/v(?:5|7)/domains/([^/?]+)#', $url, $matches)
+            && ! str_contains($url, '/config')) {
+            $apex = strtolower(rawurldecode($matches[1]));
+            $known = array_map('strtolower', $domainNames);
+
+            if (in_array($apex, $known, true)) {
+                return Http::response([
+                    'name' => $apex,
+                    'zone' => true,
+                    'verified' => true,
+                ], 200);
+            }
+
+            return Http::response(['error' => 'not_found'], 404);
+        }
+
+        if ($method === 'POST' && str_contains($url, '/v7/domains')) {
+            $postedName = strtolower((string) ($request->data()['name'] ?? ''));
+
+            return Http::response([
+                'domain' => [
+                    'name' => $postedName,
+                    'zone' => true,
+                    'verified' => false,
+                ],
+            ], 200);
+        }
+
+        if ($method === 'PATCH' && preg_match('#/v3/domains/([^/?]+)#', $url, $matches)) {
+            $apex = strtolower(rawurldecode($matches[1]));
+
+            return Http::response([
+                'domain' => [
+                    'name' => $apex,
+                    'zone' => true,
+                    'verified' => true,
+                ],
+            ], 200);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  list<string>  $domainNames
+     */
     private function fakeVercelSyncEndpoints(array $domainNames, bool $verified = true): void
     {
         $inventoryDomains = array_map(
@@ -127,6 +196,19 @@ class DomainSettingsVercelTest extends TestCase
         Http::fake(function (\Illuminate\Http\Client\Request $request) use ($domainNames, $verified, $inventoryDomains) {
             $url = $request->url();
             $method = $request->method();
+
+            $accountOrCert = $this->respondToAccountDomainAndCertificates($request, $domainNames);
+            if ($accountOrCert !== null) {
+                return $accountOrCert;
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test') && ! str_contains($url, '/domains')) {
+                return Http::response([
+                    'id' => 'prj_test',
+                    'accountId' => 'team_test',
+                    'name' => 'test-project',
+                ], 200);
+            }
 
             if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test/domains') && ! str_contains($url, '/domains/')) {
                 return Http::response([
@@ -146,7 +228,7 @@ class DomainSettingsVercelTest extends TestCase
                     }
 
                     if ($method === 'GET') {
-                        return Http::response(['name' => $name, 'verified' => $verified], 200);
+                        return Http::response(['name' => $name, 'verified' => $verified, 'verification' => []], 200);
                     }
                 }
             }
@@ -172,7 +254,9 @@ class DomainSettingsVercelTest extends TestCase
         array $inventoryDomains = [],
         ?callable $responder = null
     ): void {
-        Http::fake(function (\Illuminate\Http\Client\Request $request) use ($domainName, $verified, $inventoryDomains, $responder) {
+        $attachedProjectDomains = [];
+
+        Http::fake(function (\Illuminate\Http\Client\Request $request) use ($domainName, $verified, $inventoryDomains, $responder, &$attachedProjectDomains) {
             if ($responder !== null) {
                 $custom = $responder($request);
                 if ($custom !== null) {
@@ -183,6 +267,15 @@ class DomainSettingsVercelTest extends TestCase
             $url = $request->url();
             $method = $request->method();
 
+            $knownDomains = array_values(array_unique(array_merge(
+                [$domainName],
+                $inventoryDomains
+            )));
+            $accountOrCert = $this->respondToAccountDomainAndCertificates($request, $knownDomains);
+            if ($accountOrCert !== null) {
+                return $accountOrCert;
+            }
+
             if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test') && ! str_contains($url, '/domains')) {
                 return Http::response([
                     'id' => 'prj_test',
@@ -192,10 +285,18 @@ class DomainSettingsVercelTest extends TestCase
             }
 
             if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test/domains') && ! str_contains($url, '/domains/')) {
+                $listed = array_values(array_unique(array_merge(
+                    $inventoryDomains,
+                    array_keys($attachedProjectDomains)
+                )));
+
                 return Http::response([
                     'domains' => array_map(
-                        static fn (string $name): array => ['name' => $name, 'verified' => $verified],
-                        $inventoryDomains
+                        static fn (string $name): array => [
+                            'name' => $name,
+                            'verified' => $verified,
+                        ],
+                        $listed
                     ),
                     'pagination' => ['next' => null],
                 ], 200);
@@ -211,6 +312,7 @@ class DomainSettingsVercelTest extends TestCase
 
             if ($method === 'POST' && str_contains($url, '/v10/projects/') && str_contains($url, '/domains') && ! str_contains($url, '/verify')) {
                 $postedName = strtolower((string) ($request->data()['name'] ?? $domainName));
+                $attachedProjectDomains[$postedName] = $verified;
 
                 return Http::response(['name' => $postedName, 'verified' => $verified], 200);
             }
@@ -227,9 +329,23 @@ class DomainSettingsVercelTest extends TestCase
 
             if ($method === 'GET' && str_contains($url, '/v9/projects/') && str_contains($url, '/domains/')) {
                 if (preg_match('#/domains/([^/?]+)#', $url, $matches)) {
-                    $fetchedName = rawurldecode($matches[1]);
+                    $fetchedName = strtolower(rawurldecode($matches[1]));
+                    $knownAttached = array_map('strtolower', array_merge(
+                        $inventoryDomains,
+                        array_keys($attachedProjectDomains)
+                    ));
 
-                    return Http::response(['name' => $fetchedName, 'verified' => $verified], 200);
+                    if (! in_array($fetchedName, $knownAttached, true)) {
+                        return Http::response(['error' => 'not_found'], 404);
+                    }
+
+                    $isVerified = $attachedProjectDomains[$fetchedName] ?? $verified;
+
+                    return Http::response([
+                        'name' => $fetchedName,
+                        'verified' => $isVerified,
+                        'verification' => [],
+                    ], 200);
                 }
             }
 
@@ -450,14 +566,16 @@ class DomainSettingsVercelTest extends TestCase
             'custom_name' => 'fail.example.com',
         ]);
 
-        $response->assertStatus(502)
-            ->assertJsonPath('message', 'Failed to register domain with hosting provider. Please try again later.')
-            ->assertJsonMissing(['errors']);
+        $response->assertCreated()
+            ->assertJsonPath('data.status', 'pending')
+            ->assertJsonPath('outcome', 'pending')
+            ->assertJsonPath('retryable', true);
         $body = $response->json();
         $this->assertStringNotContainsString('boom', json_encode($body));
-        $this->assertDatabaseMissing('api_domains_settings', [
+        $this->assertDatabaseHas('api_domains_settings', [
             'user_id' => $tenant->id,
             'custom_name' => 'fail.example.com',
+            'status' => 'pending',
         ]);
     }
 
@@ -497,10 +615,6 @@ class DomainSettingsVercelTest extends TestCase
             'user_id' => $tenant->id,
             'custom_name' => 'khnas.sa.net',
         ]);
-
-        // The limit error must not trigger the "already attached?" lookup.
-        Http::assertNotSent(fn ($request) => $request->method() === 'GET'
-            && str_contains($request->url(), '/domains/khnas.sa.net'));
     }
 
     public function test_store_falls_back_to_502_for_an_unmapped_vercel_error_code(): void
@@ -544,7 +658,16 @@ class DomainSettingsVercelTest extends TestCase
                 return Http::response(['name' => 'leaky.example.com', 'verified' => false], 200);
             }
 
-            if (str_contains($request->url(), '/verify') || str_contains($request->url(), '/domains/leaky.example.com')) {
+            if ($request->method() === 'POST' && str_contains($request->url(), '/verify')) {
+                return Http::response([
+                    'error' => [
+                        'code' => 'forbidden',
+                        'message' => 'The project taearif-v2 rejected this request.',
+                    ],
+                ], 500);
+            }
+
+            if ($request->method() === 'GET' && str_contains($request->url(), '/v6/domains/leaky.example.com/config')) {
                 return Http::response([
                     'error' => [
                         'code' => 'forbidden',
@@ -874,7 +997,10 @@ class DomainSettingsVercelTest extends TestCase
 
         $postDomains = 0;
         $this->fakeVercelStoreFlow('apexonly.example.com', responder: function (\Illuminate\Http\Client\Request $request) use (&$postDomains) {
-            if ($request->method() === 'POST' && str_contains($request->url(), '/domains') && ! str_contains($request->url(), '/verify')) {
+            if ($request->method() === 'POST'
+                && str_contains($request->url(), '/v10/projects/')
+                && str_contains($request->url(), '/domains')
+                && ! str_contains($request->url(), '/verify')) {
                 $postDomains++;
                 $body = $request->data();
                 $name = $body['name'] ?? null;
@@ -1099,7 +1225,9 @@ class DomainSettingsVercelTest extends TestCase
             ->where('custom_name', $apex)
             ->firstOrFail();
 
-        $this->assertSame('uncertain', $domain->dns_records['provisioning']['state'] ?? null);
+        $this->assertSame('uncertain', $domain->dns_records['provisioning']['state']
+            ?? $domain->dns_records['last_check']['provisioning']['state']
+            ?? null);
     }
 
     public function test_tenant_cannot_delete_domain_via_api(): void

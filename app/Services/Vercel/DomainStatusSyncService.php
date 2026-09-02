@@ -15,12 +15,114 @@ class DomainStatusSyncService
         'dns_misconfigured',
         'ns_not_pointing',
         'unverified',
+        'zone_disabled',
+        'certificate_error',
     ];
 
     public function __construct(
         private readonly VercelDomainClient $vercel,
         private readonly DnsNameserverChecker $nameserverChecker
     ) {
+    }
+
+    /**
+     * Persist domain row state from a DomainProvisioningService result.
+     *
+     * @param  array{
+     *     outcome: string,
+     *     health: string,
+     *     ssl: bool,
+     *     retryable: bool,
+     *     message: string,
+     *     provisioning: array<string, mixed>,
+     *     last_check: array<string, mixed>
+     * }  $provisioningResult
+     * @return array{
+     *   changed: bool,
+     *   old_status: string|null,
+     *   new_status: string,
+     *   ssl: bool,
+     *   message: string,
+     *   vercel_verified: bool,
+     *   nameservers_ok: bool,
+     *   health_code: string,
+     *   outcome: string,
+     *   retryable: bool,
+     *   provisioning: array<string, mixed>
+     * }
+     */
+    public function applyProvisioningResult(
+        ApiDomainSetting $domain,
+        array $provisioningResult,
+        ?Request $request = null,
+        bool $applyFailureThreshold = true
+    ): array {
+        $oldStatus = (string) $domain->status;
+        $oldSsl = (bool) $domain->ssl;
+        $health = (string) ($provisioningResult['health'] ?? 'unchecked');
+        $sslReady = (bool) ($provisioningResult['ssl'] ?? false);
+        $message = (string) ($provisioningResult['message'] ?? '');
+        $lastCheck = is_array($provisioningResult['last_check'] ?? null)
+            ? $provisioningResult['last_check']
+            : [];
+        $provisioning = is_array($provisioningResult['provisioning'] ?? null)
+            ? $provisioningResult['provisioning']
+            : [];
+
+        $existingDns = is_array($domain->dns_records) ? $domain->dns_records : [];
+        $previousCheck = is_array($existingDns['last_check'] ?? null) ? $existingDns['last_check'] : [];
+
+        $providerError = $health === 'provider_error';
+
+        [$consecutiveFailures, $firstFailureAt] = $this->resolveFailureCounters(
+            $health,
+            $previousCheck,
+            $providerError
+        );
+
+        [$newStatus, $ssl] = $this->resolveStatusTransition(
+            $oldStatus,
+            $oldSsl,
+            $health,
+            $sslReady,
+            $applyFailureThreshold,
+            $consecutiveFailures,
+            $firstFailureAt
+        );
+
+        $checkSummary = array_merge($lastCheck, [
+            'health_code' => $health,
+            'message' => $message,
+            'consecutive_failures' => $consecutiveFailures,
+            'first_failure_at' => $firstFailureAt,
+            'outcome' => (string) ($provisioningResult['outcome'] ?? 'pending'),
+            'retryable' => (bool) ($provisioningResult['retryable'] ?? false),
+        ]);
+
+        if ($provisioning !== []) {
+            $checkSummary['provisioning'] = $provisioning;
+            $domain->dns_records = array_merge($existingDns, ['provisioning' => $provisioning]);
+        }
+
+        $vercelVerified = (bool) ($lastCheck['apex_verified'] ?? $lastCheck['vercel_verified'] ?? false);
+        $nameserversOk = (bool) ($lastCheck['nameservers_ok'] ?? false);
+
+        $syncResult = $this->finalize(
+            $domain,
+            $oldStatus,
+            $newStatus,
+            $ssl,
+            $checkSummary,
+            $request,
+            $vercelVerified,
+            $nameserversOk
+        );
+
+        return array_merge($syncResult, [
+            'outcome' => (string) ($provisioningResult['outcome'] ?? 'pending'),
+            'retryable' => (bool) ($provisioningResult['retryable'] ?? false),
+            'provisioning' => $provisioning,
+        ]);
     }
 
     /**
@@ -247,6 +349,42 @@ class DomainStatusSyncService
             $nameserversOk = true;
         }
 
+        $accountDomain = null;
+        $zoneEnabled = false;
+        $accountDomainPresent = false;
+        $apexCertificate = null;
+        $sslReady = false;
+        $certificateReadiness = null;
+
+        if ($autoAttach && ! $providerError) {
+            try {
+                $accountDomain = $this->vercel->getAccountDomain($apex);
+                $accountDomainPresent = $accountDomain !== null;
+                $zoneEnabled = $accountDomainPresent && ($accountDomain['zone'] ?? false) === true;
+            } catch (VercelDomainException $e) {
+                if ($this->isProviderUnknownError($e)) {
+                    $providerError = true;
+                    $providerReachable = false;
+                    $message = 'Could not reach the hosting provider to check this domain.';
+                }
+            }
+
+            if (! $providerError) {
+                try {
+                    $certificateInventory = $this->vercel->listCertificates();
+                    $apexCertificate = $this->vercel->findCoveringCertificate($apex, $certificateInventory);
+                    $sslReady = $apexCertificate !== null && $this->vercel->isCertificateReady($apexCertificate);
+                    $certificateReadiness = $apexCertificate['readiness'] ?? null;
+                } catch (VercelDomainException $e) {
+                    if ($this->isProviderUnknownError($e)) {
+                        $providerError = true;
+                        $providerReachable = false;
+                        $message = 'Could not reach the hosting provider to check this domain.';
+                    }
+                }
+            }
+        }
+
         $healthCode = $providerError
             ? 'provider_error'
             : ApiDomainSetting::resolveHealthCode([
@@ -256,11 +394,15 @@ class DomainStatusSyncService
                 'apex_verified' => $apexVerified,
                 'vercel_attached' => $apexAttached,
                 'vercel_verified' => $apexVerified,
+                'account_domain_present' => $accountDomainPresent,
+                'zone_enabled' => $zoneEnabled,
                 'www_present' => $wwwPresent,
                 'www_redirect_correct' => $wwwRedirectCorrect,
                 'ownership_challenge' => $ownershipChallenge,
                 'dns_misconfigured' => (bool) ($domainConfig['misconfigured'] ?? false),
                 'nameservers_ok' => $nameserversOk,
+                'ssl_ready' => $sslReady,
+                'certificate_readiness' => $certificateReadiness,
                 'reason' => null,
             ], $apexAttached);
 
@@ -278,7 +420,7 @@ class DomainStatusSyncService
             $oldStatus,
             $oldSsl,
             $healthCode,
-            $autoAttach,
+            $sslReady,
             $applyFailureThreshold,
             $consecutiveFailures,
             $firstFailureAt
@@ -293,6 +435,8 @@ class DomainStatusSyncService
             'apex_verified' => $apexVerified,
             'vercel_attached' => $apexAttached,
             'vercel_verified' => $apexVerified,
+            'account_domain_present' => $accountDomainPresent,
+            'zone_enabled' => $zoneEnabled,
             'www_present' => $wwwPresent,
             'www_redirect_correct' => $wwwRedirectCorrect,
             'ownership_challenge' => $ownershipChallenge,
@@ -303,6 +447,9 @@ class DomainStatusSyncService
             'configured_by' => $domainConfig['configuredBy'] ?? null,
             'recommended_ipv4' => $domainConfig['recommendedIPv4'] ?? [],
             'recommended_cname' => $domainConfig['recommendedCNAME'] ?? [],
+            'ssl_ready' => $sslReady,
+            'certificate_readiness' => $certificateReadiness,
+            'certificate_id' => $apexCertificate['id'] ?? null,
             'consecutive_failures' => $consecutiveFailures,
             'first_failure_at' => $firstFailureAt,
             'auto_attach_custom_domain' => $autoAttach,
@@ -474,7 +621,7 @@ class DomainStatusSyncService
         string $oldStatus,
         bool $oldSsl,
         string $healthCode,
-        bool $autoAttach,
+        bool $sslReady,
         bool $applyFailureThreshold,
         int $consecutiveFailures,
         ?string $firstFailureAt
@@ -484,13 +631,15 @@ class DomainStatusSyncService
         }
 
         if (in_array($healthCode, ['linked', 'apex_only'], true)) {
-            return [
-                'active',
-                $autoAttach,
-            ];
+            return ['active', $sslReady];
         }
 
-        if ($healthCode === 'expired') {
+        if ($healthCode === 'expired' || $healthCode === 'certificate_error') {
+            if ($oldStatus === 'active' && $healthCode === 'certificate_error'
+                && $applyFailureThreshold && ! $this->thresholdMet($consecutiveFailures, $firstFailureAt)) {
+                return [$oldStatus, $oldSsl];
+            }
+
             return ['failed', false];
         }
 
@@ -502,6 +651,10 @@ class DomainStatusSyncService
             return [$oldStatus, $oldSsl];
         }
 
+        if ($oldStatus === 'active' && $healthCode === 'certificate_pending') {
+            return [$oldStatus, $oldSsl];
+        }
+
         if ($oldStatus === 'active') {
             return [$oldStatus, $oldSsl];
         }
@@ -510,7 +663,7 @@ class DomainStatusSyncService
             return ['failed', false];
         }
 
-        return ['pending', false];
+        return ['pending', $sslReady];
     }
 
     private function thresholdMet(int $consecutiveFailures, ?string $firstFailureAt): bool
@@ -538,6 +691,9 @@ class DomainStatusSyncService
             'ns_not_pointing' => 'Nameservers are not pointing to Vercel yet.',
             'not_on_vercel' => 'Domain is not attached to the Vercel project.',
             'unverified' => 'Domain is on Vercel but not verified yet. Ensure nameservers have propagated.',
+            'zone_disabled' => 'The account domain exists but its DNS zone is disabled.',
+            'certificate_pending' => 'Certificate issuance or validation is still in progress.',
+            'certificate_error' => 'Certificate coverage is invalid or expired.',
             'expired' => 'Domain registration has expired.',
             'provider_error' => 'Could not reach the hosting provider to check this domain.',
             'checks_disabled' => 'Verification checks are disabled (VERCEL_AUTO_ATTACH_CUSTOM_DOMAIN and VERCEL_CHECK_NAMESERVERS are false).',

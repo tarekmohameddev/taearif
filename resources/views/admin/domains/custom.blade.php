@@ -389,10 +389,10 @@
                                         <td class="domain-actions-cell">
                                             <div class="domain-actions-wrap">
                                             <button class="btn btn-secondary btn-sm editbtn" data-toggle="modal" data-target="#mailModal" data-email="{{!empty($rcDomain->user) ? $rcDomain->user->email : ''}}" title="{{ __('Mail') }}" aria-label="{{ __('Mail') }}"><i class="fas fa-envelope"></i></button>
-                                            <form class="domain-action-form" action="{{ route('admin.custom-domain.recheck') }}" method="POST">
+                                            <form class="domain-action-form" action="{{ route('admin.custom-domain.repair-verify') }}" method="POST">
                                                 @csrf
                                                 <input type="hidden" name="domain_id" value="{{ $rcDomain->id }}">
-                                                <button type="submit" class="btn btn-info btn-sm" title="{{ __('domain_health.recheck') }}" aria-label="{{ __('domain_health.recheck') }}"><i class="fas fa-sync"></i></button>
+                                                <button type="submit" class="btn btn-info btn-sm" title="{{ __('domain_health.repair_verify') }}" aria-label="{{ __('domain_health.repair_verify') }}"><i class="fas fa-wrench"></i></button>
                                             </form>
                                             @if ($wwwState['can_enable'] ?? false)
                                             <form class="domain-action-form domain-www-form" action="{{ route('admin.custom-domain.www.enable') }}" method="POST">

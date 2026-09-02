@@ -565,14 +565,12 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::get('/domains', 'Admin\CustomDomainController@index')->name('custom-domain.index');
         Route::get('/domain/texts', 'Admin\CustomDomainController@texts')->name('custom-domain.texts');
         Route::post('/domain/texts', 'Admin\CustomDomainController@updateTexts')->name('custom-domain.texts.update');
-        Route::post('/domain/status', 'Admin\CustomDomainController@status')->name('custom-domain.status');
         Route::post('/domain/mail', 'Admin\CustomDomainController@mail')->name('custom-domain.mail');
         Route::post('/domain/delete', 'Admin\CustomDomainController@delete')->name('custom-domain.delete');
         Route::post('/domain/bulk-delete', 'Admin\CustomDomainController@bulkDelete')->name('custom-domain.bulk.delete');
-        Route::post('/domain/ssl-status', 'Admin\CustomDomainController@updateSslStatus')->name('custom-domain.ssl-status');
-        Route::post('/domain/recheck', 'Admin\CustomDomainController@recheck')
+        Route::post('/domain/repair-verify', 'Admin\CustomDomainController@repairVerify')
             ->middleware('throttle:10,1')
-            ->name('custom-domain.recheck');
+            ->name('custom-domain.repair-verify');
         Route::post('/domain/www/enable', 'Admin\CustomDomainController@enableWww')
             ->middleware('throttle:10,1')
             ->name('custom-domain.www.enable');
