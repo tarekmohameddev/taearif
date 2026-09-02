@@ -95,6 +95,39 @@ class VercelDomainClient
     /**
      * @return array<string, mixed>
      */
+    /**
+     * Claim account-level domain ownership after the customer adds the TXT challenge.
+     *
+     * @return array<string, mixed>
+     */
+    public function claimDomainOwnership(string $domain): array
+    {
+        $this->assertConfigured();
+        $domain = $this->normalizeApex($domain);
+
+        $response = $this->sendRequest(fn () => $this->http()->post(
+            $this->appendTeamId('/v9/domains/' . rawurlencode($domain) . '/claim')
+        ));
+
+        if ($response->successful()) {
+            return $response->json() ?? [];
+        }
+
+        if (in_array($response->status(), [400, 403, 409], true)) {
+            $accountDomain = $this->getAccountDomain($domain);
+            if ($accountDomain !== null && ($accountDomain['verified'] ?? false) === true) {
+                return $accountDomain['raw'] ?? ['verified' => true, 'name' => $domain];
+            }
+
+            $projectDomain = $this->getDomain($domain);
+            if ($projectDomain !== null && ($projectDomain['verified'] ?? false) === true) {
+                return $projectDomain;
+            }
+        }
+
+        $this->throwFromResponse('Failed to claim domain ownership on Vercel', $response);
+    }
+
     public function verifyDomain(string $name): array
     {
         $this->assertConfigured();

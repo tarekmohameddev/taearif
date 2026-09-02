@@ -13,6 +13,8 @@ class DomainProvisioningService
 
     public const MODE_ADMIN_REPAIR = 'admin_repair';
 
+    public const MODE_CLAIM_OWNERSHIP = 'claim_ownership';
+
     public const CLASS_CREATED = 'created';
 
     public const CLASS_ADOPTED = 'adopted';
@@ -26,6 +28,7 @@ class DomainProvisioningService
         self::MODE_INITIAL,
         self::MODE_SCHEDULED,
         self::MODE_ADMIN_REPAIR,
+        self::MODE_CLAIM_OWNERSHIP,
     ];
 
     public function __construct(
@@ -92,7 +95,8 @@ class DomainProvisioningService
             );
         }
 
-        if ($mode === self::MODE_INITIAL) {
+        if ($mode === self::MODE_INITIAL
+            || ($mode === self::MODE_ADMIN_REPAIR && $this->apexNeedsAttach($apex))) {
             $inventory = $this->cache->fresh();
             $capacity = $this->inventory->evaluateCapacityForApex($inventory, $apex);
             if (! $capacity['allowed']) {
@@ -169,7 +173,13 @@ class DomainProvisioningService
             return;
         }
 
-        $this->mutateRepair($apex, $accountDomain, $ledger);
+        if ($mode === self::MODE_CLAIM_OWNERSHIP) {
+            $this->mutateClaimOwnership($apex, $ledger);
+
+            return;
+        }
+
+        $this->mutateRepair($apex, $accountDomain, $ledger, $mode);
     }
 
     /**
@@ -230,8 +240,47 @@ class DomainProvisioningService
      * }|null  $accountDomain
      * @param  array<string, mixed>  $ledger
      */
-    private function mutateRepair(string $apex, ?array $accountDomain, array &$ledger): void
+    /**
+     * @param  array<string, mixed>  $ledger
+     */
+    private function mutateClaimOwnership(string $apex, array &$ledger): void
     {
+        try {
+            $this->client->claimDomainOwnership($apex);
+            $ledger['ownership_claim'] = self::CLASS_CREATED;
+        } catch (VercelDomainException $exception) {
+            if ($this->isTransportAmbiguity($exception)) {
+                $ledger['ownership_claim'] = self::CLASS_UNCERTAIN;
+                $ledger['uncertain'] = true;
+                $ledger['internal_code'] = $exception->internalCode;
+
+                return;
+            }
+
+            if (in_array($exception->internalCode, [
+                VercelDomainException::CODE_INVALID_DOMAIN,
+                VercelDomainException::CODE_OWNERSHIP_REQUIRED,
+            ], true)) {
+                $ledger['ownership_claim'] = self::CLASS_PRE_EXISTING;
+            } else {
+                throw $exception;
+            }
+        }
+
+        $accountDomain = $this->client->getAccountDomain($apex);
+        $this->mutateRepair($apex, $accountDomain, $ledger, self::MODE_ADMIN_REPAIR);
+    }
+
+    private function mutateRepair(string $apex, ?array $accountDomain, array &$ledger, string $mode): void
+    {
+        $projectDomain = $this->client->getDomain($apex);
+
+        if ($projectDomain === null && $mode === self::MODE_ADMIN_REPAIR) {
+            $this->mutateInitial($apex, $accountDomain, $ledger);
+
+            return;
+        }
+
         if ($accountDomain !== null) {
             $ledger['account_domain'] = self::CLASS_PRE_EXISTING;
         }
@@ -249,8 +298,7 @@ class DomainProvisioningService
             $ledger['zone'] = self::CLASS_PRE_EXISTING;
         }
 
-        $projectDomain = $this->client->getDomain($apex);
-        if ($projectDomain !== null && empty($projectDomain['verified'])) {
+        if (empty($projectDomain['verified'])) {
             try {
                 $this->client->verifyDomain($apex);
             } catch (VercelDomainException $exception) {
@@ -263,9 +311,7 @@ class DomainProvisioningService
             }
         }
 
-        if ($projectDomain !== null) {
-            $ledger['apex_attachment'] = self::CLASS_PRE_EXISTING;
-        }
+        $ledger['apex_attachment'] = self::CLASS_PRE_EXISTING;
 
         $this->maybeIssueApexCertificate($apex, $ledger);
     }
@@ -584,6 +630,18 @@ class DomainProvisioningService
         $expected = (array) config('services.vercel.nameservers', []);
 
         return $this->nameserverChecker->hasExpectedNameservers($apex, $expected);
+    }
+
+    private function apexNeedsAttach(string $apex): bool
+    {
+        if ($this->client->getDomain($apex) !== null) {
+            return false;
+        }
+
+        $inventory = $this->cache->cached();
+
+        return $inventory === null
+            || ! $this->inventory->apexPresentInSnapshot($inventory, $apex);
     }
 
     /**

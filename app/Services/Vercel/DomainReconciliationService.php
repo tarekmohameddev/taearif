@@ -208,7 +208,7 @@ class DomainReconciliationService
             'protected_platform' => $protectedPlatform,
             'apex_with_optional_www' => $apexWithOptionalWww,
             'www_without_apex' => $wwwWithoutApex,
-            'unpaired_www' => array_merge($wwwWithoutApex, $apexWithoutWww),
+            'unpaired_www' => $wwwWithoutApex,
             'apex_without_www' => $apexWithoutWww,
             'incorrect_redirect' => $incorrectRedirect,
             'status_mismatch' => $statusMismatch,
@@ -216,6 +216,117 @@ class DomainReconciliationService
             'fetched_at' => $snapshot['fetched_at'] ?? null,
             'is_lower_bound' => (bool) ($snapshot['is_lower_bound'] ?? false),
         ];
+    }
+
+    /**
+     * @return array{www: string, status: string, error?: string}
+     */
+    public function removeStrayWww(
+        string $www,
+        ?Request $request = null,
+        string $confirmationField = 'confirm_domain',
+        ?string $confirmedWww = null,
+        ?string $actor = null
+    ): array {
+        $normalizedWww = strtolower(trim($www));
+
+        if (! str_starts_with($normalizedWww, 'www.')) {
+            throw new VercelDomainException(
+                __('domain_reconciliation.stray_www_invalid', ['domain' => $normalizedWww]),
+                internalCode: VercelDomainException::CODE_INVALID_DOMAIN
+            );
+        }
+
+        $apex = $this->client->normalizeApex(substr($normalizedWww, 4));
+
+        $this->mutationGuard->assertConfigured();
+        $this->mutationGuard->assertEnvironmentAllowsMutations();
+        $this->mutationGuard->assertProjectIdentity();
+
+        if ($request !== null) {
+            $provided = $request->input($confirmationField);
+            if (! is_string($provided) || strtolower(trim($provided)) !== $normalizedWww) {
+                throw new VercelDomainException(
+                    __('domain_mutation.confirmation_required', ['domain' => $normalizedWww]),
+                    internalCode: VercelDomainException::CODE_CONFIRMATION_REQUIRED
+                );
+            }
+        } elseif ($confirmedWww === null
+            || strtolower(trim($confirmedWww)) !== $normalizedWww) {
+            throw new VercelDomainException(
+                __('domain_mutation.confirmation_required', ['domain' => $normalizedWww]),
+                internalCode: VercelDomainException::CODE_CONFIRMATION_REQUIRED
+            );
+        }
+
+        $this->assertHostnameActionable($normalizedWww, $apex);
+
+        $snapshot = $this->cache->fresh();
+        $report = $this->buildReportFromSnapshot($snapshot);
+        $stillStray = collect($report['www_without_apex'])
+            ->first(fn (array $entry) => strtolower((string) ($entry['vercel_name'] ?? '')) === $normalizedWww);
+
+        if ($stillStray === null) {
+            throw new VercelDomainException(
+                __('domain_reconciliation.not_stray_www', ['domain' => $normalizedWww]),
+                internalCode: VercelDomainException::CODE_INVALID_DOMAIN
+            );
+        }
+
+        try {
+            $this->client->removeDomain($normalizedWww);
+
+            Log::info('Vercel stray www hostname removed', [
+                'www' => $normalizedWww,
+                'missing_apex' => $apex,
+                'actor' => $actor,
+                'inventory_fetched_at' => $report['fetched_at'] ?? null,
+                'inventory_lower_bound' => $report['is_lower_bound'] ?? false,
+            ]);
+
+            $this->cache->invalidateAdminCaches();
+
+            return [
+                'www' => $normalizedWww,
+                'status' => 'removed',
+            ];
+        } catch (Throwable $e) {
+            Log::error('Vercel stray www removal failed', [
+                'www' => $normalizedWww,
+                'actor' => $actor,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->cache->invalidateAdminCaches();
+
+            return [
+                'www' => $normalizedWww,
+                'status' => 'failed',
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function assertHostnameActionable(string $hostname, ?string $apex = null): void
+    {
+        $hostname = strtolower(trim($hostname));
+        $apex = $apex ?? (str_starts_with($hostname, 'www.')
+            ? $this->client->normalizeApex(substr($hostname, 4))
+            : $this->client->normalizeApex($hostname));
+
+        if ($this->isWildcard($hostname) || $this->isWildcard($apex)) {
+            throw new VercelDomainException(
+                __('domain_reconciliation.wildcard_not_supported', ['domain' => $hostname]),
+                internalCode: VercelDomainException::CODE_INVALID_DOMAIN
+            );
+        }
+
+        if ($this->isPlatformDomain($apex) || isset($this->platformDomainSet()[$hostname])) {
+            throw new VercelDomainException(
+                __('domain_reconciliation.protected_platform', ['domain' => $hostname]),
+                internalCode: VercelDomainException::CODE_MUTATION_BLOCKED
+            );
+        }
     }
 
     /**
@@ -248,19 +359,7 @@ class DomainReconciliationService
             );
         }
 
-        if ($this->isPlatformDomain($normalizedApex)) {
-            throw new VercelDomainException(
-                __('domain_reconciliation.protected_platform', ['domain' => $normalizedApex]),
-                internalCode: VercelDomainException::CODE_MUTATION_BLOCKED
-            );
-        }
-
-        if ($this->isWildcard($normalizedApex)) {
-            throw new VercelDomainException(
-                __('domain_reconciliation.wildcard_not_supported', ['domain' => $normalizedApex]),
-                internalCode: VercelDomainException::CODE_INVALID_DOMAIN
-            );
-        }
+        $this->assertHostnameActionable($normalizedApex, $normalizedApex);
 
         $snapshot = $this->cache->fresh();
         $report = $this->buildReportFromSnapshot($snapshot);

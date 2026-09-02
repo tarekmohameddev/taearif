@@ -31,6 +31,7 @@
     ]);
     $globalHealthFilterParams = [];
     $wwwStatesByDomainId = $wwwStatesByDomainId ?? [];
+    $repairActionsByDomainId = $repairActionsByDomainId ?? [];
     $capacityBlocked = $capacityBlocked ?? false;
     $inventoryUnreliable = $inventoryUnreliable ?? false;
     $nonProductionSharedProject = $nonProductionSharedProject ?? false;
@@ -276,6 +277,20 @@
                             @endif
                         </div>
                         <button class="btn btn-danger btn-sm ml-2 d-none bulk-delete" data-href="{{route('admin.custom-domain.bulk.delete')}}"><i class="flaticon-interface-5"></i> {{__('Delete')}}</button>
+                        <form class="d-none bulk-repair-form ml-2" action="{{ route('admin.custom-domain.bulk-repair-verify') }}" method="POST">
+                            @csrf
+                            <button type="button" class="btn btn-info btn-sm bulk-repair">
+                                <i class="fas fa-wrench"></i> {{ __('domain_admin.bulk_repair_verify') }}
+                            </button>
+                        </form>
+                        @if ($vercelCapacity ?? null)
+                        <form class="domain-action-form ml-2" action="{{ route('admin.custom-domain.refresh-inventory') }}" method="POST">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-secondary btn-sm" title="{{ __('domain_admin.refresh_inventory') }}">
+                                <i class="fas fa-sync-alt"></i> {{ __('domain_admin.refresh_inventory') }}
+                            </button>
+                        </form>
+                        @endif
                         <form action="{{request()->url()}}" class="d-flex">
                             @if (!empty(request()->input('type')))
                                 <input type="hidden" name="type" value="{{request()->input('type')}}">
@@ -334,6 +349,7 @@
                                         <td>
                                             @php
                                                 $wwwState = $wwwStatesByDomainId[$rcDomain->id] ?? ['mode' => 'unknown', 'can_enable' => false, 'can_disable' => false];
+                                                $repairAction = $repairActionsByDomainId[$rcDomain->id] ?? ['needs_capacity_confirm' => false];
                                             @endphp
                                             @if ($wwwState['mode'] === 'apex_and_www')
                                                 <span class="badge badge-info">{{ __('domain_www.apex_and_www') }}</span>
@@ -362,6 +378,23 @@
                                                 @elseif ($health['code'] === 'unchecked')
                                                     <div class="domain-health-cell__reason">{{ __('domain_health.unchecked_hint') }}</div>
                                                 @endif
+                                                @if ($health['code'] === 'ownership_required')
+                                                    @php
+                                                        $dnsRecords = is_array($rcDomain->dns_records) ? $rcDomain->dns_records : [];
+                                                        $lastCheck = is_array($dnsRecords['last_check'] ?? null) ? $dnsRecords['last_check'] : [];
+                                                        $ownershipChallenge = $lastCheck['ownership_challenge'] ?? null;
+                                                    @endphp
+                                                    @if (is_array($ownershipChallenge) && $ownershipChallenge !== [])
+                                                        <div class="domain-ownership-inline mt-1">
+                                                            @include('admin.domains.partials.ownership-challenge', [
+                                                                'ownershipChallenge' => $ownershipChallenge,
+                                                                'compact' => true,
+                                                                'showClaim' => true,
+                                                                'domainId' => $rcDomain->id,
+                                                            ])
+                                                        </div>
+                                                    @endif
+                                                @endif
                                             </div>
                                         </td>
                                         <td>
@@ -389,12 +422,43 @@
                                         <td class="domain-actions-cell">
                                             <div class="domain-actions-wrap">
                                             <button class="btn btn-secondary btn-sm editbtn" data-toggle="modal" data-target="#mailModal" data-email="{{!empty($rcDomain->user) ? $rcDomain->user->email : ''}}" title="{{ __('Mail') }}" aria-label="{{ __('Mail') }}"><i class="fas fa-envelope"></i></button>
-                                            <form class="domain-action-form" action="{{ route('admin.custom-domain.repair-verify') }}" method="POST">
+                                            <button type="button"
+                                                    class="btn btn-outline-info btn-sm domain-diagnostics-btn"
+                                                    data-domain-id="{{ $rcDomain->id }}"
+                                                    data-domain-name="{{ $rcDomain->custom_name }}"
+                                                    title="{{ __('domain_diagnostics.open') }}"
+                                                    aria-label="{{ __('domain_diagnostics.open') }}"><i class="fas fa-stethoscope"></i></button>
+                                            <form class="domain-action-form domain-repair-form" action="{{ route('admin.custom-domain.repair-verify') }}" method="POST">
                                                 @csrf
                                                 <input type="hidden" name="domain_id" value="{{ $rcDomain->id }}">
-                                                <button type="submit" class="btn btn-info btn-sm" title="{{ __('domain_health.repair_verify') }}" aria-label="{{ __('domain_health.repair_verify') }}"><i class="fas fa-wrench"></i></button>
+                                                <button type="{{ ($repairAction['needs_capacity_confirm'] ?? false) ? 'button' : 'submit' }}"
+                                                        class="btn btn-info btn-sm {{ ($repairAction['needs_capacity_confirm'] ?? false) ? 'domain-repair-confirmbtn' : '' }}"
+                                                        data-domain="{{ $rcDomain->custom_name }}"
+                                                        data-needs-capacity-confirm="{{ ($repairAction['needs_capacity_confirm'] ?? false) ? '1' : '0' }}"
+                                                        title="{{ __('domain_health.repair_verify') }}"
+                                                        aria-label="{{ __('domain_health.repair_verify') }}"><i class="fas fa-wrench"></i></button>
                                             </form>
-                                            @if ($wwwState['can_enable'] ?? false)
+                                            @if (($health['code'] ?? '') === 'ownership_required')
+                                            <form class="domain-action-form" action="{{ route('admin.custom-domain.claim-ownership') }}" method="POST">
+                                                @csrf
+                                                <input type="hidden" name="domain_id" value="{{ $rcDomain->id }}">
+                                                <button type="submit"
+                                                        class="btn btn-warning btn-sm"
+                                                        title="{{ __('domain_admin.claim_ownership') }}"
+                                                        aria-label="{{ __('domain_admin.claim_ownership') }}"><i class="fas fa-key"></i></button>
+                                            </form>
+                                            @endif
+                                            @if ($wwwState['can_fix_redirect'] ?? false)
+                                            <form class="domain-action-form domain-www-form" action="{{ route('admin.custom-domain.www.fix-redirect') }}" method="POST">
+                                                @csrf
+                                                <input type="hidden" name="domain_id" value="{{ $rcDomain->id }}">
+                                                <button type="button"
+                                                        class="btn btn-outline-warning btn-sm domain-www-fix-redirectbtn"
+                                                        data-domain="{{ $rcDomain->custom_name }}"
+                                                        title="{{ __('domain_www.fix_redirect') }}"
+                                                        aria-label="{{ __('domain_www.fix_redirect') }}"><i class="fas fa-directions"></i></button>
+                                            </form>
+                                            @elseif ($wwwState['can_enable'] ?? false)
                                             <form class="domain-action-form domain-www-form" action="{{ route('admin.custom-domain.www.enable') }}" method="POST">
                                                 @csrf
                                                 <input type="hidden" name="domain_id" value="{{ $rcDomain->id }}">
@@ -473,6 +537,26 @@
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">{{__('Close')}}</button>
                             <button id="updateBtn" type="button" class="btn btn-primary">{{__('Send Mail')}}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Domain diagnostics modal -->
+            <div class="modal fade" id="domainDiagnosticsModal" tabindex="-1" role="dialog" aria-labelledby="domainDiagnosticsModalTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="domainDiagnosticsModalTitle">{{ __('domain_diagnostics.title') }}</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="{{ __('Close') }}">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="domainDiagnosticsModalBody">
+                            <p class="text-muted mb-0">{{ __('domain_diagnostics.loading') }}</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
                         </div>
                     </div>
                 </div>
@@ -609,6 +693,29 @@
         font-size: 0.8rem;
         padding: 0.4rem 0.75rem;
     }
+    .domain-diagnostics-table th {
+        width: 42%;
+        font-weight: 600;
+    }
+    .domain-diagnostics-drawer code {
+        font-size: 0.85em;
+        word-break: break-all;
+    }
+    .domain-ownership-challenge .btn-xs {
+        font-size: 0.7rem;
+        padding: 0.1rem 0.35rem;
+        line-height: 1.2;
+    }
+    .domain-ownership-inline {
+        max-width: 100%;
+    }
+    .domain-health-cell:has(.domain-ownership-inline) {
+        max-width: 18rem !important;
+    }
+    .domain-health-cell:has(.domain-ownership-inline) .domain-health-cell__reason {
+        white-space: normal;
+        max-width: 100%;
+    }
 </style>
 
 <script>
@@ -620,12 +727,12 @@
         jQuery('.bulk-check[data-val="all"]').on('change', function () {
             var isChecked = jQuery(this).is(':checked');
             jQuery('.bulk-check[data-val!="all"]').prop('checked', isChecked);
-            jQuery('.bulk-delete').toggleClass('d-none', !isChecked);
+            jQuery('.bulk-delete, .bulk-repair-form').toggleClass('d-none', !isChecked);
         });
 
         jQuery('.bulk-check[data-val!="all"]').on('change', function () {
             var checkedCount = jQuery('.bulk-check[data-val!="all"]:checked').length;
-            jQuery('.bulk-delete').toggleClass('d-none', checkedCount === 0);
+            jQuery('.bulk-delete, .bulk-repair-form').toggleClass('d-none', checkedCount === 0);
         });
 
         var deleteTitleTpl = @json(__('domain_health.delete_title'));
@@ -638,6 +745,88 @@
         var wwwEnableBody = @json(__('domain_www.enable_body'));
         var wwwDisableTitle = @json(__('domain_www.disable_title'));
         var wwwDisableBody = @json(__('domain_www.disable_body'));
+        var wwwFixRedirectTitle = @json(__('domain_www.fix_redirect_title'));
+        var wwwFixRedirectBody = @json(__('domain_www.fix_redirect_body'));
+        var wwwFixRedirectConfirm = @json(__('domain_www.fix_redirect_confirm'));
+        var legacyDeleteTitle = @json(__('domain_reconciliation.legacy_delete_title'));
+        var legacyDeleteBody = @json(__('domain_reconciliation.legacy_delete_body'));
+        var orphanCleanupTitle = @json(__('domain_reconciliation.cleanup_orphan_title'));
+        var orphanCleanupBody = @json(__('domain_reconciliation.cleanup_orphan_body'));
+        var strayWwwRemoveTitle = @json(__('domain_reconciliation.remove_stray_www_title'));
+        var strayWwwRemoveBody = @json(__('domain_reconciliation.remove_stray_www_body'));
+        var repairAttachTitle = @json(__('domain_health.repair_attach_title'));
+        var repairAttachBody = @json(__('domain_health.repair_attach_body'));
+        var repairConfirmText = @json(__('domain_health.repair_verify'));
+        var diagnosticsLoading = @json(__('domain_diagnostics.loading'));
+        var diagnosticsLoadFailed = @json(__('domain_diagnostics.load_failed'));
+        var diagnosticsUrlTemplate = @json(route('admin.custom-domain.diagnostics', ['id' => '__ID__']));
+        var bulkRepairTitle = @json(__('domain_admin.bulk_repair_title'));
+        var bulkRepairBody = @json(__('domain_admin.bulk_repair_body'));
+        var bulkRepairConfirm = @json(__('domain_admin.bulk_repair_confirm'));
+        var copySuccess = @json(__('domain_admin.copied'));
+
+        jQuery(document).on('click', '.domain-copy-btn', function (e) {
+            e.preventDefault();
+            var text = jQuery(this).data('copy') || '';
+            if (! text) {
+                return;
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(String(text)).then(function () {
+                    if (typeof swal !== 'undefined') {
+                        swal(copySuccess, { timer: 1200, buttons: false });
+                    }
+                });
+            } else {
+                var $temp = jQuery('<textarea>').val(String(text)).appendTo('body').select();
+                document.execCommand('copy');
+                $temp.remove();
+            }
+        });
+
+        jQuery('.bulk-repair').on('click', function (e) {
+            e.preventDefault();
+
+            var ids = [];
+            jQuery('.bulk-check[data-val!="all"]:checked').each(function () {
+                ids.push(jQuery(this).data('val'));
+            });
+
+            if (ids.length === 0) {
+                return;
+            }
+
+            var $form = jQuery(this).closest('.bulk-repair-form');
+
+            swal({
+                title: bulkRepairTitle,
+                text: bulkRepairBody.replace(':count', ids.length),
+                type: 'warning',
+                buttons: {
+                    confirm: {
+                        text: bulkRepairConfirm,
+                        className: 'btn btn-success',
+                    },
+                    cancel: {
+                        visible: true,
+                        text: @json(__('Cancel')),
+                        className: 'btn btn-danger',
+                    },
+                },
+            }).then(function (confirmed) {
+                if (! confirmed) {
+                    return;
+                }
+
+                $form.find('input[name="ids[]"]').remove();
+                ids.forEach(function (id) {
+                    $form.append(jQuery('<input>', { type: 'hidden', name: 'ids[]', value: id }));
+                });
+                jQuery('.request-loader').addClass('show');
+                $form.trigger('submit');
+            });
+        });
 
         function confirmDomainAction(options) {
             jQuery('.request-loader').addClass('show');
@@ -823,6 +1012,140 @@
                     }));
                     $form.trigger('submit');
                 },
+            });
+        });
+
+        jQuery('.domain-www-fix-redirectbtn').on('click', function (e) {
+            e.preventDefault();
+            var $btn = jQuery(this);
+            var domain = $btn.data('domain') || '';
+            var $form = $btn.closest('.domain-www-form');
+
+            confirmDomainAction({
+                title: wwwFixRedirectTitle.replace(':domain', domain),
+                text: wwwFixRedirectBody.replace(':domain', domain) + '\n\n' + confirmPrompt,
+                domain: domain,
+                confirmText: wwwFixRedirectConfirm,
+                onConfirm: function (typed) {
+                    $form.find('input[name="confirm_domain"]').remove();
+                    $form.append(jQuery('<input>', {
+                        type: 'hidden',
+                        name: 'confirm_domain',
+                        value: typed,
+                    }));
+                    $form.trigger('submit');
+                },
+            });
+        });
+
+        jQuery('.domain-legacy-deletebtn').on('click', function (e) {
+            e.preventDefault();
+            var $btn = jQuery(this);
+            var domain = $btn.data('domain') || '';
+            var $form = $btn.closest('.domain-legacy-delete-form');
+
+            confirmDomainAction({
+                title: legacyDeleteTitle.replace(':domain', domain),
+                text: legacyDeleteBody.replace(':domain', domain) + '\n\n' + confirmPrompt,
+                domain: domain,
+                confirmText: @json(__('domain_reconciliation.legacy_delete_confirm')),
+                onConfirm: function (typed) {
+                    $form.find('input[name="confirm_domain"]').remove();
+                    $form.append(jQuery('<input>', {
+                        type: 'hidden',
+                        name: 'confirm_domain',
+                        value: typed,
+                    }));
+                    $form.trigger('submit');
+                },
+            });
+        });
+
+        jQuery('.domain-vercel-orphan-btn').on('click', function (e) {
+            e.preventDefault();
+            var $btn = jQuery(this);
+            var domain = $btn.data('domain') || '';
+            var $form = $btn.closest('.domain-vercel-orphan-form');
+
+            confirmDomainAction({
+                title: orphanCleanupTitle.replace(':domain', domain),
+                text: orphanCleanupBody.replace(':domain', domain) + '\n\n' + confirmPrompt,
+                domain: domain,
+                confirmText: @json(__('domain_reconciliation.cleanup_orphan_confirm')),
+                onConfirm: function (typed) {
+                    $form.find('input[name="confirm_domain"]').remove();
+                    $form.append(jQuery('<input>', {
+                        type: 'hidden',
+                        name: 'confirm_domain',
+                        value: typed,
+                    }));
+                    $form.trigger('submit');
+                },
+            });
+        });
+
+        jQuery('.domain-stray-www-btn').on('click', function (e) {
+            e.preventDefault();
+            var $btn = jQuery(this);
+            var domain = $btn.data('domain') || '';
+            var $form = $btn.closest('.domain-stray-www-form');
+
+            confirmDomainAction({
+                title: strayWwwRemoveTitle.replace(':domain', domain),
+                text: strayWwwRemoveBody.replace(':domain', domain) + '\n\n' + confirmPrompt,
+                domain: domain,
+                confirmText: @json(__('domain_reconciliation.remove_stray_www_confirm')),
+                onConfirm: function (typed) {
+                    $form.find('input[name="confirm_domain"]').remove();
+                    $form.append(jQuery('<input>', {
+                        type: 'hidden',
+                        name: 'confirm_domain',
+                        value: typed,
+                    }));
+                    $form.trigger('submit');
+                },
+            });
+        });
+
+        jQuery('.domain-repair-confirmbtn').on('click', function (e) {
+            e.preventDefault();
+            var $btn = jQuery(this);
+            var domain = $btn.data('domain') || '';
+            var $form = $btn.closest('.domain-repair-form');
+
+            confirmDomainAction({
+                title: repairAttachTitle.replace(':domain', domain),
+                text: repairAttachBody.replace(':domain', domain) + '\n\n' + confirmPrompt,
+                domain: domain,
+                confirmText: repairConfirmText,
+                onConfirm: function (typed) {
+                    $form.find('input[name="confirm_domain"]').remove();
+                    $form.append(jQuery('<input>', {
+                        type: 'hidden',
+                        name: 'confirm_domain',
+                        value: typed,
+                    }));
+                    $form.trigger('submit');
+                },
+            });
+        });
+
+        jQuery('.domain-diagnostics-btn').on('click', function (e) {
+            e.preventDefault();
+            var domainId = jQuery(this).data('domain-id');
+            var domainName = jQuery(this).data('domain-name') || '';
+            var url = diagnosticsUrlTemplate.replace('__ID__', domainId);
+            var $modal = jQuery('#domainDiagnosticsModal');
+            var $body = jQuery('#domainDiagnosticsModalBody');
+
+            $body.html('<p class="text-muted mb-0">' + diagnosticsLoading + '</p>');
+            jQuery('#domainDiagnosticsModalTitle').text(@json(__('domain_diagnostics.title')) + (domainName ? ' — ' + domainName : ''));
+            $modal.modal('show');
+
+            jQuery.get(url, function (html) {
+                $body.html(html);
+            }).fail(function () {
+                $body.html('<div class="alert alert-danger mb-0">' + diagnosticsLoadFailed + '</div>');
             });
         });
     });
