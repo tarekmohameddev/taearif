@@ -1280,7 +1280,7 @@
 
             jQuery.get(url, function (html) {
                 $body.html(html);
-            }).fail(function () {
+            }, 'html').fail(function () {
                 $body.html('<div class="alert alert-danger mb-0">' + diagnosticsLoadFailed + '</div>');
             });
         });

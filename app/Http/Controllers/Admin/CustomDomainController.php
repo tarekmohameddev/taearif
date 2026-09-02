@@ -179,7 +179,11 @@ class CustomDomainController extends Controller
         $domain = ApiDomainSetting::with('user')->findOrFail($id);
         $payload = $this->buildDomainDiagnostics($domain);
 
-        if ($request->expectsJson()) {
+        // Use wantsJson(), not expectsJson(): the modal loads this over XHR with
+        // Accept: */*, which makes expectsJson() true and would wrongly return JSON
+        // (jQuery then empties the modal body). wantsJson() is true only when the
+        // caller explicitly asks for JSON via the Accept header.
+        if ($request->wantsJson()) {
             return response()->json($payload);
         }
 
