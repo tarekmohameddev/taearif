@@ -421,7 +421,7 @@
                                         </td>
                                         <td class="domain-actions-cell">
                                             <div class="domain-actions-wrap">
-                                            <button class="btn btn-secondary btn-sm editbtn" data-toggle="modal" data-target="#mailModal" data-email="{{!empty($rcDomain->user) ? $rcDomain->user->email : ''}}" title="{{ __('Mail') }}" aria-label="{{ __('Mail') }}"><i class="fas fa-envelope"></i></button>
+                                            <button class="btn btn-outline-secondary btn-sm editbtn" data-toggle="modal" data-target="#mailModal" data-email="{{!empty($rcDomain->user) ? $rcDomain->user->email : ''}}" title="{{ __('Mail') }}" aria-label="{{ __('Mail') }}"><i class="fas fa-envelope"></i></button>
                                             <button type="button"
                                                     class="btn btn-outline-info btn-sm domain-diagnostics-btn"
                                                     data-domain-id="{{ $rcDomain->id }}"
@@ -652,21 +652,40 @@
         max-width: 14rem;
     }
     .domain-actions-cell {
-        white-space: nowrap;
         min-width: 8.5rem;
         vertical-align: middle !important;
     }
     .domain-actions-wrap {
         display: flex;
         flex-direction: row;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
         align-items: center;
-        gap: .35rem;
+        gap: .3rem;
     }
     .domain-action-form {
-        display: inline-block;
+        display: inline-flex;
         margin: 0;
     }
+    /* Uniform compact icon buttons in the actions cell */
+    .domain-actions-wrap .btn {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 7px;
+        font-size: .8rem;
+        line-height: 1;
+        transition: transform .1s ease, box-shadow .1s ease;
+    }
+    .domain-actions-wrap .btn > i { line-height: 1; }
+    .domain-actions-wrap .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    }
+    .domain-actions-wrap .btn:active { transform: translateY(0); box-shadow: none; }
+    .domain-actions-wrap .btn:focus { box-shadow: 0 0 0 .18rem rgba(99, 102, 241, 0.25); }
     .domain-table td.domain-user-cell,
     .domain-table td.domain-name-cell {
         white-space: nowrap;
@@ -701,6 +720,123 @@
         font-size: 0.85em;
         word-break: break-all;
     }
+
+    /* ---- Reconciliation panel ---- */
+    .domain-reconciliation-panel > .recon-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        list-style: none;
+    }
+    .domain-reconciliation-panel > .recon-header::-webkit-details-marker { display: none; }
+    .recon-header__title { display: inline-flex; align-items: center; gap: .5rem; }
+    .recon-header__icon { width: 18px; height: 18px; color: #6366f1; }
+    .recon-header__tag { font-weight: 500; }
+    .domain-reconciliation-panel[open] > .recon-header { border-bottom: 1px solid #edf0f3; }
+
+    .recon-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+        gap: .6rem;
+    }
+    .recon-stat {
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: .55rem .75rem;
+        background: #fafbfc;
+        display: flex;
+        flex-direction: column;
+        gap: .15rem;
+    }
+    .recon-stat__label { font-size: .72rem; color: #6c757d; line-height: 1.3; }
+    .recon-stat__count { font-size: 1.15rem; font-weight: 700; line-height: 1; }
+    .recon-stat--zero { opacity: .55; }
+    .recon-stat--zero .recon-stat__count { color: #adb5bd; }
+    .recon-stat--active { background: #fff; border-color: #dfe3e8; }
+    .recon-stat--active .recon-stat__count { color: #ef4444; }
+
+    .recon-sections { display: flex; flex-direction: column; gap: .5rem; }
+    .recon-section {
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        background: #fff;
+        overflow: hidden;
+        border-left: 3px solid #ced4da;
+    }
+    [dir="rtl"] .recon-section { border-left: 1px solid #e9ecef; border-right: 3px solid #ced4da; }
+    .recon-section--danger { border-left-color: #ef4444; }
+    [dir="rtl"] .recon-section--danger { border-right-color: #ef4444; }
+    .recon-section--warning { border-left-color: #f59e0b; }
+    [dir="rtl"] .recon-section--warning { border-right-color: #f59e0b; }
+    .recon-section--muted { border-left-color: #ced4da; }
+    [dir="rtl"] .recon-section--muted { border-right-color: #ced4da; }
+
+    .recon-section__summary {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .65rem .85rem;
+        cursor: pointer;
+        user-select: none;
+        font-weight: 600;
+        font-size: .85rem;
+        list-style: none;
+    }
+    .recon-section__summary::-webkit-details-marker { display: none; }
+    .recon-section__summary:hover { background: #f8f9fa; }
+    .recon-section__chevron { display: inline-flex; color: #adb5bd; transition: transform .15s ease; }
+    .recon-section__chevron i { width: 16px; height: 16px; }
+    .recon-section[open] > .recon-section__summary .recon-section__chevron { transform: rotate(90deg); }
+    [dir="rtl"] .recon-section__chevron i { transform: scaleX(-1); }
+    [dir="rtl"] .recon-section[open] > .recon-section__summary .recon-section__chevron { transform: rotate(-90deg); }
+    .recon-section__title { flex: 1; min-width: 0; }
+    .recon-section__count {
+        background: #eef0f3;
+        color: #495057;
+        border-radius: 999px;
+        padding: .05rem .55rem;
+        font-size: .78rem;
+        font-weight: 700;
+        min-width: 1.6rem;
+        text-align: center;
+    }
+
+    .recon-list { list-style: none; margin: 0; padding: 0; }
+    .recon-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        padding: .5rem .85rem;
+        border-top: 1px solid #f1f3f5;
+    }
+    .recon-item:hover { background: #fafbfc; }
+    .recon-item__name {
+        min-width: 0;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+        font-size: .82rem;
+        color: #212529;
+        text-align: start;
+    }
+    .recon-item__arrow { width: 13px; height: 13px; color: #adb5bd; vertical-align: -1px; margin: 0 .1rem; }
+    .recon-item__meta { color: #adb5bd; font-family: inherit; }
+    .recon-item__actions { display: inline-flex; align-items: center; gap: .35rem; flex: none; }
+    .recon-item__locked { color: #ced4da; display: inline-flex; }
+    .recon-item__locked i { width: 15px; height: 15px; }
+    .recon-item--more { color: #adb5bd; font-size: .8rem; font-style: italic; }
+    .recon-btn {
+        white-space: nowrap;
+        font-size: .75rem;
+        padding: .15rem .6rem;
+        line-height: 1.5;
+        border-radius: 6px;
+    }
+    .domain-reconciliation-form { display: inline; margin: 0; }
     .domain-ownership-challenge .btn-xs {
         font-size: 0.7rem;
         padding: 0.1rem 0.35rem;
