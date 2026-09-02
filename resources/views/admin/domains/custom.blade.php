@@ -316,10 +316,10 @@
                             <table class="table table-striped table-sm mt-3 domain-table">
                                 <thead>
                                     <tr>
-                                        <th scope="col">
+                                        <th scope="col" class="domain-check-cell">
                                             <input type="checkbox" class="bulk-check" data-val="all">
                                         </th>
-                                        <th>{{__('Username')}}</th>
+                                        <th class="domain-user-cell">{{__('Username')}}</th>
                                         <th scope="col">{{__('Requested Domain')}}</th>
                                         <th scope="col">{{ __('domain_www.column') }}</th>
                                         <th scope="col">{{ __('domain_health.column') }}</th>
@@ -331,7 +331,7 @@
                                 <tbody>
                                     @foreach ($rcDomains as $rcDomain)
                                     <tr>
-                                        <td>
+                                        <td class="domain-check-cell">
                                             <input type="checkbox" class="bulk-check" data-val="{{$rcDomain->id}}">
                                         </td>
                                         @if (!empty($rcDomain->user))
@@ -626,9 +626,46 @@
     }
     .domain-table td, .domain-table th { vertical-align: middle; }
     .domain-table td { padding-top: .4rem; padding-bottom: .4rem; }
+    .domain-table th.domain-check-cell,
+    .domain-table td.domain-check-cell {
+        width: 1%;
+        max-width: 2.5rem;
+        padding-left: .5rem;
+        padding-right: .5rem;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: middle !important;
+    }
+    .domain-table th.domain-user-cell,
+    .domain-table td.domain-user-cell {
+        width: 9rem;
+        max-width: 9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    [dir="rtl"] .domain-table th.domain-user-cell,
+    [dir="rtl"] .domain-table td.domain-user-cell {
+        text-align: right;
+    }
+    .domain-table td.domain-name-cell {
+        white-space: nowrap;
+        max-width: 8.5rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .domain-table td.domain-user-cell a,
+    .domain-table td.domain-name-cell a {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
     .domain-health-cell {
         min-width: 9rem;
-        max-width: 14rem;
+        max-width: 11rem !important;
         vertical-align: middle !important;
     }
     .domain-health-cell__inner {
@@ -686,25 +723,6 @@
     }
     .domain-actions-wrap .btn:active { transform: translateY(0); box-shadow: none; }
     .domain-actions-wrap .btn:focus { box-shadow: 0 0 0 .18rem rgba(99, 102, 241, 0.25); }
-    .domain-table td.domain-user-cell,
-    .domain-table td.domain-name-cell {
-        white-space: nowrap;
-        max-width: 8.5rem;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .domain-table td.domain-user-cell a,
-    .domain-table td.domain-name-cell a {
-        display: inline-block;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        vertical-align: middle;
-    }
-    .domain-health-cell {
-        max-width: 11rem !important;
-    }
     .domain-table td.domain-status-cell {
         white-space: nowrap;
     }
