@@ -1,5 +1,25 @@
 @php
     $d = $diagnostics ?? [];
+    $formatDiagnosticsDate = function ($value): ?string {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (! is_string($value) && ! is_numeric($value) && ! ($value instanceof \DateTimeInterface)) {
+            return null;
+        }
+        try {
+            return \Illuminate\Support\Carbon::parse($value)
+                ->locale(app()->getLocale())
+                ->timezone(config('app.timezone'))
+                ->format('d/m/Y, g:i A');
+        } catch (\Throwable $e) {
+            return is_string($value) ? $value : null;
+        }
+    };
+    $looksLikeIsoDate = function ($value): bool {
+        return is_string($value)
+            && (bool) preg_match('/^\d{4}-\d{2}-\d{2}([T\s]\d{2}:\d{2}(:\d{2})?)?/', $value);
+    };
     $boolBadge = function (?bool $value, string $trueLabel = null, string $falseLabel = null): string {
         if ($value === null) {
             return '<span class="badge badge-secondary">' . e(__('domain_diagnostics.unknown')) . '</span>';
@@ -21,6 +41,8 @@
     $expectedNs = $d['expected_nameservers'] ?? [];
     $recommendedIpv4 = $d['recommended_ipv4'] ?? [];
     $recommendedCname = $d['recommended_cname'] ?? [];
+    $lastCheckAtDisplay = $formatDiagnosticsDate($d['last_check_at'] ?? null);
+    $firstFailureAtDisplay = $formatDiagnosticsDate($d['first_failure_at'] ?? null);
 @endphp
 <div class="domain-diagnostics-drawer">
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
@@ -34,8 +56,11 @@
     @if (empty($d['has_last_check']))
         <div class="alert alert-secondary mb-0">{{ __('domain_diagnostics.no_last_check') }}</div>
     @else
-        @if (! empty($d['last_check_at']))
-            <p class="text-muted small">{{ __('domain_diagnostics.last_check_at') }}: {{ $d['last_check_at'] }}</p>
+        @if ($lastCheckAtDisplay)
+            <p class="text-muted small mb-0">
+                {{ __('domain_diagnostics.last_check_at') }}:
+                <bdi dir="ltr">{{ $lastCheckAtDisplay }}</bdi>
+            </p>
         @endif
         @if (! empty($d['message']))
             <p class="small mb-3" dir="auto">{{ $d['message'] }}</p>
@@ -186,8 +211,11 @@
                     <td>
                         {{ $d['consecutive_failures'] ?? 0 }}
                         / {{ $d['failure_threshold'] ?? 3 }}
-                        @if (! empty($d['first_failure_at']))
-                            <small class="text-muted d-block">{{ __('domain_diagnostics.first_failure_at') }}: {{ $d['first_failure_at'] }}</small>
+                        @if ($firstFailureAtDisplay)
+                            <small class="text-muted d-block">
+                                {{ __('domain_diagnostics.first_failure_at') }}:
+                                <bdi dir="ltr">{{ $firstFailureAtDisplay }}</bdi>
+                            </small>
                         @endif
                     </td>
                     <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_consecutive_failures') }}</td>
@@ -310,13 +338,15 @@
                                     $displayValue = __('Yes');
                                 } elseif ($value === false) {
                                     $displayValue = __('No');
+                                } elseif ($looksLikeIsoDate($value)) {
+                                    $displayValue = $formatDiagnosticsDate($value) ?? (string) $value;
                                 } else {
                                     $displayValue = (string) $value;
                                 }
 
                                 // Plain-language gloss for known tokens (created / pre_existing / modes …).
                                 $valueGloss = '';
-                                if (is_string($value) && $value !== '') {
+                                if (is_string($value) && $value !== '' && ! $looksLikeIsoDate($value)) {
                                     $valueKey = "domain_diagnostics.ledger_value.{$value}";
                                     $translated = __($valueKey);
                                     if ($translated !== $valueKey) { $valueGloss = $translated; }
@@ -325,7 +355,11 @@
                             <tr>
                                 <th scope="row">{{ $fieldLabel }}</th>
                                 <td>
-                                    <code>{{ $displayValue }}</code>
+                                    @if ($looksLikeIsoDate($value))
+                                        <bdi dir="ltr">{{ $displayValue }}</bdi>
+                                    @else
+                                        <code>{{ $displayValue }}</code>
+                                    @endif
                                     @if ($valueGloss !== '')
                                         <span class="small text-muted d-block" dir="auto">{{ $valueGloss }}</span>
                                     @endif

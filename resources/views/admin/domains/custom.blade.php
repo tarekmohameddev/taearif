@@ -544,7 +544,7 @@
 
             <!-- Domain diagnostics modal -->
             <div class="modal fade" id="domainDiagnosticsModal" tabindex="-1" role="dialog" aria-labelledby="domainDiagnosticsModalTitle" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" role="document">
+                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable domain-diagnostics-modal-dialog" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title" id="domainDiagnosticsModalTitle">{{ __('domain_diagnostics.title') }}</h5>
@@ -712,9 +712,32 @@
         font-size: 0.8rem;
         padding: 0.4rem 0.75rem;
     }
-    .domain-diagnostics-table th {
-        width: 42%;
+    .domain-diagnostics-modal-dialog {
+        max-width: min(1140px, 96vw);
+        width: 96vw;
+    }
+    .domain-diagnostics-table {
+        table-layout: fixed;
+        width: 100%;
+    }
+    .domain-diagnostics-table thead th:nth-child(1),
+    .domain-diagnostics-table tbody th {
+        width: 22%;
         font-weight: 600;
+    }
+    .domain-diagnostics-table thead th:nth-child(2),
+    .domain-diagnostics-table tbody td:nth-child(2) {
+        width: 28%;
+    }
+    .domain-diagnostics-table thead th:nth-child(3),
+    .domain-diagnostics-table tbody td:nth-child(3) {
+        width: 50%;
+    }
+    .domain-diagnostics-table td,
+    .domain-diagnostics-table th {
+        word-wrap: break-word;
+        overflow-wrap: anywhere;
+        vertical-align: top;
     }
     .domain-diagnostics-drawer code {
         font-size: 0.85em;

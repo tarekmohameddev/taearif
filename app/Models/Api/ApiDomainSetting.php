@@ -220,6 +220,13 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
             return 'expired';
         }
 
+        // Terminal, provider-confirmed rejection (e.g. Vercel says the name is not
+        // a valid registrable domain — typically a subdomain). Checked before the
+        // provider-error heuristic so it isn't mistaken for an unreachable provider.
+        if (($lastCheck['reason'] ?? null) === 'invalid_domain') {
+            return 'invalid_domain';
+        }
+
         if (self::isProviderErrorState($lastCheck)) {
             return 'provider_error';
         }
@@ -334,6 +341,7 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
             'zone_disabled' => 'warning',
             'certificate_pending' => 'warning',
             'certificate_error' => 'danger',
+            'invalid_domain' => 'danger',
             'expired' => 'danger',
             'provider_error' => 'secondary',
             'checks_disabled' => 'secondary',

@@ -41,6 +41,7 @@ class CustomDomainController extends Controller
         'zone_disabled',
         'certificate_pending',
         'certificate_error',
+        'invalid_domain',
         'expired',
         'provider_error',
         'checks_disabled',
@@ -1087,9 +1088,27 @@ class CustomDomainController extends Controller
             'failure_threshold' => max(1, (int) config('services.vercel.health_failure_threshold', 3)),
             'outcome' => $lastCheck['outcome'] ?? null,
             'health_code' => $health['code'],
-            'message' => DomainHealthMessages::translate((string) ($lastCheck['message'] ?? $health['reason'] ?? '')),
+            'message' => $this->cleanProviderMessage(
+                DomainHealthMessages::translate((string) ($lastCheck['message'] ?? $health['reason'] ?? ''))
+            ),
             'has_last_check' => $lastCheck !== [],
         ];
+    }
+
+    /**
+     * Strip any raw provider JSON dump from a stored message so it never reaches
+     * the admin UI (older records persisted the full Vercel error body). Keeps the
+     * human-readable prefix, e.g. "Failed to issue certificate on Vercel: {…}".
+     */
+    private function cleanProviderMessage(string $message): string
+    {
+        $brace = strpos($message, '{');
+        if ($brace !== false) {
+            $message = rtrim(substr($message, 0, $brace));
+            $message = rtrim($message, " \t:;-–—");
+        }
+
+        return $message;
     }
 
     /**

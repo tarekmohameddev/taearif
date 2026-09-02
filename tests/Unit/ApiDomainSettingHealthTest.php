@@ -696,6 +696,24 @@ class ApiDomainSettingHealthTest extends TestCase
         $this->assertSame('unchecked', $domain->resolvedHealth()['code']);
     }
 
+    /** @test */
+    public function health_is_invalid_domain_marker_beats_provider_error_heuristic(): void
+    {
+        // A provider-confirmed "invalid domain name" rejection must classify as the
+        // terminal invalid_domain state, not the generic provider_error, even though
+        // the failure record sets provider_reachable.
+        $domain = $this->domainWithLastCheck([
+            'health_code' => 'invalid_domain',
+            'reason' => 'invalid_domain',
+            'provider_reachable' => true,
+            'message' => 'The `name` field contains an invalid domain name',
+        ]);
+
+        $this->assertSame('invalid_domain', $domain->health()['code']);
+        $this->assertSame('invalid_domain', $domain->resolvedHealth()['code']);
+        $this->assertSame('danger', $domain->resolvedHealth()['class']);
+    }
+
     private function domainWithLastCheck(array $lastCheck, ?Carbon $expiresAt = null): ApiDomainSetting
     {
         $domain = new ApiDomainSetting([

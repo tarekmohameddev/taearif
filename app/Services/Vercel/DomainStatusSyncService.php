@@ -634,6 +634,12 @@ class DomainStatusSyncService
             return ['active', $sslReady];
         }
 
+        // invalid_domain is a terminal, provider-confirmed rejection — fail it
+        // immediately (it only arises from a failed create, never a live domain).
+        if ($healthCode === 'invalid_domain') {
+            return ['failed', false];
+        }
+
         if ($healthCode === 'expired' || $healthCode === 'certificate_error') {
             if ($oldStatus === 'active' && $healthCode === 'certificate_error'
                 && $applyFailureThreshold && ! $this->thresholdMet($consecutiveFailures, $firstFailureAt)) {
@@ -694,6 +700,7 @@ class DomainStatusSyncService
             'zone_disabled' => 'The account domain exists but its DNS zone is disabled.',
             'certificate_pending' => 'Certificate issuance or validation is still in progress.',
             'certificate_error' => 'Certificate coverage is invalid or expired.',
+            'invalid_domain' => 'The hosting provider rejected this domain name as invalid or unsupported.',
             'expired' => 'Domain registration has expired.',
             'provider_error' => 'Could not reach the hosting provider to check this domain.',
             'checks_disabled' => 'Verification checks are disabled (VERCEL_AUTO_ATTACH_CUSTOM_DOMAIN and VERCEL_CHECK_NAMESERVERS are false).',

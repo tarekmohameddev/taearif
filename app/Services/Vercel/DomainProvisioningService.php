@@ -127,11 +127,14 @@ class DomainProvisioningService
                 $ledger['internal_code'] = $exception->internalCode;
                 $this->rollbackCreatedResources($apex, $ledger);
 
+                $health = $this->exceptionHealth($exception);
+
                 return $this->failureResult(
-                    $this->exceptionHealth($exception),
-                    $exception->getMessage(),
+                    $health,
+                    $this->exceptionMessage($exception, $health),
                     retryable: $this->isRetryableException($exception),
-                    provisioning: $this->buildProvisioningSummary($ledger)
+                    provisioning: $this->buildProvisioningSummary($ledger),
+                    reason: $health === 'invalid_domain' ? 'invalid_domain' : null,
                 );
             }
         }
@@ -597,6 +600,7 @@ class DomainProvisioningService
             'zone_disabled' => 'The account domain exists but its DNS zone is disabled.',
             'certificate_pending' => 'Certificate issuance or validation is still in progress.',
             'certificate_error' => 'Certificate coverage is invalid or expired.',
+            'invalid_domain' => 'The hosting provider rejected this domain name as invalid or unsupported.',
             'provider_error' => 'Could not reach the hosting provider to check this domain.',
             default => 'Domain verification is still pending.',
         };
@@ -856,14 +860,18 @@ class DomainProvisioningService
         string $health,
         string $message,
         bool $retryable,
-        array $provisioning
+        array $provisioning,
+        ?string $reason = null
     ): array {
         $provisioning['checked_at'] = now()->toIso8601String();
         $lastCheck = [
             'last_check_at' => now()->toIso8601String(),
             'health_code' => $health,
             'message' => $message,
-            'provider_reachable' => false,
+            // invalid_domain means Vercel responded (it was reachable) and rejected
+            // the name; only genuine transport failures are unreachable.
+            'provider_reachable' => $reason === 'invalid_domain',
+            'reason' => $reason,
             'provisioning' => $provisioning,
             'outcome' => 'failed',
             'retryable' => $retryable,
@@ -901,9 +909,20 @@ class DomainProvisioningService
     {
         return match ($exception->internalCode) {
             VercelDomainException::CODE_OWNERSHIP_REQUIRED => 'ownership_required',
-            VercelDomainException::CODE_CAPACITY_REACHED => 'provider_error',
+            VercelDomainException::CODE_INVALID_DOMAIN => 'invalid_domain',
             default => 'provider_error',
         };
+    }
+
+    private function exceptionMessage(VercelDomainException $exception, string $health): string
+    {
+        // A raw "invalid domain name" provider string is confusing to admins; give
+        // a clear, localized explanation instead. Other errors keep their message.
+        if ($health === 'invalid_domain') {
+            return __('domain_health.invalid_domain_message');
+        }
+
+        return $exception->getMessage();
     }
 
     private function isRetryableException(VercelDomainException $exception): bool
