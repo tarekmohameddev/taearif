@@ -228,8 +228,11 @@ class CustomDomainHealthFilterTest extends AdminApiTestCase
 
         $response->assertOk();
         $response->assertSee('health=linked', false);
+        $response->assertSee('health=apex_only', false);
         $response->assertSee('health=issues', false);
         $response->assertSee('health=unchecked', false);
+        $response->assertSee(__('domain_health.show_apex_and_www_count', ['count' => 1]), false);
+        $response->assertSee(__('domain_health.show_apex_only_count', ['count' => 0]), false);
     }
 
     /** @test */
