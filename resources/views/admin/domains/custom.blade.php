@@ -18,6 +18,8 @@
             $domainPageTitle = __('domain_health.filter_unchecked');
         } elseif ($healthFilter === 'linked') {
             $domainPageTitle = __('domain_health.filter_linked');
+        } elseif ($healthFilter === 'apex_only') {
+            $domainPageTitle = __('domain_health.filter_apex_only');
         } else {
             $domainPageTitle = __('domain_health.filter_code', ['code' => __("domain_health.{$healthFilter}")]);
         }
@@ -34,6 +36,7 @@
     $nonProductionSharedProject = $nonProductionSharedProject ?? false;
     $issueHealthCodes = ['unchecked', 'ns_not_pointing', 'not_on_vercel', 'unverified', 'expired', 'provider_error'];
     $linkedCount = $domainHealthCounts['linked'] ?? 0;
+    $apexOnlyCount = $domainHealthCounts['apex_only'] ?? ($domainHealthCounts['by_code']['apex_only'] ?? 0);
     $confirmedIssuesCount = $domainHealthCounts['confirmed_issues'] ?? 0;
     $uncheckedCount = $domainHealthCounts['unchecked'] ?? ($domainHealthCounts['by_code']['unchecked'] ?? 0);
     $healthCodeBadgeClass = function (string $code): string {
@@ -46,6 +49,7 @@
     $isIssuesFilter = $healthFilter === 'issues';
     $isUncheckedFilter = $healthFilter === 'unchecked';
     $isLinkedFilter = $healthFilter === 'linked';
+    $isApexOnlyFilter = $healthFilter === 'apex_only';
     $hasHealthFilter = ! empty($healthFilter);
 @endphp
 <div class="page-header">
@@ -227,6 +231,8 @@
                         <div class="card-title d-inline-block">{{ $domainPageTitle }}</div>
                         @if ($isLinkedFilter)
                             <span class="badge badge-success ml-2 align-middle">{{ __('domain_health.linked_label') }}</span>
+                        @elseif ($isApexOnlyFilter)
+                            <span class="badge badge-primary ml-2 align-middle">{{ __('domain_health.apex_only_label') }}</span>
                         @elseif ($isIssuesFilter)
                             <span class="badge badge-danger ml-2 align-middle">{{ __('domain_health.confirmed_issues_label') }}</span>
                         @elseif ($isUncheckedFilter)
@@ -239,10 +245,18 @@
                         <div class="float-lg-right d-flex flex-wrap align-items-center justify-content-lg-end domain-domains-toolbar">
                         <div class="btn-group btn-group-sm mr-2">
                             @if ($isLinkedFilter)
-                                <span class="btn btn-success disabled">{{ __('domain_health.show_working_only_count', ['count' => $linkedCount]) }}</span>
+                                <span class="btn btn-success disabled" title="{{ __('domain_health.linked_hint') }}">{{ __('domain_health.show_apex_and_www_count', ['count' => $linkedCount]) }}</span>
                             @else
                                 <a href="{{ route('admin.custom-domain.index', array_merge($healthFilterParams, ['health' => 'linked'])) }}"
-                                   class="btn btn-outline-success">{{ __('domain_health.show_working_only_count', ['count' => $linkedCount]) }}</a>
+                                   class="btn btn-outline-success"
+                                   title="{{ __('domain_health.linked_hint') }}">{{ __('domain_health.show_apex_and_www_count', ['count' => $linkedCount]) }}</a>
+                            @endif
+                            @if ($isApexOnlyFilter)
+                                <span class="btn btn-primary disabled" title="{{ __('domain_health.apex_only_hint') }}">{{ __('domain_health.show_apex_only_count', ['count' => $apexOnlyCount]) }}</span>
+                            @else
+                                <a href="{{ route('admin.custom-domain.index', array_merge($healthFilterParams, ['health' => 'apex_only'])) }}"
+                                   class="btn btn-outline-primary"
+                                   title="{{ __('domain_health.apex_only_hint') }}">{{ __('domain_health.show_apex_only_count', ['count' => $apexOnlyCount]) }}</a>
                             @endif
                             @if ($isUncheckedFilter)
                                 <span class="btn btn-secondary disabled">{{ __('domain_health.show_not_checked_count', ['count' => $uncheckedCount]) }}</span>

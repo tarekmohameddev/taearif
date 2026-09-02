@@ -365,7 +365,7 @@ class CustomDomainController extends Controller
     }
 
     /**
-     * @return array{linked: int, confirmed_issues: int, unchecked: int, db_domain_count: int, by_code: array<string, int>}
+     * @return array{linked: int, apex_only: int, confirmed_issues: int, unchecked: int, db_domain_count: int, by_code: array<string, int>}
      */
     private function resolveDomainHealthCounts(?array $inventorySnapshot): array
     {
@@ -379,6 +379,7 @@ class CustomDomainController extends Controller
                 ->get();
 
             $linked = 0;
+            $apexOnly = 0;
             $confirmedIssues = 0;
             $byCode = [];
 
@@ -395,6 +396,8 @@ class CustomDomainController extends Controller
 
                 if ($code === 'linked') {
                     $linked++;
+                } elseif ($code === 'apex_only') {
+                    $apexOnly++;
                 } elseif (! in_array($code, ['checks_disabled', 'unchecked', 'apex_only'], true)) {
                     $confirmedIssues++;
                 }
@@ -404,6 +407,7 @@ class CustomDomainController extends Controller
 
             return [
                 'linked' => $linked,
+                'apex_only' => $apexOnly,
                 'confirmed_issues' => $confirmedIssues,
                 'unchecked' => $byCode['unchecked'] ?? 0,
                 'db_domain_count' => $rows->count(),
