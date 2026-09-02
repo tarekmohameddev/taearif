@@ -9,8 +9,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /**
  * Custom Domain Model
- * 
- * Represents custom domains for tenant users
+ *
+ * Legacy admin API model (`user_custom_domains`). Tenant API, `/admin/domains`,
+ * and Vercel attachment use {@see \App\Models\Api\ApiDomainSetting} as source of truth.
  */
 class CustomDomain extends Model
 {

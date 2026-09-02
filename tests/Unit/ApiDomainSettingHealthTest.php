@@ -5,11 +5,18 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Models\Api\ApiDomainSetting;
+use App\Models\User;
+use App\Services\Vercel\DomainStatusSyncService;
+use App\Services\Vercel\DnsNameserverChecker;
+use App\Services\Vercel\VercelDomainClient;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class ApiDomainSettingHealthTest extends TestCase
 {
+    use DatabaseTransactions;
     /** @test */
     public function health_is_unchecked_when_last_check_is_missing(): void
     {
@@ -40,6 +47,7 @@ class ApiDomainSettingHealthTest extends TestCase
     {
         $domain = $this->domainWithLastCheck(
             [
+                'health_code' => 'expired',
                 'reason' => 'expired',
                 'auto_attach_custom_domain' => true,
                 'nameserver_check_enabled' => true,
@@ -56,6 +64,7 @@ class ApiDomainSettingHealthTest extends TestCase
     public function health_is_provider_error_when_reason_is_provider_error(): void
     {
         $domain = $this->domainWithLastCheck([
+            'health_code' => 'provider_error',
             'reason' => 'provider_error',
             'auto_attach_custom_domain' => true,
             'nameserver_check_enabled' => true,
@@ -81,17 +90,77 @@ class ApiDomainSettingHealthTest extends TestCase
     }
 
     /** @test */
-    public function health_is_linked_when_vercel_and_nameservers_are_ok(): void
+    public function health_is_linked_when_apex_www_and_dns_are_ok(): void
     {
         $domain = $this->domainWithLastCheck([
+            'health_code' => 'linked',
             'auto_attach_custom_domain' => true,
             'nameserver_check_enabled' => true,
-            'vercel_verified' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
             'nameservers_ok' => true,
+            'dns_misconfigured' => false,
+            'www_present' => true,
+            'www_redirect_correct' => true,
         ]);
 
         $this->assertSame('linked', $domain->health()['code']);
         $this->assertSame('success', $domain->health()['class']);
+    }
+
+    /** @test */
+    public function health_is_apex_only_when_www_redirect_is_missing(): void
+    {
+        $domain = $this->domainWithLastCheck([
+            'health_code' => 'apex_only',
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
+            'nameservers_ok' => true,
+            'dns_misconfigured' => false,
+            'www_present' => false,
+            'www_redirect_correct' => false,
+        ]);
+
+        $this->assertSame('apex_only', $domain->health()['code']);
+        $this->assertSame('success', $domain->health()['class']);
+    }
+
+    /** @test */
+    public function health_is_dns_misconfigured_when_vercel_reports_misconfiguration(): void
+    {
+        $domain = $this->domainWithLastCheck([
+            'health_code' => 'dns_misconfigured',
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
+            'nameservers_ok' => true,
+            'dns_misconfigured' => true,
+        ]);
+
+        $this->assertSame('dns_misconfigured', $domain->health()['code']);
+    }
+
+    /** @test */
+    public function health_is_ownership_required_when_txt_challenge_is_present(): void
+    {
+        $domain = $this->domainWithLastCheck([
+            'health_code' => 'ownership_required',
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => false,
+            'nameservers_ok' => true,
+            'ownership_challenge' => [
+                'type' => 'txt',
+                'domain' => '_vercel.example.com',
+                'value' => 'vc-domain-verify=abc',
+            ],
+        ]);
+
+        $this->assertSame('ownership_required', $domain->health()['code']);
     }
 
     /** @test */
@@ -100,7 +169,8 @@ class ApiDomainSettingHealthTest extends TestCase
         $domain = $this->domainWithLastCheck([
             'auto_attach_custom_domain' => true,
             'nameserver_check_enabled' => true,
-            'vercel_verified' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
             'nameservers_ok' => false,
             'message' => 'Nameservers are not pointing to Vercel yet.',
         ]);
@@ -118,9 +188,9 @@ class ApiDomainSettingHealthTest extends TestCase
         $domain = $this->domainWithLastCheck([
             'auto_attach_custom_domain' => true,
             'nameserver_check_enabled' => true,
-            'vercel_verified' => false,
+            'apex_attached' => true,
+            'apex_verified' => false,
             'nameservers_ok' => false,
-            'vercel_attached' => true,
         ]);
 
         $this->assertSame('ns_not_pointing', $domain->health(true)['code']);
@@ -132,21 +202,22 @@ class ApiDomainSettingHealthTest extends TestCase
         $domain = $this->domainWithLastCheck([
             'auto_attach_custom_domain' => true,
             'nameserver_check_enabled' => true,
-            'vercel_verified' => false,
+            'apex_attached' => true,
+            'apex_verified' => false,
             'nameservers_ok' => true,
-            'vercel_attached' => true,
         ]);
 
         $this->assertSame('unverified', $domain->health(true)['code']);
     }
 
     /** @test */
-    public function health_is_not_on_vercel_when_vercel_attached_hint_is_false(): void
+    public function health_is_not_on_vercel_when_fresh_hint_is_false(): void
     {
         $domain = $this->domainWithLastCheck([
             'auto_attach_custom_domain' => true,
             'nameserver_check_enabled' => true,
-            'vercel_verified' => false,
+            'apex_attached' => true,
+            'apex_verified' => false,
             'nameservers_ok' => false,
         ]);
 
@@ -154,30 +225,33 @@ class ApiDomainSettingHealthTest extends TestCase
     }
 
     /** @test */
-    public function health_is_unverified_when_not_verified_but_present_on_vercel(): void
+    public function health_fresh_hint_overrides_stored_attachment_when_hint_is_false(): void
     {
         $domain = $this->domainWithLastCheck([
+            'health_code' => 'unverified',
             'auto_attach_custom_domain' => true,
             'nameserver_check_enabled' => true,
-            'vercel_verified' => false,
+            'apex_attached' => true,
+            'apex_verified' => false,
             'nameservers_ok' => true,
         ]);
 
-        $this->assertSame('unverified', $domain->health(true)['code']);
+        $this->assertSame('not_on_vercel', $domain->health(false)['code']);
     }
 
     /** @test */
-    public function health_prefers_stored_vercel_attached_false_over_external_true_hint(): void
+    public function health_fresh_hint_overrides_stored_detachment_when_hint_is_true(): void
     {
         $domain = $this->domainWithLastCheck([
+            'health_code' => 'not_on_vercel',
             'auto_attach_custom_domain' => true,
             'nameserver_check_enabled' => true,
-            'vercel_verified' => false,
+            'apex_attached' => false,
+            'apex_verified' => false,
             'nameservers_ok' => false,
-            'vercel_attached' => false,
         ]);
 
-        $this->assertSame('not_on_vercel', $domain->health(true)['code']);
+        $this->assertSame('ns_not_pointing', $domain->health(true)['code']);
     }
 
     /** @test */
@@ -186,26 +260,202 @@ class ApiDomainSettingHealthTest extends TestCase
         $domain = $this->domainWithLastCheck([
             'auto_attach_custom_domain' => true,
             'nameserver_check_enabled' => true,
-            'vercel_verified' => false,
+            'apex_attached' => false,
+            'apex_verified' => false,
             'nameservers_ok' => false,
-            'vercel_attached' => false,
         ]);
 
-        $this->assertSame('not_on_vercel', $domain->health(true)['code']);
+        $this->assertSame('not_on_vercel', $domain->health(false)['code']);
     }
 
     /** @test */
-    public function health_prefers_stored_vercel_attached_true_over_external_false_hint(): void
+    public function resolve_health_code_prefers_dns_misconfigured_over_verified(): void
+    {
+        $code = ApiDomainSetting::resolveHealthCode([
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
+            'nameservers_ok' => true,
+            'dns_misconfigured' => true,
+            'www_present' => true,
+            'www_redirect_correct' => true,
+        ], true);
+
+        $this->assertSame('dns_misconfigured', $code);
+    }
+
+    /** @test */
+    public function health_is_not_on_vercel_when_apex_not_attached(): void
     {
         $domain = $this->domainWithLastCheck([
             'auto_attach_custom_domain' => true,
             'nameserver_check_enabled' => true,
-            'vercel_verified' => false,
+            'apex_attached' => false,
+            'apex_verified' => false,
             'nameservers_ok' => false,
-            'vercel_attached' => true,
         ]);
 
-        $this->assertSame('ns_not_pointing', $domain->health(false)['code']);
+        $this->assertSame('not_on_vercel', $domain->health()['code']);
+    }
+
+    /** @test */
+    public function health_is_unverified_when_attached_but_not_verified(): void
+    {
+        $domain = $this->domainWithLastCheck([
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => false,
+            'nameservers_ok' => true,
+        ]);
+
+        $this->assertSame('unverified', $domain->health()['code']);
+    }
+
+    /** @test */
+    public function health_provider_unreachable_maps_to_provider_error(): void
+    {
+        $domain = $this->domainWithLastCheck([
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'provider_reachable' => false,
+            'reason' => 'provider_error',
+        ]);
+
+        $this->assertSame('provider_error', $domain->health()['code']);
+    }
+
+    /** @test */
+    public function health_expired_code_is_ignored_when_expires_at_is_still_future(): void
+    {
+        $domain = $this->domainWithLastCheck(
+            [
+                'health_code' => 'expired',
+                'auto_attach_custom_domain' => true,
+                'nameserver_check_enabled' => true,
+                'apex_attached' => true,
+                'apex_verified' => false,
+                'nameservers_ok' => true,
+            ],
+            Carbon::tomorrow()
+        );
+
+        $this->assertSame('unverified', $domain->health()['code']);
+    }
+
+    /** @test */
+    public function sync_preserves_active_status_when_provider_is_unknown(): void
+    {
+        if (! Schema::hasTable('api_domains_settings') || ! Schema::hasTable('users')) {
+            $this->fail('Required domain tables are missing.');
+        }
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => User::factory()->tenant()->create()->id,
+            'custom_name' => 'sync-provider.example.com',
+            'status' => 'active',
+            'ssl' => true,
+            'primary' => true,
+            'added_date' => now(),
+        ]);
+
+        $this->mock(VercelDomainClient::class, function ($mock) {
+            $mock->shouldReceive('isConfigured')->andReturn(true);
+            $mock->shouldReceive('normalizeApex')->andReturnUsing(fn ($d) => strtolower(trim($d)));
+            $mock->shouldReceive('verifyDomain')->andThrow(new \App\Services\Vercel\VercelDomainException(
+                'rate limited',
+                429,
+                internalCode: \App\Services\Vercel\VercelDomainException::CODE_RATE_LIMITED
+            ));
+        });
+
+        $this->mock(DnsNameserverChecker::class, function ($mock) {
+            $mock->shouldReceive('hasExpectedNameservers')->andReturn(true);
+            $mock->shouldReceive('getObservedNameservers')->andReturn(['ns1.vercel-dns.com']);
+        });
+
+        config([
+            'services.vercel.auto_attach_custom_domain' => true,
+            'services.vercel.check_nameservers' => true,
+            'services.vercel.health_failure_threshold' => 3,
+        ]);
+
+        $inventory = [
+            'domains' => [
+                ['name' => 'sync-provider.example.com', 'verified' => true],
+            ],
+        ];
+
+        $result = app(DomainStatusSyncService::class)->sync(
+            $domain,
+            attemptVerify: true,
+            applyFailureThreshold: true,
+            projectInventory: $inventory
+        );
+
+        $this->assertSame('active', $result['new_status']);
+        $this->assertSame('provider_error', $result['health_code']);
+    }
+
+    /** @test */
+    public function sync_resets_failure_counters_after_successful_linked_check(): void
+    {
+        if (! Schema::hasTable('api_domains_settings') || ! Schema::hasTable('users')) {
+            $this->fail('Required domain tables are missing.');
+        }
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => User::factory()->tenant()->create()->id,
+            'custom_name' => 'sync-reset.example.com',
+            'status' => 'active',
+            'ssl' => true,
+            'primary' => true,
+            'added_date' => now(),
+            'dns_records' => [
+                'last_check' => [
+                    'consecutive_failures' => 2,
+                    'first_failure_at' => now()->subHours(6)->toIso8601String(),
+                ],
+            ],
+        ]);
+
+        $this->mock(VercelDomainClient::class, function ($mock) {
+            $mock->shouldReceive('isConfigured')->andReturn(true);
+            $mock->shouldReceive('normalizeApex')->andReturn('sync-reset.example.com');
+            $mock->shouldReceive('getDomainVerification')->andReturn([]);
+            $mock->shouldReceive('getDomainConfig')->andReturn(['misconfigured' => false]);
+        });
+
+        $this->mock(DnsNameserverChecker::class, function ($mock) {
+            $mock->shouldReceive('hasExpectedNameservers')->andReturn(true);
+            $mock->shouldReceive('getObservedNameservers')->andReturn(['ns1.vercel-dns.com', 'ns2.vercel-dns.com']);
+        });
+
+        config([
+            'services.vercel.auto_attach_custom_domain' => true,
+            'services.vercel.check_nameservers' => true,
+            'services.vercel.health_failure_threshold' => 3,
+        ]);
+
+        $inventory = [
+            'domains' => [
+                ['name' => 'sync-reset.example.com', 'verified' => true],
+                ['name' => 'www.sync-reset.example.com', 'verified' => true, 'redirect' => 'sync-reset.example.com', 'redirectStatusCode' => 301],
+            ],
+        ];
+
+        app(DomainStatusSyncService::class)->sync(
+            $domain,
+            attemptVerify: false,
+            applyFailureThreshold: true,
+            projectInventory: $inventory
+        );
+
+        $domain->refresh();
+        $lastCheck = $domain->dns_records['last_check'] ?? [];
+        $this->assertSame(0, $lastCheck['consecutive_failures'] ?? -1);
+        $this->assertSame('linked', $lastCheck['health_code'] ?? null);
     }
 
     /**

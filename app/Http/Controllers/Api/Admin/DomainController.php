@@ -50,7 +50,12 @@ class DomainController extends BaseController
             $filters = $request->only([
                 'search',
                 'status',
+                'ssl',
+                'primary',
                 'user_id',
+                'expires_before',
+                'expires_after',
+                'auto_renewal',
                 'start_date',
                 'end_date',
                 'order_by',
@@ -156,6 +161,8 @@ class DomainController extends BaseController
             $response = [
                 'id' => $domain->id,
                 'domain' => $domainName,
+                'requested_domain' => $domain->requested_domain,
+                'current_domain' => $domain->current_domain,
                 
                 // SSL Information
                 'ssl' => [

@@ -7,12 +7,14 @@ use App\Domain\Domain\Repositories\CustomDomainRepositoryInterface;
 use App\Domain\Shared\Services\BaseService;
 use App\Exceptions\ResourceNotFoundException;
 use App\Exceptions\BusinessLogicException;
+use App\Services\Vercel\VercelBackedDomainGuard;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
  * Custom Domain Service
- * 
- * Business logic for managing custom domains
+ *
+ * Business logic for the legacy admin API backed by `user_custom_domains`.
+ * Vercel-backed tenant and blade admin flows use {@see ApiDomainSetting} instead.
  */
 class CustomDomainService extends BaseService
 {
@@ -22,13 +24,22 @@ class CustomDomainService extends BaseService
     protected $domainRepository;
 
     /**
+     * @var VercelBackedDomainGuard
+     */
+    protected $vercelBackedGuard;
+
+    /**
      * CustomDomainService constructor.
      *
      * @param CustomDomainRepositoryInterface $domainRepository
+     * @param VercelBackedDomainGuard $vercelBackedGuard
      */
-    public function __construct(CustomDomainRepositoryInterface $domainRepository)
-    {
+    public function __construct(
+        CustomDomainRepositoryInterface $domainRepository,
+        VercelBackedDomainGuard $vercelBackedGuard
+    ) {
         $this->domainRepository = $domainRepository;
+        $this->vercelBackedGuard = $vercelBackedGuard;
     }
 
     /**
@@ -97,6 +108,8 @@ class CustomDomainService extends BaseService
             throw new ResourceNotFoundException('Domain not found');
         }
 
+        $this->vercelBackedGuard->assertLegacyUpdateSafe($domain, $data);
+
         return $this->transaction(function () use ($domain, $data) {
             $updated = $this->domainRepository->update($domain, $data);
             
@@ -119,6 +132,8 @@ class CustomDomainService extends BaseService
             throw new ResourceNotFoundException('Domain not found');
         }
 
+        $this->vercelBackedGuard->assertLegacyDeleteSafe($domain);
+
         return $this->transaction(function () use ($domain) {
             return $this->domainRepository->delete($domain);
         });
@@ -139,6 +154,8 @@ class CustomDomainService extends BaseService
         if (!$domain) {
             throw new ResourceNotFoundException('Domain not found');
         }
+
+        $this->vercelBackedGuard->assertLegacyStatusMutationSafe($domain);
 
         if ($domain->isApproved()) {
             throw new BusinessLogicException(
@@ -176,6 +193,8 @@ class CustomDomainService extends BaseService
             throw new ResourceNotFoundException('Domain not found');
         }
 
+        $this->vercelBackedGuard->assertLegacyStatusMutationSafe($domain);
+
         return $this->transaction(function () use ($domain) {
             return $this->domainRepository->rejectDomain($domain);
         });
@@ -195,6 +214,8 @@ class CustomDomainService extends BaseService
         if (!$domain) {
             throw new ResourceNotFoundException('Domain not found');
         }
+
+        $this->vercelBackedGuard->assertLegacyStatusMutationSafe($domain);
 
         return $this->transaction(function () use ($domain) {
             return $this->domainRepository->toggleStatus($domain);

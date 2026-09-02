@@ -449,9 +449,7 @@ abstract class AdminApiTestCase extends TestCase
      */
     private function ensurePlatformTables(): void
     {
-        Schema::dropIfExists('basic_extendeds');
-        Schema::dropIfExists('seos');
-
+        if (! Schema::hasTable('basic_extendeds')) {
         Schema::create('basic_extendeds', function (Blueprint $table) {
             $table->id();
             $table->foreignId('language_id')->nullable();
@@ -473,7 +471,9 @@ abstract class AdminApiTestCase extends TestCase
             $table->decimal('base_currency_rate', 12, 6)->default(1.000000);
             $table->string('timezone')->nullable();
         });
+        }
 
+        if (! Schema::hasTable('seos')) {
         Schema::create('seos', function (Blueprint $table) {
             $table->id();
             $table->text('meta_keywords')->nullable();
@@ -482,6 +482,7 @@ abstract class AdminApiTestCase extends TestCase
             $table->longText('facebook_pixel')->nullable();
             $table->timestamps();
         });
+        }
     }
 
     /**
@@ -851,6 +852,10 @@ abstract class AdminApiTestCase extends TestCase
 
         if (Schema::hasTable('user_custom_domains')) {
             DB::table('user_custom_domains')->truncate();
+        }
+
+        if (Schema::hasTable('api_domains_settings')) {
+            DB::table('api_domains_settings')->truncate();
         }
 
         if (Schema::hasTable('lead_activities')) {

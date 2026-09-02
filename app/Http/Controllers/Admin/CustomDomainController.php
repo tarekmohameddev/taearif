@@ -8,22 +8,51 @@ use App\Models\BasicSetting;
 use Illuminate\Http\Request;
 use App\Models\BasicExtended;
 use App\Support\DomainHealthMessages;
-use App\Support\TenantActivity;
 use App\Http\Helpers\MegaMailer;
 use PHPMailer\PHPMailer\PHPMailer;
 use App\Http\Controllers\Controller;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User\UserCustomDomain;
+use App\Services\Vercel\DomainReconciliationService;
 use App\Services\Vercel\DomainStatusSyncService;
+use App\Services\Vercel\VercelDomainCache;
 use App\Services\Vercel\VercelDomainClient;
 use App\Services\Vercel\VercelDomainException;
+use App\Services\Vercel\VercelDomainInventoryService;
+use App\Services\Vercel\VercelMutationGuard;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class CustomDomainController extends Controller
 {
+    private const HEALTH_FILTERS = [
+        'issues',
+        'linked',
+        'unchecked',
+        'ns_not_pointing',
+        'ns_mismatch',
+        'not_on_vercel',
+        'unverified',
+        'expired',
+        'provider_error',
+        'checks_disabled',
+        'ownership_required',
+        'dns_misconfigured',
+        'apex_only',
+    ];
+
+    private const INVENTORY_TTL_SECONDS = 300;
+
     public function __construct(
-        private readonly VercelDomainClient $vercel
+        private readonly VercelDomainClient $vercel,
+        private readonly VercelDomainCache $domainCache,
+        private readonly VercelDomainInventoryService $inventory,
+        private readonly VercelMutationGuard $mutationGuard,
+        private readonly DomainReconciliationService $reconciliationService,
     ) {
     }
 
@@ -48,7 +77,7 @@ class CustomDomainController extends Controller
         $be->cname_record_section_text = clean($request->cname_record_section_text);
         $be->save();
 
-        $request->session()->flash('success', 'Request Texts updated successfully');
+        $request->session()->flash('success', __('domain_admin.texts_updated'));
         return back();
     }
 
@@ -76,9 +105,14 @@ class CustomDomainController extends Controller
             return view('errors.404');
         }
 
-        $healthFilter = $request->filled('health') ? (string) $request->health : null;
-        $vercelProjectDomains = $this->resolveVercelProjectDomains();
-        $vercelNames = $vercelProjectDomains['names'] ?? null;
+        $healthFilter = $this->normalizeHealthFilter($request->input('health'));
+        if ($request->filled('health') && $healthFilter === null) {
+            return view('errors.404');
+        }
+
+        $inventorySnapshot = $this->domainCache->cached();
+        $vercelNames = $inventorySnapshot['names'] ?? null;
+        $inventoryUnreliable = $this->isInventoryUnreliable($inventorySnapshot);
 
         if ($healthFilter !== null) {
             $matchingIds = $this->filterDomainIdsByHealth(
@@ -98,6 +132,14 @@ class CustomDomainController extends Controller
                 ->paginate(10);
         }
 
+        $capacity = $inventorySnapshot !== null ? $this->buildCapacity($inventorySnapshot) : null;
+        $wwwStatesByDomainId = $this->resolveWwwStatesForRows(
+            $rcDomains->getCollection(),
+            $inventorySnapshot,
+            $capacity,
+            $inventoryUnreliable
+        );
+
         if ($vercelNames !== null) {
             $rcDomains->getCollection()->transform(function (ApiDomainSetting $domain) use ($vercelNames) {
                 $apex = $this->vercel->normalizeApex((string) $domain->custom_name);
@@ -107,66 +149,185 @@ class CustomDomainController extends Controller
         }
 
         $data['rcDomains'] = $rcDomains;
-        $data['vercelCapacity'] = $vercelProjectDomains !== null
-            ? $this->buildCapacity([
-                'count' => $vercelProjectDomains['count'],
-                'is_lower_bound' => $vercelProjectDomains['is_lower_bound'],
-            ])
-            : null;
-        $data['domainHealthCounts'] = $this->resolveDomainHealthCounts();
+        $data['vercelCapacity'] = $capacity;
+        $data['domainHealthCounts'] = $this->resolveDomainHealthCounts($inventorySnapshot);
         $data['healthFilter'] = $healthFilter;
+        $data['reconciliationSummary'] = $this->buildReconciliationSummary($inventorySnapshot);
+        $data['inventoryUnreliable'] = $inventoryUnreliable;
+        $data['capacityBlocked'] = $inventoryUnreliable;
+        $data['wwwStatesByDomainId'] = $wwwStatesByDomainId;
+        $data['nonProductionSharedProject'] = $this->mutationGuard->isNonProductionSharedProject();
 
         return view('admin.domains.custom', $data);
     }
 
     public function recheck(Request $request, DomainStatusSyncService $sync)
     {
-        $domain = ApiDomainSetting::findOrFail($request->domain_id);
-        $result = $sync->sync($domain, true, $request);
+        $validated = $request->validate([
+            'domain_id' => ['required', 'integer', 'exists:api_domains_settings,id'],
+        ]);
 
-        $this->clearVercelProjectDomainsCache();
-        Cache::forget('admin.domain_health_counts');
+        $domain = ApiDomainSetting::findOrFail($validated['domain_id']);
+        $result = $sync->sync($domain, true, $request, applyFailureThreshold: false);
+
+        $this->domainCache->invalidateAdminCaches();
 
         $request->session()->flash('success', DomainHealthMessages::translate($result['message']));
 
         return back();
     }
 
-    /**
-     * @return array{names: list<string>, count: int, is_lower_bound: bool}|null
-     */
-    private function resolveVercelProjectDomains(): ?array
+    public function enableWww(Request $request)
     {
-        if (! $this->vercel->isConfigured()) {
-            return null;
+        $validated = $request->validate([
+            'domain_id' => ['required', 'integer', 'exists:api_domains_settings,id'],
+            'confirm_domain' => ['required', 'string', 'max:255'],
+        ]);
+
+        $domain = ApiDomainSetting::findOrFail($validated['domain_id']);
+        $apex = $this->vercel->normalizeApex((string) $domain->custom_name);
+
+        try {
+            $this->mutationGuard->assertCanMutate($request, $apex);
+
+            return $this->withProjectLock(function () use ($request, $domain, $apex) {
+                $snapshot = $this->domainCache->fresh();
+                if ($this->isInventoryUnreliable($snapshot)) {
+                    throw new VercelDomainException(
+                        __('vercel_capacity.inventory_unreliable'),
+                        internalCode: VercelDomainException::CODE_PROVIDER_UNAVAILABLE
+                    );
+                }
+
+                $wwwState = $this->resolveWwwStateForApex($snapshot, $apex);
+                if (! in_array($apex, $snapshot['names'] ?? [], true)) {
+                    throw new VercelDomainException(
+                        __('domain_www.apex_not_on_vercel', ['domain' => $apex]),
+                        internalCode: VercelDomainException::CODE_INVALID_DOMAIN
+                    );
+                }
+
+                if ($wwwState['present']) {
+                    if (! $wwwState['valid']) {
+                        throw new VercelDomainException(
+                            __('domain_mutation.redirect_mismatch', [
+                                'domain' => 'www.' . $apex,
+                                'expected_target' => $apex,
+                                'expected_status' => '301',
+                            ]),
+                            internalCode: VercelDomainException::CODE_REDIRECT_MISMATCH
+                        );
+                    }
+
+                    $request->session()->flash('success', __('domain_www.already_enabled', ['domain' => $apex]));
+
+                    return back();
+                }
+
+                $freeEntries = $snapshot['metrics']['free_entries'] ?? null;
+                if ($freeEntries !== null && $freeEntries < 1) {
+                    throw new VercelDomainException(
+                        __('domain_www.no_free_slot'),
+                        internalCode: VercelDomainException::CODE_CAPACITY_REACHED
+                    );
+                }
+
+                $before = $this->domainActivitySnapshot($domain);
+                $this->vercel->addDomain('www.' . $apex, $apex, 301);
+                $this->domainCache->invalidateAdminCaches();
+
+                \App\Support\TenantActivity::emit(
+                    $request,
+                    'domain.www_enabled',
+                    'api_domains_settings',
+                    $domain->id,
+                    $before,
+                    array_merge($this->domainActivitySnapshot($domain), ['www' => 'www.' . $apex])
+                );
+
+                $request->session()->flash('success', __('domain_www.enabled', ['domain' => $apex]));
+
+                return back();
+            });
+        } catch (VercelDomainException|ConnectionException $e) {
+            $request->session()->flash('error', $e->getMessage());
+
+            return back();
         }
-
-        // Single paginated fetch shared by capacity cards and orphan hints.
-        // Failures are cached briefly as `false` so an outage does not retry on every page load.
-        $cached = Cache::remember('vercel.project_domains', now()->addMinutes(5), function () {
-            try {
-                return $this->vercel->listProjectDomains();
-            } catch (\Throwable $e) {
-                Log::warning('Vercel project domains unavailable', ['exception' => $e->getMessage()]);
-
-                return false;
-            }
-        });
-
-        if ($cached === false) {
-            Cache::put('vercel.project_domains', false, now()->addSeconds(60));
-
-            return null;
-        }
-
-        return $cached;
     }
 
-    private function clearVercelProjectDomainsCache(): void
+    public function disableWww(Request $request)
     {
-        Cache::forget('vercel.project_domains');
-        Cache::forget('vercel.project_domain_count');
-        Cache::forget('vercel.project_domain_names');
+        $validated = $request->validate([
+            'domain_id' => ['required', 'integer', 'exists:api_domains_settings,id'],
+            'confirm_domain' => ['required', 'string', 'max:255'],
+        ]);
+
+        $domain = ApiDomainSetting::findOrFail($validated['domain_id']);
+        $apex = $this->vercel->normalizeApex((string) $domain->custom_name);
+
+        try {
+            $this->mutationGuard->assertCanMutate($request, $apex);
+
+            return $this->withProjectLock(function () use ($request, $domain, $apex) {
+                $before = $this->domainActivitySnapshot($domain);
+                $this->vercel->removeDomain('www.' . $apex);
+                $this->domainCache->invalidateAdminCaches();
+
+                \App\Support\TenantActivity::emit(
+                    $request,
+                    'domain.www_disabled',
+                    'api_domains_settings',
+                    $domain->id,
+                    array_merge($before, ['www' => 'www.' . $apex]),
+                    $this->domainActivitySnapshot($domain)
+                );
+
+                $request->session()->flash('success', __('domain_www.disabled', ['domain' => $apex]));
+
+                return back();
+            });
+        } catch (VercelDomainException|ConnectionException $e) {
+            $request->session()->flash('error', $e->getMessage());
+
+            return back();
+        }
+    }
+
+    public function cleanupVercelOrphan(Request $request)
+    {
+        $validated = $request->validate([
+            'apex' => ['required', 'string', 'max:255'],
+            'confirm_domain' => ['required', 'string', 'max:255'],
+        ]);
+
+        try {
+            $result = $this->reconciliationService->removeVercelOnlyOrphan(
+                $validated['apex'],
+                $request,
+                'confirm_domain',
+                actor: 'admin:' . (string) (auth()->id() ?? 'unknown')
+            );
+
+            if ($result['status'] === 'removed') {
+                $request->session()->flash(
+                    'success',
+                    __('domain_reconciliation.orphan_removed', ['domain' => $result['apex']])
+                );
+            } else {
+                $request->session()->flash(
+                    'error',
+                    __('domain_reconciliation.orphan_remove_failed', [
+                        'domain' => $result['apex'],
+                        'error' => $result['error'] ?? __('domain_reconciliation.unknown_error'),
+                    ])
+                );
+            }
+        } catch (VercelDomainException $e) {
+            $request->session()->flash('error', $e->getMessage());
+        }
+
+        return back();
     }
 
     /**
@@ -188,7 +349,7 @@ class CustomDomainController extends Controller
             $code = $row->health($hint)['code'];
 
             if ($healthFilter === 'issues') {
-                if (! in_array($code, ['linked', 'checks_disabled', 'unchecked'], true)) {
+                if (! in_array($code, ['linked', 'checks_disabled', 'unchecked', 'apex_only'], true)) {
                     $ids[] = $row->id;
                 }
             } elseif ($code === $healthFilter || ($healthFilter === 'ns_mismatch' && $code === 'ns_not_pointing')) {
@@ -206,11 +367,12 @@ class CustomDomainController extends Controller
     /**
      * @return array{linked: int, confirmed_issues: int, unchecked: int, db_domain_count: int, by_code: array<string, int>}
      */
-    private function resolveDomainHealthCounts(): array
+    private function resolveDomainHealthCounts(?array $inventorySnapshot): array
     {
-        return Cache::remember('admin.domain_health_counts', now()->addMinutes(5), function () {
-            $vercelProjectDomains = $this->resolveVercelProjectDomains();
-            $vercelNames = $vercelProjectDomains['names'] ?? null;
+        $cacheKey = $this->domainCache->healthCountersKey();
+
+        return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($inventorySnapshot) {
+            $vercelNames = $inventorySnapshot['names'] ?? null;
 
             $rows = ApiDomainSetting::query()
                 ->select(['id', 'custom_name', 'status', 'dns_records', 'expires_at'])
@@ -233,7 +395,7 @@ class CustomDomainController extends Controller
 
                 if ($code === 'linked') {
                     $linked++;
-                } elseif ($code !== 'checks_disabled' && $code !== 'unchecked') {
+                } elseif (! in_array($code, ['checks_disabled', 'unchecked', 'apex_only'], true)) {
                     $confirmedIssues++;
                 }
             }
@@ -251,35 +413,213 @@ class CustomDomainController extends Controller
     }
 
     /**
-     * @param  array{count: int, is_lower_bound: bool}  $counted
+     * @param  array<string, mixed>  $snapshot
      * @return array<string, mixed>
      */
-    private function buildCapacity(array $counted): array
+    private function buildCapacity(array $snapshot): array
     {
-        $entriesUsed = $counted['count'];
-        $entriesTotal = (int) config('services.vercel.max_project_domains');
-        $platformCount = (int) config('services.vercel.platform_domain_count');
+        $metrics = is_array($snapshot['metrics'] ?? null) ? $snapshot['metrics'] : [];
+        $entriesUsed = (int) ($metrics['total_entries'] ?? $snapshot['count'] ?? 0);
+        $entriesTotal = config('services.vercel.max_project_domains');
+        $entriesTotal = $entriesTotal !== null ? (int) $entriesTotal : null;
+        $freeEntries = $metrics['free_entries'] ?? null;
+        $customerApex = (int) ($metrics['customer_apex'] ?? 0);
+        $wwwRedirects = (int) ($metrics['www_redirects'] ?? 0);
+        $platformEntries = (int) ($metrics['platform_entries'] ?? 0);
+        $isLowerBound = (bool) ($metrics['is_lower_bound'] ?? $snapshot['is_lower_bound'] ?? false);
 
-        // Each customer domain consumes 2 Vercel entries (apex + www).
-        $customerInUse = max(0, (int) floor(($entriesUsed - $platformCount) / 2));
-        $customerRemaining = max(0, (int) floor(($entriesTotal - $entriesUsed) / 2));
-        $usagePercent = $entriesTotal > 0 ? ($entriesUsed / $entriesTotal) * 100 : 0;
+        $usagePercent = ($entriesTotal !== null && $entriesTotal > 0)
+            ? ($entriesUsed / $entriesTotal) * 100
+            : null;
 
-        $alertClass = $customerRemaining === 0 || $usagePercent >= 95
-            ? 'danger'
-            : ($usagePercent >= 80 ? 'warning' : 'success');
+        $alertClass = 'success';
+        if ($entriesTotal !== null) {
+            if (($freeEntries !== null && $freeEntries === 0) || ($usagePercent !== null && $usagePercent >= 95)) {
+                $alertClass = 'danger';
+            } elseif ($usagePercent !== null && $usagePercent >= 80) {
+                $alertClass = 'warning';
+            }
+        }
 
         return [
             'entries_used' => $entriesUsed,
             'entries_total' => $entriesTotal,
-            'is_lower_bound' => $counted['is_lower_bound'],
-            'platform_entries' => $platformCount,
-            'customer_entries_used' => $customerInUse * 2,
-            'customer_domains_in_use' => $customerInUse,
-            'customer_domains_remaining' => $customerRemaining,
-            'usage_percent' => $usagePercent,
+            'free_entries' => $freeEntries,
+            'customer_apex' => $customerApex,
+            'www_redirects' => $wwwRedirects,
+            'platform_entries' => $platformEntries,
+            'is_lower_bound' => $isLowerBound,
+            'usage_percent' => $usagePercent ?? 0,
+            'has_cap' => $entriesTotal !== null,
             'alert_class' => $alertClass,
+            'fetched_at' => $snapshot['fetched_at'] ?? null,
         ];
+    }
+
+    private function normalizeHealthFilter(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $filter = (string) $value;
+
+        return in_array($filter, self::HEALTH_FILTERS, true) ? $filter : null;
+    }
+
+    private function isInventoryUnreliable(?array $snapshot): bool
+    {
+        if ($snapshot === null) {
+            return true;
+        }
+
+        if (($snapshot['is_lower_bound'] ?? false) === true) {
+            return true;
+        }
+
+        $fetchedAt = $snapshot['fetched_at'] ?? null;
+        if (! is_string($fetchedAt) || $fetchedAt === '') {
+            return true;
+        }
+
+        return Carbon::parse($fetchedAt)->diffInSeconds(now()) > self::INVENTORY_TTL_SECONDS;
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, ApiDomainSetting>  $rows
+     * @param  array<string, mixed>|null  $snapshot
+     * @param  array<string, mixed>|null  $capacity
+     * @return array<int, array{mode: string, present: bool, can_enable: bool, can_disable: bool}>
+     */
+    private function resolveWwwStatesForRows($rows, ?array $snapshot, ?array $capacity, bool $inventoryUnreliable): array
+    {
+        $states = [];
+        $freeEntries = $capacity['free_entries'] ?? null;
+        $canAllocate = ! $inventoryUnreliable
+            && ($freeEntries === null || $freeEntries > 0);
+
+        foreach ($rows as $row) {
+            $apex = $this->vercel->normalizeApex((string) $row->custom_name);
+            $wwwState = $snapshot !== null
+                ? $this->resolveWwwStateForApex($snapshot, $apex)
+                : ['present' => false, 'valid' => false];
+
+            $states[$row->id] = [
+                'mode' => $wwwState['present'] && $wwwState['valid'] ? 'apex_and_www' : 'apex_only',
+                'present' => $wwwState['present'],
+                'can_enable' => ! $wwwState['present'] && $canAllocate,
+                'can_disable' => $wwwState['present'],
+            ];
+        }
+
+        return $states;
+    }
+
+    /**
+     * @param  array<string, mixed>  $snapshot
+     * @return array{present: bool, valid: bool}
+     */
+    private function resolveWwwStateForApex(array $snapshot, string $apex): array
+    {
+        $www = 'www.' . $apex;
+
+        foreach ($snapshot['domains'] ?? [] as $domain) {
+            if ((string) ($domain['name'] ?? '') !== $www) {
+                continue;
+            }
+
+            $redirectTarget = strtolower((string) ($domain['redirect'] ?? ''));
+            $statusCode = isset($domain['redirectStatusCode']) ? (int) $domain['redirectStatusCode'] : null;
+            $valid = filled($domain['redirect'] ?? null)
+                && $redirectTarget === $apex
+                && ($statusCode === null || in_array($statusCode, [301, 308], true));
+
+            return ['present' => true, 'valid' => $valid];
+        }
+
+        return ['present' => false, 'valid' => false];
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $snapshot
+     * @return array<string, mixed>|null
+     */
+    private function buildReconciliationSummary(?array $snapshot): ?array
+    {
+        if ($snapshot === null) {
+            return null;
+        }
+
+        $report = $this->reconciliationService->buildReportFromSnapshot($snapshot);
+
+        $ownershipRequired = [];
+        $dnsIssues = [];
+
+        $vercelNames = $snapshot['names'] ?? [];
+        $vercelSet = array_fill_keys($vercelNames, true);
+
+        $dbRows = ApiDomainSetting::query()
+            ->select(['id', 'custom_name', 'status', 'dns_records'])
+            ->orderBy('id')
+            ->get();
+
+        foreach ($dbRows as $row) {
+            $apex = $this->vercel->normalizeApex((string) $row->custom_name);
+            $hint = isset($vercelSet[$apex]) ? true : false;
+            $health = $row->health($hint);
+            $code = $health['code'];
+
+            if ($code === 'ownership_required') {
+                $ownershipRequired[] = [
+                    'id' => $row->id,
+                    'custom_name' => $row->custom_name,
+                    'apex' => $apex,
+                ];
+            }
+
+            if ($code === 'dns_misconfigured') {
+                $dnsIssues[] = [
+                    'id' => $row->id,
+                    'custom_name' => $row->custom_name,
+                    'apex' => $apex,
+                ];
+            }
+        }
+
+        return array_merge($report, [
+            'summary' => array_merge($report['summary'], [
+                'ownership_required' => count($ownershipRequired),
+                'dns_issues' => count($dnsIssues),
+                'vercel_only' => $report['summary']['vercel_only_orphan'] ?? count($report['vercel_only_orphan'] ?? []),
+            ]),
+            'ownership_required' => $ownershipRequired,
+            'dns_issues' => $dnsIssues,
+            'vercel_only' => collect($report['vercel_only_orphan'] ?? [])
+                ->map(fn (array $entry) => [
+                    'name' => $entry['apex'],
+                    'apex' => $entry['apex'],
+                    'vercel_names' => $entry['vercel_names'] ?? [],
+                ])
+                ->values()
+                ->all(),
+        ]);
+    }
+
+    /**
+     * @template TReturn
+     * @param  callable(): TReturn  $callback
+     * @return TReturn
+     */
+    private function withProjectLock(callable $callback)
+    {
+        try {
+            return $this->domainCache->withMutationLock($callback);
+        } catch (LockTimeoutException $e) {
+            throw new VercelDomainException(
+                __('domain_mutation.lock_timeout'),
+                internalCode: VercelDomainException::CODE_PROVIDER_UNAVAILABLE
+            );
+        }
     }
 
     // public function index(Request $request)
@@ -313,30 +653,53 @@ class CustomDomainController extends Controller
     // }
     public function updateSslStatus(Request $request)
     {
-        $domain = ApiDomainSetting::findOrFail($request->domain_id);
-        $domain->ssl = $request->status; // 1 = enabled, 0 = disabled
+        $validated = $request->validate([
+            'domain_id' => ['required', 'integer', 'exists:api_domains_settings,id'],
+            'status' => ['required', 'boolean'],
+        ]);
+
+        $domain = ApiDomainSetting::findOrFail($validated['domain_id']);
+        $before = $this->domainActivitySnapshot($domain);
+        $domain->ssl = $validated['status'];
         $domain->save();
 
+        \App\Support\TenantActivity::emit(
+            $request,
+            'domain.ssl_updated',
+            'api_domains_settings',
+            $domain->id,
+            $before,
+            $this->domainActivitySnapshot($domain)
+        );
 
-        TenantActivity::emit($request, 'domain.ssl_updated', 'api_domains_settings', $domain->id, ['old_ssl' => !$domain->ssl], ['new_ssl' => $domain->ssl]);
+        $this->domainCache->invalidateAdminCaches();
 
-        $request->session()->flash('success', 'SSL status updated.');
+        $request->session()->flash('success', __('domain_admin.ssl_updated'));
         return back();
     }
 
     public function status(Request $request, DomainStatusSyncService $sync)
     {
-        $rcDomain = ApiDomainSetting::findOrFail($request->domain_id);
+        $validated = $request->validate([
+            'domain_id' => ['required', 'integer', 'exists:api_domains_settings,id'],
+            'status' => ['required', 'in:pending,active,failed,rejected'],
+        ]);
+
+        $rcDomain = ApiDomainSetting::findOrFail($validated['domain_id']);
+        $before = $this->domainActivitySnapshot($rcDomain);
         $oldStatus = $rcDomain->status;
-        $newStatus = $request->status === 'rejected' ? 'failed' : $request->status;
+        $newStatus = $validated['status'] === 'rejected' ? 'failed' : $validated['status'];
         $rcDomain->status = $newStatus;
         $rcDomain->save();
 
-        if ($newStatus === 'active' && $oldStatus !== 'active') {
-            if ($this->vercel->isConfigured()) {
-                $sync->sync($rcDomain->fresh(), true, $request);
-            }
+        if ($newStatus === 'active' && $oldStatus !== 'active' && $this->vercel->isConfigured()) {
+            $sync->sync($rcDomain->fresh(), true, $request);
+        }
 
+        $rcDomain->refresh();
+        $persistedStatus = $rcDomain->status;
+
+        if ($persistedStatus === 'active' && $oldStatus !== 'active') {
             if (! empty($rcDomain->user)) {
                 $user = $rcDomain->user;
                 $previousDomain = $user->domains()
@@ -359,7 +722,7 @@ class CustomDomainController extends Controller
                 ];
                 $mailer->mailFromAdmin($data);
             }
-        } elseif ($newStatus === 'failed' && ! in_array($oldStatus, ['failed', 'rejected'], true)) {
+        } elseif ($persistedStatus === 'failed' && ! in_array($oldStatus, ['failed', 'rejected'], true)) {
             if (! empty($rcDomain->user)) {
                 $user = $rcDomain->user;
                 $currentDomain = $user->domains()
@@ -383,7 +746,18 @@ class CustomDomainController extends Controller
             }
         }
 
-        $request->session()->flash('success', 'Status updated successfully');
+        \App\Support\TenantActivity::emit(
+            $request,
+            'domain.status_updated',
+            'api_domains_settings',
+            $rcDomain->id,
+            $before,
+            $this->domainActivitySnapshot($rcDomain)
+        );
+
+        $this->domainCache->invalidateAdminCaches();
+
+        $request->session()->flash('success', __('domain_admin.status_updated'));
 
         return back();
     }
@@ -452,37 +826,68 @@ class CustomDomainController extends Controller
             }
         }
 
-        Session::flash('success', 'Mail sent successfully!');
+        Session::flash('success', __('domain_admin.mail_sent'));
         return "success";
     }
 
     public function delete(Request $request)
     {
-        // index() lists ApiDomainSetting rows, so domain_id is an api_domains_settings id.
-        $domain = ApiDomainSetting::findOrFail($request->domain_id);
+        $validated = $request->validate([
+            'domain_id' => ['required', 'integer', 'exists:api_domains_settings,id'],
+            'confirm_domain' => ['required', 'string', 'max:255'],
+        ]);
 
-        if (! $this->detachFromVercel($domain)) {
-            $request->session()->flash('error', 'Could not remove the domain from the hosting provider. Nothing was deleted — please try again.');
+        $domain = ApiDomainSetting::findOrFail($validated['domain_id']);
+
+        try {
+            $this->mutationGuard->assertCanMutate($request, (string) $domain->custom_name);
+        } catch (VercelDomainException $e) {
+            $request->session()->flash('error', $e->getMessage());
+
             return redirect()->back();
         }
 
-        $this->reassignPrimary($domain);
-        $this->deleteAndRecord($request, $domain);
+        if (! $this->detachFromVercel($domain)) {
+            $request->session()->flash('error', __('domain_admin.delete_provider_failed'));
+            return redirect()->back();
+        }
 
-        $request->session()->flash('success', 'Custom domain deleted successfully!');
+        $this->deleteDomainRow($request, $domain);
+        $this->domainCache->invalidateAdminCaches();
+
+        $request->session()->flash('success', __('domain_admin.deleted'));
         return redirect()->back();
     }
 
     public function bulkDelete(Request $request)
     {
-        $ids = (array) $request->ids;
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['required', 'integer', 'distinct', 'exists:api_domains_settings,id'],
+            'confirm_domains' => ['required', 'array', 'min:1'],
+            'confirm_domains.*' => ['required', 'string', 'max:255'],
+        ]);
 
-        // Resolve everything first: an unknown id aborts the whole batch before
-        // anything is detached, rather than leaving it half applied.
+        $ids = $validated['ids'];
         $domains = ApiDomainSetting::whereIn('id', $ids)->get();
-        if ($domains->count() !== count(array_unique($ids))) {
-            $request->session()->flash('error', 'Some selected domains no longer exist. Nothing was deleted — please refresh and try again.');
-            return "error";
+
+        $expected = $domains
+            ->map(fn (ApiDomainSetting $domain) => $this->vercel->normalizeApex((string) $domain->custom_name))
+            ->sort()
+            ->values();
+        $provided = collect($validated['confirm_domains'])
+            ->map(fn (string $domain) => $this->vercel->normalizeApex($domain))
+            ->sort()
+            ->values();
+
+        if ($expected->toArray() !== $provided->toArray()) {
+            return response()->json(['message' => __('domain_mutation.confirmation_required', ['domain' => $expected->implode(', ')])], 422);
+        }
+
+        try {
+            $this->mutationGuard->assertCanMutate($request);
+        } catch (VercelDomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
 
         // Deliberately not wrapped in a transaction: Vercel removal cannot be
@@ -496,30 +901,67 @@ class CustomDomainController extends Controller
                 continue;
             }
 
-            $this->reassignPrimary($domain);
-            $this->deleteAndRecord($request, $domain);
+            $this->deleteDomainRow($request, $domain);
         }
 
         if ($failed !== []) {
-            $request->session()->flash('error', 'Some domains could not be removed from the hosting provider and were kept: ' . implode(', ', $failed));
+            $request->session()->flash('error', __('domain_admin.bulk_delete_partial', ['domains' => implode(', ', $failed)]));
             return "error";
         }
 
-        $request->session()->flash('success', 'Custom domains deleted successfully!');
+        $this->domainCache->invalidateAdminCaches();
+
+        $request->session()->flash('success', __('domain_admin.bulk_deleted'));
         return "success";
     }
 
     /**
-     * Delete the row and record the activity, capturing its state beforehand.
+     * After external detachment succeeds: lock tenant rows, delete, reassign primary.
      */
-    private function deleteAndRecord(Request $request, ApiDomainSetting $domain): void
+    private function deleteDomainRow(Request $request, ApiDomainSetting $domain): void
     {
-        $before = $domain->only(['custom_name', 'status', 'primary', 'ssl']);
-        $id = $domain->id;
+        DB::transaction(function () use ($request, $domain) {
+            ApiDomainSetting::where('user_id', $domain->user_id)->lockForUpdate()->get();
 
-        $domain->delete();
+            $row = ApiDomainSetting::where('id', $domain->id)->lockForUpdate()->first();
+            if ($row === null) {
+                return;
+            }
 
-        TenantActivity::emit($request, 'domain.deleted', 'api_domains_settings', $id, $before, null);
+            $before = $this->domainActivitySnapshot($row);
+            $wasPrimary = (bool) $row->primary;
+            $id = $row->id;
+            $userId = $row->user_id;
+
+            $row->delete();
+
+            if ($wasPrimary) {
+                $replacement = ApiDomainSetting::where('user_id', $userId)
+                    ->preferredActive()
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($replacement) {
+                    $replacement->primary = true;
+                    $replacement->save();
+                }
+            }
+
+            \App\Support\TenantActivity::emit($request, 'domain.deleted', 'api_domains_settings', $id, $before, null);
+        });
+    }
+
+    /**
+     * @return array{custom_name: string, status: string, primary: bool, ssl: bool}
+     */
+    private function domainActivitySnapshot(ApiDomainSetting $domain): array
+    {
+        return [
+            'custom_name' => $this->vercel->normalizeApex((string) $domain->custom_name),
+            'status' => (string) $domain->status,
+            'primary' => (bool) $domain->primary,
+            'ssl' => (bool) $domain->ssl,
+        ];
     }
 
     /**
@@ -534,41 +976,17 @@ class CustomDomainController extends Controller
 
         try {
             $this->vercel->removeApexAndWww((string) $domain->custom_name);
-        } catch (VercelDomainException $e) {
+        } catch (VercelDomainException|ConnectionException $e) {
             Log::warning('Failed to remove domain from Vercel during admin delete', [
                 'domain_id' => $domain->id,
                 'domain' => $domain->custom_name,
                 'error' => $e->getMessage(),
-                'status' => $e->statusCode,
+                'exception' => $e::class,
             ]);
 
             return false;
         }
 
         return true;
-    }
-
-    /**
-     * Hand the primary flag to another active domain of the same tenant.
-     *
-     * Uses preferredActive() so the choice is deterministic and matches
-     * DomainSettingsController::destroy(); an unordered first() picked an
-     * arbitrary row when a tenant had several active domains.
-     */
-    private function reassignPrimary(ApiDomainSetting $domain): void
-    {
-        if (! $domain->primary) {
-            return;
-        }
-
-        $another = ApiDomainSetting::where('user_id', $domain->user_id)
-            ->where('id', '!=', $domain->id)
-            ->preferredActive()
-            ->first();
-
-        if ($another) {
-            $another->primary = true;
-            $another->save();
-        }
     }
 }

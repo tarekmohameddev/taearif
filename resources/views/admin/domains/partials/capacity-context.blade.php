@@ -1,26 +1,37 @@
 <div class="col-md-12">
-    <div class="card card-round mb-3 domain-capacity-context {{ $vercelCapacity['customer_domains_remaining'] === 0 ? 'domain-capacity-context--full' : '' }}">
+    @php
+        $isFull = ($vercelCapacity['has_cap'] ?? false)
+            && ($vercelCapacity['free_entries'] ?? null) === 0;
+    @endphp
+    <div class="card card-round mb-3 domain-capacity-context {{ $isFull ? 'domain-capacity-context--full' : '' }}">
         <div class="card-body py-3">
-            <div class="progress mb-3" style="height: 8px; border-radius: 4px;">
-                <div class="progress-bar" role="progressbar"
-                     style="width: {{ $capPercent }}%; background-color: {{ $capHex }};"
-                     aria-valuenow="{{ $capPercent }}" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
+            @if ($vercelCapacity['has_cap'] ?? false)
+                <div class="progress mb-3" style="height: 8px; border-radius: 4px;">
+                    <div class="progress-bar" role="progressbar"
+                         style="width: {{ $capPercent }}%; background-color: {{ $capHex }};"
+                         aria-valuenow="{{ $capPercent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            @endif
             <p class="text-muted mb-2 small">
-                {{ __('Each customer domain uses two Vercel entries (apex and www).') }}
+                {{ __('vercel_capacity.apex_only_hint') }}
             </p>
             <p class="text-muted mb-0 small">
                 <bdi dir="ltr">{{ __('vercel_capacity.breakdown', [
                     'platform' => $vercelCapacity['platform_entries'],
-                    'customer_entries' => $vercelCapacity['customer_entries_used'],
-                    'customer_domains' => $vercelCapacity['customer_domains_in_use'],
+                    'customer_apex' => $vercelCapacity['customer_apex'],
+                    'www_redirects' => $vercelCapacity['www_redirects'],
                     'used' => $vercelCapacity['entries_used'],
-                    'total' => $vercelCapacity['entries_total'],
+                    'total' => $vercelCapacity['entries_total'] ?? '—',
+                    'free' => $vercelCapacity['free_entries'] ?? '—',
                 ]) }}</bdi>
             </p>
-            @if ($vercelCapacity['customer_domains_remaining'] === 0)
+            @if ($inventoryUnreliable ?? false)
+                <div class="alert alert-warning py-2 px-3 mt-3 mb-0 small">
+                    {{ __('vercel_capacity.inventory_unreliable') }}
+                </div>
+            @elseif ($isFull)
                 <div class="alert alert-danger py-2 px-3 mt-3 mb-0 small">
-                    {{ __('The project is at its limit — new customer domains will fail until capacity is increased.') }}
+                    {{ __('vercel_capacity.at_limit') }}
                 </div>
             @endif
             @if ($dbDomainCount !== null && $dbDomainCount !== $vercelCustomerCount)
@@ -37,7 +48,7 @@
                 </div>
             @endif
             @if ($vercelCapacity['is_lower_bound'])
-                <p class="text-muted small mt-2 mb-0">{{ __('Count capped at 1,000 entries; the real total may be higher.') }}</p>
+                <p class="text-muted small mt-2 mb-0">{{ __('vercel_capacity.lower_bound_hint') }}</p>
             @endif
         </div>
     </div>

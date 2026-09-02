@@ -7,7 +7,7 @@ namespace Tests\Feature\Admin\Domains;
 use App\Domain\Admin\Models\Admin;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User;
-use Illuminate\Support\Facades\Cache;
+use App\Services\Vercel\VercelDomainCache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
@@ -21,16 +21,12 @@ class CustomDomainHealthFilterTest extends AdminApiTestCase
         parent::setUp();
 
         $this->ensureAdminViewData();
-        Cache::forget('admin.domain_health_counts');
-        Cache::forget('vercel.project_domain_count');
-        Cache::forget('vercel.project_domain_names');
+        app(VercelDomainCache::class)->invalidate();
     }
 
     protected function tearDown(): void
     {
-        Cache::forget('admin.domain_health_counts');
-        Cache::forget('vercel.project_domain_count');
-        Cache::forget('vercel.project_domain_names');
+        app(VercelDomainCache::class)->invalidate();
 
         parent::tearDown();
     }
@@ -42,32 +38,11 @@ class CustomDomainHealthFilterTest extends AdminApiTestCase
         $this->configureVercel();
         $this->signInWebAdmin();
 
-        $linked = $this->seedDomainWithHealth([
-            'auto_attach_custom_domain' => true,
-            'nameserver_check_enabled' => true,
-            'vercel_verified' => true,
-            'nameservers_ok' => true,
-        ]);
-
-        $issue = $this->seedDomainWithHealth([
-            'auto_attach_custom_domain' => true,
-            'nameserver_check_enabled' => true,
-            'vercel_verified' => true,
-            'nameservers_ok' => false,
-            'message' => 'Nameservers are not pointing to Vercel yet.',
-        ]);
-
+        $linked = $this->seedDomainWithHealth($this->linkedLastCheck());
+        $issue = $this->seedDomainWithHealth($this->nsIssueLastCheck());
         $unchecked = $this->seedDomainWithHealth([]);
 
-        Http::fake([
-            'api.vercel.com/*' => Http::response([
-                'domains' => [
-                    ['name' => $linked->custom_name],
-                    ['name' => $issue->custom_name],
-                ],
-                'pagination' => ['count' => 2, 'next' => null, 'prev' => null],
-            ], 200),
-        ]);
+        $this->fakeInventory([$linked->custom_name, $issue->custom_name, $unchecked->custom_name]);
 
         $response = $this->get(route('admin.custom-domain.index', ['health' => 'issues']));
 
@@ -86,23 +61,9 @@ class CustomDomainHealthFilterTest extends AdminApiTestCase
         $this->signInWebAdmin();
 
         $unchecked = $this->seedDomainWithHealth([]);
+        $issue = $this->seedDomainWithHealth($this->nsIssueLastCheck());
 
-        $issue = $this->seedDomainWithHealth([
-            'auto_attach_custom_domain' => true,
-            'nameserver_check_enabled' => true,
-            'vercel_verified' => true,
-            'nameservers_ok' => false,
-            'message' => 'Nameservers are not pointing to Vercel yet.',
-        ]);
-
-        Http::fake([
-            'api.vercel.com/*' => Http::response([
-                'domains' => [
-                    ['name' => $issue->custom_name],
-                ],
-                'pagination' => ['count' => 1, 'next' => null, 'prev' => null],
-            ], 200),
-        ]);
+        $this->fakeInventory([$issue->custom_name]);
 
         $response = $this->get(route('admin.custom-domain.index', ['health' => 'unchecked']));
 
@@ -119,30 +80,10 @@ class CustomDomainHealthFilterTest extends AdminApiTestCase
         $this->configureVercel();
         $this->signInWebAdmin();
 
-        $linked = $this->seedDomainWithHealth([
-            'auto_attach_custom_domain' => true,
-            'nameserver_check_enabled' => true,
-            'vercel_verified' => true,
-            'nameservers_ok' => true,
-        ]);
+        $linked = $this->seedDomainWithHealth($this->linkedLastCheck());
+        $issue = $this->seedDomainWithHealth($this->nsIssueLastCheck());
 
-        $issue = $this->seedDomainWithHealth([
-            'auto_attach_custom_domain' => true,
-            'nameserver_check_enabled' => true,
-            'vercel_verified' => true,
-            'nameservers_ok' => false,
-            'message' => 'Nameservers are not pointing to Vercel yet.',
-        ]);
-
-        Http::fake([
-            'api.vercel.com/*' => Http::response([
-                'domains' => [
-                    ['name' => $linked->custom_name],
-                    ['name' => $issue->custom_name],
-                ],
-                'pagination' => ['count' => 2, 'next' => null, 'prev' => null],
-            ], 200),
-        ]);
+        $this->fakeInventory([$linked->custom_name, 'www.' . $linked->custom_name, $issue->custom_name]);
 
         $response = $this->get(route('admin.custom-domain.index', ['health' => 'linked']));
 
@@ -162,27 +103,20 @@ class CustomDomainHealthFilterTest extends AdminApiTestCase
         $orphan = $this->seedDomainWithHealth([
             'auto_attach_custom_domain' => true,
             'nameserver_check_enabled' => true,
-            'vercel_verified' => false,
+            'apex_attached' => false,
+            'apex_verified' => false,
             'nameservers_ok' => false,
-            'vercel_attached' => false,
         ]);
 
         $onVercel = $this->seedDomainWithHealth([
             'auto_attach_custom_domain' => true,
             'nameserver_check_enabled' => true,
-            'vercel_verified' => false,
+            'apex_attached' => true,
+            'apex_verified' => false,
             'nameservers_ok' => false,
-            'vercel_attached' => true,
         ]);
 
-        Http::fake([
-            'api.vercel.com/*' => Http::response([
-                'domains' => [
-                    ['name' => $onVercel->custom_name],
-                ],
-                'pagination' => ['count' => 1, 'next' => null, 'prev' => null],
-            ], 200),
-        ]);
+        $this->fakeInventory([$onVercel->custom_name]);
 
         $response = $this->get(route('admin.custom-domain.index', ['health' => 'not_on_vercel']));
 
@@ -191,10 +125,130 @@ class CustomDomainHealthFilterTest extends AdminApiTestCase
         $response->assertDontSee($onVercel->custom_name, false);
     }
 
+    /** @test */
+    public function health_ownership_required_filter_matches_txt_challenge_rows(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $ownership = $this->seedDomainWithHealth([
+            'health_code' => 'ownership_required',
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => false,
+            'nameservers_ok' => true,
+            'ownership_challenge' => [
+                'type' => 'txt',
+                'domain' => '_vercel.example.com',
+                'value' => 'vc-domain-verify=abc',
+            ],
+        ]);
+        $linked = $this->seedDomainWithHealth($this->linkedLastCheck());
+
+        $this->fakeInventory([$ownership->custom_name, $linked->custom_name, 'www.' . $linked->custom_name]);
+
+        $response = $this->get(route('admin.custom-domain.index', ['health' => 'ownership_required']));
+
+        $response->assertOk();
+        $response->assertSee($ownership->custom_name, false);
+        $response->assertDontSee($linked->custom_name, false);
+    }
+
+    /** @test */
+    public function health_dns_misconfigured_filter_matches_misconfigured_rows(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $misconfigured = $this->seedDomainWithHealth([
+            'health_code' => 'dns_misconfigured',
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
+            'nameservers_ok' => true,
+            'dns_misconfigured' => true,
+        ]);
+        $linked = $this->seedDomainWithHealth($this->linkedLastCheck());
+
+        $this->fakeInventory([$misconfigured->custom_name, $linked->custom_name]);
+
+        $response = $this->get(route('admin.custom-domain.index', ['health' => 'dns_misconfigured']));
+
+        $response->assertOk();
+        $response->assertSee($misconfigured->custom_name, false);
+        $response->assertDontSee($linked->custom_name, false);
+    }
+
+    /** @test */
+    public function health_apex_only_filter_matches_rows_without_valid_www_redirect(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $apexOnly = $this->seedDomainWithHealth([
+            'health_code' => 'apex_only',
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
+            'nameservers_ok' => true,
+            'dns_misconfigured' => false,
+            'www_present' => false,
+            'www_redirect_correct' => false,
+        ]);
+        $linked = $this->seedDomainWithHealth($this->linkedLastCheck());
+
+        $this->fakeInventory([$apexOnly->custom_name, $linked->custom_name, 'www.' . $linked->custom_name]);
+
+        $response = $this->get(route('admin.custom-domain.index', ['health' => 'apex_only']));
+
+        $response->assertOk();
+        $response->assertSee($apexOnly->custom_name, false);
+        $response->assertDontSee($linked->custom_name, false);
+    }
+
+    /** @test */
+    public function global_health_counters_link_to_filtered_views(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $linked = $this->seedDomainWithHealth($this->linkedLastCheck());
+        $this->seedDomainWithHealth($this->nsIssueLastCheck());
+
+        $this->fakeInventory([$linked->custom_name, 'www.' . $linked->custom_name]);
+
+        $response = $this->get(route('admin.custom-domain.index'));
+
+        $response->assertOk();
+        $response->assertSee('health=linked', false);
+        $response->assertSee('health=issues', false);
+        $response->assertSee('health=unchecked', false);
+    }
+
+    /** @test */
+    public function invalid_health_filter_returns_not_found(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $response = $this->get(route('admin.custom-domain.index', ['health' => 'not_a_real_filter']));
+
+        $response->assertOk();
+        $response->assertViewIs('errors.404');
+    }
+
     private function skipIfMissingSchema(): void
     {
         if (! Schema::hasTable('api_domains_settings')) {
-            $this->markTestSkipped('Missing required DB tables.');
+            $this->fail('Required domain tables are missing.');
         }
     }
 
@@ -206,7 +260,57 @@ class CustomDomainHealthFilterTest extends AdminApiTestCase
             'services.vercel.team_id' => 'team_test',
             'services.vercel.base_url' => 'https://api.vercel.com',
             'services.vercel.max_project_domains' => 50,
-            'services.vercel.platform_domain_count' => 4,
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function linkedLastCheck(): array
+    {
+        return [
+            'health_code' => 'linked',
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
+            'nameservers_ok' => true,
+            'dns_misconfigured' => false,
+            'www_present' => true,
+            'www_redirect_correct' => true,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function nsIssueLastCheck(): array
+    {
+        return [
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
+            'nameservers_ok' => false,
+            'message' => 'Nameservers are not pointing to Vercel yet.',
+        ];
+    }
+
+    /**
+     * @param  list<string>  $names
+     */
+    private function fakeInventory(array $names): void
+    {
+        $domains = array_map(
+            static fn (string $name): array => ['name' => $name, 'verified' => true],
+            $names
+        );
+
+        Http::fake([
+            'api.vercel.com/*' => Http::response([
+                'domains' => $domains,
+                'pagination' => ['count' => count($domains), 'next' => null, 'prev' => null],
+            ], 200),
         ]);
     }
 

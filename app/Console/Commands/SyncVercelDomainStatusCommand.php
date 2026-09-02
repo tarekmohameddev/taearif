@@ -4,9 +4,9 @@ namespace App\Console\Commands;
 
 use App\Models\Api\ApiDomainSetting;
 use App\Services\Vercel\DomainStatusSyncService;
+use App\Services\Vercel\VercelDomainCache;
 use App\Services\Vercel\VercelDomainClient;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -16,8 +16,11 @@ class SyncVercelDomainStatusCommand extends Command
 
     protected $description = 'Sync custom domain status/ssl from Vercel, nameservers, and expiry';
 
-    public function handle(DomainStatusSyncService $sync, VercelDomainClient $vercel): int
-    {
+    public function handle(
+        DomainStatusSyncService $sync,
+        VercelDomainClient $vercel,
+        VercelDomainCache $domainCache
+    ): int {
         $autoAttach = (bool) config('services.vercel.auto_attach_custom_domain', true);
         $checkNameservers = (bool) config('services.vercel.check_nameservers', true);
 
@@ -36,20 +39,48 @@ class SyncVercelDomainStatusCommand extends Command
         }
 
         $chunk = max(1, (int) $this->option('chunk'));
+        $paceUs = max(0, (int) config('services.vercel.sync_pace_us', 250_000));
+        $verifyPaceUs = max(0, (int) config('services.vercel.sync_verify_pace_us', 500_000));
         $checked = 0;
         $activated = 0;
         $failed = 0;
         $unchanged = 0;
         $errors = 0;
 
+        $projectInventory = null;
+        if ($autoAttach && $vercel->isConfigured()) {
+            try {
+                $projectInventory = $vercel->listProjectDomains();
+            } catch (Throwable $e) {
+                Log::warning('domains:sync-vercel-status inventory prefetch failed', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         ApiDomainSetting::query()
             ->orderBy('id')
-            ->chunkById($chunk, function ($domains) use ($sync, &$checked, &$activated, &$failed, &$unchanged, &$errors) {
+            ->chunkById($chunk, function ($domains) use (
+                $sync,
+                &$checked,
+                &$activated,
+                &$failed,
+                &$unchanged,
+                &$errors,
+                $paceUs,
+                $verifyPaceUs,
+                $projectInventory
+            ) {
                 foreach ($domains as $domain) {
                     $checked++;
                     try {
                         $attemptVerify = $domain->status === 'pending';
-                        $result = $sync->sync($domain, $attemptVerify);
+                        $result = $sync->sync(
+                            $domain,
+                            $attemptVerify,
+                            applyFailureThreshold: true,
+                            projectInventory: $projectInventory
+                        );
 
                         if (! $result['changed']) {
                             $unchanged++;
@@ -68,14 +99,17 @@ class SyncVercelDomainStatusCommand extends Command
                         ]);
                     }
 
-                    usleep(50_000);
+                    if ($paceUs > 0) {
+                        usleep($paceUs);
+                    }
+
+                    if ($attemptVerify && $verifyPaceUs > 0) {
+                        usleep($verifyPaceUs);
+                    }
                 }
             });
 
-        Cache::forget('admin.domain_health_counts');
-        Cache::forget('vercel.project_domains');
-        Cache::forget('vercel.project_domain_count');
-        Cache::forget('vercel.project_domain_names');
+        $domainCache->invalidateAdminCaches();
 
         $summary = compact('checked', 'activated', 'failed', 'unchanged', 'errors');
         $this->info('Domain sync complete: ' . json_encode($summary));

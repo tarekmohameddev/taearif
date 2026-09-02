@@ -1,4 +1,7 @@
-{{-- Full-width domain health summary — too much text for a col-md-3 stat card (especially RTL). --}}
+{{-- Full-width domain health summary — global counters clear table/search filters. --}}
+@php
+    $globalHealthFilterParams = [];
+@endphp
 <div class="col-12 mb-3">
     <div class="card card-round domain-health-panel">
         <div class="card-body py-3">
@@ -9,12 +12,13 @@
                     </div>
                 </div>
                 <div class="col min-w-0">
-                    <p class="text-muted mb-2 mb-sm-3 font-weight-bold">{{ __('domain_health.counters_title') }}</p>
+                    <p class="text-muted mb-1 font-weight-bold">{{ __('domain_health.counters_title') }}</p>
+                    <p class="text-muted small mb-2 mb-sm-3">{{ __('domain_health.counters_global_hint') }}</p>
                     <div class="row mb-2 mb-sm-3">
                         <div class="col-sm-4 mb-2 mb-sm-0">
                             <div class="domain-health-stat">
                                 <small class="text-muted d-block">{{ __('domain_health.linked_label') }}</small>
-                                <a href="{{ route('admin.custom-domain.index', array_merge($healthFilterParams, ['health' => 'linked'])) }}"
+                                <a href="{{ route('admin.custom-domain.index', array_merge($globalHealthFilterParams, ['health' => 'linked'])) }}"
                                    class="h4 font-weight-bold text-success mb-0 d-block">
                                     <bdi dir="ltr">{{ $domainHealthCounts['linked'] ?? 0 }}</bdi>
                                 </a>
@@ -23,7 +27,7 @@
                         <div class="col-sm-4 mb-2 mb-sm-0">
                             <div class="domain-health-stat">
                                 <small class="text-muted d-block">{{ __('domain_health.confirmed_issues_label') }}</small>
-                                <a href="{{ route('admin.custom-domain.index', array_merge($healthFilterParams, ['health' => 'issues'])) }}"
+                                <a href="{{ route('admin.custom-domain.index', array_merge($globalHealthFilterParams, ['health' => 'issues'])) }}"
                                    class="h4 font-weight-bold text-danger mb-0 d-block">
                                     <bdi dir="ltr">{{ $domainHealthCounts['confirmed_issues'] ?? 0 }}</bdi>
                                 </a>
@@ -32,7 +36,7 @@
                         <div class="col-sm-4">
                             <div class="domain-health-stat">
                                 <small class="text-muted d-block">{{ __('domain_health.unchecked') }}</small>
-                                <a href="{{ route('admin.custom-domain.index', array_merge($healthFilterParams, ['health' => 'unchecked'])) }}"
+                                <a href="{{ route('admin.custom-domain.index', array_merge($globalHealthFilterParams, ['health' => 'unchecked'])) }}"
                                    class="h4 font-weight-bold text-secondary mb-0 d-block">
                                     <bdi dir="ltr">{{ $uncheckedCount }}</bdi>
                                 </a>
@@ -49,7 +53,7 @@
                                             $badgeLabel = __("domain_health.{$code}");
                                         }
                                     @endphp
-                                    <a href="{{ route('admin.custom-domain.index', array_merge($healthFilterParams, ['health' => $code])) }}"
+                                    <a href="{{ route('admin.custom-domain.index', array_merge($globalHealthFilterParams, ['health' => $code])) }}"
                                        class="{{ $healthCodeBadgeClass($code) }} domain-health-badge mb-2 mr-2"
                                        title="{{ __("domain_health.{$code}") }}">
                                         <span class="domain-health-badge__count">{{ $domainHealthCounts['by_code'][$code] }}</span>

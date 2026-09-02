@@ -3,17 +3,25 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\Domain\RequestDomainSslRequest;
 use App\Http\Requests\Api\Domain\SetPrimaryDomainRequest;
 use App\Http\Requests\Api\Domain\StoreDomainSettingRequest;
 use App\Http\Requests\Api\Domain\VerifyDomainRequest;
 use App\Models\Api\ApiDomainSetting;
+use App\Models\User;
 use App\Services\Vercel\DomainStatusSyncService;
+use App\Services\Vercel\VercelDomainCache;
 use App\Services\Vercel\VercelDomainClient;
 use App\Services\Vercel\VercelDomainException;
+use App\Services\Vercel\VercelDomainInventoryService;
+use App\Services\Vercel\VercelMutationGuard;
 use App\Support\TenantActivity;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Mail;
 
@@ -21,7 +29,10 @@ class DomainSettingsController extends Controller
 {
     public function __construct(
         private readonly VercelDomainClient $vercel,
-        private readonly DomainStatusSyncService $domainSync
+        private readonly DomainStatusSyncService $domainSync,
+        private readonly VercelDomainCache $vercelCache,
+        private readonly VercelDomainInventoryService $vercelInventory,
+        private readonly VercelMutationGuard $mutationGuard
     ) {
     }
 
@@ -58,36 +69,7 @@ class DomainSettingsController extends Controller
     public function store(StoreDomainSettingRequest $request)
     {
         $user = Auth::user();
-        $validated = $request->validated();
-        $customName = $this->vercel->normalizeApex($validated['custom_name']);
-
-        $existingDomain = ApiDomainSetting::where('custom_name', $customName)->first();
-        if ($existingDomain) {
-            if ((int) $existingDomain->user_id === (int) $user->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Domain already exists',
-                    'errors' => [
-                        [
-                            'field' => 'custom_name',
-                            'message' => 'This domain is already added to your account',
-                        ],
-                    ],
-                ], 400);
-            }
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Domain already in use',
-                'errors' => [
-                    [
-                        'field' => 'custom_name',
-                        'message' => 'This domain is already in use',
-                    ],
-                ],
-            ], 400);
-        }
-
+        $customName = (string) $request->validated('custom_name');
         $autoAttach = (bool) config('services.vercel.auto_attach_custom_domain', true);
 
         if ($autoAttach && ! $this->vercel->isConfigured()) {
@@ -98,7 +80,14 @@ class DomainSettingsController extends Controller
             ], 503);
         }
 
-        $domainsCount = ApiDomainSetting::where('user_id', $user->id)->count();
+        $existingDomain = ApiDomainSetting::query()
+            ->where('custom_name', $customName)
+            ->first();
+        if ($existingDomain !== null) {
+            return $this->duplicateDomainResponse($existingDomain, $user);
+        }
+
+        $domainsCount = ApiDomainSetting::query()->where('user_id', $user->id)->count();
         $maxDomains = max(1, (int) config('services.vercel.max_domains_per_tenant', 5));
         if ($domainsCount >= $maxDomains) {
             return response()->json([
@@ -113,66 +102,159 @@ class DomainSettingsController extends Controller
             ], 400);
         }
 
-        $domain = new ApiDomainSetting([
-            'user_id' => $user->id,
-            'custom_name' => $customName,
-            'status' => 'pending',
-            'primary' => $domainsCount === 0,
-            'ssl' => false,
-            'added_date' => now(),
-        ]);
-        $domain->save();
-
-        if ($autoAttach) {
-            try {
-                $this->vercel->addApexWithWwwRedirect($customName);
-            } catch (VercelDomainException $e) {
-                // The apex may already be attached when the www call is what failed.
-                // Best effort: a cleanup failure must never mask the original error.
-                try {
-                    $this->vercel->removeApexAndWww($customName);
-                } catch (VercelDomainException $cleanupError) {
-                    Log::warning('Could not detach partially attached domain after a failed add', [
-                        'domain' => $customName,
-                        'error' => $cleanupError->getMessage(),
-                    ]);
-                }
-
-                $domain->delete();
-                Log::error('Failed to attach domain to Vercel', [
-                    'domain' => $customName,
-                    'error' => $e->getMessage(),
-                    'status' => $e->statusCode,
-                    'vercel_error_code' => $e->getErrorCode(),
-                ]);
-
-                $mapped = match ($e->getErrorCode()) {
-                    'project_domain_limit_reached' => [
-                        'status' => 503,
-                        'code' => 'HOSTING_CAPACITY_REACHED',
-                        'message' => 'We cannot add more domains right now because the hosting limit has been reached. Please contact support.',
-                    ],
-                    default => null,
-                };
-
-                if ($mapped !== null) {
-                    return response()->json([
-                        'success' => false,
-                        'code' => $mapped['code'],
-                        'message' => $mapped['message'],
-                    ], $mapped['status']);
-                }
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to register domain with hosting provider. Please try again later.',
-                ], 502);
+        if (! $autoAttach) {
+            $domain = $this->insertPendingDomainRow($user, $customName);
+            if ($domain instanceof JsonResponse) {
+                return $domain;
             }
+
+            return $this->finalizeStoreResponse($request, $domain, null, 'skipped');
         }
 
-        // Immediate verify + NS check so the dashboard can show success or setup guidance
+        try {
+            $provisioned = $this->vercelCache->withMutationLock(function () use ($user, $customName) {
+                return $this->provisionDomainWithVercel($user, $customName);
+            });
+        } catch (LockTimeoutException $exception) {
+            Log::warning('Timed out waiting for Vercel domain mutation lock', [
+                'domain' => $customName,
+                'user_id' => $user->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'code' => 'HOSTING_BUSY',
+                'message' => 'Domain hosting is busy right now. Please try again shortly.',
+            ], 503);
+        }
+
+        if ($provisioned instanceof JsonResponse) {
+            return $provisioned;
+        }
+
+        return $this->finalizeStoreResponse(
+            $request,
+            $provisioned['domain'],
+            $provisioned['attach'] ?? null,
+            $provisioned['apex_attachment'] ?? 'unknown'
+        );
+    }
+
+    /**
+     * @return array{domain: ApiDomainSetting, attach: ?array<string, mixed>, apex_attachment: string}|JsonResponse
+     */
+    private function provisionDomainWithVercel(User $user, string $customName): array|JsonResponse
+    {
+        try {
+            $this->mutationGuard->assertCanMutate();
+        } catch (VercelDomainException $exception) {
+            return $this->mapMutationGuardFailure($exception);
+        }
+
+        $inventory = $this->vercelCache->fresh();
+        $capacity = $this->vercelInventory->evaluateCapacityForApex($inventory, $customName);
+
+        if (! $capacity['allowed']) {
+            return $this->capacityRejectedResponse($capacity['reason']);
+        }
+
+        $domain = $this->insertPendingDomainRow($user, $customName);
+        if ($domain instanceof JsonResponse) {
+            return $domain;
+        }
+
+        $apexCreated = false;
+        $attachResult = ['apex' => null];
+
+        try {
+            $apexResult = $this->vercel->addDomain($customName);
+            $apexCreated = (bool) ($apexResult['was_created'] ?? false);
+            $attachResult['apex'] = $apexResult;
+            $apexAttachment = ($apexResult['was_adopted'] ?? false) ? 'adopted' : 'created';
+            $this->vercelCache->invalidateAdminCaches();
+
+            return [
+                'domain' => $domain,
+                'attach' => $attachResult,
+                'apex_attachment' => $apexAttachment,
+            ];
+        } catch (VercelDomainException $exception) {
+            return $this->handleVercelAttachFailure($domain, $customName, $apexCreated, $exception);
+        }
+    }
+
+    private function insertPendingDomainRow(User $user, string $customName): ApiDomainSetting|JsonResponse
+    {
+        try {
+            return DB::transaction(function () use ($user, $customName) {
+                User::query()->whereKey($user->id)->lockForUpdate()->first();
+
+                $existingDomain = ApiDomainSetting::query()
+                    ->where('custom_name', $customName)
+                    ->first();
+
+                if ($existingDomain !== null) {
+                    return $this->duplicateDomainResponse($existingDomain, $user);
+                }
+
+                $domainsCount = ApiDomainSetting::query()->where('user_id', $user->id)->count();
+                $maxDomains = max(1, (int) config('services.vercel.max_domains_per_tenant', 5));
+                if ($domainsCount >= $maxDomains) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Domain limit reached',
+                        'errors' => [
+                            [
+                                'field' => 'custom_name',
+                                'message' => "You can add up to {$maxDomains} domains.",
+                            ],
+                        ],
+                    ], 400);
+                }
+
+                $domain = new ApiDomainSetting([
+                    'user_id' => $user->id,
+                    'custom_name' => $customName,
+                    'status' => 'pending',
+                    'primary' => $domainsCount === 0,
+                    'ssl' => false,
+                    'added_date' => now(),
+                ]);
+                $domain->save();
+
+                $this->vercelCache->invalidateAdminCaches();
+
+                return $domain;
+            });
+        } catch (QueryException $exception) {
+            if (! $this->isUniqueConstraintViolation($exception)) {
+                throw $exception;
+            }
+            $existingDomain = ApiDomainSetting::query()
+                ->where('custom_name', $customName)
+                ->first();
+
+            if ($existingDomain !== null) {
+                return $this->duplicateDomainResponse($existingDomain, $user);
+            }
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $attachResult
+     */
+    private function finalizeStoreResponse(
+        Request $request,
+        ApiDomainSetting $domain,
+        ?array $attachResult,
+        string $apexAttachment
+    ): JsonResponse {
         $syncResult = $this->domainSync->sync($domain, true, $request);
         $domain->refresh();
+        $this->vercelCache->invalidateAdminCaches();
 
         TenantActivity::emit(
             $request,
@@ -219,7 +301,255 @@ class DomainSettingsController extends Controller
                 ),
             ],
             'dnsInstructions' => ApiDomainSetting::nameserverInstructions(),
+            'diagnostics' => $this->buildDiagnostics($domain, $attachResult, $syncResult, $apexAttachment),
         ], 201);
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $attachResult
+     * @param  array<string, mixed>  $syncResult
+     * @return array<string, mixed>
+     */
+    private function buildDiagnostics(
+        ApiDomainSetting $domain,
+        ?array $attachResult,
+        array $syncResult,
+        string $apexAttachment
+    ): array {
+        $dnsRecords = is_array($domain->dns_records) ? $domain->dns_records : [];
+        $provisioning = is_array($dnsRecords['provisioning'] ?? null) ? $dnsRecords['provisioning'] : [];
+        $resolvedAttachment = $provisioning['apex_attachment'] ?? $apexAttachment;
+
+        $apexAttach = is_array($attachResult) ? ($attachResult['apex'] ?? $attachResult) : null;
+        $verificationRecords = $this->sanitizeVerificationRecords(
+            is_array($apexAttach) ? ($apexAttach['verification'] ?? []) : []
+        );
+        $verificationState = match (true) {
+            (bool) ($syncResult['vercel_verified'] ?? false) && $domain->status === 'active' => 'verified',
+            $domain->status === 'failed' => 'failed',
+            default => 'pending',
+        };
+
+        return [
+            'code' => $domain->status === 'active' ? 'DOMAIN_ACTIVE' : 'DOMAIN_PENDING',
+            'apex_attachment' => $resolvedAttachment,
+            'verification_state' => $verificationState,
+            'recommended_dns' => ApiDomainSetting::nameserverInstructions(),
+            'ownership_txt' => $verificationRecords,
+        ];
+    }
+
+    /**
+     * @param  mixed  $verification
+     * @return list<array<string, string>>
+     */
+    private function sanitizeVerificationRecords(mixed $verification): array
+    {
+        if (! is_array($verification)) {
+            return [];
+        }
+
+        $items = array_is_list($verification) ? $verification : [$verification];
+        $sanitized = [];
+
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $record = array_filter([
+                'type' => isset($item['type']) ? (string) $item['type'] : null,
+                'domain' => isset($item['domain']) ? strtolower((string) $item['domain']) : null,
+                'value' => isset($item['value']) ? (string) $item['value'] : null,
+                'reason' => isset($item['reason']) ? (string) $item['reason'] : null,
+            ], fn ($value) => $value !== null && $value !== '');
+
+            if ($record !== []) {
+                $sanitized[] = $record;
+            }
+        }
+
+        return $sanitized;
+    }
+
+    private function handleVercelAttachFailure(
+        ApiDomainSetting $domain,
+        string $customName,
+        bool $apexCreated,
+        VercelDomainException $exception
+    ): JsonResponse {
+        if ($apexCreated) {
+            try {
+                $this->vercel->removeDomain($customName);
+            } catch (VercelDomainException|ConnectionException $cleanupError) {
+                Log::warning('Could not detach Vercel apex domain created during a failed add', [
+                    'domain' => $customName,
+                    'error' => $cleanupError->getMessage(),
+                ]);
+            }
+        }
+
+        $this->vercelCache->invalidateAdminCaches();
+
+        Log::error('Failed to attach domain to Vercel', [
+            'domain' => $customName,
+            'domain_id' => $domain->id,
+            'error' => $exception->getMessage(),
+            'status' => $exception->statusCode,
+            'internal_code' => $exception->internalCode,
+            'vercel_error_code' => $exception->getErrorCode(),
+        ]);
+
+        if ($this->isCapacityError($exception)) {
+            $domain->delete();
+            $this->vercelCache->invalidateAdminCaches();
+
+            return response()->json([
+                'success' => false,
+                'code' => 'HOSTING_CAPACITY_REACHED',
+                'message' => 'We cannot add more domains right now because the hosting limit has been reached. Please contact support.',
+            ], 503);
+        }
+
+        if ($this->isTransportAmbiguity($exception)) {
+            $this->persistProvisioningDiagnostics($domain, 'uncertain', $exception);
+
+            return $this->finalizeStoreResponse(request(), $domain, null, 'uncertain');
+        }
+
+        $domain->delete();
+        $this->vercelCache->invalidateAdminCaches();
+
+        $mapped = match ($exception->internalCode) {
+            VercelDomainException::CODE_OWNERSHIP_REQUIRED => [
+                'status' => 409,
+                'code' => 'DOMAIN_OWNERSHIP_REQUIRED',
+                'message' => 'This domain is already registered elsewhere. Complete the ownership verification steps and try again.',
+            ],
+            VercelDomainException::CODE_MUTATION_BLOCKED,
+            VercelDomainException::CODE_NOT_CONFIGURED,
+            VercelDomainException::CODE_PROJECT_IDENTITY_MISMATCH => [
+                'status' => 503,
+                'code' => 'HOSTING_NOT_CONFIGURED',
+                'message' => 'Domain hosting is not configured. Please contact support.',
+            ],
+            default => null,
+        };
+
+        if ($mapped !== null) {
+            return response()->json([
+                'success' => false,
+                'code' => $mapped['code'],
+                'message' => $mapped['message'],
+            ], $mapped['status']);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to register domain with hosting provider. Please try again later.',
+        ], 502);
+    }
+
+    private function isCapacityError(VercelDomainException $exception): bool
+    {
+        return $exception->internalCode === VercelDomainException::CODE_CAPACITY_REACHED
+            || $exception->getErrorCode() === 'project_domain_limit_reached';
+    }
+
+    private function isTransportAmbiguity(VercelDomainException $exception): bool
+    {
+        if ($exception->internalCode === VercelDomainException::CODE_RATE_LIMITED) {
+            return true;
+        }
+
+        return $exception->internalCode === VercelDomainException::CODE_PROVIDER_UNAVAILABLE
+            && $exception->getPrevious() instanceof ConnectionException;
+    }
+
+    private function persistProvisioningDiagnostics(
+        ApiDomainSetting $domain,
+        string $apexAttachment,
+        VercelDomainException $exception
+    ): void {
+        $dnsRecords = is_array($domain->dns_records) ? $domain->dns_records : [];
+        $dnsRecords['provisioning'] = [
+            'state' => 'uncertain',
+            'apex_attachment' => $apexAttachment,
+            'internal_code' => $exception->internalCode,
+            'checked_at' => now()->toIso8601String(),
+            'message' => 'Hosting provider state is uncertain. Retry verification shortly.',
+        ];
+
+        $domain->dns_records = $dnsRecords;
+        $domain->save();
+        $this->vercelCache->invalidateAdminCaches();
+    }
+
+    private function capacityRejectedResponse(?string $reason): JsonResponse
+    {
+        if ($reason === 'capacity_reached') {
+            return response()->json([
+                'success' => false,
+                'code' => 'HOSTING_CAPACITY_REACHED',
+                'message' => 'We cannot add more domains right now because the hosting limit has been reached. Please contact support.',
+            ], 503);
+        }
+
+        return response()->json([
+            'success' => false,
+            'code' => 'HOSTING_INVENTORY_UNAVAILABLE',
+            'message' => 'Domain hosting capacity could not be confirmed right now. Please try again shortly.',
+        ], 503);
+    }
+
+    private function mapMutationGuardFailure(VercelDomainException $exception): JsonResponse
+    {
+        $code = match ($exception->internalCode) {
+            VercelDomainException::CODE_MUTATION_BLOCKED => 'HOSTING_MUTATION_BLOCKED',
+            VercelDomainException::CODE_PROJECT_IDENTITY_MISMATCH => 'HOSTING_IDENTITY_MISMATCH',
+            default => 'HOSTING_NOT_CONFIGURED',
+        };
+
+        return response()->json([
+            'success' => false,
+            'code' => $code,
+            'message' => 'Domain hosting is not available in this environment. Please contact support.',
+        ], 503);
+    }
+
+    private function isUniqueConstraintViolation(QueryException $exception): bool
+    {
+        $driverCode = (string) ($exception->errorInfo[1] ?? '');
+        if (in_array($driverCode, ['1062', '19', '23505'], true)) {
+            return true;
+        }
+        return str_contains(strtolower($exception->getMessage()), 'unique');
+    }
+    private function duplicateDomainResponse(ApiDomainSetting $existingDomain, User $user): JsonResponse
+    {
+        if ((int) $existingDomain->user_id === (int) $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Domain already exists',
+                'errors' => [
+                    [
+                        'field' => 'custom_name',
+                        'message' => 'This domain is already added to your account',
+                    ],
+                ],
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Domain already in use',
+            'errors' => [
+                [
+                    'field' => 'custom_name',
+                    'message' => 'This domain is already in use',
+                ],
+            ],
+        ], 400);
     }
 
     /**
@@ -241,63 +571,6 @@ class DomainSettingsController extends Controller
             'ssl' => $domain->ssl,
             'addedDate' => $domain->added_date?->format('Y-m-d'),
             'dnsInstructions' => ApiDomainSetting::nameserverInstructions(),
-        ]);
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        $user = Auth::user();
-
-        try {
-            $domain = ApiDomainSetting::where('id', $id)
-                ->where('user_id', $user->id)
-                ->firstOrFail();
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Domain not found or you do not have permission to delete it.',
-            ], 404);
-        }
-
-        if ($domain->primary) {
-            $anotherDomain = ApiDomainSetting::where('user_id', $user->id)
-                ->where('id', '!=', $domain->id)
-                ->preferredActive()
-                ->first();
-
-            if ($anotherDomain) {
-                $anotherDomain->primary = true;
-                $anotherDomain->save();
-            }
-        }
-
-        if ((bool) config('services.vercel.auto_attach_custom_domain', true) && $this->vercel->isConfigured()) {
-            try {
-                $this->vercel->removeApexAndWww((string) $domain->custom_name);
-            } catch (VercelDomainException $e) {
-                Log::warning('Failed to remove domain from Vercel during destroy', [
-                    'domain_id' => $domain->id,
-                    'error' => $e->getMessage(),
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to remove domain from hosting provider. Please try again later.',
-                ], 502);
-            }
-        }
-
-        $domain->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Domain deleted successfully',
         ]);
     }
 
@@ -329,6 +602,7 @@ class DomainSettingsController extends Controller
 
         $result = $this->domainSync->sync($domain, true, $request);
         $domain->refresh();
+        $this->vercelCache->invalidateAdminCaches();
 
         if ($result['new_status'] === 'active') {
             if ($result['changed'] || $result['old_status'] !== 'active') {
@@ -409,6 +683,7 @@ class DomainSettingsController extends Controller
         ApiDomainSetting::where('user_id', $user->id)->update(['primary' => false]);
         $domain->primary = true;
         $domain->save();
+        $this->vercelCache->invalidateAdminCaches();
 
         $domains = $user->domains()->get();
 
@@ -434,7 +709,7 @@ class DomainSettingsController extends Controller
 
     private function notifyAdminOfVerifiedDomain(ApiDomainSetting $domain)
     {
-        $adminEmail = env('MAIL_ADMIN_ADDRESS', 'admin@example.com');
+        $adminEmail = config('mail.admin_address');
         if (! $adminEmail) {
             Log::error('Failed to send admin domain verification email: Admin email not set in .env');
 
@@ -462,49 +737,5 @@ class DomainSettingsController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to send admin domain verification email: ' . $e->getMessage());
         }
-    }
-
-    public function requestSsl(RequestDomainSslRequest $request)
-    {
-        $user = Auth::user();
-        $validated = $request->validated();
-
-        $domain = ApiDomainSetting::where('id', $validated['id'])
-            ->where('user_id', $user->id)
-            ->firstOrFail();
-
-        if ($domain->status !== 'active') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Domain must be active before requesting SSL.',
-            ], 400);
-        }
-
-        $result = $this->domainSync->sync($domain, true, $request);
-        $domain->refresh();
-
-        TenantActivity::emit($request, 'domain.ssl_requested', 'api_domains_settings', $domain->id);
-
-        if ($domain->ssl) {
-            return response()->json([
-                'success' => true,
-                'message' => 'SSL is enabled for this domain.',
-                'data' => [
-                    'id' => $domain->id,
-                    'ssl' => true,
-                    'status' => $domain->status,
-                ],
-            ]);
-        }
-
-        return response()->json([
-            'success' => false,
-            'message' => $result['message'] ?: 'SSL is not ready yet. Please try again shortly.',
-            'data' => [
-                'id' => $domain->id,
-                'ssl' => false,
-                'status' => $domain->status,
-            ],
-        ], 422);
     }
 }

@@ -2,13 +2,14 @@
 
 namespace App\Models\Api;
 
+use App\Contracts\Vercel\VercelDomainSourceOfTruth;
 use App\Domain\Domain\Models\CustomDomain;
 use App\Models\User;
 use App\Support\DomainHealthMessages;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ApiDomainSetting extends Model
+class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
 {
     use HasFactory;
 
@@ -74,9 +75,16 @@ class ApiDomainSetting extends Model
             'mode' => 'nameservers',
             'nameservers' => $nameservers,
             'steps' => [
-                'At your registrar (e.g. GoDaddy), set custom nameservers to the values above.',
-                'Wait for propagation, then click Verify.',
+                __('domain_dns.nameserver_step_registrar'),
+                __('domain_dns.nameserver_step_verify'),
             ],
+            'ownership_txt_instruction' => __('domain_dns.ownership_txt_instruction'),
+            'recommended_a_label' => __('domain_dns.recommended_a_label'),
+            'recommended_cname_label' => __('domain_dns.recommended_cname_label'),
+            'ownership_txt_label' => __('domain_dns.ownership_txt_label'),
+            'record_type_label' => __('domain_dns.record_type'),
+            'record_name_label' => __('domain_dns.record_name'),
+            'record_value_label' => __('domain_dns.record_value'),
         ];
     }
 
@@ -116,53 +124,119 @@ class ApiDomainSetting extends Model
             return $this->healthState('unchecked', []);
         }
 
+        if (isset($lastCheck['health_code']) && is_string($lastCheck['health_code']) && $lastCheck['health_code'] !== '') {
+            $code = $lastCheck['health_code'];
+
+            if ($code === 'expired' && (! $this->expires_at || ! $this->expires_at->isPast())) {
+                $code = self::resolveHealthCode($lastCheck, $this->resolveAttachment($lastCheck, $vercelAttached));
+            } elseif ($vercelAttached !== null && in_array($code, ['not_on_vercel', 'unverified', 'linked', 'apex_only'], true)) {
+                $code = self::resolveHealthCode($lastCheck, $vercelAttached);
+            }
+
+            return $this->healthState($code, $lastCheck);
+        }
+
+        $attached = $this->resolveAttachment($lastCheck, $vercelAttached);
+        $code = self::resolveHealthCode($lastCheck, $attached);
+
+        return $this->healthState($code, $lastCheck);
+    }
+
+    /**
+     * Deterministic, mutually exclusive health code from diagnostic fields.
+     *
+     * @param  array<string, mixed>  $lastCheck
+     */
+    public static function resolveHealthCode(array $lastCheck, ?bool $apexAttached = null): string
+    {
         $autoAttach = (bool) ($lastCheck['auto_attach_custom_domain'] ?? true);
         $nsCheckEnabled = (bool) ($lastCheck['nameserver_check_enabled'] ?? true);
 
         if (! $autoAttach && ! $nsCheckEnabled) {
-            return $this->healthState('checks_disabled', $lastCheck);
+            return 'checks_disabled';
         }
 
-        if (($lastCheck['reason'] ?? null) === 'expired' && $this->expires_at && $this->expires_at->isPast()) {
-            return $this->healthState('expired', $lastCheck);
+        if (($lastCheck['reason'] ?? null) === 'expired') {
+            return 'expired';
         }
 
-        if ($this->isProviderError($lastCheck)) {
-            return $this->healthState('provider_error', $lastCheck);
+        if (self::isProviderErrorState($lastCheck)) {
+            return 'provider_error';
         }
 
-        $vercelVerified = (bool) ($lastCheck['vercel_verified'] ?? false);
+        $attached = $apexAttached ?? (bool) ($lastCheck['apex_attached'] ?? $lastCheck['vercel_attached'] ?? false);
+        $verified = (bool) ($lastCheck['apex_verified'] ?? $lastCheck['vercel_verified'] ?? false);
         $nameserversOk = (bool) ($lastCheck['nameservers_ok'] ?? false);
+        $misconfigured = (bool) ($lastCheck['dns_misconfigured'] ?? false);
+        $ownershipChallenge = $lastCheck['ownership_challenge'] ?? null;
 
-        if ($vercelVerified && $nameserversOk) {
-            return $this->healthState('linked', $lastCheck);
+        if (! $attached) {
+            return 'not_on_vercel';
         }
 
-        $storedAttached = $lastCheck['vercel_attached'] ?? null;
-        $attached = $storedAttached ?? $vercelAttached;
-        if ($attached === false) {
-            return $this->healthState('not_on_vercel', $lastCheck);
+        if (is_array($ownershipChallenge) && $ownershipChallenge !== [] && ! $verified) {
+            return 'ownership_required';
+        }
+
+        if ($misconfigured) {
+            return 'dns_misconfigured';
         }
 
         if ($nsCheckEnabled && ! $nameserversOk) {
-            return $this->healthState('ns_not_pointing', $lastCheck);
+            return 'ns_not_pointing';
         }
 
-        return $this->healthState('unverified', $lastCheck);
+        if (! $verified) {
+            return 'unverified';
+        }
+
+        $wwwPresent = (bool) ($lastCheck['www_present'] ?? false);
+        $wwwRedirectCorrect = (bool) ($lastCheck['www_redirect_correct'] ?? false);
+
+        if (! $wwwPresent || ! $wwwRedirectCorrect) {
+            return 'apex_only';
+        }
+
+        return 'linked';
     }
 
     /**
      * @param  array<string, mixed>  $lastCheck
      */
-    private function isProviderError(array $lastCheck): bool
+    private function resolveAttachment(array $lastCheck, ?bool $freshHint): ?bool
+    {
+        if ($freshHint !== null) {
+            return $freshHint;
+        }
+
+        if (array_key_exists('apex_attached', $lastCheck)) {
+            return (bool) $lastCheck['apex_attached'];
+        }
+
+        if (array_key_exists('vercel_attached', $lastCheck)) {
+            return (bool) $lastCheck['vercel_attached'];
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $lastCheck
+     */
+    private static function isProviderErrorState(array $lastCheck): bool
     {
         if (($lastCheck['reason'] ?? null) === 'provider_error') {
             return true;
         }
 
+        if (array_key_exists('provider_reachable', $lastCheck) && $lastCheck['provider_reachable'] === false) {
+            return true;
+        }
+
         $message = (string) ($lastCheck['message'] ?? '');
 
-        return str_contains($message, 'Could not reach the hosting provider');
+        return str_contains($message, 'Could not reach the hosting provider')
+            || str_contains($message, 'Unable to resolve domain nameservers');
     }
 
     /**
@@ -173,6 +247,9 @@ class ApiDomainSetting extends Model
     {
         $classes = [
             'linked' => 'success',
+            'apex_only' => 'success',
+            'ownership_required' => 'warning',
+            'dns_misconfigured' => 'warning',
             'ns_mismatch' => 'warning',
             'ns_not_pointing' => 'warning',
             'not_on_vercel' => 'danger',

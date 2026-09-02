@@ -27,6 +27,11 @@
         'username' => request()->input('username'),
         'domain' => request()->input('domain'),
     ]);
+    $globalHealthFilterParams = [];
+    $wwwStatesByDomainId = $wwwStatesByDomainId ?? [];
+    $capacityBlocked = $capacityBlocked ?? false;
+    $inventoryUnreliable = $inventoryUnreliable ?? false;
+    $nonProductionSharedProject = $nonProductionSharedProject ?? false;
     $issueHealthCodes = ['unchecked', 'ns_not_pointing', 'not_on_vercel', 'unverified', 'expired', 'provider_error'];
     $linkedCount = $domainHealthCounts['linked'] ?? 0;
     $confirmedIssuesCount = $domainHealthCounts['confirmed_issues'] ?? 0;
@@ -65,6 +70,11 @@
         </li>
     </ul>
 </div>
+@if ($nonProductionSharedProject)
+<div class="alert alert-warning">
+    {{ __('domain_mutation.non_production_banner') }}
+</div>
+@endif
 @if ($vercelCapacity ?? null)
 @php
     $capColors = [
@@ -76,10 +86,11 @@
     $capRgb = $capColors[$capState] ?? $capColors['success'];
     $capHex = ['success' => '#10b981', 'warning' => '#f59e0b', 'danger' => '#ef4444'][$capState] ?? '#10b981';
     $capPercent = min(100, round($vercelCapacity['usage_percent']));
+    $showCapFraction = $vercelCapacity['has_cap'] ?? false;
 @endphp
 <div class="row">
 
-    {{-- Entries consumed on the Vercel project --}}
+    {{-- Total Vercel project entries --}}
     <div class="col-sm-6 col-md-3">
         <div class="card card-stats card-round">
             <div class="card-body">
@@ -91,10 +102,16 @@
                     </div>
                     <div class="col-8 col-stats">
                         <div class="numbers">
-                            <p class="card-category text-muted mb-1">{{ __('Vercel entries') }}</p>
-                            {{-- bdi + dir=ltr: without isolation the RTL layout renders
-                                 "49 / 50" as "50 / 49", which reads as nonsense. --}}
-                            <h4 class="card-title font-weight-bold mb-0"><bdi dir="ltr">{{ $vercelCapacity['entries_used'] }} / {{ $vercelCapacity['entries_total'] }}</bdi></h4>
+                            <p class="card-category text-muted mb-1">{{ __('vercel_capacity.total_entries') }}</p>
+                            <h4 class="card-title font-weight-bold mb-0">
+                                <bdi dir="ltr">
+                                    @if ($showCapFraction)
+                                        {{ $vercelCapacity['entries_used'] }} / {{ $vercelCapacity['entries_total'] }}
+                                    @else
+                                        {{ $vercelCapacity['entries_used'] }}
+                                    @endif
+                                </bdi>
+                            </h4>
                         </div>
                     </div>
                 </div>
@@ -102,7 +119,7 @@
         </div>
     </div>
 
-    {{-- Actual customer domains, which is entries minus platform, halved --}}
+    {{-- Customer apex domains on the project --}}
     <div class="col-sm-6 col-md-3">
         <div class="card card-stats card-round">
             <div class="card-body">
@@ -114,8 +131,8 @@
                     </div>
                     <div class="col-8 col-stats">
                         <div class="numbers">
-                            <p class="card-category text-muted mb-1">{{ __('Customer domains') }}</p>
-                            <h4 class="card-title font-weight-bold mb-0">{{ $vercelCapacity['customer_domains_in_use'] }}</h4>
+                            <p class="card-category text-muted mb-1">{{ __('vercel_capacity.customer_apex') }}</p>
+                            <h4 class="card-title font-weight-bold mb-0">{{ $vercelCapacity['customer_apex'] }}</h4>
                         </div>
                     </div>
                 </div>
@@ -123,20 +140,20 @@
         </div>
     </div>
 
-    {{-- Headroom in whole customer domains --}}
+    {{-- Optional www redirects --}}
     <div class="col-sm-6 col-md-3">
         <div class="card card-stats card-round">
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-4">
-                        <div class="icon-big text-center" style="background: rgba({{ $capRgb }}, 0.1); color: {{ $capHex }}; border-radius: 12px; padding: 10px;">
-                            <i data-lucide="plus-circle"></i>
+                        <div class="icon-big text-center" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; border-radius: 12px; padding: 10px;">
+                            <i data-lucide="arrow-right-left"></i>
                         </div>
                     </div>
                     <div class="col-8 col-stats">
                         <div class="numbers">
-                            <p class="card-category text-muted mb-1">{{ __('Can still add') }}</p>
-                            <h4 class="card-title font-weight-bold mb-0" style="color: {{ $capHex }};">{{ $vercelCapacity['customer_domains_remaining'] }}</h4>
+                            <p class="card-category text-muted mb-1">{{ __('vercel_capacity.www_redirects') }}</p>
+                            <h4 class="card-title font-weight-bold mb-0">{{ $vercelCapacity['www_redirects'] }}</h4>
                         </div>
                     </div>
                 </div>
@@ -144,7 +161,7 @@
         </div>
     </div>
 
-    {{-- Percentage of the project cap consumed --}}
+    {{-- Free entries or usage percentage --}}
     <div class="col-sm-6 col-md-3">
         <div class="card card-stats card-round">
             <div class="card-body">
@@ -156,8 +173,14 @@
                     </div>
                     <div class="col-8 col-stats">
                         <div class="numbers">
-                            <p class="card-category text-muted mb-1">{{ __('Capacity used') }}</p>
-                            <h4 class="card-title font-weight-bold mb-0" style="color: {{ $capHex }};">{{ $capPercent }}%</h4>
+                            @if ($showCapFraction)
+                                <p class="card-category text-muted mb-1">{{ __('vercel_capacity.free_entries') }}</p>
+                                <h4 class="card-title font-weight-bold mb-0" style="color: {{ $capHex }};">{{ $vercelCapacity['free_entries'] ?? '—' }}</h4>
+                                <small class="text-muted"><bdi dir="ltr">{{ $capPercent }}%</bdi> {{ __('vercel_capacity.used_label') }}</small>
+                            @else
+                                <p class="card-category text-muted mb-1">{{ __('vercel_capacity.no_cap_configured') }}</p>
+                                <h4 class="card-title font-weight-bold mb-0">—</h4>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -173,7 +196,7 @@
 @endif
 @php
     $dbDomainCount = ($domainHealthCounts ?? null) ? ($domainHealthCounts['db_domain_count'] ?? null) : null;
-    $vercelCustomerCount = $vercelCapacity['customer_domains_in_use'];
+    $vercelCustomerCount = $vercelCapacity['customer_apex'];
 @endphp
 <div class="row">
     @include('admin.domains.partials.capacity-context', [
@@ -182,8 +205,14 @@
         'capHex' => $capHex,
         'dbDomainCount' => $dbDomainCount,
         'vercelCustomerCount' => $vercelCustomerCount,
+        'inventoryUnreliable' => $inventoryUnreliable,
     ])
 </div>
+@if ($reconciliationSummary ?? null)
+<div class="row">
+    @include('admin.domains.partials.reconciliation-panel', ['reconciliationSummary' => $reconciliationSummary])
+</div>
+@endif
 @elseif ($domainHealthCounts ?? null)
 <div class="row">
     @include('admin.domains.partials.health-panel')
@@ -240,8 +269,8 @@
                             @if (!empty(request()->input('health')))
                                 <input type="hidden" name="health" value="{{request()->input('health')}}">
                             @endif
-                            <input name="username" class="min-w-250 form-control mr-2" type="text" placeholder="{{ __('Search by Username') }}" value="{{request()->input('username')}}">
-                            <input name="domain" class="min-w-250 form-control" type="text" placeholder="{{ __('Search by Domain') }}" value="{{request()->input('domain')}}">
+                            <input name="username" class="min-w-180 form-control mr-2" type="text" placeholder="{{ __('Search by Username') }}" value="{{request()->input('username')}}">
+                            <input name="domain" class="min-w-180 form-control" type="text" placeholder="{{ __('Search by Domain') }}" value="{{request()->input('domain')}}">
                             <button type="submit" class="d-none"></button>
                         </form>
                         </div>
@@ -255,7 +284,7 @@
                         <h3 class="text-center">{{__('NO REQUEST FOUND')}}</h3>
                         @else
                         <div class="table-responsive">
-                            <table class="table table-striped mt-3">
+                            <table class="table table-striped table-sm mt-3 domain-table">
                                 <thead>
                                     <tr>
                                         <th scope="col">
@@ -263,6 +292,7 @@
                                         </th>
                                         <th>{{__('Username')}}</th>
                                         <th scope="col">{{__('Requested Domain')}}</th>
+                                        <th scope="col">{{ __('domain_www.column') }}</th>
                                         <th scope="col">{{ __('domain_health.column') }}</th>
                                         <th scope="col">{{__('SSL')}}</th>
                                         <th scope="col">{{__('Status')}}</th>
@@ -276,15 +306,25 @@
                                             <input type="checkbox" class="bulk-check" data-val="{{$rcDomain->id}}">
                                         </td>
                                         @if (!empty($rcDomain->user))
-                                        <td><a href="{{route('admin.register.user.view', $rcDomain->user->id)}}" target="_blank">{{$rcDomain->user->username}}</a></td>
+                                        <td class="domain-user-cell"><a href="{{route('admin.register.user.view', $rcDomain->user->id)}}" target="_blank" title="{{$rcDomain->user->username}}">{{$rcDomain->user->username}}</a></td>
                                         @else
-                                        <td>-</td>
+                                        <td class="domain-user-cell">-</td>
                                         @endif
-                                        <td>
+                                        <td class="domain-name-cell">
                                             @if (!empty($rcDomain->custom_name))
-                                            <a href="//{{$rcDomain->custom_name}}" target="_blank">{{$rcDomain->custom_name}}</a>
+                                            <a href="//{{$rcDomain->custom_name}}" target="_blank" title="{{$rcDomain->custom_name}}">{{$rcDomain->custom_name}}</a>
                                             @else
                                             -
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @php
+                                                $wwwState = $wwwStatesByDomainId[$rcDomain->id] ?? ['mode' => 'unknown', 'can_enable' => false, 'can_disable' => false];
+                                            @endphp
+                                            @if ($wwwState['mode'] === 'apex_and_www')
+                                                <span class="badge badge-info">{{ __('domain_www.apex_and_www') }}</span>
+                                            @else
+                                                <span class="badge badge-light text-dark border">{{ __('domain_www.apex_only') }}</span>
                                             @endif
                                         </td>
                                         <td class="domain-health-cell">
@@ -292,7 +332,7 @@
                                                 $health = $rcDomain->health;
                                                 $healthTooltip = $health['reason'] ?? '';
                                                 if (!empty($health['checked_at'])) {
-                                                    $checkedAgo = \Illuminate\Support\Carbon::parse($health['checked_at'])->diffForHumans();
+                                                    $checkedAgo = \Illuminate\Support\Carbon::parse($health['checked_at'])->locale(app()->getLocale())->diffForHumans();
                                                     $healthTooltip = trim($healthTooltip . ' ' . __('domain_health.checked_ago', ['time' => $checkedAgo]));
                                                 }
                                                 $badgeClass = 'badge badge-' . ($health['class'] ?? 'secondary');
@@ -317,39 +357,56 @@
                                                 <span class="badge badge-secondary">{{ __('Disabled') }}</span>
                                             @endif
                                         </td>
-                                        <td>
-                                            <form id="statusForm{{$rcDomain->id}}" action="{{route('admin.custom-domain.status')}}" method="POST">
-                                                @csrf
-                                                <input type="hidden" name="domain_id" value="{{$rcDomain->id}}">
-                                                <select class="max-w-130 form-control form-control-sm
-                                                    @if($rcDomain->status == 'pending')
-                                                    bg-warning text-white
-                                                    @elseif($rcDomain->status == 'active')
-                                                    bg-success text-white
-                                                    @elseif($rcDomain->status == 'failed' || $rcDomain->status == 'rejected')
-                                                    bg-danger text-white
-                                                    @endif
-                                                    " name="status" onchange="document.getElementById('statusForm{{$rcDomain->id}}').submit();">
-                                                <option value="pending" {{$rcDomain->status == 'pending' ? 'selected' : ''}}>{{__('Pending')}}</option>
-                                                <option value="active" {{$rcDomain->status == 'active' ? 'selected' : ''}}>{{__('Connected')}}</option>
-                                                <option value="failed" {{$rcDomain->status == 'failed' || $rcDomain->status == 'rejected' ? 'selected' : ''}}>{{__('Rejected')}}</option>
-                                                </select>
-                                            </form>
+                                        <td class="domain-status-cell">
+                                            @php
+                                                if ($rcDomain->status == 'active') {
+                                                    $statusBadgeClass = 'badge badge-success';
+                                                    $statusLabel = __('Connected');
+                                                } elseif ($rcDomain->status == 'failed' || $rcDomain->status == 'rejected') {
+                                                    $statusBadgeClass = 'badge badge-danger';
+                                                    $statusLabel = __('Rejected');
+                                                } else {
+                                                    $statusBadgeClass = 'badge badge-warning text-dark';
+                                                    $statusLabel = __('Pending');
+                                                }
+                                            @endphp
+                                            <span class="{{ $statusBadgeClass }} domain-status-badge">{{ $statusLabel }}</span>
                                         </td>
                                         <td class="domain-actions-cell">
                                             <div class="domain-actions-wrap">
-                                            <button class="btn btn-secondary btn-sm editbtn" data-toggle="modal" data-target="#mailModal" data-email="{{!empty($rcDomain->user) ? $rcDomain->user->email : ''}}">{{__('Mail')}}</button>
+                                            <button class="btn btn-secondary btn-sm editbtn" data-toggle="modal" data-target="#mailModal" data-email="{{!empty($rcDomain->user) ? $rcDomain->user->email : ''}}" title="{{ __('Mail') }}" aria-label="{{ __('Mail') }}"><i class="fas fa-envelope"></i></button>
                                             <form class="domain-action-form" action="{{ route('admin.custom-domain.recheck') }}" method="POST">
                                                 @csrf
                                                 <input type="hidden" name="domain_id" value="{{ $rcDomain->id }}">
-                                                <button type="submit" class="btn btn-info btn-sm btn-block-sm">{{ __('domain_health.recheck') }}</button>
+                                                <button type="submit" class="btn btn-info btn-sm" title="{{ __('domain_health.recheck') }}" aria-label="{{ __('domain_health.recheck') }}"><i class="fas fa-sync"></i></button>
                                             </form>
+                                            @if ($wwwState['can_enable'] ?? false)
+                                            <form class="domain-action-form domain-www-form" action="{{ route('admin.custom-domain.www.enable') }}" method="POST">
+                                                @csrf
+                                                <input type="hidden" name="domain_id" value="{{ $rcDomain->id }}">
+                                                <button type="button"
+                                                        class="btn btn-outline-primary btn-sm domain-www-enablebtn"
+                                                        data-domain="{{ $rcDomain->custom_name }}"
+                                                        title="{{ __('domain_www.enable') }}"
+                                                        aria-label="{{ __('domain_www.enable') }}"><i class="fas fa-plus"></i></button>
+                                            </form>
+                                            @elseif ($wwwState['can_disable'] ?? false)
+                                            <form class="domain-action-form domain-www-form" action="{{ route('admin.custom-domain.www.disable') }}" method="POST">
+                                                @csrf
+                                                <input type="hidden" name="domain_id" value="{{ $rcDomain->id }}">
+                                                <button type="button"
+                                                        class="btn btn-outline-secondary btn-sm domain-www-disablebtn"
+                                                        data-domain="{{ $rcDomain->custom_name }}"
+                                                        title="{{ __('domain_www.disable') }}"
+                                                        aria-label="{{ __('domain_www.disable') }}"><i class="fas fa-minus"></i></button>
+                                            </form>
+                                            @endif
                                             <form class="domain-action-form deleteform" action="{{route('admin.custom-domain.delete')}}" method="post">
                                                 @csrf
                                                 <input type="hidden" name="domain_id" value="{{$rcDomain->id}}">
-                                                <button type="submit" class="btn btn-danger btn-sm domain-deletebtn btn-block-sm" data-domain="{{ $rcDomain->custom_name }}" title="{{ __('Delete') }}">
+                                                <button type="button" class="btn btn-danger btn-sm domain-deletebtn" data-domain="{{ $rcDomain->custom_name }}" title="{{ __('Delete') }}" aria-label="{{ __('Delete') }}">
                                                 <i class="fas fa-trash"></i>
-                                                <span class="domain-delete-label">{{__('Delete')}}</span>
+                                                <span class="domain-delete-label d-none">{{__('Delete')}}</span>
                                                 </button>
                                             </form>
                                             </div>
@@ -469,9 +526,11 @@
             margin-bottom: 0.5rem;
         }
     }
+    .domain-table td, .domain-table th { vertical-align: middle; }
+    .domain-table td { padding-top: .4rem; padding-bottom: .4rem; }
     .domain-health-cell {
-        min-width: 11rem;
-        max-width: 20rem;
+        min-width: 9rem;
+        max-width: 14rem;
         vertical-align: middle !important;
     }
     .domain-health-cell__inner {
@@ -489,45 +548,52 @@
         font-size: 0.8rem;
         line-height: 1.45;
         color: #6c757d;
-        word-break: normal;
-        overflow-wrap: break-word;
-        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 14rem;
     }
     .domain-actions-cell {
+        white-space: nowrap;
         min-width: 8.5rem;
         vertical-align: middle !important;
     }
     .domain-actions-wrap {
         display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.35rem;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: .35rem;
     }
     .domain-action-form {
-        display: block;
+        display: inline-block;
         margin: 0;
     }
-  @media (min-width: 768px) {
-        .domain-actions-wrap {
-            flex-direction: row;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .domain-action-form {
-            display: inline-block;
-        }
+    .domain-table td.domain-user-cell,
+    .domain-table td.domain-name-cell {
+        white-space: nowrap;
+        max-width: 8.5rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
-    .domain-deletebtn .domain-delete-label {
-        margin-left: 0.25rem;
+    .domain-table td.domain-user-cell a,
+    .domain-table td.domain-name-cell a {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
     }
-    [dir="rtl"] .domain-deletebtn .domain-delete-label {
-        margin-left: 0;
-        margin-right: 0.25rem;
+    .domain-health-cell {
+        max-width: 11rem !important;
     }
-    @media (max-width: 575.98px) {
-        .domain-deletebtn .domain-delete-label {
-            display: none;
-        }
+    .domain-table td.domain-status-cell {
+        white-space: nowrap;
+    }
+    .domain-status-badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.75rem;
     }
 </style>
 
@@ -552,6 +618,49 @@
         var deleteBodyTpl = @json(__('domain_health.delete_body'));
         var bulkDeleteTitle = @json(__('domain_health.bulk_delete_title'));
         var bulkDeleteBody = @json(__('domain_health.bulk_delete_body'));
+        var sharedProjectWarning = @json(__('domain_mutation.shared_project_notice'));
+        var confirmPrompt = @json(__('domain_mutation.type_domain_to_confirm'));
+        var wwwEnableTitle = @json(__('domain_www.enable_title'));
+        var wwwEnableBody = @json(__('domain_www.enable_body'));
+        var wwwDisableTitle = @json(__('domain_www.disable_title'));
+        var wwwDisableBody = @json(__('domain_www.disable_body'));
+
+        function confirmDomainAction(options) {
+            jQuery('.request-loader').addClass('show');
+
+            swal({
+                title: options.title,
+                text: options.text + '\n\n' + sharedProjectWarning,
+                type: 'warning',
+                content: {
+                    element: 'input',
+                    attributes: {
+                        placeholder: options.domain,
+                        value: '',
+                        autocapitalize: 'off',
+                        autocorrect: 'off',
+                    },
+                },
+                buttons: {
+                    confirm: {
+                        text: options.confirmText,
+                        className: 'btn btn-success',
+                    },
+                    cancel: {
+                        visible: true,
+                        text: @json(__('Cancel')),
+                        className: 'btn btn-danger',
+                    },
+                },
+            }).then(function (value) {
+                if (value && String(value).trim().toLowerCase() === String(options.domain).trim().toLowerCase()) {
+                    options.onConfirm(String(value).trim());
+                } else {
+                    swal.close();
+                    jQuery('.request-loader').removeClass('show');
+                }
+            });
+        }
 
         jQuery('.bulk-delete').on('click', function (e) {
             e.preventDefault();
@@ -579,33 +688,57 @@
 
             swal({
                 title: bulkDeleteTitle,
-                text: bulkDeleteBody.replace(':domains', domainNames.join(', ') || ids.length),
+                text: bulkDeleteBody.replace(':domains', domainNames.join(', ') || ids.length) + '\n\n' + sharedProjectWarning + '\n\n' + confirmPrompt,
                 type: 'warning',
+                content: {
+                    element: 'input',
+                    attributes: {
+                        placeholder: domainNames.join(', '),
+                        value: '',
+                        autocapitalize: 'off',
+                        autocorrect: 'off',
+                    },
+                },
                 buttons: {
                     confirm: {
                         text: @json(__('domain_health.delete_confirm')),
-                        className: 'btn btn-success'
+                        className: 'btn btn-success',
                     },
                     cancel: {
                         visible: true,
                         text: @json(__('Cancel')),
-                        className: 'btn btn-danger'
-                    }
-                }
-            }).then(function (confirmed) {
-                if (confirmed) {
-                    jQuery.post(href, {
-                        _token: @json(csrf_token()),
-                        ids: ids
-                    }).done(function () {
-                        location.reload();
-                    }).fail(function () {
-                        jQuery('.request-loader').removeClass('show');
-                    });
-                } else {
+                        className: 'btn btn-danger',
+                    },
+                },
+            }).then(function (value) {
+                if (! value) {
                     swal.close();
                     jQuery('.request-loader').removeClass('show');
+                    return;
                 }
+
+                var typedDomains = String(value).split(',').map(function (part) {
+                    return part.trim().toLowerCase();
+                }).filter(Boolean).sort();
+                var expectedDomains = domainNames.map(function (name) {
+                    return String(name).trim().toLowerCase();
+                }).sort();
+
+                if (typedDomains.join('|') !== expectedDomains.join('|')) {
+                    swal.close();
+                    jQuery('.request-loader').removeClass('show');
+                    return;
+                }
+
+                jQuery.post(href, {
+                    _token: @json(csrf_token()),
+                    ids: ids,
+                    confirm_domains: domainNames,
+                }).done(function () {
+                    location.reload();
+                }).fail(function () {
+                    jQuery('.request-loader').removeClass('show');
+                });
             });
         });
 
@@ -614,31 +747,68 @@
 
             var $btn = jQuery(this);
             var domain = $btn.data('domain') || '';
+            var $form = $btn.closest('.deleteform');
 
-            jQuery('.request-loader').addClass('show');
-
-            swal({
+            confirmDomainAction({
                 title: deleteTitleTpl.replace(':domain', domain),
-                text: deleteBodyTpl.replace(':domain', domain),
-                type: 'warning',
-                buttons: {
-                    confirm: {
-                        text: @json(__('domain_health.delete_confirm')),
-                        className: 'btn btn-success'
-                    },
-                    cancel: {
-                        visible: true,
-                        text: @json(__('Cancel')),
-                        className: 'btn btn-danger'
-                    }
-                }
-            }).then(function (confirmed) {
-                if (confirmed) {
-                    $btn.closest('.deleteform').trigger('submit');
-                } else {
-                    swal.close();
-                    jQuery('.request-loader').removeClass('show');
-                }
+                text: deleteBodyTpl.replace(':domain', domain) + '\n\n' + confirmPrompt,
+                domain: domain,
+                confirmText: @json(__('domain_health.delete_confirm')),
+                onConfirm: function (typed) {
+                    $form.find('input[name="confirm_domain"]').remove();
+                    $form.append(jQuery('<input>', {
+                        type: 'hidden',
+                        name: 'confirm_domain',
+                        value: typed,
+                    }));
+                    $form.trigger('submit');
+                },
+            });
+        });
+
+        jQuery('.domain-www-enablebtn').on('click', function (e) {
+            e.preventDefault();
+            var $btn = jQuery(this);
+            var domain = $btn.data('domain') || '';
+            var $form = $btn.closest('.domain-www-form');
+
+            confirmDomainAction({
+                title: wwwEnableTitle.replace(':domain', domain),
+                text: wwwEnableBody.replace(':domain', domain) + '\n\n' + confirmPrompt,
+                domain: domain,
+                confirmText: @json(__('domain_www.enable_confirm')),
+                onConfirm: function (typed) {
+                    $form.find('input[name="confirm_domain"]').remove();
+                    $form.append(jQuery('<input>', {
+                        type: 'hidden',
+                        name: 'confirm_domain',
+                        value: typed,
+                    }));
+                    $form.trigger('submit');
+                },
+            });
+        });
+
+        jQuery('.domain-www-disablebtn').on('click', function (e) {
+            e.preventDefault();
+            var $btn = jQuery(this);
+            var domain = $btn.data('domain') || '';
+            var $form = $btn.closest('.domain-www-form');
+
+            confirmDomainAction({
+                title: wwwDisableTitle.replace(':domain', domain),
+                text: wwwDisableBody.replace(':domain', domain) + '\n\n' + confirmPrompt,
+                domain: domain,
+                confirmText: @json(__('domain_www.disable_confirm')),
+                onConfirm: function (typed) {
+                    $form.find('input[name="confirm_domain"]').remove();
+                    $form.append(jQuery('<input>', {
+                        type: 'hidden',
+                        name: 'confirm_domain',
+                        value: typed,
+                    }));
+                    $form.trigger('submit');
+                },
             });
         });
     });

@@ -8,6 +8,7 @@ use App\Domain\Admin\Models\Admin;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User;
 use App\Services\Vercel\DnsNameserverChecker;
+use App\Services\Vercel\VercelDomainCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -22,16 +23,12 @@ class CustomDomainRecheckTest extends AdminApiTestCase
         parent::setUp();
 
         $this->ensureAdminViewData();
-        Cache::forget('admin.domain_health_counts');
-        Cache::forget('vercel.project_domain_count');
-        Cache::forget('vercel.project_domain_names');
+        app(VercelDomainCache::class)->invalidate();
     }
 
     protected function tearDown(): void
     {
-        Cache::forget('admin.domain_health_counts');
-        Cache::forget('vercel.project_domain_count');
-        Cache::forget('vercel.project_domain_names');
+        app(VercelDomainCache::class)->invalidate();
 
         parent::tearDown();
     }
@@ -45,16 +42,11 @@ class CustomDomainRecheckTest extends AdminApiTestCase
         $this->signInWebAdmin();
 
         $domain = $this->seedDomainSetting();
+        $cache = app(VercelDomainCache::class);
+        Cache::put($cache->healthCountersKey(), ['linked' => 9, 'issues' => 3], now()->addMinutes(5));
+        $this->assertTrue(Cache::has($cache->healthCountersKey()));
 
-        Cache::put('admin.domain_health_counts', ['linked' => 9, 'issues' => 3], now()->addMinutes(5));
-        $this->assertTrue(Cache::has('admin.domain_health_counts'));
-
-        Http::fake([
-            'api.vercel.com/*' => Http::response([
-                'name' => $domain->custom_name,
-                'verified' => true,
-            ], 200),
-        ]);
+        $this->fakeRecheckEndpoints($domain->custom_name);
 
         $this->from(route('admin.custom-domain.index'))
             ->post(route('admin.custom-domain.recheck'), [
@@ -62,7 +54,7 @@ class CustomDomainRecheckTest extends AdminApiTestCase
             ])
             ->assertRedirect();
 
-        $this->assertFalse(Cache::has('admin.domain_health_counts'));
+        $this->assertFalse(Cache::has($cache->healthCountersKey()));
     }
 
     /** @test */
@@ -74,27 +66,7 @@ class CustomDomainRecheckTest extends AdminApiTestCase
         $this->signInWebAdmin();
 
         $domain = $this->seedDomainSetting();
-
-        Http::fake(function (\Illuminate\Http\Client\Request $request) use ($domain) {
-            $url = $request->url();
-            $name = $domain->custom_name;
-
-            if (str_contains($url, '/verify')) {
-                return Http::response([
-                    'name' => $name,
-                    'verified' => true,
-                ], 200);
-            }
-
-            if (str_contains($url, '/v9/projects/') && str_contains($url, '/domains/')) {
-                return Http::response([
-                    'name' => $name,
-                    'verified' => true,
-                ], 200);
-            }
-
-            return Http::response(['error' => ['message' => 'unexpected']], 500);
-        });
+        $this->fakeRecheckEndpoints($domain->custom_name);
 
         $this->from(route('admin.custom-domain.index'))
             ->post(route('admin.custom-domain.recheck'), [
@@ -107,15 +79,83 @@ class CustomDomainRecheckTest extends AdminApiTestCase
         $lastCheck = $domain->dns_records['last_check'] ?? null;
 
         $this->assertIsArray($lastCheck);
-        $this->assertTrue($lastCheck['vercel_verified']);
+        $this->assertTrue($lastCheck['vercel_verified'] ?? $lastCheck['apex_verified'] ?? false);
         $this->assertTrue($lastCheck['nameservers_ok']);
         $this->assertNotEmpty($lastCheck['last_check_at']);
+    }
+
+    /** @test */
+    public function recheck_is_throttled_after_ten_requests_per_minute(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(true);
+        $this->signInWebAdmin();
+
+        $domain = $this->seedDomainSetting();
+        $this->fakeRecheckEndpoints($domain->custom_name);
+
+        for ($i = 0; $i < 10; $i++) {
+            $this->from(route('admin.custom-domain.index'))
+                ->post(route('admin.custom-domain.recheck'), ['domain_id' => $domain->id])
+                ->assertRedirect();
+        }
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.recheck'), ['domain_id' => $domain->id])
+            ->assertStatus(429);
+    }
+
+    /** @test */
+    public function recheck_surfaces_translated_provider_error_without_flipping_active_status(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        config(['services.vercel.health_failure_threshold' => 5]);
+        $this->signInWebAdmin();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => User::factory()->tenant()->create([
+                'email' => 'recheck-active-' . uniqid('', true) . '@example.com',
+            ])->id,
+            'custom_name' => 'recheck-active-' . uniqid('', false) . '.example.com',
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => true,
+            'added_date' => now(),
+        ]);
+
+        Http::fake(function (\Illuminate\Http\Client\Request $request) use ($domain) {
+            $url = $request->url();
+
+            if (str_contains($url, '/v9/projects/') && str_contains($url, '/domains') && ! str_contains($url, '/domains/')) {
+                return Http::response([
+                    'domains' => [['name' => $domain->custom_name, 'verified' => true]],
+                    'pagination' => ['next' => null],
+                ], 200);
+            }
+
+            if (str_contains($url, '/verify')) {
+                return Http::response(['error' => ['message' => 'rate limited']], 429);
+            }
+
+            return Http::response(['error' => ['message' => 'upstream']], 503);
+        });
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.recheck'), ['domain_id' => $domain->id])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $domain->refresh();
+        $this->assertSame('active', $domain->status);
+        $this->assertSame('provider_error', $domain->health()['code']);
     }
 
     private function skipIfMissingSchema(): void
     {
         if (! Schema::hasTable('api_domains_settings')) {
-            $this->markTestSkipped('Missing required DB tables.');
+            $this->fail('Required domain tables are missing.');
         }
     }
 
@@ -127,7 +167,6 @@ class CustomDomainRecheckTest extends AdminApiTestCase
             'services.vercel.team_id' => 'team_test',
             'services.vercel.base_url' => 'https://api.vercel.com',
             'services.vercel.max_project_domains' => 50,
-            'services.vercel.platform_domain_count' => 4,
             'services.vercel.auto_attach_custom_domain' => true,
             'services.vercel.check_nameservers' => true,
         ]);
@@ -137,6 +176,38 @@ class CustomDomainRecheckTest extends AdminApiTestCase
     {
         $this->mock(DnsNameserverChecker::class, function ($mock) use ($ok) {
             $mock->shouldReceive('hasExpectedNameservers')->andReturn($ok);
+            $mock->shouldReceive('getObservedNameservers')->andReturn(
+                $ok ? ['ns1.vercel-dns.com', 'ns2.vercel-dns.com'] : ['ns1.example.com']
+            );
+        });
+    }
+
+    private function fakeRecheckEndpoints(string $domainName): void
+    {
+        Http::fake(function (\Illuminate\Http\Client\Request $request) use ($domainName) {
+            $url = $request->url();
+            $method = $request->method();
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/') && str_contains($url, '/domains') && ! str_contains($url, '/domains/')) {
+                return Http::response([
+                    'domains' => [['name' => $domainName, 'verified' => true]],
+                    'pagination' => ['next' => null],
+                ], 200);
+            }
+
+            if (str_contains($url, '/verify') && $method === 'POST') {
+                return Http::response(['name' => $domainName, 'verified' => true], 200);
+            }
+
+            if (str_contains($url, '/v6/domains/' . rawurlencode($domainName) . '/config')) {
+                return Http::response(['misconfigured' => false], 200);
+            }
+
+            if (str_contains($url, '/domains/' . rawurlencode($domainName))) {
+                return Http::response(['name' => $domainName, 'verified' => true], 200);
+            }
+
+            return Http::response(['error' => ['message' => 'unexpected']], 500);
         });
     }
 

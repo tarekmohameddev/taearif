@@ -7,6 +7,7 @@ namespace Tests\Feature\Admin\Domains;
 use App\Domain\Admin\Models\Admin;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User;
+use App\Services\Vercel\VercelDomainCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -21,14 +22,12 @@ class CustomDomainCapacityTest extends AdminApiTestCase
         parent::setUp();
 
         $this->ensureAdminViewData();
-        Cache::forget('vercel.project_domains');
-        Cache::forget('vercel.project_domain_count');
+        app(VercelDomainCache::class)->invalidate();
     }
 
     protected function tearDown(): void
     {
-        Cache::forget('vercel.project_domains');
-        Cache::forget('vercel.project_domain_count');
+        app(VercelDomainCache::class)->invalidate();
 
         parent::tearDown();
     }
@@ -56,8 +55,8 @@ class CustomDomainCapacityTest extends AdminApiTestCase
         // Arabic, so asserting labels couples this test to the translation files.
         $response->assertSee('data-lucide="gauge"', false);
         $response->assertSee('46 / 50', false);
-        $response->assertSee('>21<', false);   // customer domains in use
-        $response->assertSee('>2</h4>', false); // can still add
+        $response->assertSee('>46<', false);   // customer apex domains
+        $response->assertSee('>4</h4>', false); // free entries
         $response->assertSee('92%', false);
         $response->assertSee($domain->custom_name, false);
     }
@@ -140,7 +139,7 @@ class CustomDomainCapacityTest extends AdminApiTestCase
     }
 
     /** @test */
-    public function remaining_customer_domains_accounts_for_two_entries_per_domain(): void
+    public function remaining_entries_use_exact_inventory_counts(): void
     {
         $this->skipIfMissingSchema();
         $this->configureVercel();
@@ -159,16 +158,299 @@ class CustomDomainCapacityTest extends AdminApiTestCase
 
         $response->assertOk();
         $response->assertSee('48 / 50', false);
-        // (48 - 4 platform) / 2 = 22 in use; (50 - 48) / 2 = 1 remaining.
-        $response->assertSee('>22<', false);    // (48 - 4 platform) / 2
-        $response->assertSee('>1</h4>', false); // (50 - 48) / 2
+        $response->assertSee('>48<', false);
+        $response->assertSee('>2</h4>', false);
         $response->assertSee('96%', false);
+    }
+
+    /** @test */
+    public function capacity_widget_shows_mixed_apex_only_and_apex_with_www_metrics(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+        $this->seedDomainSetting();
+
+        Http::fake([
+            'api.vercel.com/*' => Http::response([
+                'domains' => [
+                    ['name' => 'taearif.com', 'verified' => true],
+                    ['name' => 'customer-apex.example.com', 'verified' => true],
+                    ['name' => 'www.customer-apex.example.com', 'verified' => true, 'redirect' => 'customer-apex.example.com', 'redirectStatusCode' => 301],
+                    ['name' => 'apex-only.example.com', 'verified' => false],
+                ],
+                'pagination' => ['count' => 4, 'next' => null],
+            ], 200),
+        ]);
+
+        $response = $this->get(route('admin.custom-domain.index'));
+
+        $response->assertOk();
+        $response->assertSee('data-lucide="gauge"', false);
+        $response->assertSee('>2<', false);
+        $response->assertSee('>1<', false);
+    }
+
+    /** @test */
+    public function platform_allowlist_domains_are_excluded_from_customer_apex_count(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+        $this->seedDomainSetting();
+
+        Http::fake([
+            'api.vercel.com/*' => Http::response([
+                'domains' => [
+                    ['name' => 'taearif.com', 'verified' => true],
+                    ['name' => 'www.taearif.com', 'verified' => true, 'redirect' => 'taearif.com', 'redirectStatusCode' => 301],
+                    ['name' => 'bigrises.com', 'verified' => true],
+                    ['name' => 'tenant-one.example.com', 'verified' => true],
+                ],
+                'pagination' => ['count' => 4, 'next' => null],
+            ], 200),
+        ]);
+
+        $response = $this->get(route('admin.custom-domain.index'));
+
+        $response->assertOk();
+        $response->assertSee('>1<', false);
+        $response->assertSee('>2<', false);
+    }
+
+    /** @test */
+    public function page_shows_unreliable_inventory_warning_when_lower_bound(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+        $domain = $this->seedDomainSetting();
+
+        Http::fake([
+            'api.vercel.com/*' => Http::response([
+                'domains' => [['name' => 'partial.example.com', 'verified' => true]],
+                'pagination' => ['count' => 1, 'next' => 9999999999999],
+            ], 200),
+        ]);
+
+        app(VercelDomainCache::class)->fresh();
+
+        $response = $this->get(route('admin.custom-domain.index'));
+
+        $response->assertOk();
+        $response->assertSee(__('vercel_capacity.inventory_unreliable'), false);
+        $response->assertSee($domain->custom_name, false);
+    }
+
+    /** @test */
+    public function capacity_math_does_not_divide_customer_counts_by_two(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+        $this->seedDomainSetting();
+
+        Http::fake([
+            'api.vercel.com/*' => Http::response([
+                'domains' => $this->fakeDomainList(46),
+                'pagination' => ['count' => 46, 'next' => null],
+            ], 200),
+        ]);
+
+        $response = $this->get(route('admin.custom-domain.index'));
+
+        $response->assertOk();
+        $response->assertSee('>46<', false);
+        $response->assertDontSee('>23<', false);
+    }
+
+    /** @test */
+    public function enable_www_rejects_when_no_free_slot(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $user = User::factory()->tenant()->create([
+            'email' => 'www-capacity-' . uniqid('', true) . '@example.com',
+        ]);
+        $apex = 'www-capacity-' . uniqid('', false) . '.example.com';
+        $domain = ApiDomainSetting::create([
+            'user_id' => $user->id,
+            'custom_name' => $apex,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+        ]);
+
+        $filled = [];
+        for ($i = 0; $i < 50; $i++) {
+            $filled[] = ['name' => 'filled-' . $i . '.example.com', 'verified' => true];
+        }
+        $filled[] = ['name' => $apex, 'verified' => true];
+
+        $this->fakeVercelAdminDomains($filled);
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.www.enable'), [
+                'domain_id' => $domain->id,
+                'confirm_domain' => $apex,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        Http::assertNotSent(fn ($request) => $request->method() === 'POST'
+            && str_contains($request->url(), '/domains'));
+    }
+
+    /** @test */
+    public function enable_www_is_idempotent_when_valid_redirect_already_exists(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $user = User::factory()->tenant()->create([
+            'email' => 'www-idempotent-' . uniqid('', true) . '@example.com',
+        ]);
+        $apex = 'www-idempotent-' . uniqid('', false) . '.example.com';
+        $domain = ApiDomainSetting::create([
+            'user_id' => $user->id,
+            'custom_name' => $apex,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+        ]);
+
+        $this->fakeVercelAdminDomains([
+            ['name' => $apex, 'verified' => true],
+            ['name' => 'www.' . $apex, 'verified' => true, 'redirect' => $apex, 'redirectStatusCode' => 301],
+        ]);
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.www.enable'), [
+                'domain_id' => $domain->id,
+                'confirm_domain' => $apex,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        Http::assertNotSent(fn ($request) => $request->method() === 'POST'
+            && str_contains($request->url(), '/domains'));
+    }
+
+    /** @test */
+    public function enable_www_surfaces_redirect_mismatch_error(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $user = User::factory()->tenant()->create([
+            'email' => 'www-mismatch-' . uniqid('', true) . '@example.com',
+        ]);
+        $apex = 'www-mismatch-' . uniqid('', false) . '.example.com';
+        $domain = ApiDomainSetting::create([
+            'user_id' => $user->id,
+            'custom_name' => $apex,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+        ]);
+
+        $this->fakeVercelAdminDomains([
+            ['name' => $apex, 'verified' => true],
+            ['name' => 'www.' . $apex, 'verified' => true, 'redirect' => 'wrong.example.com', 'redirectStatusCode' => 301],
+        ]);
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.www.enable'), [
+                'domain_id' => $domain->id,
+                'confirm_domain' => $apex,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+    }
+
+    /** @test */
+    public function disable_www_removes_only_www_hostname(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $user = User::factory()->tenant()->create([
+            'email' => 'www-disable-' . uniqid('', true) . '@example.com',
+        ]);
+        $apex = 'www-disable-' . uniqid('', false) . '.example.com';
+        $domain = ApiDomainSetting::create([
+            'user_id' => $user->id,
+            'custom_name' => $apex,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+        ]);
+
+        $this->fakeVercelAdminDomains([
+            ['name' => $apex, 'verified' => true],
+            ['name' => 'www.' . $apex, 'verified' => true, 'redirect' => $apex, 'redirectStatusCode' => 301],
+        ], allowDelete: true);
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.www.disable'), [
+                'domain_id' => $domain->id,
+                'confirm_domain' => $apex,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        Http::assertSent(fn ($request) => $request->method() === 'DELETE'
+            && str_contains($request->url(), 'www.' . rawurlencode($apex)));
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $domains
+     */
+    private function fakeVercelAdminDomains(array $domains, bool $allowDelete = false): void
+    {
+        Http::fake(function (\Illuminate\Http\Client\Request $request) use ($domains, $allowDelete) {
+            $url = $request->url();
+            $method = $request->method();
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test') && ! str_contains($url, '/domains')) {
+                return Http::response([
+                    'id' => 'prj_test',
+                    'accountId' => 'team_test',
+                ], 200);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test/domains') && ! str_contains($url, '/domains/')) {
+                return Http::response([
+                    'domains' => $domains,
+                    'pagination' => ['count' => count($domains), 'next' => null],
+                ], 200);
+            }
+
+            if ($allowDelete && $method === 'DELETE' && str_contains($url, '/domains/')) {
+                return Http::response(null, 200);
+            }
+
+            if ($method === 'POST' && str_contains($url, '/domains')) {
+                return Http::response(['name' => 'www.example.com', 'verified' => true], 200);
+            }
+
+            return Http::response(['error' => 'unexpected'], 500);
+        });
     }
 
     private function skipIfMissingSchema(): void
     {
         if (! Schema::hasTable('api_domains_settings')) {
-            $this->markTestSkipped('Missing required DB tables.');
+            $this->fail('Required domain tables are missing.');
         }
     }
 
@@ -178,9 +460,19 @@ class CustomDomainCapacityTest extends AdminApiTestCase
             'services.vercel.token' => 'test-token',
             'services.vercel.project_id' => 'prj_test',
             'services.vercel.team_id' => 'team_test',
+            'services.vercel.expected_project_id' => 'prj_test',
+            'services.vercel.expected_team_id' => 'team_test',
+            'services.vercel.allow_shared_project_mutations' => true,
             'services.vercel.base_url' => 'https://api.vercel.com',
             'services.vercel.max_project_domains' => 50,
-            'services.vercel.platform_domain_count' => 4,
+            'services.vercel.platform_domains' => [
+                'taearif.com',
+                'www.taearif.com',
+                'bigrises.com',
+                'www.bigrises.com',
+                'test.taearif.com',
+                'mandhoor.com',
+            ],
         ]);
     }
 

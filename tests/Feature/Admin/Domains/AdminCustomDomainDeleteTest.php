@@ -5,38 +5,48 @@ declare(strict_types=1);
 namespace Tests\Feature\Admin\Domains;
 
 use App\Domain\Admin\Models\Admin;
+use App\Events\TenantActivityOccurred;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User;
 use App\Services\Vercel\VercelDomainClient;
 use App\Services\Vercel\VercelDomainException;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Tests\Feature\Admin\AdminApiTestCase;
 
 /**
  * Regression coverage for the admin custom-domain delete path.
- *
- * The panel lists ApiDomainSetting rows but used to delete UserCustomDomain rows
- * by the same numeric id — destroying an unrelated record while leaving the
- * intended domain (and its Vercel entry) in place.
  */
 class AdminCustomDomainDeleteTest extends AdminApiTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config([
+            'services.vercel.token' => 'test-token',
+            'services.vercel.project_id' => 'prj_test',
+            'services.vercel.team_id' => 'team_test',
+            'services.vercel.expected_project_id' => 'prj_test',
+            'services.vercel.expected_team_id' => 'team_test',
+            'services.vercel.allow_shared_project_mutations' => true,
+            'services.vercel.auto_attach_custom_domain' => true,
+        ]);
+    }
+
     private function skipIfMissingSchema(): void
     {
         if (! Schema::hasTable('api_domains_settings') || ! Schema::hasTable('user_custom_domains')) {
-            $this->markTestSkipped('Missing required DB tables.');
+            $this->fail('Required domain tables are missing.');
         }
     }
 
     private function signInWebAdmin(): Admin
     {
         $admin = Admin::factory()->create();
-
-        // Authenticate on the admin guard WITHOUT making it the default guard.
-        // actingAs() would call shouldUse('admin'), so $request->user() would
-        // return an Admin — which never happens in production, where these web
-        // routes run on the admin guard while the default stays 'web'.
         $this->app['auth']->guard('admin')->setUser($admin);
 
         return $admin;
@@ -48,19 +58,11 @@ class AdminCustomDomainDeleteTest extends AdminApiTestCase
             'email' => 'admin-domain-' . uniqid('', true) . '@example.com',
         ]);
 
-        // The users table is reset per run but api_domains_settings is not, so a
-        // recycled user id can inherit rows from an earlier run. reassignPrimary()
-        // picks an arbitrary active domain (unordered first(), mirroring
-        // DomainSettingsController::destroy()), so leftovers must not be candidates.
         ApiDomainSetting::where('user_id', $user->id)->delete();
 
         return $user;
     }
 
-    /**
-     * custom_name is uniquely indexed, so generate a fresh name per row rather
-     * than depending on the test database being clean.
-     */
     private function makeDomain(User $user, string $label, bool $primary = false, string $status = 'active'): ApiDomainSetting
     {
         return ApiDomainSetting::create([
@@ -73,10 +75,6 @@ class AdminCustomDomainDeleteTest extends AdminApiTestCase
         ]);
     }
 
-    /**
-     * Insert a user_custom_domains row carrying a specific id, so we can prove
-     * the delete no longer resolves against that table.
-     */
     private function makeDecoyCustomDomain(int $id, User $user): void
     {
         DB::table('user_custom_domains')->insert([
@@ -90,11 +88,26 @@ class AdminCustomDomainDeleteTest extends AdminApiTestCase
         ]);
     }
 
+    /**
+     * @return array{domain_id: int, confirm_domain: string}
+     */
+    private function deletePayload(ApiDomainSetting $domain): array
+    {
+        return [
+            'domain_id' => $domain->id,
+            'confirm_domain' => $domain->custom_name,
+        ];
+    }
+
     private function mockVercel(bool $shouldFail = false): void
     {
         $this->mock(VercelDomainClient::class, function ($mock) use ($shouldFail) {
             $mock->shouldReceive('isConfigured')->andReturn(true);
-            $mock->shouldReceive('normalizeApex')->andReturnUsing(fn ($d) => $d);
+            $mock->shouldReceive('normalizeApex')->andReturnUsing(fn ($d) => strtolower(trim((string) $d)));
+            $mock->shouldReceive('getProjectIdentity')->andReturn([
+                'project_id' => 'prj_test',
+                'team_id' => 'team_test',
+            ]);
 
             if ($shouldFail) {
                 $mock->shouldReceive('removeApexAndWww')
@@ -110,21 +123,94 @@ class AdminCustomDomainDeleteTest extends AdminApiTestCase
     {
         $this->skipIfMissingSchema();
         $this->mockVercel();
-        $admin = $this->signInWebAdmin();
+        $this->signInWebAdmin();
         $user = $this->tenant();
 
         $domain = $this->makeDomain($user, 'delete-me');
-        // A decoy sharing the same numeric id is exactly what the old code destroyed.
         $this->makeDecoyCustomDomain($domain->id, $user);
 
-        $response = $this->post(route('admin.custom-domain.delete'), [
-            'domain_id' => $domain->id,
-        ]);
+        Event::fake([TenantActivityOccurred::class]);
 
-        $response->assertRedirect();
+        $this->post(route('admin.custom-domain.delete'), $this->deletePayload($domain))
+            ->assertRedirect();
 
         $this->assertDatabaseMissing('api_domains_settings', ['id' => $domain->id]);
         $this->assertDatabaseHas('user_custom_domains', ['id' => $domain->id]);
+        Event::assertDispatched(TenantActivityOccurred::class, fn (TenantActivityOccurred $event) => $event->action === 'domain.deleted');
+    }
+
+    /** @test */
+    public function delete_requires_typed_domain_confirmation(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->mockVercel();
+        $this->signInWebAdmin();
+        $user = $this->tenant();
+        $domain = $this->makeDomain($user, 'confirm-required');
+
+        $this->post(route('admin.custom-domain.delete'), [
+            'domain_id' => $domain->id,
+        ])->assertSessionHasErrors('confirm_domain');
+
+        $this->assertDatabaseHas('api_domains_settings', ['id' => $domain->id]);
+    }
+
+    /** @test */
+    public function delete_rejects_mismatched_confirmation_value(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->mockVercel();
+        $this->signInWebAdmin();
+        $user = $this->tenant();
+        $domain = $this->makeDomain($user, 'confirm-mismatch');
+
+        $this->post(route('admin.custom-domain.delete'), [
+            'domain_id' => $domain->id,
+            'confirm_domain' => 'wrong.example.com',
+        ])->assertRedirect()->assertSessionHas('error');
+
+        $this->assertDatabaseHas('api_domains_settings', ['id' => $domain->id]);
+    }
+
+    /** @test */
+    public function delete_is_blocked_when_shared_project_mutations_are_disabled_locally(): void
+    {
+        $this->skipIfMissingSchema();
+        config(['services.vercel.allow_shared_project_mutations' => false]);
+        $this->signInWebAdmin();
+        $user = $this->tenant();
+        $domain = $this->makeDomain($user, 'shared-blocked');
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.delete'), $this->deletePayload($domain))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('api_domains_settings', ['id' => $domain->id]);
+    }
+
+    /** @test */
+    public function delete_is_blocked_when_project_identity_does_not_match(): void
+    {
+        $this->skipIfMissingSchema();
+        config(['services.vercel.expected_project_id' => 'prj_expected']);
+
+        Http::fake([
+            'api.vercel.com/v9/projects/prj_test*' => Http::response([
+                'id' => 'prj_actual',
+                'accountId' => 'team_test',
+            ], 200),
+        ]);
+
+        $this->signInWebAdmin();
+        $user = $this->tenant();
+        $domain = $this->makeDomain($user, 'identity-mismatch');
+
+        $this->post(route('admin.custom-domain.delete'), $this->deletePayload($domain))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('api_domains_settings', ['id' => $domain->id]);
     }
 
     /** @test */
@@ -138,7 +224,7 @@ class AdminCustomDomainDeleteTest extends AdminApiTestCase
         $primary = $this->makeDomain($user, 'primary', true);
         $other = $this->makeDomain($user, 'secondary', false, 'active');
 
-        $this->post(route('admin.custom-domain.delete'), ['domain_id' => $primary->id])
+        $this->post(route('admin.custom-domain.delete'), $this->deletePayload($primary))
             ->assertRedirect();
 
         $this->assertDatabaseMissing('api_domains_settings', ['id' => $primary->id]);
@@ -160,11 +246,9 @@ class AdminCustomDomainDeleteTest extends AdminApiTestCase
         $older = $this->makeDomain($user, 'older', false, 'active');
         $newer = $this->makeDomain($user, 'newer', false, 'active');
 
-        $this->post(route('admin.custom-domain.delete'), ['domain_id' => $primary->id])
+        $this->post(route('admin.custom-domain.delete'), $this->deletePayload($primary))
             ->assertRedirect();
 
-        // preferredActive() orders by primary desc, id desc — the newest wins,
-        // rather than whatever an unordered first() happened to return.
         $this->assertDatabaseHas('api_domains_settings', ['id' => $newer->id, 'primary' => 1]);
         $this->assertDatabaseHas('api_domains_settings', ['id' => $older->id, 'primary' => 0]);
     }
@@ -176,14 +260,66 @@ class AdminCustomDomainDeleteTest extends AdminApiTestCase
         $this->mockVercel(true);
         $this->signInWebAdmin();
         $user = $this->tenant();
-
         $domain = $this->makeDomain($user, 'vercel-fails');
 
-        $this->post(route('admin.custom-domain.delete'), ['domain_id' => $domain->id])
+        $this->post(route('admin.custom-domain.delete'), $this->deletePayload($domain))
             ->assertRedirect();
 
-        // Failing closed: never orphan the Vercel entry by deleting the row anyway.
         $this->assertDatabaseHas('api_domains_settings', ['id' => $domain->id]);
+    }
+
+    /** @test */
+    public function delete_keeps_primary_when_transport_failure_prevents_vercel_detach(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $this->mock(VercelDomainClient::class, function ($mock) {
+            $mock->shouldReceive('isConfigured')->andReturn(true);
+            $mock->shouldReceive('normalizeApex')->andReturnUsing(fn ($d) => strtolower(trim((string) $d)));
+            $mock->shouldReceive('getProjectIdentity')->andReturn([
+                'project_id' => 'prj_test',
+                'team_id' => 'team_test',
+            ]);
+            $mock->shouldReceive('removeApexAndWww')->andThrow(new ConnectionException('timeout'));
+        });
+
+        $this->signInWebAdmin();
+        $user = $this->tenant();
+        $primary = $this->makeDomain($user, 'transport-primary', true);
+        $this->makeDomain($user, 'transport-secondary', false, 'active');
+
+        $this->post(route('admin.custom-domain.delete'), $this->deletePayload($primary))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('api_domains_settings', ['id' => $primary->id, 'primary' => 1]);
+    }
+
+    /** @test */
+    public function delete_cascades_to_www_redirect_removal(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $removed = [];
+        $this->mock(VercelDomainClient::class, function ($mock) use (&$removed) {
+            $mock->shouldReceive('isConfigured')->andReturn(true);
+            $mock->shouldReceive('normalizeApex')->andReturnUsing(fn ($d) => strtolower(trim((string) $d)));
+            $mock->shouldReceive('getProjectIdentity')->andReturn([
+                'project_id' => 'prj_test',
+                'team_id' => 'team_test',
+            ]);
+            $mock->shouldReceive('removeApexAndWww')->andReturnUsing(function (string $apex) use (&$removed) {
+                $removed[] = $apex;
+            });
+        });
+
+        $this->signInWebAdmin();
+        $user = $this->tenant();
+        $domain = $this->makeDomain($user, 'cascade-www');
+
+        $this->post(route('admin.custom-domain.delete'), $this->deletePayload($domain))
+            ->assertRedirect();
+
+        $this->assertSame([$domain->custom_name], $removed);
     }
 
     /** @test */
@@ -200,6 +336,7 @@ class AdminCustomDomainDeleteTest extends AdminApiTestCase
 
         $this->post(route('admin.custom-domain.bulk.delete'), [
             'ids' => [$first->id, $second->id],
+            'confirm_domains' => [$first->custom_name, $second->custom_name],
         ])->assertOk();
 
         $this->assertDatabaseMissing('api_domains_settings', ['id' => $first->id]);
@@ -221,9 +358,9 @@ class AdminCustomDomainDeleteTest extends AdminApiTestCase
 
         $this->post(route('admin.custom-domain.bulk.delete'), [
             'ids' => [$first->id, $second->id, $unknownId],
+            'confirm_domains' => [$first->custom_name, $second->custom_name, 'missing.example.com'],
         ]);
 
-        // Resolve-all-up-front: the batch aborts before anything is detached.
         $this->assertDatabaseHas('api_domains_settings', ['id' => $first->id]);
         $this->assertDatabaseHas('api_domains_settings', ['id' => $second->id]);
     }

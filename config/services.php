@@ -93,16 +93,38 @@ return [
         'token' => env('VERCEL_TOKEN'),
         'team_id' => env('VERCEL_TEAM_ID'),
         'project_id' => env('VERCEL_PROJECT_ID'),
+        'expected_team_id' => env('VERCEL_EXPECTED_TEAM_ID', env('VERCEL_TEAM_ID')),
+        'expected_project_id' => env('VERCEL_EXPECTED_PROJECT_ID', env('VERCEL_PROJECT_ID')),
         'base_url' => env('VERCEL_API_BASE', 'https://api.vercel.com'),
         'nameservers' => [
             'ns1.vercel-dns.com',
             'ns2.vercel-dns.com',
         ],
         'max_domains_per_tenant' => (int) env('VERCEL_MAX_DOMAINS_PER_TENANT', 5),
-        'max_project_domains' => (int) env('VERCEL_MAX_PROJECT_DOMAINS', 50),
+        'max_project_domains' => filled(env('VERCEL_MAX_PROJECT_DOMAINS'))
+            ? (int) env('VERCEL_MAX_PROJECT_DOMAINS')
+            : null,
+        'platform_domains' => array_values(array_filter(array_map(
+            static fn (string $domain): string => strtolower(trim($domain)),
+            explode(',', (string) env(
+                'VERCEL_PLATFORM_DOMAINS',
+                'taearif.com,www.taearif.com,bigrises.com,www.bigrises.com,test.taearif.com,mandhoor.com'
+            ))
+        ))),
         'platform_domain_count' => (int) env('VERCEL_PLATFORM_DOMAIN_COUNT', 4),
+        'allow_shared_project_mutations' => filter_var(
+            env('VERCEL_ALLOW_SHARED_PROJECT_MUTATIONS', false),
+            FILTER_VALIDATE_BOOLEAN
+        ),
         'check_nameservers' => filter_var(env('VERCEL_CHECK_NAMESERVERS', true), FILTER_VALIDATE_BOOLEAN),
         'auto_attach_custom_domain' => filter_var(env('VERCEL_AUTO_ATTACH_CUSTOM_DOMAIN', true), FILTER_VALIDATE_BOOLEAN),
+        'http_timeout' => (int) env('VERCEL_HTTP_TIMEOUT', 30),
+        'retry_max_attempts' => (int) env('VERCEL_RETRY_MAX_ATTEMPTS', 3),
+        'retry_base_delay_ms' => (int) env('VERCEL_RETRY_BASE_DELAY_MS', 500),
+        'health_failure_threshold' => (int) env('VERCEL_HEALTH_FAILURE_THRESHOLD', 3),
+        'health_failure_grace_hours' => (int) env('VERCEL_HEALTH_FAILURE_GRACE_HOURS', 0),
+        'sync_pace_us' => (int) env('VERCEL_SYNC_PACE_US', 250_000),
+        'sync_verify_pace_us' => (int) env('VERCEL_SYNC_VERIFY_PACE_US', 500_000),
     ],
 
 ];
