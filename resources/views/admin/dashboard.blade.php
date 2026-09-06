@@ -392,7 +392,7 @@
                                         <div class="dashboard-activity-item">
                                             <span class="dashboard-activity-icon"><i data-lucide="user-round"></i></span>
                                             <div>
-                                                <strong>{{ $tenant->company_name ?: $tenant->username }}</strong>
+                                                <strong>{{ $tenant->display_name }}</strong>
                                                 <small>{{ '@' . $tenant->username }}</small>
                                             </div>
                                             <time datetime="{{ optional($tenant->created_at)->toIso8601String() }}">
