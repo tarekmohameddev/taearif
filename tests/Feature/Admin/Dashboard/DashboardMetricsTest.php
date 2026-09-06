@@ -30,6 +30,9 @@ class DashboardMetricsTest extends AdminApiTestCase
             'user_id' => $tenant->id,
             'package_id' => $plan->id,
             'price' => 199.99,
+            'currency' => 'SAR',
+            'currency_symbol' => 'SAR',
+            'transaction_id' => 'dashboard-metrics-1',
             'status' => 1,
             'is_trial' => false,
             'start_date' => $now->copy()->subDays(10)->toDateString(),
@@ -40,8 +43,14 @@ class DashboardMetricsTest extends AdminApiTestCase
 
         DB::table('user_properties')->insert([
             'user_id' => $tenant->id,
+            'project_id' => 1,
+            'price' => 450000.75,
+            'listing_purpose' => 'sale',
+            'unit_status' => 'available',
+            'purpose' => 'sale',
+            'property_type' => 'apartment',
+            'area' => 90,
             'status' => 1,
-            'is_active' => true,
             'created_at' => $now->copy()->subDays(15),
             'updated_at' => $now->copy()->subDays(15),
         ]);
@@ -54,12 +63,20 @@ class DashboardMetricsTest extends AdminApiTestCase
                 'status',
                 'message',
                 'data' => [
+                    'dashboard',
+                    'business_metrics' => [
+                        'as_of',
+                        'timezone',
+                        'executive_summary',
+                        'financial_metrics',
+                        'visibility',
+                    ],
                     'properties' => [
                         'total',
                         'active',
                         'inactive',
                         'change_percentage',
-                        'period_days',
+                        'period',
                     ],
                     'revenue' => [
                         'total',
@@ -88,6 +105,9 @@ class DashboardMetricsTest extends AdminApiTestCase
                 ],
                 'meta',
             ])
+            ->assertJsonPath('data.business_metrics.executive_summary.activePaidSubscriberUsers', 0)
+            ->assertJsonPath('data.business_metrics.executive_summary.registeredTenantUsers', 1)
+            ->assertJsonPath('data.business_metrics.financial_metrics.forSaleInventoryValue.amount', '450000.75')
             ->assertJsonPath('data.properties.total', 1)
             ->assertJsonPath('data.revenue.total', 199.99)
             ->assertJsonPath('data.users.total', 1)
@@ -124,6 +144,29 @@ class DashboardMetricsTest extends AdminApiTestCase
     }
 
     /** @test */
+    public function admin_can_filter_dashboard_metrics_by_business_metrics(): void
+    {
+        $this->signInAdmin();
+
+        $response = $this->getJson(route('admin.api.dashboard', [
+            'metric' => 'business_metrics',
+        ]));
+
+        $response->assertOk()
+            ->assertJsonMissingPath('data.properties')
+            ->assertJsonStructure([
+                'data' => [
+                    'business_metrics' => [
+                        'as_of',
+                        'timezone',
+                        'executive_summary',
+                        'visibility',
+                    ],
+                ],
+            ]);
+    }
+
+    /** @test */
     public function dashboard_metric_with_invalid_type_returns_validation_error(): void
     {
         $this->signInAdmin();
@@ -135,7 +178,7 @@ class DashboardMetricsTest extends AdminApiTestCase
         $response->assertStatus(400)
             ->assertJsonPath('status', 'error')
             ->assertJsonPath('code', 400)
-            ->assertJsonPath('message', 'Invalid metric. Valid values: properties, revenue, users, subscriptions');
+            ->assertJsonPath('message', 'Invalid metric. Valid values: properties, revenue, users, subscriptions, business_metrics');
     }
 
     /** @test */
@@ -167,6 +210,7 @@ class DashboardMetricsTest extends AdminApiTestCase
         $this->signInAdmin();
 
         $now = Carbon::now();
+        $plan = Plan::factory()->create();
 
         $tenant = TenantUser::factory()->create([
             'created_at' => $now,
@@ -175,8 +219,11 @@ class DashboardMetricsTest extends AdminApiTestCase
 
         DB::table('memberships')->insert([
             'user_id' => $tenant->id,
-            'package_id' => null,
+            'package_id' => $plan->id,
             'price' => 99.50,
+            'currency' => 'SAR',
+            'currency_symbol' => 'SAR',
+            'transaction_id' => 'dashboard-quick-stats-1',
             'status' => 1,
             'is_trial' => false,
             'start_date' => $now->toDateString(),
@@ -188,7 +235,6 @@ class DashboardMetricsTest extends AdminApiTestCase
         DB::table('user_properties')->insert([
             'user_id' => $tenant->id,
             'status' => 1,
-            'is_active' => true,
             'created_at' => $now,
             'updated_at' => $now,
         ]);

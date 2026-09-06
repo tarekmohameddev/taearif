@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\{
     UploadController,
     PaymentController,
     AnalyticsDashboardController,
+    DashboardVisitController,
     OnboardingController,
     PublicUserController,
     StepProgressController,
@@ -252,6 +253,7 @@ Route::middleware('auth:sanctum')->group(function () {
 // --- Dashboard (require active package) ---
 Route::middleware(['auth:sanctum', 'require.active.package'])->group(function () {
     Route::get('/dashboard', [AnalyticsDashboardController::class, 'dashboard']);
+    Route::post('/dashboard/visit', DashboardVisitController::class);
     Route::get('/dashboard/summary', [AnalyticsDashboardController::class, 'summary']);
     Route::post('/dashboard/visitors', [AnalyticsDashboardController::class, 'visitors']);
     Route::get('/dashboard/devices', [AnalyticsDashboardController::class, 'devices']);
