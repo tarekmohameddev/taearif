@@ -1,331 +1,458 @@
 @extends('admin.layout')
 
-@php
-	$admin = $adminUser ?? Auth::guard('admin')->user();
-	$permissions = $adminPermissions ?? [];
-@endphp
-
-@section('content')
-  <div class="mt-2 mb-4">
-    <h2 class="font-weight-bold" style="color: var(--primary-color);">{{__('Welcome back')}}, {{Auth::guard('admin')->user()->first_name}} {{Auth::guard('admin')->user()->last_name}}!</h2>
-    <p class="text-muted">{{ __('Here is a summary of what is happening.') }}</p>
-  </div>
-
-  {{-- Flash Messages --}}
-  @if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-      <strong>{{ __('Error') }}!</strong> {{ session('error') }}
-      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
-    </div>
-  @endif
-
-  @if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-      <strong>{{ __('Success') }}!</strong> {{ session('success') }}
-      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
-    </div>
-  @endif
-
-  @if(session('warning'))
-    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-      <strong>{{ __('Warning') }}!</strong> {{ session('warning') }}
-      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
-    </div>
-  @endif
-  <div class="row">
-		@if (empty($admin->role) || (!empty($permissions) && in_array('Registered Users', $permissions)))
-		<div class="col-sm-6 col-md-3 col-lg-2">
-			<a class="card card-stats card-round dashboard-stat-card" href="{{route('admin.register.user')}}">
-				<div class="card-body">
-					<div class="row align-items-center">
-						<div class="col-4">
-							<div class="icon-big text-center" style="background: rgba(79, 70, 229, 0.1); color: #4f46e5; border-radius: 12px; padding: 10px;">
-								<i data-lucide="users"></i>
-							</div>
-						</div>
-						<div class="col-8 col-stats">
-							<div class="numbers">
-								<p class="card-category text-muted mb-1">{{__('Registered Users')}}</p>
-								<h4 class="card-title font-weight-bold mb-0">{{ number_format($counts['users'] ?? 0) }}</h4>
-							</div>
-						</div>
-					</div>
-				</div>
-			</a>
-		</div>
-		@endif
-
-
-		@if (empty($admin->role) || (!empty($permissions) && in_array('Subscribers', $permissions)))
-		<div class="col-sm-6 col-md-3 col-lg-2">
-			<a class="card card-stats card-round dashboard-stat-card" href="{{route('admin.subscriber.index')}}">
-				<div class="card-body ">
-					<div class="row align-items-center">
-						<div class="col-4">
-							<div class="icon-big text-center" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-radius: 12px; padding: 10px;">
-								<i data-lucide="mail"></i>
-							</div>
-						</div>
-						<div class="col-8 col-stats">
-							<div class="numbers">
-								<p class="card-category text-muted mb-1">{{__('Subscribers')}}</p>
-								<h4 class="card-title font-weight-bold mb-0">{{ number_format($counts['subscribers'] ?? 0) }}</h4>
-							</div>
-						</div>
-					</div>
-				</div>
-			</a>
-		</div>
-		@endif
-
-
-		@if (empty($admin->role) || (!empty($permissions) && in_array('Packages', $permissions)))
-		<div class="col-sm-6 col-md-3 col-lg-2">
-			<a class="card card-stats card-round dashboard-stat-card" href="{{route('admin.package.index')}}">
-				<div class="card-body ">
-					<div class="row align-items-center">
-						<div class="col-4">
-							<div class="icon-big text-center" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 12px; padding: 10px;">
-								<i data-lucide="package"></i>
-							</div>
-						</div>
-						<div class="col-8 col-stats">
-							<div class="numbers">
-								<p class="card-category text-muted mb-1">{{__('Packages')}}</p>
-								<h4 class="card-title font-weight-bold mb-0">{{ number_format($counts['packages'] ?? 0) }}</h4>
-							</div>
-						</div>
-					</div>
-				</div>
-			</a>
-		</div>
-		@endif
-
-
-		@if (empty($admin->role) || (!empty($permissions) && in_array('Payment Log', $permissions)))
-		<div class="col-sm-6 col-md-3 col-lg-2">
-			<a class="card card-stats card-round dashboard-stat-card" href="{{route('admin.payment-log.index')}}">
-				<div class="card-body ">
-					<div class="row align-items-center">
-						<div class="col-4">
-							<div class="icon-big text-center" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border-radius: 12px; padding: 10px;">
-								<i data-lucide="file-text"></i>
-							</div>
-						</div>
-						<div class="col-8 col-stats">
-							<div class="numbers">
-								<p class="card-category text-muted mb-1">{{__('Payment Logs')}}</p>
-								<h4 class="card-title font-weight-bold mb-0">{{ number_format($counts['memberships'] ?? 0) }}</h4>
-							</div>
-						</div>
-					</div>
-				</div>
-			</a>
-		</div>
-		@endif
-
-		@if (empty($admin->role) || (!empty($permissions) && in_array('Admins Management', $permissions)))
-		<div class="col-sm-6 col-md-3 col-lg-2">
-			<a class="card card-stats card-round dashboard-stat-card" href="{{route('admin.user.index')}}">
-				<div class="card-body">
-					<div class="row align-items-center">
-						<div class="col-4">
-							<div class="icon-big text-center" style="background: rgba(100, 116, 139, 0.15); color: #64748b; border-radius: 12px; padding: 10px;">
-								<i data-lucide="shield-check"></i>
-							</div>
-						</div>
-						<div class="col-8 col-stats">
-							<div class="numbers">
-								<p class="card-category text-muted mb-1">{{__('Admins')}}</p>
-								<h4 class="card-title font-weight-bold mb-0">{{ number_format($counts['admins'] ?? 0) }}</h4>
-							</div>
-						</div>
-					</div>
-				</div>
-			</a>
-		</div>
-		@endif
-
-		@if (empty($admin->role) || (!empty($permissions) && in_array('Blogs', $permissions)))
-		<div class="col-sm-6 col-md-3 col-lg-2">
-			<a class="card card-stats card-round dashboard-stat-card" href="{{route('admin.blog.index', ['language' => $defaultLang->code])}}">
-				<div class="card-body">
-					<div class="row align-items-center">
-						<div class="col-4">
-							<div class="icon-big text-center" style="background: rgba(14, 165, 233, 0.15); color: #0ea5e9; border-radius: 12px; padding: 10px;">
-								<i data-lucide="book-open"></i>
-							</div>
-						</div>
-						<div class="col-8 col-stats">
-							<div class="numbers">
-								<p class="card-category text-muted mb-1">{{__('Blog')}}</p>
-								<h4 class="card-title font-weight-bold mb-0">{{ number_format($counts['blogs'] ?? 0) }}</h4>
-							</div>
-						</div>
-					</div>
-				</div>
-			</a>
-		</div>
-		@endif
-
-		<!-- Customers total -->
-		<div class="col-sm-6 col-md-3 col-lg-2">
-			<a class="card card-stats card-round dashboard-stat-card" href="#">
-				<div class="card-body">
-					<div class="row align-items-center">
-						<div class="col-4">
-							<div class="icon-big text-center" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border-radius: 12px; padding: 10px;">
-								<i data-lucide="users-round"></i>
-							</div>
-						</div>
-						<div class="col-8 col-stats">
-							<div class="numbers">
-								<p class="card-category text-muted mb-1">{{ __('Customers') }}</p>
-								<h4 class="card-title font-weight-bold mb-0">{{ number_format($customersTotal ?? 0) }}</h4>
-							</div>
-						</div>
-					</div>
-				</div>
-			</a>
-		</div>
-
-		<!-- Projects total -->
-		<div class="col-sm-6 col-md-3 col-lg-2">
-			<a class="card card-stats card-round dashboard-stat-card" href="#">
-				<div class="card-body">
-					<div class="row align-items-center">
-						<div class="col-4">
-							<div class="icon-big text-center" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border-radius: 12px; padding: 10px;">
-								<i data-lucide="building-2"></i>
-							</div>
-						</div>
-						<div class="col-8 col-stats">
-							<div class="numbers">
-								<p class="card-category text-muted mb-1">{{ __('Projects') }}</p>
-								<h4 class="card-title font-weight-bold mb-0">{{ number_format($projectsTotal ?? 0) }}</h4>
-							</div>
-						</div>
-					</div>
-				</div>
-			</a>
-		</div>
-
-		@foreach(($propertiesPurposeTotals ?? collect()) as $row)
-		<div class="col-sm-6 col-md-3 col-lg-2">
-			<div class="card card-stats card-round dashboard-stat-card">
-				<div class="card-body">
-					<div class="row align-items-center">
-						<div class="col-4">
-							<div class="icon-big text-center" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border-radius: 12px; padding: 10px;">
-								<i data-lucide="bar-chart-2"></i>
-							</div>
-						</div>
-						<div class="col-8 col-stats">
-							<div class="numbers">
-								<p class="card-category text-muted mb-1">{{ __($row->purpose ?? 'Unknown') }}</p>
-								<h4 class="card-title font-weight-bold mb-0">{{ number_format($row->total) }}</h4>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		@endforeach
-
-<!--  -->
-
-	</div>
-
-
-
-	<div class="row">
-		@if (empty($admin->role) || (!empty($permissions) && in_array('Payment Log', $permissions)))
-		<div class="col-lg-6">
-			<div class="card">
-				<div class="card-header">
-					<div class="card-title">{{__('Monthly Income')}} ({{date('Y')}})</div>
-				</div>
-				<div class="card-body">
-					<div class="chart-container">
-						<canvas id="lineChart"></canvas>
-					</div>
-				</div>
-			</div>
-		</div>
-		@endif
-
-		@if (empty($admin->role) || (!empty($permissions) && in_array('Registered Users', $permissions)))
-		<div class="col-lg-6">
-			<div class="card">
-				<div class="card-header">
-					<div class="card-title">{{__('Monthly Premium Users')}} ({{date('Y')}})</div>
-				</div>
-				<div class="card-body">
-					<div class="chart-container">
-						<canvas id="usersChart"></canvas>
-					</div>
-				</div>
-			</div>
-		</div>
-		@endif
-	  </div>
-
-
-
-
+@section('styles')
+    <link rel="stylesheet" href="{{ asset('assets/admin/css/dashboard.css') }}">
 @endsection
 
 @php
-	$months = [];
-	$inTotals = [];
+    $executive = $dashboard['executiveSummary'] ?? [];
+    $operations = $dashboard['operationsSnapshot'] ?? [];
+    $financial = $dashboard['financialMetrics'] ?? [];
+    $trends = $dashboard['trendCharts'] ?? [];
+    $breakdowns = $dashboard['breakdowns'] ?? [];
+    $recent = $dashboard['recentActivity'] ?? [];
+    $visibility = $dashboard['visibility'] ?? [];
+    $asOf = $dashboard['asOf'] ?? now('Asia/Riyadh');
 
-	for ($i=1; $i <= 12; $i++) {
-		$monthNum  = $i;
-		$dateObj   = DateTime::createFromFormat('!m', $monthNum);
-		$months[] = $dateObj->format('M');
+    $headlineCards = [];
+    if (array_key_exists('activePaidSubscriberUsers', $executive)) {
+        $headlineCards[] = [
+            'label' => __('Active Paid Subscriber Users'),
+            'value' => $executive['activePaidSubscriberUsers'],
+            'helper' => __('Tenant users with an active paid subscription, excluding trials and employees'),
+            'icon' => 'badge-check',
+            'tone' => 'primary',
+            'url' => route('admin.register.user'),
+        ];
+    }
+    if (array_key_exists('registeredTenantUsers', $executive)) {
+        $headlineCards[] = [
+            'label' => __('Registered Tenant Users'),
+            'value' => $executive['registeredTenantUsers'],
+            'helper' => __('Tenant accounts only, excluding employees and soft-deleted users'),
+            'icon' => 'users',
+            'tone' => 'info',
+            'url' => route('admin.register.user'),
+        ];
+    }
+    if (array_key_exists('uniqueDashboardUsersToday', $executive)) {
+        $headlineCards[] = [
+            'label' => __('Unique Dashboard Users Today'),
+            'value' => $executive['uniqueDashboardUsersToday'],
+            'helper' => __('Authenticated tenant-side users who opened the dashboard today in Riyadh time'),
+            'icon' => 'activity',
+            'tone' => 'success',
+        ];
+    }
+    if (array_key_exists('uniqueTenantsOpenedDashboardToday', $executive)) {
+        $headlineCards[] = [
+            'label' => __('Unique Tenant Organizations Today'),
+            'value' => $executive['uniqueTenantsOpenedDashboardToday'],
+            'helper' => __('Distinct tenant organizations represented by today\'s dashboard users'),
+            'icon' => 'building',
+            'tone' => 'violet',
+        ];
+    }
+    if (array_key_exists('customersTotal', $executive)) {
+        $headlineCards[] = [
+            'label' => __('Total Customers'),
+            'value' => $executive['customersTotal'],
+            'helper' => __('Non-deleted CRM customer records'),
+            'icon' => 'contact-round',
+            'tone' => 'violet',
+        ];
+    }
+    if (array_key_exists('publishedProperties', $executive)) {
+        $headlineCards[] = [
+            'label' => __('Published Properties'),
+            'value' => $executive['publishedProperties'],
+            'helper' => __('Listings visible through the publication rules'),
+            'icon' => 'building-2',
+            'tone' => 'success',
+        ];
+    }
 
-		$inFound = 0;
-		foreach ($incomes as $key => $income) {
-			if ($income->month == $i) {
-				$inTotals[] = $income->total;
-				$inFound = 1;
-				break;
-			}
-		}
-		if ($inFound == 0) {
-			$inTotals[] = 0;
-		}
+    $operationCards = [];
+    $operationDefinitions = [
+        'activePaidSubscriptions' => [__('Active Paid Subscriptions'), __('Valid paid membership records'), 'credit-card', 'primary', !empty($visibility['users']) ? route('admin.register.user') : null],
+        'activeTrials' => [__('Active Trials'), __('Valid 7-day and 30-day trial packages'), 'timer', 'warning', !empty($visibility['users']) ? route('admin.register.user') : null],
+        'freeUsers' => [__('Free Users'), __('Tenants currently using the free package'), 'user-round', 'neutral', !empty($visibility['users']) ? route('admin.register.user') : null],
+        'tenantRegistrationsThisMonth' => [__('Tenant Registrations This Month'), __('Created during the current Riyadh month'), 'user-plus', 'info', !empty($visibility['users']) ? route('admin.register.user') : null],
+        'customersNewThisMonth' => [__('New Customers This Month'), __('Non-deleted customers created this month'), 'contact-round', 'violet', null],
+        'projectsTotal' => [__('Total Projects'), __('All tenant real-estate projects'), 'landmark', 'warning', null],
+        'projectsPublished' => [__('Published Projects'), __('Projects currently marked as published'), 'circle-check-big', 'success', null],
+        'propertiesTotal' => [__('Total Properties'), __('All tenant property records'), 'house', 'info', null],
+        'publishedFeaturedProperties' => [__('Published Featured Properties'), __('Featured listings that also pass publication rules'), 'star', 'warning', null],
+        'packagesTotal' => [__('Total Packages'), __('All configured subscription packages'), 'package', 'neutral', !empty($visibility['packages']) ? route('admin.package.index') : null],
+        'packagesActive' => [__('Active Packages'), __('Packages enabled through is_active'), 'package-check', 'success', !empty($visibility['packages']) ? route('admin.package.index') : null],
+    ];
+    foreach ($operationDefinitions as $key => $definition) {
+        if (array_key_exists($key, $operations)) {
+            $operationCards[] = [
+                'label' => $definition[0],
+                'value' => $operations[$key],
+                'helper' => $definition[1],
+                'icon' => $definition[2],
+                'tone' => $definition[3],
+                'url' => $definition[4],
+            ];
+        }
+    }
 
-		$userFound = 0;
-		foreach ($users as $key => $user) {
-			if ($user->month == $i) {
-				$userTotals[] = $user->total;
-				$userFound = 1;
-				break;
-			}
-		}
-		if ($userFound == 0) {
-			$userTotals[] = 0;
-		}
-	}
+    $financialCards = [];
+    $financialDefinitions = [
+        'projectInventoryValue' => [__('Project Inventory Value'), __('Sum of actual property prices for units linked to projects'), 'landmark', 'primary'],
+        'forSaleInventoryValue' => [__('For Sale Inventory Value'), __('Available sale listings only'), 'badge-dollar-sign', 'success'],
+        'forRentInventoryValue' => [__('For Rent Inventory Value'), __('Available rental listings only'), 'house-plus', 'info'],
+        'completedSalesValue' => [__('Completed Sales Value'), __('Completed sales transactions only'), 'receipt-text', 'warning'],
+        'activeRentalContractValue' => [__('Active Rental Contract Value'), __('Active rental contracts only, SAR totals shown separately'), 'wallet', 'violet'],
+    ];
 
+    foreach ($financialDefinitions as $key => $definition) {
+        if (!empty($financial[$key])) {
+            $financialCards[] = array_merge($financial[$key], [
+                'label' => $definition[0],
+                'helper' => $definition[1],
+                'icon' => $definition[2],
+                'tone' => $definition[3],
+                'asOf' => $asOf,
+            ]);
+        }
+    }
+
+    $breakdownLabels = [
+        'sale' => __('Sale'),
+        'rent' => __('Rent'),
+        'available' => __('Available'),
+        'sold' => __('Sold'),
+        'rented' => __('Rented'),
+        'published' => __('Published'),
+        'draft' => __('Draft'),
+        'featured' => __('Featured'),
+        'not_featured' => __('Not Featured'),
+        'in_progress' => __('In Progress'),
+        'finished' => __('Finished'),
+        'not_started' => __('Not Started'),
+        'unknown' => __('Unknown'),
+    ];
+
+    $chartDefinitions = [
+        'tenantRegistrations' => [__('Monthly Tenant Registrations'), __('New tenant accounts by month')],
+        'customers' => [__('Monthly New Customers'), __('New non-deleted customer records by month')],
+    ];
+
+    $availableTrendCharts = [];
+    foreach ($chartDefinitions as $chartKey => $chartText) {
+        if (isset($trends[$chartKey])) {
+            $availableTrendCharts[] = [
+                'key' => $chartKey,
+                'title' => $chartText[0],
+                'subtitle' => $chartText[1],
+                'series' => $trends[$chartKey],
+            ];
+        }
+    }
+
+    $defaultTrendKey = $availableTrendCharts[0]['key'] ?? null;
+    foreach ($availableTrendCharts as $trendChart) {
+        if (empty($trendChart['series']['isEmpty'])) {
+            $defaultTrendKey = $trendChart['key'];
+            break;
+        }
+    }
+
+    $formatChartSummaryValue = static function ($value): string {
+        return number_format((int) $value);
+    };
 @endphp
+
+@section('content')
+    <div class="admin-dashboard">
+        <header class="dashboard-header">
+            <div class="dashboard-header-copy">
+                <p class="dashboard-eyebrow">{{ __('Platform Operations') }}</p>
+                <h2>{{ __('Dashboard') }}</h2>
+                <p class="dashboard-subtitle">{{ __('Overview of subscriptions, listings, projects, and customers') }}</p>
+            </div>
+            <div class="dashboard-as-of">
+                <span>{{ __('As of') }}</span>
+                <strong>{{ $asOf->locale(app()->getLocale())->translatedFormat('d M Y, H:i') }}</strong>
+                <small>{{ __('Riyadh time') }}</small>
+            </div>
+        </header>
+
+        @if(session('error') || session('success') || session('warning'))
+            @foreach(['error' => 'danger', 'success' => 'success', 'warning' => 'warning'] as $flashKey => $flashClass)
+                @if(session($flashKey))
+                    <div class="alert alert-{{ $flashClass }} alert-dismissible fade show" role="alert">
+                        {{ session($flashKey) }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="{{ __('Close') }}">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                @endif
+            @endforeach
+        @endif
+
+        @if(!empty($headlineCards))
+            <section class="dashboard-section dashboard-section-hero" aria-labelledby="executive-summary-heading">
+                <div class="dashboard-section-heading">
+                    <div>
+                        <h3 id="executive-summary-heading">{{ __('Executive Summary') }}</h3>
+                        <p>{{ __('Trusted headline metrics based on current platform data') }}</p>
+                    </div>
+                </div>
+                <div class="row dashboard-grid dashboard-grid-headline">
+                    @foreach($headlineCards as $card)
+                        <div class="col-sm-6 col-xl-3 d-flex">
+                            @include('admin.partials.dashboard.kpi-card', ['card' => $card, 'size' => 'large'])
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        @if(!empty($operationCards))
+            <section class="dashboard-section dashboard-section-secondary" aria-labelledby="operations-heading">
+                <div class="dashboard-section-heading">
+                    <div>
+                        <h3 id="operations-heading">{{ __('Operations Snapshot') }}</h3>
+                        <p>{{ __('Current subscription and inventory activity') }}</p>
+                    </div>
+                </div>
+                <div class="row dashboard-grid dashboard-grid-secondary">
+                    @foreach($operationCards as $card)
+                        <div class="col-sm-6 col-lg-4 col-xl-3 d-flex">
+                            @include('admin.partials.dashboard.kpi-card', ['card' => $card, 'size' => 'compact'])
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        @if(!empty($visibility['financial']) && !empty($financialCards))
+            <section class="dashboard-section dashboard-section-financial" aria-labelledby="financial-heading">
+                <div class="dashboard-section-heading">
+                    <div>
+                        <h3 id="financial-heading">{{ __('Financial Metrics') }}</h3>
+                        <p>{{ __('Simplified SAR totals with clear data-quality context') }}</p>
+                    </div>
+                </div>
+                <div class="row dashboard-grid dashboard-grid-financial">
+                    @foreach($financialCards as $card)
+                        <div class="col-lg-6 d-flex">
+                            @include('admin.partials.dashboard.money-card', ['card' => $card])
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        @if(!empty($availableTrendCharts) && $defaultTrendKey)
+            <section class="dashboard-section dashboard-section-supporting" aria-labelledby="trends-heading">
+                <div class="dashboard-section-heading">
+                    <div>
+                        <h3 id="trends-heading">{{ __('Platform Trends') }}</h3>
+                        <p>{{ __('Use these trend lines to support the headline KPIs') }}</p>
+                    </div>
+                </div>
+                @php
+                    $defaultTrend = collect($availableTrendCharts)->firstWhere('key', $defaultTrendKey);
+                    $defaultSeries = $defaultTrend['series'];
+                    $defaultSummaryId = 'dashboard-chart-summary-' . $defaultTrendKey;
+                @endphp
+                <article class="card dashboard-panel dashboard-chart-card dashboard-chart-card-focus w-100">
+                    <div class="dashboard-trend-toolbar">
+                        <div class="dashboard-trend-switcher" role="group" aria-label="{{ __('Platform Trends') }}">
+                            @foreach($availableTrendCharts as $trendChart)
+                                <button
+                                    type="button"
+                                    class="dashboard-trend-option{{ $trendChart['key'] === $defaultTrendKey ? ' is-active' : '' }}"
+                                    data-dashboard-trend-key="{{ $trendChart['key'] }}"
+                                    data-dashboard-trend-title="{{ $trendChart['title'] }}"
+                                    data-dashboard-trend-total="{{ (int) ($trendChart['series']['total'] ?? 0) }}"
+                                    data-dashboard-trend-period="{{ __('in') }} {{ (int) ($trendChart['series']['year'] ?? $asOf->year) }}"
+                                    data-dashboard-trend-summary="dashboard-chart-summary-{{ $trendChart['key'] }}"
+                                    aria-pressed="{{ $trendChart['key'] === $defaultTrendKey ? 'true' : 'false' }}"
+                                >
+                                    {{ $trendChart['title'] }}
+                                </button>
+                            @endforeach
+                        </div>
+                        <div class="dashboard-trend-summary" aria-live="polite">
+                            <span id="dashboard-trend-summary-label">{{ $defaultTrend['title'] }}</span>
+                            <strong id="dashboard-trend-summary-value">{{ number_format((int) ($defaultSeries['total'] ?? 0)) }}</strong>
+                            <small id="dashboard-trend-summary-year">{{ __('in') }} {{ $defaultSeries['year'] ?? $asOf->year }}</small>
+                        </div>
+                    </div>
+                    <div class="card-body dashboard-trend-body">
+                        <div class="dashboard-chart-container dashboard-chart-container-focus" role="group" aria-labelledby="trends-heading">
+                            <canvas
+                                data-dashboard-chart-switcher
+                                data-dashboard-initial-chart="{{ $defaultTrendKey }}"
+                                data-dashboard-current-month="{{ (int) $asOf->format('n') }}"
+                                data-dashboard-current-year="{{ (int) $asOf->format('Y') }}"
+                                role="img"
+                                aria-label="{{ $defaultTrend['title'] }}"
+                                aria-describedby="{{ $defaultSummaryId }}"
+                                @if(!empty($defaultSeries['isEmpty'])) hidden @endif
+                            ></canvas>
+                            <div class="dashboard-empty-state dashboard-trend-empty" @if(empty($defaultSeries['isEmpty'])) hidden @endif>
+                                <i data-lucide="chart-no-axes-column"></i>
+                                <p>{{ __('No activity recorded for this period') }}</p>
+                            </div>
+                        </div>
+                        <div class="dashboard-sr-only">
+                            @foreach($availableTrendCharts as $trendChart)
+                                <section id="dashboard-chart-summary-{{ $trendChart['key'] }}">
+                                    <p>{{ $trendChart['subtitle'] }}</p>
+                                    <ul>
+                                        @foreach(($trendChart['series']['labels'] ?? []) as $index => $label)
+                                            @if((int) ($trendChart['series']['year'] ?? 0) !== (int) $asOf->format('Y') || $index < (int) $asOf->format('n'))
+                                                <li>{{ $label }}: {{ $formatChartSummaryValue($trendChart['series']['values'][$index] ?? 0) }}</li>
+                                            @endif
+                                        @endforeach
+                                    </ul>
+                                </section>
+                            @endforeach
+                        </div>
+                    </div>
+                </article>
+            </section>
+        @endif
+
+        @if(!empty($breakdowns))
+            <section class="dashboard-section dashboard-section-supporting" aria-labelledby="breakdowns-heading">
+                <div class="dashboard-section-heading">
+                    <div>
+                        <h3 id="breakdowns-heading">{{ __('Business Breakdowns') }}</h3>
+                        <p>{{ __('Normalized property and project status views') }}</p>
+                    </div>
+                </div>
+                <div class="row dashboard-grid dashboard-grid-breakdowns">
+                    @if(!empty($breakdowns['properties']))
+                        @foreach([
+                            'listingPurpose' => __('Property Listing Purpose'),
+                            'availability' => __('Property Availability'),
+                            'publication' => __('Property Publication'),
+                        ] as $groupKey => $groupTitle)
+                            <div class="col-lg-6 d-flex">
+                                @include('admin.partials.dashboard.breakdown-card', [
+                                    'title' => $groupTitle,
+                                    'group' => $breakdowns['properties'][$groupKey],
+                                    'labels' => $breakdownLabels,
+                                    'chartScope' => 'properties',
+                                    'groupKey' => $groupKey,
+                                ])
+                            </div>
+                        @endforeach
+                    @endif
+
+                    @if(!empty($breakdowns['projects']))
+                        @foreach([
+                            'publication' => __('Project Publication'),
+                            'featured' => __('Featured Projects'),
+                            'completion' => __('Project Completion'),
+                        ] as $groupKey => $groupTitle)
+                            <div class="col-lg-6 d-flex">
+                                @include('admin.partials.dashboard.breakdown-card', [
+                                    'title' => $groupTitle,
+                                    'group' => $breakdowns['projects'][$groupKey],
+                                    'labels' => $breakdownLabels,
+                                    'chartScope' => 'projects',
+                                    'groupKey' => $groupKey,
+                                ])
+                            </div>
+                        @endforeach
+                    @endif
+                </div>
+            </section>
+        @endif
+
+        @if(!empty($recent))
+            <section class="dashboard-section dashboard-section-supporting" aria-labelledby="recent-heading">
+                <div class="dashboard-section-heading">
+                    <div>
+                        <h3 id="recent-heading">{{ __('Recent Activity') }}</h3>
+                        <p>{{ __('Latest tenant and customer records') }}</p>
+                    </div>
+                </div>
+                <div class="row dashboard-grid dashboard-grid-supporting">
+                    @if(array_key_exists('tenants', $recent))
+                        <div class="col-lg-6 d-flex">
+                            <article class="card dashboard-panel w-100">
+                                <div class="card-header dashboard-panel-header">
+                                    <div>
+                                        <h4>{{ __('Recent Tenant Signups') }}</h4>
+                                        <p>{{ __('Five most recently created tenant accounts') }}</p>
+                                    </div>
+                                </div>
+                                <div class="card-body dashboard-activity-list">
+                                    @forelse($recent['tenants'] as $tenant)
+                                        <div class="dashboard-activity-item">
+                                            <span class="dashboard-activity-icon"><i data-lucide="user-round"></i></span>
+                                            <div>
+                                                <strong>{{ $tenant->company_name ?: $tenant->username }}</strong>
+                                                <small>{{ '@' . $tenant->username }}</small>
+                                            </div>
+                                            <time datetime="{{ optional($tenant->created_at)->toIso8601String() }}">
+                                                {{ optional($tenant->created_at)->locale(app()->getLocale())->diffForHumans() }}
+                                            </time>
+                                        </div>
+                                    @empty
+                                        <div class="dashboard-empty-state dashboard-empty-state-small">
+                                            <p>{{ __('No recent tenant signups') }}</p>
+                                        </div>
+                                    @endforelse
+                                </div>
+                            </article>
+                        </div>
+                    @endif
+
+                    @if(array_key_exists('customers', $recent))
+                        <div class="col-lg-6 d-flex">
+                            <article class="card dashboard-panel w-100">
+                                <div class="card-header dashboard-panel-header">
+                                    <div>
+                                        <h4>{{ __('Recent Customers') }}</h4>
+                                        <p>{{ __('Five most recently created customer records') }}</p>
+                                    </div>
+                                </div>
+                                <div class="card-body dashboard-activity-list">
+                                    @forelse($recent['customers'] as $customer)
+                                        <div class="dashboard-activity-item">
+                                            <span class="dashboard-activity-icon"><i data-lucide="contact-round"></i></span>
+                                            <div>
+                                                <strong>{{ $customer->name ?: __('Customer') . ' #' . $customer->id }}</strong>
+                                                <small>{{ __('Tenant') }} #{{ $customer->user_id }}</small>
+                                            </div>
+                                            <time datetime="{{ optional($customer->created_at)->toIso8601String() }}">
+                                                {{ optional($customer->created_at)->locale(app()->getLocale())->diffForHumans() }}
+                                            </time>
+                                        </div>
+                                    @empty
+                                        <div class="dashboard-empty-state dashboard-empty-state-small">
+                                            <p>{{ __('No recent customers') }}</p>
+                                        </div>
+                                    @endforelse
+                                </div>
+                            </article>
+                        </div>
+                    @endif
+                </div>
+            </section>
+        @endif
+    </div>
+@endsection
+
 @section('scripts')
-	<!-- Chart JS -->
-	<script src="{{asset('assets/admin/js/plugin/chart.min.js')}}"></script>
-	<script>
-		"use strict";
-		var months = @php echo json_encode($months) @endphp;
-		var inTotals = @php echo json_encode($inTotals) @endphp;
-		var userTotals = @php echo json_encode($userTotals) @endphp;
-		var chartLabelIncome = @json(__('Monthly Income'));
-		var chartLabelPremiumUsers = @json(__('Monthly Premium Users'));
-	</script>
-	<script src="{{asset('assets/admin/js/dashboard.js')}}"></script>
+    <script src="{{ asset('assets/admin/js/plugin/chart.min.js') }}"></script>
+    <script id="dashboard-chart-data" type="application/json">@json($trends)</script>
+    <script>
+        window.dashboardChartLabels = {
+            tenantRegistrations: @json(__('Tenant Registrations')),
+            customers: @json(__('New Customers'))
+        };
+    </script>
+    <script src="{{ asset('assets/admin/js/dashboard.js') }}"></script>
 @endsection

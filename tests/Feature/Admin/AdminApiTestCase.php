@@ -4,7 +4,6 @@ namespace Tests\Feature\Admin;
 
 use App\Domain\Admin\Models\Admin;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -13,8 +12,6 @@ use Tests\TestCase;
 
 abstract class AdminApiTestCase extends TestCase
 {
-    use DatabaseTransactions;
-
     /**
      * When false, setUp will not truncate shared admin tables.
      * Use for legacy web admin feature tests against imported dumps.
@@ -30,6 +27,7 @@ abstract class AdminApiTestCase extends TestCase
 
         $this->ensurePasswordResetsTable();
         $this->ensureRolesTable();
+        $this->ensureAdminsTable();
         $this->ensureUsersTable();
         $this->ensureDailyTables();
         $this->ensureDomainTables();
@@ -39,6 +37,7 @@ abstract class AdminApiTestCase extends TestCase
         $this->ensurePlatformTables();
         $this->ensureCrmTables();
         $this->ensureAnalyticsTables();
+        $this->ensureDashboardDailyVisitsTable();
         $this->ensurePackagesTable();
         $this->ensureUserBasicSettingsTable();
         $this->ensureMembershipsJsonColumns();
@@ -114,6 +113,58 @@ abstract class AdminApiTestCase extends TestCase
     }
 
     /**
+     * Ensure the admins table exists before dependent tables add foreign keys.
+     */
+    private function ensureAdminsTable(): void
+    {
+        if (!Schema::hasTable('admins')) {
+            Schema::create('admins', function (Blueprint $table) {
+                $table->id();
+                $table->uuid('uuid')->unique();
+                $table->unsignedBigInteger('role_id')->nullable()->index();
+                $table->string('username')->unique();
+                $table->string('email')->unique();
+                $table->string('password');
+                $table->string('first_name')->nullable();
+                $table->string('last_name')->nullable();
+                $table->string('image')->nullable();
+                $table->boolean('status')->default(true);
+                $table->string('remember_token', 100)->nullable();
+                $table->timestamp('email_verified_at')->nullable();
+                $table->timestamp('last_login_at')->nullable();
+                $table->json('permissions')->nullable();
+                $table->timestamps();
+            });
+
+            return;
+        }
+
+        $columns = [
+            'uuid' => fn (Blueprint $table) => $table->uuid('uuid')->nullable()->unique()->after('id'),
+            'role_id' => fn (Blueprint $table) => $table->unsignedBigInteger('role_id')->nullable()->index()->after('uuid'),
+            'username' => fn (Blueprint $table) => $table->string('username')->unique()->after('role_id'),
+            'email' => fn (Blueprint $table) => $table->string('email')->unique()->after('username'),
+            'password' => fn (Blueprint $table) => $table->string('password')->after('email'),
+            'first_name' => fn (Blueprint $table) => $table->string('first_name')->nullable()->after('password'),
+            'last_name' => fn (Blueprint $table) => $table->string('last_name')->nullable()->after('first_name'),
+            'image' => fn (Blueprint $table) => $table->string('image')->nullable()->after('last_name'),
+            'status' => fn (Blueprint $table) => $table->boolean('status')->default(true)->after('image'),
+            'remember_token' => fn (Blueprint $table) => $table->string('remember_token', 100)->nullable()->after('status'),
+            'email_verified_at' => fn (Blueprint $table) => $table->timestamp('email_verified_at')->nullable()->after('remember_token'),
+            'last_login_at' => fn (Blueprint $table) => $table->timestamp('last_login_at')->nullable()->after('email_verified_at'),
+            'permissions' => fn (Blueprint $table) => $table->json('permissions')->nullable()->after('last_login_at'),
+        ];
+
+        foreach ($columns as $column => $callback) {
+            if (!Schema::hasColumn('admins', $column)) {
+                Schema::table('admins', function (Blueprint $table) use ($callback) {
+                    $callback($table);
+                });
+            }
+        }
+    }
+
+    /**
      * Ensure the users table exists for related factories.
      */
     private function ensureUsersTable(): void
@@ -147,6 +198,8 @@ abstract class AdminApiTestCase extends TestCase
                 $table->boolean('subscribed')->default(false);
                 $table->decimal('subscription_amount', 10, 2)->default(0);
                 $table->timestamp('trial_ends_at')->nullable();
+                $table->unsignedInteger('rbac_version')->default(0);
+                $table->timestamp('rbac_seeded_at')->nullable();
                 $table->string('referral_code')->nullable();
                 $table->string('referral_id')->nullable();
                 $table->timestamps();
@@ -168,6 +221,8 @@ abstract class AdminApiTestCase extends TestCase
             'subscribed' => fn (Blueprint $table) => $table->boolean('subscribed')->default(false)->after('online_status'),
             'subscription_amount' => fn (Blueprint $table) => $table->decimal('subscription_amount', 10, 2)->default(0)->after('subscribed'),
             'trial_ends_at' => fn (Blueprint $table) => $table->timestamp('trial_ends_at')->nullable()->after('subscription_amount'),
+            'rbac_version' => fn (Blueprint $table) => $table->unsignedInteger('rbac_version')->default(0)->after('trial_ends_at'),
+            'rbac_seeded_at' => fn (Blueprint $table) => $table->timestamp('rbac_seeded_at')->nullable()->after('rbac_version'),
             'referral_code' => fn (Blueprint $table) => $table->string('referral_code')->nullable()->after('active'),
             'uuid' => fn (Blueprint $table) => $table->uuid('uuid')->nullable()->unique()->after('id'),
             'deleted_at' => fn (Blueprint $table) => $table->softDeletes(),
@@ -184,6 +239,12 @@ abstract class AdminApiTestCase extends TestCase
         if (!Schema::hasColumn('users', 'referral_id')) {
             Schema::table('users', function (Blueprint $table) {
                 $table->string('referral_id')->nullable()->after('referral_code');
+            });
+        }
+
+        if (!Schema::hasColumn('users', 'last_login_at')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->timestamp('last_login_at')->nullable()->after('active');
             });
         }
     }
@@ -235,16 +296,48 @@ abstract class AdminApiTestCase extends TestCase
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('name')->nullable();
             $table->string('email')->nullable();
+            $table->string('phone_number')->nullable();
+            $table->string('password')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
+
+        foreach ([
+            'phone_number' => fn (Blueprint $table) => $table->string('phone_number')->nullable()->after('email'),
+            'password' => fn (Blueprint $table) => $table->string('password')->nullable()->after('phone_number'),
+            'deleted_at' => fn (Blueprint $table) => $table->softDeletes(),
+        ] as $column => $callback) {
+            if (!Schema::hasColumn('api_customers', $column)) {
+                Schema::table('api_customers', function (Blueprint $table) use ($callback) {
+                    $callback($table);
+                });
+            }
+        }
 
         $this->createTableIfNotExists('rm_rentals', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->string('name')->nullable();
+            $table->char('currency', 3)->default('SAR');
+            $table->decimal('total_rental_amount', 12, 2)->nullable();
+            $table->string('status')->default('draft');
             $table->timestamps();
             $table->softDeletes();
         });
+
+        foreach ([
+            'currency' => fn (Blueprint $table) => $table->char('currency', 3)->default('SAR')->after('user_id'),
+            'total_rental_amount' => fn (Blueprint $table) => $table->decimal('total_rental_amount', 12, 2)->nullable()->after('currency'),
+            'status' => fn (Blueprint $table) => $table->string('status')->default('draft')->after('total_rental_amount'),
+            'tenant_full_name' => fn (Blueprint $table) => $table->string('tenant_full_name', 150)->nullable()->after('user_id'),
+            'tenant_phone' => fn (Blueprint $table) => $table->string('tenant_phone', 32)->nullable()->after('tenant_full_name'),
+            'deleted_at' => fn (Blueprint $table) => $table->softDeletes(),
+        ] as $column => $callback) {
+            if (!Schema::hasColumn('rm_rentals', $column)) {
+                Schema::table('rm_rentals', function (Blueprint $table) use ($callback) {
+                    $callback($table);
+                });
+            }
+        }
 
         $this->createTableIfNotExists('memberships', function (Blueprint $table) {
             $table->id();
@@ -582,12 +675,65 @@ abstract class AdminApiTestCase extends TestCase
      */
     private function ensureAnalyticsTables(): void
     {
+        if (!Schema::hasTable('user_projects')) {
+            Schema::create('user_projects', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+                $table->boolean('published')->default(false);
+                $table->boolean('featured')->default(false);
+                $table->unsignedTinyInteger('complete_status')->default(0);
+                $table->timestamps();
+            });
+        }
+
         if (!Schema::hasTable('user_properties')) {
             Schema::create('user_properties', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+                $table->unsignedBigInteger('project_id')->nullable();
+                $table->decimal('price', 12, 2)->nullable();
+                $table->string('purpose')->nullable();
+                $table->string('listing_purpose')->nullable();
+                $table->string('unit_status')->nullable();
+                $table->string('publish_status')->nullable();
+                $table->string('property_type')->nullable();
+                $table->string('completion_status')->nullable();
+                $table->unsignedInteger('area')->default(0);
                 $table->unsignedTinyInteger('status')->default(1);
                 $table->boolean('is_active')->default(true);
+                $table->boolean('featured')->default(false);
+                $table->timestamps();
+            });
+        }
+
+        foreach ([
+            'project_id' => fn (Blueprint $table) => $table->unsignedBigInteger('project_id')->nullable()->after('user_id'),
+            'price' => fn (Blueprint $table) => $table->decimal('price', 12, 2)->nullable()->after('project_id'),
+            'purpose' => fn (Blueprint $table) => $table->string('purpose')->nullable()->after('price'),
+            'listing_purpose' => fn (Blueprint $table) => $table->string('listing_purpose')->nullable()->after('purpose'),
+            'unit_status' => fn (Blueprint $table) => $table->string('unit_status')->nullable()->after('listing_purpose'),
+            'publish_status' => fn (Blueprint $table) => $table->string('publish_status')->nullable()->after('unit_status'),
+            'property_type' => fn (Blueprint $table) => $table->string('property_type')->nullable()->after('publish_status'),
+            'completion_status' => fn (Blueprint $table) => $table->string('completion_status')->nullable()->after('property_type'),
+            'area' => fn (Blueprint $table) => $table->unsignedInteger('area')->default(0)->after('property_type'),
+            'featured' => fn (Blueprint $table) => $table->boolean('featured')->default(false)->after('is_active'),
+        ] as $column => $callback) {
+            if (!Schema::hasColumn('user_properties', $column)) {
+                Schema::table('user_properties', function (Blueprint $table) use ($callback) {
+                    $callback($table);
+                });
+            }
+        }
+
+        if (!Schema::hasTable('sales')) {
+            Schema::create('sales', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('property_id')->nullable();
+                $table->unsignedBigInteger('user_id')->nullable();
+                $table->unsignedBigInteger('contract_id')->nullable();
+                $table->decimal('sale_price', 12, 2)->nullable();
+                $table->dateTime('sale_date')->nullable();
+                $table->string('status')->default('pending');
                 $table->timestamps();
             });
         }
@@ -605,6 +751,27 @@ abstract class AdminApiTestCase extends TestCase
                 $table->timestamp('created_at')->useCurrent();
             });
         }
+    }
+
+    private function ensureDashboardDailyVisitsTable(): void
+    {
+        if (Schema::hasTable('dashboard_daily_visits')) {
+            return;
+        }
+
+        Schema::create('dashboard_daily_visits', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('tenant_owner_id')->constrained('users')->cascadeOnDelete();
+            $table->date('visited_on');
+            $table->timestamp('first_seen_at');
+            $table->timestamp('last_seen_at');
+            $table->unsignedInteger('visits_count')->default(1);
+            $table->timestamps();
+            $table->unique(['user_id', 'visited_on']);
+            $table->index('visited_on');
+            $table->index(['tenant_owner_id', 'visited_on']);
+        });
     }
 
     /**
@@ -709,9 +876,16 @@ abstract class AdminApiTestCase extends TestCase
         $this->createTableIfNotExists('api_general_settings', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id')->index();
+            $table->string('site_name')->nullable();
             $table->boolean('maintenance_mode')->default(false);
             $table->timestamps();
         });
+
+        if (!Schema::hasColumn('api_general_settings', 'site_name')) {
+            Schema::table('api_general_settings', function (Blueprint $table) {
+                $table->string('site_name')->nullable()->after('user_id');
+            });
+        }
 
         $this->createTableIfNotExists('email_templates', function (Blueprint $table) {
             $table->id();
@@ -780,94 +954,94 @@ abstract class AdminApiTestCase extends TestCase
         }
 
         Schema::disableForeignKeyConstraints();
-        DB::table('admins')->truncate();
+        DB::table('admins')->delete();
 
         if (Schema::hasTable('password_resets')) {
-            DB::table('password_resets')->truncate();
+            DB::table('password_resets')->delete();
         }
 
         if (Schema::hasTable('roles')) {
-            DB::table('roles')->truncate();
+            DB::table('roles')->delete();
         }
 
         if (Schema::hasTable('users')) {
-            DB::table('users')->truncate();
+            DB::table('users')->delete();
         }
 
         if (Schema::hasTable('users_api_customers_reminders')) {
-            DB::table('users_api_customers_reminders')->truncate();
+            DB::table('users_api_customers_reminders')->delete();
         }
 
         if (Schema::hasTable('users_api_customers_appointments')) {
-            DB::table('users_api_customers_appointments')->truncate();
+            DB::table('users_api_customers_appointments')->delete();
         }
 
         if (Schema::hasTable('rm_reminders')) {
-            DB::table('rm_reminders')->truncate();
+            DB::table('rm_reminders')->delete();
         }
 
         if (Schema::hasTable('rm_rentals')) {
-            DB::table('rm_rentals')->truncate();
+            DB::table('rm_rentals')->delete();
         }
 
         if (Schema::hasTable('memberships')) {
-            DB::table('memberships')->truncate();
+            DB::table('memberships')->delete();
         }
 
         if (Schema::hasTable('api_customers')) {
-            DB::table('api_customers')->truncate();
+            DB::table('api_customers')->delete();
         }
 
         if (Schema::hasTable('packages')) {
-            DB::table('packages')->truncate();
+            DB::table('packages')->delete();
         }
 
         if (Schema::hasTable('api_customer_inquiry')) {
-            DB::table('api_customer_inquiry')->truncate();
+            DB::table('api_customer_inquiry')->delete();
         }
 
         if (Schema::hasTable('api_customers')) {
-            DB::table('api_customers')->truncate();
+            DB::table('api_customers')->delete();
         }
 
         if (Schema::hasTable('whatsapp_templates')) {
-            DB::table('whatsapp_templates')->truncate();
+            DB::table('whatsapp_templates')->delete();
         }
 
         if (Schema::hasTable('basic_settings')) {
-            DB::table('basic_settings')->truncate();
+            DB::table('basic_settings')->delete();
         }
 
         if (Schema::hasTable('basic_extendeds')) {
-            DB::table('basic_extendeds')->truncate();
+            DB::table('basic_extendeds')->delete();
         }
 
         if (Schema::hasTable('seos')) {
-            DB::table('seos')->truncate();
+            DB::table('seos')->delete();
         }
 
         if (Schema::hasTable('languages')) {
-            DB::table('languages')->truncate();
+            DB::table('languages')->delete();
         }
 
         if (Schema::hasTable('user_custom_domains')) {
-            DB::table('user_custom_domains')->truncate();
+            DB::table('user_custom_domains')->delete();
         }
 
         if (Schema::hasTable('api_domains_settings')) {
-            DB::table('api_domains_settings')->truncate();
+            DB::table('api_domains_settings')->delete();
         }
 
         if (Schema::hasTable('lead_activities')) {
-            DB::table('lead_activities')->truncate();
+            DB::table('lead_activities')->delete();
         }
 
         if (Schema::hasTable('leads')) {
-            DB::table('leads')->truncate();
+            DB::table('leads')->delete();
         }
 
         if (Schema::hasTable('admin_crm_cards')) {
-            DB::table('admin_crm_cards')->truncate();
+            DB::table('admin_crm_cards')->delete();
 
             if (DB::table('admin_crm_cards')->where('slug', 'new')->doesntExist()) {
                 DB::table('admin_crm_cards')->insert([
@@ -884,27 +1058,39 @@ abstract class AdminApiTestCase extends TestCase
         }
 
         if (Schema::hasTable('user_properties')) {
-            DB::table('user_properties')->truncate();
+            DB::table('user_properties')->delete();
+        }
+
+        if (Schema::hasTable('user_projects')) {
+            DB::table('user_projects')->delete();
         }
 
         if (Schema::hasTable('api_affiliate_users')) {
-            DB::table('api_affiliate_users')->truncate();
+            DB::table('api_affiliate_users')->delete();
         }
 
         if (Schema::hasTable('affiliate_transactions')) {
-            DB::table('affiliate_transactions')->truncate();
+            DB::table('affiliate_transactions')->delete();
         }
 
         if (Schema::hasTable('user_activity_logs')) {
-            DB::table('user_activity_logs')->truncate();
+            DB::table('user_activity_logs')->delete();
+        }
+
+        if (Schema::hasTable('sales')) {
+            DB::table('sales')->delete();
+        }
+
+        if (Schema::hasTable('dashboard_daily_visits')) {
+            DB::table('dashboard_daily_visits')->delete();
         }
 
         if (Schema::hasTable('personal_access_tokens')) {
-            DB::table('personal_access_tokens')->truncate();
+            DB::table('personal_access_tokens')->delete();
         }
 
         if (Schema::hasTable('admin_impersonations')) {
-            DB::table('admin_impersonations')->truncate();
+            DB::table('admin_impersonations')->delete();
         }
 
         Schema::enableForeignKeyConstraints();
