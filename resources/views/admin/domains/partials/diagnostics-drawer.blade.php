@@ -54,7 +54,8 @@
     </div>
 
     @if (empty($d['has_last_check']))
-        <div class="alert alert-secondary mb-0">{{ __('domain_diagnostics.no_last_check') }}</div>
+        <div class="alert alert-secondary mb-3">{{ __('domain_diagnostics.no_last_check') }}</div>
+        @include('admin.domains.partials.connect-methods', ['d' => $d, 'domain' => $domain])
     @else
         @if ($lastCheckAtDisplay)
             <p class="text-muted small mb-0">
@@ -253,61 +254,7 @@
 
         <p class="small text-muted mb-3" dir="auto"><i class="fas fa-info-circle mr-1"></i>{{ __('domain_diagnostics.ns_order_note') }}</p>
 
-        @if (($d['dns_misconfigured'] ?? false) && ($recommendedIpv4 !== [] || $recommendedCname !== []))
-            <h6>{{ __('domain_diagnostics.recommended_records') }}</h6>
-            @if ($recommendedIpv4 !== [])
-                <p class="small text-muted mb-1">{{ $recommendedDns['recommended_a_label'] ?? 'A' }}</p>
-                <ul class="small pl-3">
-                    @foreach ($recommendedIpv4 as $record)
-                        @if (is_array($record))
-                            <li><code>{{ json_encode($record) }}</code></li>
-                        @else
-                            <li><code>{{ $record }}</code></li>
-                        @endif
-                    @endforeach
-                </ul>
-            @endif
-            @if ($recommendedCname !== [])
-                <p class="small text-muted mb-1">{{ $recommendedDns['recommended_cname_label'] ?? 'CNAME' }}</p>
-                <ul class="small pl-3">
-                    @foreach ($recommendedCname as $record)
-                        @if (is_array($record))
-                            <li><code>{{ json_encode($record) }}</code></li>
-                        @else
-                            <li><code>{{ $record }}</code></li>
-                        @endif
-                    @endforeach
-                </ul>
-            @endif
-        @elseif (($d['nameserver_check_enabled'] ?? true) && ! ($d['nameservers_ok'] ?? false) && ($recommendedDns['nameservers'] ?? []) !== [])
-            <h6>{{ __('domain_diagnostics.recommended_records') }}</h6>
-            <p class="small text-muted">{{ __('domain_diagnostics.use_expected_ns') }}</p>
-            <ul class="small pl-3">
-                @foreach ($recommendedDns['nameservers'] as $ns)
-                    <li><code>{{ $ns }}</code></li>
-                @endforeach
-            </ul>
-        @endif
-
-        @if ($ownershipChallenge !== null && $ownershipChallenge !== [])
-            <h6 class="mt-3">{{ $recommendedDns['ownership_txt_label'] ?? __('domain_diagnostics.ownership_txt') }}</h6>
-            <table class="table table-sm table-bordered mb-3">
-                <tbody>
-                    <tr>
-                        <th>{{ $recommendedDns['record_type_label'] ?? 'Type' }}</th>
-                        <td><code>{{ $ownershipChallenge['type'] ?? 'txt' }}</code></td>
-                    </tr>
-                    <tr>
-                        <th>{{ $recommendedDns['record_name_label'] ?? 'Name' }}</th>
-                        <td><code>{{ $ownershipChallenge['domain'] ?? '—' }}</code></td>
-                    </tr>
-                    <tr>
-                        <th>{{ $recommendedDns['record_value_label'] ?? 'Value' }}</th>
-                        <td><code class="text-break">{{ $ownershipChallenge['value'] ?? '—' }}</code></td>
-                    </tr>
-                </tbody>
-            </table>
-        @endif
+        @include('admin.domains.partials.connect-methods', ['d' => $d, 'domain' => $domain])
 
         @if ($provisioning !== [])
             <h6 class="mt-3">{{ __('domain_diagnostics.provisioning_ledger') }}</h6>

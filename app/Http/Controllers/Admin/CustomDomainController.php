@@ -1077,6 +1077,10 @@ class CustomDomainController extends Controller
             'configured_by' => $lastCheck['configured_by'] ?? null,
             'recommended_ipv4' => array_values((array) ($lastCheck['recommended_ipv4'] ?? [])),
             'recommended_cname' => array_values((array) ($lastCheck['recommended_cname'] ?? [])),
+            // Vercel's documented apex A / www CNAME targets, used as fallbacks in the
+            // "how to connect" guide when the last check didn't return provider values.
+            'recommended_a_default' => (string) config('services.vercel.apex_a', '76.76.21.21'),
+            'recommended_cname_default' => (string) config('services.vercel.www_cname', 'cname.vercel-dns.com'),
             'recommended_dns' => $recommendedDns,
             'ownership_challenge' => is_array($ownershipChallenge) ? $ownershipChallenge : null,
             'certificate_readiness' => $lastCheck['certificate_readiness'] ?? null,
