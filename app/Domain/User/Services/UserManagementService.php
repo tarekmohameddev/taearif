@@ -897,7 +897,7 @@ class UserManagementService extends BaseService
                 "Subscription cancelled ({$cancelType}): {$reason}",
                 [
                     'subscription_id' => $subscription->id,
-                    'plan_name' => $subscription->package?->title,
+                    'plan_name' => $subscription->package?->getDisplayTitle('ar'),
                     'cancel_type' => $cancelType,
                     'reason' => $reason,
                     'admin_notes' => $adminNotes,

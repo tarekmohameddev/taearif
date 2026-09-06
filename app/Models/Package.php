@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPackageDisplay;
 use Illuminate\Database\Eloquent\Model;
 
 class Package extends Model
 {
+    use HasPackageDisplay;
     public $table = "packages";
 
     protected $fillable = [

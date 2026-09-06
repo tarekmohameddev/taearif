@@ -7,13 +7,16 @@ class DnsNameserverChecker
     /**
      * @param  list<string>  $expected
      */
-    public function hasExpectedNameservers(string $domain, array $expected): bool
+    /**
+     * @return list<string>
+     */
+    public function getObservedNameservers(string $domain): array
     {
         $apex = strtolower(preg_replace('#^www\.#', '', trim($domain)));
         $records = @dns_get_record($apex, DNS_NS);
 
         if ($records === false || $records === []) {
-            return false;
+            return [];
         }
 
         $found = [];
@@ -22,6 +25,19 @@ class DnsNameserverChecker
             if ($target !== '') {
                 $found[] = $target;
             }
+        }
+
+        return array_values(array_unique($found));
+    }
+
+    /**
+     * @param  list<string>  $expected
+     */
+    public function hasExpectedNameservers(string $domain, array $expected): bool
+    {
+        $found = $this->getObservedNameservers($domain);
+        if ($found === []) {
+            return false;
         }
 
         $expectedNormalized = array_map(

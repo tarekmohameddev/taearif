@@ -257,6 +257,30 @@ class RentalService
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
+    /**
+     * Reject rentals that reference an incomplete unit (completion_status !== complete).
+     * publish_status is intentionally not checked.
+     */
+    private function assertUnitIsComplete($unitId): void
+    {
+        if (empty($unitId)) {
+            return;
+        }
+
+        $property = Property::find($unitId);
+        if (!$property) {
+            return;
+        }
+
+        if ($property->completion_status !== 'complete') {
+            throw RentalException::unitIncomplete(
+                $unitId,
+                $property->completion_status,
+                $property->missing_fields
+            );
+        }
+    }
+
     public function createRental($userId, array $data)
     {
         // Use the provided userId (which should be the tenant owner's ID)
@@ -272,6 +296,8 @@ class RentalService
                 if ($existingActiveRental) {
                     throw RentalException::unitHasActiveContract($data['unit_id']);
                 }
+
+                $this->assertUnitIsComplete($data['unit_id']);
             }
 
             // Extract cost items from data
@@ -411,6 +437,8 @@ class RentalService
                 if ($existingActiveRental) {
                     throw new \Exception('The selected unit already has an active contract. Please choose a different unit or end the existing contract first.');
                 }
+
+                $this->assertUnitIsComplete($data['unit_id']);
 
                 // Auto-populate project_id and building_id from property when unit changes
                 $property = Property::find($data['unit_id']);

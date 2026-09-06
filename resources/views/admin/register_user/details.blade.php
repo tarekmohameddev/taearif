@@ -291,8 +291,10 @@
                     </div>
                     <div class="col-lg-6">
                         @if ($currPackage)
-                            <a target="_blank" href="{{route('admin.package.edit', $currPackage->id)}}">{{$currPackage->title}}</a>
-                            <span class="badge badge-secondary badge-xs mr-2">{{$currPackage->term}}</span>
+                            <a target="_blank" href="{{route('admin.package.edit', $currPackage->id)}}">{{ $currPackage->getDisplayTitle('ar', $currMemb) }}</a>
+                            @unless($currPackage->isTrialPackage())
+                            <span class="badge badge-secondary badge-xs mr-2">{{ __($currPackage->term) }}</span>
+                            @endunless
                             <button type="submit" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#editCurrentPackage"><i class="far fa-edit"></i></button>
                             <form action="{{route('admin.user.currPackage.remove')}}" class="d-inline-block deleteform" method="POST">
                                 @csrf
@@ -301,7 +303,7 @@
                             </form>
 
                             <p class="mb-0">
-                                @if ($currMemb->is_trial == 1)
+                                @if ($currMemb->is_trial == 1 && !$currPackage->isTrialPackage())
                                     ({{ __('Expire Date') }}: {{Carbon\Carbon::parse($currMemb->expire_date)->format('M-d-Y')}})
                                     <span class="badge badge-primary">{{ __('Trial') }}</span>
                                 @else
@@ -341,8 +343,10 @@
                     </div>
                     <div class="col-lg-6">
                         @if ($nextPackage)
-                            <a target="_blank" href="{{route('admin.package.edit', $nextPackage->id)}}">{{$nextPackage->title}}</a>
-                            <span class="badge badge-secondary badge-xs mr-2">{{$nextPackage->term}}</span>
+                            <a target="_blank" href="{{route('admin.package.edit', $nextPackage->id)}}">{{ $nextPackage->getDisplayTitle('ar') }}</a>
+                            @unless($nextPackage->isTrialPackage())
+                            <span class="badge badge-secondary badge-xs mr-2">{{ __($nextPackage->term) }}</span>
+                            @endunless
                             <button type="button" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#editNextPackage"><i class="far fa-edit"></i></button>
                             <form action="{{route('admin.user.nextPackage.remove')}}" class="d-inline-block deleteform" method="POST">
                                 @csrf

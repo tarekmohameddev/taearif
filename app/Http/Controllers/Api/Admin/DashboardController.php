@@ -55,7 +55,7 @@ class DashboardController extends BaseController
             }
 
             // Validate metric if provided
-            $validMetrics = ['properties', 'revenue', 'users', 'subscriptions'];
+            $validMetrics = ['properties', 'revenue', 'users', 'subscriptions', 'business_metrics'];
             if ($metric && !in_array($metric, $validMetrics)) {
                 return $this->errorResponse(
                     'Invalid metric. Valid values: ' . implode(', ', $validMetrics),
@@ -74,6 +74,7 @@ class DashboardController extends BaseController
         } catch (Throwable $e) {
             return $this->errorResponse(
                 'Failed to retrieve dashboard metrics',
+                'ERROR',
                 Response::HTTP_INTERNAL_SERVER_ERROR,
                 ['error' => $e->getMessage()]
             );
@@ -99,6 +100,7 @@ class DashboardController extends BaseController
         } catch (Throwable $e) {
             return $this->errorResponse(
                 'Failed to retrieve quick stats',
+                'ERROR',
                 Response::HTTP_INTERNAL_SERVER_ERROR,
                 ['error' => $e->getMessage()]
             );

@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\{
     UploadController,
     PaymentController,
     AnalyticsDashboardController,
+    DashboardVisitController,
     OnboardingController,
     PublicUserController,
     StepProgressController,
@@ -252,6 +253,7 @@ Route::middleware('auth:sanctum')->group(function () {
 // --- Dashboard (require active package) ---
 Route::middleware(['auth:sanctum', 'require.active.package'])->group(function () {
     Route::get('/dashboard', [AnalyticsDashboardController::class, 'dashboard']);
+    Route::post('/dashboard/visit', DashboardVisitController::class);
     Route::get('/dashboard/summary', [AnalyticsDashboardController::class, 'summary']);
     Route::post('/dashboard/visitors', [AnalyticsDashboardController::class, 'visitors']);
     Route::get('/dashboard/devices', [AnalyticsDashboardController::class, 'devices']);
@@ -535,9 +537,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post  ('/settings/domain',                 [DomainSettingsController::class, 'store'])->middleware(['can:settings.update', 'throttle:10,1']);
     Route::post  ('/settings/domain/verify',          [DomainSettingsController::class, 'verify'])->middleware(['can:settings.update', 'throttle:10,1']);
     Route::match(['post', 'patch'], '/settings/domain/set-primary', [DomainSettingsController::class, 'setPrimary'])->middleware('can:settings.update');
-    Route::delete('/settings/domain/{id}',            [DomainSettingsController::class, 'destroy'])->middleware(['can:settings.update', 'throttle:10,1']);
-
-    Route::patch ('/settings/domain/request-ssl',     [DomainSettingsController::class, 'requestSsl'])->middleware('can:settings.update');
+    // Domain delete and SSL toggles are admin-only (/admin/domains). Tenants cannot detach Vercel entries or request SSL.
 });
 
 

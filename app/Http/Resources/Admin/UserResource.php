@@ -59,7 +59,7 @@ class UserResource extends JsonResource
                     'id' => $this->activeMembership->id,
                     'package' => [
                         'id' => $this->activeMembership->package?->id,
-                        'title' => $this->activeMembership->package?->title,
+                        'title' => $this->activeMembership->package?->getDisplayTitle('ar'),
                     ],
                     'price' => $this->activeMembership->price,
                     'currency' => $this->activeMembership->currency,

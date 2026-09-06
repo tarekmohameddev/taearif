@@ -17,7 +17,7 @@
                         <select name="package_id" id="" class="form-control" required>
                             <option value="" selected disabled>{{ __('Select a Package') }}</option>
                             @foreach ($packages as $package)
-                                <option value="{{$package->id}}">@if ($package->term === 'trial' || $package->is_trial == 1 || $package->id === 26){{ $package->title }}@else{{ $package->title }} ({{ __($package->term) }})@endif</option>
+                                <option value="{{$package->id}}">{{ $package->getDisplayTitle('ar') }}@unless($package->isTrialPackage()) ({{ __($package->term) }})@endunless</option>
                             @endforeach
                         </select>
                     </div>

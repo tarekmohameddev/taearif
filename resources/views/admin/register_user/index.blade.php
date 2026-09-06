@@ -10,6 +10,29 @@
         padding-left: 0.2rem !important;
         padding-right: 0.2rem !important;
     }
+
+    .ru-stats-card { border-radius: 12px; border: none; box-shadow: 0 4px 10px rgba(0, 0, 0, .07); overflow: hidden; }
+    .ru-stats-header { padding: .6rem 1.1rem; background: linear-gradient(45deg, #000, #333); }
+    .ru-stats-header h5 { font-size: 1rem; font-weight: 600; }
+    .ru-stats-body { padding: .85rem 1.1rem; }
+
+    .ru-stats-label { font-size: .78rem; font-weight: 600; color: #6c757d; margin-bottom: .4rem; }
+    .ru-stats-hint { font-size: .72rem; font-weight: 400; }
+    .ru-stats-divider { margin: .85rem 0 .7rem; border-top: 1px dashed #dee2e6; }
+
+    .ru-stats-grid { display: flex; flex-wrap: wrap; gap: .45rem; }
+    .ru-stat-tile {
+        flex: 1 1 118px; min-width: 118px;
+        padding: .45rem .5rem;
+        border-radius: 9px;
+        background-color: rgba(0, 0, 0, .045);
+        text-align: center;
+    }
+    .ru-stat-tile-filtered { background-color: rgba(13, 110, 253, .08); border: 1px solid rgba(13, 110, 253, .18); }
+
+    .ru-stat-title { font-size: .72rem; color: #6c757d; line-height: 1.25; min-height: 2.5em; }
+    .ru-stat-count { font-size: 1.35rem; font-weight: 700; color: #000; line-height: 1.2; }
+    .ru-stat-unit  { font-size: .68rem; color: #adb5bd; }
 </style>
 @endsection
 
@@ -78,24 +101,54 @@
 @endif
 
 
-<div class="row mb-4">
+@php
+    $hasActiveFilters = collect(Arr::except($userListQuery, ['page']))
+        ->filter(fn ($v) => $v !== '' && $v !== null)
+        ->isNotEmpty();
+@endphp
+<div class="row mb-3">
     <div class="col-12">
-        <div class="card" style="border-radius: 20px; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); overflow: hidden; border: none;">
-            <div class="card-header text-white" style="padding: 1.5rem 2rem; background: linear-gradient(45deg, #000000, #333333);">
-                <h5 class="mb-0" style="font-size: 1.5rem; font-weight: 600;">إحصائيات عامة</h5>
+        <div class="card ru-stats-card">
+            <div class="card-header ru-stats-header text-white">
+                <h5 class="mb-0">إحصائيات عامة</h5>
             </div>
-            <div class="card-body" style="padding: 2rem;">
-                <div class="row g-5">
-                    @foreach($stats as $stat)
-                    <div class="col-md">
-                        <div class="p-4" style="background-color: rgba(0, 0, 0, 0.05); border-radius: 15px; transition: all 0.3s ease; height: 100%;">
-                            <h6 class="mb-2" style="font-size: 1.1rem; color: #6c757d;">{{ $stat['title'] }}</h6>
-                            <p class="mb-0" style="font-size: 2rem; font-weight: bold; color: #000000;">{{ $stat['count'] }}</p>
-                            <p class="mb-0" style="font-size: 1rem; color: #6c757d;">موقع</p>
+            <div class="card-body ru-stats-body">
+
+                {{-- Top: global totals, never affected by filters --}}
+                <div class="ru-stats-label">
+                    كل المستخدمين
+                    <span class="badge badge-dark">{{ $tenantsTotal }} مستخدم</span>
+                </div>
+                <div class="ru-stats-grid">
+                    @foreach ($statsTotal as $stat)
+                        <div class="ru-stat-tile">
+                            <div class="ru-stat-title">{{ $stat['title'] }}</div>
+                            <div class="ru-stat-count">{{ $stat['count'] }}</div>
+                            <div class="ru-stat-unit">{{ $stat['unit'] }}</div>
                         </div>
-                    </div>
                     @endforeach
                 </div>
+
+                <hr class="ru-stats-divider">
+
+                {{-- Bottom: recomputed against every active filter --}}
+                <div class="ru-stats-label">
+                    ضمن الفلترة الحالية
+                    <span class="badge badge-primary">{{ $users->total() }} مستخدم</span>
+                    @unless ($hasActiveFilters)
+                        <span class="text-muted ru-stats-hint">(لا توجد فلاتر مفعّلة — مطابق للإجمالي)</span>
+                    @endunless
+                </div>
+                <div class="ru-stats-grid">
+                    @foreach ($statsFiltered as $stat)
+                        <div class="ru-stat-tile ru-stat-tile-filtered">
+                            <div class="ru-stat-title">{{ $stat['title'] }}</div>
+                            <div class="ru-stat-count">{{ $stat['count'] }}</div>
+                            <div class="ru-stat-unit">{{ $stat['unit'] }}</div>
+                        </div>
+                    @endforeach
+                </div>
+
             </div>
         </div>
     </div>
@@ -104,16 +157,6 @@
 <style>
     :root {
         --primary: #000000;
-    }
-
-    @media (max-width: 767.98px) {
-        .card-body .row>div:not(:last-child) {
-            margin-bottom: 1rem;
-        }
-    }
-
-    .card-body .row>div>div {
-        cursor: pointer;
     }
 
     .register-users-table {
@@ -162,6 +205,32 @@
         margin-top: 2px;
         padding: 0.15em 0.4em;
         font-size: 10px;
+    }
+
+    /* The Actions dropdown is clipped twice over:
+       1. `.table-responsive` own overflow (Bootstrap + atlantis.css:6456).
+       2. The theme's `.main-panel > .content { overflow: hidden }`
+          (atlantis.css:1281), which hard-clips with no scrollbar. This is the
+          one that cuts the menu on the last rows, where it would extend past
+          the bottom of the content box.
+       `overflow-y: visible` fixes neither — per the CSS overflow spec a
+       `visible` value computes to `auto` when the other axis is not visible.
+
+       (2) is unconditional: releasing it cannot cause horizontal page overflow,
+       because the table is still contained by `.table-responsive`.
+       (1) is gated to xl, where the table already fits without horizontal
+       scrolling — below that the scroll container is kept.
+
+       This <style> only ships on this page, so `.content` is untouched
+       everywhere else in the admin. */
+    .main-panel > .content {
+        overflow: visible;
+    }
+
+    @media (min-width: 1200px) {
+        .register-users-table-wrapper.table-responsive {
+            overflow: visible;
+        }
     }
 </style>
 
@@ -365,7 +434,7 @@
                         @if ($users->total() == 0)
                         <h3 class="text-center">{{ __('NO USER FOUND') }}</h3>
                         @else
-                        <div class="table-responsive">
+                        <div class="table-responsive register-users-table-wrapper">
                             <table class="table table-striped table-sm mt-3 register-users-table">
                                 <thead>
                                     <tr>
@@ -377,7 +446,7 @@
                                         <th scope="col">{{ __('Web site') }}</th>
                                         <th scope="col">{{ __('Subscription') }}</th>
                                         <th scope="col">{{ __('Package') }}</th>
-                                        <td scope="col">{{ __('Action') }}</td>
+                                        <th scope="col">{{ __('Action') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -429,7 +498,7 @@
                                             @switch($subState)
                                                 @case('expired_free')
                                                     <span class="badge badge-danger">{{ __('Subscription Expired') }}</span>
-                                                    <div class="small text-muted">{{ __('Free Package') }}</div>
+                                                    <div class="small text-muted">{{ $currPackage->getDisplayTitle('ar', $currMemb) }}</div>
                                                     @break
                                                 @case('expired')
                                                     <span class="badge badge-danger">{{ __('Subscription Expired') }}</span>
@@ -458,8 +527,8 @@
                                         </td>
                                         <td>
                                             @if ($currPackage)
-                                            <a target="_blank" href="{{route('admin.package.edit', $currPackage->id)}}">{{$currPackage->title}}</a>
-                                            @if ($currPackage->term !== 'trial' && $currPackage->is_trial != 1 && $currPackage->id !== 26)
+                                            <a target="_blank" href="{{route('admin.package.edit', $currPackage->id)}}">{{ $currPackage->getDisplayTitle('ar', $currMemb) }}</a>
+                                            @if (!$currPackage->isTrialPackage())
                                             <span class="badge badge-secondary badge-xs mr-2">{{ __($currPackage->term) }}</span>
                                             @endif
 
@@ -473,9 +542,6 @@
                                                 {{ $currPackage->term === 'lifetime'
                                                     ? __('Lifetime')
                                                     : ($currMemb->expire_date ? \Carbon\Carbon::parse($currMemb->expire_date)->format('M-d-Y') : '—') }})
-                                                @if ($currMemb->is_trial == 1)
-                                                    <span class="badge badge-primary">تجريبية</span>
-                                                @endif
                                             </div>
                                             @if ($currMemb->status == 0)
                                             <form id="statusForm{{$currMemb->id}}" class="d-inline-block" action="{{route('admin.payment-log.update')}}" method="post">
@@ -495,13 +561,7 @@
 
                                         </td>
 
-                                        @includeIf('admin.register_user.template-modal')
-                                        @includeIf('admin.register_user.template-image-modal')
-                                        @includeIf('admin.register_user.edit-current-package')
-                                        @includeIf('admin.register_user.add-current-package')
-                                        @includeIf('admin.register_user.edit-next-package')
-                                        @includeIf('admin.register_user.add-next-package')
-                                        <td>
+                                        <td class="actions-cell">
                                             @if ($currPackage)
                                             <form id="remove-package-form-{{ $user->id }}" action="{{ route('admin.user.currPackage.remove') }}" class="deleteform d-none" method="POST">
                                                 @csrf
@@ -519,10 +579,10 @@
                                                 <input type="hidden" name="user_id" value="{{ $user->id }}">
                                             </form>
                                             <div class="dropdown">
-                                                <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="dropdownMenuButton-{{ $user->id }}" data-toggle="dropdown" data-boundary="viewport" aria-haspopup="true" aria-expanded="false">
                                                     {{ __('Actions') }}
                                                 </button>
-                                                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton-{{ $user->id }}">
                                                     <a href="{{ route('admin.register.user.secretLogin', $user) }}" target="_blank" class="dropdown-item">
                                                         {{ __('Secret Login') }}
                                                     </a>
@@ -548,6 +608,18 @@
                                 </tbody>
                             </table>
                         </div>
+                        @foreach ($users as $user)
+                            @php
+                                $currMemb = $user->currentMembership ?? $user->pendingMembership;
+                                $currPackage = $currMemb?->package;
+                            @endphp
+                            {{-- Only the two modals this page can actually open. The
+                                 template / next-package modals are triggered from
+                                 vcards.blade.php and details.blade.php respectively, and
+                                 the next-package pair emits a hardcoded id per row. --}}
+                            @includeIf('admin.register_user.edit-current-package')
+                            @includeIf('admin.register_user.add-current-package')
+                        @endforeach
                         @endif
                     </div>
                 </div>
@@ -604,7 +676,7 @@
                         <select name="package_id" class="form-control">
                             @if (!empty($packages))
                             @foreach ($packages as $package)
-                            <option value="{{ $package->id }}">@if ($package->term === 'trial' || $package->is_trial == 1 || $package->id === 26){{ $package->title }}@else{{ $package->title }} ({{ __($package->term) }})@endif</option>
+                            <option value="{{ $package->id }}">{{ $package->getDisplayTitle('ar') }}@unless($package->isTrialPackage()) ({{ __($package->term) }})@endunless</option>
                             @endforeach
                             @endif
                         </select>
@@ -637,4 +709,37 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Open the Actions menu upward when it would not fit below.
+    //
+    // Popper will not do this for us: with data-boundary="viewport" it only
+    // flips when the menu would leave the *viewport*, and on the lower rows
+    // there is still viewport room — the menu is cut by an ancestor's overflow
+    // long before that. So decide the direction against the card box instead.
+    //
+    // Bootstrap 4 reads the .dropup class off the toggle's parent inside
+    // Dropdown._getPlacement(), which runs after show.bs.dropdown fires, so
+    // setting it here is picked up for the very same open.
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof jQuery === 'undefined') {
+            return;
+        }
+
+        jQuery(document).on('show.bs.dropdown', '.register-users-table .dropdown', function () {
+            var $dropdown = jQuery(this);
+            var $menu = $dropdown.find('.dropdown-menu');
+            var $card = $dropdown.closest('.card');
+
+            if (!$menu.length || !$card.length) {
+                return;
+            }
+
+            var toggleBottom = $dropdown[0].getBoundingClientRect().bottom;
+            var limit = Math.min($card[0].getBoundingClientRect().bottom, window.innerHeight);
+
+            $dropdown.toggleClass('dropup', (toggleBottom + $menu.outerHeight()) > limit);
+        });
+    });
+</script>
 @endsection

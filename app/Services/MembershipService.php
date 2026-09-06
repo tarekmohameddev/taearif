@@ -24,6 +24,15 @@ class MembershipService
     const PAID_MONTHLY_PACKAGE_ID = 25;
     const TRIAL_PACKAGE_ID = 26;
 
+    /**
+     * The 30-day trial package, distinct from TRIAL_PACKAGE_ID (26, 7 days).
+     *
+     * NOTE: its packages.term is 'monthly', not 'trial'. Never classify it as
+     * paid monthly — packages.is_trial = '1' is what marks it as a trial.
+     */
+    const TRIAL_MONTHLY_PACKAGE_ID = 28;
+    const TRIAL_MONTHLY_DAYS = 30;
+
     // Package terms
     const TERM_MONTHLY = 'monthly';
     const TERM_YEARLY = 'yearly';
@@ -272,7 +281,7 @@ class MembershipService
                 ->first();
 
             $packageName = $expiredMembership && $expiredMembership->package
-                ? $expiredMembership->package->title
+                ? $expiredMembership->package->getDisplayTitle('ar')
                 : 'الباقة السابقة';
             $expiryDate = $expiredMembership
                 ? Carbon::parse($expiredMembership->expire_date)->format('Y-m-d')
@@ -684,7 +693,7 @@ class MembershipService
         return [
             'has_membership' => $currentMembership !== null,
             'package_id' => $currentMembership ? $currentMembership->package_id : null,
-            'package_name' => $package ? $package->title : null,
+            'package_name' => $package ? $package->getDisplayTitle('ar') : null,
             'package_term' => $package ? $package->term : null,
             'is_free' => $this->hasFreePackage($user),
             'is_trial' => $this->hasTrialPackage($user),
