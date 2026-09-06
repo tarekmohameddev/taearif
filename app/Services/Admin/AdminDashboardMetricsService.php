@@ -85,9 +85,13 @@ class AdminDashboardMetricsService
             $dashboard['recentActivity']['tenants'] = User::query()
                 ->where('account_type', 'tenant')
                 ->select(['id', 'username', 'company_name', 'created_at'])
+                ->with('basic_setting:id,user_id,company_name')
                 ->latest('created_at')
                 ->limit(5)
-                ->get();
+                ->get()
+                ->each(function (User $tenant): void {
+                    $tenant->setAttribute('display_name', $this->tenantDisplayName($tenant));
+                });
         }
 
         if ($visibility['packages']) {
@@ -156,6 +160,40 @@ class AdminDashboardMetricsService
     {
         return $admin->hasPermission('Dashboard Financial Metrics')
             || $admin->hasPermission('Payment Log');
+    }
+
+    private function tenantDisplayName(User $tenant): string
+    {
+        foreach ([
+            $tenant->basic_setting?->company_name,
+            $tenant->company_name,
+        ] as $candidate) {
+            if ($this->isUsableTenantName($candidate)) {
+                return trim((string) $candidate);
+            }
+        }
+
+        $username = trim((string) $tenant->username);
+
+        return $username !== '' ? $username : __('Tenant');
+    }
+
+    private function isUsableTenantName(?string $name): bool
+    {
+        $name = trim((string) $name);
+
+        if ($name === '') {
+            return false;
+        }
+
+        $placeholders = [
+            'n/a',
+            strtolower((string) __('N/A')),
+            strtolower((string) __('N/A', [], 'en')),
+            strtolower((string) __('N/A', [], 'ar')),
+        ];
+
+        return ! in_array(strtolower($name), $placeholders, true);
     }
 
     private function activeMemberships(string $today): Builder

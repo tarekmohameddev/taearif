@@ -133,6 +133,50 @@ class AdminDashboardMetricsServiceTest extends AdminApiTestCase
     }
 
     /** @test */
+    public function recent_tenant_signups_resolve_a_display_name_without_na_placeholders(): void
+    {
+        $admin = $this->adminWithPermissions(['Dashboard', 'Registered Users']);
+        $settingsNameWins = $this->tenant('settings-name-wins');
+        $userNameWins = $this->tenant('user-name-wins');
+        $usernameFallback = $this->tenant('username-fallback');
+
+        $settingsNameWins->update(['company_name' => 'N/A']);
+        $userNameWins->update(['company_name' => 'User Company']);
+        $usernameFallback->update(['company_name' => __('N/A', [], 'ar')]);
+
+        DB::table('user_basic_settings')->insert([
+            [
+                'user_id' => $settingsNameWins->id,
+                'company_name' => 'Settings Company',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'user_id' => $userNameWins->id,
+                'company_name' => 'N/A',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'user_id' => $usernameFallback->id,
+                'company_name' => __('N/A', [], 'ar'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        $dashboard = app(AdminDashboardMetricsService::class)->build(
+            $admin,
+            CarbonImmutable::parse('2026-09-06 10:00:00', AdminDashboardMetricsService::BUSINESS_TIMEZONE)
+        );
+        $displayNames = $dashboard['recentActivity']['tenants']->keyBy('username')->map->display_name;
+
+        $this->assertSame('Settings Company', $displayNames['settings-name-wins']);
+        $this->assertSame('User Company', $displayNames['user-name-wins']);
+        $this->assertSame('username-fallback', $displayNames['username-fallback']);
+    }
+
+    /** @test */
     public function package_permission_returns_only_package_metrics(): void
     {
         $this->insertDashboardPackages();
