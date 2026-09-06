@@ -2,7 +2,9 @@
 
 namespace App\Domain\Analytics\Services;
 
+use App\Domain\Admin\Models\Admin;
 use App\Domain\Shared\Services\BaseService;
+use App\Services\Admin\AdminDashboardBusinessMetricsService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
@@ -14,10 +16,15 @@ use Carbon\Carbon;
  */
 class DashboardService extends BaseService
 {
+    public function __construct(
+        private readonly AdminDashboardBusinessMetricsService $businessMetrics
+    ) {
+    }
+
     /**
      * Build minimal tenant profile payload for a single user.
      * - Returns only fields required by the profile UI.
-     * - Visitors and revenue are returned as the literal string "coming soon".
+     * - Visitors and revenue are returned as localized placeholder text.
      */
     public function getTenantProfile(int $userId): ?array
     {
@@ -35,10 +42,10 @@ class DashboardService extends BaseService
         $siteName = DB::table('api_general_settings')
             ->where('user_id', $userId)
             ->value('site_name');
-        if ($siteName === 'N/A' || $siteName === null || trim((string) $siteName) === '') {
+        if (in_array($siteName, ['N/A', __('N/A')], true) || $siteName === null || trim((string) $siteName) === '') {
             $siteName = $user->username;
         }
-        $displayName = $siteName ?: 'Tenant';
+        $displayName = $siteName ?: __('Tenant');
 
         // Domain from username + app host
         $appUrl = config('app.url');
@@ -92,15 +99,15 @@ class DashboardService extends BaseService
                 'status' => $status,
             ],
             'kpis' => [
-                'revenue_total_sar' => 'coming soon',
-                'visitors_30d' => 'coming soon',
+                'revenue_total_sar' => __('coming soon'),
+                'visitors_30d' => __('coming soon'),
                 'projects_total' => $projectsTotal,
                 'projects_under_creation' => $projectsUnderCreation,
                 'properties_total' => $propertiesTotal,
                 'properties_activated' => $propertiesActivated,
             ],
             'subscription' => [
-                'plan_name' => $latestMembership->plan_title ?? 'N/A',
+                'plan_name' => $latestMembership->plan_title ?? __('N/A'),
                 'registered_at' => optional($user->created_at)->toDateString() ?? null,
                 'expires_at' => $latestMembership->expire_date ?? null,
                 'last_login_at' => optional($user->last_login_at)->toISOString() ?? null,
@@ -123,7 +130,9 @@ class DashboardService extends BaseService
      */
     public function getDashboardMetrics(?string $metric = null, int $period = 30): array
     {
+        $metric = $metric ?? 'all';
         $propertiesTypeItems = $this->getPropertyTypeMetrics();
+        $businessMetrics = $this->businessMetricsPayload();
 
         $limitInput = request()->input('tenants.limit');
         if ($limitInput === null) {
@@ -143,21 +152,19 @@ class DashboardService extends BaseService
         $totalTenants = $tenantsResult['total'];
         $totalPages = $limit > 0 ? (int) ceil($totalTenants / $limit) : 0;
 
-        return [
-            // Dashboard summary sections as a single object
-            'dashboard' => $this->getDashboardCards($period),
-
-            // Metrics object (can grow with more metric groups)
+        $payload = [
+            'dashboard' => array_merge(
+                $this->getDashboardCards($period),
+                ['business_metrics' => $businessMetrics]
+            ),
             'metrics' => [
                 'activity' => $this->getActivityMetrics($period),
             ],
-
-            // Collections live under a section object with items + meta
+            'business_metrics' => $businessMetrics,
             'properties_type' => [
                 'items' => $propertiesTypeItems,
                 'total' => count($propertiesTypeItems),
             ],
-
             'tenants' => [
                 'items' => $tenantsResult['items'],
                 'pagination' => [
@@ -172,6 +179,23 @@ class DashboardService extends BaseService
                 'filter_options' => $tenantsResult['filter_options'],
             ],
         ];
+
+        foreach ([
+            'properties' => fn (): array => $this->getPropertiesMetrics($period),
+            'revenue' => fn (): array => $this->getRevenueMetrics($period),
+            'users' => fn (): array => $this->getUsersMetrics($period),
+            'subscriptions' => fn (): array => $this->getSubscriptionsMetrics($period),
+        ] as $key => $resolver) {
+            if ($metric === 'all' || $metric === $key) {
+                $payload[$key] = $resolver();
+            }
+        }
+
+        if ($metric === 'business_metrics') {
+            return ['business_metrics' => $businessMetrics];
+        }
+
+        return $payload;
     }
 
     /**
@@ -229,7 +253,7 @@ class DashboardService extends BaseService
                 'inactive' => 0,
                 'change_percentage' => 0,
                 'period' => [],
-                'note' => 'Properties table might not exist',
+                'note' => __('Properties table might not exist'),
             ];
         }
     }
@@ -555,7 +579,7 @@ class DashboardService extends BaseService
 
         return [
             'total_visits' => [
-                'value' => 'coming soon',
+                'value' => __('coming soon'),
                 'change_percentage' => null,
             ],
             'inquiries' => [
@@ -790,6 +814,10 @@ class DashboardService extends BaseService
                 'items' => [],
                 'filters' => $filtersApplied,
                 'total' => $totalTenants,
+                'filter_options' => [
+                    'plans' => [],
+                    'statuses' => [],
+                ],
             ];
         }
 
@@ -805,10 +833,10 @@ class DashboardService extends BaseService
             }
 
             $siteName = $tenant->site_name ?? null;
-            if ($siteName === 'N/A' || $siteName === null || trim($siteName) === '') {
+            if (in_array($siteName, ['N/A', __('N/A')], true) || $siteName === null || trim($siteName) === '') {
                 $siteName = $tenant->username;
             }
-            $name = $siteName ?: 'Tenant';
+            $name = $siteName ?: __('Tenant');
 
             $domain = null;
             if ($tenant->username && $appHost) {
@@ -822,10 +850,10 @@ class DashboardService extends BaseService
                 'email' => $tenant->email,
                 'properties' => (int) $tenant->properties_count,
                 'projects' => (int) $tenant->projects_count,
-                'plan_name' => $tenant->plan_title ?? 'N/A',
+                'plan_name' => $tenant->plan_title ?? __('N/A'),
                 'plan_expires_at' => $tenant->expire_date ?? null,
                 'status' => $status,
-                'visitors' => 'coming soon',
+                'visitors' => __('coming soon'),
             ];
         })->toArray();
 
@@ -924,7 +952,7 @@ class DashboardService extends BaseService
                 'total' => 0,
                 'change_percentage' => 0,
                 'period' => [],
-                'note' => 'Projects table might not exist',
+                'note' => __('Projects table might not exist'),
             ];
         }
     }
@@ -969,7 +997,7 @@ class DashboardService extends BaseService
             return [
                 'total' => 0,
                 'change_percentage' => 0,
-                'note' => 'Properties table might not exist',
+                'note' => __('Properties table might not exist'),
             ];
         }
     }
@@ -981,11 +1009,10 @@ class DashboardService extends BaseService
      */
     public function getQuickStats(): array
     {
+        $businessMetrics = $this->businessMetrics->snapshot();
+
         return [
-            'total_users' => DB::table('users')
-                ->where('account_type', 'tenant')
-                ->whereNull('deleted_at')
-                ->count(),
+            'total_users' => $businessMetrics['executiveSummary']['registeredTenantUsers'],
             'active_subscriptions' => DB::table('memberships')
                 ->where('status', 1)
                 ->where('expire_date', '>=', now())
@@ -995,6 +1022,32 @@ class DashboardService extends BaseService
                 ->sum('price'),
             'total_properties' => DB::table('user_properties')->count() ?? 0,
         ];
+    }
+
+    private function businessMetricsPayload(): array
+    {
+        $snapshot = $this->businessMetrics->snapshot();
+        $admin = auth(config('admin-api.guard'))->user();
+
+        return array_filter([
+            'as_of' => $snapshot['asOf']->toIso8601String(),
+            'timezone' => $snapshot['timezone'],
+            'executive_summary' => $snapshot['executiveSummary'],
+            'financial_metrics' => $this->canViewFinancialMetrics($admin) ? $snapshot['financialMetrics'] : null,
+            'visibility' => [
+                'financial' => $this->canViewFinancialMetrics($admin),
+            ],
+        ], static fn ($value): bool => $value !== null);
+    }
+
+    private function canViewFinancialMetrics($admin): bool
+    {
+        if (!$admin instanceof Admin) {
+            return false;
+        }
+
+        return $admin->hasPermission('Dashboard Financial Metrics')
+            || $admin->hasPermission('Payment Log');
     }
 }
 
