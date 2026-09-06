@@ -458,15 +458,27 @@ class AdminDashboardMetricsServiceTest extends AdminApiTestCase
         $response = $this->get(route('admin.dashboard'));
 
         $response->assertOk();
-        $response->assertSee('1,001 SAR', false);
-        $response->assertSee('2,501 SAR', false);
-        $response->assertSee('901 SAR', false);
         $response->assertSee('USD', false);
         $response->assertSee('101', false);
         $response->assertDontSee('1,000.55 SAR', false);
         $response->assertDontSee('2,500.75 SAR', false);
         $response->assertDontSee('900.50 SAR', false);
         $response->assertDontSee('100.70', false);
+
+        $content = $response->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/dashboard-money-amount">\s*1,001\s*<\/span>\s*<span class="dashboard-money-currency">\s*SAR\s*<\/span>/',
+            $content
+        );
+        $this->assertMatchesRegularExpression(
+            '/dashboard-money-amount">\s*2,501\s*<\/span>\s*<span class="dashboard-money-currency">\s*SAR\s*<\/span>/',
+            $content
+        );
+        $this->assertMatchesRegularExpression(
+            '/dashboard-money-amount">\s*901\s*<\/span>\s*<span class="dashboard-money-currency">\s*SAR\s*<\/span>/',
+            $content
+        );
     }
 
     /** @test */

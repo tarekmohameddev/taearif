@@ -6,6 +6,7 @@ use App\Models\BasicSetting;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Config;
+use App\Services\Admin\Dashboard\AdminDashboardPresenter;
 use App\Services\Admin\AdminDashboardMetricsService;
 use Illuminate\Support\Facades\Auth;
 
@@ -20,12 +21,15 @@ class DashboardController extends Controller
         }
     }
 
-    public function dashboard(AdminDashboardMetricsService $metrics)
+    public function dashboard(
+        AdminDashboardMetricsService $metrics,
+        AdminDashboardPresenter $presenter
+    )
     {
         $admin = Auth::guard('admin')->user();
 
         return view('admin.dashboard', [
-            'dashboard' => $metrics->build($admin),
+            'dashboard' => $presenter->present($metrics->build($admin)),
         ]);
     }
 

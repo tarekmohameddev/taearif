@@ -1012,7 +1012,7 @@ class DashboardService extends BaseService
         $businessMetrics = $this->businessMetrics->snapshot();
 
         return [
-            'total_users' => $businessMetrics['executiveSummary']['registeredTenantUsers'],
+            'total_users' => $businessMetrics['executiveSummary']['registeredTenantUsers'] ?? 0,
             'active_subscriptions' => DB::table('memberships')
                 ->where('status', 1)
                 ->where('expire_date', '>=', now())
