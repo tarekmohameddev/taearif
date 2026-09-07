@@ -5,6 +5,7 @@ namespace App\Models\Api;
 use App\Contracts\Vercel\VercelDomainSourceOfTruth;
 use App\Domain\Domain\Models\CustomDomain;
 use App\Models\User;
+use App\Services\Vercel\DomainHealthPolicy;
 use App\Support\DomainHealthMessages;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +14,10 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
 {
     use HasFactory;
 
+    public const DNS_MODE_VERCEL_NS = 'vercel_ns';
+
+    public const DNS_MODE_EXTERNAL_DNS = 'external_dns';
+
     protected $table = 'api_domains_settings';
 
     protected $fillable = [
@@ -20,6 +25,7 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
         'custom_domain_id',
         'name',
         'custom_name',
+        'dns_mode',
         'status',
         'primary',
         'ssl',
@@ -37,6 +43,7 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
         'expires_at' => 'date',
         'auto_renewal' => 'boolean',
         'dns_records' => 'array',
+        'dns_mode' => 'string',
     ];
 
     protected ?bool $vercelAttachedHint = null;
@@ -60,9 +67,14 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
     public function scopePreferredActive($query)
     {
         return $query
-            ->where('status', 'active')
+            ->servable()
             ->orderByDesc('primary')
             ->orderByDesc('id');
+    }
+
+    public function scopeServable($query)
+    {
+        return $query->where('status', 'active');
     }
 
     /**
@@ -91,6 +103,17 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
             'record_type_label' => __('domain_dns.record_type'),
             'record_name_label' => __('domain_dns.record_name'),
             'record_value_label' => __('domain_dns.record_value'),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function dnsModeOptions(): array
+    {
+        return [
+            self::DNS_MODE_VERCEL_NS => __('domain_dns.mode_vercel_ns'),
+            self::DNS_MODE_EXTERNAL_DNS => __('domain_dns.mode_external_dns'),
         ];
     }
 
@@ -147,6 +170,8 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
             $lastCheck['www_present'] = (bool) $this->wwwPresentHint;
             $lastCheck['www_redirect_correct'] = (bool) $this->wwwRedirectCorrectHint;
         }
+
+        $lastCheck['dns_mode'] = $lastCheck['dns_mode'] ?? $this->dns_mode ?? self::DNS_MODE_VERCEL_NS;
 
         if (isset($lastCheck['health_code']) && is_string($lastCheck['health_code']) && $lastCheck['health_code'] !== '') {
             $code = $lastCheck['health_code'];
@@ -209,79 +234,14 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
      */
     public static function resolveHealthCode(array $lastCheck, ?bool $apexAttached = null): string
     {
-        $autoAttach = (bool) ($lastCheck['auto_attach_custom_domain'] ?? true);
-        $nsCheckEnabled = (bool) ($lastCheck['nameserver_check_enabled'] ?? true);
+        $lastCheck['dns_mode'] = $lastCheck['dns_mode'] ?? self::DNS_MODE_VERCEL_NS;
 
-        if (! $autoAttach && ! $nsCheckEnabled) {
-            return 'checks_disabled';
+        if ($apexAttached !== null) {
+            $lastCheck['apex_attached'] = $apexAttached;
+            $lastCheck['vercel_attached'] = $apexAttached;
         }
 
-        if (($lastCheck['reason'] ?? null) === 'expired') {
-            return 'expired';
-        }
-
-        // Terminal, provider-confirmed rejection (e.g. Vercel says the name is not
-        // a valid registrable domain — typically a subdomain). Checked before the
-        // provider-error heuristic so it isn't mistaken for an unreachable provider.
-        if (($lastCheck['reason'] ?? null) === 'invalid_domain') {
-            return 'invalid_domain';
-        }
-
-        if (self::isProviderErrorState($lastCheck)) {
-            return 'provider_error';
-        }
-
-        $attached = $apexAttached ?? (bool) ($lastCheck['apex_attached'] ?? $lastCheck['vercel_attached'] ?? false);
-        $verified = (bool) ($lastCheck['apex_verified'] ?? $lastCheck['vercel_verified'] ?? false);
-        $nameserversOk = (bool) ($lastCheck['nameservers_ok'] ?? false);
-        $misconfigured = (bool) ($lastCheck['dns_misconfigured'] ?? false);
-        $ownershipChallenge = $lastCheck['ownership_challenge'] ?? null;
-
-        if (! $attached) {
-            return 'not_on_vercel';
-        }
-
-        if (is_array($ownershipChallenge) && $ownershipChallenge !== [] && ! $verified) {
-            return 'ownership_required';
-        }
-
-        $accountDomainPresent = (bool) ($lastCheck['account_domain_present'] ?? false);
-        $zoneEnabled = (bool) ($lastCheck['zone_enabled'] ?? false);
-
-        if ($accountDomainPresent && ! $zoneEnabled) {
-            return 'zone_disabled';
-        }
-
-        if ($misconfigured) {
-            return 'dns_misconfigured';
-        }
-
-        if ($nsCheckEnabled && ! $nameserversOk) {
-            return 'ns_not_pointing';
-        }
-
-        if (! $verified) {
-            return 'unverified';
-        }
-
-        $readiness = (string) ($lastCheck['certificate_readiness'] ?? '');
-
-        if ($readiness === 'certificate_error') {
-            return 'certificate_error';
-        }
-
-        if (($lastCheck['ssl_ready'] ?? false) !== true) {
-            return 'certificate_pending';
-        }
-
-        $wwwPresent = (bool) ($lastCheck['www_present'] ?? false);
-        $wwwRedirectCorrect = (bool) ($lastCheck['www_redirect_correct'] ?? false);
-
-        if (! $wwwPresent || ! $wwwRedirectCorrect) {
-            return 'apex_only';
-        }
-
-        return 'linked';
+        return app(DomainHealthPolicy::class)->resolveHealthCode($lastCheck);
     }
 
     /**
@@ -307,50 +267,20 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
     /**
      * @param  array<string, mixed>  $lastCheck
      */
-    private static function isProviderErrorState(array $lastCheck): bool
-    {
-        if (($lastCheck['reason'] ?? null) === 'provider_error') {
-            return true;
-        }
-
-        if (array_key_exists('provider_reachable', $lastCheck) && $lastCheck['provider_reachable'] === false) {
-            return true;
-        }
-
-        $message = (string) ($lastCheck['message'] ?? '');
-
-        return str_contains($message, 'Could not reach the hosting provider')
-            || str_contains($message, 'Unable to resolve domain nameservers');
-    }
-
     /**
      * @param  array<string, mixed>  $lastCheck
      * @return array{code: string, class: string, label: string, reason: string, checked_at: string|null}
      */
     private function healthState(string $code, array $lastCheck): array
     {
-        $classes = [
-            'linked' => 'success',
-            'apex_only' => 'success',
-            'ownership_required' => 'warning',
-            'dns_misconfigured' => 'warning',
-            'ns_mismatch' => 'warning',
-            'ns_not_pointing' => 'warning',
-            'not_on_vercel' => 'danger',
-            'unverified' => 'warning',
-            'zone_disabled' => 'warning',
-            'certificate_pending' => 'warning',
-            'certificate_error' => 'danger',
-            'invalid_domain' => 'danger',
-            'expired' => 'danger',
-            'provider_error' => 'secondary',
-            'checks_disabled' => 'secondary',
-            'unchecked' => 'secondary',
-        ];
+        $policy = app(DomainHealthPolicy::class);
+        $severity = method_exists($policy, 'severityForCode')
+            ? $policy->severityForCode($code)
+            : 'secondary';
 
         return [
             'code' => $code,
-            'class' => $classes[$code] ?? 'secondary',
+            'class' => $severity,
             'label' => __("domain_health.{$code}"),
             'reason' => DomainHealthMessages::translate((string) ($lastCheck['message'] ?? '')),
             'checked_at' => isset($lastCheck['last_check_at']) ? (string) $lastCheck['last_check_at'] : null,

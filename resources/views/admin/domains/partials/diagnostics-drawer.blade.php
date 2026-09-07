@@ -41,6 +41,8 @@
     $expectedNs = $d['expected_nameservers'] ?? [];
     $recommendedIpv4 = $d['recommended_ipv4'] ?? [];
     $recommendedCname = $d['recommended_cname'] ?? [];
+    $apexRecords = $d['apex_records'] ?? [];
+    $wwwRecords = $d['www_records'] ?? [];
     $lastCheckAtDisplay = $formatDiagnosticsDate($d['last_check_at'] ?? null);
     $firstFailureAtDisplay = $formatDiagnosticsDate($d['first_failure_at'] ?? null);
 @endphp
@@ -65,6 +67,51 @@
         @if (! empty($d['message']))
             <p class="small mb-3" dir="auto">{{ $d['message'] }}</p>
         @endif
+
+        <div class="alert alert-light border mb-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between">
+                <div>
+                    <strong>{{ __('domain_diagnostics.selected_dns_mode') }}:</strong>
+                    <span>{{ $d['dns_mode_label'] ?? ($d['dns_mode'] ?? 'vercel_ns') }}</span>
+                </div>
+                @if (! empty($d['domain_id']))
+                    <form action="{{ route('admin.custom-domain.dns-mode') }}" method="POST" class="mt-2 mt-md-0">
+                        @csrf
+                        <input type="hidden" name="domain_id" value="{{ $d['domain_id'] }}">
+                        <div class="form-row align-items-end">
+                            <div class="col-sm-auto mb-2">
+                                <select name="dns_mode" class="form-control form-control-sm">
+                                    @foreach (($d['dns_mode_options'] ?? []) as $modeValue => $modeLabel)
+                                        <option value="{{ $modeValue }}" @selected(($d['dns_mode'] ?? null) === $modeValue)>{{ $modeLabel }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-sm-auto mb-2">
+                                <input
+                                    type="text"
+                                    name="confirm_domain"
+                                    class="form-control form-control-sm"
+                                    value=""
+                                    placeholder="{{ $d['custom_name'] ?? '' }}"
+                                    autocapitalize="off"
+                                    autocomplete="off"
+                                    spellcheck="false"
+                                >
+                            </div>
+                            <div class="col-sm-auto mb-2">
+                                <button type="submit" class="btn btn-outline-primary btn-sm">{{ __('domain_diagnostics.change_dns_mode') }}</button>
+                            </div>
+                        </div>
+                        <p class="small text-muted mb-0" dir="auto">
+                            {{ __('domain_mutation.confirmation_required', ['domain' => ($d['custom_name'] ?? '')]) }}
+                        </p>
+                    </form>
+                @endif
+            </div>
+            @if (($d['dns_mode'] ?? null) === 'external_dns')
+                <p class="small text-muted mb-0 mt-2" dir="auto">{{ __('domain_diagnostics.external_dns_notice') }}</p>
+            @endif
+        </div>
 
         @php
             $healthCode = $d['health_code'] ?? ($health['code'] ?? 'unchecked');
@@ -171,6 +218,16 @@
                     <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_nameservers_ok') }}</td>
                 </tr>
                 <tr>
+                    <th scope="row">{{ __('domain_diagnostics.apex_matches_recommended') }}</th>
+                    <td>{!! $boolBadge(isset($d['apex_matches_recommended']) ? (bool) $d['apex_matches_recommended'] : null) !!}</td>
+                    <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_apex_matches_recommended') }}</td>
+                </tr>
+                <tr>
+                    <th scope="row">{{ __('domain_diagnostics.www_matches_recommended') }}</th>
+                    <td>{!! $boolBadge(isset($d['www_matches_recommended']) ? (bool) $d['www_matches_recommended'] : null) !!}</td>
+                    <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_www_matches_recommended') }}</td>
+                </tr>
+                <tr>
                     <th scope="row">{{ __('domain_diagnostics.dns_misconfigured') }}</th>
                     <td>{!! $boolBadge(! ($d['dns_misconfigured'] ?? false), __('Yes'), __('No')) !!}</td>
                     <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_dns_misconfigured') }}</td>
@@ -186,6 +243,11 @@
                     <th scope="row">{{ __('domain_diagnostics.ssl_ready') }}</th>
                     <td>{!! $boolBadge($d['ssl_ready'] ?? false) !!}</td>
                     <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_ssl_ready') }}</td>
+                </tr>
+                <tr>
+                    <th scope="row">{{ __('domain_diagnostics.www_ssl_ready') }}</th>
+                    <td>{!! $boolBadge($d['www_ssl_ready'] ?? null) !!}</td>
+                    <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_www_ssl_ready') }}</td>
                 </tr>
                 @if (! empty($d['certificate_readiness']))
                 @php
@@ -253,7 +315,29 @@
 
         <p class="small text-muted mb-3" dir="auto"><i class="fas fa-info-circle mr-1"></i>{{ __('domain_diagnostics.ns_order_note') }}</p>
 
-        @if (($d['dns_misconfigured'] ?? false) && ($recommendedIpv4 !== [] || $recommendedCname !== []))
+        <h6>{{ __('domain_diagnostics.apex_records') }}</h6>
+        @if ($apexRecords === [])
+            <p class="small mb-3">—</p>
+        @else
+            <ul class="small pl-3">
+                @foreach ($apexRecords as $record)
+                    <li><code>{{ ($record['type'] ?? 'record') . ' ' . ($record['value'] ?? '') }}</code></li>
+                @endforeach
+            </ul>
+        @endif
+
+        <h6>{{ __('domain_diagnostics.www_records') }}</h6>
+        @if ($wwwRecords === [])
+            <p class="small mb-3">—</p>
+        @else
+            <ul class="small pl-3">
+                @foreach ($wwwRecords as $record)
+                    <li><code>{{ ($record['type'] ?? 'record') . ' ' . ($record['value'] ?? '') }}</code></li>
+                @endforeach
+            </ul>
+        @endif
+
+        @if ($recommendedIpv4 !== [] || $recommendedCname !== [])
             <h6>{{ __('domain_diagnostics.recommended_records') }}</h6>
             @if ($recommendedIpv4 !== [])
                 <p class="small text-muted mb-1">{{ $recommendedDns['recommended_a_label'] ?? 'A' }}</p>
@@ -279,7 +363,7 @@
                     @endforeach
                 </ul>
             @endif
-        @elseif (($d['nameserver_check_enabled'] ?? true) && ! ($d['nameservers_ok'] ?? false) && ($recommendedDns['nameservers'] ?? []) !== [])
+        @elseif (($d['dns_mode'] ?? null) === 'vercel_ns' && ($d['nameserver_check_enabled'] ?? true) && ! ($d['nameservers_ok'] ?? false) && ($recommendedDns['nameservers'] ?? []) !== [])
             <h6>{{ __('domain_diagnostics.recommended_records') }}</h6>
             <p class="small text-muted">{{ __('domain_diagnostics.use_expected_ns') }}</p>
             <ul class="small pl-3">
@@ -288,6 +372,23 @@
                 @endforeach
             </ul>
         @endif
+
+        @php $tenantMapping = is_array($d['tenant_mapping'] ?? null) ? $d['tenant_mapping'] : []; @endphp
+        <h6 class="mt-3">{{ __('domain_diagnostics.tenant_mapping') }}</h6>
+        <table class="table table-sm table-striped mb-3 domain-diagnostics-table">
+            <tbody>
+                <tr>
+                    <th scope="row">{{ __('domain_diagnostics.tenant_servable') }}</th>
+                    <td>{!! $boolBadge(isset($tenantMapping['servable']) ? (bool) $tenantMapping['servable'] : null) !!}</td>
+                    <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_tenant_servable') }}</td>
+                </tr>
+                <tr>
+                    <th scope="row">{{ __('domain_diagnostics.tenant_username') }}</th>
+                    <td>{{ $tenantMapping['username'] ?? '—' }}</td>
+                    <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_tenant_username') }}</td>
+                </tr>
+            </tbody>
+        </table>
 
         @if ($ownershipChallenge !== null && $ownershipChallenge !== [])
             <h6 class="mt-3">{{ $recommendedDns['ownership_txt_label'] ?? __('domain_diagnostics.ownership_txt') }}</h6>

@@ -9,6 +9,7 @@ use App\Domain\Domain\Models\CustomDomain;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User;
 use App\Services\Vercel\DnsNameserverChecker;
+use App\Services\Vercel\DomainDnsRecordService;
 use App\Services\Vercel\VercelDomainCache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -27,6 +28,7 @@ class CustomDomainReconciliationActionsTest extends AdminApiTestCase
         $_SERVER['DEMO_MODE'] = 'inactive';
 
         $this->ensureAdminViewData();
+        $this->mockDnsRecords();
         app(VercelDomainCache::class)->invalidate();
     }
 
@@ -217,6 +219,7 @@ class CustomDomainReconciliationActionsTest extends AdminApiTestCase
     {
         $this->skipIfMissingSchema();
         $this->configureVercel();
+        $this->mockNameservers(true);
         $this->signInWebAdmin();
 
         $user = User::factory()->tenant()->create([
@@ -247,6 +250,132 @@ class CustomDomainReconciliationActionsTest extends AdminApiTestCase
 
         Http::assertSent(fn ($request) => $request->method() === 'POST'
             && str_contains($request->url(), '/domains'));
+
+        $domain->refresh();
+        $lastCheck = $domain->dns_records['last_check'] ?? [];
+        $this->assertSame('linked', $lastCheck['health_code'] ?? null);
+        $this->assertTrue($lastCheck['www_present'] ?? false);
+        $this->assertTrue($lastCheck['www_redirect_correct'] ?? false);
+    }
+
+    /** @test */
+    public function fix_www_redirect_requires_matching_typed_confirmation(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $user = User::factory()->tenant()->create([
+            'email' => 'fix-redirect-confirm-' . uniqid('', true) . '@example.com',
+        ]);
+        $apex = 'fix-redirect-confirm-' . uniqid('', false) . '.example.com';
+        $domain = ApiDomainSetting::create([
+            'user_id' => $user->id,
+            'custom_name' => $apex,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+        ]);
+
+        $this->fakeVercelAdminDomains([
+            ['name' => $apex, 'verified' => true],
+            ['name' => 'www.' . $apex, 'verified' => true, 'redirect' => 'wrong.example.com', 'redirectStatusCode' => 301],
+        ], allowMutations: true);
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.www.fix-redirect'), [
+                'domain_id' => $domain->id,
+                'confirm_domain' => 'wrong.example.com',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        Http::assertNotSent(fn ($request) => $request->method() === 'POST'
+            && str_contains($request->url(), '/domains'));
+    }
+
+    /** @test */
+    public function enable_www_stays_linked_when_only_optional_www_dns_lookup_is_unknown(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(true);
+        $this->mockDnsRecords(apexMatches: true, wwwMatches: null, apexKnown: true, wwwKnown: false);
+        $this->signInWebAdmin();
+
+        $user = User::factory()->tenant()->create([
+            'email' => 'legacy-enable-www-' . uniqid('', true) . '@example.com',
+        ]);
+        $apex = 'legacy-enable-www-' . uniqid('', false) . '.example.com';
+        $domain = ApiDomainSetting::create([
+            'user_id' => $user->id,
+            'custom_name' => $apex,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => true,
+            'added_date' => now(),
+        ]);
+
+        $this->fakeVercelAdminDomains([
+            ['name' => $apex, 'verified' => true],
+        ], allowMutations: true);
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.www.enable'), [
+                'domain_id' => $domain->id,
+                'confirm_domain' => $apex,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $domain->refresh();
+        $lastCheck = $domain->dns_records['last_check'] ?? [];
+        $this->assertSame('linked', $lastCheck['health_code'] ?? null);
+        $this->assertFalse($lastCheck['dns_lookup_unknown'] ?? true);
+        $this->assertTrue($lastCheck['www_dns_lookup_unknown'] ?? false);
+    }
+
+    /** @test */
+    public function disable_www_stays_apex_only_when_only_optional_www_dns_lookup_is_unknown(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(true);
+        $this->mockDnsRecords(apexMatches: true, wwwMatches: null, apexKnown: true, wwwKnown: false);
+        $this->signInWebAdmin();
+
+        $user = User::factory()->tenant()->create([
+            'email' => 'legacy-disable-www-' . uniqid('', true) . '@example.com',
+        ]);
+        $apex = 'legacy-disable-www-' . uniqid('', false) . '.example.com';
+        $domain = ApiDomainSetting::create([
+            'user_id' => $user->id,
+            'custom_name' => $apex,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => true,
+            'added_date' => now(),
+        ]);
+
+        $this->fakeVercelAdminDomains([
+            ['name' => $apex, 'verified' => true],
+            ['name' => 'www.' . $apex, 'verified' => true, 'redirect' => $apex, 'redirectStatusCode' => 301],
+        ], allowDelete: true);
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.www.disable'), [
+                'domain_id' => $domain->id,
+                'confirm_domain' => $apex,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $domain->refresh();
+        $lastCheck = $domain->dns_records['last_check'] ?? [];
+        $this->assertSame('apex_only', $lastCheck['health_code'] ?? null);
+        $this->assertFalse($lastCheck['dns_lookup_unknown'] ?? true);
+        $this->assertTrue($lastCheck['www_dns_lookup_unknown'] ?? false);
     }
 
     private function skipIfMissingSchema(): void
@@ -280,6 +409,28 @@ class CustomDomainReconciliationActionsTest extends AdminApiTestCase
             $mock->shouldReceive('getObservedNameservers')->andReturn(
                 $ok ? ['ns1.vercel-dns.com', 'ns2.vercel-dns.com'] : ['ns1.example.com']
             );
+        });
+    }
+
+    private function mockDnsRecords(?bool $apexMatches = true, ?bool $wwwMatches = true, bool $apexKnown = true, bool $wwwKnown = true): void
+    {
+        $this->mock(DomainDnsRecordService::class, function ($mock) use ($apexMatches, $wwwMatches, $apexKnown, $wwwKnown) {
+            $mock->shouldReceive('inspect')->andReturn([
+                'apex_records' => [['type' => 'A', 'value' => '76.76.21.21']],
+                'www_records' => [['type' => 'CNAME', 'value' => 'cname.vercel-dns.com']],
+                'apex_addresses' => ['76.76.21.21'],
+                'apex_cnames' => [],
+                'www_addresses' => [],
+                'www_cnames' => ['cname.vercel-dns.com'],
+                'apex_matches_recommended' => $apexMatches,
+                'www_matches_recommended' => $wwwMatches,
+                'apex_lookup_known' => $apexKnown,
+                'www_lookup_known' => $wwwKnown,
+                'dns_provider_reachable' => $apexKnown,
+                'dns_lookup_unknown' => ! $apexKnown,
+                'apex_dns_lookup_unknown' => ! $apexKnown,
+                'www_dns_lookup_unknown' => ! $wwwKnown,
+            ]);
         });
     }
 
@@ -357,7 +508,7 @@ class CustomDomainReconciliationActionsTest extends AdminApiTestCase
     {
         $allowMutations = $allowMutations || $allowDelete;
 
-        Http::fake(function (\Illuminate\Http\Client\Request $request) use ($domains, $allowDelete, $allowMutations) {
+        Http::fake(function (\Illuminate\Http\Client\Request $request) use (&$domains, $allowDelete, $allowMutations) {
             $url = $request->url();
             $method = $request->method();
 
@@ -387,11 +538,89 @@ class CustomDomainReconciliationActionsTest extends AdminApiTestCase
             }
 
             if ($allowDelete && $method === 'DELETE' && str_contains($url, '/domains/')) {
+                if (preg_match('#/domains/([^/?]+)#', $url, $matches)) {
+                    $name = strtolower(rawurldecode($matches[1]));
+                    $domains = array_values(array_filter(
+                        $domains,
+                        static fn (array $domain): bool => strtolower((string) ($domain['name'] ?? '')) !== $name
+                    ));
+                }
+
                 return Http::response(null, 200);
             }
 
             if ($allowMutations && $method === 'POST' && str_contains($url, '/domains') && ! str_contains($url, '/verify')) {
-                return Http::response(['name' => 'www.example.com', 'verified' => true], 200);
+                $name = strtolower((string) ($request->data()['name'] ?? ''));
+                $redirect = strtolower((string) ($request->data()['redirect'] ?? ''));
+                $statusCode = (int) ($request->data()['redirectStatusCode'] ?? 301);
+
+                $updated = false;
+                foreach ($domains as &$domain) {
+                    if (strtolower((string) ($domain['name'] ?? '')) !== $name) {
+                        continue;
+                    }
+
+                    $domain['verified'] = true;
+                    $domain['redirect'] = $redirect !== '' ? $redirect : ($domain['redirect'] ?? null);
+                    $domain['redirectStatusCode'] = $redirect !== '' ? $statusCode : ($domain['redirectStatusCode'] ?? null);
+                    $updated = true;
+                    break;
+                }
+                unset($domain);
+
+                if (! $updated) {
+                    $domains[] = array_filter([
+                        'name' => $name,
+                        'verified' => true,
+                        'redirect' => $redirect !== '' ? $redirect : null,
+                        'redirectStatusCode' => $redirect !== '' ? $statusCode : null,
+                    ], static fn ($value) => $value !== null);
+                }
+
+                return Http::response([
+                    'name' => $name,
+                    'verified' => true,
+                    'redirect' => $redirect !== '' ? $redirect : null,
+                    'redirectStatusCode' => $redirect !== '' ? $statusCode : null,
+                ], 200);
+            }
+
+            if ($allowMutations && $method === 'GET' && preg_match('#/v(?:5|7)/domains/([^/?]+)#', $url, $matches) && ! str_contains($url, '/config')) {
+                $name = strtolower(rawurldecode($matches[1]));
+                foreach ($domains as $domain) {
+                    if (strtolower((string) ($domain['name'] ?? '')) === $name) {
+                        return Http::response([
+                            'name' => $name,
+                            'zone' => true,
+                            'verified' => (bool) ($domain['verified'] ?? true),
+                        ], 200);
+                    }
+                }
+
+                return Http::response(['error' => 'not found'], 404);
+            }
+
+            if ($allowMutations && $method === 'GET' && str_contains($url, '/v8/certs') && ! preg_match('#/v8/certs/[^/?]#', $url)) {
+                $certDomains = [];
+                foreach ($domains as $domain) {
+                    if (! empty($domain['name'])) {
+                        $certDomains[] = strtolower((string) $domain['name']);
+                    }
+                }
+
+                return Http::response([
+                    'certs' => [[
+                        'id' => 'cert_test',
+                        'cns' => $certDomains,
+                        'expiresAt' => ((int) (microtime(true) * 1000)) + (90 * 86400 * 1000),
+                        'autoRenew' => true,
+                    ]],
+                    'pagination' => ['next' => null],
+                ], 200);
+            }
+
+            if ($allowMutations && $method === 'GET' && preg_match('#/v6/domains/([^/]+)/config#', $url)) {
+                return Http::response(['misconfigured' => false], 200);
             }
 
             return Http::response(['error' => 'unexpected'], 500);

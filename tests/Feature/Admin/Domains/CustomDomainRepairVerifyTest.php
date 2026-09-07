@@ -9,6 +9,7 @@ use App\Domain\Admin\Models\Role;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User;
 use App\Services\Vercel\DnsNameserverChecker;
+use App\Services\Vercel\DomainDnsRecordService;
 use App\Services\Vercel\VercelDomainCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +29,7 @@ class CustomDomainRepairVerifyTest extends AdminApiTestCase
         $_SERVER['DEMO_MODE'] = 'inactive';
 
         $this->ensureAdminViewData();
+        $this->mockDnsRecords();
         app(VercelDomainCache::class)->invalidate();
     }
 
@@ -196,6 +198,90 @@ class CustomDomainRepairVerifyTest extends AdminApiTestCase
     }
 
     /** @test */
+    public function dns_mode_change_updates_domain_and_runs_resync_flow(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(false);
+        $this->signInWebAdmin();
+
+        $domain = $this->seedDomainSetting(null, [
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+        ]);
+        $this->fakeRepairEndpoints($domain->custom_name);
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.dns-mode'), [
+                'domain_id' => $domain->id,
+                'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+                'confirm_domain' => $domain->custom_name,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $domain->refresh();
+        $this->assertSame(ApiDomainSetting::DNS_MODE_EXTERNAL_DNS, $domain->dns_mode);
+        $this->assertSame(ApiDomainSetting::DNS_MODE_EXTERNAL_DNS, $domain->dns_records['last_check']['dns_mode'] ?? null);
+        $this->assertContains(
+            $domain->dns_records['last_check']['provisioning']['mode'] ?? null,
+            ['scheduled', 'admin_repair']
+        );
+    }
+
+    /** @test */
+    public function dns_mode_change_requires_matching_typed_confirmation(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $domain = $this->seedDomainSetting(null, [
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+        ]);
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.dns-mode'), [
+                'domain_id' => $domain->id,
+                'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+                'confirm_domain' => 'wrong.example.com',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $domain->refresh();
+        $this->assertSame(ApiDomainSetting::DNS_MODE_VERCEL_NS, $domain->dns_mode);
+        Http::assertNothingSent();
+    }
+
+    /** @test */
+    public function dns_mode_change_does_not_persist_requested_mode_when_resync_fails(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $domain = $this->seedDomainSetting(null, [
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+        ]);
+
+        Http::fake([
+            'api.vercel.com/*' => Http::response(['error' => ['message' => 'upstream']], 503),
+        ]);
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.dns-mode'), [
+                'domain_id' => $domain->id,
+                'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+                'confirm_domain' => $domain->custom_name,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $domain->refresh();
+        $this->assertSame(ApiDomainSetting::DNS_MODE_VERCEL_NS, $domain->dns_mode);
+    }
+
+    /** @test */
     public function repair_verify_requires_custom_domains_permission(): void
     {
         $this->skipIfMissingSchema();
@@ -238,6 +324,7 @@ class CustomDomainRepairVerifyTest extends AdminApiTestCase
         $this->assertFalse(\Illuminate\Support\Facades\Route::has('admin.custom-domain.ssl-status'));
         $this->assertFalse(\Illuminate\Support\Facades\Route::has('admin.custom-domain.recheck'));
         $this->assertTrue(\Illuminate\Support\Facades\Route::has('admin.custom-domain.repair-verify'));
+        $this->assertTrue(\Illuminate\Support\Facades\Route::has('admin.custom-domain.dns-mode'));
     }
 
     private function skipIfMissingSchema(): void
@@ -270,6 +357,24 @@ class CustomDomainRepairVerifyTest extends AdminApiTestCase
             $mock->shouldReceive('getObservedNameservers')->andReturn(
                 $ok ? ['ns1.vercel-dns.com', 'ns2.vercel-dns.com'] : ['ns1.example.com']
             );
+        });
+    }
+
+    private function mockDnsRecords(?bool $apexMatches = true, ?bool $wwwMatches = true): void
+    {
+        $this->mock(DomainDnsRecordService::class, function ($mock) use ($apexMatches, $wwwMatches) {
+            $mock->shouldReceive('inspect')->andReturn([
+                'apex_records' => [['type' => 'A', 'value' => '76.76.21.21']],
+                'www_records' => [['type' => 'CNAME', 'value' => 'cname.vercel-dns.com']],
+                'apex_addresses' => ['76.76.21.21'],
+                'apex_cnames' => [],
+                'www_addresses' => [],
+                'www_cnames' => ['cname.vercel-dns.com'],
+                'apex_matches_recommended' => $apexMatches,
+                'www_matches_recommended' => $wwwMatches,
+                'dns_provider_reachable' => true,
+                'dns_lookup_unknown' => false,
+            ]);
         });
     }
 
@@ -356,20 +461,20 @@ class CustomDomainRepairVerifyTest extends AdminApiTestCase
         return $admin;
     }
 
-    private function seedDomainSetting(?string $customName = null): ApiDomainSetting
+    private function seedDomainSetting(?string $customName = null, array $attributes = []): ApiDomainSetting
     {
         $user = User::factory()->tenant()->create([
             'email' => 'repair-domain-' . uniqid('', true) . '@example.com',
         ]);
 
-        return ApiDomainSetting::create([
+        return ApiDomainSetting::create(array_merge([
             'user_id' => $user->id,
             'custom_name' => $customName ?? ('repair-' . uniqid('', false) . '.example.com'),
             'status' => 'pending',
             'primary' => true,
             'ssl' => false,
             'added_date' => now(),
-        ]);
+        ], $attributes));
     }
 
     private function ensureAdminViewData(): void

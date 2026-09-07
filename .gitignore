@@ -101,6 +101,7 @@ database/seeders/AdminSeeder.php
 .cursor/rules
 tests/api-scripts/*
 *.bat
+!/scripts/php-with-sqlite.bat
 
 /the_test_db
 ai/api-export/*

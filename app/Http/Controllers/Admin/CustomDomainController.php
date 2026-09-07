@@ -189,6 +189,74 @@ class CustomDomainController extends Controller
         ]);
     }
 
+    public function updateDnsMode(Request $request)
+    {
+        $validated = $request->validate([
+            'domain_id' => ['required', 'integer', 'exists:api_domains_settings,id'],
+            'dns_mode' => ['required', 'in:' . implode(',', array_keys(ApiDomainSetting::dnsModeOptions()))],
+            'confirm_domain' => ['required', 'string', 'max:255'],
+        ]);
+
+        $domain = ApiDomainSetting::findOrFail((int) $validated['domain_id']);
+        $apex = $this->vercel->normalizeApex((string) $domain->custom_name);
+
+        try {
+            $this->assertConfirmedApex((string) $validated['confirm_domain'], $apex);
+            $this->mutationGuard->assertCanMutate($request, $apex);
+        } catch (VercelDomainException $e) {
+            $request->session()->flash('error', $e->getMessage());
+
+            return back();
+        }
+
+        $before = array_merge($this->domainActivitySnapshot($domain), [
+            'dns_mode' => $domain->dns_mode ?: ApiDomainSetting::DNS_MODE_VERCEL_NS,
+        ]);
+        $nextDnsMode = (string) $validated['dns_mode'];
+        $domain->dns_mode = $nextDnsMode;
+
+        try {
+            $provisionResult = $this->provisioningService->run(
+                $apex,
+                DomainProvisioningService::MODE_SCHEDULED,
+                $nextDnsMode
+            );
+            $this->domainSyncService->applyProvisioningResult(
+                $domain,
+                $provisionResult,
+                $request,
+                applyFailureThreshold: false
+            );
+        } catch (VercelDomainException|ConnectionException $e) {
+            $request->session()->flash('error', $e->getMessage());
+
+            return back();
+        } catch (LockTimeoutException) {
+            $request->session()->flash('error', __('domain_mutation.lock_timeout'));
+
+            return back();
+        }
+
+        $domain->refresh();
+        $this->domainCache->invalidateAdminCaches();
+
+        \App\Support\TenantActivity::emit(
+            $request,
+            'domain.dns_mode_updated',
+            'api_domains_settings',
+            $domain->id,
+            $before,
+            array_merge($this->domainActivitySnapshot($domain), ['dns_mode' => $domain->dns_mode])
+        );
+
+        $request->session()->flash(
+            'success',
+            __('domain_admin.dns_mode_updated', ['mode' => ApiDomainSetting::dnsModeOptions()[$domain->dns_mode] ?? $domain->dns_mode])
+        );
+
+        return back();
+    }
+
     public function repairVerify(Request $request)
     {
         $baseRules = [
@@ -649,6 +717,7 @@ class CustomDomainController extends Controller
         $apex = $this->vercel->normalizeApex((string) $domain->custom_name);
 
         try {
+            $this->assertConfirmedApex((string) $validated['confirm_domain'], $apex);
             $this->mutationGuard->assertCanMutate($request, $apex);
 
             return $this->withProjectLock(function () use ($request, $domain, $apex) {
@@ -686,8 +755,7 @@ class CustomDomainController extends Controller
 
                 $before = $this->domainActivitySnapshot($domain);
                 $this->vercel->addDomain('www.' . $apex, $apex, 301);
-                $this->syncWwwFlagsInLastCheck($domain, true, true);
-                $this->domainCache->invalidateAdminCaches();
+                $this->refreshDomainStateAfterAdminMutation($domain, $request);
 
                 \App\Support\TenantActivity::emit(
                     $request,
@@ -722,6 +790,7 @@ class CustomDomainController extends Controller
         $apex = $this->vercel->normalizeApex((string) $domain->custom_name);
 
         try {
+            $this->assertConfirmedApex((string) $validated['confirm_domain'], $apex);
             $this->mutationGuard->assertCanMutate($request, $apex);
 
             return $this->withProjectLock(function () use ($request, $domain, $apex) {
@@ -768,8 +837,7 @@ class CustomDomainController extends Controller
 
                 $before = $this->domainActivitySnapshot($domain);
                 $this->vercel->addDomain('www.' . $apex, $apex, 301);
-                $this->syncWwwFlagsInLastCheck($domain, true, true);
-                $this->domainCache->invalidateAdminCaches();
+                $this->refreshDomainStateAfterAdminMutation($domain, $request);
 
                 \App\Support\TenantActivity::emit(
                     $request,
@@ -802,13 +870,13 @@ class CustomDomainController extends Controller
         $apex = $this->vercel->normalizeApex((string) $domain->custom_name);
 
         try {
+            $this->assertConfirmedApex((string) $validated['confirm_domain'], $apex);
             $this->mutationGuard->assertCanMutate($request, $apex);
 
             return $this->withProjectLock(function () use ($request, $domain, $apex) {
                 $before = $this->domainActivitySnapshot($domain);
                 $this->vercel->removeWwwHostname($apex);
-                $this->syncWwwFlagsInLastCheck($domain, false, false);
-                $this->domainCache->invalidateAdminCaches();
+                $this->refreshDomainStateAfterAdminMutation($domain, $request);
 
                 \App\Support\TenantActivity::emit(
                     $request,
@@ -1058,6 +1126,9 @@ class CustomDomainController extends Controller
         return [
             'domain_id' => $domain->id,
             'custom_name' => $domain->custom_name,
+            'dns_mode' => $domain->dns_mode ?: ApiDomainSetting::DNS_MODE_VERCEL_NS,
+            'dns_mode_label' => ApiDomainSetting::dnsModeOptions()[$domain->dns_mode ?: ApiDomainSetting::DNS_MODE_VERCEL_NS] ?? ($domain->dns_mode ?: ApiDomainSetting::DNS_MODE_VERCEL_NS),
+            'dns_mode_options' => ApiDomainSetting::dnsModeOptions(),
             'status' => $domain->status,
             'ssl' => (bool) $domain->ssl,
             'health' => $health,
@@ -1077,21 +1148,48 @@ class CustomDomainController extends Controller
             'configured_by' => $lastCheck['configured_by'] ?? null,
             'recommended_ipv4' => array_values((array) ($lastCheck['recommended_ipv4'] ?? [])),
             'recommended_cname' => array_values((array) ($lastCheck['recommended_cname'] ?? [])),
+            'apex_records' => array_values((array) ($lastCheck['apex_records'] ?? [])),
+            'www_records' => array_values((array) ($lastCheck['www_records'] ?? [])),
+            'apex_matches_recommended' => $lastCheck['apex_matches_recommended'] ?? null,
+            'www_matches_recommended' => $lastCheck['www_matches_recommended'] ?? null,
             'recommended_dns' => $recommendedDns,
             'ownership_challenge' => is_array($ownershipChallenge) ? $ownershipChallenge : null,
             'certificate_readiness' => $lastCheck['certificate_readiness'] ?? null,
             'certificate_id' => $lastCheck['certificate_id'] ?? null,
             'ssl_ready' => (bool) ($lastCheck['ssl_ready'] ?? false),
+            'apex_ssl_ready' => (bool) ($lastCheck['apex_ssl_ready'] ?? $lastCheck['ssl_ready'] ?? false),
+            'www_ssl_ready' => (bool) ($lastCheck['www_ssl_ready'] ?? false),
+            'apex_certificate_readiness' => $lastCheck['apex_certificate_readiness'] ?? $lastCheck['certificate_readiness'] ?? null,
+            'www_certificate_readiness' => $lastCheck['www_certificate_readiness'] ?? null,
             'provisioning' => $provisioning,
             'consecutive_failures' => (int) ($lastCheck['consecutive_failures'] ?? 0),
             'first_failure_at' => $lastCheck['first_failure_at'] ?? null,
             'failure_threshold' => max(1, (int) config('services.vercel.health_failure_threshold', 3)),
             'outcome' => $lastCheck['outcome'] ?? null,
             'health_code' => $health['code'],
+            'tenant_mapping' => $this->resolveTenantMapping($domain),
             'message' => $this->cleanProviderMessage(
                 DomainHealthMessages::translate((string) ($lastCheck['message'] ?? $health['reason'] ?? ''))
             ),
             'has_last_check' => $lastCheck !== [],
+        ];
+    }
+
+    /**
+     * @return array{servable: bool, user_id: int|null, username: string|null}
+     */
+    private function resolveTenantMapping(ApiDomainSetting $domain): array
+    {
+        $mapped = ApiDomainSetting::query()
+            ->servable()
+            ->with('user:id,username')
+            ->where('id', $domain->id)
+            ->first();
+
+        return [
+            'servable' => $mapped !== null,
+            'user_id' => $mapped?->user?->id,
+            'username' => $mapped?->user?->username,
         ];
     }
 
@@ -1144,40 +1242,33 @@ class CustomDomainController extends Controller
     }
 
     /**
-     * Align persisted last_check www flags (and linked/apex_only health_code) with a
-     * successful www mutation. Does not touch status/ssl.
+     * Re-run the shared provider sync immediately after an admin-side Vercel mutation
+     * so persisted health/status/last_check reflect the fresh provider state.
      */
-    private function syncWwwFlagsInLastCheck(
+    private function refreshDomainStateAfterAdminMutation(
         ApiDomainSetting $domain,
-        bool $wwwPresent,
-        bool $wwwRedirectCorrect
+        Request $request
     ): void {
-        $dnsRecords = is_array($domain->dns_records) ? $domain->dns_records : [];
-        $lastCheck = is_array($dnsRecords['last_check'] ?? null) ? $dnsRecords['last_check'] : null;
+        $this->domainCache->invalidateAdminCaches();
+        $projectInventory = $this->domainCache->fresh();
 
-        if ($lastCheck === null) {
-            return;
+        $this->domainSyncService->sync(
+            $domain,
+            false,
+            $request,
+            applyFailureThreshold: false,
+            projectInventory: $projectInventory
+        );
+    }
+
+    private function assertConfirmedApex(string $providedDomain, string $apex): void
+    {
+        if ($this->vercel->normalizeApex($providedDomain) !== $apex) {
+            throw new VercelDomainException(
+                __('domain_mutation.confirmation_required', ['domain' => $apex]),
+                internalCode: VercelDomainException::CODE_CONFIRMATION_REQUIRED
+            );
         }
-
-        $lastCheck['www_present'] = $wwwPresent;
-        $lastCheck['www_redirect_correct'] = $wwwRedirectCorrect;
-
-        $attached = array_key_exists('apex_attached', $lastCheck)
-            ? (bool) $lastCheck['apex_attached']
-            : (array_key_exists('vercel_attached', $lastCheck) ? (bool) $lastCheck['vercel_attached'] : null);
-
-        $resolved = ApiDomainSetting::resolveHealthCode($lastCheck, $attached);
-        $storedCode = $lastCheck['health_code'] ?? null;
-
-        if ($storedCode === null
-            || in_array($storedCode, ['linked', 'apex_only'], true)
-            || in_array($resolved, ['linked', 'apex_only'], true)
-        ) {
-            $lastCheck['health_code'] = $resolved;
-        }
-
-        $domain->dns_records = array_merge($dnsRecords, ['last_check' => $lastCheck]);
-        $domain->save();
     }
 
     /**

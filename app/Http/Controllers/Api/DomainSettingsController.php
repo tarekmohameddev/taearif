@@ -46,7 +46,7 @@ class DomainSettingsController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $domains = $user->domains()->select(['id', 'custom_name', 'status', 'primary', 'ssl', 'added_date'])->get();
+        $domains = $user->domains()->select(['id', 'custom_name', 'dns_mode', 'dns_records', 'status', 'primary', 'ssl', 'added_date'])->get();
 
         return response()->json([
             'domains' => $domains->map(function ($domain) {
@@ -57,9 +57,11 @@ class DomainSettingsController extends Controller
                     'primary' => $domain->primary,
                     'ssl' => $domain->ssl,
                     'addedDate' => $domain->added_date?->format('Y-m-d'),
+                    'dnsMode' => $this->dnsModeForDomain($domain),
+                    'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
                 ];
             }),
-            'dnsInstructions' => ApiDomainSetting::nameserverInstructions(),
+            'dnsInstructions' => $this->dnsInstructionsForCollection($domains),
         ]);
     }
 
@@ -173,7 +175,8 @@ class DomainSettingsController extends Controller
         try {
             $provisionResult = $this->provisioningService->run(
                 $customName,
-                DomainProvisioningService::MODE_INITIAL
+                DomainProvisioningService::MODE_INITIAL,
+                ApiDomainSetting::DNS_MODE_VERCEL_NS
             );
         } catch (LockTimeoutException $exception) {
             Log::warning('Timed out waiting for Vercel domain mutation lock', [
@@ -242,6 +245,7 @@ class DomainSettingsController extends Controller
                 $domain = new ApiDomainSetting([
                     'user_id' => $user->id,
                     'custom_name' => $customName,
+                    'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
                     'status' => 'pending',
                     'primary' => $domainsCount === 0,
                     'ssl' => false,
@@ -331,7 +335,8 @@ class DomainSettingsController extends Controller
                         : 'Nameservers are not pointing to Vercel yet.'
                 ),
             ],
-            'dnsInstructions' => ApiDomainSetting::nameserverInstructions(),
+            'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+            'dnsMode' => $this->dnsModeForDomain($domain),
             'diagnostics' => $this->buildDiagnostics($domain, $provisionResult, $syncResult, $apexAttachment),
         ], $outcomePayload), 201);
     }
@@ -366,7 +371,8 @@ class DomainSettingsController extends Controller
             'code' => $domain->status === 'active' ? 'DOMAIN_ACTIVE' : 'DOMAIN_PENDING',
             'apex_attachment' => $resolvedAttachment,
             'verification_state' => $verificationState,
-            'recommended_dns' => ApiDomainSetting::nameserverInstructions(),
+            'recommended_dns' => $this->dnsInstructionsForDomain($domain),
+            'dns_mode' => $this->dnsModeForDomain($domain),
             'ownership_txt' => $verificationRecords,
             'outcome' => $provisionResult['outcome'] ?? ($syncResult['outcome'] ?? null),
             'health' => $provisionResult['health'] ?? ($syncResult['health_code'] ?? null),
@@ -623,7 +629,8 @@ class DomainSettingsController extends Controller
             'primary' => $domain->primary,
             'ssl' => $domain->ssl,
             'addedDate' => $domain->added_date?->format('Y-m-d'),
-            'dnsInstructions' => ApiDomainSetting::nameserverInstructions(),
+            'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+            'dnsMode' => $this->dnsModeForDomain($domain),
         ]);
     }
 
@@ -659,7 +666,11 @@ class DomainSettingsController extends Controller
             : null;
 
         try {
-            $provisionResult = $this->provisioningService->run($apex, $mode);
+            $provisionResult = $this->provisioningService->run(
+                $apex,
+                $mode,
+                $domain->dns_mode ?: ApiDomainSetting::DNS_MODE_VERCEL_NS
+            );
         } catch (LockTimeoutException $exception) {
             Log::warning('Timed out waiting for Vercel domain mutation lock during verify', [
                 'domain' => $apex,
@@ -710,6 +721,8 @@ class DomainSettingsController extends Controller
                     'verificationStatus' => 'verified',
                     'message' => $result['message'],
                 ],
+                'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+                'dnsMode' => $this->dnsModeForDomain($domain),
             ], $outcomePayload));
         }
 
@@ -724,6 +737,8 @@ class DomainSettingsController extends Controller
                     'verificationStatus' => 'failed',
                     'message' => $result['message'],
                 ],
+                'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+                'dnsMode' => $this->dnsModeForDomain($domain),
             ], $outcomePayload), 422);
         }
 
@@ -736,8 +751,9 @@ class DomainSettingsController extends Controller
                 'status' => $domain->status,
                 'verificationStatus' => 'pending',
                 'message' => $result['message'],
-                'dnsInstructions' => ApiDomainSetting::nameserverInstructions(),
             ],
+            'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+            'dnsMode' => $this->dnsModeForDomain($domain),
         ], $outcomePayload), 422);
     }
 
@@ -818,5 +834,99 @@ class DomainSettingsController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to send admin domain verification email: ' . $e->getMessage());
         }
+    }
+
+    private function dnsModeForDomain(ApiDomainSetting $domain): string
+    {
+        return $domain->dns_mode ?: ApiDomainSetting::DNS_MODE_VERCEL_NS;
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, ApiDomainSetting>  $domains
+     * @return array<string, mixed>
+     */
+    private function dnsInstructionsForCollection($domains): array
+    {
+        return ApiDomainSetting::nameserverInstructions();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function dnsInstructionsForDomain(ApiDomainSetting $domain): array
+    {
+        $mode = $this->dnsModeForDomain($domain);
+
+        if ($mode === ApiDomainSetting::DNS_MODE_EXTERNAL_DNS) {
+            $lastCheck = is_array($domain->dns_records['last_check'] ?? null)
+                ? $domain->dns_records['last_check']
+                : [];
+
+            return [
+                'mode' => 'records',
+                'message' => __('domain_diagnostics.external_dns_notice'),
+                'ownership_txt_instruction' => __('domain_dns.ownership_txt_instruction'),
+                'recommended_a_label' => __('domain_dns.recommended_a_label'),
+                'recommended_cname_label' => __('domain_dns.recommended_cname_label'),
+                'ownership_txt_label' => __('domain_dns.ownership_txt_label'),
+                'record_type_label' => __('domain_dns.record_type'),
+                'record_name_label' => __('domain_dns.record_name'),
+                'record_value_label' => __('domain_dns.record_value'),
+                'apex' => [
+                    'host' => '@',
+                    'records' => $this->recommendedRecordsForHost(
+                        '@',
+                        array_values((array) ($lastCheck['recommended_ipv4'] ?? [])),
+                        array_values((array) ($lastCheck['recommended_cname'] ?? []))
+                    ),
+                ],
+                'www' => [
+                    'host' => 'www',
+                    'records' => $this->recommendedRecordsForHost(
+                        'www',
+                        [],
+                        array_values((array) ($lastCheck['recommended_cname'] ?? []))
+                    ),
+                ],
+            ];
+        }
+
+        return ApiDomainSetting::nameserverInstructions();
+    }
+
+    /**
+     * @param  list<string>  $recommendedIpv4
+     * @param  list<string>  $recommendedCname
+     * @return list<array{name: string, type: string, value: string}>
+     */
+    private function recommendedRecordsForHost(string $host, array $recommendedIpv4, array $recommendedCname): array
+    {
+        $records = [];
+
+        foreach ($recommendedIpv4 as $value) {
+            if (! is_string($value) || trim($value) === '') {
+                continue;
+            }
+
+            $records[] = [
+                'type' => 'A',
+                'name' => $host,
+                'value' => trim($value),
+            ];
+        }
+
+        foreach ($recommendedCname as $value) {
+            if (! is_string($value) || trim($value) === '') {
+                continue;
+            }
+
+            $records[] = [
+                'type' => 'CNAME',
+                'name' => $host,
+                'value' => trim($value),
+            ];
+        }
+
+        return $records;
     }
 }

@@ -7,6 +7,7 @@ namespace Tests\Feature\Api;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User;
 use App\Services\Vercel\DnsNameserverChecker;
+use App\Services\Vercel\DomainDnsRecordService;
 use App\Services\Vercel\VercelDomainCache;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Client\ConnectionException;
@@ -51,6 +52,7 @@ class DomainSettingsVercelTest extends TestCase
             'services.vercel.sync_pace_us' => 0,
             'services.vercel.sync_verify_pace_us' => 0,
         ]);
+        $this->mockDnsRecords();
     }
 
     /**
@@ -186,10 +188,19 @@ class DomainSettingsVercelTest extends TestCase
     private function fakeVercelSyncEndpoints(array $domainNames, bool $verified = true): void
     {
         $inventoryDomains = array_map(
-            static fn (string $name): array => [
-                'name' => $name,
-                'verified' => $verified,
-            ],
+            static function (string $name) use ($verified): array {
+                $domain = [
+                    'name' => $name,
+                    'verified' => $verified,
+                ];
+
+                if (str_starts_with($name, 'www.')) {
+                    $domain['redirect'] = substr($name, 4);
+                    $domain['redirectStatusCode'] = 301;
+                }
+
+                return $domain;
+            },
             $domainNames
         );
 
@@ -374,6 +385,24 @@ class DomainSettingsVercelTest extends TestCase
         });
     }
 
+    private function mockDnsRecords(?bool $apexMatches = true, ?bool $wwwMatches = true): void
+    {
+        $this->mock(DomainDnsRecordService::class, function ($mock) use ($apexMatches, $wwwMatches) {
+            $mock->shouldReceive('inspect')->andReturn([
+                'apex_records' => [['type' => 'A', 'value' => '76.76.21.21']],
+                'www_records' => [['type' => 'CNAME', 'value' => 'cname.vercel-dns.com']],
+                'apex_addresses' => ['76.76.21.21'],
+                'apex_cnames' => [],
+                'www_addresses' => [],
+                'www_cnames' => ['cname.vercel-dns.com'],
+                'apex_matches_recommended' => $apexMatches,
+                'www_matches_recommended' => $wwwMatches,
+                'dns_provider_reachable' => true,
+                'dns_lookup_unknown' => false,
+            ]);
+        });
+    }
+
     public function test_store_creates_pending_and_calls_vercel(): void
     {
         $this->skipIfMissingSchema();
@@ -431,6 +460,10 @@ class DomainSettingsVercelTest extends TestCase
             'custom_name' => 'ready.example.com',
             'status' => 'active',
         ]);
+
+        $response->assertJsonPath('dnsMode', ApiDomainSetting::DNS_MODE_VERCEL_NS)
+            ->assertJsonPath('dnsInstructions.mode', 'nameservers')
+            ->assertJsonPath('dnsInstructions.nameservers.0', 'ns1.vercel-dns.com');
     }
 
     public function test_store_without_auto_attach_skips_vercel_http(): void
@@ -841,6 +874,49 @@ class DomainSettingsVercelTest extends TestCase
         $this->assertFalse((bool) $domain->ssl);
     }
 
+    public function test_verify_external_dns_returns_record_based_instructions(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(false);
+        config(['services.vercel.check_nameservers' => false]);
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'records.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+            'status' => 'pending',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+            'dns_records' => [
+                'last_check' => [
+                    'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+                    'recommended_ipv4' => ['76.76.21.21'],
+                    'recommended_cname' => ['cname.vercel-dns.com'],
+                ],
+            ],
+        ]);
+
+        $this->fakeVercelSyncEndpoints(['records.example.com', 'www.records.example.com'], verified: false);
+
+        $response = $this->postJson('/api/settings/domain/verify', [
+            'id' => $domain->id,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('dnsMode', ApiDomainSetting::DNS_MODE_EXTERNAL_DNS)
+            ->assertJsonPath('dnsInstructions.mode', 'records')
+            ->assertJsonPath('dnsInstructions.message', __('domain_diagnostics.external_dns_notice'))
+            ->assertJsonPath('dnsInstructions.apex.host', '@')
+            ->assertJsonPath('dnsInstructions.apex.records.0.type', 'A')
+            ->assertJsonPath('dnsInstructions.apex.records.0.value', '76.76.21.21')
+            ->assertJsonPath('dnsInstructions.www.host', 'www')
+            ->assertJsonPath('dnsInstructions.www.records.0.type', 'CNAME')
+            ->assertJsonPath('dnsInstructions.www.records.0.value', 'cname.vercel-dns.com');
+    }
+
     public function test_tenant_delete_endpoint_is_not_available(): void
     {
         $this->skipIfMissingSchema();
@@ -876,6 +952,115 @@ class DomainSettingsVercelTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('dnsInstructions.mode', 'nameservers')
             ->assertJsonPath('dnsInstructions.nameservers.0', 'ns1.vercel-dns.com');
+    }
+
+    public function test_index_returns_per_domain_dns_guidance_for_mixed_modes(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $tenant = $this->actingTenant();
+
+        ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'ns.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+            'status' => 'pending',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+        ]);
+
+        ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'records.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+            'status' => 'pending',
+            'primary' => false,
+            'ssl' => false,
+            'added_date' => now(),
+            'dns_records' => [
+                'last_check' => [
+                    'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+                    'recommended_ipv4' => ['76.76.21.21'],
+                    'recommended_cname' => ['cname.vercel-dns.com'],
+                ],
+            ],
+        ]);
+
+        $response = $this->getJson('/api/settings/domain');
+
+        $response->assertOk()
+            ->assertJsonPath('dnsInstructions.mode', 'nameservers')
+            ->assertJsonPath('dnsInstructions.nameservers.0', 'ns1.vercel-dns.com')
+            ->assertJsonPath('domains.0.custom_name', 'ns.example.com')
+            ->assertJsonPath('domains.0.dnsMode', ApiDomainSetting::DNS_MODE_VERCEL_NS)
+            ->assertJsonPath('domains.0.dnsInstructions.mode', 'nameservers')
+            ->assertJsonPath('domains.0.dnsInstructions.nameservers.0', 'ns1.vercel-dns.com')
+            ->assertJsonPath('domains.1.custom_name', 'records.example.com')
+            ->assertJsonPath('domains.1.dnsMode', ApiDomainSetting::DNS_MODE_EXTERNAL_DNS)
+            ->assertJsonPath('domains.1.dnsInstructions.mode', 'records')
+            ->assertJsonPath('domains.1.dnsInstructions.message', __('domain_diagnostics.external_dns_notice'))
+            ->assertJsonPath('domains.1.dnsInstructions.apex.records.0.type', 'A')
+            ->assertJsonPath('domains.1.dnsInstructions.apex.records.0.value', '76.76.21.21')
+            ->assertJsonPath('domains.1.dnsInstructions.www.records.0.type', 'CNAME')
+            ->assertJsonPath('domains.1.dnsInstructions.www.records.0.value', 'cname.vercel-dns.com');
+    }
+
+    public function test_show_returns_nameserver_instructions_for_vercel_ns_mode(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'show-ns.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => true,
+            'added_date' => now(),
+        ]);
+
+        $this->getJson('/api/settings/domain/' . $domain->id)
+            ->assertOk()
+            ->assertJsonPath('dnsMode', ApiDomainSetting::DNS_MODE_VERCEL_NS)
+            ->assertJsonPath('dnsInstructions.mode', 'nameservers')
+            ->assertJsonPath('dnsInstructions.nameservers.0', 'ns1.vercel-dns.com');
+    }
+
+    public function test_show_returns_record_instructions_for_external_dns_mode(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'show-records.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+            'status' => 'pending',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+            'dns_records' => [
+                'last_check' => [
+                    'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+                    'recommended_ipv4' => ['76.76.21.21'],
+                    'recommended_cname' => ['cname.vercel-dns.com'],
+                ],
+            ],
+        ]);
+
+        $this->getJson('/api/settings/domain/' . $domain->id)
+            ->assertOk()
+            ->assertJsonPath('dnsMode', ApiDomainSetting::DNS_MODE_EXTERNAL_DNS)
+            ->assertJsonPath('dnsInstructions.mode', 'records')
+            ->assertJsonPath('dnsInstructions.message', __('domain_diagnostics.external_dns_notice'))
+            ->assertJsonPath('dnsInstructions.apex.records.0.type', 'A')
+            ->assertJsonPath('dnsInstructions.apex.records.0.value', '76.76.21.21')
+            ->assertJsonPath('dnsInstructions.www.records.0.type', 'CNAME')
+            ->assertJsonPath('dnsInstructions.www.records.0.value', 'cname.vercel-dns.com');
     }
 
     public function test_sync_command_activates_pending_when_ready(): void
@@ -1389,5 +1574,51 @@ class DomainSettingsVercelTest extends TestCase
         $domain->refresh();
         $this->assertSame('active', $domain->status);
         $this->assertSame(0, $domain->dns_records['last_check']['consecutive_failures'] ?? -1);
+    }
+
+    public function test_sync_command_recovers_external_dns_row_after_dns_is_corrected(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(false);
+        config(['services.vercel.check_nameservers' => false]);
+        $tenant = User::factory()->tenant()->create([
+            'email' => 'external-dns-recover-' . uniqid('', true) . '@example.com',
+        ]);
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'external-recover.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+            'status' => 'failed',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+            'dns_records' => [
+                'last_check' => [
+                    'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+                    'health_code' => 'dns_misconfigured',
+                    'apex_attached' => true,
+                    'apex_verified' => false,
+                    'apex_matches_recommended' => false,
+                    'www_matches_recommended' => false,
+                    'consecutive_failures' => 2,
+                    'first_failure_at' => now()->subHours(2)->toIso8601String(),
+                ],
+            ],
+        ]);
+
+        $this->fakeVercelSyncEndpoints(['external-recover.example.com', 'www.external-recover.example.com'], true);
+        $this->mockDnsRecords(true, true);
+
+        Artisan::call('domains:sync-vercel-status');
+
+        $domain->refresh();
+        $lastCheck = $domain->dns_records['last_check'] ?? [];
+        $this->assertSame('active', $domain->status);
+        $this->assertSame(ApiDomainSetting::DNS_MODE_EXTERNAL_DNS, $domain->dns_mode);
+        $this->assertSame(ApiDomainSetting::DNS_MODE_EXTERNAL_DNS, $lastCheck['dns_mode'] ?? null);
+        $this->assertSame('linked', $lastCheck['health_code'] ?? null);
+        $this->assertSame(0, $lastCheck['consecutive_failures'] ?? -1);
     }
 }

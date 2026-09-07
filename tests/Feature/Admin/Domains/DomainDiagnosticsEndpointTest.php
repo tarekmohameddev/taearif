@@ -53,6 +53,8 @@ class DomainDiagnosticsEndpointTest extends AdminApiTestCase
         $payload = $response->getData(true);
         $this->assertSame($domain->id, $payload['domain_id'] ?? null);
         $this->assertArrayHasKey('health_code', $payload);
+        $this->assertSame('vercel_ns', $payload['dns_mode'] ?? null);
+        $this->assertArrayHasKey('tenant_mapping', $payload);
     }
 
     private function makeDomain(): ApiDomainSetting
@@ -78,6 +80,7 @@ class DomainDiagnosticsEndpointTest extends AdminApiTestCase
                     'zone_enabled' => false,
                     'nameservers_ok' => true,
                     'nameserver_check_enabled' => true,
+                    'dns_mode' => 'vercel_ns',
                     'ssl_ready' => false,
                 ],
             ],

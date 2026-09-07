@@ -2,6 +2,7 @@
 
 namespace App\Services\Vercel;
 
+use App\Models\Api\ApiDomainSetting;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Log;
 
@@ -36,7 +37,9 @@ class DomainProvisioningService
         private readonly VercelDomainCache $cache,
         private readonly VercelDomainInventoryService $inventory,
         private readonly VercelMutationGuard $mutationGuard,
-        private readonly DnsNameserverChecker $nameserverChecker
+        private readonly DnsNameserverChecker $nameserverChecker,
+        private readonly DomainDnsRecordService $dnsRecordService,
+        private readonly DomainHealthPolicy $healthPolicy
     ) {
     }
 
@@ -53,18 +56,19 @@ class DomainProvisioningService
      *     last_check: array<string, mixed>
      * }
      */
-    public function run(string $apex, ?string $mode = null): array
+    public function run(string $apex, ?string $mode = null, ?string $dnsMode = null): array
     {
         $apex = $this->client->normalizeApex($apex);
+        $dnsMode ??= $this->resolveDnsModeForApex($apex);
         $mutating = $mode !== null && in_array($mode, self::MUTATION_MODES, true);
 
         if ($mutating) {
-            return $this->cache->withMutationLock(function () use ($apex, $mode) {
-                return $this->executeMutatingRun($apex, $mode);
+            return $this->cache->withMutationLock(function () use ($apex, $mode, $dnsMode) {
+                return $this->executeMutatingRun($apex, $mode, $dnsMode);
             });
         }
 
-        return $this->executeVerificationOnly($apex);
+        return $this->executeVerificationOnly($apex, $dnsMode);
     }
 
     /**
@@ -78,7 +82,7 @@ class DomainProvisioningService
      *     last_check: array<string, mixed>
      * }
      */
-    private function executeMutatingRun(string $apex, string $mode): array
+    private function executeMutatingRun(string $apex, string $mode, string $dnsMode): array
     {
         try {
             $this->mutationGuard->assertCanMutate();
@@ -118,7 +122,7 @@ class DomainProvisioningService
         $ledger = $this->newLedger($mode);
 
         try {
-            $this->performModeMutations($apex, $mode, $ledger);
+            $this->performModeMutations($apex, $mode, $dnsMode, $ledger);
         } catch (VercelDomainException $exception) {
             if ($this->isTransportAmbiguity($exception)) {
                 $ledger['uncertain'] = true;
@@ -141,7 +145,7 @@ class DomainProvisioningService
 
         $this->cache->invalidateAdminCaches();
 
-        return $this->buildResultFromFreshState($apex, $ledger);
+        return $this->buildResultFromFreshState($apex, $dnsMode, $ledger);
     }
 
     /**
@@ -155,23 +159,23 @@ class DomainProvisioningService
      *     last_check: array<string, mixed>
      * }
      */
-    private function executeVerificationOnly(string $apex): array
+    private function executeVerificationOnly(string $apex, string $dnsMode): array
     {
         $ledger = $this->newLedger(null);
 
-        return $this->buildResultFromFreshState($apex, $ledger);
+        return $this->buildResultFromFreshState($apex, $dnsMode, $ledger);
     }
 
     /**
      * @param  array<string, mixed>  $ledger
      */
-    private function performModeMutations(string $apex, string $mode, array &$ledger): void
+    private function performModeMutations(string $apex, string $mode, string $dnsMode, array &$ledger): void
     {
         $ledger['mutations_attempted'] = true;
         $accountDomain = $this->client->getAccountDomain($apex);
 
         if ($mode === self::MODE_INITIAL) {
-            $this->mutateInitial($apex, $accountDomain, $ledger);
+            $this->mutateInitial($apex, $accountDomain, $dnsMode, $ledger);
 
             return;
         }
@@ -182,7 +186,7 @@ class DomainProvisioningService
             return;
         }
 
-        $this->mutateRepair($apex, $accountDomain, $ledger, $mode);
+        $this->mutateRepair($apex, $accountDomain, $ledger, $mode, $dnsMode);
     }
 
     /**
@@ -198,24 +202,26 @@ class DomainProvisioningService
      * }|null  $accountDomain
      * @param  array<string, mixed>  $ledger
      */
-    private function mutateInitial(string $apex, ?array $accountDomain, array &$ledger): void
+    private function mutateInitial(string $apex, ?array $accountDomain, string $dnsMode, array &$ledger): void
     {
-        if ($accountDomain === null) {
+        $usesVercelNs = $dnsMode === ApiDomainSetting::DNS_MODE_VERCEL_NS;
+
+        if ($usesVercelNs && $accountDomain === null) {
             $result = $this->client->createAccountDomain($apex);
             $ledger['account_domain'] = $this->classifyMutationResult($result);
             $ledger['account_domain_created'] = ($result['was_created'] ?? false) === true;
             $ledger['zone'] = $this->classifyZoneResult($result);
             $ledger['zone_enabled'] = ($result['zone'] ?? false) === true && ($result['was_created'] ?? false) === true;
             $accountDomain = $result;
-        } elseif (! $accountDomain['zone']) {
+        } elseif ($usesVercelNs && ! $accountDomain['zone']) {
             $result = $this->client->enableAccountDomainZone($apex);
             $ledger['zone'] = $this->classifyMutationResult($result);
             $ledger['zone_enabled'] = ($result['was_created'] ?? false) === false
                 && ($result['was_adopted'] ?? false) === false;
             $accountDomain = $result;
         } else {
-            $ledger['account_domain'] = self::CLASS_PRE_EXISTING;
-            $ledger['zone'] = self::CLASS_PRE_EXISTING;
+            $ledger['account_domain'] = $accountDomain !== null ? self::CLASS_PRE_EXISTING : null;
+            $ledger['zone'] = $usesVercelNs && $accountDomain !== null ? self::CLASS_PRE_EXISTING : null;
         }
 
         $projectDomain = $this->client->getDomain($apex);
@@ -227,7 +233,7 @@ class DomainProvisioningService
             $ledger['apex_attachment'] = self::CLASS_PRE_EXISTING;
         }
 
-        $this->maybeIssueApexCertificate($apex, $ledger);
+        $this->maybeIssueApexCertificate($apex, $ledger, $dnsMode);
     }
 
     /**
@@ -271,15 +277,15 @@ class DomainProvisioningService
         }
 
         $accountDomain = $this->client->getAccountDomain($apex);
-        $this->mutateRepair($apex, $accountDomain, $ledger, self::MODE_ADMIN_REPAIR);
+        $this->mutateRepair($apex, $accountDomain, $ledger, self::MODE_ADMIN_REPAIR, $this->resolveDnsModeForApex($apex));
     }
 
-    private function mutateRepair(string $apex, ?array $accountDomain, array &$ledger, string $mode): void
+    private function mutateRepair(string $apex, ?array $accountDomain, array &$ledger, string $mode, string $dnsMode): void
     {
         $projectDomain = $this->client->getDomain($apex);
 
         if ($projectDomain === null && $mode === self::MODE_ADMIN_REPAIR) {
-            $this->mutateInitial($apex, $accountDomain, $ledger);
+            $this->mutateInitial($apex, $accountDomain, $dnsMode, $ledger);
 
             return;
         }
@@ -288,7 +294,7 @@ class DomainProvisioningService
             $ledger['account_domain'] = self::CLASS_PRE_EXISTING;
         }
 
-        if ($accountDomain !== null && ! $accountDomain['zone']) {
+        if ($dnsMode === ApiDomainSetting::DNS_MODE_VERCEL_NS && $accountDomain !== null && ! $accountDomain['zone']) {
             if ($this->publicNameserversMatch($apex)) {
                 $result = $this->client->enableAccountDomainZone($apex);
                 $ledger['zone'] = $this->classifyMutationResult($result);
@@ -297,7 +303,7 @@ class DomainProvisioningService
             } else {
                 $ledger['zone'] = self::CLASS_PRE_EXISTING;
             }
-        } elseif ($accountDomain !== null && $accountDomain['zone']) {
+        } elseif ($dnsMode === ApiDomainSetting::DNS_MODE_VERCEL_NS && $accountDomain !== null && $accountDomain['zone']) {
             $ledger['zone'] = self::CLASS_PRE_EXISTING;
         }
 
@@ -316,13 +322,13 @@ class DomainProvisioningService
 
         $ledger['apex_attachment'] = self::CLASS_PRE_EXISTING;
 
-        $this->maybeIssueApexCertificate($apex, $ledger);
+        $this->maybeIssueApexCertificate($apex, $ledger, $dnsMode);
     }
 
     /**
      * @param  array<string, mixed>  $ledger
      */
-    private function maybeIssueApexCertificate(string $apex, array &$ledger): void
+    private function maybeIssueApexCertificate(string $apex, array &$ledger, string $dnsMode): void
     {
         if (($ledger['certificate'] ?? null) !== null) {
             return;
@@ -345,7 +351,7 @@ class DomainProvisioningService
         }
 
         $accountDomain = $this->client->getAccountDomain($apex);
-        if ($accountDomain === null || ! $accountDomain['zone']) {
+        if ($dnsMode === ApiDomainSetting::DNS_MODE_VERCEL_NS && ($accountDomain === null || ! $accountDomain['zone'])) {
             return;
         }
 
@@ -384,11 +390,11 @@ class DomainProvisioningService
      *     last_check: array<string, mixed>
      * }
      */
-    private function buildResultFromFreshState(string $apex, array $ledger): array
+    private function buildResultFromFreshState(string $apex, string $dnsMode, array $ledger): array
     {
         $this->cache->invalidateAdminCaches();
         $projectInventory = $this->cache->fresh();
-        $state = $this->collectProviderState($apex, $projectInventory, refreshDirectReads: true);
+        $state = $this->collectProviderState($apex, $projectInventory, refreshDirectReads: true, dnsMode: $dnsMode);
         $resolved = $this->resolveOutcome($state);
 
         $provisioning = $this->buildProvisioningSummary($ledger, $state);
@@ -416,7 +422,7 @@ class DomainProvisioningService
      * @param  array<string, mixed>  $projectInventory
      * @return array<string, mixed>
      */
-    private function collectProviderState(string $apex, array $projectInventory, bool $refreshDirectReads): array
+    private function collectProviderState(string $apex, array $projectInventory, bool $refreshDirectReads, string $dnsMode): array
     {
         $www = 'www.' . $apex;
         $indexed = $this->indexProjectDomains($projectInventory['domains'] ?? []);
@@ -437,6 +443,8 @@ class DomainProvisioningService
         $domainConfig = [
             'misconfigured' => false,
             'configuredBy' => null,
+            'recommendedIPv4' => [],
+            'recommendedCNAME' => [],
         ];
         $ownershipChallenge = null;
         $providerError = false;
@@ -484,10 +492,17 @@ class DomainProvisioningService
 
         $apexAttached = $projectDomain !== null || $apexInventory !== null;
         $apexVerified = $apexAttached && ! empty(($projectDomain ?? $apexInventory)['verified']);
+        $recommendedIpv4 = $this->normalizeRecommendationValues($domainConfig['recommendedIPv4'] ?? []);
+        $recommendedCname = $this->normalizeRecommendationValues($domainConfig['recommendedCNAME'] ?? []);
+        $dnsEvidence = $this->dnsRecordService->inspect($apex, $recommendedIpv4, $recommendedCname);
+        $wwwCertificate = $this->client->findCoveringCertificate($www, $certificateInventory);
+        $wwwSslReady = $wwwCertificate !== null && $this->client->isCertificateReady($wwwCertificate);
 
         return [
+            'dns_mode' => $dnsMode,
             'apex' => $apex,
             'account_domain' => $accountDomain,
+            'account_domain_present' => $accountDomain !== null,
             'zone_enabled' => ($accountDomain['zone'] ?? false) === true,
             'apex_attached' => $apexAttached,
             'apex_verified' => $apexVerified,
@@ -496,14 +511,30 @@ class DomainProvisioningService
             'ownership_challenge' => $ownershipChallenge,
             'dns_misconfigured' => (bool) ($domainConfig['misconfigured'] ?? false),
             'configured_by' => $domainConfig['configuredBy'] ?? null,
+            'recommended_ipv4' => $recommendedIpv4,
+            'recommended_cname' => $recommendedCname,
             'observed_nameservers' => $observedNameservers,
             'nameservers_ok' => $nameserversOk,
             'nameserver_check_enabled' => $checkNameservers,
             'auto_attach_custom_domain' => (bool) config('services.vercel.auto_attach_custom_domain', true),
             'apex_certificate' => $apexCertificate,
             'ssl_ready' => $sslReady,
+            'apex_ssl_ready' => $sslReady,
+            'www_ssl_ready' => $wwwSslReady,
+            'apex_certificate_readiness' => $apexCertificate['readiness'] ?? null,
+            'www_certificate_readiness' => $wwwCertificate['readiness'] ?? null,
             'certificate_readiness' => $apexCertificate['readiness'] ?? null,
             'provider_error' => $providerError,
+            'apex_records' => $dnsEvidence['apex_records'],
+            'www_records' => $dnsEvidence['www_records'],
+            'apex_matches_recommended' => $dnsEvidence['apex_matches_recommended'],
+            'www_matches_recommended' => $dnsEvidence['www_matches_recommended'],
+            'apex_lookup_known' => $dnsEvidence['apex_lookup_known'] ?? null,
+            'www_lookup_known' => $dnsEvidence['www_lookup_known'] ?? null,
+            'dns_provider_reachable' => $dnsEvidence['dns_provider_reachable'],
+            'dns_lookup_unknown' => $dnsEvidence['dns_lookup_unknown'],
+            'apex_dns_lookup_unknown' => $dnsEvidence['apex_dns_lookup_unknown'] ?? $dnsEvidence['dns_lookup_unknown'],
+            'www_dns_lookup_unknown' => $dnsEvidence['www_dns_lookup_unknown'] ?? null,
         ];
     }
 
@@ -513,21 +544,12 @@ class DomainProvisioningService
      */
     private function resolveOutcome(array $state): array
     {
-        if ($state['provider_error'] ?? false) {
-            return [
-                'outcome' => 'pending',
-                'health' => 'provider_error',
-                'ssl' => false,
-                'retryable' => true,
-                'message' => 'Could not reach the hosting provider to check this domain.',
-            ];
-        }
-
-        $health = $this->resolveHealthFromState($state);
-        $ssl = ($state['ssl_ready'] ?? false) === true;
+        $policy = $this->healthPolicy->evaluate($state);
+        $health = $policy['health_code'];
+        $ssl = ($state['apex_ssl_ready'] ?? $state['ssl_ready'] ?? false) === true;
         $message = $this->messageForHealth($health, $state);
 
-        if ($this->isActiveState($state, $health, $ssl)) {
+        if ($policy['servable']) {
             return [
                 'outcome' => 'active',
                 'health' => $health,
@@ -548,40 +570,12 @@ class DomainProvisioningService
         }
 
         return [
-            'outcome' => 'pending',
+            'outcome' => $policy['database_status'] === 'failed' ? 'failed' : 'pending',
             'health' => $health,
             'ssl' => $ssl,
-            'retryable' => in_array($health, ['provider_error', 'certificate_pending', 'unverified', 'ns_not_pointing', 'zone_disabled'], true),
+            'retryable' => $policy['retryable'],
             'message' => $message,
         ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $state
-     */
-    private function isActiveState(array $state, string $health, bool $sslReady): bool
-    {
-        if (! in_array($health, ['linked', 'apex_only'], true)) {
-            return false;
-        }
-
-        if (($state['zone_enabled'] ?? false) !== true) {
-            return false;
-        }
-
-        if (($state['apex_verified'] ?? false) !== true) {
-            return false;
-        }
-
-        if (($state['dns_misconfigured'] ?? false) === true) {
-            return false;
-        }
-
-        if (($state['nameserver_check_enabled'] ?? true) && ($state['nameservers_ok'] ?? false) !== true) {
-            return false;
-        }
-
-        return $sslReady;
     }
 
     /**
@@ -596,7 +590,9 @@ class DomainProvisioningService
             'dns_misconfigured' => 'DNS records are misconfigured according to the hosting provider.',
             'ns_not_pointing' => 'Nameservers are not pointing to Vercel yet.',
             'not_on_vercel' => 'Domain is not attached to the Vercel project.',
-            'unverified' => 'Domain is on Vercel but not verified yet. Ensure nameservers have propagated.',
+            'unverified' => ($state['dns_mode'] ?? null) === ApiDomainSetting::DNS_MODE_EXTERNAL_DNS
+                ? 'Domain is attached on Vercel but still not verified.'
+                : 'Domain is on Vercel but not verified yet. Ensure nameservers have propagated.',
             'zone_disabled' => 'The account domain exists but its DNS zone is disabled.',
             'certificate_pending' => 'Certificate issuance or validation is still in progress.',
             'certificate_error' => 'Certificate coverage is invalid or expired.',
@@ -819,6 +815,7 @@ class DomainProvisioningService
     {
         return [
             'last_check_at' => now()->toIso8601String(),
+            'dns_mode' => $state['dns_mode'] ?? ApiDomainSetting::DNS_MODE_VERCEL_NS,
             'health_code' => $resolved['health'],
             'message' => $resolved['message'],
             'provider_reachable' => ! ($state['provider_error'] ?? false),
@@ -826,6 +823,7 @@ class DomainProvisioningService
             'apex_verified' => (bool) ($state['apex_verified'] ?? false),
             'vercel_attached' => (bool) ($state['apex_attached'] ?? false),
             'vercel_verified' => (bool) ($state['apex_verified'] ?? false),
+            'account_domain_present' => (bool) ($state['account_domain_present'] ?? false),
             'zone_enabled' => (bool) ($state['zone_enabled'] ?? false),
             'www_present' => (bool) ($state['www_present'] ?? false),
             'www_redirect_correct' => (bool) ($state['www_redirect_correct'] ?? false),
@@ -835,8 +833,24 @@ class DomainProvisioningService
             'nameserver_check_enabled' => (bool) ($state['nameserver_check_enabled'] ?? true),
             'dns_misconfigured' => (bool) ($state['dns_misconfigured'] ?? false),
             'configured_by' => $state['configured_by'] ?? null,
+            'recommended_ipv4' => $state['recommended_ipv4'] ?? [],
+            'recommended_cname' => $state['recommended_cname'] ?? [],
+            'apex_records' => $state['apex_records'] ?? [],
+            'www_records' => $state['www_records'] ?? [],
+            'apex_matches_recommended' => $state['apex_matches_recommended'] ?? null,
+            'www_matches_recommended' => $state['www_matches_recommended'] ?? null,
+            'apex_lookup_known' => $state['apex_lookup_known'] ?? null,
+            'www_lookup_known' => $state['www_lookup_known'] ?? null,
+            'dns_provider_reachable' => $state['dns_provider_reachable'] ?? null,
             'certificate_readiness' => $state['certificate_readiness'] ?? null,
             'ssl_ready' => (bool) ($state['ssl_ready'] ?? false),
+            'apex_ssl_ready' => (bool) ($state['apex_ssl_ready'] ?? false),
+            'www_ssl_ready' => (bool) ($state['www_ssl_ready'] ?? false),
+            'apex_certificate_readiness' => $state['apex_certificate_readiness'] ?? null,
+            'www_certificate_readiness' => $state['www_certificate_readiness'] ?? null,
+            'dns_lookup_unknown' => $state['dns_lookup_unknown'] ?? null,
+            'apex_dns_lookup_unknown' => $state['apex_dns_lookup_unknown'] ?? null,
+            'www_dns_lookup_unknown' => $state['www_dns_lookup_unknown'] ?? null,
             'auto_attach_custom_domain' => (bool) ($state['auto_attach_custom_domain'] ?? true),
             'provisioning' => $provisioning,
             'outcome' => $resolved['outcome'],
@@ -991,54 +1005,43 @@ class DomainProvisioningService
         }
     }
 
-    /**
-     * @param  array<string, mixed>  $state
-     */
-    private function resolveHealthFromState(array $state): string
+    private function resolveDnsModeForApex(string $apex): string
     {
-        if (($state['provider_error'] ?? false) === true) {
-            return 'provider_error';
+        $row = ApiDomainSetting::query()
+            ->where('custom_name', $apex)
+            ->select(['dns_mode'])
+            ->first();
+
+        return $this->healthPolicy->resolveDnsMode($row?->dns_mode);
+    }
+
+    /**
+     * @param  list<string>|mixed  $values
+     * @return list<string>
+     */
+    private function normalizeRecommendationValues(mixed $values): array
+    {
+        if (! is_array($values)) {
+            $values = [$values];
         }
 
-        if (($state['apex_attached'] ?? false) !== true) {
-            return 'not_on_vercel';
+        $normalized = [];
+        foreach ($values as $value) {
+            if (is_array($value)) {
+                foreach ($value as $nested) {
+                    if (is_string($nested) && trim($nested) !== '') {
+                        $normalized[] = strtolower(rtrim(trim($nested), '.'));
+                    }
+                }
+
+                continue;
+            }
+
+            if (is_string($value) && trim($value) !== '') {
+                $normalized[] = strtolower(rtrim(trim($value), '.'));
+            }
         }
 
-        if (is_array($state['ownership_challenge'] ?? null)
-            && ($state['ownership_challenge'] ?? []) !== []
-            && ($state['apex_verified'] ?? false) !== true) {
-            return 'ownership_required';
-        }
-
-        if (($state['account_domain'] ?? null) !== null && ($state['zone_enabled'] ?? false) !== true) {
-            return 'zone_disabled';
-        }
-
-        if (($state['dns_misconfigured'] ?? false) === true) {
-            return 'dns_misconfigured';
-        }
-
-        if (($state['nameserver_check_enabled'] ?? true) && ($state['nameservers_ok'] ?? false) !== true) {
-            return 'ns_not_pointing';
-        }
-
-        if (($state['apex_verified'] ?? false) !== true) {
-            return 'unverified';
-        }
-
-        $readiness = (string) ($state['certificate_readiness'] ?? '');
-        if ($readiness === 'certificate_error') {
-            return 'certificate_error';
-        }
-
-        if (($state['ssl_ready'] ?? false) !== true) {
-            return 'certificate_pending';
-        }
-
-        if (($state['www_present'] ?? false) !== true || ($state['www_redirect_correct'] ?? false) !== true) {
-            return 'apex_only';
-        }
-
-        return 'linked';
+        return array_values(array_unique($normalized));
     }
 }

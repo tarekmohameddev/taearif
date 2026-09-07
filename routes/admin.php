@@ -574,6 +574,9 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/domain/repair-verify', 'Admin\CustomDomainController@repairVerify')
             ->middleware('throttle:10,1')
             ->name('custom-domain.repair-verify');
+        Route::post('/domain/dns-mode', 'Admin\CustomDomainController@updateDnsMode')
+            ->middleware('throttle:10,1')
+            ->name('custom-domain.dns-mode');
         Route::post('/domain/www/enable', 'Admin\CustomDomainController@enableWww')
             ->middleware('throttle:10,1')
             ->name('custom-domain.www.enable');

@@ -9,6 +9,7 @@ use App\Domain\Admin\Models\Role;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User;
 use App\Services\Vercel\DnsNameserverChecker;
+use App\Services\Vercel\DomainDnsRecordService;
 use App\Services\Vercel\VercelDomainCache;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
@@ -30,6 +31,7 @@ class CustomDomainControlCompletenessTest extends AdminApiTestCase
         $_SERVER['DEMO_MODE'] = 'inactive';
 
         $this->ensureAdminViewData();
+        $this->mockDnsRecords();
         app(VercelDomainCache::class)->invalidate();
     }
 
@@ -223,6 +225,8 @@ class CustomDomainControlCompletenessTest extends AdminApiTestCase
         $response->assertSee($challengeValue, false);
         $response->assertSee('_vercel.diag.example.com', false);
         $response->assertSee($domain->custom_name, false);
+        $response->assertSee('name="confirm_domain"', false);
+        $response->assertDontSee('type="hidden" name="confirm_domain"', false);
     }
 
     /** @test */
@@ -405,6 +409,7 @@ class CustomDomainControlCompletenessTest extends AdminApiTestCase
     {
         return [
             'diagnostics' => ['admin.custom-domain.diagnostics', 'get', []],
+            'dns_mode' => ['admin.custom-domain.dns-mode', 'post', ['domain_id' => 0, 'dns_mode' => 'external_dns', 'confirm_domain' => 'x.example.com']],
             'legacy_adopt' => ['admin.custom-domain.legacy-orphan.adopt', 'post', ['legacy_id' => 1]],
             'legacy_delete' => ['admin.custom-domain.legacy-orphan.delete', 'post', ['legacy_id' => 1, 'confirm_domain' => 'x.example.com']],
             'stray_www' => ['admin.custom-domain.stray-www.remove', 'post', ['www' => 'www.x.example.com', 'confirm_domain' => 'www.x.example.com']],
@@ -432,6 +437,7 @@ class CustomDomainControlCompletenessTest extends AdminApiTestCase
     public static function throttledPostRouteNames(): array
     {
         return [
+            'dns_mode' => ['admin.custom-domain.dns-mode'],
             'legacy_adopt' => ['admin.custom-domain.legacy-orphan.adopt'],
             'legacy_delete' => ['admin.custom-domain.legacy-orphan.delete'],
             'stray_www' => ['admin.custom-domain.stray-www.remove'],
@@ -571,6 +577,24 @@ class CustomDomainControlCompletenessTest extends AdminApiTestCase
             $mock->shouldReceive('getObservedNameservers')->andReturn(
                 $ok ? ['ns1.vercel-dns.com', 'ns2.vercel-dns.com'] : ['ns1.example.com']
             );
+        });
+    }
+
+    private function mockDnsRecords(?bool $apexMatches = true, ?bool $wwwMatches = true): void
+    {
+        $this->mock(DomainDnsRecordService::class, function ($mock) use ($apexMatches, $wwwMatches) {
+            $mock->shouldReceive('inspect')->andReturn([
+                'apex_records' => [['type' => 'A', 'value' => '76.76.21.21']],
+                'www_records' => [['type' => 'CNAME', 'value' => 'cname.vercel-dns.com']],
+                'apex_addresses' => ['76.76.21.21'],
+                'apex_cnames' => [],
+                'www_addresses' => [],
+                'www_cnames' => ['cname.vercel-dns.com'],
+                'apex_matches_recommended' => $apexMatches,
+                'www_matches_recommended' => $wwwMatches,
+                'dns_provider_reachable' => true,
+                'dns_lookup_unknown' => false,
+            ]);
         });
     }
 

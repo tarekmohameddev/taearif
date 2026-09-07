@@ -21,7 +21,9 @@ class DomainStatusSyncService
 
     public function __construct(
         private readonly VercelDomainClient $vercel,
-        private readonly DnsNameserverChecker $nameserverChecker
+        private readonly DnsNameserverChecker $nameserverChecker,
+        private readonly DomainDnsRecordService $dnsRecordService,
+        private readonly DomainHealthPolicy $healthPolicy
     ) {
     }
 
@@ -91,6 +93,7 @@ class DomainStatusSyncService
         );
 
         $checkSummary = array_merge($lastCheck, [
+            'dns_mode' => $domain->dns_mode ?: ApiDomainSetting::DNS_MODE_VERCEL_NS,
             'health_code' => $health,
             'message' => $message,
             'consecutive_failures' => $consecutiveFailures,
@@ -98,6 +101,7 @@ class DomainStatusSyncService
             'outcome' => (string) ($provisioningResult['outcome'] ?? 'pending'),
             'retryable' => (bool) ($provisioningResult['retryable'] ?? false),
         ]);
+        $checkSummary = $this->preserveDnsInstructionEvidence($checkSummary, $previousCheck);
 
         if ($provisioning !== []) {
             $checkSummary['provisioning'] = $provisioning;
@@ -126,6 +130,31 @@ class DomainStatusSyncService
     }
 
     /**
+     * Preserve previously known DNS guidance when the latest provider check omits it.
+     *
+     * @param  array<string, mixed>  $checkSummary
+     * @param  array<string, mixed>  $previousCheck
+     * @return array<string, mixed>
+     */
+    private function preserveDnsInstructionEvidence(array $checkSummary, array $previousCheck): array
+    {
+        foreach (['recommended_ipv4', 'recommended_cname', 'apex_records', 'www_records'] as $key) {
+            $current = $checkSummary[$key] ?? null;
+            $previous = $previousCheck[$key] ?? null;
+
+            if (is_array($current) && $current !== []) {
+                continue;
+            }
+
+            if (is_array($previous) && $previous !== []) {
+                $checkSummary[$key] = $previous;
+            }
+        }
+
+        return $checkSummary;
+    }
+
+    /**
      * Sync one domain's status/ssl from Vercel + NS + expires_at.
      *
      * @param  array{names: list<string>, domains: list<array<string, mixed>>}|null  $projectInventory
@@ -151,6 +180,7 @@ class DomainStatusSyncService
         $oldSsl = (bool) $domain->ssl;
         $apex = $this->vercel->normalizeApex((string) $domain->custom_name);
         $www = 'www.' . $apex;
+        $dnsMode = $this->healthPolicy->resolveDnsMode($domain->dns_mode);
         $expectedNs = config('services.vercel.nameservers', []);
         $autoAttach = (bool) config('services.vercel.auto_attach_custom_domain', true);
         $checkNameservers = (bool) config('services.vercel.check_nameservers', true);
@@ -385,26 +415,30 @@ class DomainStatusSyncService
             }
         }
 
+        $evidence = $this->buildEvidence(
+            $dnsMode,
+            $autoAttach,
+            $checkNameservers,
+            $apexAttached,
+            $apexVerified,
+            $accountDomainPresent,
+            $zoneEnabled,
+            $wwwPresent,
+            $wwwRedirectCorrect,
+            $ownershipChallenge,
+            (bool) ($domainConfig['misconfigured'] ?? false),
+            $nameserversOk,
+            $sslReady,
+            $certificateReadiness,
+            $domainConfig['recommendedIPv4'] ?? [],
+            $domainConfig['recommendedCNAME'] ?? [],
+            $apex,
+            $www
+        );
+
         $healthCode = $providerError
             ? 'provider_error'
-            : ApiDomainSetting::resolveHealthCode([
-                'auto_attach_custom_domain' => $autoAttach,
-                'nameserver_check_enabled' => $checkNameservers,
-                'apex_attached' => $apexAttached,
-                'apex_verified' => $apexVerified,
-                'vercel_attached' => $apexAttached,
-                'vercel_verified' => $apexVerified,
-                'account_domain_present' => $accountDomainPresent,
-                'zone_enabled' => $zoneEnabled,
-                'www_present' => $wwwPresent,
-                'www_redirect_correct' => $wwwRedirectCorrect,
-                'ownership_challenge' => $ownershipChallenge,
-                'dns_misconfigured' => (bool) ($domainConfig['misconfigured'] ?? false),
-                'nameservers_ok' => $nameserversOk,
-                'ssl_ready' => $sslReady,
-                'certificate_readiness' => $certificateReadiness,
-                'reason' => null,
-            ], $apexAttached);
+            : $this->healthPolicy->resolveHealthCode($evidence);
 
         if ($message === '') {
             $message = $this->defaultMessageForHealthCode($healthCode);
@@ -427,6 +461,7 @@ class DomainStatusSyncService
         );
 
         $checkSummary = $this->buildCheckSummary([
+            'dns_mode' => $dnsMode,
             'health_code' => $healthCode,
             'message' => $message,
             'reason' => $providerError ? 'provider_error' : null,
@@ -445,9 +480,23 @@ class DomainStatusSyncService
             'nameserver_check_enabled' => $checkNameservers,
             'dns_misconfigured' => (bool) ($domainConfig['misconfigured'] ?? false),
             'configured_by' => $domainConfig['configuredBy'] ?? null,
-            'recommended_ipv4' => $domainConfig['recommendedIPv4'] ?? [],
-            'recommended_cname' => $domainConfig['recommendedCNAME'] ?? [],
+            'recommended_ipv4' => $evidence['recommended_ipv4'] ?? [],
+            'recommended_cname' => $evidence['recommended_cname'] ?? [],
+            'apex_records' => $evidence['apex_records'] ?? [],
+            'www_records' => $evidence['www_records'] ?? [],
+            'apex_matches_recommended' => $evidence['apex_matches_recommended'] ?? null,
+            'www_matches_recommended' => $evidence['www_matches_recommended'] ?? null,
+            'apex_lookup_known' => $evidence['apex_lookup_known'] ?? null,
+            'www_lookup_known' => $evidence['www_lookup_known'] ?? null,
+            'dns_provider_reachable' => $evidence['dns_provider_reachable'] ?? null,
+            'dns_lookup_unknown' => $evidence['dns_lookup_unknown'] ?? null,
+            'apex_dns_lookup_unknown' => $evidence['apex_dns_lookup_unknown'] ?? null,
+            'www_dns_lookup_unknown' => $evidence['www_dns_lookup_unknown'] ?? null,
             'ssl_ready' => $sslReady,
+            'apex_ssl_ready' => $sslReady,
+            'www_ssl_ready' => $evidence['www_ssl_ready'] ?? false,
+            'apex_certificate_readiness' => $certificateReadiness,
+            'www_certificate_readiness' => $evidence['www_certificate_readiness'] ?? null,
             'certificate_readiness' => $certificateReadiness,
             'certificate_id' => $apexCertificate['id'] ?? null,
             'consecutive_failures' => $consecutiveFailures,
@@ -476,6 +525,84 @@ class DomainStatusSyncService
         return array_merge([
             'last_check_at' => now()->toIso8601String(),
         ], $fields);
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $ownershipChallenge
+     * @param  list<string>|mixed  $recommendedIpv4
+     * @param  list<string>|mixed  $recommendedCname
+     * @return array<string, mixed>
+     */
+    private function buildEvidence(
+        string $dnsMode,
+        bool $autoAttach,
+        bool $checkNameservers,
+        bool $apexAttached,
+        bool $apexVerified,
+        bool $accountDomainPresent,
+        bool $zoneEnabled,
+        bool $wwwPresent,
+        bool $wwwRedirectCorrect,
+        ?array $ownershipChallenge,
+        bool $dnsMisconfigured,
+        bool $nameserversOk,
+        bool $sslReady,
+        ?string $certificateReadiness,
+        mixed $recommendedIpv4,
+        mixed $recommendedCname,
+        string $apex,
+        string $www
+    ): array {
+        $normalizedIpv4 = $this->normalizeRecommendationValues($recommendedIpv4);
+        $normalizedCname = $this->normalizeRecommendationValues($recommendedCname);
+        $dnsEvidence = $this->dnsRecordService->inspect($apex, $normalizedIpv4, $normalizedCname);
+        $certificateInventory = ['certificates' => []];
+        $wwwCertificate = null;
+        $wwwSslReady = false;
+        $wwwCertificateReadiness = null;
+
+        try {
+            $certificateInventory = $this->vercel->listCertificates();
+            $wwwCertificate = $this->vercel->findCoveringCertificate($www, $certificateInventory);
+            $wwwSslReady = $wwwCertificate !== null && $this->vercel->isCertificateReady($wwwCertificate);
+            $wwwCertificateReadiness = $wwwCertificate['readiness'] ?? null;
+        } catch (VercelDomainException) {
+        }
+
+        return [
+            'dns_mode' => $dnsMode,
+            'auto_attach_custom_domain' => $autoAttach,
+            'nameserver_check_enabled' => $checkNameservers,
+            'apex_attached' => $apexAttached,
+            'apex_verified' => $apexVerified,
+            'vercel_attached' => $apexAttached,
+            'vercel_verified' => $apexVerified,
+            'account_domain_present' => $accountDomainPresent,
+            'zone_enabled' => $zoneEnabled,
+            'www_present' => $wwwPresent,
+            'www_redirect_correct' => $wwwRedirectCorrect,
+            'ownership_challenge' => $ownershipChallenge,
+            'dns_misconfigured' => $dnsMisconfigured,
+            'nameservers_ok' => $nameserversOk,
+            'ssl_ready' => $sslReady,
+            'apex_ssl_ready' => $sslReady,
+            'www_ssl_ready' => $wwwSslReady,
+            'apex_certificate_readiness' => $certificateReadiness,
+            'www_certificate_readiness' => $wwwCertificateReadiness,
+            'certificate_readiness' => $certificateReadiness,
+            'recommended_ipv4' => $normalizedIpv4,
+            'recommended_cname' => $normalizedCname,
+            'apex_records' => $dnsEvidence['apex_records'],
+            'www_records' => $dnsEvidence['www_records'],
+            'apex_matches_recommended' => $dnsEvidence['apex_matches_recommended'],
+            'www_matches_recommended' => $dnsEvidence['www_matches_recommended'],
+            'apex_lookup_known' => $dnsEvidence['apex_lookup_known'] ?? null,
+            'www_lookup_known' => $dnsEvidence['www_lookup_known'] ?? null,
+            'dns_provider_reachable' => $dnsEvidence['dns_provider_reachable'] ?? null,
+            'dns_lookup_unknown' => $dnsEvidence['dns_lookup_unknown'],
+            'apex_dns_lookup_unknown' => $dnsEvidence['apex_dns_lookup_unknown'] ?? $dnsEvidence['dns_lookup_unknown'],
+            'www_dns_lookup_unknown' => $dnsEvidence['www_dns_lookup_unknown'] ?? null,
+        ];
     }
 
     /**
@@ -706,6 +833,36 @@ class DomainStatusSyncService
             'checks_disabled' => 'Verification checks are disabled (VERCEL_AUTO_ATTACH_CUSTOM_DOMAIN and VERCEL_CHECK_NAMESERVERS are false).',
             default => 'Domain verification is still pending.',
         };
+    }
+
+    /**
+     * @param  list<string>|mixed  $values
+     * @return list<string>
+     */
+    private function normalizeRecommendationValues(mixed $values): array
+    {
+        if (! is_array($values)) {
+            $values = [$values];
+        }
+
+        $normalized = [];
+        foreach ($values as $value) {
+            if (is_array($value)) {
+                foreach ($value as $nested) {
+                    if (is_string($nested) && trim($nested) !== '') {
+                        $normalized[] = strtolower(rtrim(trim($nested), '.'));
+                    }
+                }
+
+                continue;
+            }
+
+            if (is_string($value) && trim($value) !== '') {
+                $normalized[] = strtolower(rtrim(trim($value), '.'));
+            }
+        }
+
+        return array_values(array_unique($normalized));
     }
 
     /**

@@ -29,8 +29,8 @@ class GetTenantController extends Controller
         // If not found, try resolving by custom domain
         if (!$tenant) {
             $domain = $this->normalizeDomain($input);
-            $domainRecord = ApiDomainSetting::where('custom_name', $domain)
-                ->where('status', 'active')
+            $domainRecord = ApiDomainSetting::servable()
+                ->where('custom_name', $domain)
                 ->first();
 
             if ($domainRecord) {
