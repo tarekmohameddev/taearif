@@ -115,3 +115,4 @@ phpunit.xml
 scripts/copy-test-db.ps1
 /phpunit.local.xml
 dump.rdb
+scripts/php-with-sqlite.bat
