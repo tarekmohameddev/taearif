@@ -276,6 +276,12 @@
                                    class="btn btn-secondary">{{ __('domain_health.show_all_domains') }}</a>
                             @endif
                         </div>
+                        <a href="{{ route('admin.custom-domain.setup-guide') }}"
+                           class="btn btn-outline-info btn-sm ml-2"
+                           title="{{ __('domain_setup_guide.title') }}"
+                           aria-label="{{ __('domain_setup_guide.title') }}">
+                            <i class="fas fa-book-open"></i> {{ __('domain_setup_guide.toolbar_link') }}
+                        </a>
                         <button class="btn btn-danger btn-sm ml-2 d-none bulk-delete" data-href="{{route('admin.custom-domain.bulk.delete')}}"><i class="flaticon-interface-5"></i> {{__('Delete')}}</button>
                         <form class="d-none bulk-repair-form ml-2" action="{{ route('admin.custom-domain.bulk-repair-verify') }}" method="POST">
                             @csrf

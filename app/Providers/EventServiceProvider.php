@@ -74,7 +74,6 @@ class EventServiceProvider extends ServiceProvider
             // WriteTenantActivityLog::class,
         ],
         UserDowngradedToFree::class => [
-            EnableMaintenanceMode::class,
             LogMembershipChange::class,
         ],
         UserUpgradedFromFree::class => [

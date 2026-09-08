@@ -112,6 +112,136 @@ class PropertyController extends Controller
         }
     }
 
+    private function resolvePublicationIntent(array $payload, ?Property $property = null): string
+    {
+        $publishStatus = $payload['publish_status'] ?? null;
+        if (is_string($publishStatus) && trim($publishStatus) !== '') {
+            return strtolower(trim($publishStatus)) === 'published' ? 'published' : 'draft';
+        }
+
+        if (array_key_exists('status', $payload)) {
+            return (int) $payload['status'] === 1 ? 'published' : 'draft';
+        }
+
+        $completionStatus = $payload['completion_status'] ?? null;
+        if (is_string($completionStatus) && trim($completionStatus) !== '') {
+            return strtolower(trim($completionStatus)) === 'complete' ? 'published' : 'draft';
+        }
+
+        if ($property) {
+            if ($property->publish_status !== null) {
+                return $property->publish_status === 'published' ? 'published' : 'draft';
+            }
+
+            return ((int) $property->status === 1 && $property->completion_status === 'complete')
+                ? 'published'
+                : 'draft';
+        }
+
+        return 'published';
+    }
+
+    private function buildCompletionData(array $payload, ?Property $property = null, ?PropertyContent $content = null): array
+    {
+        $pick = static function (array $data, string $field, $fallback = null) {
+            return array_key_exists($field, $data) ? $data[$field] : $fallback;
+        };
+
+        return [
+            'title' => $pick($payload, 'title', $content?->title),
+            'address' => $pick($payload, 'address', $content?->address),
+            'description' => $pick($payload, 'description', $content?->description),
+            'featured_image' => $pick($payload, 'featured_image', $property?->featured_image),
+            'property_type' => array_key_exists('property_type', $payload)
+                ? $payload['property_type']
+                : (array_key_exists('type', $payload) ? $payload['type'] : $property?->property_type),
+            'price' => $pick($payload, 'price', $property?->price),
+            'purpose' => $pick($payload, 'purpose', $property?->purpose),
+            'area' => $pick($payload, 'area', $property?->area),
+        ];
+    }
+
+    private function draftLifecycleFields(array $completionData): array
+    {
+        $missingFields = PropertyCompletionRequirements::missingFrom($completionData);
+
+        return [
+            'publish_status' => 'draft',
+            'status' => 0,
+            'completion_status' => empty($missingFields) ? 'complete' : 'incomplete',
+            'missing_fields' => empty($missingFields) ? null : $missingFields,
+            'validation_errors' => null,
+            'completed_at' => empty($missingFields) ? now() : null,
+        ];
+    }
+
+    private function publishLifecycleFields(?Property $property = null): array
+    {
+        return [
+            'publish_status' => 'published',
+            'status' => 1,
+            'completion_status' => 'complete',
+            'missing_fields' => null,
+            'validation_errors' => null,
+            'completed_at' => $property?->completed_at ?? now(),
+        ];
+    }
+
+    private function publishValidationResponse(array $conflicts): JsonResponse
+    {
+        $missingFields = [];
+        $validationErrors = [];
+        $errors = [];
+
+        foreach ($conflicts as $conflict) {
+            if (($conflict['type'] ?? null) === 'missing_fields') {
+                $missingFields = array_values(array_unique($conflict['fields'] ?? []));
+
+                foreach ($missingFields as $field) {
+                    $errors[$field][] = 'This field is required when publishing.';
+                }
+
+                continue;
+            }
+
+            $field = $conflict['field'] ?? 'property';
+            $errors[$field][] = $conflict['message'] ?? 'The given data was invalid.';
+            $validationErrors[] = [
+                'field' => $field,
+                'message' => $conflict['message'] ?? 'The given data was invalid.',
+                'type' => $conflict['type'] ?? 'validation',
+            ];
+        }
+
+        $missingFieldsAr = array_map(
+            fn (string $field) => self::$missingFieldsArMap[$field] ?? $field,
+            $missingFields
+        );
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Validation failed',
+            'errors' => $errors,
+            'missing_fields' => $missingFields,
+            'missing_fields_ar' => $missingFieldsAr,
+            'validation_errors' => $validationErrors,
+        ], 422);
+    }
+
+    private function validatePublishable(Property $property, array $completionData): ?JsonResponse
+    {
+        $conflicts = (new \App\Services\PropertyConflictDetectionService())
+            ->detectConflicts($property, $completionData);
+
+        $errors = array_values(array_filter($conflicts, fn ($conflict) => ($conflict['severity'] ?? null) === 'error'));
+
+        if ($errors === []) {
+            return null;
+        }
+
+        return $this->publishValidationResponse($errors);
+    }
+
     public function bulkImport(BulkImportPropertiesRequest $request)
     {
         try {
@@ -1172,6 +1302,7 @@ class PropertyController extends Controller
     public function store(StorePropertyRequest $request)
     {
         $user = auth()->user();
+        $validated = $request->validated();
 
         // Resolve tenant owner (tenant for tenant; tenant for employee)
         $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
@@ -1186,12 +1317,23 @@ class PropertyController extends Controller
             ], 403);
         }
 
+        $defaultLanguage = Language::where('user_id', $owner->id)
+            ->where('is_default', 1)
+            ->firstOrFail();
+
+        $publicationIntent = $this->resolvePublicationIntent($validated);
+        $completionData = $this->buildCompletionData($validated);
+        $lifecycleFields = $publicationIntent === 'published'
+            ? $this->publishLifecycleFields()
+            : $this->draftLifecycleFields($completionData);
+        $countsAsComplete = ($lifecycleFields['completion_status'] ?? null) === 'complete';
+
         $realEstateLimit = $membership->package->real_estate_limit_number;
         $currentPropertyCount = Property::where('user_id', $owner->id)
             ->where('completion_status', 'complete')
             ->count();
 
-        if (!is_null($realEstateLimit) && $currentPropertyCount >= $realEstateLimit) {
+        if ($countsAsComplete && !is_null($realEstateLimit) && $currentPropertyCount >= $realEstateLimit) {
             return response()->json([
                 'status' => false,
                 'message' => 'You have reached your property listing limit.',
@@ -1200,13 +1342,16 @@ class PropertyController extends Controller
             ], 403);
         }
 
-        $defaultLanguage = Language::where('user_id', $owner->id)
-            ->where('is_default', 1)
-            ->firstOrFail();
+        if ($publicationIntent === 'published') {
+            $publishValidation = $this->validatePublishable(new Property(['user_id' => $owner->id]), $completionData);
+            if ($publishValidation instanceof JsonResponse) {
+                return $publishValidation;
+            }
+        }
 
         $property = null;
 
-        DB::transaction(function () use ($request, $user, $defaultLanguage, &$property) {
+        DB::transaction(function () use ($request, $validated, $user, $defaultLanguage, $publicationIntent, $completionData, $lifecycleFields, &$property) {
             $featuredImgName = $request->featured_image;
             $videoImage = $request->video_image;
             $featured = $request->featured;
@@ -1282,6 +1427,8 @@ class PropertyController extends Controller
                 "private_parking"
 
             ]);
+
+            $propertyData = array_merge($propertyData, $lifecycleFields);
 
             // Normalize features to array format
             if (isset($propertyData['features'])) {
@@ -1387,10 +1534,10 @@ class PropertyController extends Controller
                 'category_id' => $request->category_id ?? ApiUserCategory::where('slug', 'other')->value('id'),
                 'state_id' => $request->state_id ?? 3,
                 'city_id' => $request->city_id,
-                'title' => $request->title,
-                'slug' => str_replace('.', '', Str::slug($request->title)),
-                'address' => $request->address,
-                'description' => $request->description,
+                'title' => $validated['title'] ?? '',
+                'slug' => str_replace('.', '', Str::slug($validated['title'] ?? ('property-' . ($property->id ?? 'draft')))),
+                'address' => $validated['address'] ?? '',
+                'description' => $validated['description'] ?? '',
                 'meta_keyword' => $request->meta_keyword ?? null,
                 'meta_description' => $request->meta_description ?? null,
             ];
@@ -1527,6 +1674,7 @@ class PropertyController extends Controller
     public function update(UpdatePropertyRequest $request, $id)
     {
         $user = auth()->user();
+        $validated = $request->validated();
 
         // Resolve tenant owner (tenant for tenant; tenant for employee)
         $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
@@ -1558,7 +1706,74 @@ class PropertyController extends Controller
             ], 404);
         }
 
-        DB::transaction(function () use ($request, $user, $defaultLanguage, &$property) {
+        $existingContent = PropertyContent::where('property_id', $property->id)
+            ->where('language_id', $defaultLanguage->id)
+            ->first();
+        $completionPayload = array_merge(
+            $validated,
+            $request->only([
+                'publish_status',
+                'status',
+                'completion_status',
+                'title',
+                'address',
+                'description',
+                'featured_image',
+                'property_type',
+                'type',
+                'price',
+                'purpose',
+                'area',
+            ])
+        );
+        $publicationIntent = $this->resolvePublicationIntent($completionPayload, $property);
+        $completionData = $this->buildCompletionData($completionPayload, $property, $existingContent);
+        if ($publicationIntent !== 'published') {
+            foreach (['title', 'address', 'description'] as $field) {
+                if ($request->exists($field) && $request->input($field) === null) {
+                    $completionData[$field] = '';
+                }
+            }
+        }
+        $lifecycleFields = $publicationIntent === 'published'
+            ? $this->publishLifecycleFields($property)
+            : $this->draftLifecycleFields($completionData);
+
+        $isTransitioningToComplete = ($property->completion_status !== 'complete')
+            && (($lifecycleFields['completion_status'] ?? null) === 'complete');
+
+        if ($isTransitioningToComplete) {
+            $membership = MembershipCacheService::getActiveMembership($owner->id);
+            if (!($membership instanceof Membership) || !$membership->package) {
+                return response()->json([
+                    'status' => 'fail',
+                    'message' => 'No active package found for the user.',
+                ], 403);
+            }
+
+            $realEstateLimit = $membership->package->real_estate_limit_number;
+            $currentPropertyCount = Property::where('user_id', $owner->id)
+                ->where('completion_status', 'complete')
+                ->count();
+
+            if (!is_null($realEstateLimit) && $currentPropertyCount >= $realEstateLimit) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You have reached your property listing limit.',
+                    'limit' => $realEstateLimit,
+                    'used' => $currentPropertyCount,
+                ], 403);
+            }
+        }
+
+        if ($publicationIntent === 'published') {
+            $publishValidation = $this->validatePublishable($property, $completionData);
+            if ($publishValidation instanceof JsonResponse) {
+                return $publishValidation;
+            }
+        }
+
+        DB::transaction(function () use ($request, $validated, $user, $defaultLanguage, $lifecycleFields, &$property, $existingContent, $publicationIntent) {
 
             $videoUrl = $request->video_url; // Video URL from separate upload
 
@@ -1591,59 +1806,60 @@ class PropertyController extends Controller
                 $requestData = SourceBrokerNormalizer::normalize($requestData);
             }
 
+            $requestData = array_merge($requestData, $lifecycleFields);
+
             $property->updateProperty($requestData);
 
-            $characteristics = $request->only([
-                'region_id',
-                'price',
-                'purpose',
-                'property_type',
-                'beds',
-                'bath',
-                'area',
-                // 'video_url',
-                'status',
-                'latitude',
-                'longitude',
-                'features',
-                // 'transaction_type',
-                // 'category_id',
-                'city_id',
-                'state_id',
-                "facade_id",
-                "length",
-                "width",
-                "street_width_north",
-                "street_width_south",
-                "street_width_east",
-                "street_width_west",
-                "building_age",
-                "rooms",
-                "bathrooms",
-                "floors",
-                "floor_number",
-                "driver_room",
-                "maid_room",
-                "dining_room",
-                "living_room",
-                "majlis",
-                "storage_room",
-                "basement",
-                "swimming_pool",
-                "kitchen",
-                "balcony",
-                "garden",
-                "annex",
-                "elevator",
-                "private_parking",
+            $characteristicFields = [
+                'facade_id',
+                'length',
+                'width',
+                'street_width_north',
+                'street_width_south',
+                'street_width_east',
+                'street_width_west',
+                'building_age',
+                'rooms',
+                'bathrooms',
+                'floors',
+                'floor_number',
+                'driver_room',
+                'maid_room',
+                'dining_room',
+                'living_room',
+                'majlis',
+                'storage_room',
+                'basement',
+                'swimming_pool',
+                'kitchen',
+                'balcony',
+                'garden',
+                'annex',
+                'elevator',
+                'private_parking',
                 'size',
-            ]);
-            $characteristics['facade_id'] = !empty($characteristics['facade_id']) ? $characteristics['facade_id'] : null;
+            ];
 
-            UserPropertyCharacteristic::updateOrCreate(
-                ['property_id' => $property->id],
-                $characteristics
-            );
+            $presentCharacteristicFields = array_values(array_filter(
+                $characteristicFields,
+                fn (string $field): bool => $request->exists($field)
+            ));
+
+            if ($presentCharacteristicFields !== []) {
+                $characteristics = [];
+                foreach ($presentCharacteristicFields as $field) {
+                    $characteristics[$field] = $request->input($field);
+                }
+
+                if (array_key_exists('facade_id', $characteristics)) {
+                    $characteristics['facade_id'] = !empty($characteristics['facade_id']) ? $characteristics['facade_id'] : null;
+                }
+
+                UserPropertyCharacteristic::updateOrCreate(
+                    ['property_id' => $property->id],
+                    $characteristics
+                );
+            }
 
             if ($request->has('gallery')) {
                 PropertySliderImg::where('property_id', $property->id)->delete();
@@ -1652,11 +1868,8 @@ class PropertyController extends Controller
                 }
             }
 
-            PropertyAmenity::where('property_id', $property->id)->delete();
-            PropertyContent::where('property_id', $property->id)->delete();
-            PropertySpecification::where('property_id', $property->id)->delete();
-
             if ($request->has('amenities')) {
+                PropertyAmenity::where('property_id', $property->id)->delete();
                 foreach ((array) $request->amenities as $amenity) {
                     PropertyAmenity::sotreAmenity($user->id, $property->id, $amenity);
                 }
@@ -1677,20 +1890,81 @@ class PropertyController extends Controller
                 Cache::forget('listing.links.' . $property->id);
             }
 
-            $contentRequest = [
-                'language_id' => $defaultLanguage->id,
-                'category_id' => $request->category_id ?? ApiUserCategory::where('slug', 'other')->value('id'),
-                'state_id' => $request->state_id ?? 3,
-                'city_id' => $request->city_id,
-                'title' => $request->title,
-                'slug' => str_replace('.', '', Str::slug($request->title)),
-                'address' => $request->address,
-                'description' => $request->description,
-                'meta_keyword' => $request->meta_keyword ?? null,
-                'meta_description' => $request->meta_description ?? null,
-            ];
+            if (
+                array_key_exists('title', $validated)
+                || array_key_exists('address', $validated)
+                || array_key_exists('description', $validated)
+                || $request->has('city_id')
+                || $request->has('state_id')
+                || $request->has('category_id')
+                || $request->has('meta_keyword')
+                || $request->has('meta_description')
+                || !$existingContent
+            ) {
+                $existingCategoryId = $existingContent?->category_id;
+                $existingStateId = $existingContent?->state_id;
+                $existingCityId = $existingContent?->city_id;
+                $existingTitle = $existingContent?->title;
+                $existingAddress = $existingContent?->address;
+                $existingDescription = $existingContent?->description;
+                $existingMetaKeyword = $existingContent?->meta_keyword;
+                $existingMetaDescription = $existingContent?->meta_description;
+                $existingContentUserId = $existingContent?->user_id;
 
-            PropertyContent::storePropertyContent($user->id, $property->id, $contentRequest);
+                $draftExplicitlyClearedContentFields = [];
+                if ($publicationIntent !== 'published') {
+                    foreach (['title', 'address', 'description'] as $field) {
+                        if ($request->exists($field) && array_key_exists($field, $validated) && $validated[$field] === null) {
+                            $draftExplicitlyClearedContentFields[$field] = '';
+                        }
+                    }
+                }
+
+                $contentRequest = [
+                    'language_id' => $defaultLanguage->id,
+                    'category_id' => $request->category_id ?? ($existingCategoryId ?? ApiUserCategory::where('slug', 'other')->value('id')),
+                    'state_id' => $request->has('state_id') ? $request->state_id : ($existingStateId ?? 3),
+                    'city_id' => $request->has('city_id') ? $request->city_id : ($existingCityId ?? null),
+                    'title' => $draftExplicitlyClearedContentFields['title']
+                        ?? (array_key_exists('title', $validated) ? $validated['title'] : ($existingTitle ?? '')),
+                    'address' => $draftExplicitlyClearedContentFields['address']
+                        ?? (array_key_exists('address', $validated) ? $validated['address'] : ($existingAddress ?? '')),
+                    'description' => $draftExplicitlyClearedContentFields['description']
+                        ?? (array_key_exists('description', $validated) ? $validated['description'] : ($existingDescription ?? '')),
+                    'meta_keyword' => $request->has('meta_keyword') ? $request->meta_keyword : ($existingMetaKeyword ?? null),
+                    'meta_description' => $request->has('meta_description') ? $request->meta_description : ($existingMetaDescription ?? null),
+                    'user_id' => $existingContentUserId ?? $user->id,
+                    'property_id' => $property->id,
+                ];
+
+                if ($existingContent) {
+                    if (array_key_exists('title', $validated)) {
+                        $contentRequest['slug'] = PropertyContent::generateUniqueSlug($validated['title'] ?? ('property-' . $property->id), $property->id);
+                    }
+                    $existingContent->update($contentRequest);
+                } else {
+                    $contentRequest['slug'] = PropertyContent::generateUniqueSlug(($contentRequest['title'] ?? '') ?: ('property-' . $property->id), $property->id);
+                    PropertyContent::storePropertyContent($user->id, $property->id, $contentRequest);
+                }
+            }
+
+            if ($request->has('label') || $request->has('value')) {
+                PropertySpecification::where('property_id', $property->id)->delete();
+                $labels = (array) $request->input('label', []);
+                $values = (array) $request->input('value', []);
+
+                foreach ($labels as $key => $label) {
+                    if (!empty($values[$key])) {
+                        $spec = [
+                            'language_id' => $defaultLanguage->id,
+                            'key' => $key,
+                            'label' => $label,
+                            'value' => $values[$key],
+                        ];
+                        PropertySpecification::storeSpecification($user->id, $property->id, $spec);
+                    }
+                }
+            }
         });
 
         $responseProperty = Property::with([
@@ -3831,11 +4105,17 @@ class PropertyController extends Controller
                 $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
             } catch (\Throwable $e) {}
 
+            $scope = strtolower((string) $request->query('scope', 'incomplete'));
+
             $query = Property::with(['contents:id,property_id,title,address'])
                 ->whereIn('user_id', $allowedUserIds)
-                ->where(function($q) {
+                ->where(function($q) use ($scope) {
                     $q->where('completion_status', '!=', 'complete')
                       ->orWhereNull('completion_status');
+
+                    if (in_array($scope, ['unpublished', 'all_unpublished'], true)) {
+                        $q->orWhere('publish_status', 'draft');
+                    }
                 });
 
             // Optional: restrict to a specific user (must be in allowedUserIds)
@@ -4115,30 +4395,11 @@ class PropertyController extends Controller
 
             // Collect all data for validation
             $propertyContent = $property->contents()->where('language_id', $defaultLanguage->id)->first();
-            $completeData = [
-                'title' => $validated['title'] ?? $propertyContent?->title,
-                'price' => $validated['price'] ?? $property->price,
-                'address' => $validated['address'] ?? $propertyContent?->address,
-                'description' => $validated['description'] ?? $propertyContent?->description,
-                'purpose' => $validated['purpose'] ?? $property->purpose,
-                'property_type' => $validated['property_type'] ?? $property->property_type,
-                'featured_image' => $validated['featured_image'] ?? $property->featured_image,
-                'area' => $validated['area'] ?? $property->area,
-            ];
+            $completeData = $this->buildCompletionData($validated, $property, $propertyContent);
 
-            // Check for conflicts
-            $conflictService = new \App\Services\PropertyConflictDetectionService();
-            $conflicts = $conflictService->detectConflicts($property, $completeData);
-
-            // Filter only errors (not warnings)
-            $errors = array_filter($conflicts, fn($c) => $c['severity'] === 'error');
-
-            if (!empty($errors)) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Cannot complete property due to validation errors',
-                    'conflicts' => array_values($errors),
-                ], 422);
+            $publishValidation = $this->validatePublishable($property, $completeData);
+            if ($publishValidation instanceof JsonResponse) {
+                return $publishValidation;
             }
 
             if (array_key_exists('project_id', $validated)) {
@@ -4174,11 +4435,7 @@ class PropertyController extends Controller
                 if (isset($completeData['featured_image'])) $propertyData['featured_image'] = $completeData['featured_image'];
                 if (isset($completeData['area'])) $propertyData['area'] = $completeData['area'];
 
-                $propertyData['status'] = 1; // Active
-                $propertyData['completion_status'] = 'complete';
-                $propertyData['completed_at'] = now();
-                $propertyData['missing_fields'] = null;
-                $propertyData['validation_errors'] = null;
+                $propertyData = array_merge($propertyData, $this->publishLifecycleFields($property));
 
                 $property->update($propertyData);
 

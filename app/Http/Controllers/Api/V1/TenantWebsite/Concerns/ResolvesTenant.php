@@ -29,13 +29,8 @@ trait ResolvesTenant
         // 2) Custom domain
         $domainCandidates = $this->domainCandidates($tenantId);
         $domainRecord = ApiDomainSetting::query()
+            ->servable()
             ->whereIn('custom_name', $domainCandidates)
-            ->where(function ($q) {
-                // some environments may have different status semantics
-                $q->whereNull('status')
-                    ->orWhere('status', 'active')
-                    ->orWhere('status', 1);
-            })
             ->first();
 
         if ($domainRecord?->user) {

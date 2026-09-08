@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Tests\Unit\Services\Vercel;
 
 use App\Services\Vercel\DnsNameserverChecker;
+use App\Services\Vercel\DomainDnsRecordService;
 use App\Services\Vercel\DomainProvisioningService;
+use App\Services\Vercel\DomainHealthPolicy;
 use App\Services\Vercel\VercelDomainCache;
 use App\Services\Vercel\VercelDomainClient;
 use App\Services\Vercel\VercelDomainInventoryService;
@@ -26,6 +28,7 @@ class DomainProvisioningServiceTest extends TestCase
 
         $this->configureVercel();
         Cache::flush();
+        $this->mockDnsRecords();
         $this->service = app(DomainProvisioningService::class);
     }
 
@@ -298,6 +301,76 @@ class DomainProvisioningServiceTest extends TestCase
         $this->assertSame(0, $state['mutation_requests']);
     }
 
+    /** @test */
+    public function external_dns_mode_can_be_active_without_vercel_nameservers(): void
+    {
+        $this->mockNameservers(ok: false);
+        config([
+            'services.vercel.external_dns.apex_record_value' => '192.0.2.25',
+            'services.vercel.external_dns.www_record_value' => 'customer.standard-dns.test',
+        ]);
+
+        $state = [
+            'account' => $this->accountBody('example.com', zone: false, verified: true, serviceType: 'external'),
+            'project_domain' => [
+                'name' => 'example.com',
+                'verified' => true,
+                'verification' => [],
+            ],
+            'project_domains' => [
+                ['name' => 'example.com', 'verified' => true],
+                ['name' => 'www.example.com', 'verified' => true, 'redirect' => 'example.com', 'redirectStatusCode' => 301],
+            ],
+            'certificates' => [[
+                'id' => 'cert_external_dns',
+                'cns' => ['example.com', 'www.example.com'],
+                'expiresAt' => 1_900_000_000_000,
+                'autoRenew' => true,
+            ]],
+        ];
+
+        Http::fake(function (Request $request) use (&$state) {
+            return $this->respondVercel($request, $state);
+        });
+
+        $result = $this->service->run('example.com', DomainProvisioningService::MODE_SCHEDULED, 'external_dns');
+
+        $this->assertSame('active', $result['outcome']);
+        $this->assertSame('linked', $result['health']);
+        $this->assertSame('external_dns', $result['last_check']['dns_mode']);
+        $this->assertSame(['192.0.2.25'], $result['last_check']['recommended_ipv4']);
+        $this->assertSame(['customer.standard-dns.test'], $result['last_check']['recommended_cname']);
+    }
+
+    /** @test */
+    public function optional_www_lookup_uncertainty_does_not_poison_healthy_apex_state(): void
+    {
+        $this->mockNameservers(ok: true);
+        $this->mockDnsRecords(apexMatches: true, wwwMatches: null, apexKnown: true, wwwKnown: false);
+
+        $state = [
+            'account' => $this->accountBody('example.com', zone: true, verified: true),
+            'project_domain' => [
+                'name' => 'example.com',
+                'verified' => true,
+                'verification' => [],
+            ],
+            'project_domains' => [['name' => 'example.com', 'verified' => true]],
+        ];
+
+        Http::fake(function (Request $request) use (&$state) {
+            return $this->respondVercel($request, $state);
+        });
+
+        $result = $this->service->run('example.com');
+
+        $this->assertSame('active', $result['outcome']);
+        $this->assertSame('apex_only', $result['health']);
+        $this->assertFalse($result['retryable']);
+        $this->assertFalse($result['last_check']['dns_lookup_unknown'] ?? true);
+        $this->assertTrue($result['last_check']['www_dns_lookup_unknown'] ?? false);
+    }
+
     /**
      * @param  array<string, mixed>  $state
      */
@@ -482,7 +555,41 @@ class DomainProvisioningServiceTest extends TestCase
             app(VercelDomainCache::class),
             app(VercelDomainInventoryService::class),
             app(VercelMutationGuard::class),
-            $checker
+            $checker,
+            app(DomainDnsRecordService::class),
+            app(DomainHealthPolicy::class)
+        );
+    }
+
+    private function mockDnsRecords(?bool $apexMatches = true, ?bool $wwwMatches = true, bool $apexKnown = true, bool $wwwKnown = true): void
+    {
+        $checker = Mockery::mock(DomainDnsRecordService::class);
+        $checker->shouldReceive('inspect')->andReturn([
+            'apex_records' => [['type' => 'A', 'value' => '76.76.21.21']],
+            'www_records' => [['type' => 'CNAME', 'value' => 'cname.vercel-dns.com']],
+            'apex_addresses' => ['76.76.21.21'],
+            'apex_cnames' => [],
+            'www_addresses' => [],
+            'www_cnames' => ['cname.vercel-dns.com'],
+            'apex_matches_recommended' => $apexMatches,
+            'www_matches_recommended' => $wwwMatches,
+            'apex_lookup_known' => $apexKnown,
+            'www_lookup_known' => $wwwKnown,
+            'dns_provider_reachable' => $apexKnown,
+            'dns_lookup_unknown' => ! $apexKnown,
+            'apex_dns_lookup_unknown' => ! $apexKnown,
+            'www_dns_lookup_unknown' => ! $wwwKnown,
+        ]);
+
+        $this->app->instance(DomainDnsRecordService::class, $checker);
+        $this->service = new DomainProvisioningService(
+            app(VercelDomainClient::class),
+            app(VercelDomainCache::class),
+            app(VercelDomainInventoryService::class),
+            app(VercelMutationGuard::class),
+            app(DnsNameserverChecker::class),
+            $checker,
+            app(DomainHealthPolicy::class)
         );
     }
 

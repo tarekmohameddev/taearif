@@ -17,6 +17,9 @@ class UserDowngradedToFree
 
     public $user;
     public $previousPackage;
+    public $reason;
+    public $previousPackageId;
+    public $newPackageId;
     public $timestamp;
 
     /**
@@ -25,10 +28,19 @@ class UserDowngradedToFree
      * @param User $user
      * @param mixed $previousPackage
      */
-    public function __construct(User $user, $previousPackage = null)
+    public function __construct(
+        User $user,
+        $previousPackage = null,
+        ?string $reason = null,
+        ?int $previousPackageId = null,
+        ?int $newPackageId = null
+    )
     {
         $this->user = $user;
         $this->previousPackage = $previousPackage;
+        $this->reason = $reason;
+        $this->previousPackageId = $previousPackageId;
+        $this->newPackageId = $newPackageId;
         $this->timestamp = now();
     }
 

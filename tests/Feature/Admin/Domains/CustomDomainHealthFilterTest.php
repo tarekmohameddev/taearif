@@ -8,6 +8,7 @@ use App\Domain\Admin\Models\Admin;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User;
 use App\Services\Vercel\VercelDomainCache;
+use App\Services\Vercel\DnsNameserverChecker;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
@@ -99,6 +100,7 @@ class CustomDomainHealthFilterTest extends AdminApiTestCase
     {
         $this->skipIfMissingSchema();
         $this->configureVercel();
+        $this->mockNameservers(true);
         $this->signInWebAdmin();
 
         $apexOnly = $this->seedDomainWithHealth($this->apexOnlyLastCheck());
@@ -136,6 +138,7 @@ class CustomDomainHealthFilterTest extends AdminApiTestCase
     {
         $this->skipIfMissingSchema();
         $this->configureVercel();
+        $this->mockNameservers(true);
         $this->signInWebAdmin();
 
         $linked = $this->seedDomainWithHealth($this->linkedLastCheck());
@@ -348,6 +351,16 @@ class CustomDomainHealthFilterTest extends AdminApiTestCase
         ]);
     }
 
+    private function mockNameservers(bool $ok): void
+    {
+        $this->mock(DnsNameserverChecker::class, function ($mock) use ($ok) {
+            $mock->shouldReceive('hasExpectedNameservers')->andReturn($ok);
+            $mock->shouldReceive('getObservedNameservers')->andReturn(
+                $ok ? ['ns1.vercel-dns.com', 'ns2.vercel-dns.com'] : ['ns1.example.com']
+            );
+        });
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -462,6 +475,55 @@ class CustomDomainHealthFilterTest extends AdminApiTestCase
                 return Http::response([
                     'domains' => $state['domains'],
                     'pagination' => ['count' => count($state['domains']), 'next' => null, 'prev' => null],
+                ], 200);
+            }
+
+            if ($method === 'GET' && preg_match('#/v9/projects/prj_test/domains/([^/?]+)#', $url, $matches)) {
+                $name = strtolower(rawurldecode($matches[1]));
+                foreach ($state['domains'] as $domain) {
+                    if (strtolower((string) ($domain['name'] ?? '')) === $name) {
+                        return Http::response($domain, 200);
+                    }
+                }
+
+                return Http::response(['error' => 'not found'], 404);
+            }
+
+            if ($method === 'GET' && preg_match('#/v5/domains/([^/?]+)#', $url, $matches)) {
+                return Http::response([
+                    'domain' => [
+                        'id' => 'dom_' . str_replace('.', '_', strtolower(rawurldecode($matches[1]))),
+                        'name' => strtolower(rawurldecode($matches[1])),
+                        'zone' => true,
+                        'verified' => true,
+                        'serviceType' => 'zeit.world',
+                        'nameservers' => ['ns1.vercel-dns.com', 'ns2.vercel-dns.com'],
+                        'intendedNameservers' => ['ns1.vercel-dns.com', 'ns2.vercel-dns.com'],
+                    ],
+                ], 200);
+            }
+
+            if ($method === 'GET' && preg_match('#/v6/domains/([^/]+)/config#', $url)) {
+                return Http::response([
+                    'misconfigured' => false,
+                    'configuredBy' => 'CNAME',
+                ], 200);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v8/certs')) {
+                $certHosts = array_map(
+                    static fn (array $domain): string => strtolower((string) ($domain['name'] ?? '')),
+                    array_values($state['domains'])
+                );
+
+                return Http::response([
+                    'certs' => [[
+                        'id' => 'cert_health_filter',
+                        'cns' => $certHosts,
+                        'expiresAt' => 1_900_000_000_000,
+                        'autoRenew' => true,
+                    ]],
+                    'pagination' => ['next' => null],
                 ], 200);
             }
 

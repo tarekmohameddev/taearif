@@ -28,7 +28,10 @@ class Membership extends Model
         'user_id',
         'start_date',
         'expire_date',
-        'conversation_id'
+        'conversation_id',
+        'activation_source',
+        'transition_reason',
+        'previous_membership_id',
     ];
 
     public function user()
@@ -39,6 +42,11 @@ class Membership extends Model
     public function package()
     {
         return $this->belongsTo(Package::class, 'package_id');
+    }
+
+    public function previousMembership()
+    {
+        return $this->belongsTo(self::class, 'previous_membership_id');
     }
 
     public function getDaysOnPackage(): int

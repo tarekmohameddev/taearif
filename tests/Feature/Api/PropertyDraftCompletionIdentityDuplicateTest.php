@@ -216,13 +216,14 @@ class PropertyDraftCompletionIdentityDuplicateTest extends TestCase
         $response = $this->postJson("/api/properties/drafts/{$draft->id}/complete", $identity);
 
         $response->assertStatus(422)
-            ->assertJsonPath('status', 'error');
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('message', 'Validation failed');
 
-        $conflicts = $response->json('conflicts') ?? [];
-        $this->assertNotEmpty($conflicts, $response->getContent());
-
-        $fields = array_column($conflicts, 'field');
-        $this->assertContains('completion_identity', $fields, $response->getContent());
+        $this->assertSame(
+            ['A property with the same title, address, description, featured image, and property type already exists'],
+            $response->json('errors.completion_identity')
+        );
+        $this->assertSame('completion_identity', $response->json('validation_errors.0.field'));
 
         $draft->refresh();
         $this->assertSame('incomplete', $draft->completion_status);
