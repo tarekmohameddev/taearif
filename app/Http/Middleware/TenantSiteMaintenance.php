@@ -3,7 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
-use App\Models\Api\GeneralSetting;
+use App\Services\Membership\MembershipAccessStateService;
 use App\Models\User;
 use Closure;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -12,6 +12,13 @@ use Illuminate\Http\Request;
 class TenantSiteMaintenance
 {
     use ResolvesTenant;
+
+    protected $accessStateService;
+
+    public function __construct(MembershipAccessStateService $accessStateService)
+    {
+        $this->accessStateService = $accessStateService;
+    }
 
     /**
      * Return JSON 503 for public tenant-website traffic when that tenant's
@@ -28,9 +35,8 @@ class TenantSiteMaintenance
             return $next($request);
         }
 
-        $setting = GeneralSetting::where('user_id', $tenant->id)->first();
-
-        if (!$setting || !$setting->maintenance_mode) {
+        $publicAccessState = $this->accessStateService->publicForTenant($tenant);
+        if (data_get($publicAccessState, 'website_access.allowed', true)) {
             return $next($request);
         }
 
@@ -40,7 +46,11 @@ class TenantSiteMaintenance
 
         return response()->json([
             'maintenance' => true,
-            'message'     => __('This website is currently under maintenance'),
+            'code' => data_get($publicAccessState, 'website_access.reason') === MembershipAccessStateService::WEBSITE_REASON_SUBSCRIPTION_REQUIRED
+                ? 'SUBSCRIPTION_REQUIRED'
+                : 'SITE_MAINTENANCE',
+            'message' => __('This website is currently unavailable'),
+            'website_access' => $publicAccessState['website_access'],
         ], 503);
     }
 

@@ -13,7 +13,9 @@ use App\Services\UserPackageService;
 use App\Services\WhatsAppService;
 use App\Events\UserDowngradedToFree;
 use App\Events\UserUpgradedFromFree;
+use App\Services\Membership\MembershipAccessStateService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
@@ -42,11 +44,17 @@ class MembershipService
 
     protected $userPackageService;
     protected $whatsappService;
+    protected $accessStateService;
 
-    public function __construct(UserPackageService $userPackageService, WhatsAppService $whatsappService)
+    public function __construct(
+        UserPackageService $userPackageService,
+        WhatsAppService $whatsappService,
+        MembershipAccessStateService $accessStateService
+    )
     {
         $this->userPackageService = $userPackageService;
         $this->whatsappService = $whatsappService;
+        $this->accessStateService = $accessStateService;
     }
 
     /**
@@ -54,74 +62,141 @@ class MembershipService
      */
     public function handleMembershipExpiration(User $user): void
     {
-        $currentPackage = UserPermissionHelper::userPackage($user->id);
+        $result = DB::transaction(function () use ($user) {
+            $tenant = User::query()
+                ->whereKey($user->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        if ($this->shouldDowngradeToFree($currentPackage)) {
-            $this->downgradeToFreePackage($user);
+            $currentMembership = $this->getCurrentMembership($tenant);
+            $existingFallback = $this->getActiveExpirationFallbackMembership($tenant->id);
+
+            if ($currentMembership
+                && $this->isFreePackage((int) $currentMembership->package_id)
+                && !$this->isRepairableExpirationFallback($currentMembership)
+            ) {
+                Log::info("Skipping expiration fallback; user {$tenant->id} already has an active free membership");
+
+                return null;
+            }
+
+            $expiredMembership = $this->getLatestExpiredMembership($tenant->id);
+            $scheduledMembership = $this->hasScheduledFutureMembership($tenant->id);
+            $shouldDowngrade = $this->shouldDowngradeToFree($currentMembership, $scheduledMembership, $expiredMembership);
+
+            if (!$shouldDowngrade && !$existingFallback) {
+                return null;
+            }
+
+            $transitionReason = $this->resolveFallbackTransitionReason($existingFallback, $expiredMembership);
+            if ($transitionReason === null) {
+                Log::warning("Unable to resolve expiration fallback transition reason for user {$tenant->id}");
+                return null;
+            }
+
+            $shouldDispatchDowngrade = false;
+            $newMembership = $existingFallback;
+
+            if ($shouldDowngrade) {
+                $newMembership = $this->assignFreePackage($tenant, $expiredMembership, $transitionReason);
+
+                if (!$newMembership || !$this->isActiveMembership($newMembership) || !$this->isFreePackage((int) $newMembership->package_id)) {
+                    Log::warning("Expiration fallback was not created for user {$tenant->id}; skipping side effects");
+
+                    return null;
+                }
+
+                $shouldDispatchDowngrade = !$existingFallback && (int) $newMembership->id !== (int) ($existingFallback->id ?? 0);
+            }
+
+            $this->enableMaintenanceMode($tenant);
+            $this->setUserMessage($tenant, $transitionReason);
+
+            if (!$shouldDispatchDowngrade) {
+                return null;
+            }
+
+            return [
+                'user' => $tenant->fresh(),
+                'expired_membership' => $expiredMembership,
+                'new_membership' => $newMembership->fresh('package'),
+                'transition_reason' => $transitionReason,
+            ];
+        });
+
+        if ($result) {
+            $this->completeFreeDowngrade(
+                $result['user'],
+                $result['expired_membership'],
+                $result['new_membership'],
+                $result['transition_reason']
+            );
         }
     }
 
     /**
      * Check if user should be downgraded to free package
      */
-    private function shouldDowngradeToFree($currentPackage): bool
+    private function shouldDowngradeToFree(?Membership $currentMembership, bool $scheduledMembershipExists, ?Membership $expiredMembership): bool
     {
-        return is_null($currentPackage);
+        return $currentMembership === null
+            && !$scheduledMembershipExists
+            && $expiredMembership !== null;
     }
 
     /**
      * Downgrade user to free package with all related actions
      */
-    private function downgradeToFreePackage(User $user): void
+    private function completeFreeDowngrade(User $user, ?Membership $expiredMembership, Membership $newMembership, ?string $transitionReason): void
     {
         Log::info("Downgrading user {$user->id} to free package");
 
-        // Get previous package info for event
-        $previousPackage = \App\Models\Membership::where('user_id', $user->id)
-            ->where('status', 1)
-            ->whereDate('expire_date', '<', now()->toDateString())
-            ->with('package')
-            ->first();
+        // 2. Send notifications
+        $this->sendExpirationNotifications($user, $expiredMembership);
 
-        // 1. Assign free package
-        $this->assignFreePackage($user);
-
-        // 2. Enable maintenance mode
-        $this->enableMaintenanceMode($user);
-
-        // 3. Send notifications
-        $this->sendExpirationNotifications($user);
-
-        // 4. Set user message
-        $this->setUserMessage($user);
-
-        // 5. Ensure user has language data
+        // 3. Ensure user has language data
         $this->ensureUserLanguageData($user);
 
-        // 6. Fire event for other listeners
-        event(new UserDowngradedToFree($user, $previousPackage ? $previousPackage->package : null));
+        // 4. Fire event for other listeners
+        event(new UserDowngradedToFree(
+            $user,
+            $expiredMembership ? $expiredMembership->package : null,
+            $transitionReason,
+            $expiredMembership ? (int) $expiredMembership->package_id : null,
+            $newMembership ? (int) $newMembership->package_id : self::FREE_PACKAGE_ID
+        ));
     }
 
     /**
      * Assign free package to user
      */
-    private function assignFreePackage(User $user): void
+    private function assignFreePackage(User $user, ?Membership $expiredMembership = null, ?string $transitionReason = null): ?Membership
     {
         $freePackage = Package::find(self::FREE_PACKAGE_ID);
 
         if (!$freePackage || $freePackage->status != '1') {
             Log::error("Free package (ID: " . self::FREE_PACKAGE_ID . ") not found or inactive for user {$user->id}");
-            return;
+            return null;
         }
 
-        $request = new Request([
-            'user_id' => $user->id,
-            'package_id' => self::FREE_PACKAGE_ID,
+        $existingFreeMembership = $this->getActiveFreeFallbackMembership($user->id);
+
+        if ($existingFreeMembership) {
+            Log::info("Reusing existing active free membership for user {$user->id}");
+            return $existingFreeMembership;
+        }
+
+        $membership = $this->activateImmediateMembership($user, $freePackage, [
             'payment_method' => 'system',
+            'source' => 'expiration_fallback',
+            'transition_reason' => $transitionReason,
+            'previous_membership_id' => $expiredMembership ? (int) $expiredMembership->id : null,
+            'skip_upgrade_hooks' => true,
         ]);
 
-        $this->userPackageService->addCurrentPackage($request);
         Log::info("Assigned free package to user {$user->id}");
+
+        return $membership;
     }
 
     /**
@@ -131,7 +206,7 @@ class MembershipService
     {
         $setting = $this->getOrCreateGeneralSetting($user);
         $setting->maintenance_mode = 1;
-        $setting->save();
+        $this->persistMaintenanceSetting($setting);
 
         Log::info("Enabled maintenance mode for user {$user->id}");
     }
@@ -143,7 +218,7 @@ class MembershipService
     {
         $setting = $this->getOrCreateGeneralSetting($user);
         $setting->maintenance_mode = 0;
-        $setting->save();
+        $this->persistMaintenanceSetting($setting);
 
         Log::info("Disabled maintenance mode for user {$user->id}");
     }
@@ -177,7 +252,8 @@ class MembershipService
     public function hasTrialPackage(User $user): bool
     {
         $currentMembership = $this->getCurrentMembership($user);
-        return $currentMembership && $currentMembership->package_id === self::TRIAL_PACKAGE_ID;
+        return $currentMembership
+            && $this->accessStateService->classifyPackage($currentMembership, $currentMembership->package ?: Package::find($currentMembership->package_id)) === MembershipAccessStateService::PLAN_TRIAL;
     }
 
     /**
@@ -190,13 +266,9 @@ class MembershipService
             return false;
         }
 
-        $package = Package::find($currentMembership->package_id);
-        if (!$package) {
-            return false;
-        }
+        $package = $currentMembership->package ?: Package::find($currentMembership->package_id);
 
-        // Paid packages are monthly or yearly (not free, trial, or lifetime)
-        return in_array($package->term, [self::TERM_MONTHLY, self::TERM_YEARLY]);
+        return $this->accessStateService->classifyPackage($currentMembership, $package) === MembershipAccessStateService::PLAN_PAID;
     }
 
     /**
@@ -252,7 +324,8 @@ class MembershipService
             ->where('status', 1)
             ->where('start_date', '<=', now()->format('Y-m-d'))
             ->where('expire_date', '>=', now()->format('Y-m-d'))
-            ->orderBy('created_at', 'desc')
+            ->with('package')
+            ->orderByDesc('id')
             ->first();
     }
 
@@ -270,16 +343,9 @@ class MembershipService
     /**
      * Send expiration notifications
      */
-    private function sendExpirationNotifications(User $user): void
+    private function sendExpirationNotifications(User $user, ?Membership $expiredMembership = null): void
     {
         try {
-            // Get user's expired membership info for WhatsApp message
-            $expiredMembership = \App\Models\Membership::where('user_id', $user->id)
-                ->where('status', 1)
-                ->whereDate('expire_date', '<', now()->toDateString())
-                ->with('package')
-                ->first();
-
             $packageName = $expiredMembership && $expiredMembership->package
                 ? $expiredMembership->package->getDisplayTitle('ar')
                 : 'الباقة السابقة';
@@ -351,10 +417,16 @@ class MembershipService
     /**
      * Set user message about free package
      */
-    private function setUserMessage(User $user): void
+    private function setUserMessage(User $user, ?string $transitionReason): void
     {
-        $user->message = 'تم تحويلك إلى الباقة المجانية بعد انتهاء فترة التجربة. يمكنك ترقية باقاتك في أي وقت من لوحة التحكم.';
-        $user->save();
+        if ($transitionReason === MembershipAccessStateService::TRANSITION_PAID_EXPIRED) {
+            $user->message = 'انتهى اشتراكك المدفوع وتم تحويلك إلى الباقة المجانية. يمكنك تجديد اشتراكك في أي وقت لاستعادة الوصول الكامل.';
+        } elseif ($transitionReason === MembershipAccessStateService::TRANSITION_TRIAL_EXPIRED) {
+            $user->message = 'تم تحويلك إلى الباقة المجانية بعد انتهاء الفترة التجريبية. يمكنك ترقية باقاتك في أي وقت من لوحة التحكم.';
+        } else {
+            $user->message = 'انتهت عضويتك السابقة وتم تحويلك إلى الباقة المجانية. يمكنك الترقية أو التجديد في أي وقت من لوحة التحكم.';
+        }
+        $this->persistExpirationUserMessage($user);
     }
 
     /**
@@ -494,6 +566,9 @@ class MembershipService
             'start_date' => $startDate->format('Y-m-d'),
             'expire_date' => $expireDate->format('Y-m-d'),
             'conversation_id' => $options['conversation_id'] ?? null,
+            'activation_source' => $source,
+            'transition_reason' => $options['transition_reason'] ?? null,
+            'previous_membership_id' => $options['previous_membership_id'] ?? $this->resolvePreviousMembershipId($user->id, $exceptId),
         ]);
 
         $user->subscribed = true;
@@ -581,6 +656,9 @@ class MembershipService
             'user_id' => $user->id,
             'start_date' => $startDate->format('Y-m-d'),
             'expire_date' => $expireDate->format('Y-m-d'),
+            'activation_source' => (string) ($options['source'] ?? 'admin_change_scheduled'),
+            'transition_reason' => $options['transition_reason'] ?? null,
+            'previous_membership_id' => (int) $currentMembership->id,
         ]);
     }
 
@@ -675,9 +753,6 @@ class MembershipService
         if ($newPackageId === self::FREE_PACKAGE_ID) {
             $this->enableMaintenanceMode($user);
 
-            // Fire event for downgrade
-            event(new UserDowngradedToFree($user, $this->getCurrentMembership($user) ? $this->getCurrentMembership($user)->package : null));
-
             Log::info("Enabled maintenance mode for user {$user->id} after package downgrade to free package");
         }
     }
@@ -687,19 +762,19 @@ class MembershipService
      */
     public function getMembershipStatus(User $user): array
     {
-        $currentMembership = $this->getCurrentMembership($user);
-        $package = $currentMembership ? Package::find($currentMembership->package_id) : null;
+        $state = $this->accessStateService->forUser($user);
+        $planType = data_get($state, 'subscription.plan.type');
 
         return [
-            'has_membership' => $currentMembership !== null,
-            'package_id' => $currentMembership ? $currentMembership->package_id : null,
-            'package_name' => $package ? $package->getDisplayTitle('ar') : null,
-            'package_term' => $package ? $package->term : null,
-            'is_free' => $this->hasFreePackage($user),
-            'is_trial' => $this->hasTrialPackage($user),
-            'is_paid' => $this->hasPaidPackage($user),
+            'has_membership' => data_get($state, 'subscription.plan.id') !== null,
+            'package_id' => data_get($state, 'subscription.plan.id'),
+            'package_name' => data_get($state, 'subscription.plan.title'),
+            'package_term' => $planType,
+            'is_free' => $planType === MembershipAccessStateService::PLAN_FREE,
+            'is_trial' => $planType === MembershipAccessStateService::PLAN_TRIAL,
+            'is_paid' => $planType === MembershipAccessStateService::PLAN_PAID,
             'can_control_maintenance' => $this->canControlMaintenanceMode($user),
-            'expires_at' => $currentMembership ? $currentMembership->expire_date : null,
+            'expires_at' => data_get($state, 'subscription.expires_at'),
             'days_until_expiry' => $this->getDaysUntilExpiry($user),
             'is_expiring_soon' => $this->isPackageExpiringSoon($user),
             'maintenance_mode_enabled' => $this->isMaintenanceModeEnabled($user),
@@ -728,6 +803,143 @@ class MembershipService
      */
     public function isFreePackage(int $packageId): bool
     {
-        return $packageId === self::FREE_PACKAGE_ID;
+        return $packageId === (int) config('membership.free_package_id', self::FREE_PACKAGE_ID);
+    }
+
+    private function resolveExpirationTransitionReason(?Membership $expiredMembership): ?string
+    {
+        if (!$expiredMembership) {
+            return null;
+        }
+
+        $package = $expiredMembership->package ?: Package::find($expiredMembership->package_id);
+        $previousPlanType = $this->accessStateService->classifyPackage($expiredMembership, $package);
+
+        if ($previousPlanType === MembershipAccessStateService::PLAN_TRIAL) {
+            return MembershipAccessStateService::TRANSITION_TRIAL_EXPIRED;
+        }
+
+        if ($previousPlanType === MembershipAccessStateService::PLAN_PAID) {
+            return MembershipAccessStateService::TRANSITION_PAID_EXPIRED;
+        }
+
+        Log::warning('Unexpected previous membership for expiration fallback', [
+            'membership_id' => $expiredMembership->id,
+            'user_id' => $expiredMembership->user_id,
+            'package_id' => $expiredMembership->package_id,
+            'classified_as' => $previousPlanType,
+        ]);
+
+        return null;
+    }
+
+    private function resolvePreviousMembershipId(int $userId, ?int $exceptId = null): ?int
+    {
+        $query = Membership::query()
+            ->where('user_id', $userId);
+
+        if ($exceptId !== null) {
+            $query->where('id', '!=', $exceptId);
+        }
+
+        $previousMembership = $query->orderByDesc('id')->first();
+
+        return $previousMembership ? (int) $previousMembership->id : null;
+    }
+
+    private function getLatestExpiredMembership(int $userId): ?Membership
+    {
+        return Membership::query()
+            ->with('package')
+            ->where('user_id', $userId)
+            ->where('status', 1)
+            ->whereDate('expire_date', '<', now()->toDateString())
+            ->orderByDesc('expire_date')
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    private function hasScheduledFutureMembership(int $userId): bool
+    {
+        return Membership::query()
+            ->where('user_id', $userId)
+            ->where('status', 1)
+            ->whereDate('start_date', '>', now()->toDateString())
+            ->exists();
+    }
+
+    private function getActiveFreeFallbackMembership(int $userId): ?Membership
+    {
+        return Membership::query()
+            ->with('package')
+            ->where('user_id', $userId)
+            ->where('package_id', self::FREE_PACKAGE_ID)
+            ->where('status', 1)
+            ->whereDate('start_date', '<=', now()->toDateString())
+            ->whereDate('expire_date', '>=', now()->toDateString())
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    private function getActiveExpirationFallbackMembership(int $userId): ?Membership
+    {
+        return Membership::query()
+            ->with('package')
+            ->where('user_id', $userId)
+            ->where('package_id', self::FREE_PACKAGE_ID)
+            ->where('status', 1)
+            ->whereDate('start_date', '<=', now()->toDateString())
+            ->whereDate('expire_date', '>=', now()->toDateString())
+            ->where('activation_source', 'expiration_fallback')
+            ->whereIn('transition_reason', [
+                MembershipAccessStateService::TRANSITION_TRIAL_EXPIRED,
+                MembershipAccessStateService::TRANSITION_PAID_EXPIRED,
+            ])
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    private function isRepairableExpirationFallback(?Membership $membership): bool
+    {
+        if (!$membership) {
+            return false;
+        }
+
+        return (int) $membership->package_id === self::FREE_PACKAGE_ID
+            && $membership->activation_source === 'expiration_fallback'
+            && in_array($membership->transition_reason, [
+                MembershipAccessStateService::TRANSITION_TRIAL_EXPIRED,
+                MembershipAccessStateService::TRANSITION_PAID_EXPIRED,
+            ], true);
+    }
+
+    private function resolveFallbackTransitionReason(?Membership $existingFallback, ?Membership $expiredMembership): ?string
+    {
+        if ($this->isRepairableExpirationFallback($existingFallback)) {
+            return $existingFallback->transition_reason;
+        }
+
+        return $this->resolveExpirationTransitionReason($expiredMembership);
+    }
+
+    protected function persistMaintenanceSetting(GeneralSetting $setting): void
+    {
+        $setting->save();
+    }
+
+    protected function persistExpirationUserMessage(User $user): void
+    {
+        $user->save();
+    }
+
+    private function isActiveMembership(Membership $membership): bool
+    {
+        $today = now()->toDateString();
+
+        return (int) $membership->status === 1
+            && $membership->start_date !== null
+            && $membership->expire_date !== null
+            && Carbon::parse($membership->start_date)->toDateString() <= $today
+            && Carbon::parse($membership->expire_date)->toDateString() >= $today;
     }
 }
