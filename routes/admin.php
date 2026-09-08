@@ -563,6 +563,8 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
     // Custom Domains
     Route::group(['middleware' => 'checkpermission:Custom Domains'], function () {
         Route::get('/domains', 'Admin\CustomDomainController@index')->name('custom-domain.index');
+        Route::get('/domain/setup-guide', 'Admin\CustomDomainController@setupGuide')
+            ->name('custom-domain.setup-guide');
         Route::get('/domain/{id}/diagnostics', 'Admin\CustomDomainController@diagnostics')
             ->whereNumber('id')
             ->name('custom-domain.diagnostics');

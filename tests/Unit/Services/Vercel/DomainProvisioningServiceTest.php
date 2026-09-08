@@ -305,6 +305,10 @@ class DomainProvisioningServiceTest extends TestCase
     public function external_dns_mode_can_be_active_without_vercel_nameservers(): void
     {
         $this->mockNameservers(ok: false);
+        config([
+            'services.vercel.external_dns.apex_record_value' => '192.0.2.25',
+            'services.vercel.external_dns.www_record_value' => 'customer.standard-dns.test',
+        ]);
 
         $state = [
             'account' => $this->accountBody('example.com', zone: false, verified: true, serviceType: 'external'),
@@ -334,6 +338,8 @@ class DomainProvisioningServiceTest extends TestCase
         $this->assertSame('active', $result['outcome']);
         $this->assertSame('linked', $result['health']);
         $this->assertSame('external_dns', $result['last_check']['dns_mode']);
+        $this->assertSame(['192.0.2.25'], $result['last_check']['recommended_ipv4']);
+        $this->assertSame(['customer.standard-dns.test'], $result['last_check']['recommended_cname']);
     }
 
     /** @test */

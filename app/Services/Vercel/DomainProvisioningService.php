@@ -492,8 +492,14 @@ class DomainProvisioningService
 
         $apexAttached = $projectDomain !== null || $apexInventory !== null;
         $apexVerified = $apexAttached && ! empty(($projectDomain ?? $apexInventory)['verified']);
-        $recommendedIpv4 = $this->normalizeRecommendationValues($domainConfig['recommendedIPv4'] ?? []);
-        $recommendedCname = $this->normalizeRecommendationValues($domainConfig['recommendedCNAME'] ?? []);
+        if ($dnsMode === ApiDomainSetting::DNS_MODE_EXTERNAL_DNS) {
+            $externalDns = ApiDomainSetting::externalDnsInstructions();
+            $recommendedIpv4 = $this->normalizeRecommendationValues([$externalDns['apex_record_value']]);
+            $recommendedCname = $this->normalizeRecommendationValues([$externalDns['www_record_value']]);
+        } else {
+            $recommendedIpv4 = $this->normalizeRecommendationValues($domainConfig['recommendedIPv4'] ?? []);
+            $recommendedCname = $this->normalizeRecommendationValues($domainConfig['recommendedCNAME'] ?? []);
+        }
         $dnsEvidence = $this->dnsRecordService->inspect($apex, $recommendedIpv4, $recommendedCname);
         $wwwCertificate = $this->client->findCoveringCertificate($www, $certificateInventory);
         $wwwSslReady = $wwwCertificate !== null && $this->client->isCertificateReady($wwwCertificate);

@@ -189,6 +189,15 @@ class CustomDomainController extends Controller
         ]);
     }
 
+    public function setupGuide()
+    {
+        return view('admin.domains.setup-guide', [
+            'nameserverInstructions' => ApiDomainSetting::nameserverInstructions(),
+            'dnsModeOptions' => ApiDomainSetting::dnsModeOptions(),
+            'externalDnsInstructions' => ApiDomainSetting::externalDnsInstructions(),
+        ]);
+    }
+
     public function updateDnsMode(Request $request)
     {
         $validated = $request->validate([

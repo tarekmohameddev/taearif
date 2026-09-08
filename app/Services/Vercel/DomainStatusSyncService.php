@@ -553,8 +553,14 @@ class DomainStatusSyncService
         string $apex,
         string $www
     ): array {
-        $normalizedIpv4 = $this->normalizeRecommendationValues($recommendedIpv4);
-        $normalizedCname = $this->normalizeRecommendationValues($recommendedCname);
+        if ($dnsMode === ApiDomainSetting::DNS_MODE_EXTERNAL_DNS) {
+            $externalDns = ApiDomainSetting::externalDnsInstructions();
+            $normalizedIpv4 = $this->normalizeRecommendationValues([$externalDns['apex_record_value']]);
+            $normalizedCname = $this->normalizeRecommendationValues([$externalDns['www_record_value']]);
+        } else {
+            $normalizedIpv4 = $this->normalizeRecommendationValues($recommendedIpv4);
+            $normalizedCname = $this->normalizeRecommendationValues($recommendedCname);
+        }
         $dnsEvidence = $this->dnsRecordService->inspect($apex, $normalizedIpv4, $normalizedCname);
         $certificateInventory = ['certificates' => []];
         $wwwCertificate = null;

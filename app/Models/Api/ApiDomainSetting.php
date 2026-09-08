@@ -118,6 +118,30 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
     }
 
     /**
+     * Standard website records for tenants who keep an external DNS provider.
+     *
+     * @return array{
+     *     apex_record_type: string,
+     *     apex_record_host: string,
+     *     apex_record_value: string,
+     *     www_record_type: string,
+     *     www_record_host: string,
+     *     www_record_value: string
+     * }
+     */
+    public static function externalDnsInstructions(): array
+    {
+        return [
+            'apex_record_type' => (string) config('services.vercel.external_dns.apex_record_type', 'A'),
+            'apex_record_host' => (string) config('services.vercel.external_dns.apex_record_host', '@'),
+            'apex_record_value' => (string) config('services.vercel.external_dns.apex_record_value', '76.76.21.21'),
+            'www_record_type' => (string) config('services.vercel.external_dns.www_record_type', 'CNAME'),
+            'www_record_host' => (string) config('services.vercel.external_dns.www_record_host', 'www'),
+            'www_record_value' => (string) config('services.vercel.external_dns.www_record_value', 'cname.vercel-dns.com'),
+        ];
+    }
+
+    /**
      * @deprecated Prefer nameserverInstructions(); kept for callers expecting a list shape.
      * @return array{mode: string, nameservers: list<string>, steps: list<string>}
      */
