@@ -3227,6 +3227,8 @@
     "Projects table might not exist": "Projects table might not exist",
     "domain_dns.mode_vercel_ns": "Vercel nameservers",
     "domain_dns.mode_external_dns": "External DNS",
+    "domain_dns.form_mode_vercel_ns": "Use Vercel nameservers",
+    "domain_dns.form_mode_external_dns": "Keep my current DNS",
     "domain_admin.dns_mode_updated": "DNS mode updated to :mode and a fresh sync was run.",
     "domain_diagnostics.selected_dns_mode": "Selected DNS mode",
     "domain_diagnostics.change_dns_mode": "Change mode + resync",

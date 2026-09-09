@@ -1779,6 +1779,8 @@
     "Projects table might not exist": "قد لا يكون جدول المشاريع موجوداً",
     "domain_dns.mode_vercel_ns": "خوادم أسماء Vercel",
     "domain_dns.mode_external_dns": "DNS خارجي",
+    "domain_dns.form_mode_vercel_ns": "استخدم خوادم أسماء Vercel",
+    "domain_dns.form_mode_external_dns": "أبقِ إعدادات DNS الحالية",
     "domain_admin.dns_mode_updated": "تم تحديث وضع DNS إلى :mode وتشغيل مزامنة جديدة.",
     "domain_diagnostics.selected_dns_mode": "وضع DNS المحدد",
     "domain_diagnostics.change_dns_mode": "تغيير الوضع + إعادة المزامنة",

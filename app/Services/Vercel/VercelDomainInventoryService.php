@@ -85,12 +85,8 @@ class VercelDomainInventoryService
                 if ($hasRedirect) {
                     $wwwRedirects++;
                     $expectedApex = substr($name, 4);
-                    $redirectTarget = strtolower((string) $domain['redirect']);
-                    $statusCode = isset($domain['redirectStatusCode']) ? (int) $domain['redirectStatusCode'] : null;
 
-                    if ($redirectTarget !== $expectedApex) {
-                        $mismatchedRedirects++;
-                    } elseif ($statusCode !== null && ! in_array($statusCode, [301, 308], true)) {
+                    if (! WwwRedirectPolicy::isCorrect($domain, $expectedApex)) {
                         $mismatchedRedirects++;
                     } elseif (! isset($apexNamesOnProject[$expectedApex])) {
                         $unpairedRedirects++;

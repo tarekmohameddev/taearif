@@ -6,6 +6,7 @@ namespace Tests\Feature\Api;
 
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User;
+use App\Events\TenantActivityOccurred;
 use App\Services\Vercel\DnsNameserverChecker;
 use App\Services\Vercel\DomainDnsRecordService;
 use App\Services\Vercel\VercelDomainCache;
@@ -13,6 +14,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
@@ -908,13 +910,19 @@ class DomainSettingsVercelTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonPath('dnsMode', ApiDomainSetting::DNS_MODE_EXTERNAL_DNS)
             ->assertJsonPath('dnsInstructions.mode', 'records')
-            ->assertJsonPath('dnsInstructions.message', __('domain_diagnostics.external_dns_notice'))
+            ->assertJsonMissingPath('dnsInstructions.message')
+            ->assertJsonMissingPath('dnsInstructions.nameservers')
             ->assertJsonPath('dnsInstructions.apex.host', '@')
             ->assertJsonPath('dnsInstructions.apex.records.0.type', 'A')
             ->assertJsonPath('dnsInstructions.apex.records.0.value', '76.76.21.21')
             ->assertJsonPath('dnsInstructions.www.host', 'www')
             ->assertJsonPath('dnsInstructions.www.records.0.type', 'CNAME')
             ->assertJsonPath('dnsInstructions.www.records.0.value', 'cname.vercel-dns.com');
+
+        $this->assertSame(
+            ['mode', 'apex', 'www'],
+            array_keys($response->json('dnsInstructions'))
+        );
     }
 
     public function test_tenant_delete_endpoint_is_not_available(): void
@@ -999,11 +1007,17 @@ class DomainSettingsVercelTest extends TestCase
             ->assertJsonPath('domains.1.custom_name', 'records.example.com')
             ->assertJsonPath('domains.1.dnsMode', ApiDomainSetting::DNS_MODE_EXTERNAL_DNS)
             ->assertJsonPath('domains.1.dnsInstructions.mode', 'records')
-            ->assertJsonPath('domains.1.dnsInstructions.message', __('domain_diagnostics.external_dns_notice'))
+            ->assertJsonMissingPath('domains.1.dnsInstructions.message')
+            ->assertJsonMissingPath('domains.1.dnsInstructions.nameservers')
             ->assertJsonPath('domains.1.dnsInstructions.apex.records.0.type', 'A')
             ->assertJsonPath('domains.1.dnsInstructions.apex.records.0.value', '76.76.21.21')
             ->assertJsonPath('domains.1.dnsInstructions.www.records.0.type', 'CNAME')
             ->assertJsonPath('domains.1.dnsInstructions.www.records.0.value', 'cname.vercel-dns.com');
+
+        $this->assertSame(
+            ['mode', 'apex', 'www'],
+            array_keys($response->json('domains.1.dnsInstructions'))
+        );
     }
 
     public function test_show_returns_nameserver_instructions_for_vercel_ns_mode(): void
@@ -1052,15 +1066,39 @@ class DomainSettingsVercelTest extends TestCase
             ],
         ]);
 
-        $this->getJson('/api/settings/domain/' . $domain->id)
-            ->assertOk()
+        $response = $this->getJson('/api/settings/domain/' . $domain->id);
+        $response->assertOk()
             ->assertJsonPath('dnsMode', ApiDomainSetting::DNS_MODE_EXTERNAL_DNS)
             ->assertJsonPath('dnsInstructions.mode', 'records')
-            ->assertJsonPath('dnsInstructions.message', __('domain_diagnostics.external_dns_notice'))
+            ->assertJsonMissingPath('dnsInstructions.message')
+            ->assertJsonMissingPath('dnsInstructions.nameservers')
             ->assertJsonPath('dnsInstructions.apex.records.0.type', 'A')
             ->assertJsonPath('dnsInstructions.apex.records.0.value', '76.76.21.21')
             ->assertJsonPath('dnsInstructions.www.records.0.type', 'CNAME')
             ->assertJsonPath('dnsInstructions.www.records.0.value', 'cname.vercel-dns.com');
+
+        $this->assertSame(
+            ['mode', 'apex', 'www'],
+            array_keys($response->json('dnsInstructions'))
+        );
+        $this->assertSame(
+            [
+                'mode' => 'records',
+                'apex' => [
+                    'host' => '@',
+                    'records' => [
+                        ['type' => 'A', 'name' => '@', 'value' => '76.76.21.21'],
+                    ],
+                ],
+                'www' => [
+                    'host' => 'www',
+                    'records' => [
+                        ['type' => 'CNAME', 'name' => 'www', 'value' => 'cname.vercel-dns.com'],
+                    ],
+                ],
+            ],
+            $response->json('dnsInstructions')
+        );
     }
 
     public function test_sync_command_activates_pending_when_ready(): void
@@ -1620,5 +1658,1143 @@ class DomainSettingsVercelTest extends TestCase
         $this->assertSame(ApiDomainSetting::DNS_MODE_EXTERNAL_DNS, $lastCheck['dns_mode'] ?? null);
         $this->assertSame('linked', $lastCheck['health_code'] ?? null);
         $this->assertSame(0, $lastCheck['consecutive_failures'] ?? -1);
+    }
+
+    public function test_store_defaults_dns_mode_to_vercel_ns_when_omitted(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(false);
+        $tenant = $this->actingTenant();
+        $this->fakeVercelStoreFlow('default-mode.example.com');
+
+        $response = $this->postJson('/api/settings/domain', [
+            'custom_name' => 'default-mode.example.com',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('dnsMode', ApiDomainSetting::DNS_MODE_VERCEL_NS)
+            ->assertJsonPath('data.dnsMode', ApiDomainSetting::DNS_MODE_VERCEL_NS)
+            ->assertJsonPath('data.www.status', 'not_enabled');
+
+        $this->assertDatabaseHas('api_domains_settings', [
+            'user_id' => $tenant->id,
+            'custom_name' => 'default-mode.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+        ]);
+    }
+
+    public function test_store_persists_explicit_vercel_ns_and_external_dns_modes(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(false);
+        $tenant = $this->actingTenant();
+
+        $this->fakeVercelStoreFlow('ns-mode.example.com');
+        $nsResponse = $this->postJson('/api/settings/domain', [
+            'custom_name' => 'ns-mode.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+        ]);
+        $nsResponse->assertCreated()
+            ->assertJsonPath('dnsMode', ApiDomainSetting::DNS_MODE_VERCEL_NS)
+            ->assertJsonPath('data.dnsMode', ApiDomainSetting::DNS_MODE_VERCEL_NS)
+            ->assertJsonPath('dnsInstructions.mode', 'nameservers');
+
+        $this->fakeVercelStoreFlow('ext-mode.example.com');
+        $extResponse = $this->postJson('/api/settings/domain', [
+            'custom_name' => 'ext-mode.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+        ]);
+        $extResponse->assertCreated()
+            ->assertJsonPath('dnsMode', ApiDomainSetting::DNS_MODE_EXTERNAL_DNS)
+            ->assertJsonPath('data.dnsMode', ApiDomainSetting::DNS_MODE_EXTERNAL_DNS)
+            ->assertJsonPath('dnsInstructions.mode', 'records')
+            ->assertJsonPath('dnsInstructions.apex.records.0.type', 'A')
+            ->assertJsonPath('dnsInstructions.apex.records.0.value', '76.76.21.21')
+            ->assertJsonCount(1, 'dnsInstructions.apex.records')
+            ->assertJsonPath('dnsInstructions.www.records.0.type', 'CNAME')
+            ->assertJsonCount(1, 'dnsInstructions.www.records');
+
+        $this->assertDatabaseHas('api_domains_settings', [
+            'user_id' => $tenant->id,
+            'custom_name' => 'ns-mode.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+        ]);
+        $this->assertDatabaseHas('api_domains_settings', [
+            'user_id' => $tenant->id,
+            'custom_name' => 'ext-mode.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+        ]);
+    }
+
+    public function test_store_rejects_invalid_dns_mode_values(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->actingTenant();
+
+        foreach ([null, 'unknown', ['vercel_ns']] as $invalid) {
+            $response = $this->postJson('/api/settings/domain', [
+                'custom_name' => 'invalid-mode.example.com',
+                'dns_mode' => $invalid,
+            ]);
+
+            $response->assertStatus(422)
+                ->assertJsonPath('success', false);
+        }
+    }
+
+    public function test_store_without_auto_attach_preserves_selected_dns_mode(): void
+    {
+        $this->skipIfMissingSchema();
+        config([
+            'services.vercel.token' => null,
+            'services.vercel.project_id' => null,
+            'services.vercel.auto_attach_custom_domain' => false,
+            'services.vercel.check_nameservers' => true,
+            'services.vercel.nameservers' => [
+                'ns1.vercel-dns.com',
+                'ns2.vercel-dns.com',
+            ],
+            'services.vercel.external_dns' => [
+                'apex_record_type' => 'A',
+                'apex_record_host' => '@',
+                'apex_record_value' => '76.76.21.21',
+                'www_record_type' => 'CNAME',
+                'www_record_host' => 'www',
+                'www_record_value' => 'cname.vercel-dns.com',
+            ],
+        ]);
+        $this->mockNameservers(false);
+        $tenant = $this->actingTenant();
+        Http::fake();
+
+        $response = $this->postJson('/api/settings/domain', [
+            'custom_name' => 'local-ext.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('dnsMode', ApiDomainSetting::DNS_MODE_EXTERNAL_DNS)
+            ->assertJsonPath('data.dnsMode', ApiDomainSetting::DNS_MODE_EXTERNAL_DNS);
+
+        $this->assertDatabaseHas('api_domains_settings', [
+            'user_id' => $tenant->id,
+            'custom_name' => 'local-ext.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+        ]);
+    }
+
+    public function test_store_external_dns_attaches_project_domain_only(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(false);
+        $this->actingTenant();
+        $this->fakeVercelStoreFlow('project-only.example.com');
+
+        $response = $this->postJson('/api/settings/domain', [
+            'custom_name' => 'project-only.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('dnsMode', ApiDomainSetting::DNS_MODE_EXTERNAL_DNS);
+
+        $recorded = Http::recorded();
+        $accountDomainPosts = collect($recorded)->filter(function (array $pair): bool {
+            /** @var \Illuminate\Http\Client\Request $request */
+            $request = $pair[0];
+
+            return $request->method() === 'POST'
+                && str_contains($request->url(), '/v7/domains')
+                && ! str_contains($request->url(), '/projects/');
+        });
+        $zonePatches = collect($recorded)->filter(function (array $pair): bool {
+            /** @var \Illuminate\Http\Client\Request $request */
+            $request = $pair[0];
+
+            return $request->method() === 'PATCH'
+                && preg_match('#/v3/domains/#', $request->url()) === 1;
+        });
+        $projectAttaches = collect($recorded)->filter(function (array $pair): bool {
+            /** @var \Illuminate\Http\Client\Request $request */
+            $request = $pair[0];
+
+            return $request->method() === 'POST'
+                && str_contains($request->url(), '/v10/projects/')
+                && str_contains($request->url(), '/domains')
+                && ! str_contains($request->url(), '/verify');
+        });
+
+        $this->assertCount(0, $accountDomainPosts);
+        $this->assertCount(0, $zonePatches);
+        $this->assertGreaterThanOrEqual(1, $projectAttaches->count());
+    }
+
+    public function test_store_provider_error_pending_retains_dns_mode(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(false);
+        $tenant = $this->actingTenant();
+
+        Http::fake(function (\Illuminate\Http\Client\Request $request) {
+            $url = $request->url();
+            $method = $request->method();
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test') && ! str_contains($url, '/domains')) {
+                return Http::response([
+                    'id' => 'prj_test',
+                    'accountId' => 'team_test',
+                    'name' => 'test-project',
+                ], 200);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test/domains') && ! str_contains($url, '/domains/')) {
+                return Http::response([
+                    'domains' => [],
+                    'pagination' => ['count' => 0, 'next' => null],
+                ], 200);
+            }
+
+            if ($method === 'POST' && str_contains($url, '/v10/projects/') && str_contains($url, '/domains')) {
+                throw new ConnectionException('Connection timed out');
+            }
+
+            return Http::response(['error' => 'unexpected'], 500);
+        });
+
+        $response = $this->postJson('/api/settings/domain', [
+            'custom_name' => 'timeout-ext.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('dnsMode', ApiDomainSetting::DNS_MODE_EXTERNAL_DNS);
+
+        $this->assertDatabaseHas('api_domains_settings', [
+            'user_id' => $tenant->id,
+            'custom_name' => 'timeout-ext.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+            'status' => 'pending',
+        ]);
+    }
+
+    public function test_external_instructions_use_config_fallback_and_keep_ownership_separate(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'fallback-ext.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+            'status' => 'pending',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+            'dns_records' => [
+                'last_check' => [
+                    'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+                    'ownership_challenge' => [
+                        'type' => 'txt',
+                        'domain' => '_vercel',
+                        'value' => 'vc-domain-verify=abc',
+                    ],
+                    'recommended_ipv4' => [],
+                    'recommended_cname' => [],
+                ],
+            ],
+        ]);
+
+        $response = $this->getJson('/api/settings/domain/' . $domain->id);
+
+        $response->assertOk()
+            ->assertJsonPath('dnsMode', ApiDomainSetting::DNS_MODE_EXTERNAL_DNS)
+            ->assertJsonPath('dnsInstructions.mode', 'records')
+            ->assertJsonCount(1, 'dnsInstructions.apex.records')
+            ->assertJsonPath('dnsInstructions.apex.records.0.type', 'A')
+            ->assertJsonPath('dnsInstructions.apex.records.0.value', '76.76.21.21')
+            ->assertJsonCount(1, 'dnsInstructions.www.records')
+            ->assertJsonPath('dnsInstructions.www.records.0.type', 'CNAME')
+            ->assertJsonPath('dnsInstructions.www.records.0.value', 'cname.vercel-dns.com')
+            ->assertJsonMissingPath('dnsInstructions.nameservers')
+            ->assertJsonMissingPath('dnsInstructions.message')
+            ->assertJsonPath('dnsInstructions.ownership.required', true)
+            ->assertJsonPath('dnsInstructions.ownership.record.type', 'TXT')
+            ->assertJsonPath('dnsInstructions.ownership.record.name', '_vercel')
+            ->assertJsonPath('dnsInstructions.ownership.record.value', 'vc-domain-verify=abc')
+            ->assertJsonPath('www.hostname', 'www.fallback-ext.example.com')
+            ->assertJsonPath('www.status', 'not_enabled');
+
+        $this->assertSame(
+            ['mode', 'apex', 'www', 'ownership'],
+            array_keys($response->json('dnsInstructions'))
+        );
+        $this->assertSame(
+            [
+                'mode' => 'records',
+                'apex' => [
+                    'host' => '@',
+                    'records' => [
+                        ['type' => 'A', 'name' => '@', 'value' => '76.76.21.21'],
+                    ],
+                ],
+                'www' => [
+                    'host' => 'www',
+                    'records' => [
+                        ['type' => 'CNAME', 'name' => 'www', 'value' => 'cname.vercel-dns.com'],
+                    ],
+                ],
+                'ownership' => [
+                    'required' => true,
+                    'record' => [
+                        'type' => 'TXT',
+                        'name' => '_vercel',
+                        'value' => 'vc-domain-verify=abc',
+                    ],
+                ],
+            ],
+            $response->json('dnsInstructions')
+        );
+    }
+
+    public function test_external_instructions_ignore_stale_last_check_recommended_records(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        config([
+            'services.vercel.external_dns' => [
+                'apex_record_type' => 'A',
+                'apex_record_host' => '@',
+                'apex_record_value' => '203.0.113.50',
+                'www_record_type' => 'CNAME',
+                'www_record_host' => 'www',
+                'www_record_value' => 'platform-standard.cname.test',
+            ],
+        ]);
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'stale-recs.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+            'status' => 'pending',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+            'dns_records' => [
+                'last_check' => [
+                    'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+                    'recommended_ipv4' => ['198.51.100.99'],
+                    'recommended_cname' => ['stale-override.cname.test'],
+                    'ownership_challenge' => [
+                        'type' => 'txt',
+                        'domain' => '_vercel.stale-recs.example.com',
+                        'value' => 'vc-domain-verify=stale-recs',
+                    ],
+                ],
+            ],
+        ]);
+
+        $standard = ApiDomainSetting::externalDnsInstructions();
+
+        $response = $this->getJson('/api/settings/domain/' . $domain->id);
+
+        $response->assertOk()
+            ->assertJsonPath('dnsMode', ApiDomainSetting::DNS_MODE_EXTERNAL_DNS)
+            ->assertJsonPath('dnsInstructions.mode', 'records')
+            ->assertJsonPath('dnsInstructions.apex.records.0.type', $standard['apex_record_type'])
+            ->assertJsonPath('dnsInstructions.apex.records.0.value', $standard['apex_record_value'])
+            ->assertJsonPath('dnsInstructions.www.records.0.type', $standard['www_record_type'])
+            ->assertJsonPath('dnsInstructions.www.records.0.value', $standard['www_record_value'])
+            ->assertJsonPath('dnsInstructions.ownership.required', true)
+            ->assertJsonPath('dnsInstructions.ownership.record.name', '_vercel.stale-recs.example.com')
+            ->assertJsonPath('dnsInstructions.ownership.record.value', 'vc-domain-verify=stale-recs');
+
+        $this->assertSame('203.0.113.50', $response->json('dnsInstructions.apex.records.0.value'));
+        $this->assertSame('platform-standard.cname.test', $response->json('dnsInstructions.www.records.0.value'));
+        $this->assertNotSame('198.51.100.99', $response->json('dnsInstructions.apex.records.0.value'));
+        $this->assertNotSame('stale-override.cname.test', $response->json('dnsInstructions.www.records.0.value'));
+    }
+
+    public function test_external_instructions_omit_blank_or_malformed_ownership(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'blank-own.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+            'status' => 'pending',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+            'dns_records' => [
+                'last_check' => [
+                    'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+                    'ownership_challenge' => [
+                        'type' => 'txt',
+                        'domain' => '',
+                        'value' => '   ',
+                    ],
+                ],
+            ],
+        ]);
+
+        $response = $this->getJson('/api/settings/domain/' . $domain->id);
+        $response->assertOk()
+            ->assertJsonMissingPath('dnsInstructions.ownership');
+
+        $this->assertSame(
+            [
+                'mode' => 'records',
+                'apex' => [
+                    'host' => '@',
+                    'records' => [
+                        ['type' => 'A', 'name' => '@', 'value' => '76.76.21.21'],
+                    ],
+                ],
+                'www' => [
+                    'host' => 'www',
+                    'records' => [
+                        ['type' => 'CNAME', 'name' => 'www', 'value' => 'cname.vercel-dns.com'],
+                    ],
+                ],
+            ],
+            $response->json('dnsInstructions')
+        );
+    }
+
+    public function test_index_includes_available_dns_modes_and_www_payload(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $tenant = $this->actingTenant();
+
+        ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'listed.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+            'status' => 'pending',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+        ]);
+
+        $response = $this->getJson('/api/settings/domain');
+
+        $response->assertOk()
+            ->assertJsonPath('availableDnsModes.0.value', ApiDomainSetting::DNS_MODE_VERCEL_NS)
+            ->assertJsonPath('availableDnsModes.0.label', __('domain_dns.form_mode_vercel_ns'))
+            ->assertJsonPath('availableDnsModes.0.instructions.mode', 'nameservers')
+            ->assertJsonPath('availableDnsModes.1.value', ApiDomainSetting::DNS_MODE_EXTERNAL_DNS)
+            ->assertJsonPath('availableDnsModes.1.label', __('domain_dns.form_mode_external_dns'))
+            ->assertJsonPath('availableDnsModes.1.instructions.mode', 'records')
+            ->assertJsonPath('availableDnsModes.1.instructions.apex.type', 'A')
+            ->assertJsonPath('availableDnsModes.1.instructions.www.type', 'CNAME')
+            ->assertJsonPath('domains.0.www.hostname', 'www.listed.example.com')
+            ->assertJsonPath('domains.0.www.status', 'unknown');
+    }
+
+    public function test_enable_www_for_own_domain_is_idempotent_and_rejects_wrong_redirect(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(true);
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'www-enable.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => true,
+            'added_date' => now(),
+            'dns_records' => [
+                'last_check' => [
+                    'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+                    'www_present' => false,
+                    'www_redirect_correct' => false,
+                ],
+            ],
+        ]);
+
+        $attached = [
+            'www-enable.example.com' => [
+                'name' => 'www-enable.example.com',
+                'verified' => true,
+            ],
+        ];
+
+        Http::fake(function (\Illuminate\Http\Client\Request $request) use (&$attached) {
+            $url = $request->url();
+            $method = $request->method();
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test') && ! str_contains($url, '/domains')) {
+                return Http::response([
+                    'id' => 'prj_test',
+                    'accountId' => 'team_test',
+                    'name' => 'test-project',
+                ], 200);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test/domains') && ! str_contains($url, '/domains/')) {
+                return Http::response([
+                    'domains' => array_values($attached),
+                    'pagination' => ['count' => count($attached), 'next' => null],
+                ], 200);
+            }
+
+            if ($method === 'POST' && str_contains($url, '/v10/projects/') && str_contains($url, '/domains') && ! str_contains($url, '/verify')) {
+                $name = strtolower((string) ($request->data()['name'] ?? ''));
+                $attached[$name] = [
+                    'name' => $name,
+                    'verified' => true,
+                    'redirect' => (string) ($request->data()['redirect'] ?? ''),
+                    'redirectStatusCode' => (int) ($request->data()['redirectStatusCode'] ?? 301),
+                ];
+
+                return Http::response($attached[$name], 200);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v6/domains/') && str_contains($url, '/config')) {
+                return Http::response(['misconfigured' => false], 200);
+            }
+
+            if ($method === 'GET' && preg_match('#/v(?:5|7)/domains/([^/?]+)#', $url, $matches) && ! str_contains($url, '/config')) {
+                return Http::response([
+                    'name' => strtolower(rawurldecode($matches[1])),
+                    'zone' => false,
+                    'verified' => true,
+                ], 200);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v8/certs')) {
+                return Http::response([
+                    'certs' => [[
+                        'id' => 'cert_www',
+                        'cns' => ['www-enable.example.com', 'www.www-enable.example.com'],
+                        'expiresAt' => ((int) (microtime(true) * 1000)) + (90 * 86400 * 1000),
+                        'autoRenew' => true,
+                    ]],
+                    'pagination' => ['next' => null],
+                ], 200);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/domains/')) {
+                $name = 'www-enable.example.com';
+                if (preg_match('#/domains/([^/?]+)#', $url, $matches)) {
+                    $name = strtolower(rawurldecode($matches[1]));
+                }
+
+                return Http::response([
+                    'name' => $name,
+                    'verified' => true,
+                    'verification' => [],
+                    'redirect' => $attached[$name]['redirect'] ?? null,
+                    'redirectStatusCode' => $attached[$name]['redirectStatusCode'] ?? null,
+                ], 200);
+            }
+
+            return Http::response(['error' => 'unexpected'], 500);
+        });
+
+        $enabled = $this->postJson('/api/settings/domain/www/enable', ['id' => $domain->id]);
+        $enabled->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.hostname', 'www.www-enable.example.com')
+            ->assertJsonPath('data.redirectTarget', 'www-enable.example.com')
+            ->assertJsonPath('data.redirectStatusCode', 301)
+            ->assertJsonPath('data.alreadyEnabled', false)
+            ->assertJsonPath('dnsMode', ApiDomainSetting::DNS_MODE_EXTERNAL_DNS)
+            ->assertJsonPath('dnsInstructions.mode', 'records');
+
+        $again = $this->postJson('/api/settings/domain/www/enable', ['id' => $domain->id]);
+        $again->assertOk()
+            ->assertJsonPath('data.alreadyEnabled', true);
+
+        $attached['www.www-enable.example.com'] = [
+            'name' => 'www.www-enable.example.com',
+            'verified' => true,
+            'redirect' => 'other.example.com',
+            'redirectStatusCode' => 301,
+        ];
+        Cache::flush();
+
+        $mismatch = $this->postJson('/api/settings/domain/www/enable', ['id' => $domain->id]);
+        $mismatch->assertStatus(409)
+            ->assertJsonPath('code', 'WWW_REDIRECT_MISMATCH');
+    }
+
+    public function test_enable_www_rejects_other_tenant_and_missing_apex(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(true);
+        $tenant = $this->actingTenant();
+        $other = User::factory()->tenant()->create([
+            'email' => 'other-domain-' . uniqid('', true) . '@example.com',
+        ]);
+
+        $foreign = ApiDomainSetting::create([
+            'user_id' => $other->id,
+            'custom_name' => 'foreign.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => true,
+            'added_date' => now(),
+        ]);
+
+        $this->postJson('/api/settings/domain/www/enable', ['id' => $foreign->id])
+            ->assertNotFound();
+
+        $missingApex = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'missing-apex.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+            'status' => 'pending',
+            'primary' => false,
+            'ssl' => false,
+            'added_date' => now(),
+        ]);
+
+        Http::fake(function (\Illuminate\Http\Client\Request $request) {
+            $url = $request->url();
+            $method = $request->method();
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test') && ! str_contains($url, '/domains')) {
+                return Http::response([
+                    'id' => 'prj_test',
+                    'accountId' => 'team_test',
+                    'name' => 'test-project',
+                ], 200);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test/domains') && ! str_contains($url, '/domains/')) {
+                return Http::response([
+                    'domains' => [],
+                    'pagination' => ['count' => 0, 'next' => null],
+                ], 200);
+            }
+
+            return Http::response(['error' => 'unexpected'], 500);
+        });
+
+        $this->postJson('/api/settings/domain/www/enable', ['id' => $missingApex->id])
+            ->assertStatus(422)
+            ->assertJsonPath('code', 'APEX_NOT_ATTACHED');
+    }
+
+    public function test_enable_www_fails_closed_on_unreliable_inventory(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(true);
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'unreliable.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => true,
+            'added_date' => now(),
+        ]);
+
+        Http::fake(function (\Illuminate\Http\Client\Request $request) {
+            $url = $request->url();
+            $method = $request->method();
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test') && ! str_contains($url, '/domains')) {
+                return Http::response([
+                    'id' => 'prj_test',
+                    'accountId' => 'team_test',
+                    'name' => 'test-project',
+                ], 200);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test/domains') && ! str_contains($url, '/domains/')) {
+                return Http::response([
+                    'domains' => [[
+                        'name' => 'unreliable.example.com',
+                        'verified' => true,
+                    ]],
+                    'pagination' => ['count' => 1, 'next' => 'cursor'],
+                ], 200);
+            }
+
+            return Http::response(['error' => 'unexpected'], 500);
+        });
+
+        $this->postJson('/api/settings/domain/www/enable', ['id' => $domain->id])
+            ->assertStatus(503)
+            ->assertJsonPath('code', 'HOSTING_PROVIDER_UNAVAILABLE');
+    }
+
+    public function test_enable_www_returns_capacity_error_when_no_free_slot(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        config(['services.vercel.max_project_domains' => 1]);
+        $this->mockNameservers(true);
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'capacity.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => true,
+            'added_date' => now(),
+        ]);
+
+        Http::fake(function (\Illuminate\Http\Client\Request $request) {
+            $url = $request->url();
+            $method = $request->method();
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test') && ! str_contains($url, '/domains')) {
+                return Http::response([
+                    'id' => 'prj_test',
+                    'accountId' => 'team_test',
+                    'name' => 'test-project',
+                ], 200);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test/domains') && ! str_contains($url, '/domains/')) {
+                return Http::response([
+                    'domains' => [[
+                        'name' => 'capacity.example.com',
+                        'verified' => true,
+                    ]],
+                    'pagination' => ['count' => 1, 'next' => null],
+                ], 200);
+            }
+
+            return Http::response(['error' => 'unexpected'], 500);
+        });
+
+        $this->postJson('/api/settings/domain/www/enable', ['id' => $domain->id])
+            ->assertStatus(503)
+            ->assertJsonPath('code', 'HOSTING_CAPACITY_REACHED');
+    }
+
+    public function test_enable_www_requires_auth_and_valid_id(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $this->postJson('/api/settings/domain/www/enable', ['id' => 1])
+            ->assertUnauthorized();
+
+        $this->configureVercel();
+        $this->actingTenant();
+
+        $this->postJson('/api/settings/domain/www/enable', [])
+            ->assertStatus(422);
+    }
+
+    public function test_enable_www_emits_activity_before_and_after_on_new_enable(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(true);
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'www-activity.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => true,
+            'added_date' => now(),
+        ]);
+
+        Event::fake([TenantActivityOccurred::class]);
+        $this->fakeWwwEnableInventory('www-activity.example.com');
+
+        $this->postJson('/api/settings/domain/www/enable', ['id' => $domain->id])
+            ->assertOk()
+            ->assertJsonPath('data.alreadyEnabled', false);
+
+        Event::assertDispatched(TenantActivityOccurred::class, function (TenantActivityOccurred $event) use ($domain, $tenant) {
+            return $event->action === 'domain.www_enabled'
+                && (int) $event->tenantId === (int) $tenant->id
+                && (int) $event->targetId === (int) $domain->id
+                && is_array($event->oldValues)
+                && ($event->oldValues['custom_name'] ?? null) === 'www-activity.example.com'
+                && ($event->oldValues['status'] ?? null) === 'active'
+                && is_array($event->newValues)
+                && ($event->newValues['custom_name'] ?? null) === 'www-activity.example.com'
+                && ($event->newValues['www'] ?? null) === 'www.www-activity.example.com';
+        });
+    }
+
+    public function test_enable_www_invalidates_cache_and_refreshes_inventory(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(true);
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'www-cache.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => true,
+            'added_date' => now(),
+        ]);
+
+        $cache = app(VercelDomainCache::class);
+        $this->fakeWwwEnableInventory('www-cache.example.com');
+        $cache->fresh();
+        $this->assertNotNull(Cache::get($cache->inventoryKey()));
+        Cache::put('admin.domain_health_counts', ['x' => 1], 300);
+
+        $this->postJson('/api/settings/domain/www/enable', ['id' => $domain->id])
+            ->assertOk();
+
+        // Mutation invalidates, then refreshDomainState()->fresh() repopulates inventory.
+        $this->assertNotNull(Cache::get($cache->inventoryKey()));
+        $this->assertNull(Cache::get('admin.domain_health_counts'));
+        $snapshot = Cache::get($cache->inventoryKey());
+        $this->assertContains('www.www-cache.example.com', $snapshot['names'] ?? []);
+    }
+
+    public function test_enable_www_persists_synced_www_state(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(true);
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'www-sync.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => true,
+            'added_date' => now(),
+            'dns_records' => [
+                'last_check' => [
+                    'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+                    'www_present' => false,
+                    'www_redirect_correct' => false,
+                ],
+            ],
+        ]);
+
+        $this->fakeWwwEnableInventory('www-sync.example.com');
+
+        $response = $this->postJson('/api/settings/domain/www/enable', ['id' => $domain->id]);
+        $response->assertOk()
+            ->assertJsonPath('data.www.present', true)
+            ->assertJsonPath('data.www.redirectCorrect', true)
+            ->assertJsonPath('data.redirectStatusCode', 301);
+
+        $domain->refresh();
+        $lastCheck = $domain->dns_records['last_check'] ?? [];
+        $this->assertTrue((bool) ($lastCheck['www_present'] ?? false));
+        $this->assertTrue((bool) ($lastCheck['www_redirect_correct'] ?? false));
+    }
+
+    public function test_enable_www_returns_nameserver_instructions_for_vercel_ns(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(true);
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'www-ns.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => true,
+            'added_date' => now(),
+        ]);
+
+        $this->fakeWwwEnableInventory('www-ns.example.com');
+
+        $this->postJson('/api/settings/domain/www/enable', ['id' => $domain->id])
+            ->assertOk()
+            ->assertJsonPath('dnsMode', ApiDomainSetting::DNS_MODE_VERCEL_NS)
+            ->assertJsonPath('dnsInstructions.mode', 'nameservers')
+            ->assertJsonPath('dnsInstructions.nameservers.0', 'ns1.vercel-dns.com');
+    }
+
+    public function test_enable_www_permission_denied_for_employee_without_settings_update(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+
+        $tenant = User::factory()->tenant()->create([
+            'email' => 'www-perm-tenant-' . uniqid('', true) . '@example.com',
+        ]);
+        $employee = User::factory()->create([
+            'account_type' => 'employee',
+            'tenant_id' => $tenant->id,
+            'email' => 'www-perm-emp-' . uniqid('', true) . '@example.com',
+        ]);
+
+        Sanctum::actingAs($employee);
+
+        $this->postJson('/api/settings/domain/www/enable', ['id' => 1])
+            ->assertForbidden();
+    }
+
+    public function test_enable_www_is_throttled(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->actingTenant();
+
+        Http::fake();
+
+        $sawTooMany = false;
+        for ($i = 0; $i < 11; $i++) {
+            $status = $this->postJson('/api/settings/domain/www/enable', ['id' => 999999])->status();
+            if ($status === 429) {
+                $sawTooMany = true;
+                break;
+            }
+        }
+
+        $this->assertTrue($sawTooMany, 'Expected throttle:10,1 to return 429 after repeated www/enable calls');
+    }
+
+    public function test_enable_www_posts_exact_301_payload_to_vercel(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(true);
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'www-301.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => true,
+            'added_date' => now(),
+        ]);
+
+        $this->fakeWwwEnableInventory('www-301.example.com');
+
+        $response = $this->postJson('/api/settings/domain/www/enable', ['id' => $domain->id]);
+        $response->assertOk()
+            ->assertJsonPath('data.redirectTarget', 'www-301.example.com')
+            ->assertJsonPath('data.redirectStatusCode', 301)
+            ->assertJsonPath('data.hostname', 'www.www-301.example.com');
+
+        Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+            if ($request->method() !== 'POST' || ! str_contains($request->url(), '/v10/projects/')) {
+                return false;
+            }
+            if (! str_contains($request->url(), '/domains') || str_contains($request->url(), '/verify')) {
+                return false;
+            }
+
+            $data = $request->data();
+
+            return ($data['name'] ?? null) === 'www.www-301.example.com'
+                && ($data['redirect'] ?? null) === 'www-301.example.com'
+                && (int) ($data['redirectStatusCode'] ?? 0) === 301;
+        });
+    }
+
+    public function test_enable_www_conflicts_on_308_and_missing_redirect_status(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(true);
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'www-conflict.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => true,
+            'added_date' => now(),
+        ]);
+
+        $cases = [
+            ['redirectStatusCode' => 308],
+            ['redirectStatusCode' => null],
+            [], // missing/unknown status key
+        ];
+
+        foreach ($cases as $statusFields) {
+            Cache::flush();
+            $this->fakeWwwEnableInventory(
+                'www-conflict.example.com',
+                preAttachedWww: array_merge([
+                    'name' => 'www.www-conflict.example.com',
+                    'verified' => true,
+                    'redirect' => 'www-conflict.example.com',
+                ], $statusFields)
+            );
+
+            $response = $this->postJson('/api/settings/domain/www/enable', ['id' => $domain->id]);
+            $response->assertStatus(409)
+                ->assertJsonPath('code', 'WWW_REDIRECT_MISMATCH')
+                ->assertJsonMissingPath('data.redirectStatusCode');
+
+            Http::assertNotSent(function (\Illuminate\Http\Client\Request $request): bool {
+                return in_array($request->method(), ['POST', 'PATCH', 'PUT', 'DELETE'], true);
+            });
+        }
+    }
+
+    public function test_domain_openapi_docs_are_durable_via_generator_source(): void
+    {
+        $generator = file_get_contents(app_path('Console/Commands/GenerateSwaggerApiPathsCommand.php'));
+        $this->assertNotFalse($generator);
+        $this->assertStringContainsString('availableDnsModes', $generator);
+        $this->assertStringContainsString('POST /settings/domain/www/enable', $generator);
+        $this->assertStringContainsString('optional dns_mode defaults to vercel_ns', $generator);
+        $this->assertStringContainsString('redirectStatusCode', $generator);
+        $this->assertStringContainsString('Existing www redirect mismatch', $generator);
+        $this->assertDoesNotMatchRegularExpression(
+            "/'(GET|POST|PATCH|PUT|DELETE) \\/settings\\/domain\\/(request-ssl|ssl-status)'/",
+            $generator
+        );
+
+        $doc = file_get_contents(app_path('Http/Controllers/Api/GeneratedApiPathsDoc.php'));
+        $this->assertNotFalse($doc);
+        $this->assertStringContainsString('path="/settings/domain/www/enable"', $doc);
+        $this->assertStringContainsString('availableDnsModes', $doc);
+        $this->assertStringContainsString('dns_mode', $doc);
+        $this->assertStringContainsString('redirectStatusCode', $doc);
+        $this->assertStringNotContainsString('path="/settings/domain/request-ssl"', $doc);
+        $this->assertStringNotContainsString('path="/settings/domain/ssl-status"', $doc);
+        $this->assertStringNotContainsString('operationId="delete_settings_domain_id', $doc);
+        $this->assertStringContainsString(
+            "'App\\Http\\Controllers\\Api\\DomainSettingsController@enableWww'",
+            file_get_contents(config_path('swagger_request_map.php')) ?: ''
+        );
+        $this->assertStringContainsString(
+            'in:vercel_ns,external_dns',
+            file_get_contents(config_path('swagger_request_map.php')) ?: ''
+        );
+    }
+
+    /**
+     * @param  array{name: string, verified?: bool, redirect?: string|null, redirectStatusCode?: int|null}|null  $preAttachedWww
+     */
+    private function fakeWwwEnableInventory(string $apex, ?array $preAttachedWww = null): void
+    {
+        $attached = [
+            $apex => [
+                'name' => $apex,
+                'verified' => true,
+            ],
+        ];
+
+        if ($preAttachedWww !== null) {
+            $name = (string) $preAttachedWww['name'];
+            $entry = [
+                'name' => $name,
+                'verified' => (bool) ($preAttachedWww['verified'] ?? true),
+                'redirect' => $preAttachedWww['redirect'] ?? null,
+            ];
+            if (array_key_exists('redirectStatusCode', $preAttachedWww)) {
+                $entry['redirectStatusCode'] = $preAttachedWww['redirectStatusCode'];
+            }
+            $attached[$name] = $entry;
+        }
+
+        Http::fake(function (\Illuminate\Http\Client\Request $request) use (&$attached, $apex) {
+            $url = $request->url();
+            $method = $request->method();
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test') && ! str_contains($url, '/domains')) {
+                return Http::response([
+                    'id' => 'prj_test',
+                    'accountId' => 'team_test',
+                    'name' => 'test-project',
+                ], 200);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test/domains') && ! str_contains($url, '/domains/')) {
+                return Http::response([
+                    'domains' => array_values($attached),
+                    'pagination' => ['count' => count($attached), 'next' => null],
+                ], 200);
+            }
+
+            if ($method === 'POST' && str_contains($url, '/v10/projects/') && str_contains($url, '/domains') && ! str_contains($url, '/verify')) {
+                $name = strtolower((string) ($request->data()['name'] ?? ''));
+                $attached[$name] = [
+                    'name' => $name,
+                    'verified' => true,
+                    'redirect' => (string) ($request->data()['redirect'] ?? ''),
+                    'redirectStatusCode' => (int) ($request->data()['redirectStatusCode'] ?? 301),
+                ];
+
+                return Http::response($attached[$name], 200);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v6/domains/') && str_contains($url, '/config')) {
+                return Http::response(['misconfigured' => false], 200);
+            }
+
+            if ($method === 'GET' && preg_match('#/v(?:5|7)/domains/([^/?]+)#', $url, $matches) && ! str_contains($url, '/config')) {
+                return Http::response([
+                    'name' => strtolower(rawurldecode($matches[1])),
+                    'zone' => false,
+                    'verified' => true,
+                ], 200);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v8/certs')) {
+                return Http::response([
+                    'certs' => [[
+                        'id' => 'cert_www',
+                        'cns' => [$apex, 'www.' . $apex],
+                        'expiresAt' => ((int) (microtime(true) * 1000)) + (90 * 86400 * 1000),
+                        'autoRenew' => true,
+                    ]],
+                    'pagination' => ['next' => null],
+                ], 200);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/domains/')) {
+                $name = $apex;
+                if (preg_match('#/domains/([^/?]+)#', $url, $matches)) {
+                    $name = strtolower(rawurldecode($matches[1]));
+                }
+
+                $payload = [
+                    'name' => $name,
+                    'verified' => true,
+                    'verification' => [],
+                    'redirect' => $attached[$name]['redirect'] ?? null,
+                ];
+                if (array_key_exists($name, $attached) && array_key_exists('redirectStatusCode', $attached[$name])) {
+                    $payload['redirectStatusCode'] = $attached[$name]['redirectStatusCode'];
+                }
+
+                return Http::response($payload, 200);
+            }
+
+            return Http::response(['error' => 'unexpected'], 500);
+        });
     }
 }

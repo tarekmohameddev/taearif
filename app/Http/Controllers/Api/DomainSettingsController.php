@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Domain\EnableDomainWwwRequest;
 use App\Http\Requests\Api\Domain\SetPrimaryDomainRequest;
 use App\Http\Requests\Api\Domain\StoreDomainSettingRequest;
 use App\Http\Requests\Api\Domain\VerifyDomainRequest;
@@ -10,6 +11,7 @@ use App\Models\Api\ApiDomainSetting;
 use App\Models\User;
 use App\Services\Vercel\DomainProvisioningService;
 use App\Services\Vercel\DomainStatusSyncService;
+use App\Services\Vercel\DomainWwwService;
 use App\Services\Vercel\VercelDomainCache;
 use App\Services\Vercel\VercelDomainClient;
 use App\Services\Vercel\VercelDomainException;
@@ -34,7 +36,8 @@ class DomainSettingsController extends Controller
         private readonly DomainStatusSyncService $domainSync,
         private readonly VercelDomainCache $vercelCache,
         private readonly VercelDomainInventoryService $vercelInventory,
-        private readonly VercelMutationGuard $mutationGuard
+        private readonly VercelMutationGuard $mutationGuard,
+        private readonly DomainWwwService $domainWwwService,
     ) {
     }
 
@@ -59,9 +62,14 @@ class DomainSettingsController extends Controller
                     'addedDate' => $domain->added_date?->format('Y-m-d'),
                     'dnsMode' => $this->dnsModeForDomain($domain),
                     'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+                    'www' => $this->domainWwwService->wwwPayload($domain),
                 ];
             }),
+            // Collection-level nameserver instructions kept for backward compatibility.
+            // New clients should use per-domain dnsInstructions and availableDnsModes
+            // (especially for external_dns domains).
             'dnsInstructions' => $this->dnsInstructionsForCollection($domains),
+            'availableDnsModes' => $this->availableDnsModes(),
         ]);
     }
 
@@ -73,7 +81,9 @@ class DomainSettingsController extends Controller
     public function store(StoreDomainSettingRequest $request)
     {
         $user = Auth::user();
-        $customName = (string) $request->validated('custom_name');
+        $validated = $request->validated();
+        $customName = (string) $validated['custom_name'];
+        $dnsMode = (string) ($validated['dns_mode'] ?? ApiDomainSetting::DNS_MODE_VERCEL_NS);
         $autoAttach = (bool) config('services.vercel.auto_attach_custom_domain', true);
 
         if ($autoAttach && ! $this->vercel->isConfigured()) {
@@ -107,7 +117,7 @@ class DomainSettingsController extends Controller
         }
 
         if (! $autoAttach) {
-            $domain = $this->insertPendingDomainRow($user, $customName);
+            $domain = $this->insertPendingDomainRow($user, $customName, $dnsMode);
             if ($domain instanceof JsonResponse) {
                 return $domain;
             }
@@ -116,7 +126,7 @@ class DomainSettingsController extends Controller
         }
 
         try {
-            $provisioned = $this->provisionDomainWithVercel($user, $customName);
+            $provisioned = $this->provisionDomainWithVercel($user, $customName, $dnsMode);
         } catch (LockTimeoutException $exception) {
             Log::warning('Timed out waiting for Vercel domain mutation lock', [
                 'domain' => $customName,
@@ -152,7 +162,7 @@ class DomainSettingsController extends Controller
      *     apex_attachment: string
      * }|JsonResponse
      */
-    private function provisionDomainWithVercel(User $user, string $customName): array|JsonResponse
+    private function provisionDomainWithVercel(User $user, string $customName, string $dnsMode): array|JsonResponse
     {
         try {
             $this->mutationGuard->assertCanMutate();
@@ -167,7 +177,7 @@ class DomainSettingsController extends Controller
             return $this->capacityRejectedResponse($capacity['reason']);
         }
 
-        $domain = $this->insertPendingDomainRow($user, $customName);
+        $domain = $this->insertPendingDomainRow($user, $customName, $dnsMode);
         if ($domain instanceof JsonResponse) {
             return $domain;
         }
@@ -176,7 +186,7 @@ class DomainSettingsController extends Controller
             $provisionResult = $this->provisioningService->run(
                 $customName,
                 DomainProvisioningService::MODE_INITIAL,
-                ApiDomainSetting::DNS_MODE_VERCEL_NS
+                $dnsMode
             );
         } catch (LockTimeoutException $exception) {
             Log::warning('Timed out waiting for Vercel domain mutation lock', [
@@ -213,10 +223,10 @@ class DomainSettingsController extends Controller
         ];
     }
 
-    private function insertPendingDomainRow(User $user, string $customName): ApiDomainSetting|JsonResponse
+    private function insertPendingDomainRow(User $user, string $customName, string $dnsMode): ApiDomainSetting|JsonResponse
     {
         try {
-            return DB::transaction(function () use ($user, $customName) {
+            return DB::transaction(function () use ($user, $customName, $dnsMode) {
                 User::query()->whereKey($user->id)->lockForUpdate()->first();
 
                 $existingDomain = ApiDomainSetting::query()
@@ -245,7 +255,7 @@ class DomainSettingsController extends Controller
                 $domain = new ApiDomainSetting([
                     'user_id' => $user->id,
                     'custom_name' => $customName,
-                    'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+                    'dns_mode' => $dnsMode,
                     'status' => 'pending',
                     'primary' => $domainsCount === 0,
                     'ssl' => false,
@@ -296,7 +306,7 @@ class DomainSettingsController extends Controller
             'api_domains_settings',
             $domain->id,
             null,
-            $domain->only(['custom_name', 'status', 'primary', 'ssl'])
+            $domain->only(['custom_name', 'dns_mode', 'status', 'primary', 'ssl'])
         );
 
         if ($domain->status === 'active') {
@@ -313,6 +323,8 @@ class DomainSettingsController extends Controller
 
         $verified = $domain->status === 'active';
         $outcomePayload = $this->buildOutcomePayload($provisionResult, $syncResult);
+        $dnsMode = $this->dnsModeForDomain($domain);
+        $www = $this->domainWwwService->wwwPayload($domain);
 
         return response()->json(array_merge([
             'success' => true,
@@ -324,6 +336,8 @@ class DomainSettingsController extends Controller
                 'primary' => $domain->primary,
                 'ssl' => $domain->ssl,
                 'addedDate' => $domain->added_date?->format('Y-m-d'),
+                'dnsMode' => $dnsMode,
+                'www' => $www,
             ],
             'verification' => [
                 'verified' => $verified,
@@ -336,7 +350,7 @@ class DomainSettingsController extends Controller
                 ),
             ],
             'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
-            'dnsMode' => $this->dnsModeForDomain($domain),
+            'dnsMode' => $dnsMode,
             'diagnostics' => $this->buildDiagnostics($domain, $provisionResult, $syncResult, $apexAttachment),
         ], $outcomePayload), 201);
     }
@@ -631,6 +645,54 @@ class DomainSettingsController extends Controller
             'addedDate' => $domain->added_date?->format('Y-m-d'),
             'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
             'dnsMode' => $this->dnsModeForDomain($domain),
+            'www' => $this->domainWwwService->wwwPayload($domain),
+        ]);
+    }
+
+    public function enableWww(EnableDomainWwwRequest $request)
+    {
+        $user = Auth::user();
+        $validated = $request->validated();
+
+        $domain = ApiDomainSetting::query()
+            ->whereKey($validated['id'])
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        try {
+            $result = $this->domainWwwService->enable($domain, $request);
+        } catch (VercelDomainException $exception) {
+            return $this->mapWwwEnableFailure($exception);
+        } catch (ConnectionException $exception) {
+            Log::warning('Provider connection failure enabling www', [
+                'domain_id' => $domain->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'code' => 'HOSTING_PROVIDER_UNAVAILABLE',
+                'message' => 'Domain hosting is temporarily unavailable. Please try again shortly.',
+            ], 503);
+        }
+
+        $domain = $result['domain'];
+
+        return response()->json([
+            'success' => true,
+            'message' => $result['already_enabled']
+                ? 'www redirect already enabled'
+                : 'www redirect enabled',
+            'data' => [
+                'domainId' => $domain->id,
+                'hostname' => $result['hostname'],
+                'redirectTarget' => $result['redirect_target'],
+                'redirectStatusCode' => $result['redirect_status_code'],
+                'alreadyEnabled' => $result['already_enabled'],
+                'www' => $this->domainWwwService->wwwPayload($domain),
+            ],
+            'dnsMode' => $this->dnsModeForDomain($domain),
+            'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
         ]);
     }
 
@@ -720,6 +782,7 @@ class DomainSettingsController extends Controller
                     'ssl' => $domain->ssl,
                     'verificationStatus' => 'verified',
                     'message' => $result['message'],
+                    'www' => $this->domainWwwService->wwwPayload($domain),
                 ],
                 'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
                 'dnsMode' => $this->dnsModeForDomain($domain),
@@ -736,6 +799,7 @@ class DomainSettingsController extends Controller
                     'status' => $domain->status,
                     'verificationStatus' => 'failed',
                     'message' => $result['message'],
+                    'www' => $this->domainWwwService->wwwPayload($domain),
                 ],
                 'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
                 'dnsMode' => $this->dnsModeForDomain($domain),
@@ -751,6 +815,7 @@ class DomainSettingsController extends Controller
                 'status' => $domain->status,
                 'verificationStatus' => 'pending',
                 'message' => $result['message'],
+                'www' => $this->domainWwwService->wwwPayload($domain),
             ],
             'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
             'dnsMode' => $this->dnsModeForDomain($domain),
@@ -851,6 +916,48 @@ class DomainSettingsController extends Controller
     }
 
     /**
+     * Mode options + setup instructions for the tenant add-domain form.
+     *
+     * @return list<array{value: string, label: string, instructions: array<string, mixed>}>
+     */
+    private function availableDnsModes(): array
+    {
+        $external = ApiDomainSetting::externalDnsInstructions();
+        $nameservers = array_values(config('services.vercel.nameservers', [
+            'ns1.vercel-dns.com',
+            'ns2.vercel-dns.com',
+        ]));
+
+        return [
+            [
+                'value' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+                'label' => __('domain_dns.form_mode_vercel_ns'),
+                'instructions' => [
+                    'mode' => 'nameservers',
+                    'nameservers' => $nameservers,
+                ],
+            ],
+            [
+                'value' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+                'label' => __('domain_dns.form_mode_external_dns'),
+                'instructions' => [
+                    'mode' => 'records',
+                    'apex' => [
+                        'type' => $external['apex_record_type'],
+                        'host' => $external['apex_record_host'],
+                        'value' => $external['apex_record_value'],
+                    ],
+                    'www' => [
+                        'type' => $external['www_record_type'],
+                        'host' => $external['www_record_host'],
+                        'value' => $external['www_record_value'],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function dnsInstructionsForDomain(ApiDomainSetting $domain): array
@@ -861,34 +968,48 @@ class DomainSettingsController extends Controller
             $lastCheck = is_array($domain->dns_records['last_check'] ?? null)
                 ? $domain->dns_records['last_check']
                 : [];
+            // Always use platform-standard A/@ and CNAME/www from config.
+            // Stale/conflicting last_check recommended_ipv4 / recommended_cname must not override.
+            $standard = ApiDomainSetting::externalDnsInstructions();
 
-            return [
+            $instructions = [
                 'mode' => 'records',
-                'message' => __('domain_diagnostics.external_dns_notice'),
-                'ownership_txt_instruction' => __('domain_dns.ownership_txt_instruction'),
-                'recommended_a_label' => __('domain_dns.recommended_a_label'),
-                'recommended_cname_label' => __('domain_dns.recommended_cname_label'),
-                'ownership_txt_label' => __('domain_dns.ownership_txt_label'),
-                'record_type_label' => __('domain_dns.record_type'),
-                'record_name_label' => __('domain_dns.record_name'),
-                'record_value_label' => __('domain_dns.record_value'),
                 'apex' => [
-                    'host' => '@',
-                    'records' => $this->recommendedRecordsForHost(
-                        '@',
-                        array_values((array) ($lastCheck['recommended_ipv4'] ?? [])),
-                        array_values((array) ($lastCheck['recommended_cname'] ?? []))
-                    ),
+                    'host' => (string) $standard['apex_record_host'],
+                    // Apex must only receive exactly one A record — never mix www CNAMEs into apex.
+                    'records' => [[
+                        'type' => (string) $standard['apex_record_type'],
+                        'name' => (string) $standard['apex_record_host'],
+                        'value' => (string) $standard['apex_record_value'],
+                    ]],
                 ],
                 'www' => [
-                    'host' => 'www',
-                    'records' => $this->recommendedRecordsForHost(
-                        'www',
-                        [],
-                        array_values((array) ($lastCheck['recommended_cname'] ?? []))
-                    ),
+                    'host' => (string) $standard['www_record_host'],
+                    'records' => [[
+                        'type' => (string) $standard['www_record_type'],
+                        'name' => (string) $standard['www_record_host'],
+                        'value' => (string) $standard['www_record_value'],
+                    ]],
                 ],
             ];
+
+            $challenge = $lastCheck['ownership_challenge'] ?? null;
+            if (is_array($challenge)) {
+                $challengeName = trim((string) ($challenge['domain'] ?? ''));
+                $challengeValue = trim((string) ($challenge['value'] ?? ''));
+                if ($challengeName !== '' && $challengeValue !== '') {
+                    $instructions['ownership'] = [
+                        'required' => true,
+                        'record' => [
+                            'type' => 'TXT',
+                            'name' => $challengeName,
+                            'value' => $challengeValue,
+                        ],
+                    ];
+                }
+            }
+
+            return $instructions;
         }
 
         return ApiDomainSetting::nameserverInstructions();
@@ -928,5 +1049,38 @@ class DomainSettingsController extends Controller
         }
 
         return $records;
+    }
+
+    private function mapWwwEnableFailure(VercelDomainException $exception): JsonResponse
+    {
+        return match ($exception->internalCode) {
+            VercelDomainException::CODE_INVALID_DOMAIN => response()->json([
+                'success' => false,
+                'code' => 'APEX_NOT_ATTACHED',
+                'message' => $exception->getMessage(),
+            ], 422),
+            VercelDomainException::CODE_REDIRECT_MISMATCH => response()->json([
+                'success' => false,
+                'code' => 'WWW_REDIRECT_MISMATCH',
+                'message' => $exception->getMessage(),
+            ], 409),
+            VercelDomainException::CODE_CAPACITY_REACHED => response()->json([
+                'success' => false,
+                'code' => 'HOSTING_CAPACITY_REACHED',
+                'message' => $exception->getMessage(),
+            ], 503),
+            VercelDomainException::CODE_MUTATION_BLOCKED,
+            VercelDomainException::CODE_NOT_CONFIGURED,
+            VercelDomainException::CODE_PROJECT_IDENTITY_MISMATCH => response()->json([
+                'success' => false,
+                'code' => 'HOSTING_NOT_CONFIGURED',
+                'message' => 'Domain hosting is not configured. Please contact support.',
+            ], 503),
+            default => response()->json([
+                'success' => false,
+                'code' => 'HOSTING_PROVIDER_UNAVAILABLE',
+                'message' => $exception->getMessage() ?: 'Domain hosting is temporarily unavailable. Please try again shortly.',
+            ], 503),
+        };
     }
 }

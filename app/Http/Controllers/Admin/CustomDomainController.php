@@ -16,6 +16,7 @@ use App\Models\User\UserCustomDomain;
 use App\Services\Vercel\DomainProvisioningService;
 use App\Services\Vercel\DomainReconciliationService;
 use App\Services\Vercel\DomainStatusSyncService;
+use App\Services\Vercel\DomainWwwService;
 use App\Services\Vercel\VercelDomainCache;
 use App\Services\Vercel\VercelBackedDomainGuard;
 use App\Services\Vercel\VercelDomainClient;
@@ -62,6 +63,7 @@ class CustomDomainController extends Controller
         private readonly DomainProvisioningService $provisioningService,
         private readonly DomainStatusSyncService $domainSyncService,
         private readonly VercelBackedDomainGuard $vercelBackedGuard,
+        private readonly DomainWwwService $domainWwwService,
     ) {
     }
 
@@ -789,7 +791,8 @@ class CustomDomainController extends Controller
         }
     }
 
-    public function enableWww(Request $request)    {
+    public function enableWww(Request $request)
+    {
         $validated = $request->validate([
             'domain_id' => ['required', 'integer', 'exists:api_domains_settings,id'],
             'confirm_domain' => ['required', 'string', 'max:255'],
@@ -800,67 +803,16 @@ class CustomDomainController extends Controller
 
         try {
             $this->assertConfirmedApex((string) $validated['confirm_domain'], $apex);
-            $this->mutationGuard->assertCanMutate($request, $apex);
+            $result = $this->domainWwwService->enable($domain, $request, requireTypedConfirmation: true);
 
-            return $this->withProjectLock(function () use ($request, $domain, $apex) {
-                $snapshot = $this->domainCache->fresh();
-                if ($this->isInventoryUnreliable($snapshot)) {
-                    throw new VercelDomainException(
-                        __('vercel_capacity.inventory_unreliable'),
-                        internalCode: VercelDomainException::CODE_PROVIDER_UNAVAILABLE
-                    );
-                }
+            $request->session()->flash(
+                'success',
+                $result['already_enabled']
+                    ? __('domain_www.already_enabled', ['domain' => $apex])
+                    : __('domain_www.enabled', ['domain' => $apex])
+            );
 
-                $wwwState = $this->resolveWwwStateForApex($snapshot, $apex);
-                if (! in_array($apex, $snapshot['names'] ?? [], true)) {
-                    throw new VercelDomainException(
-                        __('domain_www.apex_not_on_vercel', ['domain' => $apex]),
-                        internalCode: VercelDomainException::CODE_INVALID_DOMAIN
-                    );
-                }
-
-                if ($wwwState['present']) {
-                    if (! $wwwState['valid']) {
-                        throw new VercelDomainException(
-                            __('domain_mutation.redirect_mismatch', [
-                                'domain' => 'www.' . $apex,
-                                'expected_target' => $apex,
-                                'expected_status' => '301',
-                            ]),
-                            internalCode: VercelDomainException::CODE_REDIRECT_MISMATCH
-                        );
-                    }
-
-                    $request->session()->flash('success', __('domain_www.already_enabled', ['domain' => $apex]));
-
-                    return back();
-                }
-
-                $freeEntries = $snapshot['metrics']['free_entries'] ?? null;
-                if ($freeEntries !== null && $freeEntries < 1) {
-                    throw new VercelDomainException(
-                        __('domain_www.no_free_slot'),
-                        internalCode: VercelDomainException::CODE_CAPACITY_REACHED
-                    );
-                }
-
-                $before = $this->domainActivitySnapshot($domain);
-                $this->vercel->addDomain('www.' . $apex, $apex, 301);
-                $this->refreshDomainStateAfterAdminMutation($domain, $request);
-
-                \App\Support\TenantActivity::emit(
-                    $request,
-                    'domain.www_enabled',
-                    'api_domains_settings',
-                    $domain->id,
-                    $before,
-                    array_merge($this->domainActivitySnapshot($domain), ['www' => 'www.' . $apex])
-                );
-
-                $request->session()->flash('success', __('domain_www.enabled', ['domain' => $apex]));
-
-                return back();
-            });
+            return back();
         } catch (VercelDomainException|ConnectionException $e) {
             $request->session()->flash('error', $e->getMessage());
 
@@ -1319,11 +1271,7 @@ class CustomDomainController extends Controller
                 continue;
             }
 
-            $redirectTarget = strtolower((string) ($domain['redirect'] ?? ''));
-            $statusCode = isset($domain['redirectStatusCode']) ? (int) $domain['redirectStatusCode'] : null;
-            $valid = filled($domain['redirect'] ?? null)
-                && $redirectTarget === $apex
-                && ($statusCode === null || in_array($statusCode, [301, 308], true));
+            $valid = \App\Services\Vercel\WwwRedirectPolicy::isCorrect($domain, $apex);
 
             return ['present' => true, 'valid' => $valid];
         }

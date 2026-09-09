@@ -461,11 +461,7 @@ class DomainReconciliationService
 
             if (str_starts_with($name, 'www.')) {
                 $groups[$apex]['has_www'] = true;
-                $redirect = isset($domain['redirect']) ? strtolower((string) $domain['redirect']) : null;
-                $statusCode = isset($domain['redirectStatusCode']) ? (int) $domain['redirectStatusCode'] : null;
-                $targetOk = $redirect === $apex;
-                $statusOk = $statusCode === null || in_array($statusCode, [301, 308], true);
-                $groups[$apex]['www_redirect_correct'] = $targetOk && $statusOk && filled($domain['redirect'] ?? null);
+                $groups[$apex]['www_redirect_correct'] = WwwRedirectPolicy::isCorrect($domain, $apex);
             }
         }
 
