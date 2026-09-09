@@ -12,13 +12,47 @@ class DashboardVisitService
 {
     public const BUSINESS_TIMEZONE = 'Asia/Riyadh';
 
+    public function __construct(
+        private readonly DashboardPresenceEligibilityService $eligibility
+    ) {
+    }
+
+    public function recordEligibleVisit(User $user, ?CarbonImmutable $clock = null): array
+    {
+        $eligibility = $this->eligibility->resolve($user);
+
+        if (! $eligibility['eligible']) {
+            return [
+                'recorded' => false,
+                'reason' => $eligibility['reason'],
+            ];
+        }
+
+        $this->recordResolvedVisit($user, (int) $eligibility['tenant_owner_id'], $clock);
+
+        return [
+            'recorded' => true,
+            'reason' => null,
+        ];
+    }
+
     public function recordFor(User $user, ?CarbonImmutable $clock = null): void
+    {
+        $eligibility = $this->eligibility->resolve($user);
+
+        if (! $eligibility['eligible']) {
+            return;
+        }
+
+        $this->recordResolvedVisit($user, (int) $eligibility['tenant_owner_id'], $clock);
+    }
+
+    private function recordResolvedVisit(User $user, int $tenantOwnerId, ?CarbonImmutable $clock = null): void
     {
         $now = ($clock ?? CarbonImmutable::now(self::BUSINESS_TIMEZONE))
             ->setTimezone(self::BUSINESS_TIMEZONE);
 
         $visitedOn = $now->toDateString();
-        $tenantOwnerId = $user->tenantOwnerId();
 
         $inserted = DB::table('dashboard_daily_visits')->insertOrIgnore([
             'user_id' => $user->id,

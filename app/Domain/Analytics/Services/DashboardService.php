@@ -294,7 +294,7 @@ class DashboardService extends BaseService
         // Monthly revenue trend (last 12 months)
         $monthlyTrend = DB::table('memberships')
             ->select(
-                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+                DB::raw($this->monthBucketExpression('created_at') . ' as month'),
                 DB::raw('SUM(price) as revenue'),
                 DB::raw('COUNT(*) as count')
             )
@@ -377,7 +377,7 @@ class DashboardService extends BaseService
         // Monthly user growth trend (last 12 months)
         $monthlyTrend = DB::table('users')
             ->select(
-                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+                DB::raw($this->monthBucketExpression('created_at') . ' as month'),
                 DB::raw('COUNT(*) as count')
             )
             ->where('account_type', 'tenant')
@@ -1048,6 +1048,13 @@ class DashboardService extends BaseService
 
         return $admin->hasPermission('Dashboard Financial Metrics')
             || $admin->hasPermission('Payment Log');
+    }
+
+    private function monthBucketExpression(string $column): string
+    {
+        return DB::connection()->getDriverName() === 'sqlite'
+            ? sprintf("strftime('%%Y-%%m', %s)", $column)
+            : sprintf("DATE_FORMAT(%s, '%%Y-%%m')", $column);
     }
 }
 

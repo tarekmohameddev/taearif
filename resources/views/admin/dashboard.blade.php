@@ -5,6 +5,7 @@
 @endsection
 
 @php
+    $livePresenceCards = $dashboard['livePresenceCards'] ?? [];
     $headlineCards = $dashboard['headlineCards'] ?? [];
     $operationCards = $dashboard['operationCards'] ?? [];
     $financialCards = $dashboard['financialCards'] ?? [];
@@ -65,6 +66,30 @@
                     @foreach($headlineCards as $card)
                         <div class="col-sm-6 col-xl-3 d-flex">
                             @include('admin.partials.dashboard.kpi-card', ['card' => $card, 'size' => 'large'])
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        @if(!empty($livePresenceCards))
+            <section
+                class="dashboard-section dashboard-section-secondary"
+                aria-labelledby="live-presence-heading"
+                data-dashboard-live-presence
+                data-dashboard-live-url="{{ route('admin.dashboard.online-presence') }}"
+                data-dashboard-live-interval-ms="{{ (int) config('dashboard-presence.admin_poll_seconds', 30) * 1000 }}"
+            >
+                <div class="dashboard-section-heading">
+                    <div>
+                        <h3 id="live-presence-heading">{{ __('Live Presence') }}</h3>
+                        <p>{{ __('Updates automatically while this tab is visible') }}</p>
+                    </div>
+                </div>
+                <div class="row dashboard-grid dashboard-grid-secondary">
+                    @foreach($livePresenceCards as $card)
+                        <div class="col-sm-6 d-flex">
+                            @include('admin.partials.dashboard.kpi-card', ['card' => $card, 'size' => 'compact'])
                         </div>
                     @endforeach
                 </div>
@@ -307,6 +332,121 @@
             tenantRegistrations: @json($dashboard['chartLabels']['tenantRegistrations'] ?? __('Tenant Registrations')),
             customers: @json($dashboard['chartLabels']['customers'] ?? __('New Customers'))
         };
+    </script>
+    <script>
+        (function () {
+            "use strict";
+
+            var section = document.querySelector("[data-dashboard-live-presence]");
+            var intervalId = null;
+            var requestInFlight = false;
+            var locale = document.documentElement.getAttribute("lang") || "en";
+
+            if (!section || !window.fetch) {
+                return;
+            }
+
+            function formatInteger(value) {
+                var numericValue = Number(value) || 0;
+
+                if (typeof Intl !== "undefined" && Intl.NumberFormat) {
+                    return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(numericValue);
+                }
+
+                return String(Math.round(numericValue));
+            }
+
+            function applyPayload(payload) {
+                var cards = section.querySelectorAll("[data-dashboard-live-card]");
+                var available = !!(payload && payload.available === true);
+
+                Array.prototype.forEach.call(cards, function (card) {
+                    var key = card.getAttribute("data-dashboard-live-key");
+                    var valueElement = card.querySelector(".dashboard-kpi-value");
+                    var helperElement = card.querySelector(".dashboard-kpi-helper");
+                    var nextValue = available && payload[key] !== null && typeof payload[key] !== "undefined"
+                        ? formatInteger(payload[key])
+                        : (card.getAttribute("data-dashboard-live-unavailable-value") || "—");
+                    var nextHelper = available
+                        ? (card.getAttribute("data-dashboard-live-available-helper") || "")
+                        : (card.getAttribute("data-dashboard-live-unavailable-helper") || "");
+
+                    if (valueElement) {
+                        valueElement.textContent = nextValue;
+                    }
+
+                    if (helperElement) {
+                        helperElement.textContent = nextHelper;
+                    }
+                });
+            }
+
+            function refresh() {
+                var url = section.getAttribute("data-dashboard-live-url");
+
+                if (!url || requestInFlight || document.visibilityState === "hidden") {
+                    return;
+                }
+
+                requestInFlight = true;
+
+                window.fetch(url, {
+                    method: "GET",
+                    headers: {
+                        "Accept": "application/json",
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    credentials: "same-origin"
+                })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            throw new Error("Request failed");
+                        }
+
+                        return response.json();
+                    })
+                    .then(function (payload) {
+                        applyPayload(payload);
+                    })
+                    .catch(function () {
+                        applyPayload({ available: false });
+                    })
+                    .finally(function () {
+                        requestInFlight = false;
+                    });
+            }
+
+            function stopPolling() {
+                if (intervalId !== null) {
+                    window.clearInterval(intervalId);
+                    intervalId = null;
+                }
+            }
+
+            function startPolling() {
+                var intervalMs = Number(section.getAttribute("data-dashboard-live-interval-ms")) || 30000;
+
+                stopPolling();
+
+                if (document.visibilityState === "hidden") {
+                    return;
+                }
+
+                refresh();
+                intervalId = window.setInterval(refresh, intervalMs);
+            }
+
+            document.addEventListener("visibilitychange", function () {
+                if (document.visibilityState === "visible") {
+                    startPolling();
+                    return;
+                }
+
+                stopPolling();
+            });
+
+            startPolling();
+        })();
     </script>
     <script src="{{ asset('assets/admin/js/dashboard.js') }}"></script>
 @endsection

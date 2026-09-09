@@ -180,5 +180,15 @@ class RouteServiceProvider extends ServiceProvider
 
             return Limit::perMinute($max)->by(optional($user)->id ?: $request->ip());
         }));
+
+        RateLimiter::for('dashboard_presence_heartbeat', $only(function (Request $request) {
+            return Limit::perMinute(10)->by(optional($request->user())->id ?: $request->ip());
+        }));
+
+        RateLimiter::for('dashboard_presence_admin', $only(function (Request $request) {
+            $user = $request->user('admin');
+
+            return Limit::perMinute(60)->by(optional($user)->id ?: $request->ip());
+        }));
     }
 }

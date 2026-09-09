@@ -35,6 +35,9 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
     Route::group(['middleware' => 'checkpermission:Dashboard'], function () {
         // Admin Dashboard Routes
         Route::get('/dashboard', 'Admin\DashboardController@dashboard')->name('dashboard');
+        Route::get('/dashboard/online-presence', 'Admin\DashboardController@onlinePresence')
+            ->middleware('throttle:dashboard_presence_admin')
+            ->name('dashboard.online-presence');
     });
 
     // Admin Profile Routes

@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\{
     UploadController,
     PaymentController,
     AnalyticsDashboardController,
+    DashboardPresenceController,
     DashboardVisitController,
     OnboardingController,
     PublicUserController,
@@ -250,10 +251,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/dashboard/visit', DashboardVisitController::class);
+    Route::post('/dashboard/presence/heartbeat', [DashboardPresenceController::class, 'heartbeat'])
+        ->middleware('throttle:dashboard_presence_heartbeat');
+});
+
 // --- Dashboard (require active package) ---
 Route::middleware(['auth:sanctum', 'require.active.package'])->group(function () {
     Route::get('/dashboard', [AnalyticsDashboardController::class, 'dashboard']);
-    Route::post('/dashboard/visit', DashboardVisitController::class);
     Route::get('/dashboard/summary', [AnalyticsDashboardController::class, 'summary']);
     Route::post('/dashboard/visitors', [AnalyticsDashboardController::class, 'visitors']);
     Route::get('/dashboard/devices', [AnalyticsDashboardController::class, 'devices']);
