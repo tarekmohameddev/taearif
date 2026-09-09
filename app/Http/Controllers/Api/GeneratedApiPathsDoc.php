@@ -4000,36 +4000,69 @@ namespace App\Http\Controllers\Api;
  *     @OA\Get(
  *         operationId="get_settings_domain_0",
  *         tags={"Settings"},
- *         summary="Index", security={{"sanctum":{}}},
- *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
+ *         summary="List tenant domains (includes per-domain dnsInstructions/www and availableDnsModes for the add form). Collection-level dnsInstructions is nameserver-style for backward compatibility; new clients should use per-domain dnsInstructions and availableDnsModes for external_dns.", security={{"sanctum":{}}},
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object",
+ *             @OA\Property(property="domains", type="array", @OA\Items(type="object")),
+ *             @OA\Property(property="dnsInstructions", type="object", description="Legacy collection-level nameserver instructions"),
+ *             @OA\Property(property="availableDnsModes", type="array", @OA\Items(type="object",
+ *                 @OA\Property(property="value", type="string", enum={"vercel_ns","external_dns"}),
+ *                 @OA\Property(property="label", type="string"),
+ *                 @OA\Property(property="instructions", type="object")
+ *             ))
+ *         )),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     ),
  *     @OA\Post(
  *         operationId="post_settings_domain_1",
  *         tags={"Settings"},
- *         summary="Store", security={{"sanctum":{}}},
+ *         summary="Store custom domain (optional dns_mode defaults to vercel_ns)", security={{"sanctum":{}}},
  *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"custom_name"},
  *             @OA\Property(property="custom_name", type="string", maxLength=255),
+ *             @OA\Property(property="dns_mode", type="string", enum={"vercel_ns","external_dns"}, description="Optional; defaults to vercel_ns when omitted"),
  *         )),
- *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
- *         @OA\Response(response=401, description="Unauthenticated")
+ *         @OA\Response(response=201, description="Created", @OA\JsonContent(type="object",
+ *             @OA\Property(property="success", type="boolean"),
+ *             @OA\Property(property="data", type="object"),
+ *             @OA\Property(property="dnsMode", type="string"),
+ *             @OA\Property(property="dnsInstructions", type="object", description="Mode-specific setup instructions"),
+ *             @OA\Property(property="message", type="string", nullable=true)
+ *         )),
+ *         @OA\Response(response=401, description="Unauthenticated"),
+ *         @OA\Response(response=422, description="Validation failed")
  *     )
  *
  * )
  *
  * @OA\PathItem(
  *
- *     path="/settings/domain/request-ssl",
+ *     path="/settings/domain/www/enable",
  *
- *     @OA\Patch(
- *         operationId="patch_settings_domain_request_ssl_0",
+ *     @OA\Post(
+ *         operationId="post_settings_domain_www_enable_0",
  *         tags={"Settings"},
- *         summary="Request Ssl", security={{"sanctum":{}}},
+ *         summary="Enable www redirect for a tenant domain", security={{"sanctum":{}}},
  *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"id"},
- *             @OA\Property(property="id", type="integer"),
+ *             @OA\Property(property="id", type="integer", description="Tenant-owned api_domains_settings id"),
  *         )),
- *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
- *         @OA\Response(response=401, description="Unauthenticated")
+ *         @OA\Response(response=200, description="Enabled or already enabled", @OA\JsonContent(type="object",
+ *             @OA\Property(property="success", type="boolean"),
+ *             @OA\Property(property="message", type="string"),
+ *             @OA\Property(property="data", type="object",
+ *                 @OA\Property(property="domainId", type="integer"),
+ *                 @OA\Property(property="hostname", type="string"),
+ *                 @OA\Property(property="redirectTarget", type="string"),
+ *                 @OA\Property(property="redirectStatusCode", type="integer", example=301),
+ *                 @OA\Property(property="alreadyEnabled", type="boolean"),
+ *                 @OA\Property(property="www", type="object")
+ *             ),
+ *             @OA\Property(property="dnsMode", type="string"),
+ *             @OA\Property(property="dnsInstructions", type="object")
+ *         )),
+ *         @OA\Response(response=401, description="Unauthenticated"),
+ *         @OA\Response(response=404, description="Domain not found for tenant"),
+ *         @OA\Response(response=409, description="Existing www redirect mismatch"),
+ *         @OA\Response(response=422, description="Validation failed or apex not attached"),
+ *         @OA\Response(response=503, description="Capacity, mutation guard, or provider unavailable")
  *     )
  *
  * )
@@ -4044,24 +4077,6 @@ namespace App\Http\Controllers\Api;
  *         summary="Set Primary", security={{"sanctum":{}}},
  *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"id"},
  *             @OA\Property(property="id", type="integer"),
- *         )),
- *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
- *         @OA\Response(response=401, description="Unauthenticated")
- *     )
- *
- * )
- *
- * @OA\PathItem(
- *
- *     path="/settings/domain/ssl-status",
- *
- *     @OA\Patch(
- *         operationId="patch_settings_domain_ssl_status_0",
- *         tags={"Settings"},
- *         summary="Update Ssl Status", security={{"sanctum":{}}},
- *         @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"domain_id","ssl"},
- *             @OA\Property(property="domain_id", type="integer"),
- *             @OA\Property(property="ssl", type="boolean"),
  *         )),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")
@@ -4094,14 +4109,6 @@ namespace App\Http\Controllers\Api;
  *         operationId="get_settings_domain_id_0",
  *         tags={"Settings"},
  *         summary="Show", security={{"sanctum":{}}},
- *         @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
- *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
- *         @OA\Response(response=401, description="Unauthenticated")
- *     ),
- *     @OA\Delete(
- *         operationId="delete_settings_domain_id_1",
- *         tags={"Settings"},
- *         summary="Destroy", security={{"sanctum":{}}},
  *         @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")

@@ -62,6 +62,7 @@ use App\Models\User\UserEmailTemplate;
 use App\Models\User\UserPaymentGeteway;
 use App\Models\EmployeeAddon;
 use App\Models\WhatsappAddon;
+use App\Services\Membership\MembershipAccessStateService;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -833,33 +834,13 @@ class AuthController extends Controller
                 ->where('enabled', true)
                 ->exists();
 
-            // Get current date for comparing with membership expiration
-            $currentDate = now();
+            $accessStateService = app(MembershipAccessStateService::class);
+            $accessContext = $accessStateService->contextForUser($user);
+            $accessState = $accessContext['state'];
+            $membership = $accessContext['membership'];
+            $cacheTtl = $accessStateService->profileCacheTtl($accessState, $cacheTtl);
 
             if ($useOptimizations) {
-                // OPTIMIZATION: Use direct queries with limit(1) instead of eager loading all records
-                // This is much faster when we only need the latest/active record
-
-                // Get latest membership with package in a single optimized query
-                $membership = Membership::where('user_id', $owner->id)
-                    ->select([
-                        'id', 'user_id', 'package_id', 'package_price', 'discount',
-                        'coupon_code', 'price', 'currency', 'currency_symbol',
-                        'payment_method', 'transaction_id', 'status', 'is_trial',
-                        'trial_days', 'start_date', 'expire_date'
-                    ])
-                    ->orderBy('id', 'desc')
-                    ->with(['package' => function ($pkgQuery) {
-                        $pkgQuery->select([
-                            'id', 'title', 'title_en', 'video_size_limit', 'file_size_limit',
-                            'number_of_vcards', 'trial_days', 'features',
-                            'project_limit_number', 'real_estate_limit_number',
-                            'whatsapp_numbers_limit', 'employees_limit'
-                        ]);
-                    }])
-                    ->limit(1)
-                    ->first();
-
                 // Get active domain with limit(1) - only fetch what we need
                 $domain = ApiDomainSetting::where('user_id', $owner->id)
                     ->preferredActive()
@@ -885,12 +866,6 @@ class AuthController extends Controller
                     }
                 ]);
             } else {
-                // Original code path without optimizations
-                // Get owner's latest membership from the membership table
-                $membership = Membership::where('user_id', $owner->id)
-                    ->orderBy('id', 'desc')
-                    ->first();
-
                 $domain = ApiDomainSetting::where('user_id', $owner->id)
                     ->preferredActive()
                     ->first([
@@ -909,16 +884,11 @@ class AuthController extends Controller
             }
 
               $membershipDetails = null;
-              $isFreePlan = true;
-              $isExpired = true;
+              $isFreePlan = data_get($accessState, 'subscription.plan.type') === MembershipAccessStateService::PLAN_FREE;
+              $isExpired = data_get($accessState, 'subscription.entitlement_status') === MembershipAccessStateService::ENTITLEMENT_EXPIRED;
+              $legacyDaysRemaining = data_get($accessState, 'subscription.days_remaining');
 
             if ($membership) {
-                // Determine if membership is expired
-                $isExpired = $currentDate->gt($membership->expire_date);
-
-                // Determine if it's a free plan (price = 0)
-                $isFreePlan = (float)$membership->price <= 0;
-
                 // Format membership details
                 $membershipDetails = [
                     'id' => $membership->id,
@@ -937,8 +907,11 @@ class AuthController extends Controller
                     'start_date' => $membership->start_date,
                     'expire_date' => $membership->expire_date,
                     'is_expired' => $isExpired,
-                    'days_remaining' => $isExpired ? 0 : $currentDate->diffInDays($membership->expire_date),
-                    'is_free_plan' => $isFreePlan
+                    'days_remaining' => $legacyDaysRemaining,
+                    'is_free_plan' => $isFreePlan,
+                    'activation_source' => $membership->activation_source,
+                    'transition_reason' => $membership->transition_reason,
+                    'previous_membership_id' => $membership->previous_membership_id,
                 ];
 
                 // Get package details if needed (already loaded via eager loading in direct query if optimizations enabled)
@@ -1053,12 +1026,15 @@ class AuthController extends Controller
                 'profile_image' => $user->profile_image ? url('/') . '/assets/front/img/user/' . $user->profile_image : null,
                 'membership' => $membershipDetails,
                 'is_free_plan' => $isFreePlan,
-                'has_active_membership' => !$isExpired && $membership && (int) $membership->status === 1,
+                // TODO(api-v3): remove legacy membership fields after frontend fully consumes subscription.schema_version=1.
+                'has_active_membership' => data_get($accessState, 'subscription.entitlement_status') === MembershipAccessStateService::ENTITLEMENT_ACTIVE,
                 'message' => $user->message ?? null,
                 'created_at' => $user->created_at,
                   'updated_at' => $user->updated_at,
                   'domain' => $domain ? $domain->custom_name : "https://{$owner->username}.taearif.com/",
                   'onboarding_completed' => $user->onboarding_completed ?? false,
+                  'subscription' => $accessState['subscription'],
+                  'website_access' => $accessState['website_access'],
                   'calling_enabled' => $callingEnabled,
                   'company_name' => $companyName,
                   'valLicense' => $valLicense,

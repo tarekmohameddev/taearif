@@ -7,7 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\Analytics\DashboardVisitService;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response;
 
 class DashboardVisitController extends Controller
 {
@@ -17,7 +17,14 @@ class DashboardVisitController extends Controller
 
         abort_unless($user, Response::HTTP_UNAUTHORIZED);
 
-        $visitService->recordFor($user);
+        $result = $visitService->recordEligibleVisit($user);
+
+        if (! $result['recorded']) {
+            return response()->json([
+                'message' => 'Dashboard visit is not allowed for this user.',
+                'code' => 'dashboard_visit_forbidden',
+            ], Response::HTTP_FORBIDDEN);
+        }
 
         return response()->noContent();
     }

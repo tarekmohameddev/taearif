@@ -11,6 +11,7 @@ use App\Models\Package;
 use App\Models\User;
 use App\Models\User\RealestateManagement\Project;
 use App\Models\User\RealestateManagement\Property;
+use App\Services\Analytics\DashboardPresenceService;
 use App\Services\MembershipService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,7 +21,8 @@ class AdminDashboardMetricsService
     public const BUSINESS_TIMEZONE = 'Asia/Riyadh';
 
     public function __construct(
-        private readonly AdminDashboardBusinessMetricsService $businessMetrics
+        private readonly AdminDashboardBusinessMetricsService $businessMetrics,
+        private readonly DashboardPresenceService $presence
     ) {
     }
 
@@ -70,6 +72,7 @@ class AdminDashboardMetricsService
             $dashboard['executiveSummary']['registeredTenantUsers'] = (int) $canonicalSummary['registeredTenantUsers'];
             $dashboard['executiveSummary']['uniqueDashboardUsersToday'] = (int) $canonicalSummary['uniqueDashboardUsersToday'];
             $dashboard['executiveSummary']['uniqueTenantsOpenedDashboardToday'] = (int) $canonicalSummary['uniqueTenantsOpenedDashboardToday'];
+            $dashboard['presence'] = $this->presence->snapshot($clock->setTimezone('UTC'));
             $dashboard['operationsSnapshot']['activePaidSubscriptions'] = (int) $membershipSummary->paid_subscriptions;
             $dashboard['operationsSnapshot']['activeTrials'] = (int) $membershipSummary->trials;
             $dashboard['operationsSnapshot']['freeUsers'] = (int) $membershipSummary->free_users;
@@ -258,10 +261,17 @@ class AdminDashboardMetricsService
         CarbonImmutable $nextYearStart,
         CarbonImmutable $clock
     ): array {
+        $driver = $query->getModel()->getConnection()->getDriverName();
+        $monthExpression = match ($driver) {
+            'sqlite' => 'CAST(strftime("%m", created_at) AS INTEGER)',
+            'pgsql' => 'EXTRACT(MONTH FROM created_at)',
+            default => 'MONTH(created_at)',
+        };
+
         $counts = $query
             ->where('created_at', '>=', $yearStart)
             ->where('created_at', '<', $nextYearStart)
-            ->selectRaw('MONTH(created_at) AS month, COUNT(*) AS total')
+            ->selectRaw($monthExpression . ' AS month, COUNT(*) AS total')
             ->groupBy('month')
             ->pluck('total', 'month');
 

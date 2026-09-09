@@ -7,6 +7,8 @@ namespace Tests\Feature\Admin\Domains;
 use App\Domain\Admin\Models\Admin;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User;
+use App\Services\Vercel\DnsNameserverChecker;
+use App\Services\Vercel\DomainDnsRecordService;
 use App\Services\Vercel\VercelDomainCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +24,7 @@ class CustomDomainCapacityTest extends AdminApiTestCase
         parent::setUp();
 
         $this->ensureAdminViewData();
+        $this->mockDnsRecords();
         app(VercelDomainCache::class)->invalidate();
     }
 
@@ -309,6 +312,7 @@ class CustomDomainCapacityTest extends AdminApiTestCase
     {
         $this->skipIfMissingSchema();
         $this->configureVercel();
+        $this->mockNameservers(true);
         $this->signInWebAdmin();
 
         $user = User::factory()->tenant()->create([
@@ -346,6 +350,7 @@ class CustomDomainCapacityTest extends AdminApiTestCase
     {
         $this->skipIfMissingSchema();
         $this->configureVercel();
+        $this->mockNameservers(true);
         $this->signInWebAdmin();
 
         $user = User::factory()->tenant()->create([
@@ -376,10 +381,67 @@ class CustomDomainCapacityTest extends AdminApiTestCase
     }
 
     /** @test */
+    public function enable_www_requires_matching_typed_confirmation(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $domain = $this->seedDomainSetting();
+        $apex = $domain->custom_name;
+
+        $this->fakeVercelAdminDomains([
+            ['name' => $apex, 'verified' => true],
+        ]);
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.www.enable'), [
+                'domain_id' => $domain->id,
+                'confirm_domain' => 'wrong.example.com',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        Http::assertNotSent(fn ($request) => $request->method() === 'POST'
+            && str_contains($request->url(), '/domains'));
+    }
+
+    /** @test */
+    public function enable_www_rechecks_and_persists_fresh_health_after_mutation(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(true);
+        $this->signInWebAdmin();
+
+        $domain = $this->seedDomainSetting();
+        $apex = $domain->custom_name;
+
+        $this->fakeVercelAdminDomains([
+            ['name' => $apex, 'verified' => true],
+        ], allowPatch: true);
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.www.enable'), [
+                'domain_id' => $domain->id,
+                'confirm_domain' => $apex,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $domain->refresh();
+        $lastCheck = $domain->dns_records['last_check'] ?? [];
+        $this->assertSame('linked', $lastCheck['health_code'] ?? null);
+        $this->assertTrue($lastCheck['www_present'] ?? false);
+        $this->assertTrue($lastCheck['www_redirect_correct'] ?? false);
+    }
+
+    /** @test */
     public function disable_www_removes_only_www_hostname(): void
     {
         $this->skipIfMissingSchema();
         $this->configureVercel();
+        $this->mockNameservers(true);
         $this->signInWebAdmin();
 
         $user = User::factory()->tenant()->create([
@@ -420,6 +482,7 @@ class CustomDomainCapacityTest extends AdminApiTestCase
     {
         $this->skipIfMissingSchema();
         $this->configureVercel();
+        $this->mockNameservers(true);
         $this->signInWebAdmin();
 
         $user = User::factory()->tenant()->create([
@@ -457,6 +520,33 @@ class CustomDomainCapacityTest extends AdminApiTestCase
             && str_contains($request->url(), 'www.' . rawurlencode($apex)));
     }
 
+    /** @test */
+    public function disable_www_requires_matching_typed_confirmation(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $domain = $this->seedDomainSetting();
+        $apex = $domain->custom_name;
+
+        $this->fakeVercelAdminDomains([
+            ['name' => $apex, 'verified' => true],
+            ['name' => 'www.' . $apex, 'verified' => true, 'redirect' => $apex, 'redirectStatusCode' => 301],
+        ], allowDelete: true);
+
+        $this->from(route('admin.custom-domain.index'))
+            ->post(route('admin.custom-domain.www.disable'), [
+                'domain_id' => $domain->id,
+                'confirm_domain' => 'wrong.example.com',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        Http::assertNotSent(fn ($request) => $request->method() === 'DELETE'
+            && str_contains($request->url(), 'www.' . rawurlencode($apex)));
+    }
+
     /**
      * @param  list<array<string, mixed>>  $domains
      */
@@ -464,7 +554,7 @@ class CustomDomainCapacityTest extends AdminApiTestCase
     {
         $allowMutations = $allowDelete || $allowPatch;
 
-        Http::fake(function (\Illuminate\Http\Client\Request $request) use ($domains, $allowDelete, $allowMutations) {
+        Http::fake(function (\Illuminate\Http\Client\Request $request) use (&$domains, $allowDelete, $allowMutations) {
             $url = $request->url();
             $method = $request->method();
 
@@ -494,15 +584,85 @@ class CustomDomainCapacityTest extends AdminApiTestCase
             }
 
             if ($allowMutations && $method === 'PATCH' && str_contains($url, '/domains/')) {
+                if (preg_match('#/domains/([^/?]+)#', $url, $matches)) {
+                    $name = strtolower(rawurldecode($matches[1]));
+                    foreach ($domains as &$domain) {
+                        if (strtolower((string) ($domain['name'] ?? '')) !== $name) {
+                            continue;
+                        }
+
+                        $body = $request->data();
+                        $domain['redirect'] = $body['redirect'] ?? null;
+                        $domain['redirectStatusCode'] = $body['redirectStatusCode'] ?? null;
+                        break;
+                    }
+                    unset($domain);
+                }
+
                 return Http::response(null, 200);
             }
 
             if ($allowDelete && $method === 'DELETE' && str_contains($url, '/domains/')) {
+                if (preg_match('#/domains/([^/?]+)#', $url, $matches)) {
+                    $name = strtolower(rawurldecode($matches[1]));
+                    $domains = array_values(array_filter(
+                        $domains,
+                        static fn (array $domain): bool => strtolower((string) ($domain['name'] ?? '')) !== $name
+                    ));
+                }
+
                 return Http::response(null, 200);
             }
 
             if ($method === 'POST' && str_contains($url, '/domains')) {
-                return Http::response(['name' => 'www.example.com', 'verified' => true], 200);
+                $name = strtolower((string) ($request->data()['name'] ?? 'www.example.com'));
+                $redirect = strtolower((string) ($request->data()['redirect'] ?? ''));
+                $statusCode = (int) ($request->data()['redirectStatusCode'] ?? 301);
+
+                $domains[] = array_filter([
+                    'name' => $name,
+                    'verified' => true,
+                    'redirect' => $redirect !== '' ? $redirect : null,
+                    'redirectStatusCode' => $redirect !== '' ? $statusCode : null,
+                ], static fn ($value) => $value !== null);
+
+                return Http::response(['name' => $name, 'verified' => true], 200);
+            }
+
+            if ($allowMutations && $method === 'GET' && preg_match('#/v(?:5|7)/domains/([^/?]+)#', $url, $matches) && ! str_contains($url, '/config')) {
+                $name = strtolower(rawurldecode($matches[1]));
+                foreach ($domains as $domain) {
+                    if (strtolower((string) ($domain['name'] ?? '')) === $name) {
+                        return Http::response([
+                            'name' => $name,
+                            'zone' => true,
+                            'verified' => (bool) ($domain['verified'] ?? true),
+                        ], 200);
+                    }
+                }
+
+                return Http::response(['error' => 'not found'], 404);
+            }
+
+            if ($allowMutations && $method === 'GET' && preg_match('#/v6/domains/([^/]+)/config#', $url)) {
+                return Http::response(['misconfigured' => false], 200);
+            }
+
+            if ($allowMutations && $method === 'GET' && str_contains($url, '/v8/certs') && ! preg_match('#/v8/certs/[^/?]#', $url)) {
+                $certDomains = array_values(array_map(
+                    static fn (array $domain): string => strtolower((string) ($domain['name'] ?? '')),
+                    $domains
+                ));
+
+                return Http::response([
+                    'certs' => [[
+                        'id' => 'cert_test',
+                        'cns' => $certDomains,
+                        'expiresAt' => ((int) (microtime(true) * 1000)) + (90 * 86400 * 1000),
+                        'autoRenew' => true,
+                    ]],
+                    'pagination' => ['next' => null],
+                ], 200);
             }
 
             return Http::response(['error' => 'unexpected'], 500);
@@ -536,6 +696,34 @@ class CustomDomainCapacityTest extends AdminApiTestCase
                 'mandhoor.com',
             ],
         ]);
+    }
+
+    private function mockNameservers(bool $ok): void
+    {
+        $this->mock(DnsNameserverChecker::class, function ($mock) use ($ok) {
+            $mock->shouldReceive('hasExpectedNameservers')->andReturn($ok);
+            $mock->shouldReceive('getObservedNameservers')->andReturn(
+                $ok ? ['ns1.vercel-dns.com', 'ns2.vercel-dns.com'] : ['ns1.example.com']
+            );
+        });
+    }
+
+    private function mockDnsRecords(?bool $apexMatches = true, ?bool $wwwMatches = true): void
+    {
+        $this->mock(DomainDnsRecordService::class, function ($mock) use ($apexMatches, $wwwMatches) {
+            $mock->shouldReceive('inspect')->andReturn([
+                'apex_records' => [['type' => 'A', 'value' => '76.76.21.21']],
+                'www_records' => [['type' => 'CNAME', 'value' => 'cname.vercel-dns.com']],
+                'apex_addresses' => ['76.76.21.21'],
+                'apex_cnames' => [],
+                'www_addresses' => [],
+                'www_cnames' => ['cname.vercel-dns.com'],
+                'apex_matches_recommended' => $apexMatches,
+                'www_matches_recommended' => $wwwMatches,
+                'dns_provider_reachable' => true,
+                'dns_lookup_unknown' => false,
+            ]);
+        });
     }
 
     private function signInWebAdmin(): Admin

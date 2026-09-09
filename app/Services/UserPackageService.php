@@ -10,6 +10,7 @@ use App\Models\Membership;
 use Illuminate\Http\Request;
 use App\Http\Helpers\UserPermissionHelper;
 use Illuminate\Support\Facades\Log;
+use App\Services\Membership\MembershipAccessStateService;
 
 class UserPackageService
 {
@@ -41,6 +42,9 @@ class UserPackageService
             'payment_method' => $request->payment_method,
             'transaction_id' => uniqid(),
             'source' => 'admin_change_current',
+            'transition_reason' => (int) $selectedPackage->id === (int) config('membership.free_package_id', MembershipService::FREE_PACKAGE_ID)
+                ? MembershipAccessStateService::TRANSITION_MANUAL_FREE
+                : null,
         ]);
 
         if (!empty($nextMembership) && $selectedPackage->term !== MembershipService::TERM_LIFETIME) {
@@ -84,6 +88,9 @@ class UserPackageService
             'transaction_id' => uniqid(),
             'source' => 'admin_add_current',
             'skip_upgrade_hooks' => $skipHooks,
+            'transition_reason' => (int) $selectedPackage->id === (int) config('membership.free_package_id', MembershipService::FREE_PACKAGE_ID)
+                ? MembershipAccessStateService::TRANSITION_MANUAL_FREE
+                : null,
         ]);
 
         Session::flash('success', 'Current Package has been added successfully!');

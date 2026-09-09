@@ -17,7 +17,7 @@ class TenantResolver
         $tenantUser = null;
 
         if (strpos($cleanHost, $websiteHost) === false) {
-            $domain = ApiDomainSetting::where('custom_name', $cleanHost)->first();
+            $domain = ApiDomainSetting::servable()->where('custom_name', $cleanHost)->first();
             if ($domain) {
                 $tenantUser = $domain->user;
             }

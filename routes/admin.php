@@ -35,6 +35,9 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
     Route::group(['middleware' => 'checkpermission:Dashboard'], function () {
         // Admin Dashboard Routes
         Route::get('/dashboard', 'Admin\DashboardController@dashboard')->name('dashboard');
+        Route::get('/dashboard/online-presence', 'Admin\DashboardController@onlinePresence')
+            ->middleware('throttle:dashboard_presence_admin')
+            ->name('dashboard.online-presence');
     });
 
     // Admin Profile Routes
@@ -563,6 +566,8 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
     // Custom Domains
     Route::group(['middleware' => 'checkpermission:Custom Domains'], function () {
         Route::get('/domains', 'Admin\CustomDomainController@index')->name('custom-domain.index');
+        Route::get('/domain/setup-guide', 'Admin\CustomDomainController@setupGuide')
+            ->name('custom-domain.setup-guide');
         Route::get('/domain/{id}/diagnostics', 'Admin\CustomDomainController@diagnostics')
             ->whereNumber('id')
             ->name('custom-domain.diagnostics');
@@ -574,6 +579,9 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/domain/repair-verify', 'Admin\CustomDomainController@repairVerify')
             ->middleware('throttle:10,1')
             ->name('custom-domain.repair-verify');
+        Route::post('/domain/dns-mode', 'Admin\CustomDomainController@updateDnsMode')
+            ->middleware('throttle:10,1')
+            ->name('custom-domain.dns-mode');
         Route::post('/domain/www/enable', 'Admin\CustomDomainController@enableWww')
             ->middleware('throttle:10,1')
             ->name('custom-domain.www.enable');

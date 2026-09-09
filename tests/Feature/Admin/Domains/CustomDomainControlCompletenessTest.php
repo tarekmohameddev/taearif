@@ -9,6 +9,7 @@ use App\Domain\Admin\Models\Role;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User;
 use App\Services\Vercel\DnsNameserverChecker;
+use App\Services\Vercel\DomainDnsRecordService;
 use App\Services\Vercel\VercelDomainCache;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
@@ -30,6 +31,7 @@ class CustomDomainControlCompletenessTest extends AdminApiTestCase
         $_SERVER['DEMO_MODE'] = 'inactive';
 
         $this->ensureAdminViewData();
+        $this->mockDnsRecords();
         app(VercelDomainCache::class)->invalidate();
     }
 
@@ -223,6 +225,8 @@ class CustomDomainControlCompletenessTest extends AdminApiTestCase
         $response->assertSee($challengeValue, false);
         $response->assertSee('_vercel.diag.example.com', false);
         $response->assertSee($domain->custom_name, false);
+        $response->assertSee('name="confirm_domain"', false);
+        $response->assertDontSee('type="hidden" name="confirm_domain"', false);
     }
 
     /** @test */
@@ -369,6 +373,139 @@ class CustomDomainControlCompletenessTest extends AdminApiTestCase
         $this->assertNotSame($staleFetchedAt, $fresh['fetched_at'] ?? null);
     }
 
+    /** @test */
+    public function setup_guide_route_exists_as_get_and_resolves_expected_url(): void
+    {
+        $route = Route::getRoutes()->getByName('admin.custom-domain.setup-guide');
+
+        $this->assertNotNull($route);
+        $this->assertSame(['GET', 'HEAD'], $route->methods());
+        $this->assertSame('admin/domain/setup-guide', trim($route->uri(), '/'));
+        $this->assertSame('/admin/domain/setup-guide', route('admin.custom-domain.setup-guide', absolute: false));
+    }
+
+    /** @test */
+    public function setup_guide_route_keeps_custom_domains_permission_middleware(): void
+    {
+        $route = Route::getRoutes()->getByName('admin.custom-domain.setup-guide');
+
+        $this->assertNotNull($route);
+        $this->assertContains('checkpermission:Custom Domains', $route->gatherMiddleware());
+    }
+
+    /** @test */
+    public function authorized_admin_can_open_setup_guide_view_without_provider_requests_or_domain_rows(): void
+    {
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        ApiDomainSetting::query()->delete();
+
+        config([
+            'services.vercel.nameservers' => ['ns1.unit.test', 'ns2.unit.test'],
+            'services.vercel.external_dns' => [
+                'apex_record_type' => 'A',
+                'apex_record_host' => '@',
+                'apex_record_value' => '192.0.2.10',
+                'www_record_type' => 'CNAME',
+                'www_record_host' => 'www',
+                'www_record_value' => 'customer.unit-vercel.test',
+            ],
+        ]);
+
+        Http::fake();
+
+        $response = $this->get(route('admin.custom-domain.setup-guide'));
+        $html = $response->getContent();
+
+        $response->assertOk();
+        $response->assertViewIs('admin.domains.setup-guide');
+        $this->assertIsString($html);
+        $response->assertSeeText(__('domain_setup_guide.title'));
+        $response->assertSeeText(__('domain_setup_guide.tab_overview'));
+        $response->assertSeeText(__('domain_setup_guide.tab_vercel_ns'));
+        $response->assertSeeText(__('domain_setup_guide.tab_external_dns'));
+        $response->assertSeeText(__('domain_setup_guide.tab_troubleshooting'));
+        $response->assertSeeText(__('domain_setup_guide.tab_support'));
+        $response->assertSee('ns1.unit.test', false);
+        $response->assertSee('ns2.unit.test', false);
+        $response->assertSeeText(__('domain_dns.mode_vercel_ns'));
+        $response->assertSeeText(__('domain_dns.mode_external_dns'));
+        $response->assertSeeText(__('domain_setup_guide.diagnostics_title'));
+        $this->assertStringContainsString('role="tablist"', $html);
+        $this->assertStringContainsString('id="dns-guide-overview-tab"', $html);
+        $this->assertStringContainsString('href="#dns-guide-overview"', $html);
+        $this->assertStringContainsString('aria-controls="dns-guide-overview"', $html);
+        $this->assertStringContainsString('aria-selected="true"', $html);
+        $this->assertStringContainsString('href="#dns-guide-vercel-ns"', $html);
+        $this->assertStringContainsString('aria-controls="dns-guide-vercel-ns"', $html);
+        $this->assertStringContainsString('href="#dns-guide-external-dns"', $html);
+        $this->assertStringContainsString('aria-controls="dns-guide-external-dns"', $html);
+        $this->assertStringContainsString('href="#dns-guide-troubleshooting"', $html);
+        $this->assertStringContainsString('aria-controls="dns-guide-troubleshooting"', $html);
+        $this->assertStringContainsString('href="#dns-guide-support"', $html);
+        $this->assertStringContainsString('aria-controls="dns-guide-support"', $html);
+        $this->assertStringContainsString('class="nav-link active"', $html);
+        $this->assertStringContainsString('id="dns-guide-overview"', $html);
+        $this->assertStringContainsString('role="tabpanel"', $html);
+        $this->assertStringContainsString('aria-labelledby="dns-guide-overview-tab"', $html);
+        $this->assertStringContainsString('id="dns-guide-vercel-ns"', $html);
+        $this->assertStringContainsString('aria-labelledby="dns-guide-vercel-ns-tab"', $html);
+        $this->assertStringContainsString('id="dns-guide-external-dns"', $html);
+        $this->assertStringContainsString('aria-labelledby="dns-guide-external-dns-tab"', $html);
+        $this->assertStringContainsString('id="dns-guide-troubleshooting"', $html);
+        $this->assertStringContainsString('aria-labelledby="dns-guide-troubleshooting-tab"', $html);
+        $this->assertStringContainsString('id="dns-guide-support"', $html);
+        $this->assertStringContainsString('aria-labelledby="dns-guide-support-tab"', $html);
+        $this->assertStringContainsString('class="tab-pane fade show active"', $html);
+        $this->assertStringNotContainsString('class="tab-pane fade show active" id="dns-guide-vercel-ns"', $html);
+        $this->assertStringNotContainsString('class="tab-pane fade show active" id="dns-guide-external-dns"', $html);
+        $this->assertStringNotContainsString('class="tab-pane fade show active" id="dns-guide-troubleshooting"', $html);
+        $this->assertStringNotContainsString('class="tab-pane fade show active" id="dns-guide-support"', $html);
+        $this->assertStringContainsString('data-guide-target="#dns-guide-vercel-ns"', $html);
+        $this->assertStringContainsString('data-guide-target="#dns-guide-external-dns"', $html);
+        $response->assertSeeText(__('domain_setup_guide.support_external_title'));
+        $response->assertSeeText(__('domain_setup_guide.support_vercel_ns_title'));
+        $this->assertStringContainsString('id="domainSetupGuideExternalDnsTemplate"', $html);
+        $this->assertStringContainsString('id="domainSetupGuideExternalDnsCopyBtn"', $html);
+        $this->assertStringContainsString('data-copy-target="domainSetupGuideExternalDnsTemplate"', $html);
+        $this->assertStringContainsString('id="domainSetupGuideExternalDnsCopyStatus"', $html);
+        $this->assertStringContainsString('id="domainSetupGuideVercelNsTemplate"', $html);
+        $this->assertStringContainsString('id="domainSetupGuideVercelNsCopyBtn"', $html);
+        $this->assertStringContainsString('data-copy-target="domainSetupGuideVercelNsTemplate"', $html);
+        $this->assertStringContainsString('id="domainSetupGuideVercelNsCopyStatus"', $html);
+        $this->assertStringContainsString('class="btn btn-outline-primary btn-sm mr-2 domain-setup-guide__copy-btn"', $html);
+        $response->assertSeeText(__('domain_setup_guide.placeholder_domain'));
+        $response->assertSee('192.0.2.10', false);
+        $response->assertSee('customer.unit-vercel.test', false);
+        $response->assertDontSee('cname.vercel-dns-0.com', false);
+        $response->assertDontSee('.example.com', false);
+
+        Http::assertNothingSent();
+    }
+
+    /** @test */
+    public function guest_is_redirected_away_from_setup_guide_by_admin_auth_middleware(): void
+    {
+        $response = $this->get(route('admin.custom-domain.setup-guide'));
+
+        $response->assertRedirect(route('admin.login'));
+    }
+
+    /** @test */
+    public function domains_index_shows_setup_guide_link_for_authorized_admin(): void
+    {
+        $this->configureVercel();
+        $this->signInWebAdmin();
+        Http::fake();
+
+        $response = $this->get(route('admin.custom-domain.index'));
+
+        $response->assertOk();
+        $response->assertSee(route('admin.custom-domain.setup-guide'), false);
+        $response->assertSeeText(__('domain_setup_guide.toolbar_link'));
+    }
+
     /**
      * @test
      * @dataProvider protectedNewRouteNames
@@ -405,6 +542,8 @@ class CustomDomainControlCompletenessTest extends AdminApiTestCase
     {
         return [
             'diagnostics' => ['admin.custom-domain.diagnostics', 'get', []],
+            'setup_guide' => ['admin.custom-domain.setup-guide', 'get', []],
+            'dns_mode' => ['admin.custom-domain.dns-mode', 'post', ['domain_id' => 0, 'dns_mode' => 'external_dns', 'confirm_domain' => 'x.example.com']],
             'legacy_adopt' => ['admin.custom-domain.legacy-orphan.adopt', 'post', ['legacy_id' => 1]],
             'legacy_delete' => ['admin.custom-domain.legacy-orphan.delete', 'post', ['legacy_id' => 1, 'confirm_domain' => 'x.example.com']],
             'stray_www' => ['admin.custom-domain.stray-www.remove', 'post', ['www' => 'www.x.example.com', 'confirm_domain' => 'www.x.example.com']],
@@ -432,6 +571,7 @@ class CustomDomainControlCompletenessTest extends AdminApiTestCase
     public static function throttledPostRouteNames(): array
     {
         return [
+            'dns_mode' => ['admin.custom-domain.dns-mode'],
             'legacy_adopt' => ['admin.custom-domain.legacy-orphan.adopt'],
             'legacy_delete' => ['admin.custom-domain.legacy-orphan.delete'],
             'stray_www' => ['admin.custom-domain.stray-www.remove'],
@@ -571,6 +711,24 @@ class CustomDomainControlCompletenessTest extends AdminApiTestCase
             $mock->shouldReceive('getObservedNameservers')->andReturn(
                 $ok ? ['ns1.vercel-dns.com', 'ns2.vercel-dns.com'] : ['ns1.example.com']
             );
+        });
+    }
+
+    private function mockDnsRecords(?bool $apexMatches = true, ?bool $wwwMatches = true): void
+    {
+        $this->mock(DomainDnsRecordService::class, function ($mock) use ($apexMatches, $wwwMatches) {
+            $mock->shouldReceive('inspect')->andReturn([
+                'apex_records' => [['type' => 'A', 'value' => '76.76.21.21']],
+                'www_records' => [['type' => 'CNAME', 'value' => 'cname.vercel-dns.com']],
+                'apex_addresses' => ['76.76.21.21'],
+                'apex_cnames' => [],
+                'www_addresses' => [],
+                'www_cnames' => ['cname.vercel-dns.com'],
+                'apex_matches_recommended' => $apexMatches,
+                'www_matches_recommended' => $wwwMatches,
+                'dns_provider_reachable' => true,
+                'dns_lookup_unknown' => false,
+            ]);
         });
     }
 
