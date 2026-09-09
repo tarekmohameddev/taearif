@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\BasicSetting;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Config;
+use App\Services\Analytics\DashboardPresenceService;
 use App\Services\Admin\Dashboard\AdminDashboardPresenter;
 use App\Services\Admin\AdminDashboardMetricsService;
 use Illuminate\Support\Facades\Auth;
@@ -31,6 +33,11 @@ class DashboardController extends Controller
         return view('admin.dashboard', [
             'dashboard' => $presenter->present($metrics->build($admin)),
         ]);
+    }
+
+    public function onlinePresence(DashboardPresenceService $presenceService): JsonResponse
+    {
+        return response()->json($presenceService->snapshot());
     }
 
     public function changeTheme(Request $request)

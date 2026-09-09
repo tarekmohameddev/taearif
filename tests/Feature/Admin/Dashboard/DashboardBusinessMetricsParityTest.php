@@ -34,6 +34,7 @@ class DashboardBusinessMetricsParityTest extends AdminApiTestCase
         Sanctum::actingAs($tenant);
 
         Carbon::setTestNow(CarbonImmutable::parse('2026-09-06 23:50:00', 'Asia/Riyadh'));
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-09-06 23:50:00', 'Asia/Riyadh'));
         $this->postJson('/api/dashboard/visit')->assertNoContent();
         $this->postJson('/api/dashboard/visit')->assertNoContent();
 
@@ -49,10 +50,36 @@ class DashboardBusinessMetricsParityTest extends AdminApiTestCase
     }
 
     /** @test */
+    public function tenant_dashboard_visit_endpoint_rejects_ineligible_or_impersonated_users(): void
+    {
+        $inactive = User::factory()->create([
+            'account_type' => 'tenant',
+            'active' => false,
+            'username' => 'visit-inactive',
+            'email' => 'visit-inactive@example.test',
+        ]);
+
+        Sanctum::actingAs($inactive);
+        $this->postJson('/api/dashboard/visit')->assertForbidden();
+
+        $impersonated = User::factory()->create([
+            'account_type' => 'tenant',
+            'username' => 'visit-impersonated',
+            'email' => 'visit-impersonated@example.test',
+        ]);
+        $token = $impersonated->createToken('impersonated-by-admin-3')->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/dashboard/visit')
+            ->assertForbidden();
+    }
+
+    /** @test */
     public function business_metrics_count_unique_users_and_unique_tenants_from_daily_visits(): void
     {
         $clock = CarbonImmutable::parse('2026-09-06 10:00:00', 'Asia/Riyadh');
         Carbon::setTestNow($clock);
+        CarbonImmutable::setTestNow($clock);
 
         $this->withoutMiddleware(RequireActiveMembership::class);
         $this->withoutMiddleware(SetTenantForPermissions::class);
@@ -94,6 +121,7 @@ class DashboardBusinessMetricsParityTest extends AdminApiTestCase
     {
         $clock = CarbonImmutable::parse('2026-09-06 14:30:00', 'Asia/Riyadh');
         Carbon::setTestNow($clock);
+        CarbonImmutable::setTestNow($clock);
 
         $tenant = User::factory()->create([
             'account_type' => 'tenant',
@@ -161,5 +189,13 @@ class DashboardBusinessMetricsParityTest extends AdminApiTestCase
             $bladeDashboard['financialMetrics']['completedSalesValue']['amount'],
             $apiBusinessMetrics['financial_metrics']['completedSalesValue']['amount']
         );
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        CarbonImmutable::setTestNow();
+
+        parent::tearDown();
     }
 }

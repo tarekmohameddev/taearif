@@ -16,6 +16,7 @@ class AdminDashboardPresenter
         $trends = $dashboard['trendCharts'] ?? [];
         $breakdowns = $dashboard['breakdowns'] ?? [];
         $recent = $dashboard['recentActivity'] ?? [];
+        $presence = $dashboard['presence'] ?? [];
         $visibility = $dashboard['visibility'] ?? [];
         $asOf = $dashboard['asOf'] ?? now('Asia/Riyadh');
 
@@ -28,6 +29,7 @@ class AdminDashboardPresenter
             'raw' => $dashboard,
             'asOf' => $asOf,
             'visibility' => $visibility,
+            'livePresenceCards' => $this->livePresenceCards($presence),
             'headlineCards' => $this->headlineCards($executive),
             'operationCards' => $this->operationCards($operations, $visibility),
             'financialCards' => $this->financialCards($financial, $asOf),
@@ -44,6 +46,55 @@ class AdminDashboardPresenter
             'chartLabels' => [
                 'tenantRegistrations' => __('Tenant Registrations'),
                 'customers' => __('New Customers'),
+            ],
+        ];
+    }
+
+    private function livePresenceCards(array $presence): array
+    {
+        if ($presence === []) {
+            return [];
+        }
+
+        $available = (bool) ($presence['available'] ?? false);
+        $windowSeconds = (int) ($presence['window_seconds'] ?? 0);
+        $minutes = max(1, (int) ceil($windowSeconds / 60));
+        $unavailableHelper = __('Live dashboard presence is temporarily unavailable');
+
+        return [
+            [
+                'label' => __('Dashboard Users Online Now'),
+                'value' => $presence['online_users'],
+                'displayValue' => $available ? number_format((int) ($presence['online_users'] ?? 0)) : '—',
+                'helper' => $available
+                    ? __('Distinct eligible dashboard accounts active in the last :minutes minutes', ['minutes' => $minutes])
+                    : $unavailableHelper,
+                'icon' => 'radio',
+                'tone' => $available ? 'success' : 'neutral',
+                'attributes' => [
+                    'data-dashboard-live-card' => 'true',
+                    'data-dashboard-live-key' => 'online_users',
+                    'data-dashboard-live-available-helper' => __('Distinct eligible dashboard accounts active in the last :minutes minutes', ['minutes' => $minutes]),
+                    'data-dashboard-live-unavailable-helper' => $unavailableHelper,
+                    'data-dashboard-live-unavailable-value' => '—',
+                ],
+            ],
+            [
+                'label' => __('Tenant Organizations Online Now'),
+                'value' => $presence['online_tenant_organizations'],
+                'displayValue' => $available ? number_format((int) ($presence['online_tenant_organizations'] ?? 0)) : '—',
+                'helper' => $available
+                    ? __('Distinct tenant organizations with at least one eligible dashboard user active in the last :minutes minutes', ['minutes' => $minutes])
+                    : $unavailableHelper,
+                'icon' => 'building',
+                'tone' => $available ? 'violet' : 'neutral',
+                'attributes' => [
+                    'data-dashboard-live-card' => 'true',
+                    'data-dashboard-live-key' => 'online_tenant_organizations',
+                    'data-dashboard-live-available-helper' => __('Distinct tenant organizations with at least one eligible dashboard user active in the last :minutes minutes', ['minutes' => $minutes]),
+                    'data-dashboard-live-unavailable-helper' => $unavailableHelper,
+                    'data-dashboard-live-unavailable-value' => '—',
+                ],
             ],
         ];
     }
