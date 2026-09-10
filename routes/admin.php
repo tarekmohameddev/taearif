@@ -499,6 +499,7 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/user/store', 'Admin\UserController@store')->name('user.store');
         Route::get('/user/{id}/edit', 'Admin\UserController@edit')->name('user.edit');
         Route::post('/user/update', 'Admin\UserController@update')->name('user.update');
+        Route::post('/user/update-password', 'Admin\UserController@updatePassword')->name('user.updatePassword');
         Route::post('/user/{id}/uploadUpdate', 'Admin\UserController@uploadUpdate')->name('user.uploadUpdate');
         Route::post('/user/delete', 'Admin\UserController@delete')->name('user.delete');
     });

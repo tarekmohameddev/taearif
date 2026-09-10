@@ -85,7 +85,6 @@ class UserController extends Controller
             'first_name' => 'required|max:255',
             'last_name' => 'required|max:255',
             'role_id' => 'required',
-            'password' => 'nullable|confirmed',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -95,23 +94,39 @@ class UserController extends Controller
         }
 
         $input = $request->all();
-
-        if ($request->filled('password')) {
-            $input['password'] = bcrypt($request->password);
-        } else {
-            unset($input['password']);
-        }
+        unset($input['password'], $input['password_confirmation']);
 
         if ($request->hasFile('image')) {
             @unlink(public_path('assets/admin/img/propics/' . $user->image));
             $image = $request->image;
             $name =  uniqid() . '.' . $image->getClientOriginalExtension();
-            $image->move(public_path('assets/admin/img/propics/', $name));
+            $image->move(public_path('assets/admin/img/propics/'), $name);
             $input['image'] = $name;
         }
         $user->update($input);
 
         Session::flash('success', 'User updated successfully!');
+        return "success";
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $user = Admin::findOrFail($request->user_id);
+
+        $rules = [
+            'password' => 'required|confirmed',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            $errmsgs = $validator->getMessageBag()->add('error', 'true');
+            return response()->json($validator->errors());
+        }
+
+        $user->password = bcrypt($request->password);
+        $user->save();
+
+        Session::flash('success', 'Password updated successfully!');
         return "success";
     }
 
