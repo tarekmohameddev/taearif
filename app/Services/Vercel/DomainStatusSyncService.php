@@ -653,18 +653,7 @@ class DomainStatusSyncService
      */
     private function isWwwRedirectCorrect(?array $wwwInventory, string $apex): bool
     {
-        if ($wwwInventory === null) {
-            return false;
-        }
-
-        $redirect = isset($wwwInventory['redirect']) ? strtolower((string) $wwwInventory['redirect']) : null;
-        $statusCode = isset($wwwInventory['redirectStatusCode']) ? (int) $wwwInventory['redirectStatusCode'] : null;
-
-        if ($redirect !== $apex) {
-            return false;
-        }
-
-        return $statusCode === null || in_array($statusCode, [301, 308], true);
+        return WwwRedirectPolicy::isCorrect($wwwInventory, $apex);
     }
 
     /**

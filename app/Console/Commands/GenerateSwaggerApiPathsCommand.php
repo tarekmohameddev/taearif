@@ -1137,7 +1137,10 @@ class GenerateSwaggerApiPathsCommand extends Command
                 $operationId = $this->uniqueOperationId($path, $method, $i);
                 $tag = $this->pathToTag($path);
                 $tagEsc = $this->escapeDocblock($tag);
-                $summary = $this->escapeDocblock($this->summaryFromAction($op['action'], $path, $method));
+                $enrichment = $this->operationEnrichment($path, $method);
+                $summary = $this->escapeDocblock(
+                    $enrichment['summary'] ?? $this->summaryFromAction($op['action'], $path, $method)
+                );
                 $sec = $op['secured'] ? ', security={{"sanctum":{}}}' : '';
                 $opsLines[] = " *     @OA\\{$oaMethod}(";
                 $opsLines[] = " *         operationId=\"{$operationId}\",";
@@ -1147,29 +1150,41 @@ class GenerateSwaggerApiPathsCommand extends Command
                     $opsLines[] = $paramLine;
                 }
                 if (in_array($oaMethod, ['Post', 'Put', 'Patch'], true)) {
-                    $resolved = $this->resolveValidationRulesForOperation($op, $path);
-                    $requestBodyLines = null;
-                    if ($resolved !== null) {
-                        try {
-                            $schema = $this->rulesToSchema($resolved['rules']);
-                            $requestBodyLines = $this->emitRequestBodyAnnotations($schema);
-                        } catch (\Throwable $e) {
-                            $requestBodyLines = null;
-                        }
-                    }
-                    if ($requestBodyLines !== null && !empty($requestBodyLines)) {
-                        foreach ($requestBodyLines as $line) {
+                    if (! empty($enrichment['request_body_lines']) && is_array($enrichment['request_body_lines'])) {
+                        foreach ($enrichment['request_body_lines'] as $line) {
                             $opsLines[] = $line;
                         }
-                    } elseif ($resolved === null) {
-                        // truly unresolved - show the fallback message
-                        $this->fallbackCount++;
-                        $opsLines[] = " *         @OA\\RequestBody(required=true, @OA\\JsonContent(type=\"object\", description=\"Schema not resolved. Add FormRequest or swagger_request_map entry for this operation.\")),";
+                    } else {
+                        $resolved = $this->resolveValidationRulesForOperation($op, $path);
+                        $requestBodyLines = null;
+                        if ($resolved !== null) {
+                            try {
+                                $schema = $this->rulesToSchema($resolved['rules']);
+                                $requestBodyLines = $this->emitRequestBodyAnnotations($schema);
+                            } catch (\Throwable $e) {
+                                $requestBodyLines = null;
+                            }
+                        }
+                        if ($requestBodyLines !== null && !empty($requestBodyLines)) {
+                            foreach ($requestBodyLines as $line) {
+                                $opsLines[] = $line;
+                            }
+                        } elseif ($resolved === null) {
+                            // truly unresolved - show the fallback message
+                            $this->fallbackCount++;
+                            $opsLines[] = " *         @OA\\RequestBody(required=true, @OA\\JsonContent(type=\"object\", description=\"Schema not resolved. Add FormRequest or swagger_request_map entry for this operation.\")),";
+                        }
+                        // if resolved but empty properties: action-only, emit nothing
                     }
-                    // if resolved but empty properties: action-only, emit nothing
                 }
-                $opsLines[] = " *         @OA\\Response(response=200, description=\"OK\", @OA\\JsonContent(type=\"object\", @OA\\Property(property=\"status\", type=\"string\", example=\"success\"), @OA\\Property(property=\"data\", type=\"object\"), @OA\\Property(property=\"message\", type=\"string\", nullable=true))),";
-                $opsLines[] = " *         @OA\\Response(response=401, description=\"Unauthenticated\")";
+                if (! empty($enrichment['response_lines']) && is_array($enrichment['response_lines'])) {
+                    foreach ($enrichment['response_lines'] as $line) {
+                        $opsLines[] = $line;
+                    }
+                } else {
+                    $opsLines[] = " *         @OA\\Response(response=200, description=\"OK\", @OA\\JsonContent(type=\"object\", @OA\\Property(property=\"status\", type=\"string\", example=\"success\"), @OA\\Property(property=\"data\", type=\"object\"), @OA\\Property(property=\"message\", type=\"string\", nullable=true))),";
+                    $opsLines[] = " *         @OA\\Response(response=401, description=\"Unauthenticated\")";
+                }
                 $opsLines[] = $i < $last ? " *     )," : " *     )";
             }
             $pathItems[] = " * @OA\\PathItem(";
@@ -1214,6 +1229,86 @@ PHP;
             $s = $method . ' ' . $path;
         }
         return mb_substr($s, 0, 80);
+    }
+
+    /**
+     * Durable path enrichments for domain OpenAPI docs (regen-safe).
+     * Keys: "{METHOD} {path}". Only registered routes are emitted — obsolete
+     * unrouted SSL toggle docs are intentionally omitted from this map.
+     *
+     * @return array{summary?: string, request_body_lines?: list<string>, response_lines?: list<string>}|null
+     */
+    private function operationEnrichment(string $path, string $method): ?array
+    {
+        $key = strtoupper($method) . ' ' . $path;
+        $map = [
+            'GET /settings/domain' => [
+                'summary' => 'List tenant domains (includes per-domain dnsInstructions/www and availableDnsModes for the add form). Collection-level dnsInstructions is nameserver-style for backward compatibility; new clients should use per-domain dnsInstructions and availableDnsModes for external_dns.',
+                'response_lines' => [
+                    ' *         @OA\\Response(response=200, description="OK", @OA\\JsonContent(type="object",',
+                    ' *             @OA\\Property(property="domains", type="array", @OA\\Items(type="object")),',
+                    ' *             @OA\\Property(property="dnsInstructions", type="object", description="Legacy collection-level nameserver instructions"),',
+                    ' *             @OA\\Property(property="availableDnsModes", type="array", @OA\\Items(type="object",',
+                    ' *                 @OA\\Property(property="value", type="string", enum={"vercel_ns","external_dns"}),',
+                    ' *                 @OA\\Property(property="label", type="string"),',
+                    ' *                 @OA\\Property(property="instructions", type="object")',
+                    ' *             ))',
+                    ' *         )),',
+                    ' *         @OA\\Response(response=401, description="Unauthenticated")',
+                ],
+            ],
+            'POST /settings/domain' => [
+                'summary' => 'Store custom domain (optional dns_mode defaults to vercel_ns)',
+                'request_body_lines' => [
+                    ' *         @OA\\RequestBody(required=true, @OA\\JsonContent(type="object", required={"custom_name"},',
+                    ' *             @OA\\Property(property="custom_name", type="string", maxLength=255),',
+                    ' *             @OA\\Property(property="dns_mode", type="string", enum={"vercel_ns","external_dns"}, description="Optional; defaults to vercel_ns when omitted"),',
+                    ' *         )),',
+                ],
+                'response_lines' => [
+                    ' *         @OA\\Response(response=201, description="Created", @OA\\JsonContent(type="object",',
+                    ' *             @OA\\Property(property="success", type="boolean"),',
+                    ' *             @OA\\Property(property="data", type="object"),',
+                    ' *             @OA\\Property(property="dnsMode", type="string"),',
+                    ' *             @OA\\Property(property="dnsInstructions", type="object", description="Mode-specific setup instructions"),',
+                    ' *             @OA\\Property(property="message", type="string", nullable=true)',
+                    ' *         )),',
+                    ' *         @OA\\Response(response=401, description="Unauthenticated"),',
+                    ' *         @OA\\Response(response=422, description="Validation failed")',
+                ],
+            ],
+            'POST /settings/domain/www/enable' => [
+                'summary' => 'Enable www redirect for a tenant domain',
+                'request_body_lines' => [
+                    ' *         @OA\\RequestBody(required=true, @OA\\JsonContent(type="object", required={"id"},',
+                    ' *             @OA\\Property(property="id", type="integer", description="Tenant-owned api_domains_settings id"),',
+                    ' *         )),',
+                ],
+                'response_lines' => [
+                    ' *         @OA\\Response(response=200, description="Enabled or already enabled", @OA\\JsonContent(type="object",',
+                    ' *             @OA\\Property(property="success", type="boolean"),',
+                    ' *             @OA\\Property(property="message", type="string"),',
+                    ' *             @OA\\Property(property="data", type="object",',
+                    ' *                 @OA\\Property(property="domainId", type="integer"),',
+                    ' *                 @OA\\Property(property="hostname", type="string"),',
+                    ' *                 @OA\\Property(property="redirectTarget", type="string"),',
+                    ' *                 @OA\\Property(property="redirectStatusCode", type="integer", example=301),',
+                    ' *                 @OA\\Property(property="alreadyEnabled", type="boolean"),',
+                    ' *                 @OA\\Property(property="www", type="object")',
+                    ' *             ),',
+                    ' *             @OA\\Property(property="dnsMode", type="string"),',
+                    ' *             @OA\\Property(property="dnsInstructions", type="object")',
+                    ' *         )),',
+                    ' *         @OA\\Response(response=401, description="Unauthenticated"),',
+                    ' *         @OA\\Response(response=404, description="Domain not found for tenant"),',
+                    ' *         @OA\\Response(response=409, description="Existing www redirect mismatch"),',
+                    ' *         @OA\\Response(response=422, description="Validation failed or apex not attached"),',
+                    ' *         @OA\\Response(response=503, description="Capacity, mutation guard, or provider unavailable")',
+                ],
+            ],
+        ];
+
+        return $map[$key] ?? null;
     }
 
     private function escapeDocblock(string $s): string

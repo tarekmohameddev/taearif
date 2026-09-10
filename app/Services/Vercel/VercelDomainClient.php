@@ -866,11 +866,9 @@ class VercelDomainClient
         $actualTarget = isset($existing['redirect']) ? strtolower((string) $existing['redirect']) : null;
         $actualStatusCode = isset($existing['redirectStatusCode']) ? (int) $existing['redirectStatusCode'] : null;
 
+        // Exact match only — never treat 308 or missing status as equivalent to 301.
         $targetMatches = $actualTarget === $this->normalizeApex($expectedTarget);
-        $statusMatches = $actualStatusCode === null
-            || $actualStatusCode === $expectedStatusCode
-            || ($expectedStatusCode === 301 && $actualStatusCode === 308)
-            || ($expectedStatusCode === 308 && $actualStatusCode === 301);
+        $statusMatches = $actualStatusCode === $expectedStatusCode;
 
         if ($targetMatches && $statusMatches) {
             return;

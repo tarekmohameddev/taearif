@@ -3,8 +3,10 @@
 namespace App\Http\Requests\Api\Domain;
 
 use App\Http\Requests\Api\BaseApiFormRequest;
+use App\Models\Api\ApiDomainSetting;
 use App\Rules\ValidApexDomain;
 use App\Support\ApexDomainValidator;
+use Illuminate\Validation\Rule;
 
 class StoreDomainSettingRequest extends BaseApiFormRequest
 {
@@ -33,6 +35,15 @@ class StoreDomainSettingRequest extends BaseApiFormRequest
                 'string',
                 'max:255',
                 new ValidApexDomain(),
+            ],
+            'dns_mode' => [
+                'sometimes',
+                'required',
+                'string',
+                Rule::in([
+                    ApiDomainSetting::DNS_MODE_VERCEL_NS,
+                    ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+                ]),
             ],
         ];
     }
