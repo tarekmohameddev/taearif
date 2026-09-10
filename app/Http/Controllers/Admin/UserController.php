@@ -85,6 +85,7 @@ class UserController extends Controller
             'first_name' => 'required|max:255',
             'last_name' => 'required|max:255',
             'role_id' => 'required',
+            'password' => 'nullable|confirmed',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -94,6 +95,12 @@ class UserController extends Controller
         }
 
         $input = $request->all();
+
+        if ($request->filled('password')) {
+            $input['password'] = bcrypt($request->password);
+        } else {
+            unset($input['password']);
+        }
 
         if ($request->hasFile('image')) {
             @unlink(public_path('assets/admin/img/propics/' . $user->image));
