@@ -74,6 +74,16 @@
                     </li>
                 @endif
 
+                {{-- Admins (main/super admin only) --}}
+                @if (empty($admin->role))
+                    <li class="nav-item @if (request()->routeIs('admin.user.*')) active @endif">
+                        <a href="{{ route('admin.user.index') }}">
+                            <i data-lucide="user-cog"></i>
+                            <p>{{ __('Admins') }}</p>
+                        </a>
+                    </li>
+                @endif
+
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Payment Log', $permissions)))
                     <li class="nav-item
                     @if (request()->path() == 'admin/payment-log') active @endif">

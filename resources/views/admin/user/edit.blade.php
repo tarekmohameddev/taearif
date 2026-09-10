@@ -115,6 +115,23 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <label for="">{{__('Password')}}</label>
+                                            <input type="password" class="form-control" name="password" placeholder="{{__('Leave blank to keep current password')}}" value="" autocomplete="new-password">
+                                            <p id="errpassword" class="mb-0 text-danger em"></p>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <label for="">{{__('Re-type Password')}}</label>
+                                            <input type="password" class="form-control" name="password_confirmation" placeholder="{{__('Enter password again')}}" value="" autocomplete="new-password">
+                                            <p id="errpassword_confirmation" class="mb-0 text-danger em"></p>
+                                        </div>
+                                    </div>
+                                </div>
                             </form>
                         </div>
                     </div>
