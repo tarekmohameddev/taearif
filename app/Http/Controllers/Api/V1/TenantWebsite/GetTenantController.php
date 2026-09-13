@@ -13,11 +13,19 @@ use App\Models\TenantSetting;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\Api\GeneralSetting;
 use App\Models\User\BasicSetting;
+use App\Services\Membership\MembershipAccessStateService;
 
 use App\Http\Requests\Api\V1\TenantWebsite\GetTenantRequest;
 
 class GetTenantController extends Controller
 {
+    protected $accessStateService;
+
+    public function __construct(MembershipAccessStateService $accessStateService)
+    {
+        $this->accessStateService = $accessStateService;
+    }
+
     public function store(GetTenantRequest $request)
     {
         $data = $request->validated();
@@ -29,8 +37,8 @@ class GetTenantController extends Controller
         // If not found, try resolving by custom domain
         if (!$tenant) {
             $domain = $this->normalizeDomain($input);
-            $domainRecord = ApiDomainSetting::where('custom_name', $domain)
-                ->where('status', 'active')
+            $domainRecord = ApiDomainSetting::servable()
+                ->where('custom_name', $domain)
                 ->first();
 
             if ($domainRecord) {
@@ -78,6 +86,7 @@ class GetTenantController extends Controller
                 'name' => $basicSetting?->company_name ?: $tenant->username,
                 'websiteBranding' => data_get($tenantSetting?->settings, 'websiteBranding'),
             ];
+            $publicAccessState = $this->accessStateService->publicForTenant($tenant);
             return response()->json([
                 'username' => $tenant->username,
                 'websiteName' => $tenant->username,
@@ -88,6 +97,8 @@ class GetTenantController extends Controller
                 'ThemesBackup' => $layout?->themes_backup ?? null,
                 'StaticPages' => $staticPagesData,
                 'maintenance_mode' => $this->isMaintenanceMode($tenant),
+                'subscription' => $publicAccessState['subscription'],
+                'website_access' => $publicAccessState['website_access'],
             ]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('GetTenant failed', [
@@ -102,6 +113,7 @@ class GetTenantController extends Controller
                 'name' => $basicSetting?->company_name ?: $tenant->username,
                 'websiteBranding' => null,
             ];
+            $publicAccessState = $this->accessStateService->publicForTenant($tenant);
             return response()->json([
                 'username' => $tenant->username,
                 'websiteName' => $tenant->username,
@@ -112,6 +124,8 @@ class GetTenantController extends Controller
                 'ThemesBackup' => null,
                 'StaticPages' => null,
                 'maintenance_mode' => $this->isMaintenanceMode($tenant),
+                'subscription' => $publicAccessState['subscription'],
+                'website_access' => $publicAccessState['website_access'],
             ]);
         }
     }

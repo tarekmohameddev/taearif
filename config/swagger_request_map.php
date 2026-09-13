@@ -21,6 +21,15 @@ $base = [
     // No request body (action-only POST)
     'App\Http\Controllers\ImpersonationController@stop' => [],
 
+    // Domain onboarding (docs durability; FormRequests also resolve these)
+    'App\Http\Controllers\Api\DomainSettingsController@store' => [
+        'custom_name' => ['required', 'string', 'max:255'],
+        'dns_mode' => ['sometimes', 'required', 'string', 'in:vercel_ns,external_dns'],
+    ],
+    'App\Http\Controllers\Api\DomainSettingsController@enableWww' => [
+        'id' => ['required', 'integer'],
+    ],
+
 ];
 
 $extended = file_exists(__DIR__ . '/swagger_request_map_extended.php')

@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\{
     UploadController,
     PaymentController,
     AnalyticsDashboardController,
+    DashboardPresenceController,
     DashboardVisitController,
     OnboardingController,
     PublicUserController,
@@ -250,10 +251,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/dashboard/visit', DashboardVisitController::class);
+    Route::post('/dashboard/presence/heartbeat', [DashboardPresenceController::class, 'heartbeat'])
+        ->middleware('throttle:dashboard_presence_heartbeat');
+});
+
 // --- Dashboard (require active package) ---
 Route::middleware(['auth:sanctum', 'require.active.package'])->group(function () {
     Route::get('/dashboard', [AnalyticsDashboardController::class, 'dashboard']);
-    Route::post('/dashboard/visit', DashboardVisitController::class);
     Route::get('/dashboard/summary', [AnalyticsDashboardController::class, 'summary']);
     Route::post('/dashboard/visitors', [AnalyticsDashboardController::class, 'visitors']);
     Route::get('/dashboard/devices', [AnalyticsDashboardController::class, 'devices']);
@@ -533,6 +539,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/settings/payment', [PaymentController::class, 'index']); //PaymentController
     // (small note: remove the stray spaces in your paths like '/settings/domain ')
     Route::get   ('/settings/domain',                 [DomainSettingsController::class, 'index'])->middleware('can:settings.update');
+    Route::post  ('/settings/domain/www/enable',      [DomainSettingsController::class, 'enableWww'])->middleware(['can:settings.update', 'throttle:10,1']);
     Route::get   ('/settings/domain/{id}',            [DomainSettingsController::class, 'show'])->middleware('can:settings.update');
     Route::post  ('/settings/domain',                 [DomainSettingsController::class, 'store'])->middleware(['can:settings.update', 'throttle:10,1']);
     Route::post  ('/settings/domain/verify',          [DomainSettingsController::class, 'verify'])->middleware(['can:settings.update', 'throttle:10,1']);

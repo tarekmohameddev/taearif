@@ -100,6 +100,14 @@ return [
             'ns1.vercel-dns.com',
             'ns2.vercel-dns.com',
         ],
+        'external_dns' => [
+            'apex_record_type' => 'A',
+            'apex_record_host' => '@',
+            'apex_record_value' => env('VERCEL_EXTERNAL_DNS_APEX_IPV4', '76.76.21.21'),
+            'www_record_type' => 'CNAME',
+            'www_record_host' => 'www',
+            'www_record_value' => env('VERCEL_EXTERNAL_DNS_WWW_CNAME', 'cname.vercel-dns.com'),
+        ],
         'max_domains_per_tenant' => (int) env('VERCEL_MAX_DOMAINS_PER_TENANT', 5),
         'max_project_domains' => filled(env('VERCEL_MAX_PROJECT_DOMAINS'))
             ? (int) env('VERCEL_MAX_PROJECT_DOMAINS')

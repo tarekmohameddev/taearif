@@ -109,9 +109,13 @@
             "php artisan view:clear"
 
         ],
+        "test": [
+            "scripts\\php-with-sqlite.bat vendor\\bin\\phpunit"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi"
+            "@php artisan package:discover --ansi",
+            "@php scripts/ensure-sqlite-test-launchers.php"
         ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""

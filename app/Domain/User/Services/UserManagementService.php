@@ -15,6 +15,7 @@ use App\Domain\Billing\Models\Invoice;
 use App\Models\Package;
 use App\Models\User as TenantUser;
 use App\Services\MembershipService;
+use App\Services\Membership\MembershipAccessStateService;
 use App\Domain\Shared\Services\BaseService;
 use App\Exceptions\ResourceNotFoundException;
 use App\Exceptions\BusinessLogicException;
@@ -828,6 +829,9 @@ class UserManagementService extends BaseService
                     'transaction_id' => 'ADMIN_PLAN_CHANGE_' . now()->timestamp,
                     'price' => (float) $newPlan->price,
                     'source' => 'admin_change',
+                    'transition_reason' => (int) $package->id === (int) config('membership.free_package_id', MembershipService::FREE_PACKAGE_ID)
+                        ? MembershipAccessStateService::TRANSITION_MANUAL_FREE
+                        : null,
                 ]);
             } else {
                 $membershipService->queueNextMembership($tenant, $package, [

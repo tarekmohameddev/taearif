@@ -56,7 +56,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('expire:user')->daily();
+        $schedule->command('expire:user')
+            ->daily()
+            ->withoutOverlapping()
+            ->onOneServer();
         $schedule->command('app:expire-trials')->daily();
         $schedule->command('app:verify-pending-payments')->everyThirtyMinutes();
         $schedule->command('reminders:process')->dailyAt('04:00')->timezone('Asia/Riyadh');

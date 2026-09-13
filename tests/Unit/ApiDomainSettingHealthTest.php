@@ -6,7 +6,9 @@ namespace Tests\Unit;
 
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User;
+use App\Services\Vercel\DomainHealthPolicy;
 use App\Services\Vercel\DomainStatusSyncService;
+use App\Services\Vercel\DomainDnsRecordService;
 use App\Services\Vercel\DnsNameserverChecker;
 use App\Services\Vercel\VercelDomainClient;
 use Carbon\Carbon;
@@ -17,6 +19,31 @@ use Tests\TestCase;
 class ApiDomainSettingHealthTest extends TestCase
 {
     use DatabaseTransactions;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->mock(DomainDnsRecordService::class, function ($mock) {
+            $mock->shouldReceive('inspect')->andReturn([
+                'apex_records' => [['type' => 'A', 'value' => '76.76.21.21']],
+                'www_records' => [['type' => 'CNAME', 'value' => 'cname.vercel-dns.com']],
+                'apex_addresses' => ['76.76.21.21'],
+                'apex_cnames' => [],
+                'www_addresses' => [],
+                'www_cnames' => ['cname.vercel-dns.com'],
+                'apex_matches_recommended' => true,
+                'www_matches_recommended' => true,
+                'apex_lookup_known' => true,
+                'www_lookup_known' => true,
+                'dns_provider_reachable' => true,
+                'dns_lookup_unknown' => false,
+                'apex_dns_lookup_unknown' => false,
+                'www_dns_lookup_unknown' => false,
+            ]);
+        });
+    }
+
     /** @test */
     public function health_is_unchecked_when_last_check_is_missing(): void
     {
@@ -136,6 +163,50 @@ class ApiDomainSettingHealthTest extends TestCase
     }
 
     /** @test */
+    public function health_is_apex_only_when_only_optional_www_lookup_is_unknown(): void
+    {
+        $domain = $this->domainWithLastCheck([
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
+            'account_domain_present' => true,
+            'zone_enabled' => true,
+            'nameservers_ok' => true,
+            'dns_misconfigured' => false,
+            'ssl_ready' => true,
+            'apex_ssl_ready' => true,
+            'www_present' => false,
+            'www_redirect_correct' => false,
+            'dns_lookup_unknown' => false,
+            'apex_dns_lookup_unknown' => false,
+            'www_dns_lookup_unknown' => true,
+        ]);
+
+        $this->assertSame('apex_only', $domain->health()['code']);
+    }
+
+    /** @test */
+    public function vercel_ns_health_ignores_unknown_apex_public_lookup_when_other_evidence_is_sufficient(): void
+    {
+        $code = ApiDomainSetting::resolveHealthCode([
+            'dns_mode' => ApiDomainSetting::DNS_MODE_VERCEL_NS,
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
+            'account_domain_present' => true,
+            'zone_enabled' => true,
+            'nameservers_ok' => true,
+            'apex_dns_lookup_unknown' => true,
+            'www_dns_lookup_unknown' => false,
+        ], true);
+
+        $this->assertSame('apex_only', $code);
+    }
+
+    /** @test */
     public function health_is_dns_misconfigured_when_vercel_reports_misconfiguration(): void
     {
         $domain = $this->domainWithLastCheck([
@@ -202,6 +273,28 @@ class ApiDomainSettingHealthTest extends TestCase
         ]);
 
         $this->assertSame('ns_not_pointing', $domain->health(true)['code']);
+    }
+
+    /** @test */
+    public function external_dns_health_does_not_fail_only_for_non_vercel_nameservers(): void
+    {
+        $domain = $this->domainWithLastCheck([
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => true,
+            'nameservers_ok' => false,
+            'apex_matches_recommended' => true,
+            'www_matches_recommended' => true,
+            'www_present' => true,
+            'www_redirect_correct' => true,
+            'apex_ssl_ready' => true,
+            'www_ssl_ready' => true,
+            'ssl_ready' => true,
+        ]);
+
+        $this->assertSame('linked', $domain->health(true)['code']);
     }
 
     /** @test */
@@ -376,6 +469,11 @@ class ApiDomainSettingHealthTest extends TestCase
                 429,
                 internalCode: \App\Services\Vercel\VercelDomainException::CODE_RATE_LIMITED
             ));
+            $mock->shouldReceive('listCertificates')->andReturn([
+                'certificates' => [],
+                'is_lower_bound' => false,
+            ]);
+            $mock->shouldReceive('findCoveringCertificate')->andReturn(null);
         });
 
         $this->mock(DnsNameserverChecker::class, function ($mock) {

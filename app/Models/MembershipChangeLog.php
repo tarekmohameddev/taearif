@@ -14,8 +14,11 @@ class MembershipChangeLog extends Model
         'username',
         'email',
         'action',
+        'reason',
         'previous_package',
+        'previous_package_id',
         'new_package',
+        'new_package_id',
         'event_timestamp',
     ];
 
