@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Reports;
 
 use App\Domain\Reports\DTOs\ReportDateFilter;
+use App\Domain\Reports\DTOs\ReportFilters;
 use App\Domain\Reports\Services\PlatformReportService;
 use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\Api\V1\Reports\ReportFilterRequest;
@@ -50,7 +51,9 @@ class PlatformReportController extends BaseApiController
                 : null;
             $page    = (int) $request->input('page', 1);
             $limit   = (int) $request->input('limit', 20);
-            return $this->success($this->service->employees($userId, $page, $limit, $actorId));
+            $search  = $request->input('search');
+            $search  = is_string($search) && trim($search) !== '' ? trim($search) : null;
+            return $this->success($this->service->employees($userId, $page, $limit, $actorId, $search));
         }, 'retrieve platform employees');
     }
 
@@ -82,7 +85,7 @@ class PlatformReportController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request) {
             $userId = $request->attributes->get('report_user_id');
-            $filter = ReportDateFilter::fromRequest($request);
+            $filter = ReportFilters::fromRequest($request);
             $page   = (int) $request->input('page', 1);
             $limit  = (int) $request->input('limit', 20);
             return $this->success($this->service->propertyDetails($userId, $filter, $page, $limit));
@@ -112,5 +115,45 @@ class PlatformReportController extends BaseApiController
             $filter = ReportDateFilter::fromRequest($request);
             return $this->success($this->service->performanceAlerts($userId, $filter));
         }, 'retrieve platform performance alerts');
+    }
+
+    public function propertyStats(ReportFilterRequest $request)
+    {
+        return $this->executeWithExceptionHandling(function () use ($request) {
+            $userId = $request->attributes->get('report_user_id');
+            $filter = ReportFilters::fromRequest($request);
+            return $this->success($this->service->propertyStats($userId, $filter));
+        }, 'retrieve platform property stats');
+    }
+
+    public function performanceKpis(ReportFilterRequest $request)
+    {
+        return $this->executeWithExceptionHandling(function () use ($request) {
+            $userId = $request->attributes->get('report_user_id');
+            $filter = ReportFilters::fromRequest($request);
+            return $this->success($this->service->performanceKpis($userId, $filter));
+        }, 'retrieve platform performance KPIs');
+    }
+
+    public function activityLog(ReportFilterRequest $request)
+    {
+        return $this->executeWithExceptionHandling(function () use ($request) {
+            $userId = $request->attributes->get('report_user_id');
+            $filter = ReportFilters::fromRequest($request);
+            $page   = (int) $request->input('page', 1);
+            $limit  = (int) $request->input('limit', 20);
+            return $this->success($this->service->activityLog($userId, $filter, $page, $limit));
+        }, 'retrieve platform activity log');
+    }
+
+    public function messages(ReportFilterRequest $request)
+    {
+        return $this->executeWithExceptionHandling(function () use ($request) {
+            $userId = $request->attributes->get('report_user_id');
+            $filter = ReportFilters::fromRequest($request);
+            $page   = (int) $request->input('page', 1);
+            $limit  = (int) $request->input('limit', 20);
+            return $this->success($this->service->messages($userId, $filter, $page, $limit));
+        }, 'retrieve platform messages');
     }
 }

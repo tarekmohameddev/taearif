@@ -494,8 +494,15 @@ class DomainProvisioningService
         $apexVerified = $apexAttached && ! empty(($projectDomain ?? $apexInventory)['verified']);
         if ($dnsMode === ApiDomainSetting::DNS_MODE_EXTERNAL_DNS) {
             $externalDns = ApiDomainSetting::externalDnsInstructions();
-            $recommendedIpv4 = $this->normalizeRecommendationValues([$externalDns['apex_record_value']]);
-            $recommendedCname = $this->normalizeRecommendationValues([$externalDns['www_record_value']]);
+            // Accept both published instruction targets and Vercel's live recommendations.
+            $recommendedIpv4 = $this->normalizeRecommendationValues(array_merge(
+                [$externalDns['apex_record_value']],
+                $domainConfig['recommendedIPv4'] ?? []
+            ));
+            $recommendedCname = $this->normalizeRecommendationValues(array_merge(
+                [$externalDns['www_record_value']],
+                $domainConfig['recommendedCNAME'] ?? []
+            ));
         } else {
             $recommendedIpv4 = $this->normalizeRecommendationValues($domainConfig['recommendedIPv4'] ?? []);
             $recommendedCname = $this->normalizeRecommendationValues($domainConfig['recommendedCNAME'] ?? []);
@@ -1023,9 +1030,21 @@ class DomainProvisioningService
         $normalized = [];
         foreach ($values as $value) {
             if (is_array($value)) {
+                if (array_key_exists('value', $value)) {
+                    foreach ($this->normalizeRecommendationValues($value['value']) as $nested) {
+                        $normalized[] = $nested;
+                    }
+
+                    continue;
+                }
+
                 foreach ($value as $nested) {
                     if (is_string($nested) && trim($nested) !== '') {
                         $normalized[] = strtolower(rtrim(trim($nested), '.'));
+                    } elseif (is_array($nested)) {
+                        foreach ($this->normalizeRecommendationValues([$nested]) as $deep) {
+                            $normalized[] = $deep;
+                        }
                     }
                 }
 

@@ -67,9 +67,13 @@ Route::prefix('v1/reports')
             Route::get('geographic/areas',               [PlatformReportController::class, 'geographicAreas']);
             Route::get('properties/reservation-status', [PlatformReportController::class, 'reservationStatus']);
             Route::get('properties/details',            [PlatformReportController::class, 'propertyDetails']);
+            Route::get('properties/stats',              [PlatformReportController::class, 'propertyStats']);
             Route::get('financial/monthly',              [PlatformReportController::class, 'financialMonthly']);
             Route::get('financial/summary',              [PlatformReportController::class, 'financialSummary']);
             Route::get('performance/alerts',             [PlatformReportController::class, 'performanceAlerts']);
+            Route::get('performance/kpis',               [PlatformReportController::class, 'performanceKpis']);
+            Route::get('activity-log',                   [PlatformReportController::class, 'activityLog']);
+            Route::get('messages',                       [PlatformReportController::class, 'messages']);
         });
 
         // ── 6. Exports ────────────────────────────────────────────────────────
