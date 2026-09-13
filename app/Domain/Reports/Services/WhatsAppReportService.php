@@ -4,24 +4,32 @@ declare(strict_types=1);
 
 namespace App\Domain\Reports\Services;
 
-use App\Domain\Reports\DTOs\ReportDateFilter;
-use App\Models\WaAiResponseLog;
+use App\Domain\Reports\DTOs\ReportFilters;
+use App\Domain\Reports\Support\WhatsAppNumberFilter;
 use App\Models\WaAutomationRule;
 use App\Models\WaCampaign;
 use App\Models\WaNumber;
 use App\Models\WaTemplate;
-use Carbon\Carbon;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 final class WhatsAppReportService
 {
-    public function summary(int $userId, ReportDateFilter $filter): array
-    {
-        $start = $filter->startDate;
-        $end   = $filter->endDate;
+    private const UNLIMITED_CREDIT_SENTINEL = 2147483647;
 
-        // Conversations (using wa_conversation_states)
+    public function summary(int $userId, ReportFilters $filter): array
+    {
+        $start = $filter->date->startDate;
+        $end   = $filter->date->endDate;
+        $waNumberId = WhatsAppNumberFilter::resolveId($userId, $filter->number);
+
+        if ($waNumberId === 0) {
+            return $this->emptySummary();
+        }
+
         $convBase = DB::table('wa_conversation_states')->where('user_id', $userId);
+        $this->applyNumber($convBase, $waNumberId);
         $conversations = [
             'total'    => (clone $convBase)->count(),
             'active'   => (clone $convBase)->where('status', 'active')->count(),
@@ -29,10 +37,11 @@ final class WhatsAppReportService
             'resolved' => (clone $convBase)->where('status', 'resolved')->count(),
         ];
 
-        // AI automation rate (% of bot replies that did NOT hand off)
-        $aiRow = DB::table('wa_ai_response_logs')
+        $aiQuery = DB::table('wa_ai_response_logs')
             ->where('user_id', $userId)
-            ->whereBetween('created_at', [$start, $end])
+            ->whereBetween('created_at', [$start, $end]);
+        $this->applyNumber($aiQuery, $waNumberId);
+        $aiRow = $aiQuery
             ->selectRaw('COUNT(*) as total, SUM(CASE WHEN handed_off = 0 THEN 1 ELSE 0 END) as automated, AVG(response_time_ms) as avg_ms')
             ->first();
 
@@ -41,33 +50,35 @@ final class WhatsAppReportService
         $automationRate = $aiTotal > 0 ? round($aiAutomated / $aiTotal * 100, 2) : 0.0;
         $avgResponseMin = $aiRow->avg_ms ? round((float) $aiRow->avg_ms / 60000, 2) : null;
 
-        // Campaigns in period
-        $campaignBase = WaCampaign::where('user_id', $userId)
-            ->whereBetween('created_at', [$start, $end]);
-
-        $campaignStats = (clone $campaignBase)->selectRaw(
+        $campaignQuery = WaCampaign::where('user_id', $userId);
+        $this->applyCampaignDate($campaignQuery, $start, $end);
+        if ($waNumberId !== null) {
+            $campaignQuery->where('wa_number_id', $waNumberId);
+        }
+        $campaignStats = (clone $campaignQuery)->selectRaw(
             'COUNT(*) as total, SUM(sent_count) as sent, SUM(delivered_count) as delivered, SUM(failed_count) as failed'
         )->first();
 
-        $campaignTotal    = (int) ($campaignStats->total ?? 0);
-        $campaignSent     = (int) ($campaignStats->sent ?? 0);
+        $campaignTotal     = (int) ($campaignStats->total ?? 0);
+        $campaignSent      = (int) ($campaignStats->sent ?? 0);
         $campaignDelivered = (int) ($campaignStats->delivered ?? 0);
-        $campaignFailed   = (int) ($campaignStats->failed ?? 0);
-        $deliveryRate     = $campaignSent > 0 ? round($campaignDelivered / $campaignSent * 100, 2) : 0.0;
+        $campaignFailed    = (int) ($campaignStats->failed ?? 0);
+        $deliveryRate      = $campaignSent > 0 ? round($campaignDelivered / $campaignSent * 100, 2) : 0.0;
 
-        // Templates by status
         $templateBase = WaTemplate::where('user_id', $userId);
         $templateTotal = (clone $templateBase)->count();
-        $templatesByStatus = (clone $templateBase)
-            ->selectRaw('status, COUNT(*) as cnt')
-            ->groupBy('status')
-            ->pluck('cnt', 'status')
-            ->toArray();
+        $templatesByStatus = [];
+        foreach ((clone $templateBase)->selectRaw('status, COUNT(*) as cnt')->groupBy('status')->get() as $row) {
+            $key = strtolower((string) ($row->status ?? ''));
+            if ($key === '') {
+                continue;
+            }
+            $templatesByStatus[$key] = ($templatesByStatus[$key] ?? 0) + (int) $row->cnt;
+        }
 
-        // Automation rules
-        $automationRules = DB::table('wa_automation_rules')
-            ->where('user_id', $userId)
-            ->whereBetween('created_at', [$start, $end])
+        $rulesQuery = DB::table('wa_automation_rules')->where('user_id', $userId);
+        $this->applyNumber($rulesQuery, $waNumberId);
+        $automationRules = $rulesQuery
             ->selectRaw('COUNT(*) as total, SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active, SUM(triggered_count) as triggered, SUM(success_count) as successes')
             ->first();
 
@@ -77,7 +88,6 @@ final class WhatsAppReportService
             ? round($automationSuccesses / $automationTriggered * 100, 2)
             : 0.0;
 
-        // Credit balance (current month)
         $creditRow = DB::table('credit_transactions')
             ->where('user_id', $userId)
             ->where('transaction_type', 'usage')
@@ -87,7 +97,10 @@ final class WhatsAppReportService
             ->first();
 
         $creditUsed = (int) ($creditRow->used ?? 0);
-        $creditLimit = (int) DB::table('user_credits')->where('user_id', $userId)->value('monthly_limit') ?: 0;
+        $rawLimit = Schema::hasTable('user_credits')
+            ? DB::table('user_credits')->where('user_id', $userId)->value('monthly_limit')
+            : null;
+        $creditLimit = $this->normalizeCreditLimit($rawLimit);
 
         return [
             'conversations'          => $conversations,
@@ -102,7 +115,7 @@ final class WhatsAppReportService
                 'pending'  => (int) ($templatesByStatus['pending'] ?? 0),
                 'rejected' => (int) ($templatesByStatus['rejected'] ?? 0),
             ],
-            'active_automation_rules'     => (int) ($automationRules->active ?? 0),
+            'active_automation_rules'       => (int) ($automationRules->active ?? 0),
             'automation_messages_triggered' => $automationTriggered,
             'automation_success_rate'       => $automationSuccessRate,
             'credit_used_this_month'        => $creditUsed,
@@ -111,11 +124,16 @@ final class WhatsAppReportService
         ];
     }
 
-    public function conversationVolume(int $userId, ReportDateFilter $filter): array
+    public function conversationVolume(int $userId, ReportFilters $filter): array
     {
-        $start       = $filter->startDate;
-        $end         = $filter->endDate;
-        $granularity = $filter->granularity();
+        $start       = $filter->date->startDate;
+        $end         = $filter->date->endDate;
+        $granularity = $filter->date->granularity();
+        $waNumberId  = WhatsAppNumberFilter::resolveId($userId, $filter->number);
+
+        if ($waNumberId === 0) {
+            return ['granularity' => $granularity, 'data' => [], 'generated_at' => now()->toISOString()];
+        }
 
         $dateFormat = match ($granularity) {
             'month' => '%Y-%m',
@@ -123,11 +141,18 @@ final class WhatsAppReportService
             default => '%Y-%m-%d',
         };
 
-        $rows = DB::table('messages as m')
+        $query = DB::table('messages as m')
             ->join('conversations as c', 'c.id', '=', 'm.conversation_id')
             ->where('c.user_id', $userId)
             ->where('c.channel', 'whatsapp')
-            ->whereBetween('m.created_at', [$start, $end])
+            ->whereBetween('m.created_at', [$start, $end]);
+
+        if ($waNumberId !== null) {
+            $query->join('wa_conversation_states as wcs', 'wcs.conversation_id', '=', 'c.id')
+                ->where('wcs.wa_number_id', $waNumberId);
+        }
+
+        $rows = $query
             ->selectRaw(
                 "DATE_FORMAT(m.created_at, '{$dateFormat}') as date_label,
                  SUM(CASE WHEN m.direction = 'outbound' THEN 1 ELSE 0 END) as ai_messages,
@@ -146,16 +171,28 @@ final class WhatsAppReportService
         return ['granularity' => $granularity, 'data' => $rows, 'generated_at' => now()->toISOString()];
     }
 
-    public function hourlyDistribution(int $userId, ReportDateFilter $filter): array
+    public function hourlyDistribution(int $userId, ReportFilters $filter): array
     {
-        $start = $filter->startDate;
-        $end   = $filter->endDate;
+        $start      = $filter->date->startDate;
+        $end        = $filter->date->endDate;
+        $waNumberId = WhatsAppNumberFilter::resolveId($userId, $filter->number);
 
-        $rows = DB::table('messages as m')
+        if ($waNumberId === 0) {
+            return ['data' => $this->emptyHourBuckets(), 'generated_at' => now()->toISOString()];
+        }
+
+        $query = DB::table('messages as m')
             ->join('conversations as c', 'c.id', '=', 'm.conversation_id')
             ->where('c.user_id', $userId)
             ->where('c.channel', 'whatsapp')
-            ->whereBetween('m.created_at', [$start, $end])
+            ->whereBetween('m.created_at', [$start, $end]);
+
+        if ($waNumberId !== null) {
+            $query->join('wa_conversation_states as wcs', 'wcs.conversation_id', '=', 'c.id')
+                ->where('wcs.wa_number_id', $waNumberId);
+        }
+
+        $rows = $query
             ->selectRaw('HOUR(m.created_at) as hour, COUNT(*) as message_count')
             ->groupByRaw('HOUR(m.created_at)')
             ->orderBy('hour')
@@ -170,10 +207,20 @@ final class WhatsAppReportService
         return ['data' => $buckets, 'generated_at' => now()->toISOString()];
     }
 
-    public function campaignDelivery(int $userId, ReportDateFilter $filter): array
+    public function campaignDelivery(int $userId, ReportFilters $filter): array
     {
-        $rows = WaCampaign::where('user_id', $userId)
-            ->whereBetween('created_at', [$filter->startDate, $filter->endDate])
+        $waNumberId = WhatsAppNumberFilter::resolveId($userId, $filter->number);
+        if ($waNumberId === 0) {
+            return ['data' => [], 'generated_at' => now()->toISOString()];
+        }
+
+        $query = WaCampaign::where('user_id', $userId);
+        $this->applyCampaignDate($query, $filter->date->startDate, $filter->date->endDate);
+        if ($waNumberId !== null) {
+            $query->where('wa_number_id', $waNumberId);
+        }
+
+        $rows = $query
             ->get(['name', 'sent_count', 'delivered_count', 'failed_count'])
             ->map(function ($c) {
                 $deliveryRate = $c->sent_count > 0
@@ -193,9 +240,19 @@ final class WhatsAppReportService
         return ['data' => $rows, 'generated_at' => now()->toISOString()];
     }
 
-    public function automationTriggers(int $userId, ReportDateFilter $filter): array
+    public function automationTriggers(int $userId, ReportFilters $filter): array
     {
-        $rows = WaAutomationRule::where('user_id', $userId)
+        $waNumberId = WhatsAppNumberFilter::resolveId($userId, $filter->number);
+        if ($waNumberId === 0) {
+            return ['data' => [], 'generated_at' => now()->toISOString()];
+        }
+
+        $query = WaAutomationRule::where('user_id', $userId);
+        if ($waNumberId !== null) {
+            $query->where('wa_number_id', $waNumberId);
+        }
+
+        $rows = $query
             ->get(['name', 'trigger', 'triggered_count', 'success_count'])
             ->map(function ($r) {
                 $successRate = $r->triggered_count > 0
@@ -203,10 +260,10 @@ final class WhatsAppReportService
                     : 0.0;
 
                 return [
-                    'rule_name'     => $r->name,
-                    'trigger_type'  => $r->trigger,
+                    'rule_name'       => $r->name,
+                    'trigger_type'    => $r->trigger,
                     'times_triggered' => (int) $r->triggered_count,
-                    'success_rate'  => $successRate,
+                    'success_rate'    => $successRate,
                 ];
             })
             ->toArray();
@@ -214,10 +271,19 @@ final class WhatsAppReportService
         return ['data' => $rows, 'generated_at' => now()->toISOString()];
     }
 
-    public function conversationStatus(int $userId): array
+    public function conversationStatus(int $userId, ReportFilters $filter): array
     {
-        $rows = DB::table('wa_conversation_states')
-            ->where('user_id', $userId)
+        $waNumberId = WhatsAppNumberFilter::resolveId($userId, $filter->number);
+        if ($waNumberId === 0) {
+            return [
+                'data' => ['active' => 0, 'pending' => 0, 'resolved' => 0],
+                'generated_at' => now()->toISOString(),
+            ];
+        }
+
+        $query = DB::table('wa_conversation_states')->where('user_id', $userId);
+        $this->applyNumber($query, $waNumberId);
+        $rows = $query
             ->selectRaw('status, COUNT(*) as count')
             ->groupBy('status')
             ->pluck('count', 'status')
@@ -233,15 +299,24 @@ final class WhatsAppReportService
         ];
     }
 
-    public function agentPerformance(int $userId, ReportDateFilter $filter, int $page, int $limit, ?int $actorId = null): array
+    public function agentPerformance(int $userId, ReportFilters $filter, int $page, int $limit, ?int $actorId = null): array
     {
-        $start = $filter->startDate;
-        $end   = $filter->endDate;
+        $waNumberId = WhatsAppNumberFilter::resolveId($userId, $filter->number);
+        if ($waNumberId === 0) {
+            return [
+                'data'       => [],
+                'pagination' => ['total' => 0, 'page' => $page, 'limit' => $limit],
+                'generated_at' => now()->toISOString(),
+            ];
+        }
 
         $query = DB::table('wa_conversation_states as wcs')
             ->join('users as u', 'u.id', '=', 'wcs.assigned_agent_id')
             ->where('wcs.user_id', $userId)
             ->whereNotNull('wcs.assigned_agent_id');
+        if ($waNumberId !== null) {
+            $query->where('wcs.wa_number_id', $waNumberId);
+        }
 
         if ($actorId !== null) {
             $query->where('wcs.assigned_agent_id', $actorId);
@@ -261,11 +336,11 @@ final class WhatsAppReportService
             ->limit($limit)
             ->get()
             ->map(fn ($r) => [
-                'agent_name'           => trim((string) $r->agent_name),
+                'agent_name'            => trim((string) $r->agent_name),
                 'conversations_handled' => (int) $r->conversations_handled,
                 'avg_response_time_min' => null,
-                'resolution_rate'      => null,
-                'csat_score'           => null,
+                'resolution_rate'       => null,
+                'csat_score'            => null,
             ])
             ->toArray();
 
@@ -276,12 +351,23 @@ final class WhatsAppReportService
         ];
     }
 
-    public function numberPerformance(int $userId, ReportDateFilter $filter, int $page, int $limit): array
+    public function numberPerformance(int $userId, ReportFilters $filter, int $page, int $limit): array
     {
-        $numbers = WaNumber::where('user_id', $userId)
-            ->with('aiConfig:id,wa_number_id,enabled')
-            ->get();
+        $waNumberId = WhatsAppNumberFilter::resolveId($userId, $filter->number);
+        if ($waNumberId === 0) {
+            return [
+                'data'       => [],
+                'pagination' => ['total' => 0, 'page' => $page, 'limit' => $limit],
+                'generated_at' => now()->toISOString(),
+            ];
+        }
 
+        $numbersQuery = WaNumber::where('user_id', $userId)->with('aiConfig:id,wa_number_id,enabled');
+        if ($waNumberId !== null) {
+            $numbersQuery->where('id', $waNumberId);
+        }
+
+        $numbers = $numbersQuery->get();
         $total = $numbers->count();
         $paged = $numbers->forPage($page, $limit);
 
@@ -293,11 +379,11 @@ final class WhatsAppReportService
                 ->count();
 
             return [
-                'name'               => $n->name ?: $n->phone_number,
-                'phone_number'       => $n->phone_number,
-                'quota_used'         => (int) $n->quota_used,
-                'quota_limit'        => (int) $n->quota_limit,
-                'bot_enabled'        => (bool) ($n->aiConfig?->enabled ?? false),
+                'name'                 => $n->name ?: $n->phone_number,
+                'phone_number'         => $n->phone_number,
+                'quota_used'           => (int) $n->quota_used,
+                'quota_limit'          => (int) $n->quota_limit,
+                'bot_enabled'          => (bool) ($n->aiConfig?->enabled ?? false),
                 'active_conversations' => $activeConvs,
             ];
         })->values()->toArray();
@@ -307,5 +393,66 @@ final class WhatsAppReportService
             'pagination' => ['total' => $total, 'page' => $page, 'limit' => $limit],
             'generated_at' => now()->toISOString(),
         ];
+    }
+
+    private function applyNumber(Builder|\Illuminate\Database\Eloquent\Builder $query, ?int $waNumberId): void
+    {
+        if ($waNumberId !== null) {
+            $query->where('wa_number_id', $waNumberId);
+        }
+    }
+
+    private function applyCampaignDate($query, $start, $end): void
+    {
+        $query->where(function ($q) use ($start, $end): void {
+            $q->whereBetween('sent_at', [$start, $end])
+                ->orWhere(function ($inner) use ($start, $end): void {
+                    $inner->whereNull('sent_at')->whereBetween('created_at', [$start, $end]);
+                });
+        });
+    }
+
+    private function normalizeCreditLimit(mixed $rawLimit): ?int
+    {
+        if ($rawLimit === null) {
+            return null;
+        }
+
+        $limit = (int) $rawLimit;
+        if ($limit <= 0 || $limit >= self::UNLIMITED_CREDIT_SENTINEL) {
+            return null;
+        }
+
+        return $limit;
+    }
+
+    private function emptySummary(): array
+    {
+        return [
+            'conversations'                 => ['total' => 0, 'active' => 0, 'pending' => 0, 'resolved' => 0],
+            'ai_automation_rate'            => 0.0,
+            'avg_response_time_min'         => null,
+            'campaigns_total'               => 0,
+            'campaign_delivery_rate'        => 0.0,
+            'campaign_failed_count'         => 0,
+            'templates_total'               => 0,
+            'templates_by_status'           => ['approved' => 0, 'pending' => 0, 'rejected' => 0],
+            'active_automation_rules'       => 0,
+            'automation_messages_triggered' => 0,
+            'automation_success_rate'       => 0.0,
+            'credit_used_this_month'        => 0,
+            'credit_quota_limit'            => null,
+            'generated_at'                  => now()->toISOString(),
+        ];
+    }
+
+    private function emptyHourBuckets(): array
+    {
+        $buckets = [];
+        for ($h = 0; $h < 24; $h++) {
+            $buckets[] = ['hour' => $h, 'message_count' => 0];
+        }
+
+        return $buckets;
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\Reports;
 
-use App\Domain\Reports\DTOs\ReportDateFilter;
+use App\Domain\Reports\DTOs\ReportFilters;
 use App\Domain\Reports\Services\PropertiesReportService;
 use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\Api\V1\Reports\ReportFilterRequest;
@@ -20,7 +20,7 @@ class PropertiesReportController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request) {
             $userId = $request->attributes->get('report_user_id');
-            $filter = ReportDateFilter::fromRequest($request);
+            $filter = ReportFilters::fromRequest($request);
             return $this->success($this->service->summary($userId, $filter));
         }, 'retrieve properties report summary');
     }
@@ -29,7 +29,8 @@ class PropertiesReportController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request) {
             $userId = $request->attributes->get('report_user_id');
-            return $this->success($this->service->priceDistribution($userId));
+            $filter = ReportFilters::fromRequest($request);
+            return $this->success($this->service->priceDistribution($userId, $filter));
         }, 'retrieve properties price distribution');
     }
 
@@ -37,7 +38,8 @@ class PropertiesReportController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request) {
             $userId = $request->attributes->get('report_user_id');
-            return $this->success($this->service->byCity($userId));
+            $filter = ReportFilters::fromRequest($request);
+            return $this->success($this->service->byCity($userId, $filter));
         }, 'retrieve properties by city');
     }
 
@@ -45,7 +47,8 @@ class PropertiesReportController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request) {
             $userId = $request->attributes->get('report_user_id');
-            return $this->success($this->service->byType($userId));
+            $filter = ReportFilters::fromRequest($request);
+            return $this->success($this->service->byType($userId, $filter));
         }, 'retrieve properties by type');
     }
 
@@ -53,7 +56,7 @@ class PropertiesReportController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request) {
             $userId = $request->attributes->get('report_user_id');
-            $filter = ReportDateFilter::fromRequest($request);
+            $filter = ReportFilters::fromRequest($request);
             return $this->success($this->service->viewsTrend($userId, $filter));
         }, 'retrieve properties views trend');
     }
@@ -62,7 +65,7 @@ class PropertiesReportController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request) {
             $userId = $request->attributes->get('report_user_id');
-            $filter = ReportDateFilter::fromRequest($request);
+            $filter = ReportFilters::fromRequest($request);
             return $this->success($this->service->featuredComparison($userId, $filter));
         }, 'retrieve properties featured comparison');
     }
@@ -71,7 +74,7 @@ class PropertiesReportController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request) {
             $userId = $request->attributes->get('report_user_id');
-            $filter = ReportDateFilter::fromRequest($request);
+            $filter = ReportFilters::fromRequest($request);
             return $this->success($this->service->importHistory($userId, $filter));
         }, 'retrieve properties import history');
     }
@@ -80,7 +83,7 @@ class PropertiesReportController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request) {
             $userId = $request->attributes->get('report_user_id');
-            $filter = ReportDateFilter::fromRequest($request);
+            $filter = ReportFilters::fromRequest($request);
             return $this->success($this->service->topListings($userId, $filter));
         }, 'retrieve top property listings');
     }
@@ -92,7 +95,7 @@ class PropertiesReportController extends BaseApiController
             $actorId = $request->attributes->get('report_scope') === 'self'
                 ? $request->attributes->get('report_actor_id')
                 : null;
-            $filter  = ReportDateFilter::fromRequest($request);
+            $filter  = ReportFilters::fromRequest($request);
             $page    = (int) $request->input('page', 1);
             $limit   = (int) $request->input('limit', 20);
             return $this->success($this->service->agentPerformance($userId, $filter, $page, $limit, $actorId));

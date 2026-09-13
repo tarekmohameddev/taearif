@@ -20,6 +20,10 @@ class ReportExportRequest extends BaseApiFormRequest
             'preset'     => 'nullable|string|in:today,week,month,quarter,year,custom',
             'start_date' => 'nullable|date',
             'end_date'   => 'nullable|date|after_or_equal:start_date',
+            'purpose'    => 'nullable|string|in:sale,rent',
+            'type'       => 'nullable|string|max:100',
+            'number'     => 'nullable|string|max:32',
+            'search'     => 'nullable|string|max:100',
         ];
     }
 }

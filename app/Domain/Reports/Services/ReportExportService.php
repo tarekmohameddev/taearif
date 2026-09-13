@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Reports\Services;
 
-use App\Domain\Reports\DTOs\ReportDateFilter;
+use App\Domain\Reports\DTOs\ReportFilters;
 use App\Domain\Reports\Exports\ReportExcelExport;
 use Maatwebsite\Excel\Facades\Excel;
 use PDF;
@@ -25,10 +25,10 @@ final class ReportExportService
         string $group,
         string $format,
         int $userId,
-        ReportDateFilter $filter
+        ReportFilters $filters
     ): BinaryFileResponse|StreamedResponse|\Illuminate\Http\Response {
-        $data     = $this->collectData($group, $userId, $filter);
-        $filename = "report-{$group}-{$filter->startDate->toDateString()}";
+        $data     = $this->collectData($group, $userId, $filters);
+        $filename = "report-{$group}-{$filters->date->startDate->toDateString()}";
 
         if ($format === 'pdf') {
             return $this->downloadPdf($group, $data, $filename);
@@ -37,36 +37,38 @@ final class ReportExportService
         return $this->downloadExcel($data, $filename);
     }
 
-    private function collectData(string $group, int $userId, ReportDateFilter $filter): array
+    private function collectData(string $group, int $userId, ReportFilters $filters): array
     {
+        $date = $filters->date;
+
         return match ($group) {
             'whatsapp'   => [
-                'summary'       => $this->whatsApp->summary($userId, $filter),
-                'campaigns'     => $this->whatsApp->campaignDelivery($userId, $filter),
-                'automations'   => $this->whatsApp->automationTriggers($userId, $filter),
-                'agents'        => $this->whatsApp->agentPerformance($userId, $filter, 1, 200),
-                'numbers'       => $this->whatsApp->numberPerformance($userId, $filter, 1, 200),
+                'summary'       => $this->whatsApp->summary($userId, $filters),
+                'campaigns'     => $this->whatsApp->campaignDelivery($userId, $filters),
+                'automations'   => $this->whatsApp->automationTriggers($userId, $filters),
+                'agents'        => $this->whatsApp->agentPerformance($userId, $filters, 1, 200),
+                'numbers'       => $this->whatsApp->numberPerformance($userId, $filters, 1, 200),
             ],
             'customers'  => [
-                'summary'       => $this->customers->summary($userId, $filter),
-                'funnel'        => $this->customers->pipelineFunnel($userId, $filter),
-                'top_deals'     => $this->customers->topDeals($userId, $filter),
-                'agents'        => $this->customers->agentPerformance($userId, $filter, 1, 200),
+                'summary'       => $this->customers->summary($userId, $date),
+                'funnel'        => $this->customers->pipelineFunnel($userId, $date),
+                'top_deals'     => $this->customers->topDeals($userId, $date),
+                'agents'        => $this->customers->agentPerformance($userId, $date, 1, 200),
             ],
             'projects'   => [
-                'summary'       => $this->projects->summary($userId, $filter),
-                'projects_list' => $this->projects->projectsList($userId, $filter, 1, 200),
+                'summary'       => $this->projects->summary($userId, $date),
+                'projects_list' => $this->projects->projectsList($userId, $date, 1, 200),
             ],
             'properties' => [
-                'summary'         => $this->properties->summary($userId, $filter),
-                'import_history'  => $this->properties->importHistory($userId, $filter),
-                'top_listings'    => $this->properties->topListings($userId, $filter),
-                'agents'          => $this->properties->agentPerformance($userId, $filter, 1, 200),
+                'summary'         => $this->properties->summary($userId, $filters),
+                'import_history'  => $this->properties->importHistory($userId, $filters),
+                'top_listings'    => $this->properties->topListings($userId, $filters),
+                'agents'          => $this->properties->agentPerformance($userId, $filters, 1, 200),
             ],
             'platform'   => [
-                'summary'         => $this->platform->summary($userId, $filter),
+                'summary'         => $this->platform->summary($userId, $date),
                 'financial'       => $this->platform->financialSummary($userId),
-                'employees'       => $this->platform->employees($userId, 1, 200),
+                'employees'       => $this->platform->employees($userId, 1, 200, null, $filters->search),
             ],
             default => [],
         };
