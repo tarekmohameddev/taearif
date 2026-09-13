@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\Reports;
 
-use App\Domain\Reports\DTOs\ReportDateFilter;
+use App\Domain\Reports\DTOs\ReportFilters;
 use App\Domain\Reports\Services\WhatsAppReportService;
 use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\Api\V1\Reports\ReportFilterRequest;
@@ -20,7 +20,7 @@ class WhatsAppReportController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request) {
             $userId = $request->attributes->get('report_user_id');
-            $filter = ReportDateFilter::fromRequest($request);
+            $filter = ReportFilters::fromRequest($request);
             return $this->success($this->service->summary($userId, $filter));
         }, 'retrieve WhatsApp report summary');
     }
@@ -29,7 +29,7 @@ class WhatsAppReportController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request) {
             $userId = $request->attributes->get('report_user_id');
-            $filter = ReportDateFilter::fromRequest($request);
+            $filter = ReportFilters::fromRequest($request);
             return $this->success($this->service->conversationVolume($userId, $filter));
         }, 'retrieve WhatsApp conversation volume');
     }
@@ -38,7 +38,7 @@ class WhatsAppReportController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request) {
             $userId = $request->attributes->get('report_user_id');
-            $filter = ReportDateFilter::fromRequest($request);
+            $filter = ReportFilters::fromRequest($request);
             return $this->success($this->service->hourlyDistribution($userId, $filter));
         }, 'retrieve WhatsApp hourly distribution');
     }
@@ -47,7 +47,7 @@ class WhatsAppReportController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request) {
             $userId = $request->attributes->get('report_user_id');
-            $filter = ReportDateFilter::fromRequest($request);
+            $filter = ReportFilters::fromRequest($request);
             return $this->success($this->service->campaignDelivery($userId, $filter));
         }, 'retrieve WhatsApp campaign delivery');
     }
@@ -56,7 +56,7 @@ class WhatsAppReportController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request) {
             $userId = $request->attributes->get('report_user_id');
-            $filter = ReportDateFilter::fromRequest($request);
+            $filter = ReportFilters::fromRequest($request);
             return $this->success($this->service->automationTriggers($userId, $filter));
         }, 'retrieve WhatsApp automation triggers');
     }
@@ -65,7 +65,8 @@ class WhatsAppReportController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request) {
             $userId = $request->attributes->get('report_user_id');
-            return $this->success($this->service->conversationStatus($userId));
+            $filter = ReportFilters::fromRequest($request);
+            return $this->success($this->service->conversationStatus($userId, $filter));
         }, 'retrieve WhatsApp conversation status distribution');
     }
 
@@ -76,7 +77,7 @@ class WhatsAppReportController extends BaseApiController
             $actorId = $request->attributes->get('report_scope') === 'self'
                 ? $request->attributes->get('report_actor_id')
                 : null;
-            $filter  = ReportDateFilter::fromRequest($request);
+            $filter  = ReportFilters::fromRequest($request);
             $page    = (int) $request->input('page', 1);
             $limit   = (int) $request->input('limit', 20);
             return $this->success($this->service->agentPerformance($userId, $filter, $page, $limit, $actorId));
@@ -87,7 +88,7 @@ class WhatsAppReportController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request) {
             $userId = $request->attributes->get('report_user_id');
-            $filter = ReportDateFilter::fromRequest($request);
+            $filter = ReportFilters::fromRequest($request);
             $page   = (int) $request->input('page', 1);
             $limit  = (int) $request->input('limit', 20);
             return $this->success($this->service->numberPerformance($userId, $filter, $page, $limit));

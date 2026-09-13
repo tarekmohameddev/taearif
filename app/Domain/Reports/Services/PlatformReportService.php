@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Domain\Reports\Services;
 
 use App\Domain\Reports\DTOs\ReportDateFilter;
+use App\Domain\Reports\DTOs\ReportFilters;
+use App\Domain\Reports\Support\PropertiesReportQuery;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 final class PlatformReportService
 {
@@ -90,7 +93,7 @@ final class PlatformReportService
         return ['data' => $rows, 'generated_at' => now()->toISOString()];
     }
 
-    public function employees(int $userId, int $page, int $limit, ?int $actorId = null): array
+    public function employees(int $userId, int $page, int $limit, ?int $actorId = null, ?string $search = null): array
     {
         $query = DB::table('users as u')
             ->where('u.tenant_id', $userId)
@@ -98,6 +101,18 @@ final class PlatformReportService
 
         if ($actorId !== null) {
             $query->where('u.id', $actorId);
+        }
+
+        if ($search !== null && $search !== '') {
+            $like = '%' . addcslashes($search, '%_\\') . '%';
+            $query->where(function ($q) use ($like): void {
+                $q->where('u.first_name', 'like', $like)
+                    ->orWhere('u.last_name', 'like', $like)
+                    ->orWhereRaw(
+                        "CONCAT(COALESCE(u.first_name,''), ' ', COALESCE(u.last_name,'')) LIKE ?",
+                        [$like]
+                    );
+            });
         }
 
         $total = (clone $query)->count();
@@ -110,24 +125,78 @@ final class PlatformReportService
                 "u.id, u.first_name, u.last_name, u.account_type as role,
                  COUNT(DISTINCT p.id) as properties_listed"
             )
-            ->groupBy('u.id', 'u.first_name', 'u.last_name')
+            ->groupBy('u.id', 'u.first_name', 'u.last_name', 'u.account_type')
             ->offset(($page - 1) * $limit)
             ->limit($limit)
-            ->get()
-            ->map(fn ($r) => [
-                'name'             => trim("{$r->first_name} {$r->last_name}"),
-                'role'             => $r->role,
+            ->get();
+
+        $employeeIds = $rows->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $salesByEmployee = [];
+        $conversionsByEmployee = [];
+        $revenueByEmployee = [];
+
+        if ($employeeIds !== []) {
+            if (Schema::hasTable('users_property_requests')) {
+                $salesByEmployee = DB::table('users_property_requests')
+                    ->where('user_id', $userId)
+                    ->whereIn('responsible_employee_id', $employeeIds)
+                    ->selectRaw('responsible_employee_id, COUNT(*) as cnt')
+                    ->groupBy('responsible_employee_id')
+                    ->pluck('cnt', 'responsible_employee_id')
+                    ->all();
+            }
+
+            $closingStageIds = [];
+            if (Schema::hasTable('customers_hub_stages')) {
+                $closingStageIds = DB::table('customers_hub_stages')
+                    ->whereIn('stage_id', ['deal_completed', 'closing'])
+                    ->pluck('stage_id')
+                    ->all();
+            }
+            if ($closingStageIds !== [] && Schema::hasTable('api_customers')) {
+                $conversionsByEmployee = DB::table('api_customers')
+                    ->where('user_id', $userId)
+                    ->whereIn('responsible_employee_id', $employeeIds)
+                    ->whereIn('customers_hub_stage_id', $closingStageIds)
+                    ->selectRaw('responsible_employee_id, COUNT(*) as cnt')
+                    ->groupBy('responsible_employee_id')
+                    ->pluck('cnt', 'responsible_employee_id')
+                    ->all();
+            }
+
+            if (Schema::hasTable('sales')) {
+                $revenueByEmployee = DB::table('sales as s')
+                    ->join('user_properties as p', 'p.id', '=', 's.property_id')
+                    ->where('s.user_id', $userId)
+                    ->whereIn('p.created_by', $employeeIds)
+                    ->selectRaw('p.created_by as employee_id, SUM(s.sale_price) as revenue')
+                    ->groupBy('p.created_by')
+                    ->pluck('revenue', 'employee_id')
+                    ->all();
+            }
+        }
+
+        $mapped = $rows->map(function ($r) use ($salesByEmployee, $conversionsByEmployee, $revenueByEmployee) {
+            $id = (int) $r->id;
+            $sales = (int) ($salesByEmployee[$id] ?? 0);
+            $conversions = (int) ($conversionsByEmployee[$id] ?? 0);
+
+            return [
+                'name'              => trim("{$r->first_name} {$r->last_name}"),
+                'role'              => $r->role,
                 'properties_listed' => (int) $r->properties_listed,
-                'deals_closed'     => 0,
-                'revenue_generated' => 0.0,
+                'deals_closed'      => $conversions,
+                'sales'             => $sales,
+                'conversions'       => $conversions,
+                'revenue_generated' => round((float) ($revenueByEmployee[$id] ?? 0), 2),
                 'commission_earned' => 0.0,
-                'rating'           => null,
+                'rating'            => null,
                 'performance_score' => null,
-            ])
-            ->toArray();
+            ];
+        })->toArray();
 
         return [
-            'data'       => $rows,
+            'data'       => $mapped,
             'pagination' => ['total' => $total, 'page' => $page, 'limit' => $limit],
             'generated_at' => now()->toISOString(),
         ];
@@ -219,16 +288,16 @@ final class PlatformReportService
         ];
     }
 
-    public function propertyDetails(int $userId, ReportDateFilter $filter, int $page, int $limit): array
+    public function propertyDetails(int $userId, ReportFilters $filter, int $page, int $limit): array
     {
-        $query = DB::table('user_properties as p')
-            ->where('p.user_id', $userId)
+        $scope = new PropertiesReportQuery($userId, $filter);
+        $query = $scope->properties('p', true)
             ->leftJoin('user_property_contents as pc', 'pc.property_id', '=', 'p.id')
             ->leftJoin('user_cities as c', 'c.id', '=', 'pc.city_id')
             ->leftJoin('user_districts as d', 'd.id', '=', 'pc.state_id')
             ->leftJoin('users as u', 'u.id', '=', 'p.created_by');
 
-        $total = (clone $query)->distinct('p.id')->count();
+        $total = (int) (clone $query)->count(DB::raw('DISTINCT p.id'));
 
         $rows = (clone $query)
             ->selectRaw(
@@ -332,7 +401,7 @@ final class PlatformReportService
 
         // Conversion rate alert
         $totalViews = (int) DB::table('pageview_analytics')
-            ->where('tenant_id', $userId)
+            ->where('tenant_id', (new PropertiesReportQuery($userId, ReportFilters::fromDate($filter)))->analyticsTenantKey())
             ->whereBetween('date_bucket', [$start->toDateString(), $end->toDateString()])
             ->sum('views_count');
 
@@ -391,6 +460,239 @@ final class PlatformReportService
         ];
 
         return ['data' => $alerts, 'generated_at' => now()->toISOString()];
+    }
+
+    public function propertyStats(int $userId, ReportFilters $filter): array
+    {
+        $scope = new PropertiesReportQuery($userId, $filter);
+        $base  = fn () => $scope->properties('p', true);
+
+        $total = (int) (clone $base())->count(DB::raw('DISTINCT p.id'));
+
+        $availableQuery = (clone $base());
+        if (Schema::hasColumn('user_properties', 'unit_status')) {
+            $availableQuery->where(function ($q): void {
+                $q->where('p.unit_status', 'available')
+                    ->orWhere(function ($inner): void {
+                        $inner->whereNull('p.unit_status')
+                            ->where('p.status', 1)
+                            ->where(function ($purpose): void {
+                                $purpose->whereNull('p.purpose')
+                                    ->orWhereNotIn('p.purpose', ['sold', 'rented']);
+                            });
+                    });
+            });
+        } else {
+            $availableQuery->where('p.status', 1);
+        }
+        $available = (int) $availableQuery->count(DB::raw('DISTINCT p.id'));
+
+        $reserved = 0;
+        if (Schema::hasTable('reservations')) {
+            $propIds = $scope->matchingPropertyIds(true);
+            $reservedQuery = DB::table('reservations')->where('tenant_id', $userId)
+                ->whereIn('status', ['active', 'accepted', 'reserved']);
+            if ($filter->hasPropertySubsetFilters()) {
+                $reservedQuery->whereIn('property_id', $propIds === [] ? [0] : $propIds);
+            }
+            $reserved = (int) $reservedQuery->count();
+        }
+
+        $soldQuery = (clone $base());
+        if (Schema::hasColumn('user_properties', 'unit_status')) {
+            $soldQuery->where(function ($q): void {
+                $q->where('p.purpose', 'sold')->orWhere('p.unit_status', 'sold');
+            });
+        } else {
+            $soldQuery->where('p.purpose', 'sold');
+        }
+        $sold = (int) $soldQuery->count(DB::raw('DISTINCT p.id'));
+
+        $avgPrice = (clone $base())->where('p.price', '>', 0)->avg('p.price') ?: 0.0;
+
+        return [
+            'data' => [
+                'total_properties' => $total,
+                'available'        => $available,
+                'reserved'         => $reserved,
+                'sold'             => $sold,
+                'avg_price'        => round((float) $avgPrice, 2),
+            ],
+            'generated_at' => now()->toISOString(),
+        ];
+    }
+
+    public function performanceKpis(int $userId, ReportFilters $filter): array
+    {
+        $date  = $filter->date;
+        $start = $date->startDate;
+        $end   = $date->endDate;
+        $scope = new PropertiesReportQuery($userId, $filter);
+
+        $totalViews = (int) DB::table('pageview_analytics')
+            ->where('tenant_id', $scope->analyticsTenantKey())
+            ->whereBetween('date_bucket', [$start->toDateString(), $end->toDateString()])
+            ->sum('views_count');
+
+        $totalInquiries = (int) DB::table('users_property_requests')
+            ->where('user_id', $userId)
+            ->whereBetween('created_at', [$start, $end])
+            ->count();
+
+        $conversionRate = $totalViews > 0 ? round($totalInquiries / $totalViews * 100, 2) : 0.0;
+
+        $totalProps = (int) DB::table('user_properties')->where('user_id', $userId)->count();
+        $published  = (int) DB::table('user_properties')->where('user_id', $userId)->where('status', 1)->count();
+        $completion = $totalProps > 0 ? round($published / $totalProps * 100, 2) : 0.0;
+
+        $cancelRate = 0.0;
+        if (Schema::hasTable('reservations')) {
+            $totalRes = (int) DB::table('reservations')->where('tenant_id', $userId)->count();
+            $cancelled = (int) DB::table('reservations')
+                ->where('tenant_id', $userId)
+                ->whereIn('status', ['rejected', 'cancelled'])
+                ->count();
+            $cancelRate = $totalRes > 0 ? round($cancelled / $totalRes * 100, 2) : 0.0;
+        }
+
+        $kpis = [
+            [
+                'metric'        => 'conversion_rate',
+                'current_value' => $conversionRate,
+                'target_value'  => 5.0,
+                'status'        => $conversionRate >= 5.0 ? 'ok' : ($conversionRate >= 2.5 ? 'warning' : 'critical'),
+            ],
+            [
+                'metric'        => 'completion_rate',
+                'current_value' => $completion,
+                'target_value'  => 80.0,
+                'status'        => $completion >= 80.0 ? 'ok' : ($completion >= 50.0 ? 'warning' : 'critical'),
+            ],
+            [
+                'metric'        => 'cancellation_rate',
+                'current_value' => $cancelRate,
+                'target_value'  => 15.0,
+                'status'        => $cancelRate <= 15.0 ? 'ok' : ($cancelRate <= 30.0 ? 'warning' : 'critical'),
+            ],
+        ];
+
+        return ['data' => $kpis, 'generated_at' => now()->toISOString()];
+    }
+
+    public function activityLog(int $userId, ReportFilters $filter, int $page, int $limit): array
+    {
+        if (! Schema::hasTable('entity_audit_logs')) {
+            return [
+                'data'       => [],
+                'pagination' => ['total' => 0, 'page' => $page, 'limit' => $limit],
+                'generated_at' => now()->toISOString(),
+            ];
+        }
+
+        $query = DB::table('entity_audit_logs as e')
+            ->where('e.tenant_id', $userId)
+            ->whereBetween('e.changed_at', [$filter->date->startDate, $filter->date->endDate]);
+
+        $total = (clone $query)->count();
+
+        $rows = (clone $query)
+            ->leftJoin('users as u', 'u.id', '=', 'e.changed_by')
+            ->selectRaw(
+                "e.id, e.action, e.changed_at, e.entity_type, e.entity_id,
+                 CONCAT(COALESCE(u.first_name,''), ' ', COALESCE(u.last_name,'')) as user_name"
+            )
+            ->orderByDesc('e.changed_at')
+            ->offset(($page - 1) * $limit)
+            ->limit($limit)
+            ->get()
+            ->map(fn ($r) => [
+                'id'          => (int) $r->id,
+                'action'      => $r->action,
+                'timestamp'   => $r->changed_at,
+                'user_name'   => trim((string) $r->user_name),
+                'entity_type' => $r->entity_type,
+                'entity_id'   => (int) $r->entity_id,
+            ])
+            ->toArray();
+
+        return [
+            'data'       => $rows,
+            'pagination' => ['total' => $total, 'page' => $page, 'limit' => $limit],
+            'generated_at' => now()->toISOString(),
+        ];
+    }
+
+    public function messages(int $userId, ReportFilters $filter, int $page, int $limit): array
+    {
+        if (Schema::hasTable('crm_hub_notes')) {
+            $query = DB::table('crm_hub_notes as n')
+                ->join('users as u', 'u.id', '=', 'n.employee_id')
+                ->where('u.tenant_id', $userId)
+                ->whereBetween('n.created_at', [$filter->date->startDate, $filter->date->endDate]);
+
+            $total = (clone $query)->count();
+            $rows = (clone $query)
+                ->selectRaw(
+                    "n.id, n.note as message, n.created_at,
+                     CONCAT(COALESCE(u.first_name,''), ' ', COALESCE(u.last_name,'')) as from_user"
+                )
+                ->orderByDesc('n.created_at')
+                ->offset(($page - 1) * $limit)
+                ->limit($limit)
+                ->get()
+                ->map(fn ($r) => [
+                    'id'        => (int) $r->id,
+                    'from_user' => trim((string) $r->from_user),
+                    'message'   => $r->message,
+                    'timestamp' => $r->created_at,
+                ])
+                ->toArray();
+
+            if ($rows !== [] || $total > 0) {
+                return [
+                    'data'       => $rows,
+                    'pagination' => ['total' => $total, 'page' => $page, 'limit' => $limit],
+                    'generated_at' => now()->toISOString(),
+                ];
+            }
+        }
+
+        if (! Schema::hasTable('app_notifications')) {
+            return [
+                'data'       => [],
+                'pagination' => ['total' => 0, 'page' => $page, 'limit' => $limit],
+                'generated_at' => now()->toISOString(),
+            ];
+        }
+
+        $query = DB::table('app_notifications as n')
+            ->where('n.tenant_user_id', $userId)
+            ->whereBetween('n.occurred_at', [$filter->date->startDate, $filter->date->endDate]);
+
+        $total = (clone $query)->count();
+        $rows = (clone $query)
+            ->leftJoin('users as u', 'u.id', '=', 'n.actor_user_id')
+            ->selectRaw(
+                "n.id, n.body as message, n.occurred_at,
+                 CONCAT(COALESCE(u.first_name,''), ' ', COALESCE(u.last_name,'')) as from_user"
+            )
+            ->orderByDesc('n.occurred_at')
+            ->offset(($page - 1) * $limit)
+            ->limit($limit)
+            ->get()
+            ->map(fn ($r) => [
+                'id'        => (int) $r->id,
+                'from_user' => trim((string) $r->from_user),
+                'message'   => $r->message,
+                'timestamp' => $r->occurred_at,
+            ])
+            ->toArray();
+
+        return [
+            'data'       => $rows,
+            'pagination' => ['total' => $total, 'page' => $page, 'limit' => $limit],
+            'generated_at' => now()->toISOString(),
+        ];
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

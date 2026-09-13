@@ -360,7 +360,11 @@ class DomainStatusSyncService
             try {
                 $observedNameservers = $this->nameserverChecker->getObservedNameservers($apex);
                 $nameserversOk = $this->nameserverChecker->hasExpectedNameservers($apex, $expectedNs);
-                if (! $nameserversOk && $message === '' && ! $providerError) {
+                // NS messaging only applies to vercel_ns mode; external_dns uses A/CNAME matching.
+                if ($dnsMode === ApiDomainSetting::DNS_MODE_VERCEL_NS
+                    && ! $nameserversOk
+                    && $message === ''
+                    && ! $providerError) {
                     $message = 'Nameservers are not pointing to Vercel yet.';
                 }
             } catch (\Throwable $e) {
@@ -369,10 +373,13 @@ class DomainStatusSyncService
                     'error' => $e->getMessage(),
                 ]);
                 $nameserversOk = false;
-                $providerError = true;
-                $providerReachable = false;
-                if ($message === '') {
-                    $message = 'Unable to resolve domain nameservers.';
+                // NS resolution failures are only fatal for vercel_ns health.
+                if ($dnsMode === ApiDomainSetting::DNS_MODE_VERCEL_NS) {
+                    $providerError = true;
+                    $providerReachable = false;
+                    if ($message === '') {
+                        $message = 'Unable to resolve domain nameservers.';
+                    }
                 }
             }
         } else {
@@ -405,6 +412,16 @@ class DomainStatusSyncService
                     $apexCertificate = $this->vercel->findCoveringCertificate($apex, $certificateInventory);
                     $sslReady = $apexCertificate !== null && $this->vercel->isCertificateReady($apexCertificate);
                     $certificateReadiness = $apexCertificate['readiness'] ?? null;
+
+                    // Project domains often get automatic edge TLS that never appears in
+                    // the account /v8/certs inventory. If apex is verified and Vercel
+                    // reports DNS as healthy, treat SSL as ready.
+                    if (! $sslReady
+                        && $apexVerified
+                        && ! (bool) ($domainConfig['misconfigured'] ?? false)) {
+                        $sslReady = true;
+                        $certificateReadiness = $certificateReadiness ?: 'issued';
+                    }
                 } catch (VercelDomainException $e) {
                     if ($this->isProviderUnknownError($e)) {
                         $providerError = true;
@@ -555,8 +572,16 @@ class DomainStatusSyncService
     ): array {
         if ($dnsMode === ApiDomainSetting::DNS_MODE_EXTERNAL_DNS) {
             $externalDns = ApiDomainSetting::externalDnsInstructions();
-            $normalizedIpv4 = $this->normalizeRecommendationValues([$externalDns['apex_record_value']]);
-            $normalizedCname = $this->normalizeRecommendationValues([$externalDns['www_record_value']]);
+            // Accept both our published instruction targets and Vercel's live
+            // recommended records (project domains often use newer anycast IPs).
+            $normalizedIpv4 = $this->normalizeRecommendationValues(array_merge(
+                [$externalDns['apex_record_value']],
+                is_array($recommendedIpv4) ? $recommendedIpv4 : [$recommendedIpv4]
+            ));
+            $normalizedCname = $this->normalizeRecommendationValues(array_merge(
+                [$externalDns['www_record_value']],
+                is_array($recommendedCname) ? $recommendedCname : [$recommendedCname]
+            ));
         } else {
             $normalizedIpv4 = $this->normalizeRecommendationValues($recommendedIpv4);
             $normalizedCname = $this->normalizeRecommendationValues($recommendedCname);
@@ -573,6 +598,11 @@ class DomainStatusSyncService
             $wwwSslReady = $wwwCertificate !== null && $this->vercel->isCertificateReady($wwwCertificate);
             $wwwCertificateReadiness = $wwwCertificate['readiness'] ?? null;
         } catch (VercelDomainException) {
+        }
+
+        if (! $wwwSslReady && $sslReady && $wwwPresent && $wwwRedirectCorrect) {
+            $wwwSslReady = true;
+            $wwwCertificateReadiness = $wwwCertificateReadiness ?: 'issued';
         }
 
         return [
@@ -843,9 +873,21 @@ class DomainStatusSyncService
         $normalized = [];
         foreach ($values as $value) {
             if (is_array($value)) {
+                if (array_key_exists('value', $value)) {
+                    foreach ($this->normalizeRecommendationValues($value['value']) as $nested) {
+                        $normalized[] = $nested;
+                    }
+
+                    continue;
+                }
+
                 foreach ($value as $nested) {
                     if (is_string($nested) && trim($nested) !== '') {
                         $normalized[] = strtolower(rtrim(trim($nested), '.'));
+                    } elseif (is_array($nested)) {
+                        foreach ($this->normalizeRecommendationValues([$nested]) as $deep) {
+                            $normalized[] = $deep;
+                        }
                     }
                 }
 

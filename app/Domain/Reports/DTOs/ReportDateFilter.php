@@ -36,11 +36,18 @@ final class ReportDateFilter
     {
         return match ($preset) {
             'today'   => new self(Carbon::today()->startOfDay(), Carbon::today()->endOfDay()),
-            'week'    => new self(Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()),
+            'week'    => self::sundayToSaturdayWeek(),
             'quarter' => new self(Carbon::now()->firstOfQuarter(), Carbon::now()->lastOfQuarter()->endOfDay()),
             'year'    => new self(Carbon::now()->startOfYear(), Carbon::now()->endOfYear()->endOfDay()),
             default   => new self(Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()->endOfDay()),
         };
+    }
+
+    private static function sundayToSaturdayWeek(): self
+    {
+        $start = Carbon::now()->startOfWeek(Carbon::SUNDAY)->startOfDay();
+
+        return new self($start, $start->copy()->addDays(6)->endOfDay());
     }
 
     public function granularity(): string

@@ -21,6 +21,10 @@ class ReportFilterRequest extends BaseApiFormRequest
             'end_date'   => 'nullable|date|after_or_equal:start_date',
             'page'       => 'nullable|integer|min:1',
             'limit'      => 'nullable|integer|min:1|max:200',
+            'purpose'    => 'nullable|string|in:sale,rent',
+            'type'       => 'nullable|string|max:100',
+            'number'     => 'nullable|string|max:32',
+            'search'     => 'nullable|string|max:100',
         ];
     }
 }
