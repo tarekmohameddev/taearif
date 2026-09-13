@@ -25,7 +25,7 @@ class UpdateEmployeeRequest extends BaseApiFormRequest
         return array_merge([
             'first_name' => ['nullable', 'string', 'max:120'],
             'last_name' => ['nullable', 'string', 'max:120'],
-            'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($employeeId)],
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($employeeId)->whereNull('deleted_at')],
             'phone' => ['nullable', 'string', 'max:50'],
             'password' => ['nullable', 'string', 'min:6'],
             'active' => ['boolean'],

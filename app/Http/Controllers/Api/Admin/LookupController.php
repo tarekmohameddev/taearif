@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\BaseController;
+use App\Models\Package;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,11 +16,17 @@ class LookupController extends BaseController
      */
     public function plans(Request $request): JsonResponse
     {
-        $items = DB::table('packages')
-            ->select('id', 'title', 'slug')
-            ->where('is_active', 1) // adjust to status=1 if preferred
+        $items = Package::query()
+            ->select('id', 'title', 'title_en', 'slug', 'term', 'is_trial', 'trial_days')
+            ->where('is_active', 1)
             ->orderBy('title')
-            ->get();
+            ->get()
+            ->map(fn (Package $package) => [
+                'id' => $package->id,
+                'title' => $package->getDisplayTitle('ar'),
+                'slug' => $package->slug,
+            ])
+            ->values();
 
         return $this->successResponse(
             ['items' => $items, 'total' => $items->count()],

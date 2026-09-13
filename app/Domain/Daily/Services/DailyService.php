@@ -3,6 +3,7 @@
 namespace App\Domain\Daily\Services;
 
 use App\Domain\Shared\Services\BaseService;
+use App\Models\Package;
 use App\Models\Api\Rms\RmReminder;
 use App\Models\Api\UserApiCustomerReminder;
 use App\Models\Api\UserApiCustomerAppointment;
@@ -607,7 +608,12 @@ class DailyService extends BaseService
                 'm.is_trial',
                 'm.start_date',
                 'm.expire_date',
+                'p.id as package_id',
                 'p.title as package_title',
+                'p.title_en as package_title_en',
+                'p.term as package_term',
+                'p.is_trial as package_is_trial',
+                'p.trial_days as package_trial_days',
                 'p.price as package_price',
                 'lc.last_contact_at',
             ]);
@@ -681,6 +687,15 @@ class DailyService extends BaseService
     protected function formatTenantRow(object $row, Carbon $today): array
     {
         $expireDate = $row->expire_date ? Carbon::parse($row->expire_date) : null;
+        $package = new Package([
+            'title' => $row->package_title,
+            'title_en' => $row->package_title_en ?? null,
+            'term' => $row->package_term ?? null,
+            'is_trial' => $row->package_is_trial ?? 0,
+            'trial_days' => $row->package_trial_days ?? 0,
+        ]);
+        $package->id = $row->package_id ?? null;
+
         return [
             'user' => [
                 'id' => (int) $row->user_id,
@@ -689,7 +704,7 @@ class DailyService extends BaseService
                 'phone' => $row->phone,
             ],
             'package' => [
-                'title' => $row->package_title,
+                'title' => $package->getDisplayTitle('ar'),
                 'price' => $row->package_price !== null ? (float) $row->package_price : null,
             ],
             'membership' => [

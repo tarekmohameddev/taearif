@@ -132,9 +132,9 @@ class PropertyController extends Controller
 					->orWhere('address', 'like', "%{$q}%");
 			});
 		}
-		foreach (['property_type','beds','bath','city_id','state_id','category_id','project_id'] as $eq) {
+		foreach (['beds','bath','city_id','state_id','project_id'] as $eq) {
 			if (!is_null($request->query($eq))) {
-				if (in_array($eq, ['city_id','state_id','category_id'])) {
+				if (in_array($eq, ['city_id','state_id'])) {
 					$query->whereHas('contents', function ($qbuilder) use ($eq, $request) {
 						$qbuilder->where($eq, $request->query($eq));
 					});
@@ -142,6 +142,25 @@ class PropertyController extends Controller
 					$query->where($eq, $request->query($eq));
 				}
 			}
+		}
+
+		// Prefer plural params when present (category_ids / property_types over singular).
+		$categoryIds = $this->parseMultiIntQuery(
+			$request,
+			$request->query->has('category_ids') ? 'category_ids' : 'category_id'
+		);
+		if ($categoryIds !== []) {
+			$query->whereHas('contents', function ($q) use ($categoryIds) {
+				$q->whereIn('category_id', $categoryIds);
+			});
+		}
+
+		$propertyTypes = $this->parseMultiValueQuery(
+			$request,
+			$request->query->has('property_types') ? 'property_types' : 'property_type'
+		);
+		if ($propertyTypes !== []) {
+			$query->whereIn('property_type', $propertyTypes);
 		}
 		// Featured filter
 		if ($request->boolean('featured')) {
@@ -362,6 +381,62 @@ class PropertyController extends Controller
 		}
 
 		$query->publishedForPublic();
+	}
+
+	/**
+	 * Accepts: ?key=a,b | ?key[]=a&key[]=b | ?key=a
+	 * @return list<string>
+	 */
+	protected function parseMultiValueQuery(Request $request, string $key): array
+	{
+		$value = $request->query($key);
+		if ($value === null) {
+			return [];
+		}
+
+		if (is_array($value)) {
+			$parts = [];
+			foreach ($value as $item) {
+				if (is_array($item)) {
+					foreach ($item as $nested) {
+						if (is_array($nested)) {
+							continue;
+						}
+						$trimmed = trim((string) $nested);
+						if ($trimmed !== '') {
+							$parts[] = $trimmed;
+						}
+					}
+					continue;
+				}
+				$trimmed = trim((string) $item);
+				if ($trimmed !== '') {
+					$parts[] = $trimmed;
+				}
+			}
+		} elseif (is_string($value)) {
+			$parts = array_values(array_filter(array_map('trim', explode(',', $value)), fn ($p) => $p !== ''));
+		} else {
+			$trimmed = trim((string) $value);
+			$parts = $trimmed !== '' ? [$trimmed] : [];
+		}
+
+		return array_values(array_unique($parts));
+	}
+
+	/**
+	 * @return list<int>
+	 */
+	protected function parseMultiIntQuery(Request $request, string $key): array
+	{
+		$ints = [];
+		foreach ($this->parseMultiValueQuery($request, $key) as $part) {
+			if (is_numeric($part)) {
+				$ints[] = (int) $part;
+			}
+		}
+
+		return array_values(array_unique($ints));
 	}
 
 }

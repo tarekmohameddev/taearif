@@ -199,7 +199,7 @@
                                         placeholder="{{ __('Select Packages') }}">
                                         @foreach ($packages as $package)
                                             <option value="{{ $package->id }}">
-                                                {{ $package->title }} {{ ucfirst($package->term) }}
+                                                {{ $package->getDisplayTitle('ar') }}@unless($package->isTrialPackage()) {{ __($package->term) }}@endunless
                                             </option>
                                         @endforeach
                                     </select>

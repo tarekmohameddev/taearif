@@ -38,7 +38,6 @@ class ManageDomainsTest extends AdminApiTestCase
         ApiDomainSetting::create([
             'user_id' => $domain->user_id,
             'custom_domain_id' => $domain->id,
-            'name' => 'Tenant Primary',
             'custom_name' => $domain->current_domain,
             'status' => 'active',
             'primary' => true,
@@ -53,7 +52,7 @@ class ManageDomainsTest extends AdminApiTestCase
             ->assertJsonPath('data.data.0.status_key', 'active')
             ->assertJsonPath('data.data.0.status_source', 'api')
             ->assertJsonPath('data.data.0.ssl_enabled', true)
-            ->assertJsonPath('data.data.0.added_date', now()->toDateString());
+            ->assertJsonPath('data.data.0.added_date', now()->startOfDay()->toIso8601String());
     }
 
     /** @test */
@@ -67,7 +66,6 @@ class ManageDomainsTest extends AdminApiTestCase
         ApiDomainSetting::create([
             'user_id' => $activeDomain->user_id,
             'custom_domain_id' => $activeDomain->id,
-            'name' => 'Active Domain',
             'custom_name' => $activeDomain->current_domain,
             'status' => 'active',
             'primary' => true,
@@ -81,7 +79,6 @@ class ManageDomainsTest extends AdminApiTestCase
         ApiDomainSetting::create([
             'user_id' => $failedDomain->user_id,
             'custom_domain_id' => $failedDomain->id,
-            'name' => 'Failed Domain',
             'custom_name' => $failedDomain->current_domain,
             'status' => 'failed',
             'primary' => false,
@@ -310,6 +307,7 @@ class ManageDomainsTest extends AdminApiTestCase
         $this->signInAdmin();
 
         $domain = CustomDomain::factory()->create([
+            'current_domain' => 'toggle.example.com',
             'status' => false,
         ]);
 

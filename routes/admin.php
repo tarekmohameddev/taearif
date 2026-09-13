@@ -563,13 +563,47 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
     // Custom Domains
     Route::group(['middleware' => 'checkpermission:Custom Domains'], function () {
         Route::get('/domains', 'Admin\CustomDomainController@index')->name('custom-domain.index');
+        Route::get('/domain/{id}/diagnostics', 'Admin\CustomDomainController@diagnostics')
+            ->whereNumber('id')
+            ->name('custom-domain.diagnostics');
         Route::get('/domain/texts', 'Admin\CustomDomainController@texts')->name('custom-domain.texts');
         Route::post('/domain/texts', 'Admin\CustomDomainController@updateTexts')->name('custom-domain.texts.update');
-        Route::post('/domain/status', 'Admin\CustomDomainController@status')->name('custom-domain.status');
         Route::post('/domain/mail', 'Admin\CustomDomainController@mail')->name('custom-domain.mail');
         Route::post('/domain/delete', 'Admin\CustomDomainController@delete')->name('custom-domain.delete');
         Route::post('/domain/bulk-delete', 'Admin\CustomDomainController@bulkDelete')->name('custom-domain.bulk.delete');
-        Route::post('/domain/ssl-status', 'Admin\CustomDomainController@updateSslStatus')->name('custom-domain.ssl-status');
+        Route::post('/domain/repair-verify', 'Admin\CustomDomainController@repairVerify')
+            ->middleware('throttle:10,1')
+            ->name('custom-domain.repair-verify');
+        Route::post('/domain/www/enable', 'Admin\CustomDomainController@enableWww')
+            ->middleware('throttle:10,1')
+            ->name('custom-domain.www.enable');
+        Route::post('/domain/www/disable', 'Admin\CustomDomainController@disableWww')
+            ->middleware('throttle:10,1')
+            ->name('custom-domain.www.disable');
+        Route::post('/domain/cleanup-vercel-orphan', 'Admin\CustomDomainController@cleanupVercelOrphan')
+            ->middleware('throttle:10,1')
+            ->name('custom-domain.cleanup-vercel-orphan');
+        Route::post('/domain/legacy-orphan/adopt', 'Admin\CustomDomainController@adoptLegacyOrphan')
+            ->middleware('throttle:10,1')
+            ->name('custom-domain.legacy-orphan.adopt');
+        Route::post('/domain/legacy-orphan/delete', 'Admin\CustomDomainController@deleteLegacyOrphan')
+            ->middleware('throttle:10,1')
+            ->name('custom-domain.legacy-orphan.delete');
+        Route::post('/domain/stray-www/remove', 'Admin\CustomDomainController@removeStrayWww')
+            ->middleware('throttle:10,1')
+            ->name('custom-domain.stray-www.remove');
+        Route::post('/domain/www/fix-redirect', 'Admin\CustomDomainController@fixWwwRedirect')
+            ->middleware('throttle:10,1')
+            ->name('custom-domain.www.fix-redirect');
+        Route::post('/domain/claim-ownership', 'Admin\CustomDomainController@claimOwnership')
+            ->middleware('throttle:10,1')
+            ->name('custom-domain.claim-ownership');
+        Route::post('/domain/bulk-repair-verify', 'Admin\CustomDomainController@bulkRepairVerify')
+            ->middleware('throttle:3,1')
+            ->name('custom-domain.bulk-repair-verify');
+        Route::post('/domain/refresh-inventory', 'Admin\CustomDomainController@refreshInventory')
+            ->middleware('throttle:10,1')
+            ->name('custom-domain.refresh-inventory');
     });
 
     // Subdomains

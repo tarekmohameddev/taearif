@@ -30,7 +30,7 @@ class SubscriptionResource extends JsonResource
             'tenant_name' => $this->user?->generalSetting?->site_name,
             'plan' => [
                 'id' => $this->package?->id,
-                'title' => $this->package?->title,
+                'title' => $this->package?->getDisplayTitle('ar'),
                 'slug' => $this->package?->slug,
             ],
             'pricing' => [

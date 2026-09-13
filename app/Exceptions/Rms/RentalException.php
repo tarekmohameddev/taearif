@@ -122,5 +122,28 @@ class RentalException extends ApiException
             safeMessage: 'This unit already has an active contract. Please end the existing contract before creating a new one.'
         );
     }
+
+    /**
+     * Unit is incomplete and cannot be used for a rental
+     */
+    public static function unitIncomplete($unitId, ?string $completionStatus = null, $missingFields = null): self
+    {
+        $details = [
+            'unit_id' => $unitId,
+            'completion_status' => $completionStatus,
+        ];
+
+        if ($missingFields !== null) {
+            $details['missing_fields'] = $missingFields;
+        }
+
+        return new self(
+            message: "Unit ID {$unitId} is incomplete and cannot be used for a rental",
+            code: 'RMS_UNIT_INCOMPLETE',
+            statusCode: 400,
+            details: $details,
+            safeMessage: 'This unit is incomplete and cannot be used for a rental. Please complete the unit first.'
+        );
+    }
 }
 

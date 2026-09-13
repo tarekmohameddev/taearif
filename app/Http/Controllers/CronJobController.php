@@ -381,7 +381,7 @@ class CronJobController extends Controller
     {
         try {
             $emailService = new EmailService();
-            $packageName = $membership->package ? $membership->package->title : 'الباقة المميزة';
+            $packageName = $membership->package ? $membership->package->getDisplayTitle('ar') : 'الباقة المميزة';
             $expiryDate = Carbon::parse($membership->expire_date)->format('Y-m-d');
             
             // Get template name from settings
@@ -421,7 +421,7 @@ class CronJobController extends Controller
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             try {
                 $whatsappService = new \App\Services\WhatsAppService();
-                $packageName = $membership->package ? $membership->package->title : 'الباقة المميزة';
+                $packageName = $membership->package ? $membership->package->getDisplayTitle('ar') : 'الباقة المميزة';
                 $expiryDate = Carbon::parse($membership->expire_date)->format('Y-m-d');
                 
                 $whatsappService->sendSubscriptionExpiredMessage(

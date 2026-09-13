@@ -8,8 +8,10 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
  * Custom Domain Repository Interface
- * 
- * Defines the contract for CustomDomain data access operations
+ *
+ * Data access for the legacy `user_custom_domains` admin API. Vercel-backed
+ * domains are authoritative in `api_domains_settings` — see
+ * {@see \App\Contracts\Vercel\VercelDomainSourceOfTruth}.
  */
 interface CustomDomainRepositoryInterface extends BaseRepositoryInterface
 {

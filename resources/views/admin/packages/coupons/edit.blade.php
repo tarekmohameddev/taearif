@@ -120,7 +120,7 @@
                                                 @foreach ($packages as $package)
                                                     <option value="{{ $package->id }}"
                                                         {{ is_array($selectedPackages) && in_array($package->id, $selectedPackages) ? 'selected' : '' }}>
-                                                        {{ $package->title }} {{ ucfirst($package->term) }}
+                                                        {{ $package->getDisplayTitle('ar') }}@unless($package->isTrialPackage()) {{ __($package->term) }}@endunless
                                                     </option>
                                                 @endforeach
                                             </select>

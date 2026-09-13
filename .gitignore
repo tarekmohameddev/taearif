@@ -56,6 +56,14 @@ composer.lock
 !/public/assets/**/*.ttf
 !/public/assets/**/*.eot
 !/public/assets/**/*.otf
+
+# Keep the dashboard stylesheet deployable while other generated public assets stay ignored.
+!/public/assets/
+!/public/assets/admin/
+/public/assets/admin/*
+!/public/assets/admin/css/
+/public/assets/admin/css/*
+!/public/assets/admin/css/dashboard.css
 *.md
 database/seeders/RentalDashboardTestSeeder833.php
 database/seeds/RentalDashboardTestSeeder833.php

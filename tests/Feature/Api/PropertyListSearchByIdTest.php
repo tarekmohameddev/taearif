@@ -165,6 +165,14 @@ class PropertyListSearchByIdTest extends TestCase
         return $property;
     }
 
+    private function createPropertyWithCompletionStatus(User $tenant, string $completionStatus, array $overrides = [], array $contentOverrides = []): Property
+    {
+        return $this->createCompleteProperty($tenant, array_merge([
+            'completion_status' => $completionStatus,
+            'property_status' => 'available',
+        ], $overrides), $contentOverrides);
+    }
+
     public function test_index_search_by_numeric_id_returns_property(): void
     {
         $this->skipIfMissingSchema();
@@ -340,5 +348,70 @@ class PropertyListSearchByIdTest extends TestCase
                 ->all();
         }
         $this->assertContains($property->id, $ids);
+    }
+
+    public function test_available_units_excludes_incomplete_by_default(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'username' => 'availinc' . Str::random(4)]);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, ['properties.view']);
+        Sanctum::actingAs($tenant);
+
+        $complete = $this->createCompleteProperty($tenant, [
+            'property_status' => 'available',
+        ], [
+            'title' => 'CompleteAvailableUnit',
+        ]);
+
+        $incomplete = $this->createPropertyWithCompletionStatus($tenant, 'incomplete', [], [
+            'title' => 'IncompleteAvailableUnit',
+        ]);
+
+        $pending = $this->createPropertyWithCompletionStatus($tenant, 'pending_review', [], [
+            'title' => 'PendingReviewAvailableUnit',
+        ]);
+
+        $response = $this->getJson('/api/properties/available-units?' . http_build_query([
+            'per_page' => 100,
+        ]));
+
+        $response->assertOk()->assertJsonPath('status', true);
+        $ids = collect($response->json('data'))->pluck('id')->all();
+
+        $this->assertContains($complete->id, $ids);
+        $this->assertNotContains($incomplete->id, $ids);
+        $this->assertNotContains($pending->id, $ids);
+        $this->assertIsArray($response->json('pagination'));
+    }
+
+    public function test_available_units_all_returns_unpaginated_list(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'username' => 'availall' . Str::random(4)]);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, ['properties.view']);
+        Sanctum::actingAs($tenant);
+
+        $property = $this->createCompleteProperty($tenant, [
+            'property_status' => 'available',
+        ], [
+            'title' => 'AllModeAvailableUnit',
+        ]);
+
+        $response = $this->getJson('/api/properties/available-units?' . http_build_query([
+            'all' => 1,
+        ]));
+
+        $response->assertOk()
+            ->assertJsonPath('status', true)
+            ->assertJsonPath('pagination', null);
+
+        $ids = collect($response->json('data'))->pluck('id')->all();
+        $this->assertContains($property->id, $ids);
+        $this->assertIsArray($response->json('data'));
+        $this->assertTrue(array_is_list($response->json('data')));
     }
 }

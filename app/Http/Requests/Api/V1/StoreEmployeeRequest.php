@@ -20,7 +20,7 @@ class StoreEmployeeRequest extends BaseApiFormRequest
         return array_merge([
             'first_name' => ['nullable', 'string', 'max:120'],
             'last_name' => ['nullable', 'string', 'max:120'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->whereNull('deleted_at')],
             'phone' => ['nullable', 'string', 'max:50'],
             'password' => ['required', 'string', 'min:6'],
             'active' => ['boolean'],

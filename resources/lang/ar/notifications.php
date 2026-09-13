@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'navbar_title' => 'الإشعارات',
+    'item_fallback_title' => 'إشعار',
+
     'property_request_created' => [
         'title' => 'طلب عقار جديد',
         'body_with_name' => 'تم إرسال طلب عقار جديد بواسطة :name.',

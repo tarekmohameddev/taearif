@@ -193,7 +193,7 @@ class PaymentController extends Controller
             $title = "You are extending your membership";
             $description = "Congratulation you are going to join our membership.Please make a payment for confirming your membership now!";
 
-            $title = $package->title;
+            $title = $package->getDisplayTitleEn();
             $description = $package->description;
 
             $success_url = route('api.membership.payment.success', ['gateway' => 'arb']);
@@ -249,9 +249,9 @@ class PaymentController extends Controller
 
             $planData = [
                 'id' => $package->id,
-                'name' => $package->title,
-                'name_ar' => $package->title,
-                'name_en' => $package->title_en,
+                'name' => $package->getDisplayTitle('ar'),
+                'name_ar' => $package->getDisplayTitle('ar'),
+                'name_en' => $package->getDisplayTitleEn(),
                 'price' => '' . number_format($package->price, 2),
                 'billing' => match ($package->term) {
                     'monthly' => 'شهريًا',

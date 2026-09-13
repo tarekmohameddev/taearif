@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 class Membership extends Model
@@ -38,5 +39,21 @@ class Membership extends Model
     public function package()
     {
         return $this->belongsTo(Package::class, 'package_id');
+    }
+
+    public function getDaysOnPackage(): int
+    {
+        if (empty($this->start_date)) {
+            return 0;
+        }
+
+        $start = Carbon::parse($this->start_date)->startOfDay();
+        $today = now()->startOfDay();
+
+        if ($start->isFuture()) {
+            return 0;
+        }
+
+        return max(0, (int) $start->diffInDays($today));
     }
 }

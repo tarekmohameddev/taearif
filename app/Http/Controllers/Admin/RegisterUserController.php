@@ -9,7 +9,6 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Package;
 use App\Models\Api\GeneralSetting;
-use App\Models\UserStep;
 use App\Models\User\Menu;
 use App\Models\Membership;
 use App\Constants\Constant;
@@ -41,6 +40,7 @@ use App\Http\Helpers\UserPermissionHelper;
 use PhpOffice\PhpSpreadsheet\Calculation\Web;
 use App\Models\User\BasicSetting as UserBasicSetting;
 use App\Services\MembershipService;
+use App\Services\RegisterUserStatsService;
 use App\Domain\User\Services\UserManagementService;
 use App\Domain\DataExport\Services\TenantDataExportService;
 use App\Domain\DataExport\Services\DataExportImportLogger;
@@ -51,6 +51,17 @@ use App\Domain\DataExport\Models\TenantDataImportBatch;
 
 class RegisterUserController extends Controller
 {
+    /**
+     * Packages already resolved for the package_id filter, keyed by id.
+     *
+     * applyUserFilters() runs once for the listing and once per stats bucket,
+     * so without this the same package row is fetched nine times per page
+     * load. The controller lives one request, so does this cache.
+     *
+     * @var array<int, \App\Models\Package|null>
+     */
+    private array $filteredPackageCache = [];
+
     public function __construct()
     {
         $abs = BasicSetting::first();
@@ -61,6 +72,80 @@ class RegisterUserController extends Controller
     public function index(Request $request)
     {
         $userListQuery = $this->userListQuery($request);
+        $activeMembership = $request->input('active_membership');
+        $paidMember = $request->input('paid_member');
+
+        $users = $this->applyUserFilters(
+            User::where('account_type', 'tenant')->with([
+                'referrer',
+                'basic_setting',
+                'currentMembership.package',
+                'pendingMembership.package',
+            ]),
+            $request
+        )->orderBy('id', 'DESC')->paginate(10);
+
+        if ($userListQuery !== []) {
+            $users->appends($userListQuery);
+        }
+
+        if ($users->total() > 0 && $users->count() === 0) {
+            return redirect()->route('admin.register.user', $userListQuery);
+        }
+
+        $maintenanceFlags = GeneralSetting::whereIn('user_id', $users->pluck('id'))->pluck('maintenance_mode', 'user_id');
+
+        // $affiliateUsers = User::whereNotNull('referral_code')->get(['id','username','email']);
+        $affiliateUsers = User::where('account_type', 'tenant')
+            ->whereHas('referrals')->get(['id','username','email']);
+
+        $online = PaymentGateway::query()->where('status', 1)->get();
+        $offline = OfflineGateway::where('status', 1)->get();
+        $gateways = $online->merge($offline);
+        $packages = Package::query()->where('status', '1')->get();
+        $packageFilterButtons = $this->packageFilterButtons($packages);
+
+        $statsService = app(RegisterUserStatsService::class);
+
+        // The headline the totals row is labelled with. $users->total() is the
+        // filtered count, so the unfiltered one needs its own query.
+        $tenantsTotal = User::query()->where('account_type', 'tenant')->count();
+
+        $statsTotal = $statsService->counts(
+            fn () => User::query()->where('account_type', 'tenant')
+        );
+        $statsFiltered = $statsService->counts(
+            fn () => $this->applyUserFilters(
+                User::query()->where('account_type', 'tenant'),
+                $request
+            ),
+            $this->registrationWindow($request)
+        );
+
+        return view('admin.register_user.index', compact(
+            'users',
+            'gateways',
+            'packages',
+            'statsTotal',
+            'statsFiltered',
+            'tenantsTotal',
+            'affiliateUsers',
+            'activeMembership',
+            'paidMember',
+            'userListQuery',
+            'packageFilterButtons',
+            'maintenanceFlags'
+        ));
+    }
+
+    /**
+     * The filter set shared by the paginated listing and the filtered stats row,
+     * so the bottom row of cards always describes the users in the table.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     */
+    private function applyUserFilters($query, Request $request)
+    {
         $term = $request->term;
         $startDate = $request->filled('start_date') ? Carbon::createFromFormat('Y-m-d', $request->start_date)->startOfDay() : null;
         $endDate   = $request->filled('end_date') ? Carbon::createFromFormat('Y-m-d', $request->end_date)->endOfDay() : null;
@@ -83,19 +168,10 @@ class RegisterUserController extends Controller
         $activeMembership = $request->input('active_membership');
         $paidMember = $request->input('paid_member');
 
-        $activeUsers = User::where('account_type', 'tenant')
-            ->whereHas('memberships', function ($q) {
-                $q->where('status', 1) // active membership
-                  ->where('expire_date', '>=', now()); // not expired
-            })->get();
+        // Needed to decide whether the package_id filter is a trial filter.
+        $filteredPackage = $this->resolveFilteredPackage($request);
 
-        $users = User::where('account_type', 'tenant')
-            ->with([
-                'referrer',
-                'basic_setting',
-                'currentMembership.package',
-                'pendingMembership.package',
-            ])->when($term, function ($query, $term) {
+        return $query->when($term, function ($query, $term) {
                 $query->where(function ($q) use ($term) {
                     $q->where('username', 'like', "%$term%")
                       ->orWhere('email', 'like', "%$term%")
@@ -146,9 +222,18 @@ class RegisterUserController extends Controller
                 });
             });
         })
-        ->when($request->filled('package_id'), function ($q) use ($request) {
-            $q->whereHas('currentMembership', function ($m) use ($request) {
+        ->when($request->filled('package_id'), function ($q) use ($request, $filteredPackage) {
+            $q->whereHas('currentMembership', function ($m) use ($request, $filteredPackage) {
                 $m->where('package_id', (int) $request->package_id);
+
+                // A trial whose expire_date is today is already rendered as
+                // "منتهي" in the Subscription column, because the badge treats
+                // the expire date as exclusive while currentMembership treats
+                // it as inclusive (whereDate expire_date >= today). Keep the
+                // trial filters to trials that are actually still running.
+                if ($filteredPackage && $filteredPackage->isTrialPackage()) {
+                    $m->whereDate('expire_date', '>', now()->toDateString());
+                }
             });
         })
         ->when($membershipStartFrom || $membershipStartTo, function ($q) use ($membershipStartFrom, $membershipStartTo) {
@@ -160,67 +245,86 @@ class RegisterUserController extends Controller
                     $m->where('start_date', '<=', $membershipStartTo);
                 }
             });
-        })
-        ->orderBy('id', 'DESC')
-        ->paginate(10);
+        });
+    }
 
-        if ($userListQuery !== []) {
-            $users->appends($userListQuery);
+    /**
+     * The window the filtered row's registrations tile reports on.
+     *
+     * Without this the tile ANDs the current month onto whatever registration
+     * date filter is active, so any window not overlapping today reads 0. With
+     * a From/To filter set it reports that window instead; with none it falls
+     * back to the current month. Only the filtered row passes this — the totals
+     * row always reports the current month.
+     *
+     * Either date filter drives it, in priority order:
+     *   1. start_date/end_date  — the advanced filter, on users.created_at
+     *   2. btn_start_date/btn_end_date — the subscription-start filter that is
+     *      visible on the page without opening فلتر متقدم, and the one admins
+     *      actually reach for when they want "registrations in month X"
+     *   3. no date filter — the current month
+     *
+     * Reads the same request keys applyUserFilters() does, so the window and
+     * the filter it describes can never drift apart.
+     *
+     * @return array{from: ?Carbon, to: ?Carbon, title: string}
+     */
+    private function registrationWindow(Request $request): array
+    {
+        $from = $request->filled('start_date')
+            ? Carbon::createFromFormat('Y-m-d', $request->start_date)->startOfDay()
+            : null;
+        $to = $request->filled('end_date')
+            ? Carbon::createFromFormat('Y-m-d', $request->end_date)->endOfDay()
+            : null;
+
+        // applyUserFilters() swallows malformed btn_* dates rather than failing
+        // the request, so this has to swallow them too — otherwise a bad date
+        // would start 500ing a page that until now just ignored the filter.
+        if (! $from && ! $to) {
+            try {
+                $from = $request->filled('btn_start_date')
+                    ? Carbon::createFromFormat('Y-m-d', $request->btn_start_date)->startOfDay()
+                    : null;
+                $to = $request->filled('btn_end_date')
+                    ? Carbon::createFromFormat('Y-m-d', $request->btn_end_date)->endOfDay()
+                    : null;
+            } catch (\Throwable $e) {
+                $from = null;
+                $to = null;
+            }
         }
 
-        if ($users->total() > 0 && $users->count() === 0) {
-            return redirect()->route('admin.register.user', $userListQuery);
+        if ($from || $to) {
+            return ['from' => $from, 'to' => $to, 'title' => 'المسجلون خلال الفترة المحددة'];
         }
 
-        $maintenanceFlags = GeneralSetting::whereIn('user_id', $users->pluck('id'))->pluck('maintenance_mode', 'user_id');
-
-        // $affiliateUsers = User::whereNotNull('referral_code')->get(['id','username','email']);
-        $affiliateUsers = User::where('account_type', 'tenant')
-            ->whereHas('referrals')->get(['id','username','email']);
-
-        $online = PaymentGateway::query()->where('status', 1)->get();
-        $offline = OfflineGateway::where('status', 1)->get();
-        $gateways = $online->merge($offline);
-        $packages = Package::query()->where('status', '1')->get();
-        $packageFilterButtons = $this->packageFilterButtons($packages);
-
-        $logoUploads = UserStep::where('logo_uploaded', true)->count();
-        $faviconUploads = UserStep::where('favicon_uploaded', true)->count();
-        $websiteNames = UserStep::where('website_named', true)->count();
-        $homepageUpdates = UserStep::where('homepage_updated', true)->count();
-        $newUsersThisMonth = User::where('account_type', 'tenant')
-            ->whereBetween('created_at', [
-                now()->startOfMonth(),
-                now()->endOfMonth()
-            ])->count();
-        $newUsersThisWeek = User::where('account_type', 'tenant')
-            ->whereBetween('created_at', [
-                now()->startOfWeek(Carbon::SUNDAY),
-                now()->endOfWeek(Carbon::SUNDAY)
-            ])->count();
-
-
-        $stats = [
-            ['title' => 'رفع شعار', 'count' => $logoUploads ?? 0],
-            ['title' => 'تحميل أيقونة المفضلة', 'count' => $faviconUploads ?? 0],
-            ['title' => 'تحديث الاسم', 'count' => $websiteNames ?? 0],
-            ['title' => 'تحديث الصفحة الرئيسية', 'count' => $homepageUpdates ?? 0],
-            ['title' => 'المسجلين الجديد في هذا الشهر', 'count' => $newUsersThisMonth ?? 0],
-            ['title' => 'المسجلين الجديد في هذا الاسبوع', 'count' => $newUsersThisWeek ?? 0],
+        return [
+            'from'  => now()->startOfMonth(),
+            'to'    => now(),
+            'title' => 'المسجلون الجدد هذا الشهر',
         ];
+    }
 
-        return view('admin.register_user.index', compact(
-            'users',
-            'gateways',
-            'packages','stats',
-            'affiliateUsers',
-            'activeMembership',
-            'paidMember',
-            'activeUsers',
-            'userListQuery',
-            'packageFilterButtons',
-            'maintenanceFlags'
-        ));
+    /**
+     * The package behind the package_id filter, fetched at most once per id.
+     *
+     * array_key_exists rather than isset/??: a package_id that matches no row
+     * caches a null, and that miss should stay cached too.
+     */
+    private function resolveFilteredPackage(Request $request): ?Package
+    {
+        if (! $request->filled('package_id')) {
+            return null;
+        }
+
+        $packageId = (int) $request->package_id;
+
+        if (! array_key_exists($packageId, $this->filteredPackageCache)) {
+            $this->filteredPackageCache[$packageId] = Package::find($packageId);
+        }
+
+        return $this->filteredPackageCache[$packageId];
     }
 
     private function userListQuery(Request $request): array
@@ -263,21 +367,37 @@ class RegisterUserController extends Controller
 
     private function packageFilterButtons($packages)
     {
-        $orderedIds = [24, 25, 26, 16];
+        // Both trials (26 and 28) get their own button, each labelled with its
+        // own day count by getDisplayTitle().
+        $orderedIds = [24, 25, 26, 28, 16];
         $fallbacks = [
-            24 => 'الباقة المميزة سنوية',
-            25 => 'الباقة المميزة الشهرية',
-            26 => 'الباقة التجريبية',
-            16 => 'الباقة المجانية',
+            // is_trial is enum('0','1') on packages — keep these as strings so
+            // the values stay valid if a fallback is ever persisted. MySQL
+            // reads an integer written to an ENUM as a 1-based index, so a
+            // literal 1 would store '0'.
+            24 => ['title' => 'الباقة المميزة سنوية', 'term' => MembershipService::TERM_YEARLY, 'is_trial' => '0', 'trial_days' => 0],
+            25 => ['title' => 'الباقة المميزة الشهرية', 'term' => MembershipService::TERM_MONTHLY, 'is_trial' => '0', 'trial_days' => 0],
+            26 => ['title' => 'الباقة التجريبية', 'term' => MembershipService::TERM_TRIAL, 'is_trial' => '1', 'trial_days' => MembershipService::DEFAULT_TRIAL_DAYS],
+            28 => ['title' => 'الباقة الشهرية للتجربة', 'term' => MembershipService::TERM_MONTHLY, 'is_trial' => '1', 'trial_days' => 30],
+            16 => ['title' => 'الباقة المجانية', 'term' => MembershipService::TERM_YEARLY, 'is_trial' => '0', 'trial_days' => 0],
         ];
         $packagesById = $packages->keyBy('id');
 
         return collect($orderedIds)->map(function (int $id) use ($packagesById, $fallbacks) {
             $package = $packagesById->get($id);
 
+            if ($package) {
+                return (object) [
+                    'id' => $id,
+                    'title' => $package->getDisplayTitle('ar'),
+                ];
+            }
+
+            $fallbackPackage = new Package(['id' => $id] + $fallbacks[$id]);
+
             return (object) [
                 'id' => $id,
-                'title' => ($package && filled($package->title)) ? $package->title : $fallbacks[$id],
+                'title' => $fallbackPackage->getDisplayTitle('ar'),
             ];
         });
     }
