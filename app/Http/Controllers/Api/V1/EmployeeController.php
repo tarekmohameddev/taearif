@@ -88,9 +88,12 @@ class EmployeeController extends Controller
         // Set tenant context for Spatie
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
 
-        // Add roles and permissions
-        $employee->roles = $employee->roles->pluck('name', 'id');
-        $employee->permissions = $employee->getPermissionNames();
+        // Consistent shapes for FE: roles as [{id,name}], permissions as string names
+        $employee->roles = $employee->roles
+            ->map(fn ($role) => ['id' => (int) $role->id, 'name' => $role->name])
+            ->values()
+            ->all();
+        $employee->permissions = $employee->getPermissionNames()->values()->all();
 
         return response()->json([
             'status' => 'success',
