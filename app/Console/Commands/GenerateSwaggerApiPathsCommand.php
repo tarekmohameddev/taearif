@@ -1149,8 +1149,11 @@ class GenerateSwaggerApiPathsCommand extends Command
                 foreach ($this->emitPathParameterAnnotations($path) as $paramLine) {
                     $opsLines[] = $paramLine;
                 }
-                if (in_array($oaMethod, ['Post', 'Put', 'Patch'], true)) {
-                    if (! empty($enrichment['request_body_lines']) && is_array($enrichment['request_body_lines'])) {
+                $hasMappedRequestBody = ! empty($enrichment['request_body_lines'])
+                    && is_array($enrichment['request_body_lines']);
+                if (in_array($oaMethod, ['Post', 'Put', 'Patch'], true)
+                    || ($oaMethod === 'Delete' && $hasMappedRequestBody)) {
+                    if ($hasMappedRequestBody) {
                         foreach ($enrichment['request_body_lines'] as $line) {
                             $opsLines[] = $line;
                         }
@@ -1304,6 +1307,27 @@ PHP;
                     ' *         @OA\\Response(response=409, description="Existing www redirect mismatch"),',
                     ' *         @OA\\Response(response=422, description="Validation failed or apex not attached"),',
                     ' *         @OA\\Response(response=503, description="Capacity, mutation guard, or provider unavailable")',
+                ],
+            ],
+            'DELETE /settings/domain/{id}' => [
+                'summary' => 'Delete tenant domain and detach it from Vercel',
+                'request_body_lines' => [
+                    ' *         @OA\\RequestBody(required=false, @OA\\JsonContent(type="object",',
+                    ' *             @OA\\Property(property="confirm_domain", type="string", description="Must match the domain hostname being deleted"),',
+                    ' *         )),',
+                ],
+                'response_lines' => [
+                    ' *         @OA\\Response(response=200, description="Deleted", @OA\\JsonContent(type="object",',
+                    ' *             @OA\\Property(property="success", type="boolean"),',
+                    ' *             @OA\\Property(property="message", type="string"),',
+                    ' *             @OA\\Property(property="data", type="object",',
+                    ' *                 @OA\\Property(property="domains", type="array", @OA\\Items(type="object"))',
+                    ' *             )',
+                    ' *         )),',
+                    ' *         @OA\\Response(response=401, description="Unauthenticated"),',
+                    ' *         @OA\\Response(response=404, description="Domain not found for tenant"),',
+                    ' *         @OA\\Response(response=422, description="Provided confirm_domain is invalid or does not match"),',
+                    ' *         @OA\\Response(response=503, description="Mutation guard or provider detach failed")',
                 ],
             ],
         ];

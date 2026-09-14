@@ -649,6 +649,87 @@ class DomainSettingsController extends Controller
         ]);
     }
 
+    /**
+     * Detach apex+www from Vercel (when enabled), then delete the tenant-owned domain row.
+     * Accepts confirm_domain for explicit confirmation while remaining compatible with
+     * older tenant clients that did not send a request body. Fails closed if provider
+     * detach fails.
+     */
+    public function destroy(Request $request, $id)
+    {
+        $request->validate([
+            'confirm_domain' => ['sometimes', 'string', 'max:255'],
+        ]);
+
+        $user = Auth::user();
+        $domain = ApiDomainSetting::query()
+            ->whereKey($id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        // The tenant dashboard shipped DELETE requests without a JSON body before
+        // this endpoint gained provider-detach protection. Preserve that contract,
+        // but only derive the confirmation after tenant ownership is established.
+        if (! $request->has('confirm_domain')) {
+            $request->merge(['confirm_domain' => (string) $domain->custom_name]);
+        }
+
+        try {
+            $this->mutationGuard->assertCanMutate($request, (string) $domain->custom_name);
+        } catch (VercelDomainException $exception) {
+            if ($exception->internalCode === VercelDomainException::CODE_CONFIRMATION_REQUIRED) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'CONFIRMATION_REQUIRED',
+                    'message' => $exception->getMessage(),
+                    'errors' => [
+                        [
+                            'field' => 'confirm_domain',
+                            'message' => $exception->getMessage(),
+                        ],
+                    ],
+                ], 422);
+            }
+
+            return $this->mapMutationGuardFailure($exception);
+        }
+
+        if (! $this->detachFromVercel($domain)) {
+            return response()->json([
+                'success' => false,
+                'code' => 'HOSTING_PROVIDER_UNAVAILABLE',
+                'message' => 'Failed to remove domain from hosting provider. Please try again shortly.',
+            ], 503);
+        }
+
+        $this->deleteDomainRow($request, $domain);
+        $this->vercelCache->invalidateAdminCaches();
+
+        $domains = $user->domains()
+            ->select(['id', 'custom_name', 'dns_mode', 'dns_records', 'status', 'primary', 'ssl', 'added_date'])
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Domain deleted successfully',
+            'data' => [
+                'domains' => $domains->map(function ($domain) {
+                    return [
+                        'id' => $domain->id,
+                        'custom_name' => $domain->custom_name,
+                        'status' => $domain->status,
+                        'primary' => $domain->primary,
+                        'ssl' => $domain->ssl,
+                        'addedDate' => $domain->added_date?->format('Y-m-d'),
+                        'dnsMode' => $this->dnsModeForDomain($domain),
+                        'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+                        'www' => $this->domainWwwService->wwwPayload($domain),
+                    ];
+                }),
+            ],
+        ]);
+    }
+
     public function enableWww(EnableDomainWwwRequest $request)
     {
         $user = Auth::user();
@@ -1082,5 +1163,80 @@ class DomainSettingsController extends Controller
                 'message' => $exception->getMessage() ?: 'Domain hosting is temporarily unavailable. Please try again shortly.',
             ], 503),
         };
+    }
+
+    /**
+     * After external detachment succeeds: lock tenant rows, delete, reassign primary.
+     */
+    private function deleteDomainRow(Request $request, ApiDomainSetting $domain): void
+    {
+        DB::transaction(function () use ($request, $domain) {
+            ApiDomainSetting::where('user_id', $domain->user_id)->lockForUpdate()->get();
+
+            $row = ApiDomainSetting::where('id', $domain->id)->lockForUpdate()->first();
+            if ($row === null) {
+                return;
+            }
+
+            $before = $this->domainActivitySnapshot($row);
+            $wasPrimary = (bool) $row->primary;
+            $id = $row->id;
+            $userId = $row->user_id;
+
+            $row->delete();
+
+            if ($wasPrimary) {
+                $replacement = ApiDomainSetting::where('user_id', $userId)
+                    ->preferredActive()
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($replacement) {
+                    $replacement->primary = true;
+                    $replacement->save();
+                }
+            }
+
+            TenantActivity::emit($request, 'domain.deleted', 'api_domains_settings', $id, $before, null);
+        });
+    }
+
+    /**
+     * @return array{custom_name: string, status: string, primary: bool, ssl: bool}
+     */
+    private function domainActivitySnapshot(ApiDomainSetting $domain): array
+    {
+        return [
+            'custom_name' => $this->vercel->normalizeApex((string) $domain->custom_name),
+            'status' => (string) $domain->status,
+            'primary' => (bool) $domain->primary,
+            'ssl' => (bool) $domain->ssl,
+        ];
+    }
+
+    /**
+     * Detach apex + www from Vercel. Fails closed: returns false so the caller
+     * keeps the row rather than orphaning the domain on the Vercel project.
+     */
+    private function detachFromVercel(ApiDomainSetting $domain): bool
+    {
+        if (! (bool) config('services.vercel.auto_attach_custom_domain', true) || ! $this->vercel->isConfigured()) {
+            return true;
+        }
+
+        try {
+            $this->vercel->removeApexAndWww((string) $domain->custom_name);
+        } catch (VercelDomainException|ConnectionException $e) {
+            Log::warning('Failed to remove domain from Vercel during tenant delete', [
+                'domain_id' => $domain->id,
+                'domain' => $domain->custom_name,
+                'error' => $e->getMessage(),
+                'exception' => $e::class,
+            ]);
+
+            return false;
+        }
+
+        return true;
     }
 }

@@ -10,6 +10,7 @@ use App\Events\TenantActivityOccurred;
 use App\Services\Vercel\DnsNameserverChecker;
 use App\Services\Vercel\DomainDnsRecordService;
 use App\Services\Vercel\VercelDomainCache;
+use App\Services\Vercel\VercelDomainClient;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Artisan;
@@ -528,22 +529,44 @@ class DomainSettingsVercelTest extends TestCase
         ]);
     }
 
-    public function test_tenant_destroy_route_is_not_registered(): void
+    public function test_tenant_destroy_route_supports_legacy_client_without_confirmation_body(): void
     {
         $this->skipIfMissingSchema();
-        $this->actingTenant();
+        $this->configureVercel();
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'legacy-delete.example.com',
+            'status' => 'pending',
+            'primary' => false,
+            'ssl' => false,
+            'added_date' => now(),
+        ]);
+
+        $this->mock(VercelDomainClient::class, function ($mock) {
+            $mock->shouldReceive('isConfigured')->andReturn(true);
+            $mock->shouldReceive('normalizeApex')->andReturnUsing(fn ($value) => strtolower(trim((string) $value)));
+            $mock->shouldReceive('getProjectIdentity')->andReturn([
+                'project_id' => 'prj_test',
+                'team_id' => 'team_test',
+            ]);
+            $mock->shouldReceive('removeApexAndWww')->once()->with('legacy-delete.example.com');
+        });
 
         $hasDestroyRoute = collect(\Illuminate\Support\Facades\Route::getRoutes())
             ->contains(fn ($route) => in_array('DELETE', $route->methods(), true)
                 && str_contains($route->uri(), 'settings/domain/{id}'));
-        $this->assertFalse($hasDestroyRoute, 'Tenant domain delete must not be registered');
-        $this->assertFalse(
+        $this->assertTrue($hasDestroyRoute, 'Tenant domain delete must be registered');
+        $this->assertTrue(
             method_exists(\App\Http\Controllers\Api\DomainSettingsController::class, 'destroy')
         );
 
-        $response = $this->deleteJson('/api/settings/domain/1');
-        $this->assertNotEquals(200, $response->status());
-        $this->assertNotTrue($response->json('success'));
+        $this->deleteJson('/api/settings/domain/' . $domain->id)
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('api_domains_settings', ['id' => $domain->id]);
     }
 
     public function test_tenant_request_ssl_route_is_not_registered(): void
@@ -925,7 +948,7 @@ class DomainSettingsVercelTest extends TestCase
         );
     }
 
-    public function test_tenant_delete_endpoint_is_not_available(): void
+    public function test_tenant_delete_rejects_an_explicit_mismatched_confirmation(): void
     {
         $this->skipIfMissingSchema();
         $this->configureVercel();
@@ -940,13 +963,23 @@ class DomainSettingsVercelTest extends TestCase
             'added_date' => now(),
         ]);
 
-        Http::fake();
+        $this->mock(VercelDomainClient::class, function ($mock) {
+            $mock->shouldReceive('isConfigured')->andReturn(true);
+            $mock->shouldReceive('normalizeApex')->andReturnUsing(fn ($value) => strtolower(trim((string) $value)));
+            $mock->shouldReceive('getProjectIdentity')->andReturn([
+                'project_id' => 'prj_test',
+                'team_id' => 'team_test',
+            ]);
+            $mock->shouldNotReceive('removeApexAndWww');
+        });
 
-        $response = $this->deleteJson('/api/settings/domain/' . $domain->id);
+        $response = $this->deleteJson('/api/settings/domain/' . $domain->id, [
+            'confirm_domain' => 'wrong.example.com',
+        ]);
 
-        $this->assertNotEquals(200, $response->status());
+        $response->assertStatus(422)
+            ->assertJsonPath('code', 'CONFIRMATION_REQUIRED');
         $this->assertDatabaseHas('api_domains_settings', ['id' => $domain->id]);
-        Http::assertNothingSent();
     }
 
     public function test_index_returns_nameserver_instructions(): void
@@ -1453,7 +1486,7 @@ class DomainSettingsVercelTest extends TestCase
             ?? null);
     }
 
-    public function test_tenant_cannot_delete_domain_via_api(): void
+    public function test_tenant_delete_keeps_domain_when_provider_detach_fails(): void
     {
         $this->skipIfMissingSchema();
         $this->configureVercel();
@@ -1468,18 +1501,27 @@ class DomainSettingsVercelTest extends TestCase
             'added_date' => now(),
         ]);
 
-        Http::fake([
-            'api.vercel.com/*' => Http::response(['error' => ['message' => 'boom']], 500),
-        ]);
+        $this->mock(VercelDomainClient::class, function ($mock) {
+            $mock->shouldReceive('isConfigured')->andReturn(true);
+            $mock->shouldReceive('normalizeApex')->andReturnUsing(fn ($value) => strtolower(trim((string) $value)));
+            $mock->shouldReceive('getProjectIdentity')->andReturn([
+                'project_id' => 'prj_test',
+                'team_id' => 'team_test',
+            ]);
+            $mock->shouldReceive('removeApexAndWww')
+                ->once()
+                ->with('primary-keep.example.com')
+                ->andThrow(new ConnectionException('Connection timed out'));
+        });
 
         $response = $this->deleteJson('/api/settings/domain/' . $primary->id);
-        $this->assertNotEquals(200, $response->status());
-        $this->assertNotTrue($response->json('success'));
+        $response->assertStatus(503)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('code', 'HOSTING_PROVIDER_UNAVAILABLE');
 
         $primary->refresh();
         $this->assertTrue((bool) $primary->primary);
         $this->assertDatabaseHas('api_domains_settings', ['id' => $primary->id, 'primary' => 1]);
-        Http::assertNothingSent();
     }
 
     public function test_store_invalidates_vercel_inventory_cache(): void
