@@ -812,6 +812,57 @@ class ApiDomainSettingHealthTest extends TestCase
         $this->assertSame('danger', $domain->resolvedHealth()['class']);
     }
 
+    /** @test */
+    public function ownership_challenges_normalize_apex_and_www_and_support_legacy_rows(): void
+    {
+        $domain = new ApiDomainSetting([
+            'custom_name' => 'example.com',
+            'dns_records' => [
+                'last_check' => [
+                    'ownership_challenges' => [
+                        [
+                            'scope' => 'apex',
+                            'hostname' => 'example.com',
+                            'type' => 'txt',
+                            'domain' => '_vercel.example.com.',
+                            'value' => 'vc-domain-verify=example.com,apex-token',
+                        ],
+                        [
+                            'type' => 'TXT',
+                            'domain' => '_vercel.example.com',
+                            'value' => 'vc-domain-verify=www.example.com,www-token',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $challenges = $domain->ownershipChallenges();
+
+        $this->assertCount(2, $challenges);
+        $this->assertSame('apex', $challenges[0]['scope']);
+        $this->assertSame('example.com', $challenges[0]['hostname']);
+        $this->assertSame('www', $challenges[1]['scope']);
+        $this->assertSame('www.example.com', $challenges[1]['hostname']);
+        $this->assertSame('_vercel.example.com', $challenges[1]['domain']);
+
+        $legacy = new ApiDomainSetting([
+            'custom_name' => 'legacy.example.com',
+            'dns_records' => [
+                'last_check' => [
+                    'ownership_challenge' => [
+                        'type' => 'txt',
+                        'domain' => '_vercel.legacy.example.com',
+                        'value' => 'vc-domain-verify=legacy.example.com,legacy-token',
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->assertSame('apex', $legacy->ownershipChallenges()[0]['scope']);
+        $this->assertSame('legacy.example.com', $legacy->ownershipChallenges()[0]['hostname']);
+    }
+
     private function domainWithLastCheck(array $lastCheck, ?Carbon $expiresAt = null): ApiDomainSetting
     {
         $domain = new ApiDomainSetting([

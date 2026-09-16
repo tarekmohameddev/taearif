@@ -86,10 +86,7 @@ class DomainStatusSyncService
             $oldStatus,
             $oldSsl,
             $health,
-            $sslReady,
-            $applyFailureThreshold,
-            $consecutiveFailures,
-            $firstFailureAt
+            $sslReady
         );
 
         $checkSummary = array_merge($lastCheck, [
@@ -155,6 +152,21 @@ class DomainStatusSyncService
 
             if (is_array($previous) && $previous !== []) {
                 $checkSummary[$key] = $previous;
+            }
+        }
+
+        if (($checkSummary['health_code'] ?? null) === 'provider_error') {
+            foreach (['ownership_challenge', 'ownership_challenges'] as $key) {
+                $current = $checkSummary[$key] ?? null;
+                $previous = $previousCheck[$key] ?? null;
+
+                if (is_array($current) && $current !== []) {
+                    continue;
+                }
+
+                if (is_array($previous) && $previous !== []) {
+                    $checkSummary[$key] = $previous;
+                }
             }
         }
 
@@ -260,6 +272,7 @@ class DomainStatusSyncService
         $providerReachable = true;
         $message = '';
         $ownershipChallenge = null;
+        $ownershipChallenges = [];
         $domainConfig = [
             'misconfigured' => false,
             'configuredBy' => null,
@@ -314,16 +327,38 @@ class DomainStatusSyncService
                 }
 
                 if (! $providerError && $apexAttached) {
-                    try {
-                        $verification = $this->vercel->getDomainVerification($apex);
-                        $ownershipChallenge = $this->extractOwnershipChallenge($verification);
-                    } catch (VercelDomainException $e) {
-                        if ($this->isProviderUnknownError($e)) {
-                            $providerError = true;
-                            $providerReachable = false;
-                            $message = 'Could not reach the hosting provider to check this domain.';
+                    $verificationTargets = [
+                        ['scope' => 'apex', 'hostname' => $apex, 'present' => $apexAttached],
+                        ['scope' => 'www', 'hostname' => $www, 'present' => $wwwPresent],
+                    ];
+
+                    foreach ($verificationTargets as $target) {
+                        if (! $target['present']) {
+                            continue;
+                        }
+
+                        try {
+                            $verification = $this->vercel->getDomainVerification($target['hostname']);
+                            $ownershipChallenges = array_merge(
+                                $ownershipChallenges,
+                                $this->extractOwnershipChallenges(
+                                    $verification,
+                                    $target['scope'],
+                                    $target['hostname']
+                                )
+                            );
+                        } catch (VercelDomainException $e) {
+                            if ($this->isProviderUnknownError($e)) {
+                                $providerError = true;
+                                $providerReachable = false;
+                                $message = 'Could not reach the hosting provider to check this domain.';
+                                break;
+                            }
                         }
                     }
+
+                    $ownershipChallenges = $this->uniqueOwnershipChallenges($ownershipChallenges);
+                    $ownershipChallenge = $this->legacyOwnershipChallenge($ownershipChallenges[0] ?? null);
 
                     if (! $providerError) {
                         try {
@@ -482,10 +517,7 @@ class DomainStatusSyncService
             $oldStatus,
             $oldSsl,
             $healthCode,
-            $sslReady,
-            $applyFailureThreshold,
-            $consecutiveFailures,
-            $firstFailureAt
+            $sslReady
         );
 
         $checkSummary = $this->buildCheckSummary([
@@ -503,6 +535,7 @@ class DomainStatusSyncService
             'www_present' => $wwwPresent,
             'www_redirect_correct' => $wwwRedirectCorrect,
             'ownership_challenge' => $ownershipChallenge,
+            'ownership_challenges' => $ownershipChallenges,
             'observed_nameservers' => $observedNameservers,
             'nameservers_ok' => $nameserversOk,
             'nameserver_check_enabled' => $checkNameservers,
@@ -711,10 +744,12 @@ class DomainStatusSyncService
 
     /**
      * @param  list<array<string, mixed>>  $verification
-     * @return array{type: string, domain: string, value: string, reason?: string}|null
+     * @return list<array{scope: string, hostname: string, type: string, domain: string, value: string, reason?: string}>
      */
-    private function extractOwnershipChallenge(array $verification): ?array
+    private function extractOwnershipChallenges(array $verification, string $scope, string $hostname): array
     {
+        $challenges = [];
+
         foreach ($verification as $item) {
             if (! is_array($item)) {
                 continue;
@@ -731,7 +766,9 @@ class DomainStatusSyncService
                 continue;
             }
 
-            return array_filter([
+            $challenges[] = array_filter([
+                'scope' => $scope,
+                'hostname' => strtolower($hostname),
                 'type' => 'txt',
                 'domain' => strtolower($domain),
                 'value' => $value,
@@ -739,7 +776,42 @@ class DomainStatusSyncService
             ], fn ($v) => $v !== null && $v !== '');
         }
 
-        return null;
+        return $challenges;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $challenges
+     * @return list<array<string, mixed>>
+     */
+    private function uniqueOwnershipChallenges(array $challenges): array
+    {
+        $unique = [];
+        foreach ($challenges as $challenge) {
+            $key = strtolower((string) ($challenge['type'] ?? 'txt'))
+                . '|' . strtolower((string) ($challenge['domain'] ?? ''))
+                . '|' . (string) ($challenge['value'] ?? '');
+            $unique[$key] = $challenge;
+        }
+
+        return array_values($unique);
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $challenge
+     * @return array{type: string, domain: string, value: string, reason?: string}|null
+     */
+    private function legacyOwnershipChallenge(?array $challenge): ?array
+    {
+        if ($challenge === null) {
+            return null;
+        }
+
+        return array_filter([
+            'type' => $challenge['type'] ?? null,
+            'domain' => $challenge['domain'] ?? null,
+            'value' => $challenge['value'] ?? null,
+            'reason' => $challenge['reason'] ?? null,
+        ], fn ($value) => $value !== null && $value !== '');
     }
 
     private function isProviderUnknownError(VercelDomainException $e): bool
@@ -796,10 +868,7 @@ class DomainStatusSyncService
         string $oldStatus,
         bool $oldSsl,
         string $healthCode,
-        bool $sslReady,
-        bool $applyFailureThreshold,
-        int $consecutiveFailures,
-        ?string $firstFailureAt
+        bool $sslReady
     ): array {
         if ($healthCode === 'provider_error') {
             return [$oldStatus, $oldSsl];
@@ -815,29 +884,19 @@ class DomainStatusSyncService
             return ['failed', false];
         }
 
-        if ($healthCode === 'expired' || $healthCode === 'certificate_error') {
-            if ($oldStatus === 'active' && $healthCode === 'certificate_error'
-                && $applyFailureThreshold && ! $this->thresholdMet($consecutiveFailures, $firstFailureAt)) {
-                return [$oldStatus, $oldSsl];
-            }
-
+        if ($healthCode === 'expired') {
             return ['failed', false];
         }
 
-        if ($oldStatus === 'active' && in_array($healthCode, self::CONFIRMED_FAILURE_CODES, true)) {
-            if (! $applyFailureThreshold || $this->thresholdMet($consecutiveFailures, $firstFailureAt)) {
-                return ['failed', false];
-            }
-
-            return [$oldStatus, $oldSsl];
-        }
-
-        if ($oldStatus === 'active' && $healthCode === 'certificate_pending') {
-            return [$oldStatus, $oldSsl];
-        }
-
+        // Once a domain has been activated, health synchronization is diagnostic:
+        // DNS, Vercel, or certificate drift must not disconnect the tenant website.
+        // Terminal lifecycle events (currently expiry, handled above) may still stop it.
         if ($oldStatus === 'active') {
             return [$oldStatus, $oldSsl];
+        }
+
+        if ($healthCode === 'certificate_error') {
+            return ['failed', false];
         }
 
         if ($oldStatus === 'failed' && in_array($healthCode, self::CONFIRMED_FAILURE_CODES, true)) {
@@ -845,21 +904,6 @@ class DomainStatusSyncService
         }
 
         return ['pending', $sslReady];
-    }
-
-    private function thresholdMet(int $consecutiveFailures, ?string $firstFailureAt): bool
-    {
-        $threshold = max(1, (int) config('services.vercel.health_failure_threshold', 3));
-        if ($consecutiveFailures < $threshold) {
-            return false;
-        }
-
-        $graceHours = max(0, (int) config('services.vercel.health_failure_grace_hours', 0));
-        if ($graceHours === 0 || $firstFailureAt === null) {
-            return true;
-        }
-
-        return now()->diffInHours($firstFailureAt) >= $graceHours;
     }
 
     private function defaultMessageForHealthCode(string $healthCode): string

@@ -541,10 +541,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get   ('/settings/domain',                 [DomainSettingsController::class, 'index'])->middleware('can:settings.update');
     Route::post  ('/settings/domain/www/enable',      [DomainSettingsController::class, 'enableWww'])->middleware(['can:settings.update', 'throttle:10,1']);
     Route::get   ('/settings/domain/{id}',            [DomainSettingsController::class, 'show'])->middleware('can:settings.update');
+    Route::delete('/settings/domain/{id}',            [DomainSettingsController::class, 'destroy'])->middleware(['can:settings.update', 'throttle:10,1']);
     Route::post  ('/settings/domain',                 [DomainSettingsController::class, 'store'])->middleware(['can:settings.update', 'throttle:10,1']);
     Route::post  ('/settings/domain/verify',          [DomainSettingsController::class, 'verify'])->middleware(['can:settings.update', 'throttle:10,1']);
     Route::match(['post', 'patch'], '/settings/domain/set-primary', [DomainSettingsController::class, 'setPrimary'])->middleware('can:settings.update');
-    // Domain delete and SSL toggles are admin-only (/admin/domains). Tenants cannot detach Vercel entries or request SSL.
+    // SSL toggles remain admin-only (/admin/domains). Tenant delete detaches from Vercel first.
 });
 
 

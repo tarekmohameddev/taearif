@@ -10,6 +10,7 @@ use App\Events\TenantActivityOccurred;
 use App\Services\Vercel\DnsNameserverChecker;
 use App\Services\Vercel\DomainDnsRecordService;
 use App\Services\Vercel\VercelDomainCache;
+use App\Services\Vercel\VercelDomainClient;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Artisan;
@@ -528,22 +529,44 @@ class DomainSettingsVercelTest extends TestCase
         ]);
     }
 
-    public function test_tenant_destroy_route_is_not_registered(): void
+    public function test_tenant_destroy_route_supports_legacy_client_without_confirmation_body(): void
     {
         $this->skipIfMissingSchema();
-        $this->actingTenant();
+        $this->configureVercel();
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'legacy-delete.example.com',
+            'status' => 'pending',
+            'primary' => false,
+            'ssl' => false,
+            'added_date' => now(),
+        ]);
+
+        $this->mock(VercelDomainClient::class, function ($mock) {
+            $mock->shouldReceive('isConfigured')->andReturn(true);
+            $mock->shouldReceive('normalizeApex')->andReturnUsing(fn ($value) => strtolower(trim((string) $value)));
+            $mock->shouldReceive('getProjectIdentity')->andReturn([
+                'project_id' => 'prj_test',
+                'team_id' => 'team_test',
+            ]);
+            $mock->shouldReceive('removeApexAndWww')->once()->with('legacy-delete.example.com');
+        });
 
         $hasDestroyRoute = collect(\Illuminate\Support\Facades\Route::getRoutes())
             ->contains(fn ($route) => in_array('DELETE', $route->methods(), true)
                 && str_contains($route->uri(), 'settings/domain/{id}'));
-        $this->assertFalse($hasDestroyRoute, 'Tenant domain delete must not be registered');
-        $this->assertFalse(
+        $this->assertTrue($hasDestroyRoute, 'Tenant domain delete must be registered');
+        $this->assertTrue(
             method_exists(\App\Http\Controllers\Api\DomainSettingsController::class, 'destroy')
         );
 
-        $response = $this->deleteJson('/api/settings/domain/1');
-        $this->assertNotEquals(200, $response->status());
-        $this->assertNotTrue($response->json('success'));
+        $this->deleteJson('/api/settings/domain/' . $domain->id)
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('api_domains_settings', ['id' => $domain->id]);
     }
 
     public function test_tenant_request_ssl_route_is_not_registered(): void
@@ -925,7 +948,90 @@ class DomainSettingsVercelTest extends TestCase
         );
     }
 
-    public function test_tenant_delete_endpoint_is_not_available(): void
+    public function test_verify_recovers_project_ownership_records_when_account_lookup_is_forbidden(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        config(['services.vercel.check_nameservers' => false]);
+        $tenant = $this->actingTenant();
+        $apex = 'ownership-recovery.example.com';
+        $www = 'www.' . $apex;
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => $apex,
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+            'status' => 'pending',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+        ]);
+
+        Http::fake(function (\Illuminate\Http\Client\Request $request) use ($apex, $www) {
+            $url = $request->url();
+            $method = $request->method();
+
+            if ($method === 'GET' && preg_match('#/v5/domains/' . preg_quote($apex, '#') . '(?:\\?|$)#', $url)) {
+                return Http::response(['error' => ['code' => 'forbidden']], 403);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test') && ! str_contains($url, '/domains')) {
+                return Http::response(['id' => 'prj_test', 'accountId' => 'team_test'], 200);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test/domains') && ! str_contains($url, '/domains/')) {
+                return Http::response([
+                    'domains' => [
+                        ['name' => $apex, 'verified' => false],
+                        ['name' => $www, 'verified' => false, 'redirect' => $apex, 'redirectStatusCode' => 301],
+                    ],
+                    'pagination' => ['count' => 2, 'next' => null],
+                ], 200);
+            }
+
+            foreach ([
+                $apex => 'apex-token',
+                $www => 'www-token',
+            ] as $hostname => $token) {
+                if ($method === 'GET' && str_contains($url, '/v9/projects/prj_test/domains/' . rawurlencode($hostname))) {
+                    return Http::response([
+                        'name' => $hostname,
+                        'verified' => false,
+                        'verification' => [[
+                            'type' => 'TXT',
+                            'domain' => '_vercel.' . $apex,
+                            'value' => 'vc-domain-verify=' . $hostname . ',' . $token,
+                        ]],
+                    ], 200);
+                }
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v6/domains/' . rawurlencode($apex) . '/config')) {
+                return Http::response(['misconfigured' => false], 200);
+            }
+
+            if ($method === 'GET' && str_contains($url, '/v8/certs')) {
+                return Http::response(['certs' => [], 'pagination' => ['next' => null]], 200);
+            }
+
+            return Http::response(['error' => ['code' => 'unexpected']], 500);
+        });
+
+        $response = $this->postJson('/api/settings/domain/verify', ['id' => $domain->id]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('health', 'ownership_required')
+            ->assertJsonPath('ownershipVerification.required', true)
+            ->assertJsonCount(2, 'ownershipVerification.records')
+            ->assertJsonPath('ownershipVerification.records.0.scope', 'apex')
+            ->assertJsonPath('ownershipVerification.records.1.scope', 'www');
+
+        $domain->refresh();
+        $this->assertSame('ownership_required', $domain->dns_records['last_check']['health_code'] ?? null);
+        $this->assertCount(2, $domain->dns_records['last_check']['ownership_challenges'] ?? []);
+    }
+
+    public function test_tenant_delete_rejects_an_explicit_mismatched_confirmation(): void
     {
         $this->skipIfMissingSchema();
         $this->configureVercel();
@@ -940,13 +1046,23 @@ class DomainSettingsVercelTest extends TestCase
             'added_date' => now(),
         ]);
 
-        Http::fake();
+        $this->mock(VercelDomainClient::class, function ($mock) {
+            $mock->shouldReceive('isConfigured')->andReturn(true);
+            $mock->shouldReceive('normalizeApex')->andReturnUsing(fn ($value) => strtolower(trim((string) $value)));
+            $mock->shouldReceive('getProjectIdentity')->andReturn([
+                'project_id' => 'prj_test',
+                'team_id' => 'team_test',
+            ]);
+            $mock->shouldNotReceive('removeApexAndWww');
+        });
 
-        $response = $this->deleteJson('/api/settings/domain/' . $domain->id);
+        $response = $this->deleteJson('/api/settings/domain/' . $domain->id, [
+            'confirm_domain' => 'wrong.example.com',
+        ]);
 
-        $this->assertNotEquals(200, $response->status());
+        $response->assertStatus(422)
+            ->assertJsonPath('code', 'CONFIRMATION_REQUIRED');
         $this->assertDatabaseHas('api_domains_settings', ['id' => $domain->id]);
-        Http::assertNothingSent();
     }
 
     public function test_index_returns_nameserver_instructions(): void
@@ -1129,7 +1245,7 @@ class DomainSettingsVercelTest extends TestCase
         $this->assertTrue((bool) $domain->ssl);
     }
 
-    public function test_sync_command_fails_active_when_missing_on_vercel(): void
+    public function test_sync_command_preserves_active_when_missing_on_vercel(): void
     {
         $this->skipIfMissingSchema();
         $this->configureVercel();
@@ -1153,8 +1269,10 @@ class DomainSettingsVercelTest extends TestCase
         Artisan::call('domains:sync-vercel-status');
 
         $domain->refresh();
-        $this->assertSame('failed', $domain->status);
-        $this->assertFalse((bool) $domain->ssl);
+        $this->assertSame('active', $domain->status);
+        $this->assertTrue((bool) $domain->ssl);
+        $this->assertSame('not_on_vercel', $domain->dns_records['last_check']['health_code'] ?? null);
+        $this->assertSame(1, $domain->dns_records['last_check']['consecutive_failures'] ?? null);
     }
 
     public function test_sync_command_fails_when_expires_at_past(): void
@@ -1453,7 +1571,7 @@ class DomainSettingsVercelTest extends TestCase
             ?? null);
     }
 
-    public function test_tenant_cannot_delete_domain_via_api(): void
+    public function test_tenant_delete_keeps_domain_when_provider_detach_fails(): void
     {
         $this->skipIfMissingSchema();
         $this->configureVercel();
@@ -1468,18 +1586,27 @@ class DomainSettingsVercelTest extends TestCase
             'added_date' => now(),
         ]);
 
-        Http::fake([
-            'api.vercel.com/*' => Http::response(['error' => ['message' => 'boom']], 500),
-        ]);
+        $this->mock(VercelDomainClient::class, function ($mock) {
+            $mock->shouldReceive('isConfigured')->andReturn(true);
+            $mock->shouldReceive('normalizeApex')->andReturnUsing(fn ($value) => strtolower(trim((string) $value)));
+            $mock->shouldReceive('getProjectIdentity')->andReturn([
+                'project_id' => 'prj_test',
+                'team_id' => 'team_test',
+            ]);
+            $mock->shouldReceive('removeApexAndWww')
+                ->once()
+                ->with('primary-keep.example.com')
+                ->andThrow(new ConnectionException('Connection timed out'));
+        });
 
         $response = $this->deleteJson('/api/settings/domain/' . $primary->id);
-        $this->assertNotEquals(200, $response->status());
-        $this->assertNotTrue($response->json('success'));
+        $response->assertStatus(503)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('code', 'HOSTING_PROVIDER_UNAVAILABLE');
 
         $primary->refresh();
         $this->assertTrue((bool) $primary->primary);
         $this->assertDatabaseHas('api_domains_settings', ['id' => $primary->id, 'primary' => 1]);
-        Http::assertNothingSent();
     }
 
     public function test_store_invalidates_vercel_inventory_cache(): void
@@ -1658,6 +1785,43 @@ class DomainSettingsVercelTest extends TestCase
         $this->assertSame(ApiDomainSetting::DNS_MODE_EXTERNAL_DNS, $lastCheck['dns_mode'] ?? null);
         $this->assertSame('linked', $lastCheck['health_code'] ?? null);
         $this->assertSame(0, $lastCheck['consecutive_failures'] ?? -1);
+    }
+
+    public function test_sync_command_reports_external_dns_problem_without_disabling_active_domain(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->mockNameservers(false);
+
+        $tenant = User::factory()->tenant()->create([
+            'email' => 'external-dns-warning-' . uniqid('', true) . '@example.com',
+        ]);
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'external-warning.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => true,
+            'added_date' => now(),
+        ]);
+
+        $this->fakeVercelSyncEndpoints([
+            'external-warning.example.com',
+            'www.external-warning.example.com',
+        ], true);
+        $this->mockDnsRecords(false, false);
+
+        Artisan::call('domains:sync-vercel-status');
+
+        $domain->refresh();
+        $lastCheck = $domain->dns_records['last_check'] ?? [];
+
+        $this->assertSame('active', $domain->status);
+        $this->assertTrue((bool) $domain->ssl);
+        $this->assertSame('dns_misconfigured', $lastCheck['health_code'] ?? null);
+        $this->assertSame(1, $lastCheck['consecutive_failures'] ?? null);
     }
 
     public function test_store_defaults_dns_mode_to_vercel_ns_when_omitted(): void
@@ -1882,6 +2046,90 @@ class DomainSettingsVercelTest extends TestCase
         ]);
     }
 
+    public function test_domain_responses_include_apex_and_www_ownership_verification_records(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $tenant = $this->actingTenant();
+
+        $domain = ApiDomainSetting::create([
+            'user_id' => $tenant->id,
+            'custom_name' => 'ownership-list.example.com',
+            'dns_mode' => ApiDomainSetting::DNS_MODE_EXTERNAL_DNS,
+            'status' => 'pending',
+            'primary' => true,
+            'ssl' => false,
+            'added_date' => now(),
+            'dns_records' => [
+                'last_check' => [
+                    'last_check_at' => now()->toIso8601String(),
+                    'health_code' => 'ownership_required',
+                    'apex_verified' => false,
+                    'ownership_challenge' => [
+                        'type' => 'txt',
+                        'domain' => '_vercel.ownership-list.example.com',
+                        'value' => 'vc-domain-verify=ownership-list.example.com,apex-token',
+                    ],
+                    'ownership_challenges' => [
+                        [
+                            'scope' => 'apex',
+                            'hostname' => 'ownership-list.example.com',
+                            'type' => 'txt',
+                            'domain' => '_vercel.ownership-list.example.com',
+                            'value' => 'vc-domain-verify=ownership-list.example.com,apex-token',
+                        ],
+                        [
+                            'scope' => 'www',
+                            'hostname' => 'www.ownership-list.example.com',
+                            'type' => 'txt',
+                            'domain' => '_vercel.ownership-list.example.com',
+                            'value' => 'vc-domain-verify=www.ownership-list.example.com,www-token',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $detail = $this->getJson('/api/settings/domain/' . $domain->id);
+        $detail->assertOk()
+            ->assertJsonPath('ownershipVerification.required', true)
+            ->assertJsonPath('ownershipVerification.state', 'ownership_required')
+            ->assertJsonPath('ownershipVerification.strategy', 'sequential')
+            ->assertJsonCount(2, 'ownershipVerification.records')
+            ->assertJsonPath('ownershipVerification.records.0.scope', 'apex')
+            ->assertJsonPath('ownershipVerification.records.1.scope', 'www')
+            ->assertJsonPath('dnsInstructions.ownership.record.value', 'vc-domain-verify=ownership-list.example.com,apex-token')
+            ->assertJsonCount(2, 'dnsInstructions.ownership.records');
+
+        $this->getJson('/api/settings/domain')
+            ->assertOk()
+            ->assertJsonPath('domains.0.ownershipVerification.required', true)
+            ->assertJsonCount(2, 'domains.0.ownershipVerification.records');
+
+        $domain->forceFill([
+            'dns_records' => [
+                'last_check' => [
+                    'last_check_at' => now()->toIso8601String(),
+                    'health_code' => 'apex_only',
+                    'apex_verified' => true,
+                    'ownership_challenges' => [[
+                        'scope' => 'www',
+                        'hostname' => 'www.ownership-list.example.com',
+                        'type' => 'txt',
+                        'domain' => '_vercel.ownership-list.example.com',
+                        'value' => 'vc-domain-verify=www.ownership-list.example.com,www-token',
+                    ]],
+                ],
+            ],
+        ])->save();
+
+        $this->getJson('/api/settings/domain/' . $domain->id)
+            ->assertOk()
+            ->assertJsonPath('ownershipVerification.required', true)
+            ->assertJsonPath('ownershipVerification.state', 'ownership_required')
+            ->assertJsonPath('ownershipVerification.records.0.scope', 'www');
+    }
+
     public function test_external_instructions_use_config_fallback_and_keep_ownership_separate(): void
     {
         $this->skipIfMissingSchema();
@@ -1956,6 +2204,14 @@ class DomainSettingsVercelTest extends TestCase
                         'name' => '_vercel',
                         'value' => 'vc-domain-verify=abc',
                     ],
+                    'strategy' => 'single',
+                    'records' => [[
+                        'scope' => 'apex',
+                        'hostname' => 'fallback-ext.example.com',
+                        'type' => 'TXT',
+                        'name' => '_vercel',
+                        'value' => 'vc-domain-verify=abc',
+                    ]],
                 ],
             ],
             $response->json('dnsInstructions')

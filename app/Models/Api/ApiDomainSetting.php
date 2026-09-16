@@ -54,6 +54,77 @@ class ApiDomainSetting extends Model implements VercelDomainSourceOfTruth
 
     protected ?bool $wwwRedirectCorrectHint = null;
 
+    /**
+     * Normalized Vercel ownership challenges persisted by the latest domain check.
+     *
+     * The singular ownership_challenge key is retained for older rows and clients;
+     * newer checks persist ownership_challenges so apex and www can be shown
+     * independently when Vercel requires both hostnames to be verified.
+     *
+     * @return list<array{scope: string, hostname: string, type: string, domain: string, value: string, reason?: string}>
+     */
+    public function ownershipChallenges(): array
+    {
+        $dnsRecords = is_array($this->dns_records) ? $this->dns_records : [];
+        $lastCheck = is_array($dnsRecords['last_check'] ?? null) ? $dnsRecords['last_check'] : [];
+        $items = is_array($lastCheck['ownership_challenges'] ?? null)
+            ? $lastCheck['ownership_challenges']
+            : [];
+
+        if (! array_is_list($items)) {
+            $items = [$items];
+        }
+
+        $legacy = $lastCheck['ownership_challenge'] ?? null;
+        if ($items === [] && is_array($legacy)) {
+            $items = [$legacy];
+        }
+
+        $apex = strtolower(trim((string) $this->custom_name));
+        $normalized = [];
+
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $type = strtoupper(trim((string) ($item['type'] ?? 'TXT')));
+            $domain = strtolower(rtrim(trim((string) ($item['domain'] ?? $item['name'] ?? '')), '.'));
+            $value = trim((string) ($item['value'] ?? ''));
+            if ($domain === '' || $value === '') {
+                continue;
+            }
+
+            $hostname = strtolower(rtrim(trim((string) ($item['hostname'] ?? '')), '.'));
+            if ($hostname === '' && preg_match('/^vc-domain-verify=([^,]+),/i', $value, $matches) === 1) {
+                $hostname = strtolower(rtrim(trim((string) $matches[1]), '.'));
+            }
+            if ($hostname === '') {
+                $hostname = $apex;
+            }
+
+            $scope = strtolower(trim((string) ($item['scope'] ?? '')));
+            if (! in_array($scope, ['apex', 'www'], true)) {
+                $scope = str_starts_with($hostname, 'www.') ? 'www' : 'apex';
+            }
+
+            $record = [
+                'scope' => $scope,
+                'hostname' => $hostname,
+                'type' => $type,
+                'domain' => $domain,
+                'value' => $value,
+            ];
+            if (isset($item['reason']) && trim((string) $item['reason']) !== '') {
+                $record['reason'] = (string) $item['reason'];
+            }
+
+            $normalized[$type . '|' . $domain . '|' . $value] = $record;
+        }
+
+        return array_values($normalized);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
