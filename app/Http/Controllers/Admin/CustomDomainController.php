@@ -13,6 +13,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 use App\Http\Controllers\Controller;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User\UserCustomDomain;
+use App\Services\Vercel\DomainDnsActionPlanService;
 use App\Services\Vercel\DomainProvisioningService;
 use App\Services\Vercel\DomainReconciliationService;
 use App\Services\Vercel\DomainStatusSyncService;
@@ -64,6 +65,7 @@ class CustomDomainController extends Controller
         private readonly DomainStatusSyncService $domainSyncService,
         private readonly VercelBackedDomainGuard $vercelBackedGuard,
         private readonly DomainWwwService $domainWwwService,
+        private readonly DomainDnsActionPlanService $dnsActionPlanService,
     ) {
     }
 
@@ -1079,13 +1081,14 @@ class CustomDomainController extends Controller
         $expectedNs = array_values((array) config('services.vercel.nameservers', []));
         $observedNs = array_values((array) ($lastCheck['observed_nameservers'] ?? []));
         $recommendedDns = ApiDomainSetting::nameserverInstructions();
+        $externalDns = ApiDomainSetting::externalDnsInstructions();
         $ownershipChallenges = $domain->ownershipChallenges();
         $ownershipChallenge = $ownershipChallenges[0] ?? null;
         // Re-derive from the fields shown below so the badge cannot contradict the
         // rows when a stored health_code is stale (e.g. predates zone/SSL tracking).
         $health = $domain->resolvedHealth();
 
-        return [
+        $payload = [
             'domain_id' => $domain->id,
             'custom_name' => $domain->custom_name,
             'dns_mode' => $domain->dns_mode ?: ApiDomainSetting::DNS_MODE_VERCEL_NS,
@@ -1110,8 +1113,14 @@ class CustomDomainController extends Controller
             'configured_by' => $lastCheck['configured_by'] ?? null,
             'recommended_ipv4' => array_values((array) ($lastCheck['recommended_ipv4'] ?? [])),
             'recommended_cname' => array_values((array) ($lastCheck['recommended_cname'] ?? [])),
+            'recommended_ipv4_groups' => array_values((array) ($lastCheck['recommended_ipv4_groups'] ?? [])),
+            'recommended_cname_groups' => array_values((array) ($lastCheck['recommended_cname_groups'] ?? [])),
+            'recommended_a_default' => (string) ($externalDns['apex_record_value'] ?? '76.76.21.21'),
+            'recommended_cname_default' => (string) ($externalDns['www_record_value'] ?? 'cname.vercel-dns.com'),
             'apex_records' => array_values((array) ($lastCheck['apex_records'] ?? [])),
             'www_records' => array_values((array) ($lastCheck['www_records'] ?? [])),
+            'apex_lookup_known' => $lastCheck['apex_lookup_known'] ?? null,
+            'www_lookup_known' => $lastCheck['www_lookup_known'] ?? null,
             'apex_matches_recommended' => $lastCheck['apex_matches_recommended'] ?? null,
             'www_matches_recommended' => $lastCheck['www_matches_recommended'] ?? null,
             'recommended_dns' => $recommendedDns,
@@ -1136,6 +1145,10 @@ class CustomDomainController extends Controller
             ),
             'has_last_check' => $lastCheck !== [],
         ];
+
+        $payload['dns_action_plan'] = $this->dnsActionPlanService->build($payload);
+
+        return $payload;
     }
 
     /**

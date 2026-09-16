@@ -355,6 +355,35 @@ class VercelDomainClientTest extends TestCase
     }
 
     /** @test */
+    public function get_domain_config_preserves_ranked_dns_recommendation_groups(): void
+    {
+        Http::fake([
+            'api.vercel.com/v6/domains/example.com/config*' => Http::response([
+                'misconfigured' => true,
+                'recommendedIPv4' => [
+                    ['rank' => 1, 'value' => ['216.198.79.1', '64.29.17.1']],
+                    ['rank' => 2, 'value' => ['76.76.21.21']],
+                ],
+                'recommendedCNAME' => [
+                    ['rank' => 1, 'value' => 'project.vercel-dns-017.com.'],
+                    ['rank' => 2, 'value' => 'cname.vercel-dns.com.'],
+                ],
+            ], 200),
+        ]);
+
+        $config = $this->client->getDomainConfig('example.com');
+
+        $this->assertSame([
+            ['rank' => 1, 'values' => ['216.198.79.1', '64.29.17.1']],
+            ['rank' => 2, 'values' => ['76.76.21.21']],
+        ], $config['recommendedIPv4Groups']);
+        $this->assertSame([
+            ['rank' => 1, 'values' => ['project.vercel-dns-017.com']],
+            ['rank' => 2, 'values' => ['cname.vercel-dns.com']],
+        ], $config['recommendedCNAMEGroups']);
+    }
+
+    /** @test */
     public function provider_errors_are_normalized_to_vercel_domain_exception(): void
     {
         Http::fake([

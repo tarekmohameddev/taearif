@@ -60,7 +60,8 @@
     </div>
 
     @if (empty($d['has_last_check']))
-        <div class="alert alert-secondary mb-0">{{ __('domain_diagnostics.no_last_check') }}</div>
+        <div class="alert alert-secondary mb-3">{{ __('domain_diagnostics.no_last_check') }}</div>
+        @include('admin.domains.partials.registrar-action-plan', ['d' => $d, 'domain' => $domain])
     @else
         @if ($lastCheckAtDisplay)
             <p class="text-muted small mb-0">
@@ -145,6 +146,8 @@
             </div>
         </div>
 
+        @include('admin.domains.partials.registrar-action-plan', ['d' => $d, 'domain' => $domain])
+
         @php
             // Issues we can act on from here. Repair & Verify re-runs the guarded
             // orchestration (enable zone, attach, issue cert, re-check); the claim
@@ -213,13 +216,15 @@
                 <tr>
                     <th scope="row">{{ __('domain_diagnostics.nameservers_ok') }}</th>
                     <td>
-                        @if (($d['nameserver_check_enabled'] ?? true) === false)
+                        @if (($d['dns_mode'] ?? null) === 'external_dns')
+                            <span class="badge badge-info">{{ __('domain_diagnostics.external_nameservers_not_applicable') }}</span>
+                        @elseif (($d['nameserver_check_enabled'] ?? true) === false)
                             <span class="badge badge-secondary">{{ __('domain_health.checks_disabled') }}</span>
                         @else
                             {!! $boolBadge($d['nameservers_ok'] ?? false) !!}
                         @endif
                     </td>
-                    <td class="small text-muted" dir="auto">{{ __('domain_diagnostics.help_nameservers_ok') }}</td>
+                    <td class="small text-muted" dir="auto">{{ ($d['dns_mode'] ?? null) === 'external_dns' ? __('domain_diagnostics.help_nameservers_external') : __('domain_diagnostics.help_nameservers_ok') }}</td>
                 </tr>
                 <tr>
                     <th scope="row">{{ __('domain_diagnostics.apex_matches_recommended') }}</th>
@@ -291,19 +296,21 @@
 
         <h6 class="mt-3">{{ __('domain_diagnostics.nameservers') }}</h6>
         <div class="row mb-3">
-            <div class="col-md-6">
-                <p class="small text-muted mb-1">{{ __('domain_diagnostics.expected_ns') }}</p>
-                @if ($expectedNs === [])
-                    <p class="small mb-0">—</p>
-                @else
-                    <ul class="small mb-0 pl-3">
-                        @foreach ($expectedNs as $ns)
-                            <li><code>{{ $ns }}</code></li>
-                        @endforeach
-                    </ul>
-                @endif
-            </div>
-            <div class="col-md-6">
+            @if (($d['dns_mode'] ?? null) === 'vercel_ns')
+                <div class="col-md-6">
+                    <p class="small text-muted mb-1">{{ __('domain_diagnostics.expected_ns') }}</p>
+                    @if ($expectedNs === [])
+                        <p class="small mb-0">—</p>
+                    @else
+                        <ul class="small mb-0 pl-3">
+                            @foreach ($expectedNs as $ns)
+                                <li><code>{{ $ns }}</code></li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+            @endif
+            <div class="{{ ($d['dns_mode'] ?? null) === 'vercel_ns' ? 'col-md-6' : 'col-12' }}">
                 <p class="small text-muted mb-1">{{ __('domain_diagnostics.observed_ns') }}</p>
                 @if ($observedNs === [])
                     <p class="small mb-0">—</p>
@@ -317,7 +324,7 @@
             </div>
         </div>
 
-        <p class="small text-muted mb-3" dir="auto"><i class="fas fa-info-circle mr-1"></i>{{ __('domain_diagnostics.ns_order_note') }}</p>
+        <p class="small text-muted mb-3" dir="auto"><i class="fas fa-info-circle mr-1"></i>{{ ($d['dns_mode'] ?? null) === 'external_dns' ? __('domain_diagnostics.external_ns_are_expected') : __('domain_diagnostics.ns_order_note') }}</p>
 
         <h6>{{ __('domain_diagnostics.apex_records') }}</h6>
         @if ($apexRecords === [])
@@ -343,6 +350,7 @@
 
         @if ($recommendedIpv4 !== [] || $recommendedCname !== [])
             <h6>{{ __('domain_diagnostics.recommended_records') }}</h6>
+            <p class="small text-muted" dir="auto">{{ __('domain_diagnostics.recommended_records_reference_only') }}</p>
             @if ($recommendedIpv4 !== [])
                 <p class="small text-muted mb-1">{{ $recommendedDns['recommended_a_label'] ?? 'A' }}</p>
                 <ul class="small pl-3">

@@ -144,6 +144,9 @@ class EmployeeController extends Controller
 
         $permissions = collect();
         if (!empty($data['permissions'])) {
+            // Resolve only the requested models. Passing permission names to
+            // Spatie hydrates the global permission/role cache, which grows
+            // with every tenant role and can exhaust PHP memory.
             $permissions = Permission::query()
                 ->where('guard_name', 'sanctum')
                 ->whereIn('name', $data['permissions'])
@@ -295,6 +298,8 @@ class EmployeeController extends Controller
         $oldPermissions = [];
         if (array_key_exists('permissions', $data)) {
             $oldPermissions = $employee->getPermissionNames()->toArray();
+            // Resolve only the requested models instead of hydrating Spatie's
+            // global permission/role cache for string-name lookups.
             $permissions = Permission::query()
                 ->where('guard_name', 'sanctum')
                 ->whereIn('name', $data['permissions'])
