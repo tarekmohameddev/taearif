@@ -384,22 +384,16 @@
                                                 @elseif ($health['code'] === 'unchecked')
                                                     <div class="domain-health-cell__reason">{{ __('domain_health.unchecked_hint') }}</div>
                                                 @endif
-                                                @if ($health['code'] === 'ownership_required')
-                                                    @php
-                                                        $dnsRecords = is_array($rcDomain->dns_records) ? $rcDomain->dns_records : [];
-                                                        $lastCheck = is_array($dnsRecords['last_check'] ?? null) ? $dnsRecords['last_check'] : [];
-                                                        $ownershipChallenge = $lastCheck['ownership_challenge'] ?? null;
-                                                    @endphp
-                                                    @if (is_array($ownershipChallenge) && $ownershipChallenge !== [])
-                                                        <div class="domain-ownership-inline mt-1">
-                                                            @include('admin.domains.partials.ownership-challenge', [
-                                                                'ownershipChallenge' => $ownershipChallenge,
-                                                                'compact' => true,
-                                                                'showClaim' => true,
-                                                                'domainId' => $rcDomain->id,
-                                                            ])
-                                                        </div>
-                                                    @endif
+                                                @php $ownershipChallenges = $rcDomain->ownershipChallenges(); @endphp
+                                                @if ($ownershipChallenges !== [])
+                                                    <div class="domain-ownership-inline mt-1">
+                                                        @include('admin.domains.partials.ownership-challenge', [
+                                                            'ownershipChallenges' => $ownershipChallenges,
+                                                            'compact' => true,
+                                                            'showClaim' => true,
+                                                            'domainId' => $rcDomain->id,
+                                                        ])
+                                                    </div>
                                                 @endif
                                             </div>
                                         </td>

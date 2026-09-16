@@ -62,6 +62,7 @@ class DomainSettingsController extends Controller
                     'addedDate' => $domain->added_date?->format('Y-m-d'),
                     'dnsMode' => $this->dnsModeForDomain($domain),
                     'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+                    'ownershipVerification' => $this->ownershipVerificationForDomain($domain),
                     'www' => $this->domainWwwService->wwwPayload($domain),
                 ];
             }),
@@ -337,6 +338,7 @@ class DomainSettingsController extends Controller
                 'ssl' => $domain->ssl,
                 'addedDate' => $domain->added_date?->format('Y-m-d'),
                 'dnsMode' => $dnsMode,
+                'ownershipVerification' => $this->ownershipVerificationForDomain($domain),
                 'www' => $www,
             ],
             'verification' => [
@@ -350,6 +352,7 @@ class DomainSettingsController extends Controller
                 ),
             ],
             'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+            'ownershipVerification' => $this->ownershipVerificationForDomain($domain),
             'dnsMode' => $dnsMode,
             'diagnostics' => $this->buildDiagnostics($domain, $provisionResult, $syncResult, $apexAttachment),
         ], $outcomePayload), 201);
@@ -371,10 +374,7 @@ class DomainSettingsController extends Controller
         $resolvedAttachment = $provisioning['apex_attachment'] ?? $apexAttachment;
 
         $lastCheck = is_array($dnsRecords['last_check'] ?? null) ? $dnsRecords['last_check'] : [];
-        $ownershipChallenge = $lastCheck['ownership_challenge'] ?? null;
-        $verificationRecords = $this->sanitizeVerificationRecords(
-            is_array($ownershipChallenge) ? [$ownershipChallenge] : []
-        );
+        $verificationRecords = $this->sanitizeVerificationRecords($domain->ownershipChallenges());
         $verificationState = match (true) {
             (bool) ($syncResult['vercel_verified'] ?? false) && $domain->status === 'active' => 'verified',
             $domain->status === 'failed' => 'failed',
@@ -445,6 +445,8 @@ class DomainSettingsController extends Controller
 
             $record = array_filter([
                 'type' => isset($item['type']) ? (string) $item['type'] : null,
+                'scope' => isset($item['scope']) ? (string) $item['scope'] : null,
+                'hostname' => isset($item['hostname']) ? strtolower((string) $item['hostname']) : null,
                 'domain' => isset($item['domain']) ? strtolower((string) $item['domain']) : null,
                 'value' => isset($item['value']) ? (string) $item['value'] : null,
                 'reason' => isset($item['reason']) ? (string) $item['reason'] : null,
@@ -645,6 +647,7 @@ class DomainSettingsController extends Controller
             'addedDate' => $domain->added_date?->format('Y-m-d'),
             'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
             'dnsMode' => $this->dnsModeForDomain($domain),
+            'ownershipVerification' => $this->ownershipVerificationForDomain($domain),
             'www' => $this->domainWwwService->wwwPayload($domain),
         ]);
     }
@@ -723,6 +726,7 @@ class DomainSettingsController extends Controller
                         'addedDate' => $domain->added_date?->format('Y-m-d'),
                         'dnsMode' => $this->dnsModeForDomain($domain),
                         'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+                        'ownershipVerification' => $this->ownershipVerificationForDomain($domain),
                         'www' => $this->domainWwwService->wwwPayload($domain),
                     ];
                 }),
@@ -866,6 +870,7 @@ class DomainSettingsController extends Controller
                     'www' => $this->domainWwwService->wwwPayload($domain),
                 ],
                 'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+                'ownershipVerification' => $this->ownershipVerificationForDomain($domain),
                 'dnsMode' => $this->dnsModeForDomain($domain),
             ], $outcomePayload));
         }
@@ -883,6 +888,7 @@ class DomainSettingsController extends Controller
                     'www' => $this->domainWwwService->wwwPayload($domain),
                 ],
                 'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+                'ownershipVerification' => $this->ownershipVerificationForDomain($domain),
                 'dnsMode' => $this->dnsModeForDomain($domain),
             ], $outcomePayload), 422);
         }
@@ -899,6 +905,7 @@ class DomainSettingsController extends Controller
                 'www' => $this->domainWwwService->wwwPayload($domain),
             ],
             'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+            'ownershipVerification' => $this->ownershipVerificationForDomain($domain),
             'dnsMode' => $this->dnsModeForDomain($domain),
         ], $outcomePayload), 422);
     }
@@ -988,6 +995,47 @@ class DomainSettingsController extends Controller
     }
 
     /**
+     * Authenticated tenant-facing ownership state. Never expose this payload from
+     * public tenant-resolution endpoints.
+     *
+     * @return array{required: bool, state: string, action: string|null, strategy: string|null, records: list<array<string, string>>, checkedAt: string|null}
+     */
+    private function ownershipVerificationForDomain(ApiDomainSetting $domain): array
+    {
+        $dnsRecords = is_array($domain->dns_records) ? $domain->dns_records : [];
+        $lastCheck = is_array($dnsRecords['last_check'] ?? null) ? $dnsRecords['last_check'] : [];
+        $records = array_map(static function (array $challenge): array {
+            return array_filter([
+                'scope' => (string) ($challenge['scope'] ?? 'apex'),
+                'hostname' => (string) ($challenge['hostname'] ?? ''),
+                'type' => strtoupper((string) ($challenge['type'] ?? 'TXT')),
+                'name' => (string) ($challenge['domain'] ?? ''),
+                'value' => (string) ($challenge['value'] ?? ''),
+                'reason' => isset($challenge['reason']) ? (string) $challenge['reason'] : null,
+            ], fn ($value) => $value !== null && $value !== '');
+        }, $domain->ownershipChallenges());
+
+        // Vercel can require a separate TXT record for www even after the apex
+        // domain is verified, so any current challenge still needs user action.
+        $required = $records !== [];
+        $health = (string) ($lastCheck['health_code'] ?? 'unchecked');
+        $state = $required
+            ? 'ownership_required'
+            : ((bool) ($lastCheck['apex_verified'] ?? $lastCheck['vercel_verified'] ?? false)
+                ? 'verified'
+                : $health);
+
+        return [
+            'required' => $required,
+            'state' => $state,
+            'action' => $required ? 'add_ownership_txt' : null,
+            'strategy' => $required && count($records) > 1 ? 'sequential' : ($required ? 'single' : null),
+            'records' => $required ? array_values($records) : [],
+            'checkedAt' => isset($lastCheck['last_check_at']) ? (string) $lastCheck['last_check_at'] : null,
+        ];
+    }
+
+    /**
      * @param  \Illuminate\Support\Collection<int, ApiDomainSetting>  $domains
      * @return array<string, mixed>
      */
@@ -1046,9 +1094,6 @@ class DomainSettingsController extends Controller
         $mode = $this->dnsModeForDomain($domain);
 
         if ($mode === ApiDomainSetting::DNS_MODE_EXTERNAL_DNS) {
-            $lastCheck = is_array($domain->dns_records['last_check'] ?? null)
-                ? $domain->dns_records['last_check']
-                : [];
             // Always use platform-standard A/@ and CNAME/www from config.
             // Stale/conflicting last_check recommended_ipv4 / recommended_cname must not override.
             $standard = ApiDomainSetting::externalDnsInstructions();
@@ -1074,20 +1119,20 @@ class DomainSettingsController extends Controller
                 ],
             ];
 
-            $challenge = $lastCheck['ownership_challenge'] ?? null;
-            if (is_array($challenge)) {
-                $challengeName = trim((string) ($challenge['domain'] ?? ''));
-                $challengeValue = trim((string) ($challenge['value'] ?? ''));
-                if ($challengeName !== '' && $challengeValue !== '') {
-                    $instructions['ownership'] = [
-                        'required' => true,
-                        'record' => [
-                            'type' => 'TXT',
-                            'name' => $challengeName,
-                            'value' => $challengeValue,
-                        ],
-                    ];
-                }
+            $ownership = $this->ownershipVerificationForDomain($domain);
+            if ($ownership['required'] && $ownership['records'] !== []) {
+                $legacyRecord = $ownership['records'][0];
+                $instructions['ownership'] = [
+                    'required' => true,
+                    // Singular record is retained for deployed clients.
+                    'record' => [
+                        'type' => $legacyRecord['type'],
+                        'name' => $legacyRecord['name'],
+                        'value' => $legacyRecord['value'],
+                    ],
+                    'strategy' => $ownership['strategy'],
+                    'records' => $ownership['records'],
+                ];
             }
 
             return $instructions;

@@ -1079,7 +1079,8 @@ class CustomDomainController extends Controller
         $expectedNs = array_values((array) config('services.vercel.nameservers', []));
         $observedNs = array_values((array) ($lastCheck['observed_nameservers'] ?? []));
         $recommendedDns = ApiDomainSetting::nameserverInstructions();
-        $ownershipChallenge = $lastCheck['ownership_challenge'] ?? null;
+        $ownershipChallenges = $domain->ownershipChallenges();
+        $ownershipChallenge = $ownershipChallenges[0] ?? null;
         // Re-derive from the fields shown below so the badge cannot contradict the
         // rows when a stored health_code is stale (e.g. predates zone/SSL tracking).
         $health = $domain->resolvedHealth();
@@ -1115,6 +1116,7 @@ class CustomDomainController extends Controller
             'www_matches_recommended' => $lastCheck['www_matches_recommended'] ?? null,
             'recommended_dns' => $recommendedDns,
             'ownership_challenge' => is_array($ownershipChallenge) ? $ownershipChallenge : null,
+            'ownership_challenges' => $ownershipChallenges,
             'certificate_readiness' => $lastCheck['certificate_readiness'] ?? null,
             'certificate_id' => $lastCheck['certificate_id'] ?? null,
             'ssl_ready' => (bool) ($lastCheck['ssl_ready'] ?? false),

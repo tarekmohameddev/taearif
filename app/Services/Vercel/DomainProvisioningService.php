@@ -129,6 +129,23 @@ class DomainProvisioningService
                 $ledger['internal_code'] = $exception->internalCode;
             } else {
                 $ledger['internal_code'] = $exception->internalCode;
+
+                // Account-level access can be forbidden while the hostname is
+                // attached to this project and exposes a project ownership TXT
+                // challenge. Recover that read-only state before returning a
+                // generic provider error so the required DNS record is visible.
+                if ($exception->internalCode === VercelDomainException::CODE_UNAUTHORIZED) {
+                    try {
+                        $freshResult = $this->buildResultFromFreshState($apex, $dnsMode, $ledger);
+                        if (($freshResult['health'] ?? null) === 'ownership_required') {
+                            return $freshResult;
+                        }
+                    } catch (\Throwable) {
+                        // Keep the original guarded failure when read-only recovery
+                        // cannot establish a current project verification challenge.
+                    }
+                }
+
                 $this->rollbackCreatedResources($apex, $ledger);
 
                 $health = $this->exceptionHealth($exception);
@@ -447,17 +464,40 @@ class DomainProvisioningService
             'recommendedCNAME' => [],
         ];
         $ownershipChallenge = null;
+        $ownershipChallenges = [];
         $providerError = false;
 
         if ($refreshDirectReads && ($projectDomain !== null || $apexInventory !== null)) {
-            try {
-                $verification = $this->client->getDomainVerification($apex);
-                $ownershipChallenge = $this->extractOwnershipChallenge($verification);
-            } catch (VercelDomainException $exception) {
-                if ($this->isTransportAmbiguity($exception)) {
-                    $providerError = true;
+            $verificationTargets = [
+                ['scope' => 'apex', 'hostname' => $apex, 'present' => $projectDomain !== null || $apexInventory !== null],
+                ['scope' => 'www', 'hostname' => $www, 'present' => $wwwInventory !== null],
+            ];
+
+            foreach ($verificationTargets as $target) {
+                if (! $target['present']) {
+                    continue;
+                }
+
+                try {
+                    $verification = $this->client->getDomainVerification($target['hostname']);
+                    $ownershipChallenges = array_merge(
+                        $ownershipChallenges,
+                        $this->extractOwnershipChallenges(
+                            $verification,
+                            $target['scope'],
+                            $target['hostname']
+                        )
+                    );
+                } catch (VercelDomainException $exception) {
+                    if ($this->isTransportAmbiguity($exception)) {
+                        $providerError = true;
+                        break;
+                    }
                 }
             }
+
+            $ownershipChallenges = $this->uniqueOwnershipChallenges($ownershipChallenges);
+            $ownershipChallenge = $this->legacyOwnershipChallenge($ownershipChallenges[0] ?? null);
 
             if (! $providerError) {
                 try {
@@ -522,6 +562,7 @@ class DomainProvisioningService
             'www_present' => $wwwInventory !== null,
             'www_redirect_correct' => $this->isWwwRedirectCorrect($wwwInventory, $apex),
             'ownership_challenge' => $ownershipChallenge,
+            'ownership_challenges' => $ownershipChallenges,
             'dns_misconfigured' => (bool) ($domainConfig['misconfigured'] ?? false),
             'configured_by' => $domainConfig['configuredBy'] ?? null,
             'recommended_ipv4' => $recommendedIpv4,
@@ -688,10 +729,12 @@ class DomainProvisioningService
 
     /**
      * @param  list<array<string, mixed>>  $verification
-     * @return array{type: string, domain: string, value: string, reason?: string}|null
+     * @return list<array{scope: string, hostname: string, type: string, domain: string, value: string, reason?: string}>
      */
-    private function extractOwnershipChallenge(array $verification): ?array
+    private function extractOwnershipChallenges(array $verification, string $scope, string $hostname): array
     {
+        $challenges = [];
+
         foreach ($verification as $item) {
             if (! is_array($item)) {
                 continue;
@@ -707,7 +750,9 @@ class DomainProvisioningService
                 continue;
             }
 
-            return array_filter([
+            $challenges[] = array_filter([
+                'scope' => $scope,
+                'hostname' => strtolower($hostname),
                 'type' => 'txt',
                 'domain' => strtolower($domain),
                 'value' => $value,
@@ -715,7 +760,42 @@ class DomainProvisioningService
             ], fn ($value) => $value !== null && $value !== '');
         }
 
-        return null;
+        return $challenges;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $challenges
+     * @return list<array<string, mixed>>
+     */
+    private function uniqueOwnershipChallenges(array $challenges): array
+    {
+        $unique = [];
+        foreach ($challenges as $challenge) {
+            $key = strtolower((string) ($challenge['type'] ?? 'txt'))
+                . '|' . strtolower((string) ($challenge['domain'] ?? ''))
+                . '|' . (string) ($challenge['value'] ?? '');
+            $unique[$key] = $challenge;
+        }
+
+        return array_values($unique);
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $challenge
+     * @return array{type: string, domain: string, value: string, reason?: string}|null
+     */
+    private function legacyOwnershipChallenge(?array $challenge): ?array
+    {
+        if ($challenge === null) {
+            return null;
+        }
+
+        return array_filter([
+            'type' => $challenge['type'] ?? null,
+            'domain' => $challenge['domain'] ?? null,
+            'value' => $challenge['value'] ?? null,
+            'reason' => $challenge['reason'] ?? null,
+        ], fn ($value) => $value !== null && $value !== '');
     }
 
     /**
@@ -830,6 +910,7 @@ class DomainProvisioningService
             'www_present' => (bool) ($state['www_present'] ?? false),
             'www_redirect_correct' => (bool) ($state['www_redirect_correct'] ?? false),
             'ownership_challenge' => $state['ownership_challenge'] ?? null,
+            'ownership_challenges' => $state['ownership_challenges'] ?? [],
             'observed_nameservers' => $state['observed_nameservers'] ?? [],
             'nameservers_ok' => (bool) ($state['nameservers_ok'] ?? false),
             'nameserver_check_enabled' => (bool) ($state['nameserver_check_enabled'] ?? true),

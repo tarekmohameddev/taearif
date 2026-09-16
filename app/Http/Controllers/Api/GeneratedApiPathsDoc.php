@@ -4712,7 +4712,22 @@ namespace App\Http\Controllers\Api;
  *         tags={"Settings"},
  *         summary="List tenant domains (includes per-domain dnsInstructions/www and availableDnsModes for the add form). Collection-level dnsInstructions is nameserver-style for backward compatibility; new clients should use per-domain dnsInstructions and availableDnsModes for external_dns.", security={{"sanctum":{}}},
  *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object",
- *             @OA\Property(property="domains", type="array", @OA\Items(type="object")),
+ *             @OA\Property(property="domains", type="array", @OA\Items(type="object",
+ *                 @OA\Property(property="ownershipVerification", type="object",
+ *                     @OA\Property(property="required", type="boolean"),
+ *                     @OA\Property(property="state", type="string"),
+ *                     @OA\Property(property="action", type="string", nullable=true),
+ *                     @OA\Property(property="strategy", type="string", nullable=true, enum={"single","sequential"}),
+ *                     @OA\Property(property="records", type="array", @OA\Items(type="object",
+ *                         @OA\Property(property="scope", type="string", enum={"apex","www"}),
+ *                         @OA\Property(property="hostname", type="string"),
+ *                         @OA\Property(property="type", type="string", example="TXT"),
+ *                         @OA\Property(property="name", type="string"),
+ *                         @OA\Property(property="value", type="string")
+ *                     )),
+ *                     @OA\Property(property="checkedAt", type="string", nullable=true)
+ *                 )
+ *             )),
  *             @OA\Property(property="dnsInstructions", type="object", description="Legacy collection-level nameserver instructions"),
  *             @OA\Property(property="availableDnsModes", type="array", @OA\Items(type="object",
  *                 @OA\Property(property="value", type="string", enum={"vercel_ns","external_dns"}),
@@ -4735,6 +4750,7 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="data", type="object"),
  *             @OA\Property(property="dnsMode", type="string"),
  *             @OA\Property(property="dnsInstructions", type="object", description="Mode-specific setup instructions"),
+ *             @OA\Property(property="ownershipVerification", type="object", description="Authenticated ownership TXT instructions when verification is required"),
  *             @OA\Property(property="message", type="string", nullable=true)
  *         )),
  *         @OA\Response(response=401, description="Unauthenticated"),

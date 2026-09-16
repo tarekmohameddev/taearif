@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\apps\whatsapp;
 
 use App\Domain\Communication\WhatsApp\Services\SyncWhatsappUserToWaNumberService;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\WhatsappUser;
 use App\Services\MetaGraphService;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -12,6 +13,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class MetaOAuthController extends Controller
@@ -45,6 +47,8 @@ class MetaOAuthController extends Controller
             ], 401);
         }
 
+        $owner = $user->tenantOwner();
+
         $appId = Config::get('services.meta.app_id');
         $redirectUri = Config::get('services.meta.redirect_uri');
         $configId = Config::get('services.meta.embedded_signup_config_id');
@@ -71,14 +75,39 @@ class MetaOAuthController extends Controller
             $mode = 'new';
         }
 
-        // Build encrypted state with user context and mode
+        if ($mode === 'new' && $owner->whatsapp_usage >= $owner->whatsapp_quota) {
+            $this->logMetaEvent('warning', 'MetaOAuthController.redirect blocked by quota', $this->metaLogContext(
+                $request,
+                $owner,
+                $user,
+                $user->isEmployee() ? (int) $user->id : null,
+                $mode
+            ));
+
+            return response()->json([
+                'success' => false,
+                'message' => 'لقد وصلت للحد الأقصى لعدد الأرقام المسموح بها. يرجى شراء إضافة لزيادة الحد.',
+            ], 422);
+        }
+
+        // Keep user_id for callbacks already integrated with this payload.
         $statePayload = [
             'user_id' => $user->id,
+            'actor_user_id' => $user->id,
+            'tenant_owner_id' => $owner->id,
             'mode' => $mode,
             'issued_at' => now()->timestamp,
         ];
 
         $state = Crypt::encryptString(json_encode($statePayload));
+
+        $this->logMetaEvent('info', 'MetaOAuthController.redirect started', $this->metaLogContext(
+            $request,
+            $owner,
+            $user,
+            $user->isEmployee() ? (int) $user->id : null,
+            $mode
+        ));
 
         // Build extras for Embedded Signup (Meta's Embedded Signup format)
         // featureType determines the onboarding flow
@@ -131,11 +160,14 @@ class MetaOAuthController extends Controller
     {
         $error = $request->query('error');
         if ($error) {
-            Log::warning('MetaOAuthController.callback received error from Meta', [
+            $this->logMetaEvent('warning', 'MetaOAuthController.callback received error from Meta', array_merge(
+                $this->metaStateLogContext($request),
+                [
                 'error' => $error,
                 'error_reason' => $request->query('error_reason'),
                 'error_description' => $request->query('error_description'),
-            ]);
+                ]
+            ));
 
             return response()->json([
                 'success' => false,
@@ -149,6 +181,13 @@ class MetaOAuthController extends Controller
         $state = $request->query('state');
 
         if (!$code || !$state) {
+            $this->logMetaEvent('warning', 'MetaOAuthController.callback missing code or state', [
+                'has_code' => (bool) $code,
+                'has_state' => (bool) $state,
+                'ip' => $request->ip(),
+                'user_agent' => $this->safeUserAgent($request),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Missing authorization code or state.',
@@ -159,8 +198,10 @@ class MetaOAuthController extends Controller
         try {
             $decoded = json_decode(Crypt::decryptString($state), true);
         } catch (DecryptException $e) {
-            Log::error('MetaOAuthController.callback state decryption failed', [
-                'error' => $e->getMessage(),
+            $this->logMetaEvent('warning', 'MetaOAuthController.callback invalid state', [
+                'reason' => 'decrypt_failed',
+                'ip' => $request->ip(),
+                'user_agent' => $this->safeUserAgent($request),
             ]);
 
             return response()->json([
@@ -170,13 +211,59 @@ class MetaOAuthController extends Controller
         }
 
         if (!is_array($decoded) || empty($decoded['user_id'])) {
+            $this->logMetaEvent('warning', 'MetaOAuthController.callback invalid state', [
+                'reason' => 'invalid_payload',
+                'ip' => $request->ip(),
+                'user_agent' => $this->safeUserAgent($request),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid state payload.',
             ], 400);
         }
 
-        $userId = (int) $decoded['user_id'];
+        $actorUserId = (int) ($decoded['actor_user_id'] ?? $decoded['user_id']);
+        $actor = User::find($actorUserId);
+
+        if (!$actor || ($actor->isEmployee() && (!$actor->active || !$actor->tenant_id))) {
+            $this->logMetaEvent('warning', 'MetaOAuthController.callback actor unavailable', [
+                'actor_user_id' => $actorUserId,
+                'tenant_owner_id' => $decoded['tenant_owner_id'] ?? null,
+                'mode' => $decoded['mode'] ?? null,
+                'ip' => $request->ip(),
+                'user_agent' => $this->safeUserAgent($request),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'The user who started this signup is no longer available.',
+            ], 403);
+        }
+
+        $owner = isset($decoded['tenant_owner_id'])
+            ? User::find((int) $decoded['tenant_owner_id'])
+            : $actor->tenantOwner();
+
+        if (!$owner || $owner->isEmployee() || $actor->tenantOwnerId() !== (int) $owner->id) {
+            $this->logMetaEvent('warning', 'MetaOAuthController.callback invalid tenant context', [
+                'actor_user_id' => $actorUserId,
+                'tenant_owner_id' => $decoded['tenant_owner_id'] ?? null,
+                'actor_tenant_owner_id' => $actor->tenantOwnerId(),
+                'mode' => $decoded['mode'] ?? null,
+                'ip' => $request->ip(),
+                'user_agent' => $this->safeUserAgent($request),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid tenant context in state payload.',
+            ], 400);
+        }
+
+        $ownerId = (int) $owner->id;
+        $employeeId = $actor->isEmployee() ? (int) $actor->id : null;
+        $callbackLogContext = $this->metaLogContext($request, $owner, $actor, $employeeId, $decoded['mode'] ?? null);
 
         try {
             // 1) Exchange code for short-lived token
@@ -202,9 +289,12 @@ class MetaOAuthController extends Controller
                     }
                 }
             } catch (\Throwable $e) {
-                Log::warning('MetaOAuthController.callback long-lived token exchange failed', [
+                $this->logMetaEvent('warning', 'MetaOAuthController.callback long-lived token exchange failed', array_merge(
+                    $callbackLogContext,
+                    [
                     'error' => $e->getMessage(),
-                ]);
+                    ]
+                ));
                 if ($expiresIn) {
                     $expiresAt = Carbon::now()->addSeconds((int) $expiresIn);
                 }
@@ -215,21 +305,31 @@ class MetaOAuthController extends Controller
             $wabaId = $this->metaGraph->extractWabaIdFromDebugToken($debugTokenResponse);
 
             if (!$wabaId) {
+                $this->logMetaEvent('warning', 'MetaOAuthController.callback no WABA found', $callbackLogContext);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'No WhatsApp Business Account found in token scopes.',
                 ], 400);
             }
 
-            Log::info('MetaOAuthController.callback WABA ID extracted', [
+            $this->logMetaEvent('info', 'MetaOAuthController.callback WABA ID extracted', array_merge(
+                $callbackLogContext,
+                [
                 'waba_id' => $wabaId,
-            ]);
+                ]
+            ));
 
             // 4) Get phone numbers for that WABA
             $phonesResponse = $this->metaGraph->listPhoneNumbers($finalToken, $wabaId);
             $phones = $phonesResponse['data'] ?? [];
 
             if (empty($phones)) {
+                $this->logMetaEvent('warning', 'MetaOAuthController.callback no phone numbers found', array_merge(
+                    $callbackLogContext,
+                    ['waba_id' => $wabaId]
+                ));
+
                 return response()->json([
                     'success' => false,
                     'message' => 'No phone number found for WhatsApp Business Account.',
@@ -237,7 +337,7 @@ class MetaOAuthController extends Controller
             }
 
             // Get existing phone_ids for this user to find the newly added one
-            $existingPhoneIds = WhatsappUser::where('user_id', $userId)
+            $existingPhoneIds = WhatsappUser::where('user_id', $ownerId)
                 ->whereNotNull('phone_id')
                 ->pluck('phone_id')
                 ->toArray();
@@ -263,31 +363,81 @@ class MetaOAuthController extends Controller
             $verifiedName = $newPhone['verified_name'] ?? null;
 
             if (!$phoneId) {
+                $this->logMetaEvent('warning', 'MetaOAuthController.callback invalid phone data', array_merge(
+                    $callbackLogContext,
+                    ['waba_id' => $wabaId]
+                ));
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid phone number data from Meta.',
                 ], 400);
             }
 
-            // 5) Subscribe app to WABA for webhooks
-            try {
-                $this->metaGraph->subscribeAppToWaba($finalToken, $wabaId);
-            } catch (\Throwable $e) {
-                Log::warning('MetaOAuthController.callback WABA subscription failed (non-fatal)', [
-                    'waba_id' => $wabaId,
-                    'error' => $e->getMessage(),
-                ]);
-                // Continue even if subscription fails - it's not critical for linking
-            }
+            // Serialize links per tenant so concurrent callbacks cannot exceed the shared quota.
+            $linkResult = DB::transaction(function () use (
+                $ownerId,
+                $employeeId,
+                $phoneId,
+                $displayPhoneNumber,
+                $verifiedName,
+                $finalToken,
+                $expiresAt,
+                $wabaId
+            ) {
+                $lockedOwner = User::query()->whereKey($ownerId)->lockForUpdate()->firstOrFail();
+                $whatsappUser = WhatsappUser::query()
+                    ->where('user_id', $ownerId)
+                    ->where('phone_id', $phoneId)
+                    ->first();
 
-            // 6) Save to database - use phone_id as unique key so each phone gets its own row
-            // This allows users to link multiple phone numbers
-            $whatsappUser = WhatsappUser::updateOrCreate(
-                [
-                    'user_id' => $userId,
-                    'phone_id' => $phoneId,  // Each phone number is a separate row
-                ],
-                [
+                if ($employeeId !== null) {
+                    if ($whatsappUser && $whatsappUser->employee_id && (int) $whatsappUser->employee_id !== $employeeId) {
+                        return [
+                            'error' => 'This WhatsApp number is already assigned to another employee.',
+                            'status' => 422,
+                            'reason' => 'assigned_to_another_employee',
+                            'assigned_employee_id' => (int) $whatsappUser->employee_id,
+                        ];
+                    }
+
+                    $employeeNumber = WhatsappUser::query()
+                        ->where('user_id', $ownerId)
+                        ->where('employee_id', $employeeId)
+                        ->first();
+
+                    if ($employeeNumber && (!$whatsappUser || $employeeNumber->id !== $whatsappUser->id)) {
+                        return [
+                            'error' => 'This employee already has a WhatsApp number assigned.',
+                            'status' => 422,
+                            'reason' => 'employee_already_has_number',
+                            'existing_whatsapp_user_id' => (int) $employeeNumber->id,
+                        ];
+                    }
+                }
+
+                $usesNewSlot = !$whatsappUser || $whatsappUser->status !== 'active';
+                $usage = WhatsappUser::query()
+                    ->where('user_id', $ownerId)
+                    ->where('status', 'active')
+                    ->count();
+
+                if ($usesNewSlot && $usage >= $lockedOwner->whatsapp_quota) {
+                    return [
+                        'error' => 'لقد وصلت للحد الأقصى لعدد الأرقام المسموح بها. يرجى شراء إضافة لزيادة الحد.',
+                        'status' => 422,
+                        'reason' => 'quota_exceeded',
+                        'quota' => $lockedOwner->whatsapp_quota,
+                        'usage' => $usage,
+                    ];
+                }
+
+                $whatsappUser ??= new WhatsappUser([
+                    'user_id' => $ownerId,
+                    'phone_id' => $phoneId,
+                ]);
+
+                $whatsappUser->fill([
                     'number' => $displayPhoneNumber,
                     'name' => $verifiedName,
                     'status' => 'active',
@@ -297,20 +447,75 @@ class MetaOAuthController extends Controller
                     'token_expires_at' => $expiresAt,
                     'business_id' => $wabaId, // WABA ID is the business account ID
                     'waba_id' => $wabaId,
-                ]
-            );
+                ]);
+
+                if ($employeeId !== null) {
+                    $whatsappUser->employee_id = $employeeId;
+                }
+
+                $whatsappUser->save();
+
+                return [
+                    'whatsapp_user' => $whatsappUser,
+                    'is_new_phone' => $whatsappUser->wasRecentlyCreated,
+                ];
+            });
+
+            if (isset($linkResult['error'])) {
+                $this->logMetaEvent('warning', 'MetaOAuthController.callback link blocked', array_merge(
+                    $callbackLogContext,
+                    [
+                        'reason' => $linkResult['reason'] ?? 'unknown',
+                        'status' => $linkResult['status'],
+                        'quota' => $linkResult['quota'] ?? null,
+                        'usage' => $linkResult['usage'] ?? null,
+                        'phone_id' => $phoneId,
+                        'waba_id' => $wabaId,
+                        'assigned_employee_id' => $linkResult['assigned_employee_id'] ?? null,
+                        'existing_whatsapp_user_id' => $linkResult['existing_whatsapp_user_id'] ?? null,
+                    ]
+                ));
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $linkResult['error'],
+                ], $linkResult['status']);
+            }
+
+            /** @var WhatsappUser $whatsappUser */
+            $whatsappUser = $linkResult['whatsapp_user'];
+
+            // Subscribe only after the tenant and quota checks have accepted the number.
+            try {
+                $this->metaGraph->subscribeAppToWaba($finalToken, $wabaId);
+            } catch (\Throwable $e) {
+                $this->logMetaEvent('warning', 'MetaOAuthController.callback WABA subscription failed (non-fatal)', array_merge(
+                    $callbackLogContext,
+                    [
+                    'waba_id' => $wabaId,
+                    'error' => $e->getMessage(),
+                    ]
+                ));
+            }
 
             // Keep Communication/AI wa_numbers in sync (used by /api/v1/whatsapp/* and AI bot).
             $waNumber = $this->syncWaNumber->syncQuietly($whatsappUser);
 
-            Log::info('MetaOAuthController.callback WhatsApp linked successfully', [
-                'user_id' => $userId,
+            $this->logMetaEvent('info', 'MetaOAuthController.callback WhatsApp linked successfully', array_merge(
+                $callbackLogContext,
+                [
+                'tenant_owner_id' => $ownerId,
+                'actor_user_id' => $actorUserId,
+                'employee_id' => $employeeId,
+                'actor_email' => $actor->email,
+                'whatsapp_user_id' => $whatsappUser->id,
                 'waba_id' => $wabaId,
                 'phone_id' => $phoneId,
                 'display_phone_number' => $displayPhoneNumber,
-                'is_new_phone' => !in_array($phoneId, $existingPhoneIds),
+                'is_new_phone' => $linkResult['is_new_phone'],
                 'wa_number_id' => $waNumber?->id,
-            ]);
+                ]
+            ));
 
             return response()->json([
                 'success' => true,
@@ -326,10 +531,13 @@ class MetaOAuthController extends Controller
                 ],
             ]);
         } catch (\Throwable $e) {
-            Log::error('MetaOAuthController.callback failed', [
+            $this->logMetaEvent('error', 'MetaOAuthController.callback failed', array_merge(
+                $callbackLogContext ?? $this->metaStateLogContext($request),
+                [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-            ]);
+                ]
+            ));
 
             return response()->json([
                 'success' => false,
@@ -338,6 +546,84 @@ class MetaOAuthController extends Controller
             ], 500);
         }
     }
+
+    private function metaStateLogContext(Request $request): array
+    {
+        $state = $request->query('state');
+
+        if (!$state) {
+            return [
+                'ip' => $request->ip(),
+                'user_agent' => $this->safeUserAgent($request),
+            ];
+        }
+
+        try {
+            $decoded = json_decode(Crypt::decryptString((string) $state), true);
+        } catch (\Throwable $e) {
+            return [
+                'state_status' => 'decrypt_failed',
+                'ip' => $request->ip(),
+                'user_agent' => $this->safeUserAgent($request),
+            ];
+        }
+
+        if (!is_array($decoded)) {
+            return [
+                'state_status' => 'invalid_payload',
+                'ip' => $request->ip(),
+                'user_agent' => $this->safeUserAgent($request),
+            ];
+        }
+
+        $actor = !empty($decoded['actor_user_id']) || !empty($decoded['user_id'])
+            ? User::find((int) ($decoded['actor_user_id'] ?? $decoded['user_id']))
+            : null;
+        $owner = !empty($decoded['tenant_owner_id'])
+            ? User::find((int) $decoded['tenant_owner_id'])
+            : ($actor ? $actor->tenantOwner() : null);
+
+        return $this->metaLogContext(
+            $request,
+            $owner,
+            $actor,
+            $actor && $actor->isEmployee() ? (int) $actor->id : null,
+            $decoded['mode'] ?? null
+        );
+    }
+
+    private function metaLogContext(Request $request, ?User $owner, ?User $actor, ?int $employeeId, ?string $mode): array
+    {
+        $quota = $owner?->whatsapp_quota;
+        $usage = $owner?->whatsapp_usage;
+
+        return [
+            'tenant_owner_id' => $owner?->id,
+            'actor_user_id' => $actor?->id,
+            'employee_id' => $employeeId,
+            'actor_email' => $actor?->email,
+            'mode' => $mode,
+            'quota' => $quota,
+            'usage' => $usage,
+            'remaining' => $quota !== null && $usage !== null ? max(0, (int) $quota - (int) $usage) : null,
+            'ip' => $request->ip(),
+            'user_agent' => $this->safeUserAgent($request),
+        ];
+    }
+
+    private function safeUserAgent(Request $request): ?string
+    {
+        $userAgent = $request->userAgent();
+
+        return $userAgent ? mb_substr($userAgent, 0, 500) : null;
+    }
+
+    private function logMetaEvent(string $level, string $message, array $context = []): void
+    {
+        try {
+            Log::log($level, $message, $context);
+        } catch (\Throwable $e) {
+            // Logging must never interrupt Meta signup.
+        }
+    }
 }
-
-

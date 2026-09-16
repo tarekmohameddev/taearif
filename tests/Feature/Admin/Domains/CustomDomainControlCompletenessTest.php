@@ -197,6 +197,53 @@ class CustomDomainControlCompletenessTest extends AdminApiTestCase
     }
 
     /** @test */
+    public function apex_and_www_ownership_txt_records_are_rendered_on_index(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $domain = $this->seedDomain('ownership-pair-' . uniqid('', false) . '.example.com', [
+            'health_code' => 'ownership_required',
+            'auto_attach_custom_domain' => true,
+            'nameserver_check_enabled' => true,
+            'apex_attached' => true,
+            'apex_verified' => false,
+            'nameservers_ok' => true,
+            'ownership_challenge' => [
+                'type' => 'txt',
+                'domain' => '_vercel.example.com',
+                'value' => 'vc-domain-verify=example.com,apex-token',
+            ],
+            'ownership_challenges' => [
+                [
+                    'scope' => 'apex',
+                    'hostname' => 'example.com',
+                    'type' => 'txt',
+                    'domain' => '_vercel.example.com',
+                    'value' => 'vc-domain-verify=example.com,apex-token',
+                ],
+                [
+                    'scope' => 'www',
+                    'hostname' => 'www.example.com',
+                    'type' => 'txt',
+                    'domain' => '_vercel.example.com',
+                    'value' => 'vc-domain-verify=www.example.com,www-token',
+                ],
+            ],
+        ]);
+
+        $this->fakeInventory([$domain->custom_name]);
+
+        $response = $this->get(route('admin.custom-domain.index', ['health' => 'ownership_required']));
+
+        $response->assertOk();
+        $response->assertSee('vc-domain-verify=example.com,apex-token', false);
+        $response->assertSee('vc-domain-verify=www.example.com,www-token', false);
+        $response->assertSee('www.example.com', false);
+    }
+
+    /** @test */
     public function diagnostics_drawer_renders_persisted_last_check_payload(): void
     {
         $this->skipIfMissingSchema();

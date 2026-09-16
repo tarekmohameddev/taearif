@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Concerns\ResolvesTenant;
 use App\Http\Controllers\Controller;
 use App\Domain\CustomersHub\Services\AssignmentService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 
@@ -121,50 +122,11 @@ class EmployeeController extends Controller
             ], 422);
         }
 
-        // Create employee as a User with account_type = 'employee'
-        $employee = User::create([
-            'first_name' => $data['first_name'] ?? null,
-            'last_name'  => $data['last_name'] ?? null,
-            'email'      => $data['email'],
-            'phone'      => $data['phone'] ?? null,
-            'password'   => Hash::make($data['password']),
-            'active'     => $data['active'] ?? true,
-            'tenant_id'  => $tenantId,
-            'account_type' => 'employee',
-            'status'     => 1,
-            'onboarding_completed' => true,
-        ]);
-
-        // Copy BasicSetting from Tenant
-        $tenantBasicSetting = \App\Models\User\BasicSetting::where('user_id', $tenantId)->first();
-        if ($tenantBasicSetting) {
-            $newBasicSetting = $tenantBasicSetting->replicate();
-            $newBasicSetting->user_id = $employee->id;
-            $newBasicSetting->save();
-        }
-
-        // Copy UserStep from Tenant
-        $tenantUserStep = \App\Models\UserStep::where('user_id', $tenantId)->first();
-        if ($tenantUserStep) {
-            $newUserStep = $tenantUserStep->replicate();
-            $newUserStep->user_id = $employee->id;
-            $newUserStep->save();
-        }
-
-        // Copy GeneralSetting from Tenant
-        $tenantGeneralSetting = \App\Models\Api\GeneralSetting::where('user_id', $tenantId)->first();
-        if ($tenantGeneralSetting) {
-            $newGeneralSetting = $tenantGeneralSetting->replicate();
-            $newGeneralSetting->user_id = $employee->id;
-            $newGeneralSetting->save();
-        }
-
         // Set tenant context for Spatie
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
 
-        // Assign roles if provided
+        $availableRoles = collect();
         if (!empty($data['role_ids'])) {
-            // Ensure roles belong to same tenant
             $availableRoles = Role::where('team_id', $tenantId)->whereIn('id', $data['role_ids'])->get();
             $requestedRoles = $data['role_ids'];
             $availableRoleIds = $availableRoles->pluck('id')->toArray();
@@ -178,70 +140,119 @@ class EmployeeController extends Controller
                     'available_roles' => Role::where('team_id', $tenantId)->select('id', 'name')->get()
                 ], 422);
             }
-
-            // Assign roles using Spatie
-            $employee->syncRoles($availableRoles);
-
-            ActivityLogger::log([
-                'user_id'     => $tenantId,
-                'actor_type'  => 'user',
-                'actor_id'    => auth()->id(),
-                'action'      => 'role.assigned',
-                'target_type' => 'users',
-                'target_id'   => $employee->id,
-                'new_values'  => ['roles' => $availableRoleIds],
-            ]);
         }
 
-        // Assign permissions if provided
+        $permissions = collect();
         if (!empty($data['permissions'])) {
-            // Assign permissions using Spatie
-            $employee->syncPermissions($data['permissions']);
-
-            ActivityLogger::log([
-                'user_id'     => $tenantId,
-                'actor_type'  => 'user',
-                'actor_id'    => auth()->id(),
-                'action'      => 'permissions.assigned',
-                'target_type' => 'users',
-                'target_id'   => $employee->id,
-                'new_values'  => ['permissions' => $data['permissions']],
-            ]);
+            $permissions = Permission::query()
+                ->where('guard_name', 'sanctum')
+                ->whereIn('name', $data['permissions'])
+                ->get();
         }
 
-        $savedAssignmentRulesMeta = null;
-        if (!empty($data['employeeRules'])) {
-            try {
-                $savedAssignmentRulesMeta = $this->saveEmployeeAssignmentRules(
-                    $tenantId,
-                    (int) $employee->id,
-                    $data['employeeRules']
-                );
-
-                ActivityLogger::log([
-                    'user_id'     => $tenantId,
-                    'actor_type'  => 'user',
-                    'actor_id'    => auth()->id(),
-                    'action'      => 'customers_hub.assignment_rules.saved',
-                    'target_type' => 'users',
-                    'target_id'   => $employee->id,
-                    'new_values'  => ['employeeRules' => $savedAssignmentRulesMeta['rules'] ?? []],
-                ]);
-            } catch (\Throwable $e) {
-                Log::error('Employee store: assignment rules save failed', [
-                    'tenant_id'   => $tenantId,
-                    'employee_id' => $employee->id,
-                    'error'       => $e->getMessage(),
+        try {
+            [$employee, $savedAssignmentRulesMeta] = DB::transaction(function () use ($tenantId, $data, $availableRoles, $permissions) {
+                // Create employee as a User with account_type = 'employee'
+                $employee = User::create([
+                    'first_name' => $data['first_name'] ?? null,
+                    'last_name'  => $data['last_name'] ?? null,
+                    'email'      => $data['email'],
+                    'phone'      => $data['phone'] ?? null,
+                    'password'   => Hash::make($data['password']),
+                    'active'     => $data['active'] ?? true,
+                    'tenant_id'  => $tenantId,
+                    'account_type' => 'employee',
+                    'status'     => 1,
+                    'onboarding_completed' => true,
                 ]);
 
-                return response()->json([
-                    'status'  => 'error',
-                    'message' => 'Employee created but assignment rules could not be saved.',
-                ], 500);
-            }
+                // Copy BasicSetting from Tenant
+                $tenantBasicSetting = \App\Models\User\BasicSetting::where('user_id', $tenantId)->first();
+                if ($tenantBasicSetting) {
+                    $newBasicSetting = $tenantBasicSetting->replicate();
+                    $newBasicSetting->user_id = $employee->id;
+                    $newBasicSetting->save();
+                }
+
+                // Copy UserStep from Tenant
+                $tenantUserStep = \App\Models\UserStep::where('user_id', $tenantId)->first();
+                if ($tenantUserStep) {
+                    $newUserStep = $tenantUserStep->replicate();
+                    $newUserStep->user_id = $employee->id;
+                    $newUserStep->save();
+                }
+
+                // Copy GeneralSetting from Tenant
+                $tenantGeneralSetting = \App\Models\Api\GeneralSetting::where('user_id', $tenantId)->first();
+                if ($tenantGeneralSetting) {
+                    $newGeneralSetting = $tenantGeneralSetting->replicate();
+                    $newGeneralSetting->user_id = $employee->id;
+                    $newGeneralSetting->save();
+                }
+
+                if (!empty($data['role_ids'])) {
+                    $employee->syncRoles($availableRoles);
+
+                    ActivityLogger::log([
+                        'user_id'     => $tenantId,
+                        'actor_type'  => 'user',
+                        'actor_id'    => auth()->id(),
+                        'action'      => 'role.assigned',
+                        'target_type' => 'users',
+                        'target_id'   => $employee->id,
+                        'new_values'  => ['roles' => $availableRoles->pluck('id')->toArray()],
+                    ]);
+                }
+
+                if (!empty($data['permissions'])) {
+                    $employee->syncPermissions($permissions);
+
+                    ActivityLogger::log([
+                        'user_id'     => $tenantId,
+                        'actor_type'  => 'user',
+                        'actor_id'    => auth()->id(),
+                        'action'      => 'permissions.assigned',
+                        'target_type' => 'users',
+                        'target_id'   => $employee->id,
+                        'new_values'  => ['permissions' => $data['permissions']],
+                    ]);
+                }
+
+                $savedAssignmentRulesMeta = null;
+                if (!empty($data['employeeRules'])) {
+                    $savedAssignmentRulesMeta = $this->saveEmployeeAssignmentRules(
+                        $tenantId,
+                        (int) $employee->id,
+                        $data['employeeRules']
+                    );
+
+                    ActivityLogger::log([
+                        'user_id'     => $tenantId,
+                        'actor_type'  => 'user',
+                        'actor_id'    => auth()->id(),
+                        'action'      => 'customers_hub.assignment_rules.saved',
+                        'target_type' => 'users',
+                        'target_id'   => $employee->id,
+                        'new_values'  => ['employeeRules' => $savedAssignmentRulesMeta['rules'] ?? []],
+                    ]);
+                }
+
+                return [$employee, $savedAssignmentRulesMeta];
+            });
+        } catch (\Throwable $e) {
+            Log::error('Employee store failed', [
+                'tenant_id' => $tenantId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Employee could not be created.',
+            ], 500);
         }
 
         // Add roles and permissions to response
+        $employee->unsetRelation('roles')->unsetRelation('permissions');
         $employee->roles = $employee->roles->pluck('name', 'id');
         $employee->permissions = $employee->getPermissionNames();
 
@@ -270,107 +281,122 @@ class EmployeeController extends Controller
 
         $old = $employee->only(['first_name','last_name','email','phone','active']);
 
-        $employee->fill(array_filter([
-            'first_name' => $data['first_name'] ?? null,
-            'last_name'  => $data['last_name'] ?? null,
-            'email'      => $data['email'] ?? null,
-            'phone'      => $data['phone'] ?? null,
-            'active'     => array_key_exists('active',$data) ? $data['active'] : null,
-        ], fn($v) => !is_null($v)));
-
-        if (!empty($data['password'])) {
-            $employee->password = Hash::make($data['password']);
-        }
-
-        $employee->save();
-
         // Set tenant context for Spatie
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
 
-        // Handle role updates
+        $availableRoles = null;
+        $oldRoles = [];
         if (array_key_exists('role_ids', $data)) {
             $oldRoles = $employee->roles->pluck('id')->toArray();
-
-            // Ensure roles belong to same tenant
             $availableRoles = Role::where('team_id', $tenantId)->whereIn('id', $data['role_ids'] ?? [])->get();
-            $employee->syncRoles($availableRoles);
-
-            ActivityLogger::log([
-                'user_id'     => $tenantId,
-                'actor_type'  => 'user',
-                'actor_id'    => auth()->id(),
-                'action'      => 'role.updated',
-                'target_type' => 'users',
-                'target_id'   => $employee->id,
-                'old_values'  => ['roles' => $oldRoles],
-                'new_values'  => ['roles' => $availableRoles->pluck('id')->toArray()],
-            ]);
         }
 
-        // Handle permission updates
+        $permissions = null;
+        $oldPermissions = [];
         if (array_key_exists('permissions', $data)) {
             $oldPermissions = $employee->getPermissionNames()->toArray();
-            $employee->syncPermissions($data['permissions']);
-
-            ActivityLogger::log([
-                'user_id'     => $tenantId,
-                'actor_type'  => 'user',
-                'actor_id'    => auth()->id(),
-                'action'      => 'permissions.updated',
-                'target_type' => 'users',
-                'target_id'   => $employee->id,
-                'old_values'  => ['permissions' => $oldPermissions],
-                'new_values'  => ['permissions' => $data['permissions']],
-            ]);
+            $permissions = Permission::query()
+                ->where('guard_name', 'sanctum')
+                ->whereIn('name', $data['permissions'])
+                ->get();
         }
 
-        $savedAssignmentRulesMeta = null;
-        if (array_key_exists('employeeRules', $data) && !empty($data['employeeRules'])) {
-            try {
-                $savedAssignmentRulesMeta = $this->saveEmployeeAssignmentRules(
-                    $tenantId,
-                    (int) $employee->id,
-                    $data['employeeRules']
-                );
+        try {
+            [$employee, $savedAssignmentRulesMeta] = DB::transaction(function () use ($employee, $tenantId, $data, $old, $availableRoles, $oldRoles, $permissions, $oldPermissions) {
+                $employee->fill(array_filter([
+                    'first_name' => $data['first_name'] ?? null,
+                    'last_name'  => $data['last_name'] ?? null,
+                    'email'      => $data['email'] ?? null,
+                    'phone'      => $data['phone'] ?? null,
+                    'active'     => array_key_exists('active', $data) ? $data['active'] : null,
+                ], fn ($value) => !is_null($value)));
+
+                if (!empty($data['password'])) {
+                    $employee->password = Hash::make($data['password']);
+                }
+
+                $employee->save();
+
+                if (array_key_exists('role_ids', $data)) {
+                    $employee->syncRoles($availableRoles);
+
+                    ActivityLogger::log([
+                        'user_id'     => $tenantId,
+                        'actor_type'  => 'user',
+                        'actor_id'    => auth()->id(),
+                        'action'      => 'role.updated',
+                        'target_type' => 'users',
+                        'target_id'   => $employee->id,
+                        'old_values'  => ['roles' => $oldRoles],
+                        'new_values'  => ['roles' => $availableRoles->pluck('id')->toArray()],
+                    ]);
+                }
+
+                if (array_key_exists('permissions', $data)) {
+                    $employee->syncPermissions($permissions);
+
+                    ActivityLogger::log([
+                        'user_id'     => $tenantId,
+                        'actor_type'  => 'user',
+                        'actor_id'    => auth()->id(),
+                        'action'      => 'permissions.updated',
+                        'target_type' => 'users',
+                        'target_id'   => $employee->id,
+                        'old_values'  => ['permissions' => $oldPermissions],
+                        'new_values'  => ['permissions' => $data['permissions']],
+                    ]);
+                }
+
+                $savedAssignmentRulesMeta = null;
+                if (array_key_exists('employeeRules', $data) && !empty($data['employeeRules'])) {
+                    $savedAssignmentRulesMeta = $this->saveEmployeeAssignmentRules(
+                        $tenantId,
+                        (int) $employee->id,
+                        $data['employeeRules']
+                    );
+
+                    ActivityLogger::log([
+                        'user_id'     => $tenantId,
+                        'actor_type'  => 'user',
+                        'actor_id'    => auth()->id(),
+                        'action'      => 'customers_hub.assignment_rules.saved',
+                        'target_type' => 'users',
+                        'target_id'   => $employee->id,
+                        'new_values'  => ['employeeRules' => $savedAssignmentRulesMeta['rules'] ?? []],
+                    ]);
+                }
 
                 ActivityLogger::log([
                     'user_id'     => $tenantId,
                     'actor_type'  => 'user',
                     'actor_id'    => auth()->id(),
-                    'action'      => 'customers_hub.assignment_rules.saved',
+                    'action'      => 'employee.updated',
                     'target_type' => 'users',
                     'target_id'   => $employee->id,
-                    'new_values'  => ['employeeRules' => $savedAssignmentRulesMeta['rules'] ?? []],
-                ]);
-            } catch (\Throwable $e) {
-                Log::error('Employee update: assignment rules save failed', [
-                    'tenant_id'   => $tenantId,
-                    'employee_id' => $employee->id,
-                    'error'       => $e->getMessage(),
+                    'old_values'  => $old,
+                    'new_values'  => $employee->only(['first_name','last_name','email','phone','active']),
                 ]);
 
-                return response()->json([
-                    'status'  => 'error',
-                    'message' => 'Employee updated but assignment rules could not be saved.',
-                ], 500);
-            }
+                return [$employee, $savedAssignmentRulesMeta];
+            });
+        } catch (\Throwable $e) {
+            Log::error('Employee update failed', [
+                'tenant_id' => $tenantId,
+                'employee_id' => $employee->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Employee could not be updated.',
+            ], 500);
         }
-
-        ActivityLogger::log([
-            'user_id'     => $tenantId,
-            'actor_type'  => 'user',
-            'actor_id'    => auth()->id(),
-            'action'      => 'employee.updated',
-            'target_type' => 'users',
-            'target_id'   => $employee->id,
-            'old_values'  => $old,
-            'new_values'  => $employee->only(['first_name','last_name','email','phone','active']),
-        ]);
 
         // Set tenant context for Spatie
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
 
         // Add roles and permissions to response
+        $employee->unsetRelation('roles')->unsetRelation('permissions');
         $employee->roles = $employee->roles->pluck('name', 'id');
         $employee->permissions = $employee->getPermissionNames();
 

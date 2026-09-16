@@ -37,6 +37,10 @@
     $provisioning = is_array($d['provisioning'] ?? null) ? $d['provisioning'] : [];
     $recommendedDns = is_array($d['recommended_dns'] ?? null) ? $d['recommended_dns'] : [];
     $ownershipChallenge = is_array($d['ownership_challenge'] ?? null) ? $d['ownership_challenge'] : null;
+    $ownershipChallenges = is_array($d['ownership_challenges'] ?? null) ? $d['ownership_challenges'] : [];
+    if ($ownershipChallenges === [] && $ownershipChallenge !== null) {
+        $ownershipChallenges = [$ownershipChallenge];
+    }
     $observedNs = $d['observed_nameservers'] ?? [];
     $expectedNs = $d['expected_nameservers'] ?? [];
     $recommendedIpv4 = $d['recommended_ipv4'] ?? [];
@@ -390,24 +394,14 @@
             </tbody>
         </table>
 
-        @if ($ownershipChallenge !== null && $ownershipChallenge !== [])
+        @if ($ownershipChallenges !== [])
             <h6 class="mt-3">{{ $recommendedDns['ownership_txt_label'] ?? __('domain_diagnostics.ownership_txt') }}</h6>
-            <table class="table table-sm table-bordered mb-3">
-                <tbody>
-                    <tr>
-                        <th>{{ $recommendedDns['record_type_label'] ?? 'Type' }}</th>
-                        <td><code>{{ $ownershipChallenge['type'] ?? 'txt' }}</code></td>
-                    </tr>
-                    <tr>
-                        <th>{{ $recommendedDns['record_name_label'] ?? 'Name' }}</th>
-                        <td><code>{{ $ownershipChallenge['domain'] ?? '—' }}</code></td>
-                    </tr>
-                    <tr>
-                        <th>{{ $recommendedDns['record_value_label'] ?? 'Value' }}</th>
-                        <td><code class="text-break">{{ $ownershipChallenge['value'] ?? '—' }}</code></td>
-                    </tr>
-                </tbody>
-            </table>
+            @include('admin.domains.partials.ownership-challenge', [
+                'ownershipChallenges' => $ownershipChallenges,
+                'recommendedDns' => $recommendedDns,
+                'compact' => false,
+                'showClaim' => false,
+            ])
         @endif
 
         @if ($provisioning !== [])
