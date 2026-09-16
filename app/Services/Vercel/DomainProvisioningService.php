@@ -445,6 +445,8 @@ class DomainProvisioningService
             'configuredBy' => null,
             'recommendedIPv4' => [],
             'recommendedCNAME' => [],
+            'recommendedIPv4Groups' => [],
+            'recommendedCNAMEGroups' => [],
         ];
         $ownershipChallenge = null;
         $providerError = false;
@@ -492,21 +494,30 @@ class DomainProvisioningService
 
         $apexAttached = $projectDomain !== null || $apexInventory !== null;
         $apexVerified = $apexAttached && ! empty(($projectDomain ?? $apexInventory)['verified']);
+        $recommendedIpv4Groups = DomainDnsRecommendationService::normalizeGroups(
+            $domainConfig['recommendedIPv4Groups'] ?? [],
+            $domainConfig['recommendedIPv4'] ?? []
+        );
+        $recommendedCnameGroups = DomainDnsRecommendationService::normalizeGroups(
+            $domainConfig['recommendedCNAMEGroups'] ?? [],
+            $domainConfig['recommendedCNAME'] ?? []
+        );
+
         if ($dnsMode === ApiDomainSetting::DNS_MODE_EXTERNAL_DNS) {
             $externalDns = ApiDomainSetting::externalDnsInstructions();
-            // Accept both published instruction targets and Vercel's live recommendations.
-            $recommendedIpv4 = $this->normalizeRecommendationValues(array_merge(
-                [$externalDns['apex_record_value']],
-                $domainConfig['recommendedIPv4'] ?? []
-            ));
-            $recommendedCname = $this->normalizeRecommendationValues(array_merge(
-                [$externalDns['www_record_value']],
-                $domainConfig['recommendedCNAME'] ?? []
-            ));
-        } else {
-            $recommendedIpv4 = $this->normalizeRecommendationValues($domainConfig['recommendedIPv4'] ?? []);
-            $recommendedCname = $this->normalizeRecommendationValues($domainConfig['recommendedCNAME'] ?? []);
+            // Keep configured platform targets as accepted fallbacks, but never
+            // merge them into Vercel's higher-ranked provider group.
+            $recommendedIpv4Groups = DomainDnsRecommendationService::withFallback(
+                $recommendedIpv4Groups,
+                $externalDns['apex_record_value']
+            );
+            $recommendedCnameGroups = DomainDnsRecommendationService::withFallback(
+                $recommendedCnameGroups,
+                $externalDns['www_record_value']
+            );
         }
+        $recommendedIpv4 = DomainDnsRecommendationService::flatten($recommendedIpv4Groups);
+        $recommendedCname = DomainDnsRecommendationService::flatten($recommendedCnameGroups);
         $dnsEvidence = $this->dnsRecordService->inspect($apex, $recommendedIpv4, $recommendedCname);
         $wwwCertificate = $this->client->findCoveringCertificate($www, $certificateInventory);
         $wwwSslReady = $wwwCertificate !== null && $this->client->isCertificateReady($wwwCertificate);
@@ -526,6 +537,8 @@ class DomainProvisioningService
             'configured_by' => $domainConfig['configuredBy'] ?? null,
             'recommended_ipv4' => $recommendedIpv4,
             'recommended_cname' => $recommendedCname,
+            'recommended_ipv4_groups' => $recommendedIpv4Groups,
+            'recommended_cname_groups' => $recommendedCnameGroups,
             'observed_nameservers' => $observedNameservers,
             'nameservers_ok' => $nameserversOk,
             'nameserver_check_enabled' => $checkNameservers,
@@ -837,6 +850,8 @@ class DomainProvisioningService
             'configured_by' => $state['configured_by'] ?? null,
             'recommended_ipv4' => $state['recommended_ipv4'] ?? [],
             'recommended_cname' => $state['recommended_cname'] ?? [],
+            'recommended_ipv4_groups' => $state['recommended_ipv4_groups'] ?? [],
+            'recommended_cname_groups' => $state['recommended_cname_groups'] ?? [],
             'apex_records' => $state['apex_records'] ?? [],
             'www_records' => $state['www_records'] ?? [],
             'apex_matches_recommended' => $state['apex_matches_recommended'] ?? null,
@@ -1017,45 +1032,4 @@ class DomainProvisioningService
         return $this->healthPolicy->resolveDnsMode($row?->dns_mode);
     }
 
-    /**
-     * @param  list<string>|mixed  $values
-     * @return list<string>
-     */
-    private function normalizeRecommendationValues(mixed $values): array
-    {
-        if (! is_array($values)) {
-            $values = [$values];
-        }
-
-        $normalized = [];
-        foreach ($values as $value) {
-            if (is_array($value)) {
-                if (array_key_exists('value', $value)) {
-                    foreach ($this->normalizeRecommendationValues($value['value']) as $nested) {
-                        $normalized[] = $nested;
-                    }
-
-                    continue;
-                }
-
-                foreach ($value as $nested) {
-                    if (is_string($nested) && trim($nested) !== '') {
-                        $normalized[] = strtolower(rtrim(trim($nested), '.'));
-                    } elseif (is_array($nested)) {
-                        foreach ($this->normalizeRecommendationValues([$nested]) as $deep) {
-                            $normalized[] = $deep;
-                        }
-                    }
-                }
-
-                continue;
-            }
-
-            if (is_string($value) && trim($value) !== '') {
-                $normalized[] = strtolower(rtrim(trim($value), '.'));
-            }
-        }
-
-        return array_values(array_unique($normalized));
-    }
 }

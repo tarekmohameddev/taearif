@@ -138,7 +138,14 @@ class DomainStatusSyncService
      */
     private function preserveDnsInstructionEvidence(array $checkSummary, array $previousCheck): array
     {
-        foreach (['recommended_ipv4', 'recommended_cname', 'apex_records', 'www_records'] as $key) {
+        foreach ([
+            'recommended_ipv4',
+            'recommended_cname',
+            'recommended_ipv4_groups',
+            'recommended_cname_groups',
+            'apex_records',
+            'www_records',
+        ] as $key) {
             $current = $checkSummary[$key] ?? null;
             $previous = $previousCheck[$key] ?? null;
 
@@ -258,6 +265,8 @@ class DomainStatusSyncService
             'configuredBy' => null,
             'recommendedIPv4' => [],
             'recommendedCNAME' => [],
+            'recommendedIPv4Groups' => [],
+            'recommendedCNAMEGroups' => [],
         ];
 
         if ($autoAttach) {
@@ -449,6 +458,8 @@ class DomainStatusSyncService
             $certificateReadiness,
             $domainConfig['recommendedIPv4'] ?? [],
             $domainConfig['recommendedCNAME'] ?? [],
+            $domainConfig['recommendedIPv4Groups'] ?? [],
+            $domainConfig['recommendedCNAMEGroups'] ?? [],
             $apex,
             $www
         );
@@ -499,6 +510,8 @@ class DomainStatusSyncService
             'configured_by' => $domainConfig['configuredBy'] ?? null,
             'recommended_ipv4' => $evidence['recommended_ipv4'] ?? [],
             'recommended_cname' => $evidence['recommended_cname'] ?? [],
+            'recommended_ipv4_groups' => $evidence['recommended_ipv4_groups'] ?? [],
+            'recommended_cname_groups' => $evidence['recommended_cname_groups'] ?? [],
             'apex_records' => $evidence['apex_records'] ?? [],
             'www_records' => $evidence['www_records'] ?? [],
             'apex_matches_recommended' => $evidence['apex_matches_recommended'] ?? null,
@@ -567,25 +580,33 @@ class DomainStatusSyncService
         ?string $certificateReadiness,
         mixed $recommendedIpv4,
         mixed $recommendedCname,
+        mixed $recommendedIpv4Groups,
+        mixed $recommendedCnameGroups,
         string $apex,
         string $www
     ): array {
+        $ipv4Groups = DomainDnsRecommendationService::normalizeGroups(
+            $recommendedIpv4Groups,
+            $recommendedIpv4
+        );
+        $cnameGroups = DomainDnsRecommendationService::normalizeGroups(
+            $recommendedCnameGroups,
+            $recommendedCname
+        );
+
         if ($dnsMode === ApiDomainSetting::DNS_MODE_EXTERNAL_DNS) {
             $externalDns = ApiDomainSetting::externalDnsInstructions();
-            // Accept both our published instruction targets and Vercel's live
-            // recommended records (project domains often use newer anycast IPs).
-            $normalizedIpv4 = $this->normalizeRecommendationValues(array_merge(
-                [$externalDns['apex_record_value']],
-                is_array($recommendedIpv4) ? $recommendedIpv4 : [$recommendedIpv4]
-            ));
-            $normalizedCname = $this->normalizeRecommendationValues(array_merge(
-                [$externalDns['www_record_value']],
-                is_array($recommendedCname) ? $recommendedCname : [$recommendedCname]
-            ));
-        } else {
-            $normalizedIpv4 = $this->normalizeRecommendationValues($recommendedIpv4);
-            $normalizedCname = $this->normalizeRecommendationValues($recommendedCname);
+            $ipv4Groups = DomainDnsRecommendationService::withFallback(
+                $ipv4Groups,
+                $externalDns['apex_record_value']
+            );
+            $cnameGroups = DomainDnsRecommendationService::withFallback(
+                $cnameGroups,
+                $externalDns['www_record_value']
+            );
         }
+        $normalizedIpv4 = DomainDnsRecommendationService::flatten($ipv4Groups);
+        $normalizedCname = DomainDnsRecommendationService::flatten($cnameGroups);
         $dnsEvidence = $this->dnsRecordService->inspect($apex, $normalizedIpv4, $normalizedCname);
         $certificateInventory = ['certificates' => []];
         $wwwCertificate = null;
@@ -628,6 +649,8 @@ class DomainStatusSyncService
             'certificate_readiness' => $certificateReadiness,
             'recommended_ipv4' => $normalizedIpv4,
             'recommended_cname' => $normalizedCname,
+            'recommended_ipv4_groups' => $ipv4Groups,
+            'recommended_cname_groups' => $cnameGroups,
             'apex_records' => $dnsEvidence['apex_records'],
             'www_records' => $dnsEvidence['www_records'],
             'apex_matches_recommended' => $dnsEvidence['apex_matches_recommended'],
@@ -858,48 +881,6 @@ class DomainStatusSyncService
             'checks_disabled' => 'Verification checks are disabled (VERCEL_AUTO_ATTACH_CUSTOM_DOMAIN and VERCEL_CHECK_NAMESERVERS are false).',
             default => 'Domain verification is still pending.',
         };
-    }
-
-    /**
-     * @param  list<string>|mixed  $values
-     * @return list<string>
-     */
-    private function normalizeRecommendationValues(mixed $values): array
-    {
-        if (! is_array($values)) {
-            $values = [$values];
-        }
-
-        $normalized = [];
-        foreach ($values as $value) {
-            if (is_array($value)) {
-                if (array_key_exists('value', $value)) {
-                    foreach ($this->normalizeRecommendationValues($value['value']) as $nested) {
-                        $normalized[] = $nested;
-                    }
-
-                    continue;
-                }
-
-                foreach ($value as $nested) {
-                    if (is_string($nested) && trim($nested) !== '') {
-                        $normalized[] = strtolower(rtrim(trim($nested), '.'));
-                    } elseif (is_array($nested)) {
-                        foreach ($this->normalizeRecommendationValues([$nested]) as $deep) {
-                            $normalized[] = $deep;
-                        }
-                    }
-                }
-
-                continue;
-            }
-
-            if (is_string($value) && trim($value) !== '') {
-                $normalized[] = strtolower(rtrim(trim($value), '.'));
-            }
-        }
-
-        return array_values(array_unique($normalized));
     }
 
     /**

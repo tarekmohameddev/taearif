@@ -343,6 +343,48 @@ class DomainProvisioningServiceTest extends TestCase
     }
 
     /** @test */
+    public function ranked_dns_recommendation_groups_are_persisted_for_registrar_guidance(): void
+    {
+        $this->mockNameservers(ok: false);
+
+        $state = [
+            'account' => $this->accountBody('example.com', zone: false, verified: true, serviceType: 'external'),
+            'project_domain' => [
+                'name' => 'example.com',
+                'verified' => true,
+                'verification' => [],
+            ],
+            'project_domains' => [['name' => 'example.com', 'verified' => true]],
+            'domain_config' => [
+                'misconfigured' => true,
+                'recommendedIPv4' => [
+                    ['rank' => 1, 'value' => ['216.198.79.1', '64.29.17.1']],
+                    ['rank' => 2, 'value' => ['76.76.21.21']],
+                ],
+                'recommendedCNAME' => [
+                    ['rank' => 1, 'value' => 'project.vercel-dns-017.com'],
+                    ['rank' => 2, 'value' => 'cname.vercel-dns.com'],
+                ],
+            ],
+        ];
+
+        Http::fake(function (Request $request) use (&$state) {
+            return $this->respondVercel($request, $state);
+        });
+
+        $result = $this->service->run('example.com', DomainProvisioningService::MODE_SCHEDULED, 'external_dns');
+
+        $this->assertSame([
+            ['rank' => 1, 'values' => ['216.198.79.1', '64.29.17.1']],
+            ['rank' => 2, 'values' => ['76.76.21.21']],
+        ], $result['last_check']['recommended_ipv4_groups']);
+        $this->assertSame([
+            ['rank' => 1, 'values' => ['project.vercel-dns-017.com']],
+            ['rank' => 2, 'values' => ['cname.vercel-dns.com']],
+        ], $result['last_check']['recommended_cname_groups']);
+    }
+
+    /** @test */
     public function optional_www_lookup_uncertainty_does_not_poison_healthy_apex_state(): void
     {
         $this->mockNameservers(ok: true);
@@ -485,7 +527,10 @@ class DomainProvisioningServiceTest extends TestCase
         }
 
         if ($method === 'GET' && str_contains($url, '/v6/domains/example.com/config')) {
-            return Http::response(['misconfigured' => false, 'configuredBy' => 'CNAME'], 200);
+            return Http::response(
+                $state['domain_config'] ?? ['misconfigured' => false, 'configuredBy' => 'CNAME'],
+                200
+            );
         }
 
         if (str_contains($url, '/v8/certs')) {

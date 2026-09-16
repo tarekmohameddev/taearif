@@ -230,6 +230,54 @@ class CustomDomainControlCompletenessTest extends AdminApiTestCase
     }
 
     /** @test */
+    public function external_dns_diagnostics_render_a_minimal_registrar_action_plan(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->configureVercel();
+        $this->signInWebAdmin();
+
+        $domain = $this->seedDomain('registrar-plan-' . uniqid('', false) . '.example.com', [
+            'health_code' => 'dns_misconfigured',
+            'observed_nameservers' => ['ns25.domaincontrol.com', 'ns26.domaincontrol.com'],
+            'recommended_ipv4' => ['216.198.79.1', '64.29.17.1', '76.76.21.21'],
+            'recommended_cname' => ['project.vercel-dns-017.com', 'cname.vercel-dns.com'],
+            'recommended_ipv4_groups' => [
+                ['rank' => 1, 'values' => ['216.198.79.1', '64.29.17.1']],
+                ['rank' => 2, 'values' => ['76.76.21.21']],
+            ],
+            'recommended_cname_groups' => [
+                ['rank' => 1, 'values' => ['project.vercel-dns-017.com']],
+                ['rank' => 2, 'values' => ['cname.vercel-dns.com']],
+            ],
+            'apex_records' => [
+                ['type' => 'A', 'value' => '13.248.243.5'],
+                ['type' => 'A', 'value' => '76.76.21.21'],
+            ],
+            'www_records' => [
+                ['type' => 'A', 'value' => '66.33.60.67'],
+                ['type' => 'CNAME', 'value' => 'cname.vercel-dns.com'],
+            ],
+            'apex_lookup_known' => true,
+            'www_lookup_known' => true,
+        ]);
+        $domain->dns_mode = 'external_dns';
+        $domain->save();
+
+        $response = $this->get(route('admin.custom-domain.diagnostics', ['id' => $domain->id]));
+
+        $response->assertOk();
+        $response->assertSeeText(__('domain_diagnostics.registrar_plan_title'));
+        $response->assertSeeText(__('domain_diagnostics.registrar_keep_nameservers'));
+        $response->assertSee('13.248.243.5', false);
+        $response->assertSee('76.76.21.21', false);
+        $response->assertSee('cname.vercel-dns.com', false);
+        $response->assertSeeText(__('domain_diagnostics.registrar_action.delete'));
+        $response->assertSeeText(__('domain_diagnostics.registrar_action.keep'));
+        $response->assertSeeText(__('domain_diagnostics.external_nameservers_not_applicable'));
+        $response->assertDontSeeText(__('domain_diagnostics.registrar_replace_nameservers'));
+    }
+
+    /** @test */
     public function claim_ownership_surfaces_pending_outcome(): void
     {
         $this->skipIfMissingSchema();
