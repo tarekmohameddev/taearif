@@ -702,7 +702,7 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/whatsapp-numbers/{id}/toggle-status', 'Admin\WhatsappNumberController@toggleStatus')->name('whatsapp-numbers.toggle-status');
         Route::delete('/whatsapp-numbers/{id}', 'Admin\WhatsappNumberController@destroy')->name('whatsapp-numbers.destroy');
 
-        // WhatsApp Numbers Monitor (read-only)
+        // WhatsApp Numbers Monitor and guarded reconciliation
         Route::get('/whatsapp-numbers/monitor', 'Admin\WhatsappNumberMonitorController@index')
             ->name('whatsapp-numbers.monitor');
         Route::get('/whatsapp-numbers/{id}/monitor', 'Admin\WhatsappNumberMonitorController@show')
@@ -710,6 +710,9 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/whatsapp-numbers/{id}/monitor/diagnose', 'Admin\WhatsappNumberMonitorController@diagnose')
             ->name('whatsapp-numbers.monitor.diagnose')
             ->middleware('throttle:10,1');
+        Route::post('/whatsapp-numbers/{id}/monitor/reconcile-waba', 'Admin\WhatsappNumberMonitorController@reconcileWaba')
+            ->name('whatsapp-numbers.monitor.reconcile-waba')
+            ->middleware('throttle:3,1');
 
         // WhatsApp Addon Plans Management
         Route::get('/whatsapp-addon-plans', 'Admin\WhatsappAddonPlanController@index')->name('whatsapp-addon-plans.index');
@@ -793,5 +796,3 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
 
 
 });
-
-

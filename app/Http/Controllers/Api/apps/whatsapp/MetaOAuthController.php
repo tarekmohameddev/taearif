@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class MetaOAuthController extends Controller
 {
@@ -158,14 +159,18 @@ class MetaOAuthController extends Controller
      */
     public function callback(Request $request)
     {
+        $attemptId = (string) Str::uuid();
         $error = $request->query('error');
         if ($error) {
             $this->logMetaEvent('warning', 'MetaOAuthController.callback received error from Meta', array_merge(
                 $this->metaStateLogContext($request),
                 [
+                'attempt_id' => $attemptId,
                 'error' => $error,
+                'error_code' => $request->query('error_code'),
                 'error_reason' => $request->query('error_reason'),
                 'error_description' => $request->query('error_description'),
+                'action' => $request->query('action'),
                 ]
             ));
 
@@ -264,10 +269,11 @@ class MetaOAuthController extends Controller
         $ownerId = (int) $owner->id;
         $employeeId = $actor->isEmployee() ? (int) $actor->id : null;
         $callbackLogContext = $this->metaLogContext($request, $owner, $actor, $employeeId, $decoded['mode'] ?? null);
+        $callbackLogContext['attempt_id'] = $attemptId;
 
         try {
             // 1) Exchange code for short-lived token
-            $tokenResponse = $this->metaGraph->exchangeCodeForToken($code);
+            $tokenResponse = $this->metaGraph->exchangeCodeForToken($code, $callbackLogContext);
             $shortLivedToken = $tokenResponse['access_token'] ?? null;
             $expiresIn = $tokenResponse['expires_in'] ?? null;
 
@@ -280,7 +286,7 @@ class MetaOAuthController extends Controller
             $expiresAt = null;
 
             try {
-                $longLived = $this->metaGraph->exchangeForLongLivedToken($shortLivedToken);
+                $longLived = $this->metaGraph->exchangeForLongLivedToken($shortLivedToken, $callbackLogContext);
                 if (!empty($longLived['access_token'])) {
                     $finalToken = $longLived['access_token'];
                     $longExpiresIn = $longLived['expires_in'] ?? null;
@@ -301,7 +307,7 @@ class MetaOAuthController extends Controller
             }
 
             // 3) Debug token to get WABA ID from granular scopes
-            $debugTokenResponse = $this->metaGraph->debugToken($finalToken);
+            $debugTokenResponse = $this->metaGraph->debugToken($finalToken, $callbackLogContext);
             $wabaId = $this->metaGraph->extractWabaIdFromDebugToken($debugTokenResponse);
 
             if (!$wabaId) {
@@ -321,7 +327,7 @@ class MetaOAuthController extends Controller
             ));
 
             // 4) Get phone numbers for that WABA
-            $phonesResponse = $this->metaGraph->listPhoneNumbers($finalToken, $wabaId);
+            $phonesResponse = $this->metaGraph->listPhoneNumbers($finalToken, $wabaId, $callbackLogContext);
             $phones = $phonesResponse['data'] ?? [];
 
             if (empty($phones)) {
@@ -487,7 +493,7 @@ class MetaOAuthController extends Controller
 
             // Subscribe only after the tenant and quota checks have accepted the number.
             try {
-                $this->metaGraph->subscribeAppToWaba($finalToken, $wabaId);
+                $this->metaGraph->subscribeAppToWaba($finalToken, $wabaId, $callbackLogContext);
             } catch (\Throwable $e) {
                 $this->logMetaEvent('warning', 'MetaOAuthController.callback WABA subscription failed (non-fatal)', array_merge(
                     $callbackLogContext,

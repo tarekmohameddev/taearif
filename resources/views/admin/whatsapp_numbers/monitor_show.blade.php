@@ -476,6 +476,18 @@
         };
         $checks = $diagnostics['checks'] ?? [];
         $metaPhoneNumbers = $diagnostics['meta_phone_numbers'] ?? [];
+        $reconciliation = $diagnostics['reconciliation'] ?? [];
+        $reconciliationState = $reconciliation['state'] ?? 'blocked';
+        $reconciliationReason = $reconciliation['reason_code'] ?? 'unverified';
+        $blockedReasonLabels = [
+            'token_not_usable' => __('Reconnect through Meta because the token is invalid or expired.'),
+            'phone_id_missing' => __('Automatic reconciliation requires a stored phone ID.'),
+            'phone_not_found' => __('Reconnect through Meta because this phone was not found in any accessible WABA.'),
+            'ambiguous_phone_ownership' => __('Automatic reconciliation is blocked because the phone matched more than one WABA.'),
+            'meta_lookup_incomplete' => __('Meta did not return a complete WABA lookup. No repair is allowed.'),
+            'owner_mismatch' => __('Automatic reconciliation is blocked because the Communication number belongs to another tenant.'),
+            'number_not_active' => __('Only active WhatsApp numbers can be reconciled.'),
+        ];
     @endphp
     <div class="row">
         <div class="col-12 mb-4">
@@ -523,6 +535,7 @@
                                 <thead>
                                     <tr>
                                         <th scope="col">{{ __('ID') }}</th>
+                                        <th scope="col">{{ __('WABA ID') }}</th>
                                         <th scope="col">{{ __('Display number') }}</th>
                                         <th scope="col">{{ __('Verified name') }}</th>
                                         <th scope="col">{{ __('Quality rating') }}</th>
@@ -532,6 +545,7 @@
                                     @foreach ($metaPhoneNumbers as $metaPhone)
                                         <tr @if (!empty($number->phone_id) && ($metaPhone['id'] ?? '') === $number->phone_id) class="table-active" @endif>
                                             <td><span class="wa-monitor-phone">{{ $metaPhone['id'] ?? '—' }}</span></td>
+                                            <td><span class="wa-monitor-phone">{{ $metaPhone['waba_id'] ?? '—' }}</span></td>
                                             <td><span class="wa-monitor-phone">{{ $metaPhone['display_phone_number'] ?? '—' }}</span></td>
                                             <td>{{ $metaPhone['verified_name'] ?? '—' }}</td>
                                             <td>{{ $metaPhone['quality_rating'] ?? '—' }}</td>
@@ -539,6 +553,76 @@
                                     @endforeach
                                 </tbody>
                             </table>
+                        </div>
+                    @endif
+
+                    @if ($reconciliationState === 'eligible')
+                        <div class="alert alert-warning rounded-0 border-left-0 border-right-0 border-bottom-0 mb-0">
+                            <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+                                <div>
+                                    <strong>{{ __('Verified WABA correction available') }}</strong>
+                                    <div class="small mt-1">
+                                        {{ __('Stored WABA') }}:
+                                        <span class="wa-monitor-phone">{{ $reconciliation['stored_waba_id'] ?: __('Not stored') }}</span>
+                                        <span class="mx-1" aria-hidden="true">→</span>
+                                        {{ __('Verified WABA') }}:
+                                        <span class="wa-monitor-phone">{{ $reconciliation['verified_waba_id'] }}</span>
+                                    </div>
+                                    <div class="small text-muted mt-1">
+                                        {{ __('The stored phone ID belongs to exactly one accessible WABA. No tenant, token, phone ID, quota, or message data will be changed.') }}
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#wabaReconcileModal">
+                                    <i class="fas fa-wrench" aria-hidden="true"></i>
+                                    {{ __('Reconcile with Meta') }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="modal fade" id="wabaReconcileModal" tabindex="-1" role="dialog" aria-labelledby="wabaReconcileModalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <form method="POST" action="{{ route('admin.whatsapp-numbers.monitor.reconcile-waba', $number->id) }}">
+                                        @csrf
+                                        <input type="hidden" name="expected_phone_id" value="{{ $reconciliation['phone_id'] }}">
+                                        <input type="hidden" name="expected_stored_waba_id" value="{{ $reconciliation['stored_waba_id'] }}">
+                                        <input type="hidden" name="expected_verified_waba_id" value="{{ $reconciliation['verified_waba_id'] }}">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="wabaReconcileModalLabel">{{ __('Confirm WABA reconciliation') }}</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="{{ __('Close') }}">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>{{ __('This will update the local WABA linkage, synchronize the Communication number, and subscribe the application to the verified WABA.') }}</p>
+                                            <dl class="row mb-3">
+                                                <dt class="col-sm-5">{{ __('Phone ID') }}</dt>
+                                                <dd class="col-sm-7 wa-monitor-phone">{{ $reconciliation['phone_id'] }}</dd>
+                                                <dt class="col-sm-5">{{ __('Current WABA') }}</dt>
+                                                <dd class="col-sm-7 wa-monitor-phone">{{ $reconciliation['stored_waba_id'] ?: __('Not stored') }}</dd>
+                                                <dt class="col-sm-5">{{ __('Verified WABA') }}</dt>
+                                                <dd class="col-sm-7 wa-monitor-phone">{{ $reconciliation['verified_waba_id'] }}</dd>
+                                            </dl>
+                                            <label for="waba-reconcile-confirmation" class="font-weight-bold">
+                                                {{ __('Type RECONCILE to confirm') }}
+                                            </label>
+                                            <input id="waba-reconcile-confirmation" name="confirmation" type="text" class="form-control" required autocomplete="off" pattern="RECONCILE">
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Cancel') }}</button>
+                                            <button type="submit" class="btn btn-warning">
+                                                <i class="fas fa-wrench" aria-hidden="true"></i>
+                                                {{ __('Apply verified correction') }}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    @elseif ($reconciliationState === 'blocked' && isset($blockedReasonLabels[$reconciliationReason]))
+                        <div class="alert alert-danger rounded-0 border-left-0 border-right-0 border-bottom-0 mb-0">
+                            <strong>{{ __('Automatic reconciliation unavailable') }}</strong>
+                            <div class="small mt-1">{{ $blockedReasonLabels[$reconciliationReason] }}</div>
                         </div>
                     @endif
                 </div>
