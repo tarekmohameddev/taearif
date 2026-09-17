@@ -13,13 +13,21 @@ class WhatsappAddonAudit extends Model
     protected $table = 'whatsapp_addons_audit';
 
     protected $fillable = [
+        'tenant_id',
         'whatsapp_addon_id',
         'whatsapp_number_id',
         'entity_type',
+        'action',
+        'quantity',
+        'old_quota',
+        'new_quota',
         'changed_by',
         'old_status',
         'new_status',
         'note',
+        'correlation_id',
+        'ip_address',
+        'metadata',
         'changed_at',
     ];
 
@@ -28,6 +36,10 @@ class WhatsappAddonAudit extends Model
         'old_status' => 'string',
         'new_status' => 'string',
         'entity_type' => 'string',
+        'quantity' => 'integer',
+        'old_quota' => 'integer',
+        'new_quota' => 'integer',
+        'metadata' => 'array',
     ];
 
     public function addon()
@@ -45,4 +57,3 @@ class WhatsappAddonAudit extends Model
         return $this->belongsTo(Admin::class, 'changed_by');
     }
 }
-

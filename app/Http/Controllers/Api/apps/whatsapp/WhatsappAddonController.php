@@ -107,6 +107,7 @@ class WhatsappAddonController extends Controller
 
         // Create the addon with pending status
         $addon = WhatsappAddon::create([
+            'user_id' => $tenantId,
             'whatsapp_number_id' => $whatsappUser->id,
             'plan_id' => $plan->id,
             'qty' => $validated['qty'],

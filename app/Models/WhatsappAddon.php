@@ -16,6 +16,7 @@ class WhatsappAddon extends Model
     protected $table = 'whatsapp_addons';
 
     protected $fillable = [
+        'user_id',
         'whatsapp_number_id',
         'plan_id',
         'qty',
@@ -36,6 +37,11 @@ class WhatsappAddon extends Model
     public function whatsappUser()
     {
         return $this->belongsTo(WhatsappUser::class, 'whatsapp_number_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function plan()
@@ -62,4 +68,3 @@ class WhatsappAddon extends Model
         ];
     }
 }
-

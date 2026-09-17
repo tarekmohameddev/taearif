@@ -164,6 +164,10 @@
                             <input type="checkbox" name="permissions[]" value="Calling" class="selectgroup-input" @if(is_array($permissions) && in_array('Calling', $permissions)) checked @endif>
                             <span class="selectgroup-button">{{__('Calling')}}</span>
                         </label>
+                        <label class="selectgroup-item">
+                            <input type="checkbox" name="permissions[]" value="WhatsApp Quota Management" class="selectgroup-input" @if(is_array($permissions) && in_array('WhatsApp Quota Management', $permissions)) checked @endif>
+                            <span class="selectgroup-button">{{__('WhatsApp Quota Management')}}</span>
+                        </label>
                 	</div>
                 </div>
               </form>

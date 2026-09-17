@@ -690,6 +690,12 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/whatsapp-addons/{id}/reject', 'Admin\WhatsappAddonController@reject')->name('whatsapp-addons.reject');
         Route::delete('/whatsapp-addons/{id}', 'Admin\WhatsappAddonController@destroy')->name('whatsapp-addons.destroy');
 
+        Route::group(['middleware' => 'checkpermission:WhatsApp Quota Management'], function () {
+            Route::get('/whatsapp-quota-grants', 'Admin\WhatsappQuotaGrantController@index')->name('whatsapp-quota-grants.index');
+            Route::post('/whatsapp-quota-grants', 'Admin\WhatsappQuotaGrantController@store')->name('whatsapp-quota-grants.store');
+            Route::post('/whatsapp-quota-grants/{grant}/revoke', 'Admin\WhatsappQuotaGrantController@revoke')->name('whatsapp-quota-grants.revoke');
+        });
+
         // WhatsApp Numbers Management
         Route::get('/whatsapp-numbers/{id}/edit', 'Admin\WhatsappNumberController@edit')->name('whatsapp-numbers.edit');
         Route::put('/whatsapp-numbers/{id}', 'Admin\WhatsappNumberController@update')->name('whatsapp-numbers.update');
