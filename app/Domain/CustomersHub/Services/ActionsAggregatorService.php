@@ -107,28 +107,37 @@ class ActionsAggregatorService
      */
     public function getList(int $userId, array $filters = [], int $limit = 50, int $offset = 0): array
     {
+        // Detect client sort before unsetting internal keys. Empty unread ID arrays
+        // must not force createdAt / unread-first — only a non-empty list does.
+        $hasExplicitSort = array_key_exists('sort_by', $filters)
+            && $filters['sort_by'] !== null
+            && $filters['sort_by'] !== '';
         $unreadPropertyRequestSourceIds = $filters['_unread_property_request_source_ids'] ?? null;
         unset($filters['_unread_property_request_source_ids']);
 
         $query = $this->getUnifiedQuery($userId, $filters);
 
-        // Unread-first sort for property requests (before pagination), then createdAt desc.
-        if ($unreadPropertyRequestSourceIds !== null) {
-            if (! empty($unreadPropertyRequestSourceIds)) {
-                $placeholders = implode(',', array_fill(0, count($unreadPropertyRequestSourceIds), '?'));
-                $query->orderByRaw(
-                    "CASE WHEN actions.objectType = 'property_request' AND actions.sourceId IN ({$placeholders}) THEN 0 ELSE 1 END",
-                    $unreadPropertyRequestSourceIds
-                );
-            }
+        if ($hasExplicitSort) {
+            $sortBy = $filters['sort_by'];
+            $sortDir = $filters['sort_dir'] ?? 'desc';
+            $query->orderBy($sortBy, $sortDir);
+        } elseif (! empty($unreadPropertyRequestSourceIds)) {
+            $placeholders = implode(',', array_fill(0, count($unreadPropertyRequestSourceIds), '?'));
+            $query->orderByRaw(
+                "CASE WHEN actions.objectType = 'property_request' AND actions.sourceId IN ({$placeholders}) THEN 0 ELSE 1 END",
+                $unreadPropertyRequestSourceIds
+            );
             $query->orderBy('createdAt', 'desc');
             $sortBy = 'createdAt';
             $sortDir = 'desc';
         } else {
-            $sortBy = $filters['sort_by'] ?? 'updatedAt';
+            $sortBy = 'updatedAt';
             $sortDir = $filters['sort_dir'] ?? 'desc';
             $query->orderBy($sortBy, $sortDir);
         }
+
+        // Stable secondary order for pagination when primary sort values tie.
+        $query->orderBy('sourceId', 'desc');
 
         // Page query: select only the row columns. Previously we used
         // COUNT(*) OVER() AS _totalRows to compute the total in the same
