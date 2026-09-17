@@ -943,25 +943,14 @@ class AuthController extends Controller
                 }
               }
 
-              // Avoid duplicate membership lookups by computing quotas here
-              $baseWhatsappLimit = isset($membershipDetails['package'])
-                  ? (int) $membershipDetails['package']['whatsapp_numbers_limit']
-                  : 0;
+              $whatsappBreakdown = app(\App\Services\WhatsApp\WhatsAppQuotaService::class)->breakdown($owner);
               $baseEmployeeLimit = isset($membershipDetails['package'])
                   ? (int) $membershipDetails['package']['employees_limit']
                   : 0;
 
-              $whatsappAddonLimit = WhatsappAddon::whereHas('whatsappUser', function ($q) use ($owner) {
-                  $q->where('user_id', $owner->id);
-              })->where('status', WhatsappAddon::STATUS_APPROVED)
-                  ->where(function ($q) {
-                      $q->whereNull('expire_date')
-                        ->orWhere('expire_date', '>=', now());
-                  })->sum('qty');
-
               $employeeAddonLimit = EmployeeAddon::activeFor($owner->id)->sum('qty');
 
-              $whatsappQuota = (int) ($baseWhatsappLimit + $whatsappAddonLimit + $employeeAddonLimit);
+              $whatsappQuota = $whatsappBreakdown['quota'];
               $employeeQuota = (int) ($baseEmployeeLimit + $employeeAddonLimit);
 
               // OPTIMIZATION: Cache permissions separately since they change less frequently

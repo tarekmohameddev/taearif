@@ -28,10 +28,16 @@ class WhatsappNumberDiagnosticsTest extends TestCase
 
     protected function refreshTestDatabase(): void
     {
+        if (! $this->app->environment('testing') || DB::connection()->getDriverName() !== 'sqlite') {
+            throw new \LogicException('WhatsApp diagnostics tests require APP_ENV=testing with SQLite.');
+        }
+
         if (! RefreshDatabaseState::$migrated) {
-            if (! Schema::hasTable('whatsapp_users') || ! Schema::hasTable('users')) {
+            if (! Schema::hasTable('whatsapp_users')
+                || ! Schema::hasTable('users')
+                || ! Schema::hasTable('wa_numbers')) {
                 $this->markTestSkipped(
-                    'taearif_testing needs core tables (users, whatsapp_users). Import the application schema into taearif_testing.'
+                    'The isolated SQLite database needs users, whatsapp_users, and wa_numbers tables.'
                 );
             }
 
@@ -266,6 +272,97 @@ class WhatsappNumberDiagnosticsTest extends TestCase
 
         $this->assertSame('fail', $result['summary']);
         $this->assertSame('fail', $this->checkStatus($result['checks'], 'waba_id_match'));
+        $this->assertNoTokenLeak($result);
+    }
+
+    /** @test */
+    public function it_matches_the_phone_to_the_owning_waba_instead_of_the_first_token_target(): void
+    {
+        $tenantId = $this->createTenant();
+        $phoneId = 'multi-waba-phone-id';
+        $numberId = $this->createNumber($tenantId, [
+            'phone_id' => $phoneId,
+            'access_token' => self::TEST_ACCESS_TOKEN,
+            'waba_id' => 'stale-waba',
+            'token_expires_at' => now()->addDays(30),
+        ]);
+
+        Http::fake([
+            'graph.facebook.com/v20.0/debug_token*' => Http::response($this->debugTokenResponse([
+                'data' => [
+                    'granular_scopes' => [
+                        [
+                            'scope' => 'whatsapp_business_management',
+                            'target_ids' => ['first-waba', 'owning-waba'],
+                        ],
+                        [
+                            'scope' => 'whatsapp_business_messaging',
+                            'target_ids' => ['owning-waba'],
+                        ],
+                    ],
+                ],
+            ])),
+            'graph.facebook.com/v20.0/first-waba/phone_numbers*' => Http::response(
+                $this->phoneNumbersResponse([])
+            ),
+            'graph.facebook.com/v20.0/owning-waba/phone_numbers*' => Http::response(
+                $this->phoneNumbersResponse([
+                    [
+                        'id' => $phoneId,
+                        'display_phone_number' => '+966500000099',
+                        'verified_name' => 'Owning WABA',
+                        'quality_rating' => 'GREEN',
+                    ],
+                ])
+            ),
+        ]);
+
+        $result = $this->service->diagnose($numberId);
+
+        $this->assertSame('eligible', $result['reconciliation']['state']);
+        $this->assertSame('owning-waba', $result['reconciliation']['verified_waba_id']);
+        $this->assertSame('ok', $this->checkStatus($result['checks'], 'phone_id_known_to_meta'));
+        $this->assertSame('fail', $this->checkStatus($result['checks'], 'waba_id_match'));
+        $this->assertNoTokenLeak($result);
+
+        Http::assertSentCount(3);
+    }
+
+    /** @test */
+    public function it_blocks_reconciliation_when_any_accessible_waba_lookup_fails(): void
+    {
+        $tenantId = $this->createTenant();
+        $phoneId = 'incomplete-lookup-phone-id';
+        $numberId = $this->createNumber($tenantId, [
+            'phone_id' => $phoneId,
+            'access_token' => self::TEST_ACCESS_TOKEN,
+            'waba_id' => 'stale-waba',
+            'token_expires_at' => now()->addDays(30),
+        ]);
+
+        Http::fake([
+            'graph.facebook.com/v20.0/debug_token*' => Http::response($this->debugTokenResponse([
+                'data' => [
+                    'granular_scopes' => [[
+                        'scope' => 'whatsapp_business_management',
+                        'target_ids' => ['visible-waba', 'unavailable-waba'],
+                    ]],
+                ],
+            ])),
+            'graph.facebook.com/v20.0/visible-waba/phone_numbers*' => Http::response(
+                $this->phoneNumbersResponse([['id' => $phoneId]])
+            ),
+            'graph.facebook.com/v20.0/unavailable-waba/phone_numbers*' => Http::response([
+                'error' => ['message' => 'Unavailable'],
+            ], 503),
+        ]);
+
+        $result = $this->service->diagnose($numberId);
+
+        $this->assertSame('blocked', $result['reconciliation']['state']);
+        $this->assertSame('meta_lookup_incomplete', $result['reconciliation']['reason_code']);
+        $this->assertNull($result['reconciliation']['verified_waba_id']);
+        $this->assertSame('fail', $this->checkStatus($result['checks'], 'phone_id_known_to_meta'));
         $this->assertNoTokenLeak($result);
     }
 

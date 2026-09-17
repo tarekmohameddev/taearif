@@ -683,32 +683,7 @@ class User extends Authenticatable
 
     public function getWhatsAppQuotaAttribute()
     {
-        // Get base limit from active membership
-        $membership = Membership::where('user_id', $this->id)
-            ->where('status', 1)
-            ->whereDate('expire_date', '>=', now())
-            ->latest()
-            ->first();
-
-        if (!$membership) {
-            return 0;
-        }
-
-        $baseLimit = $membership->package->whatsapp_numbers_limit ?? 0;
-
-        // Get addon limits (approved and not expired)
-        $whatsappAddonLimit = WhatsappAddon::whereHas('whatsappUser', function($q) {
-            $q->where('user_id', $this->id);
-        })->where('status', WhatsappAddon::STATUS_APPROVED)
-          ->where(function($q) {
-              $q->whereNull('expire_date')
-                ->orWhere('expire_date', '>=', now());
-          })->sum('qty');
-
-        // Employee addons also grant WhatsApp numbers (bundled)
-        $employeeAddonLimit = EmployeeAddon::activeFor($this->id)->sum('qty');
-
-        return (int) ($baseLimit + $whatsappAddonLimit + $employeeAddonLimit);
+        return app(\App\Services\WhatsApp\WhatsAppQuotaService::class)->quota($this);
     }
 
     public function getWhatsAppUsageAttribute()

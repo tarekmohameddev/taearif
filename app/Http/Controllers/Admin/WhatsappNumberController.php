@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class WhatsappNumberController extends Controller
 {
@@ -30,14 +31,24 @@ class WhatsappNumberController extends Controller
 
     public function update(Request $request, $id)
     {
+        $whatsappNumber = WhatsappUser::findOrFail($id);
         $validated = $request->validate([
             'name' => 'nullable|string|max:255',
-            'employee_id' => 'nullable|exists:users,id',
+            'employee_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('users', 'id')->where(fn ($query) => $query
+                    ->where('tenant_id', $whatsappNumber->user_id)
+                    ->where('account_type', 'employee')
+                    ->where('active', true)),
+                Rule::unique('whatsapp_users', 'employee_id')
+                    ->where(fn ($query) => $query->where('user_id', $whatsappNumber->user_id))
+                    ->ignore($whatsappNumber->id),
+            ],
             'note' => 'nullable|string',
         ]);
 
         try {
-            $whatsappNumber = WhatsappUser::findOrFail($id);
             $whatsappNumber->update($validated);
 
             if ($request->wantsJson()) {
@@ -162,4 +173,3 @@ class WhatsappNumberController extends Controller
         }
     }
 }
-

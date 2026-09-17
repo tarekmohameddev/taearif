@@ -8,6 +8,7 @@ use App\Models\WhatsappAddonAudit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class WhatsappAddonController extends Controller
 {
@@ -58,38 +59,43 @@ class WhatsappAddonController extends Controller
 
     public function approve($id)
     {
-        DB::beginTransaction();
         try {
-            $addon = WhatsappAddon::findOrFail($id);
-            
-            if ($addon->status !== WhatsappAddon::STATUS_PENDING) {
-                return back()->with('error', 'يمكن الموافقة على الطلبات المعلقة فقط');
-            }
+            DB::transaction(function () use ($id) {
+                $addon = WhatsappAddon::query()->lockForUpdate()->findOrFail($id);
+                if ($addon->status !== WhatsappAddon::STATUS_PENDING) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'status' => 'يمكن الموافقة على الطلبات المعلقة فقط',
+                    ]);
+                }
 
-            $oldStatus = $addon->status;
-            $addon->update(['status' => WhatsappAddon::STATUS_APPROVED]);
+                $oldStatus = $addon->status;
+                $addon->status = WhatsappAddon::STATUS_APPROVED;
+                $addon->saveQuietly();
 
-            // Log audit
-            WhatsappAddonAudit::create([
-                'whatsapp_addon_id' => $addon->id,
-                'entity_type' => 'addon',
-                'changed_by' => Auth::guard('admin')->id(),
-                'old_status' => $oldStatus,
-                'new_status' => WhatsappAddon::STATUS_APPROVED,
-                'note' => 'Admin approved add-on request',
-                'changed_at' => now(),
-            ]);
-
-            DB::commit();
+                WhatsappAddonAudit::create([
+                    'tenant_id' => $addon->user_id ?? optional($addon->whatsappUser)->user_id,
+                    'whatsapp_addon_id' => $addon->id,
+                    'entity_type' => 'addon',
+                    'action' => 'approve',
+                    'quantity' => $addon->qty,
+                    'changed_by' => Auth::guard('admin')->id(),
+                    'old_status' => $oldStatus,
+                    'new_status' => WhatsappAddon::STATUS_APPROVED,
+                    'note' => 'Admin approved add-on request',
+                    'correlation_id' => (string) Str::uuid(),
+                    'ip_address' => request()->ip(),
+                    'changed_at' => now(),
+                ]);
+            }, 3);
 
             if (request()->wantsJson()) {
                 return response()->json(['success' => true, 'message' => 'تمت الموافقة بنجاح']);
             }
 
             return back()->with('success', 'تمت الموافقة بنجاح');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->with('error', $e->validator->errors()->first());
         } catch (\Exception $e) {
-            DB::rollBack();
-            
             if (request()->wantsJson()) {
                 return response()->json(['success' => false, 'message' => 'فشلت الموافقة'], 500);
             }
@@ -100,38 +106,43 @@ class WhatsappAddonController extends Controller
 
     public function reject($id)
     {
-        DB::beginTransaction();
         try {
-            $addon = WhatsappAddon::findOrFail($id);
-            
-            if ($addon->status !== WhatsappAddon::STATUS_PENDING) {
-                return back()->with('error', 'يمكن رفض الطلبات المعلقة فقط');
-            }
+            DB::transaction(function () use ($id) {
+                $addon = WhatsappAddon::query()->lockForUpdate()->findOrFail($id);
+                if ($addon->status !== WhatsappAddon::STATUS_PENDING) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'status' => 'يمكن رفض الطلبات المعلقة فقط',
+                    ]);
+                }
 
-            $oldStatus = $addon->status;
-            $addon->update(['status' => WhatsappAddon::STATUS_REJECTED]);
+                $oldStatus = $addon->status;
+                $addon->status = WhatsappAddon::STATUS_REJECTED;
+                $addon->saveQuietly();
 
-            // Log audit
-            WhatsappAddonAudit::create([
-                'whatsapp_addon_id' => $addon->id,
-                'entity_type' => 'addon',
-                'changed_by' => Auth::guard('admin')->id(),
-                'old_status' => $oldStatus,
-                'new_status' => WhatsappAddon::STATUS_REJECTED,
-                'note' => 'Admin rejected add-on request',
-                'changed_at' => now(),
-            ]);
-
-            DB::commit();
+                WhatsappAddonAudit::create([
+                    'tenant_id' => $addon->user_id ?? optional($addon->whatsappUser)->user_id,
+                    'whatsapp_addon_id' => $addon->id,
+                    'entity_type' => 'addon',
+                    'action' => 'reject',
+                    'quantity' => $addon->qty,
+                    'changed_by' => Auth::guard('admin')->id(),
+                    'old_status' => $oldStatus,
+                    'new_status' => WhatsappAddon::STATUS_REJECTED,
+                    'note' => 'Admin rejected add-on request',
+                    'correlation_id' => (string) Str::uuid(),
+                    'ip_address' => request()->ip(),
+                    'changed_at' => now(),
+                ]);
+            }, 3);
 
             if (request()->wantsJson()) {
                 return response()->json(['success' => true, 'message' => 'تم الرفض بنجاح']);
             }
 
             return back()->with('success', 'تم الرفض بنجاح');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->with('error', $e->validator->errors()->first());
         } catch (\Exception $e) {
-            DB::rollBack();
-            
             if (request()->wantsJson()) {
                 return response()->json(['success' => false, 'message' => 'فشل الرفض'], 500);
             }
@@ -142,26 +153,26 @@ class WhatsappAddonController extends Controller
 
     public function destroy($id)
     {
-        DB::beginTransaction();
         try {
-            $addon = WhatsappAddon::findOrFail($id);
-            
-            // Delete associated audits first
-            $addon->audits()->delete();
-            
-            // Delete the addon
-            $addon->delete();
+            DB::transaction(function () use ($id) {
+                $addon = WhatsappAddon::query()->lockForUpdate()->findOrFail($id);
+                if ($addon->status !== WhatsappAddon::STATUS_PENDING || $addon->audits()->exists()) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'status' => 'لا يمكن حذف إضافة تمت معالجتها أو لديها سجل تدقيق',
+                    ]);
+                }
 
-            DB::commit();
+                $addon->delete();
+            }, 3);
 
             if (request()->wantsJson() || request()->ajax()) {
                 return response()->json(['success' => true, 'message' => 'تم الحذف بنجاح']);
             }
 
             return back()->with('success', 'تم الحذف بنجاح');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->with('error', $e->validator->errors()->first());
         } catch (\Exception $e) {
-            DB::rollBack();
-           
             if (request()->wantsJson() || request()->ajax()) {
                 return response()->json(['success' => false, 'message' => 'فشل الحذف'], 500);
             }
@@ -170,4 +181,3 @@ class WhatsappAddonController extends Controller
         }
     }
 }
-

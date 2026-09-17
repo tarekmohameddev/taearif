@@ -372,9 +372,8 @@ class WhatsappNumberMonitorService
     }
 
     /**
-     * Health cannot be resolved after pagination without breaking the page counts, so when a
-     * health filter is present it is pushed into the query as a correlated EXISTS. That is
-     * bounded by the whatsapp_users row count and uses the messages.user_id index per row.
+     * Health must be resolved before pagination so filtered totals remain accurate. A single
+     * grouped activity join avoids repeating message-history lookups for every number row.
      */
     private function applyHealthFilter(Builder $query, ?string $health): void
     {
@@ -390,21 +389,33 @@ class WhatsappNumberMonitorService
                 break;
 
             case self::HEALTH_WORKING:
+                $this->joinInboundActivityForHealth($query);
                 $query->where($this->linkedPredicate())
-                    ->whereExists($this->inboundExists($cutoff));
+                    ->where('inbound_health.last_inbound_at', '>=', $cutoff);
                 break;
 
             case self::HEALTH_NO_RECENT_INBOUND:
+                $this->joinInboundActivityForHealth($query);
                 $query->where($this->linkedPredicate())
-                    ->whereNotExists($this->inboundExists($cutoff))
-                    ->whereExists($this->inboundExists(null));
+                    ->whereNotNull('inbound_health.last_inbound_at')
+                    ->where('inbound_health.last_inbound_at', '<', $cutoff);
                 break;
 
             case self::HEALTH_NO_INBOUND_EVER:
+                $this->joinInboundActivityForHealth($query);
                 $query->where($this->linkedPredicate())
-                    ->whereNotExists($this->inboundExists(null));
+                    ->whereNull('inbound_health.last_inbound_at');
                 break;
         }
+    }
+
+    private function joinInboundActivityForHealth(Builder $query): void
+    {
+        $owner = $this->tenantOwnerExpression();
+
+        $query->leftJoinSub($this->inboundActivityQuery(), 'inbound_health', function ($join) use ($owner) {
+            $join->whereRaw("inbound_health.user_id = {$owner}");
+        });
     }
 
     /**
@@ -430,44 +441,70 @@ class WhatsappNumberMonitorService
         };
     }
 
-    private function inboundExists(?Carbon $since): \Closure
-    {
-        $owner = $this->tenantOwnerExpression();
-
-        return function ($sub) use ($since, $owner) {
-            $sub->from('messages as m')
-                ->selectRaw('1')
-                ->whereRaw("m.user_id = {$owner}")
-                ->where('m.direction', 'inbound');
-
-            if ($since !== null) {
-                $sub->where('m.created_at', '>=', $since);
-            }
-        };
-    }
-
     /**
      * @return array<string,int>
      */
     private function buildSummaryCounts(): array
     {
-        $counts = [];
+        $rows = $this->baseQuery()->get();
+        $inboundActivity = $this->inboundActivityFor(
+            $rows->pluck('tenant_owner_id')->all()
+        );
 
-        foreach (self::healthOptions() as $health) {
-            $query = $this->baseQuery();
-            $this->applyHealthFilter($query, $health);
-            $counts[$health] = $query->count();
+        $counts = array_fill_keys(self::healthOptions(), 0);
+        $counts[self::SYNC_MISSING] = 0;
+        $counts[self::SYNC_OWNER_MISMATCH] = 0;
+        $counts['total'] = $rows->count();
+
+        foreach ($rows as $row) {
+            $activity = $inboundActivity[(int) $row->tenant_owner_id] ?? null;
+            $health = $this->resolveHealth($row, $activity->last_inbound_at ?? null);
+            $counts[$health]++;
+
+            $sync = $this->resolveSync($row);
+            if (array_key_exists($sync, $counts)) {
+                $counts[$sync]++;
+            }
         }
-
-        foreach ([self::SYNC_MISSING, self::SYNC_OWNER_MISMATCH] as $sync) {
-            $query = $this->baseQuery();
-            $this->applySyncFilter($query, $sync);
-            $counts[$sync] = $query->count();
-        }
-
-        $counts['total'] = $this->baseQuery()->count();
 
         return $counts;
+    }
+
+    /**
+     * Latest inbound message per tenant for summary classification.
+     *
+     * @param  array<int|string|null>  $tenantOwnerIds
+     * @return array<int,object>
+     */
+    private function inboundActivityFor(array $tenantOwnerIds): array
+    {
+        $ids = collect($tenantOwnerIds)
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($ids === []) {
+            return [];
+        }
+
+        return $this->inboundActivityQuery()
+            ->whereIn('user_id', $ids)
+            ->get()
+            ->keyBy(fn ($row) => (int) $row->user_id)
+            ->all();
+    }
+
+    private function inboundActivityQuery(): Builder
+    {
+        return DB::table('messages')
+            ->where('direction', 'inbound')
+            ->groupBy('user_id')
+            ->select([
+                'user_id',
+                DB::raw('MAX(created_at) as last_inbound_at'),
+            ]);
     }
 
     private function isLinked(object $row): bool

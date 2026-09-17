@@ -28,10 +28,16 @@ class WhatsappNumberDiagnoseActionTest extends TestCase
 
     protected function refreshTestDatabase(): void
     {
+        if (! $this->app->environment('testing') || DB::connection()->getDriverName() !== 'sqlite') {
+            throw new \LogicException('WhatsApp diagnostics action tests require APP_ENV=testing with SQLite.');
+        }
+
         if (! RefreshDatabaseState::$migrated) {
-            if (! Schema::hasTable('whatsapp_users') || ! Schema::hasTable('users')) {
+            if (! Schema::hasTable('whatsapp_users')
+                || ! Schema::hasTable('users')
+                || ! Schema::hasTable('wa_numbers')) {
                 $this->markTestSkipped(
-                    'taearif_testing needs core tables (users, whatsapp_users). Import the application schema into taearif_testing.'
+                    'The isolated SQLite database needs users, whatsapp_users, and wa_numbers tables.'
                 );
             }
 
@@ -355,5 +361,47 @@ class WhatsappNumberDiagnoseActionTest extends TestCase
         $response->assertDontSee(self::TEST_ACCESS_TOKEN, false);
         $response->assertDontSee(substr(self::TEST_ACCESS_TOKEN, 0, 12), false);
         $response->assertDontSee(substr(self::TEST_ACCESS_TOKEN, -12), false);
+    }
+
+    /** @test */
+    public function eligible_waba_mismatch_renders_a_guarded_reconciliation_form(): void
+    {
+        $this->ensureAdminViewData();
+
+        $tenantId = $this->createTenant();
+        $phoneId = 'action-reconcile-phone-id';
+        $numberId = $this->createNumber($tenantId, [
+            'phone_id' => $phoneId,
+            'access_token' => self::TEST_ACCESS_TOKEN,
+            'waba_id' => 'stored-waba',
+            'token_expires_at' => now()->addDays(30),
+        ]);
+
+        Http::fake([
+            'graph.facebook.com/v20.0/debug_token*' => Http::response($this->debugTokenResponse([
+                'data' => [
+                    'granular_scopes' => [[
+                        'scope' => 'whatsapp_business_management',
+                        'target_ids' => ['verified-waba'],
+                    ]],
+                ],
+            ])),
+            'graph.facebook.com/v20.0/verified-waba/phone_numbers*' => Http::response(
+                $this->phoneNumbersResponse([['id' => $phoneId]])
+            ),
+        ]);
+
+        $admin = $this->createAdmin();
+        $this->withoutAdminMiddleware();
+
+        $response = $this->actingAs($admin, 'admin')
+            ->followingRedirects()
+            ->post(route('admin.whatsapp-numbers.monitor.diagnose', $numberId));
+
+        $response->assertOk();
+        $response->assertSee(__('Reconcile with Meta'), false);
+        $response->assertSee(__('Type RECONCILE to confirm'), false);
+        $response->assertSee(route('admin.whatsapp-numbers.monitor.reconcile-waba', $numberId), false);
+        $response->assertDontSee(self::TEST_ACCESS_TOKEN, false);
     }
 }

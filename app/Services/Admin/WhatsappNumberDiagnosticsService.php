@@ -16,6 +16,10 @@ class WhatsappNumberDiagnosticsService
     private const STATUS_FAIL = 'fail';
     private const STATUS_SKIPPED = 'skipped';
 
+    private const RECONCILIATION_ELIGIBLE = 'eligible';
+    private const RECONCILIATION_NOT_NEEDED = 'not_needed';
+    private const RECONCILIATION_BLOCKED = 'blocked';
+
     /** @var array<string,int> */
     private const STATUS_RANK = [
         self::STATUS_FAIL => 4,
@@ -35,7 +39,7 @@ class WhatsappNumberDiagnosticsService
 
         $row = DB::table('whatsapp_users')
             ->where('id', $whatsappUserId)
-            ->first(['id', 'access_token', 'token_expires_at', 'waba_id', 'phone_id']);
+            ->first(['id', 'user_id', 'status', 'access_token', 'token_expires_at', 'waba_id', 'phone_id']);
 
         if ($row === null) {
             return [
@@ -48,6 +52,7 @@ class WhatsappNumberDiagnosticsService
                     ),
                 ],
                 'meta_phone_numbers' => [],
+                'reconciliation' => $this->blockedReconciliation(null, 'not_found'),
                 'summary' => self::STATUS_FAIL,
                 'checked_at' => $checkedAt,
             ];
@@ -103,6 +108,7 @@ class WhatsappNumberDiagnosticsService
             return [
                 'checks' => $checks,
                 'meta_phone_numbers' => $metaPhoneNumbers,
+                'reconciliation' => $this->blockedReconciliation($row, $tokenPresent ? 'app_token_missing' : 'token_missing'),
                 'summary' => $this->resolveSummary($checks),
                 'checked_at' => $checkedAt,
             ];
@@ -139,37 +145,44 @@ class WhatsappNumberDiagnosticsService
             return [
                 'checks' => $checks,
                 'meta_phone_numbers' => $metaPhoneNumbers,
+                'reconciliation' => $this->blockedReconciliation($row, 'token_debug_failed'),
                 'summary' => $this->resolveSummary($checks),
                 'checked_at' => $checkedAt,
             ];
         }
 
-        $checks[] = $this->buildTokenExpiryCheck($debugResponse, $row->token_expires_at);
-        $checks[] = $this->buildWabaIdMatchCheck($debugResponse, $row->waba_id);
+        $tokenValid = (bool) ($debugResponse['data']['is_valid'] ?? false);
+        $expiryCheck = $this->buildTokenExpiryCheck($debugResponse, $row->token_expires_at);
+        $checks[] = $expiryCheck;
 
-        $tokenWabaId = $this->metaGraph->extractWabaIdFromDebugToken($debugResponse);
-        $wabaForPhones = $tokenWabaId ?: trim((string) ($row->waba_id ?? ''));
+        $tokenWabaIds = $this->metaGraph->extractWabaIdsFromDebugToken($debugResponse);
+        $phoneId = trim((string) ($row->phone_id ?? ''));
+        $discovery = $tokenValid
+            ? $this->discoverPhoneOwnership($accessToken, $tokenWabaIds, $phoneId)
+            : [
+                'check' => $this->skippedGraphCheck(
+                    'phone_id_known_to_meta',
+                    __('Skipped because Meta reports the access token is invalid.')
+                ),
+                'meta_phone_numbers' => [],
+                'matched_waba_ids' => [],
+                'failed_waba_ids' => [],
+                'verified_waba_id' => null,
+            ];
 
-        if ($wabaForPhones === '') {
-            $checks[] = $this->makeCheck(
-                'phone_id_known_to_meta',
-                self::STATUS_SKIPPED,
-                __('Phone number known to Meta'),
-                __('Skipped because no WhatsApp Business Account id is available from the token or database.')
-            );
-        } else {
-            $phoneCheck = $this->buildPhoneIdKnownCheck(
-                $accessToken,
-                $wabaForPhones,
-                trim((string) ($row->phone_id ?? ''))
-            );
-            $checks[] = $phoneCheck['check'];
-            $metaPhoneNumbers = $phoneCheck['meta_phone_numbers'];
-        }
+        $checks[] = $this->buildWabaIdMatchCheck($row->waba_id, $tokenWabaIds, $discovery);
+        $checks[] = $discovery['check'];
+        $metaPhoneNumbers = $discovery['meta_phone_numbers'];
+        $reconciliation = $this->buildReconciliation(
+            $row,
+            $discovery,
+            $tokenValid && ($expiryCheck['status'] ?? self::STATUS_FAIL) !== self::STATUS_FAIL
+        );
 
         return [
             'checks' => $checks,
             'meta_phone_numbers' => $metaPhoneNumbers,
+            'reconciliation' => $reconciliation,
             'summary' => $this->resolveSummary($checks),
             'checked_at' => $checkedAt,
         ];
@@ -316,15 +329,15 @@ class WhatsappNumberDiagnosticsService
     }
 
     /**
-     * @param  array<string,mixed>  $debugResponse
-     * @return array{key:string,status:string,label:string,detail:string}
+     * @param  array<int,string>  $tokenWabaIds
+     * @param  array<string,mixed>  $discovery
      */
-    private function buildWabaIdMatchCheck(array $debugResponse, $storedWabaId): array
+    private function buildWabaIdMatchCheck($storedWabaId, array $tokenWabaIds, array $discovery): array
     {
-        $tokenWabaId = $this->metaGraph->extractWabaIdFromDebugToken($debugResponse);
         $stored = trim((string) ($storedWabaId ?? ''));
+        $verified = (string) ($discovery['verified_waba_id'] ?? '');
 
-        if ($tokenWabaId === null || $tokenWabaId === '') {
+        if ($tokenWabaIds === []) {
             return $this->makeCheck(
                 'waba_id_match',
                 self::STATUS_FAIL,
@@ -333,23 +346,32 @@ class WhatsappNumberDiagnosticsService
             );
         }
 
+        if ($verified === '') {
+            return $this->makeCheck(
+                'waba_id_match',
+                self::STATUS_FAIL,
+                __('WABA id match'),
+                __('A unique WABA could not be verified from the stored phone ID.')
+            );
+        }
+
         if ($stored === '') {
             return $this->makeCheck(
                 'waba_id_match',
                 self::STATUS_WARN,
                 __('WABA id match'),
-                __('Token WABA id :token_waba is not stored locally and can be backfilled.', [
-                    'token_waba' => $tokenWabaId,
+                __('Verified WABA id :verified_waba is not stored locally and can be reconciled.', [
+                    'verified_waba' => $verified,
                 ])
             );
         }
 
-        if ($stored === $tokenWabaId) {
+        if ($stored === $verified) {
             return $this->makeCheck(
                 'waba_id_match',
                 self::STATUS_OK,
                 __('WABA id match'),
-                __('Stored waba_id matches the token WABA id (:waba).', ['waba' => $stored])
+                __('Stored waba_id matches the WABA that owns this phone (:waba).', ['waba' => $stored])
             );
         }
 
@@ -357,95 +379,107 @@ class WhatsappNumberDiagnosticsService
             'waba_id_match',
             self::STATUS_FAIL,
             __('WABA id match'),
-            __('Stored waba_id (:stored) differs from token WABA id (:token).', [
+            __('Stored waba_id (:stored) differs from the WABA verified for this phone (:verified).', [
                 'stored' => $stored,
-                'token' => $tokenWabaId,
+                'verified' => $verified,
             ])
         );
     }
 
     /**
-     * @return array{check:array{key:string,status:string,label:string,detail:string},meta_phone_numbers:array<int,array<string,string|null>>}
+     * @param  array<int,string>  $wabaIds
+     * @return array<string,mixed>
      */
-    private function buildPhoneIdKnownCheck(string $accessToken, string $wabaId, string $phoneId): array
+    private function discoverPhoneOwnership(string $accessToken, array $wabaIds, string $phoneId): array
     {
-        try {
-            $response = $this->metaGraph->listPhoneNumbers($accessToken, $wabaId);
-        } catch (\Throwable $e) {
-            return [
-                'check' => $this->makeCheck(
-                    'phone_id_known_to_meta',
-                    self::STATUS_FAIL,
-                    __('Phone number known to Meta'),
-                    __('Meta Graph phone_numbers request failed: :message', [
-                        'message' => $this->safeExceptionMessage($e),
-                    ])
-                ),
-                'meta_phone_numbers' => [],
-            ];
-        }
+        $metaPhoneNumbers = [];
+        $matchedWabaIds = [];
+        $failedWabaIds = [];
 
-        $metaPhoneNumbers = $this->normalizePhoneNumbers($response);
+        foreach ($wabaIds as $wabaId) {
+            try {
+                $response = $this->metaGraph->listPhoneNumbers($accessToken, $wabaId);
+                $phones = $this->normalizePhoneNumbers($response, $wabaId);
+                $metaPhoneNumbers = array_merge($metaPhoneNumbers, $phones);
 
-        if ($metaPhoneNumbers === []) {
-            return [
-                'check' => $this->makeCheck(
-                    'phone_id_known_to_meta',
-                    self::STATUS_WARN,
-                    __('Phone number known to Meta'),
-                    __('Meta returned no phone numbers for WABA :waba.', ['waba' => $wabaId])
-                ),
-                'meta_phone_numbers' => $metaPhoneNumbers,
-            ];
-        }
-
-        if ($phoneId === '') {
-            return [
-                'check' => $this->makeCheck(
-                    'phone_id_known_to_meta',
-                    self::STATUS_FAIL,
-                    __('Phone number known to Meta'),
-                    __('No phone_id is stored locally, but Meta lists :count phone number(s).', [
-                        'count' => (string) count($metaPhoneNumbers),
-                    ])
-                ),
-                'meta_phone_numbers' => $metaPhoneNumbers,
-            ];
-        }
-
-        foreach ($metaPhoneNumbers as $entry) {
-            if (($entry['id'] ?? '') === $phoneId) {
-                return [
-                    'check' => $this->makeCheck(
-                        'phone_id_known_to_meta',
-                        self::STATUS_OK,
-                        __('Phone number known to Meta'),
-                        __('Stored phone_id matches a phone number returned by Meta.')
-                    ),
-                    'meta_phone_numbers' => $metaPhoneNumbers,
-                ];
+                foreach ($phones as $phone) {
+                    if ($phoneId !== '' && ($phone['id'] ?? '') === $phoneId) {
+                        $matchedWabaIds[$wabaId] = $wabaId;
+                    }
+                }
+            } catch (\Throwable $e) {
+                $failedWabaIds[$wabaId] = $wabaId;
             }
         }
 
-        return [
-            'check' => $this->makeCheck(
+        $matchedWabaIds = array_values($matchedWabaIds);
+        $failedWabaIds = array_values($failedWabaIds);
+        $verifiedWabaId = count($matchedWabaIds) === 1 && $failedWabaIds === []
+            ? $matchedWabaIds[0]
+            : null;
+
+        if ($wabaIds === []) {
+            $check = $this->makeCheck(
+                'phone_id_known_to_meta',
+                self::STATUS_SKIPPED,
+                __('Phone number known to Meta'),
+                __('Skipped because the token grants no WhatsApp Business Account IDs.')
+            );
+        } elseif ($failedWabaIds !== []) {
+            $check = $this->makeCheck(
                 'phone_id_known_to_meta',
                 self::STATUS_FAIL,
                 __('Phone number known to Meta'),
-                __('Stored phone_id :phone_id was not found among Meta phone numbers for WABA :waba.', [
-                    'phone_id' => $phoneId,
-                    'waba' => $wabaId,
+                __('Meta phone lookup was incomplete for :count WABA account(s). No repair is allowed.', [
+                    'count' => (string) count($failedWabaIds),
                 ])
-            ),
+            );
+        } elseif ($phoneId === '') {
+            $check = $this->makeCheck(
+                'phone_id_known_to_meta',
+                self::STATUS_FAIL,
+                __('Phone number known to Meta'),
+                __('No phone_id is stored locally, so WABA ownership cannot be verified.')
+            );
+        } elseif (count($matchedWabaIds) === 1) {
+            $check = $this->makeCheck(
+                'phone_id_known_to_meta',
+                self::STATUS_OK,
+                __('Phone number known to Meta'),
+                __('Stored phone_id belongs to exactly one accessible WABA (:waba).', [
+                    'waba' => $matchedWabaIds[0],
+                ])
+            );
+        } elseif ($matchedWabaIds === []) {
+            $check = $this->makeCheck(
+                'phone_id_known_to_meta',
+                self::STATUS_FAIL,
+                __('Phone number known to Meta'),
+                __('Stored phone_id was not found in any WABA accessible to this token.')
+            );
+        } else {
+            $check = $this->makeCheck(
+                'phone_id_known_to_meta',
+                self::STATUS_FAIL,
+                __('Phone number known to Meta'),
+                __('Stored phone_id matched more than one WABA. Automatic repair is blocked.')
+            );
+        }
+
+        return [
+            'check' => $check,
             'meta_phone_numbers' => $metaPhoneNumbers,
+            'matched_waba_ids' => $matchedWabaIds,
+            'failed_waba_ids' => $failedWabaIds,
+            'verified_waba_id' => $verifiedWabaId,
         ];
     }
 
     /**
      * @param  array<string,mixed>  $response
-     * @return array<int,array{id:string,display_phone_number:string,verified_name:string,quality_rating:string}>
+     * @return array<int,array{id:string,waba_id:string,display_phone_number:string,verified_name:string,quality_rating:string}>
      */
-    private function normalizePhoneNumbers(array $response): array
+    private function normalizePhoneNumbers(array $response, string $wabaId): array
     {
         $items = $response['data'] ?? [];
 
@@ -462,6 +496,7 @@ class WhatsappNumberDiagnosticsService
 
             $normalized[] = [
                 'id' => (string) ($item['id'] ?? ''),
+                'waba_id' => $wabaId,
                 'display_phone_number' => (string) ($item['display_phone_number'] ?? ''),
                 'verified_name' => (string) ($item['verified_name'] ?? ''),
                 'quality_rating' => (string) ($item['quality_rating'] ?? ''),
@@ -469,6 +504,106 @@ class WhatsappNumberDiagnosticsService
         }
 
         return $normalized;
+    }
+
+    /**
+     * @param  array<string,mixed>  $discovery
+     * @return array<string,mixed>
+     */
+    private function buildReconciliation(object $row, array $discovery, bool $tokenUsable): array
+    {
+        $base = [
+            'state' => self::RECONCILIATION_BLOCKED,
+            'reason_code' => 'unverified',
+            'stored_waba_id' => trim((string) ($row->waba_id ?? '')),
+            'verified_waba_id' => $discovery['verified_waba_id'] ?? null,
+            'phone_id' => trim((string) ($row->phone_id ?? '')),
+        ];
+
+        if ((string) ($row->status ?? '') !== 'active') {
+            $base['reason_code'] = 'number_not_active';
+
+            return $base;
+        }
+
+        if ($this->hasWaNumberOwnerMismatch($row)) {
+            $base['reason_code'] = 'owner_mismatch';
+
+            return $base;
+        }
+
+        if (! $tokenUsable) {
+            $base['reason_code'] = 'token_not_usable';
+
+            return $base;
+        }
+
+        if (($discovery['failed_waba_ids'] ?? []) !== []) {
+            $base['reason_code'] = 'meta_lookup_incomplete';
+
+            return $base;
+        }
+
+        $matches = $discovery['matched_waba_ids'] ?? [];
+
+        if ($base['phone_id'] === '') {
+            $base['reason_code'] = 'phone_id_missing';
+
+            return $base;
+        }
+
+        if (count($matches) === 0) {
+            $base['reason_code'] = 'phone_not_found';
+
+            return $base;
+        }
+
+        if (count($matches) !== 1 || empty($base['verified_waba_id'])) {
+            $base['reason_code'] = 'ambiguous_phone_ownership';
+
+            return $base;
+        }
+
+        if ($base['stored_waba_id'] === (string) $base['verified_waba_id']) {
+            $base['state'] = self::RECONCILIATION_NOT_NEEDED;
+            $base['reason_code'] = 'already_matches';
+
+            return $base;
+        }
+
+        $base['state'] = self::RECONCILIATION_ELIGIBLE;
+        $base['reason_code'] = 'unique_phone_match';
+
+        return $base;
+    }
+
+    private function hasWaNumberOwnerMismatch(object $row): bool
+    {
+        $phoneId = trim((string) ($row->phone_id ?? ''));
+
+        if ($phoneId === '') {
+            return false;
+        }
+
+        return DB::table('wa_numbers')
+            ->where('provider', 'meta')
+            ->where('phone_number_id', $phoneId)
+            ->where('user_id', '<>', (int) ($row->user_id ?? 0))
+            ->exists();
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function blockedReconciliation(?object $row, string $reasonCode): array
+    {
+        return [
+            'state' => self::RECONCILIATION_BLOCKED,
+            'reason_code' => $reasonCode,
+            'stored_waba_id' => trim((string) ($row->waba_id ?? '')),
+            'verified_waba_id' => null,
+            'phone_id' => trim((string) ($row->phone_id ?? '')),
+        ];
     }
 
     /**
