@@ -9,7 +9,9 @@ class WhatsappUpdateEmployeeRequest extends BaseApiFormRequest
 {
     public function authorize()
     {
-        return true;
+        $user = auth('sanctum')->user() ?? auth()->user();
+
+        return $user instanceof \App\Models\User && !$user->isEmployee();
     }
 
     public function rules()
