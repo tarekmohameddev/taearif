@@ -129,6 +129,23 @@ class DomainProvisioningService
                 $ledger['internal_code'] = $exception->internalCode;
             } else {
                 $ledger['internal_code'] = $exception->internalCode;
+
+                // Account-level access can be forbidden while the hostname is
+                // attached to this project and exposes a project ownership TXT
+                // challenge. Recover that read-only state before returning a
+                // generic provider error so the required DNS record is visible.
+                if ($exception->internalCode === VercelDomainException::CODE_UNAUTHORIZED) {
+                    try {
+                        $freshResult = $this->buildResultFromFreshState($apex, $dnsMode, $ledger);
+                        if (($freshResult['health'] ?? null) === 'ownership_required') {
+                            return $freshResult;
+                        }
+                    } catch (\Throwable) {
+                        // Keep the original guarded failure when read-only recovery
+                        // cannot establish a current project verification challenge.
+                    }
+                }
+
                 $this->rollbackCreatedResources($apex, $ledger);
 
                 $health = $this->exceptionHealth($exception);
@@ -445,19 +462,44 @@ class DomainProvisioningService
             'configuredBy' => null,
             'recommendedIPv4' => [],
             'recommendedCNAME' => [],
+            'recommendedIPv4Groups' => [],
+            'recommendedCNAMEGroups' => [],
         ];
         $ownershipChallenge = null;
+        $ownershipChallenges = [];
         $providerError = false;
 
         if ($refreshDirectReads && ($projectDomain !== null || $apexInventory !== null)) {
-            try {
-                $verification = $this->client->getDomainVerification($apex);
-                $ownershipChallenge = $this->extractOwnershipChallenge($verification);
-            } catch (VercelDomainException $exception) {
-                if ($this->isTransportAmbiguity($exception)) {
-                    $providerError = true;
+            $verificationTargets = [
+                ['scope' => 'apex', 'hostname' => $apex, 'present' => $projectDomain !== null || $apexInventory !== null],
+                ['scope' => 'www', 'hostname' => $www, 'present' => $wwwInventory !== null],
+            ];
+
+            foreach ($verificationTargets as $target) {
+                if (! $target['present']) {
+                    continue;
+                }
+
+                try {
+                    $verification = $this->client->getDomainVerification($target['hostname']);
+                    $ownershipChallenges = array_merge(
+                        $ownershipChallenges,
+                        $this->extractOwnershipChallenges(
+                            $verification,
+                            $target['scope'],
+                            $target['hostname']
+                        )
+                    );
+                } catch (VercelDomainException $exception) {
+                    if ($this->isTransportAmbiguity($exception)) {
+                        $providerError = true;
+                        break;
+                    }
                 }
             }
+
+            $ownershipChallenges = $this->uniqueOwnershipChallenges($ownershipChallenges);
+            $ownershipChallenge = $this->legacyOwnershipChallenge($ownershipChallenges[0] ?? null);
 
             if (! $providerError) {
                 try {
@@ -492,21 +534,30 @@ class DomainProvisioningService
 
         $apexAttached = $projectDomain !== null || $apexInventory !== null;
         $apexVerified = $apexAttached && ! empty(($projectDomain ?? $apexInventory)['verified']);
+        $recommendedIpv4Groups = DomainDnsRecommendationService::normalizeGroups(
+            $domainConfig['recommendedIPv4Groups'] ?? [],
+            $domainConfig['recommendedIPv4'] ?? []
+        );
+        $recommendedCnameGroups = DomainDnsRecommendationService::normalizeGroups(
+            $domainConfig['recommendedCNAMEGroups'] ?? [],
+            $domainConfig['recommendedCNAME'] ?? []
+        );
+
         if ($dnsMode === ApiDomainSetting::DNS_MODE_EXTERNAL_DNS) {
             $externalDns = ApiDomainSetting::externalDnsInstructions();
-            // Accept both published instruction targets and Vercel's live recommendations.
-            $recommendedIpv4 = $this->normalizeRecommendationValues(array_merge(
-                [$externalDns['apex_record_value']],
-                $domainConfig['recommendedIPv4'] ?? []
-            ));
-            $recommendedCname = $this->normalizeRecommendationValues(array_merge(
-                [$externalDns['www_record_value']],
-                $domainConfig['recommendedCNAME'] ?? []
-            ));
-        } else {
-            $recommendedIpv4 = $this->normalizeRecommendationValues($domainConfig['recommendedIPv4'] ?? []);
-            $recommendedCname = $this->normalizeRecommendationValues($domainConfig['recommendedCNAME'] ?? []);
+            // Keep configured platform targets as accepted fallbacks, but never
+            // merge them into Vercel's higher-ranked provider group.
+            $recommendedIpv4Groups = DomainDnsRecommendationService::withFallback(
+                $recommendedIpv4Groups,
+                $externalDns['apex_record_value']
+            );
+            $recommendedCnameGroups = DomainDnsRecommendationService::withFallback(
+                $recommendedCnameGroups,
+                $externalDns['www_record_value']
+            );
         }
+        $recommendedIpv4 = DomainDnsRecommendationService::flatten($recommendedIpv4Groups);
+        $recommendedCname = DomainDnsRecommendationService::flatten($recommendedCnameGroups);
         $dnsEvidence = $this->dnsRecordService->inspect($apex, $recommendedIpv4, $recommendedCname);
         $wwwCertificate = $this->client->findCoveringCertificate($www, $certificateInventory);
         $wwwSslReady = $wwwCertificate !== null && $this->client->isCertificateReady($wwwCertificate);
@@ -522,10 +573,13 @@ class DomainProvisioningService
             'www_present' => $wwwInventory !== null,
             'www_redirect_correct' => $this->isWwwRedirectCorrect($wwwInventory, $apex),
             'ownership_challenge' => $ownershipChallenge,
+            'ownership_challenges' => $ownershipChallenges,
             'dns_misconfigured' => (bool) ($domainConfig['misconfigured'] ?? false),
             'configured_by' => $domainConfig['configuredBy'] ?? null,
             'recommended_ipv4' => $recommendedIpv4,
             'recommended_cname' => $recommendedCname,
+            'recommended_ipv4_groups' => $recommendedIpv4Groups,
+            'recommended_cname_groups' => $recommendedCnameGroups,
             'observed_nameservers' => $observedNameservers,
             'nameservers_ok' => $nameserversOk,
             'nameserver_check_enabled' => $checkNameservers,
@@ -688,10 +742,12 @@ class DomainProvisioningService
 
     /**
      * @param  list<array<string, mixed>>  $verification
-     * @return array{type: string, domain: string, value: string, reason?: string}|null
+     * @return list<array{scope: string, hostname: string, type: string, domain: string, value: string, reason?: string}>
      */
-    private function extractOwnershipChallenge(array $verification): ?array
+    private function extractOwnershipChallenges(array $verification, string $scope, string $hostname): array
     {
+        $challenges = [];
+
         foreach ($verification as $item) {
             if (! is_array($item)) {
                 continue;
@@ -707,7 +763,9 @@ class DomainProvisioningService
                 continue;
             }
 
-            return array_filter([
+            $challenges[] = array_filter([
+                'scope' => $scope,
+                'hostname' => strtolower($hostname),
                 'type' => 'txt',
                 'domain' => strtolower($domain),
                 'value' => $value,
@@ -715,7 +773,42 @@ class DomainProvisioningService
             ], fn ($value) => $value !== null && $value !== '');
         }
 
-        return null;
+        return $challenges;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $challenges
+     * @return list<array<string, mixed>>
+     */
+    private function uniqueOwnershipChallenges(array $challenges): array
+    {
+        $unique = [];
+        foreach ($challenges as $challenge) {
+            $key = strtolower((string) ($challenge['type'] ?? 'txt'))
+                . '|' . strtolower((string) ($challenge['domain'] ?? ''))
+                . '|' . (string) ($challenge['value'] ?? '');
+            $unique[$key] = $challenge;
+        }
+
+        return array_values($unique);
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $challenge
+     * @return array{type: string, domain: string, value: string, reason?: string}|null
+     */
+    private function legacyOwnershipChallenge(?array $challenge): ?array
+    {
+        if ($challenge === null) {
+            return null;
+        }
+
+        return array_filter([
+            'type' => $challenge['type'] ?? null,
+            'domain' => $challenge['domain'] ?? null,
+            'value' => $challenge['value'] ?? null,
+            'reason' => $challenge['reason'] ?? null,
+        ], fn ($value) => $value !== null && $value !== '');
     }
 
     /**
@@ -830,6 +923,7 @@ class DomainProvisioningService
             'www_present' => (bool) ($state['www_present'] ?? false),
             'www_redirect_correct' => (bool) ($state['www_redirect_correct'] ?? false),
             'ownership_challenge' => $state['ownership_challenge'] ?? null,
+            'ownership_challenges' => $state['ownership_challenges'] ?? [],
             'observed_nameservers' => $state['observed_nameservers'] ?? [],
             'nameservers_ok' => (bool) ($state['nameservers_ok'] ?? false),
             'nameserver_check_enabled' => (bool) ($state['nameserver_check_enabled'] ?? true),
@@ -837,6 +931,8 @@ class DomainProvisioningService
             'configured_by' => $state['configured_by'] ?? null,
             'recommended_ipv4' => $state['recommended_ipv4'] ?? [],
             'recommended_cname' => $state['recommended_cname'] ?? [],
+            'recommended_ipv4_groups' => $state['recommended_ipv4_groups'] ?? [],
+            'recommended_cname_groups' => $state['recommended_cname_groups'] ?? [],
             'apex_records' => $state['apex_records'] ?? [],
             'www_records' => $state['www_records'] ?? [],
             'apex_matches_recommended' => $state['apex_matches_recommended'] ?? null,
@@ -1017,45 +1113,4 @@ class DomainProvisioningService
         return $this->healthPolicy->resolveDnsMode($row?->dns_mode);
     }
 
-    /**
-     * @param  list<string>|mixed  $values
-     * @return list<string>
-     */
-    private function normalizeRecommendationValues(mixed $values): array
-    {
-        if (! is_array($values)) {
-            $values = [$values];
-        }
-
-        $normalized = [];
-        foreach ($values as $value) {
-            if (is_array($value)) {
-                if (array_key_exists('value', $value)) {
-                    foreach ($this->normalizeRecommendationValues($value['value']) as $nested) {
-                        $normalized[] = $nested;
-                    }
-
-                    continue;
-                }
-
-                foreach ($value as $nested) {
-                    if (is_string($nested) && trim($nested) !== '') {
-                        $normalized[] = strtolower(rtrim(trim($nested), '.'));
-                    } elseif (is_array($nested)) {
-                        foreach ($this->normalizeRecommendationValues([$nested]) as $deep) {
-                            $normalized[] = $deep;
-                        }
-                    }
-                }
-
-                continue;
-            }
-
-            if (is_string($value) && trim($value) !== '') {
-                $normalized[] = strtolower(rtrim(trim($value), '.'));
-            }
-        }
-
-        return array_values(array_unique($normalized));
-    }
 }

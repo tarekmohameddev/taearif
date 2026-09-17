@@ -27,7 +27,11 @@ class StoreEmployeeRequest extends BaseApiFormRequest
             'role_ids' => ['array'],
             'role_ids.*' => ['integer', 'exists:api_roles,id'],
             'permissions' => ['array'],
-            'permissions.*' => ['string'],
+            'permissions.*' => [
+                'string',
+                Rule::exists('api_permissions', 'name')
+                    ->where(fn ($query) => $query->where('guard_name', 'sanctum')),
+            ],
         ], $this->employeeAssignmentRulesValidationRules(null));
     }
 }

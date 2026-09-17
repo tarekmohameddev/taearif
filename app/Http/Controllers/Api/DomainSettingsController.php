@@ -62,6 +62,7 @@ class DomainSettingsController extends Controller
                     'addedDate' => $domain->added_date?->format('Y-m-d'),
                     'dnsMode' => $this->dnsModeForDomain($domain),
                     'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+                    'ownershipVerification' => $this->ownershipVerificationForDomain($domain),
                     'www' => $this->domainWwwService->wwwPayload($domain),
                 ];
             }),
@@ -337,6 +338,7 @@ class DomainSettingsController extends Controller
                 'ssl' => $domain->ssl,
                 'addedDate' => $domain->added_date?->format('Y-m-d'),
                 'dnsMode' => $dnsMode,
+                'ownershipVerification' => $this->ownershipVerificationForDomain($domain),
                 'www' => $www,
             ],
             'verification' => [
@@ -350,6 +352,7 @@ class DomainSettingsController extends Controller
                 ),
             ],
             'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+            'ownershipVerification' => $this->ownershipVerificationForDomain($domain),
             'dnsMode' => $dnsMode,
             'diagnostics' => $this->buildDiagnostics($domain, $provisionResult, $syncResult, $apexAttachment),
         ], $outcomePayload), 201);
@@ -371,10 +374,7 @@ class DomainSettingsController extends Controller
         $resolvedAttachment = $provisioning['apex_attachment'] ?? $apexAttachment;
 
         $lastCheck = is_array($dnsRecords['last_check'] ?? null) ? $dnsRecords['last_check'] : [];
-        $ownershipChallenge = $lastCheck['ownership_challenge'] ?? null;
-        $verificationRecords = $this->sanitizeVerificationRecords(
-            is_array($ownershipChallenge) ? [$ownershipChallenge] : []
-        );
+        $verificationRecords = $this->sanitizeVerificationRecords($domain->ownershipChallenges());
         $verificationState = match (true) {
             (bool) ($syncResult['vercel_verified'] ?? false) && $domain->status === 'active' => 'verified',
             $domain->status === 'failed' => 'failed',
@@ -445,6 +445,8 @@ class DomainSettingsController extends Controller
 
             $record = array_filter([
                 'type' => isset($item['type']) ? (string) $item['type'] : null,
+                'scope' => isset($item['scope']) ? (string) $item['scope'] : null,
+                'hostname' => isset($item['hostname']) ? strtolower((string) $item['hostname']) : null,
                 'domain' => isset($item['domain']) ? strtolower((string) $item['domain']) : null,
                 'value' => isset($item['value']) ? (string) $item['value'] : null,
                 'reason' => isset($item['reason']) ? (string) $item['reason'] : null,
@@ -645,7 +647,90 @@ class DomainSettingsController extends Controller
             'addedDate' => $domain->added_date?->format('Y-m-d'),
             'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
             'dnsMode' => $this->dnsModeForDomain($domain),
+            'ownershipVerification' => $this->ownershipVerificationForDomain($domain),
             'www' => $this->domainWwwService->wwwPayload($domain),
+        ]);
+    }
+
+    /**
+     * Detach apex+www from Vercel (when enabled), then delete the tenant-owned domain row.
+     * Accepts confirm_domain for explicit confirmation while remaining compatible with
+     * older tenant clients that did not send a request body. Fails closed if provider
+     * detach fails.
+     */
+    public function destroy(Request $request, $id)
+    {
+        $request->validate([
+            'confirm_domain' => ['sometimes', 'string', 'max:255'],
+        ]);
+
+        $user = Auth::user();
+        $domain = ApiDomainSetting::query()
+            ->whereKey($id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        // The tenant dashboard shipped DELETE requests without a JSON body before
+        // this endpoint gained provider-detach protection. Preserve that contract,
+        // but only derive the confirmation after tenant ownership is established.
+        if (! $request->has('confirm_domain')) {
+            $request->merge(['confirm_domain' => (string) $domain->custom_name]);
+        }
+
+        try {
+            $this->mutationGuard->assertCanMutate($request, (string) $domain->custom_name);
+        } catch (VercelDomainException $exception) {
+            if ($exception->internalCode === VercelDomainException::CODE_CONFIRMATION_REQUIRED) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'CONFIRMATION_REQUIRED',
+                    'message' => $exception->getMessage(),
+                    'errors' => [
+                        [
+                            'field' => 'confirm_domain',
+                            'message' => $exception->getMessage(),
+                        ],
+                    ],
+                ], 422);
+            }
+
+            return $this->mapMutationGuardFailure($exception);
+        }
+
+        if (! $this->detachFromVercel($domain)) {
+            return response()->json([
+                'success' => false,
+                'code' => 'HOSTING_PROVIDER_UNAVAILABLE',
+                'message' => 'Failed to remove domain from hosting provider. Please try again shortly.',
+            ], 503);
+        }
+
+        $this->deleteDomainRow($request, $domain);
+        $this->vercelCache->invalidateAdminCaches();
+
+        $domains = $user->domains()
+            ->select(['id', 'custom_name', 'dns_mode', 'dns_records', 'status', 'primary', 'ssl', 'added_date'])
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Domain deleted successfully',
+            'data' => [
+                'domains' => $domains->map(function ($domain) {
+                    return [
+                        'id' => $domain->id,
+                        'custom_name' => $domain->custom_name,
+                        'status' => $domain->status,
+                        'primary' => $domain->primary,
+                        'ssl' => $domain->ssl,
+                        'addedDate' => $domain->added_date?->format('Y-m-d'),
+                        'dnsMode' => $this->dnsModeForDomain($domain),
+                        'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+                        'ownershipVerification' => $this->ownershipVerificationForDomain($domain),
+                        'www' => $this->domainWwwService->wwwPayload($domain),
+                    ];
+                }),
+            ],
         ]);
     }
 
@@ -785,6 +870,7 @@ class DomainSettingsController extends Controller
                     'www' => $this->domainWwwService->wwwPayload($domain),
                 ],
                 'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+                'ownershipVerification' => $this->ownershipVerificationForDomain($domain),
                 'dnsMode' => $this->dnsModeForDomain($domain),
             ], $outcomePayload));
         }
@@ -802,6 +888,7 @@ class DomainSettingsController extends Controller
                     'www' => $this->domainWwwService->wwwPayload($domain),
                 ],
                 'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+                'ownershipVerification' => $this->ownershipVerificationForDomain($domain),
                 'dnsMode' => $this->dnsModeForDomain($domain),
             ], $outcomePayload), 422);
         }
@@ -818,6 +905,7 @@ class DomainSettingsController extends Controller
                 'www' => $this->domainWwwService->wwwPayload($domain),
             ],
             'dnsInstructions' => $this->dnsInstructionsForDomain($domain),
+            'ownershipVerification' => $this->ownershipVerificationForDomain($domain),
             'dnsMode' => $this->dnsModeForDomain($domain),
         ], $outcomePayload), 422);
     }
@@ -907,6 +995,47 @@ class DomainSettingsController extends Controller
     }
 
     /**
+     * Authenticated tenant-facing ownership state. Never expose this payload from
+     * public tenant-resolution endpoints.
+     *
+     * @return array{required: bool, state: string, action: string|null, strategy: string|null, records: list<array<string, string>>, checkedAt: string|null}
+     */
+    private function ownershipVerificationForDomain(ApiDomainSetting $domain): array
+    {
+        $dnsRecords = is_array($domain->dns_records) ? $domain->dns_records : [];
+        $lastCheck = is_array($dnsRecords['last_check'] ?? null) ? $dnsRecords['last_check'] : [];
+        $records = array_map(static function (array $challenge): array {
+            return array_filter([
+                'scope' => (string) ($challenge['scope'] ?? 'apex'),
+                'hostname' => (string) ($challenge['hostname'] ?? ''),
+                'type' => strtoupper((string) ($challenge['type'] ?? 'TXT')),
+                'name' => (string) ($challenge['domain'] ?? ''),
+                'value' => (string) ($challenge['value'] ?? ''),
+                'reason' => isset($challenge['reason']) ? (string) $challenge['reason'] : null,
+            ], fn ($value) => $value !== null && $value !== '');
+        }, $domain->ownershipChallenges());
+
+        // Vercel can require a separate TXT record for www even after the apex
+        // domain is verified, so any current challenge still needs user action.
+        $required = $records !== [];
+        $health = (string) ($lastCheck['health_code'] ?? 'unchecked');
+        $state = $required
+            ? 'ownership_required'
+            : ((bool) ($lastCheck['apex_verified'] ?? $lastCheck['vercel_verified'] ?? false)
+                ? 'verified'
+                : $health);
+
+        return [
+            'required' => $required,
+            'state' => $state,
+            'action' => $required ? 'add_ownership_txt' : null,
+            'strategy' => $required && count($records) > 1 ? 'sequential' : ($required ? 'single' : null),
+            'records' => $required ? array_values($records) : [],
+            'checkedAt' => isset($lastCheck['last_check_at']) ? (string) $lastCheck['last_check_at'] : null,
+        ];
+    }
+
+    /**
      * @param  \Illuminate\Support\Collection<int, ApiDomainSetting>  $domains
      * @return array<string, mixed>
      */
@@ -965,9 +1094,6 @@ class DomainSettingsController extends Controller
         $mode = $this->dnsModeForDomain($domain);
 
         if ($mode === ApiDomainSetting::DNS_MODE_EXTERNAL_DNS) {
-            $lastCheck = is_array($domain->dns_records['last_check'] ?? null)
-                ? $domain->dns_records['last_check']
-                : [];
             // Always use platform-standard A/@ and CNAME/www from config.
             // Stale/conflicting last_check recommended_ipv4 / recommended_cname must not override.
             $standard = ApiDomainSetting::externalDnsInstructions();
@@ -993,20 +1119,20 @@ class DomainSettingsController extends Controller
                 ],
             ];
 
-            $challenge = $lastCheck['ownership_challenge'] ?? null;
-            if (is_array($challenge)) {
-                $challengeName = trim((string) ($challenge['domain'] ?? ''));
-                $challengeValue = trim((string) ($challenge['value'] ?? ''));
-                if ($challengeName !== '' && $challengeValue !== '') {
-                    $instructions['ownership'] = [
-                        'required' => true,
-                        'record' => [
-                            'type' => 'TXT',
-                            'name' => $challengeName,
-                            'value' => $challengeValue,
-                        ],
-                    ];
-                }
+            $ownership = $this->ownershipVerificationForDomain($domain);
+            if ($ownership['required'] && $ownership['records'] !== []) {
+                $legacyRecord = $ownership['records'][0];
+                $instructions['ownership'] = [
+                    'required' => true,
+                    // Singular record is retained for deployed clients.
+                    'record' => [
+                        'type' => $legacyRecord['type'],
+                        'name' => $legacyRecord['name'],
+                        'value' => $legacyRecord['value'],
+                    ],
+                    'strategy' => $ownership['strategy'],
+                    'records' => $ownership['records'],
+                ];
             }
 
             return $instructions;
@@ -1082,5 +1208,80 @@ class DomainSettingsController extends Controller
                 'message' => $exception->getMessage() ?: 'Domain hosting is temporarily unavailable. Please try again shortly.',
             ], 503),
         };
+    }
+
+    /**
+     * After external detachment succeeds: lock tenant rows, delete, reassign primary.
+     */
+    private function deleteDomainRow(Request $request, ApiDomainSetting $domain): void
+    {
+        DB::transaction(function () use ($request, $domain) {
+            ApiDomainSetting::where('user_id', $domain->user_id)->lockForUpdate()->get();
+
+            $row = ApiDomainSetting::where('id', $domain->id)->lockForUpdate()->first();
+            if ($row === null) {
+                return;
+            }
+
+            $before = $this->domainActivitySnapshot($row);
+            $wasPrimary = (bool) $row->primary;
+            $id = $row->id;
+            $userId = $row->user_id;
+
+            $row->delete();
+
+            if ($wasPrimary) {
+                $replacement = ApiDomainSetting::where('user_id', $userId)
+                    ->preferredActive()
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($replacement) {
+                    $replacement->primary = true;
+                    $replacement->save();
+                }
+            }
+
+            TenantActivity::emit($request, 'domain.deleted', 'api_domains_settings', $id, $before, null);
+        });
+    }
+
+    /**
+     * @return array{custom_name: string, status: string, primary: bool, ssl: bool}
+     */
+    private function domainActivitySnapshot(ApiDomainSetting $domain): array
+    {
+        return [
+            'custom_name' => $this->vercel->normalizeApex((string) $domain->custom_name),
+            'status' => (string) $domain->status,
+            'primary' => (bool) $domain->primary,
+            'ssl' => (bool) $domain->ssl,
+        ];
+    }
+
+    /**
+     * Detach apex + www from Vercel. Fails closed: returns false so the caller
+     * keeps the row rather than orphaning the domain on the Vercel project.
+     */
+    private function detachFromVercel(ApiDomainSetting $domain): bool
+    {
+        if (! (bool) config('services.vercel.auto_attach_custom_domain', true) || ! $this->vercel->isConfigured()) {
+            return true;
+        }
+
+        try {
+            $this->vercel->removeApexAndWww((string) $domain->custom_name);
+        } catch (VercelDomainException|ConnectionException $e) {
+            Log::warning('Failed to remove domain from Vercel during tenant delete', [
+                'domain_id' => $domain->id,
+                'domain' => $domain->custom_name,
+                'error' => $e->getMessage(),
+                'exception' => $e::class,
+            ]);
+
+            return false;
+        }
+
+        return true;
     }
 }

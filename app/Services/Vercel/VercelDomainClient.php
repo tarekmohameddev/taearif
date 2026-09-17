@@ -708,12 +708,17 @@ class VercelDomainClient
 
         $body = $response->json() ?? [];
 
+        $recommendedIpv4 = $body['recommendedIPv4'] ?? ($body['aValues'] ?? []);
+        $recommendedCname = $body['recommendedCNAME'] ?? ($body['cnames'] ?? []);
+
         return [
             'misconfigured' => (bool) ($body['misconfigured'] ?? false),
             'configuredBy' => $body['configuredBy'] ?? null,
             'acceptedChallenges' => $body['acceptedChallenges'] ?? [],
-            'recommendedIPv4' => $body['recommendedIPv4'] ?? ($body['aValues'] ?? []),
-            'recommendedCNAME' => $body['recommendedCNAME'] ?? ($body['cnames'] ?? []),
+            'recommendedIPv4' => $recommendedIpv4,
+            'recommendedCNAME' => $recommendedCname,
+            'recommendedIPv4Groups' => DomainDnsRecommendationService::normalizeGroups($recommendedIpv4),
+            'recommendedCNAMEGroups' => DomainDnsRecommendationService::normalizeGroups($recommendedCname),
         ];
     }
 

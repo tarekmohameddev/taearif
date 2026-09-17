@@ -808,7 +808,7 @@ class AuthController extends Controller
                 $ownerId = (int) $user->id;
             }
 
-            $cacheKey = "user:profile:v2:{$user->id}:{$ownerId}";
+            $cacheKey = "user:profile:v3:{$user->id}:{$ownerId}";
             $cacheTtl = 3600; // 60 minutes
 
             if ($useOptimizations) {
@@ -1041,7 +1041,7 @@ class AuthController extends Controller
                   'whatsapp' => [
                       'quota' => $whatsappQuota,
                       'usage' => $owner->whatsapp_usage,
-                      'max_whatsapp_numbers' => (isset($membershipDetails['package']) ? $membershipDetails['package']['whatsapp_numbers_limit'] : 0),
+                      'max_whatsapp_numbers' => $whatsappQuota,
                       'is_over_limit' => $owner->whatsapp_usage >= $whatsappQuota,
                   ],
                   'employees' => [

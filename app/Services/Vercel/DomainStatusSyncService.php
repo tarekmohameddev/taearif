@@ -86,10 +86,7 @@ class DomainStatusSyncService
             $oldStatus,
             $oldSsl,
             $health,
-            $sslReady,
-            $applyFailureThreshold,
-            $consecutiveFailures,
-            $firstFailureAt
+            $sslReady
         );
 
         $checkSummary = array_merge($lastCheck, [
@@ -138,7 +135,14 @@ class DomainStatusSyncService
      */
     private function preserveDnsInstructionEvidence(array $checkSummary, array $previousCheck): array
     {
-        foreach (['recommended_ipv4', 'recommended_cname', 'apex_records', 'www_records'] as $key) {
+        foreach ([
+            'recommended_ipv4',
+            'recommended_cname',
+            'recommended_ipv4_groups',
+            'recommended_cname_groups',
+            'apex_records',
+            'www_records',
+        ] as $key) {
             $current = $checkSummary[$key] ?? null;
             $previous = $previousCheck[$key] ?? null;
 
@@ -148,6 +152,21 @@ class DomainStatusSyncService
 
             if (is_array($previous) && $previous !== []) {
                 $checkSummary[$key] = $previous;
+            }
+        }
+
+        if (($checkSummary['health_code'] ?? null) === 'provider_error') {
+            foreach (['ownership_challenge', 'ownership_challenges'] as $key) {
+                $current = $checkSummary[$key] ?? null;
+                $previous = $previousCheck[$key] ?? null;
+
+                if (is_array($current) && $current !== []) {
+                    continue;
+                }
+
+                if (is_array($previous) && $previous !== []) {
+                    $checkSummary[$key] = $previous;
+                }
             }
         }
 
@@ -253,11 +272,14 @@ class DomainStatusSyncService
         $providerReachable = true;
         $message = '';
         $ownershipChallenge = null;
+        $ownershipChallenges = [];
         $domainConfig = [
             'misconfigured' => false,
             'configuredBy' => null,
             'recommendedIPv4' => [],
             'recommendedCNAME' => [],
+            'recommendedIPv4Groups' => [],
+            'recommendedCNAMEGroups' => [],
         ];
 
         if ($autoAttach) {
@@ -305,16 +327,38 @@ class DomainStatusSyncService
                 }
 
                 if (! $providerError && $apexAttached) {
-                    try {
-                        $verification = $this->vercel->getDomainVerification($apex);
-                        $ownershipChallenge = $this->extractOwnershipChallenge($verification);
-                    } catch (VercelDomainException $e) {
-                        if ($this->isProviderUnknownError($e)) {
-                            $providerError = true;
-                            $providerReachable = false;
-                            $message = 'Could not reach the hosting provider to check this domain.';
+                    $verificationTargets = [
+                        ['scope' => 'apex', 'hostname' => $apex, 'present' => $apexAttached],
+                        ['scope' => 'www', 'hostname' => $www, 'present' => $wwwPresent],
+                    ];
+
+                    foreach ($verificationTargets as $target) {
+                        if (! $target['present']) {
+                            continue;
+                        }
+
+                        try {
+                            $verification = $this->vercel->getDomainVerification($target['hostname']);
+                            $ownershipChallenges = array_merge(
+                                $ownershipChallenges,
+                                $this->extractOwnershipChallenges(
+                                    $verification,
+                                    $target['scope'],
+                                    $target['hostname']
+                                )
+                            );
+                        } catch (VercelDomainException $e) {
+                            if ($this->isProviderUnknownError($e)) {
+                                $providerError = true;
+                                $providerReachable = false;
+                                $message = 'Could not reach the hosting provider to check this domain.';
+                                break;
+                            }
                         }
                     }
+
+                    $ownershipChallenges = $this->uniqueOwnershipChallenges($ownershipChallenges);
+                    $ownershipChallenge = $this->legacyOwnershipChallenge($ownershipChallenges[0] ?? null);
 
                     if (! $providerError) {
                         try {
@@ -449,6 +493,8 @@ class DomainStatusSyncService
             $certificateReadiness,
             $domainConfig['recommendedIPv4'] ?? [],
             $domainConfig['recommendedCNAME'] ?? [],
+            $domainConfig['recommendedIPv4Groups'] ?? [],
+            $domainConfig['recommendedCNAMEGroups'] ?? [],
             $apex,
             $www
         );
@@ -471,10 +517,7 @@ class DomainStatusSyncService
             $oldStatus,
             $oldSsl,
             $healthCode,
-            $sslReady,
-            $applyFailureThreshold,
-            $consecutiveFailures,
-            $firstFailureAt
+            $sslReady
         );
 
         $checkSummary = $this->buildCheckSummary([
@@ -492,6 +535,7 @@ class DomainStatusSyncService
             'www_present' => $wwwPresent,
             'www_redirect_correct' => $wwwRedirectCorrect,
             'ownership_challenge' => $ownershipChallenge,
+            'ownership_challenges' => $ownershipChallenges,
             'observed_nameservers' => $observedNameservers,
             'nameservers_ok' => $nameserversOk,
             'nameserver_check_enabled' => $checkNameservers,
@@ -499,6 +543,8 @@ class DomainStatusSyncService
             'configured_by' => $domainConfig['configuredBy'] ?? null,
             'recommended_ipv4' => $evidence['recommended_ipv4'] ?? [],
             'recommended_cname' => $evidence['recommended_cname'] ?? [],
+            'recommended_ipv4_groups' => $evidence['recommended_ipv4_groups'] ?? [],
+            'recommended_cname_groups' => $evidence['recommended_cname_groups'] ?? [],
             'apex_records' => $evidence['apex_records'] ?? [],
             'www_records' => $evidence['www_records'] ?? [],
             'apex_matches_recommended' => $evidence['apex_matches_recommended'] ?? null,
@@ -567,25 +613,33 @@ class DomainStatusSyncService
         ?string $certificateReadiness,
         mixed $recommendedIpv4,
         mixed $recommendedCname,
+        mixed $recommendedIpv4Groups,
+        mixed $recommendedCnameGroups,
         string $apex,
         string $www
     ): array {
+        $ipv4Groups = DomainDnsRecommendationService::normalizeGroups(
+            $recommendedIpv4Groups,
+            $recommendedIpv4
+        );
+        $cnameGroups = DomainDnsRecommendationService::normalizeGroups(
+            $recommendedCnameGroups,
+            $recommendedCname
+        );
+
         if ($dnsMode === ApiDomainSetting::DNS_MODE_EXTERNAL_DNS) {
             $externalDns = ApiDomainSetting::externalDnsInstructions();
-            // Accept both our published instruction targets and Vercel's live
-            // recommended records (project domains often use newer anycast IPs).
-            $normalizedIpv4 = $this->normalizeRecommendationValues(array_merge(
-                [$externalDns['apex_record_value']],
-                is_array($recommendedIpv4) ? $recommendedIpv4 : [$recommendedIpv4]
-            ));
-            $normalizedCname = $this->normalizeRecommendationValues(array_merge(
-                [$externalDns['www_record_value']],
-                is_array($recommendedCname) ? $recommendedCname : [$recommendedCname]
-            ));
-        } else {
-            $normalizedIpv4 = $this->normalizeRecommendationValues($recommendedIpv4);
-            $normalizedCname = $this->normalizeRecommendationValues($recommendedCname);
+            $ipv4Groups = DomainDnsRecommendationService::withFallback(
+                $ipv4Groups,
+                $externalDns['apex_record_value']
+            );
+            $cnameGroups = DomainDnsRecommendationService::withFallback(
+                $cnameGroups,
+                $externalDns['www_record_value']
+            );
         }
+        $normalizedIpv4 = DomainDnsRecommendationService::flatten($ipv4Groups);
+        $normalizedCname = DomainDnsRecommendationService::flatten($cnameGroups);
         $dnsEvidence = $this->dnsRecordService->inspect($apex, $normalizedIpv4, $normalizedCname);
         $certificateInventory = ['certificates' => []];
         $wwwCertificate = null;
@@ -628,6 +682,8 @@ class DomainStatusSyncService
             'certificate_readiness' => $certificateReadiness,
             'recommended_ipv4' => $normalizedIpv4,
             'recommended_cname' => $normalizedCname,
+            'recommended_ipv4_groups' => $ipv4Groups,
+            'recommended_cname_groups' => $cnameGroups,
             'apex_records' => $dnsEvidence['apex_records'],
             'www_records' => $dnsEvidence['www_records'],
             'apex_matches_recommended' => $dnsEvidence['apex_matches_recommended'],
@@ -688,10 +744,12 @@ class DomainStatusSyncService
 
     /**
      * @param  list<array<string, mixed>>  $verification
-     * @return array{type: string, domain: string, value: string, reason?: string}|null
+     * @return list<array{scope: string, hostname: string, type: string, domain: string, value: string, reason?: string}>
      */
-    private function extractOwnershipChallenge(array $verification): ?array
+    private function extractOwnershipChallenges(array $verification, string $scope, string $hostname): array
     {
+        $challenges = [];
+
         foreach ($verification as $item) {
             if (! is_array($item)) {
                 continue;
@@ -708,7 +766,9 @@ class DomainStatusSyncService
                 continue;
             }
 
-            return array_filter([
+            $challenges[] = array_filter([
+                'scope' => $scope,
+                'hostname' => strtolower($hostname),
                 'type' => 'txt',
                 'domain' => strtolower($domain),
                 'value' => $value,
@@ -716,7 +776,42 @@ class DomainStatusSyncService
             ], fn ($v) => $v !== null && $v !== '');
         }
 
-        return null;
+        return $challenges;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $challenges
+     * @return list<array<string, mixed>>
+     */
+    private function uniqueOwnershipChallenges(array $challenges): array
+    {
+        $unique = [];
+        foreach ($challenges as $challenge) {
+            $key = strtolower((string) ($challenge['type'] ?? 'txt'))
+                . '|' . strtolower((string) ($challenge['domain'] ?? ''))
+                . '|' . (string) ($challenge['value'] ?? '');
+            $unique[$key] = $challenge;
+        }
+
+        return array_values($unique);
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $challenge
+     * @return array{type: string, domain: string, value: string, reason?: string}|null
+     */
+    private function legacyOwnershipChallenge(?array $challenge): ?array
+    {
+        if ($challenge === null) {
+            return null;
+        }
+
+        return array_filter([
+            'type' => $challenge['type'] ?? null,
+            'domain' => $challenge['domain'] ?? null,
+            'value' => $challenge['value'] ?? null,
+            'reason' => $challenge['reason'] ?? null,
+        ], fn ($value) => $value !== null && $value !== '');
     }
 
     private function isProviderUnknownError(VercelDomainException $e): bool
@@ -773,10 +868,7 @@ class DomainStatusSyncService
         string $oldStatus,
         bool $oldSsl,
         string $healthCode,
-        bool $sslReady,
-        bool $applyFailureThreshold,
-        int $consecutiveFailures,
-        ?string $firstFailureAt
+        bool $sslReady
     ): array {
         if ($healthCode === 'provider_error') {
             return [$oldStatus, $oldSsl];
@@ -792,29 +884,19 @@ class DomainStatusSyncService
             return ['failed', false];
         }
 
-        if ($healthCode === 'expired' || $healthCode === 'certificate_error') {
-            if ($oldStatus === 'active' && $healthCode === 'certificate_error'
-                && $applyFailureThreshold && ! $this->thresholdMet($consecutiveFailures, $firstFailureAt)) {
-                return [$oldStatus, $oldSsl];
-            }
-
+        if ($healthCode === 'expired') {
             return ['failed', false];
         }
 
-        if ($oldStatus === 'active' && in_array($healthCode, self::CONFIRMED_FAILURE_CODES, true)) {
-            if (! $applyFailureThreshold || $this->thresholdMet($consecutiveFailures, $firstFailureAt)) {
-                return ['failed', false];
-            }
-
-            return [$oldStatus, $oldSsl];
-        }
-
-        if ($oldStatus === 'active' && $healthCode === 'certificate_pending') {
-            return [$oldStatus, $oldSsl];
-        }
-
+        // Once a domain has been activated, health synchronization is diagnostic:
+        // DNS, Vercel, or certificate drift must not disconnect the tenant website.
+        // Terminal lifecycle events (currently expiry, handled above) may still stop it.
         if ($oldStatus === 'active') {
             return [$oldStatus, $oldSsl];
+        }
+
+        if ($healthCode === 'certificate_error') {
+            return ['failed', false];
         }
 
         if ($oldStatus === 'failed' && in_array($healthCode, self::CONFIRMED_FAILURE_CODES, true)) {
@@ -822,21 +904,6 @@ class DomainStatusSyncService
         }
 
         return ['pending', $sslReady];
-    }
-
-    private function thresholdMet(int $consecutiveFailures, ?string $firstFailureAt): bool
-    {
-        $threshold = max(1, (int) config('services.vercel.health_failure_threshold', 3));
-        if ($consecutiveFailures < $threshold) {
-            return false;
-        }
-
-        $graceHours = max(0, (int) config('services.vercel.health_failure_grace_hours', 0));
-        if ($graceHours === 0 || $firstFailureAt === null) {
-            return true;
-        }
-
-        return now()->diffInHours($firstFailureAt) >= $graceHours;
     }
 
     private function defaultMessageForHealthCode(string $healthCode): string
@@ -858,48 +925,6 @@ class DomainStatusSyncService
             'checks_disabled' => 'Verification checks are disabled (VERCEL_AUTO_ATTACH_CUSTOM_DOMAIN and VERCEL_CHECK_NAMESERVERS are false).',
             default => 'Domain verification is still pending.',
         };
-    }
-
-    /**
-     * @param  list<string>|mixed  $values
-     * @return list<string>
-     */
-    private function normalizeRecommendationValues(mixed $values): array
-    {
-        if (! is_array($values)) {
-            $values = [$values];
-        }
-
-        $normalized = [];
-        foreach ($values as $value) {
-            if (is_array($value)) {
-                if (array_key_exists('value', $value)) {
-                    foreach ($this->normalizeRecommendationValues($value['value']) as $nested) {
-                        $normalized[] = $nested;
-                    }
-
-                    continue;
-                }
-
-                foreach ($value as $nested) {
-                    if (is_string($nested) && trim($nested) !== '') {
-                        $normalized[] = strtolower(rtrim(trim($nested), '.'));
-                    } elseif (is_array($nested)) {
-                        foreach ($this->normalizeRecommendationValues([$nested]) as $deep) {
-                            $normalized[] = $deep;
-                        }
-                    }
-                }
-
-                continue;
-            }
-
-            if (is_string($value) && trim($value) !== '') {
-                $normalized[] = strtolower(rtrim(trim($value), '.'));
-            }
-        }
-
-        return array_values(array_unique($normalized));
     }
 
     /**

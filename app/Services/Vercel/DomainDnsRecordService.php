@@ -94,9 +94,25 @@ class DomainDnsRecordService
             }
         }
 
+        // dns_get_record() may include addresses reached after following a CNAME.
+        // Those IPs are not records the customer can edit at the original host,
+        // and displaying them as such produces unsafe registrar instructions.
+        if ($cnames !== []) {
+            $normalized = array_values(array_filter(
+                $normalized,
+                static fn (array $record): bool => $record['type'] === 'CNAME'
+            ));
+            $addresses = [];
+        }
+
+        $uniqueRecords = [];
+        foreach ($normalized as $record) {
+            $uniqueRecords[$record['type'] . '|' . $record['value']] = $record;
+        }
+
         return [
             'known' => true,
-            'records' => array_values($normalized),
+            'records' => array_values($uniqueRecords),
             'addresses' => array_values(array_unique($addresses)),
             'cnames' => array_values(array_unique($cnames)),
         ];
