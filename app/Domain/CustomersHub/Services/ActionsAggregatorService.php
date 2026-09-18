@@ -84,14 +84,16 @@ class ActionsAggregatorService
         $inquiriesQuery       = $this->getInquiriesSubquery($userId, $stageIds, $excludeStageIds, $dateFrom, $dateTo);
         $propertyRequestsQuery = $this->getPropertyRequestsSubquery($userId, $stageIds, $excludeStageIds, $dateFrom, $dateTo);
         $remindersQuery = $this->getRemindersSubquery($userId, $dateFrom, $dateTo);
+        $requestAppointmentsQuery = $this->getRequestAppointmentsSubquery($userId, $stageIds, $excludeStageIds, $dateFrom, $dateTo);
 
         // Build UNION ALL.
-        // property_request_appointments and property_request_reminders are intentionally excluded here:
-        // they are already nested inside each property_request card by RequestsController::list,
-        // so including them in the UNION would show them twice (once nested, once as a top-level card).
+        // Appointments remain nested on property-request cards and are also exposed as
+        // top-level site_visit actions so the follow-ups view can show actionable visits.
+        // Request reminders stay nested to avoid duplicating ordinary follow-up cards.
         $unionQuery = $inquiriesQuery
             ->unionAll($propertyRequestsQuery)
-            ->unionAll($remindersQuery);
+            ->unionAll($remindersQuery)
+            ->unionAll($requestAppointmentsQuery);
 
         // Wrap in subquery for filtering and ordering
         $query = DB::query()->fromSub($unionQuery, 'actions');
@@ -1724,13 +1726,33 @@ class ActionsAggregatorService
     /**
      * Build request-level appointments subquery (property_request_appointments).
      */
-    private function getRequestAppointmentsSubquery(int $userId): \Illuminate\Database\Query\Builder
+    private function getRequestAppointmentsSubquery(
+        int $userId,
+        array $stageIds = [],
+        array $excludeStageIds = [],
+        ?string $dateFrom = null,
+        ?string $dateTo = null
+    ): \Illuminate\Database\Query\Builder
     {
-        return DB::table('property_request_appointments as a')
+        $query = DB::table('property_request_appointments as a')
             ->leftJoin('api_customers as ac', 'a.customer_id', '=', 'ac.id')
             ->leftJoin('users_property_requests as upr', 'a.property_request_id', '=', 'upr.id')
-            ->where('a.user_id', $userId)
-            ->select([
+            ->where('a.user_id', $userId);
+
+        if (!empty($stageIds)) {
+            $query->whereIn('upr.customers_hub_stage_id', $stageIds);
+        }
+        if (!empty($excludeStageIds)) {
+            $query->whereNotIn('upr.customers_hub_stage_id', $excludeStageIds);
+        }
+        if (!empty($dateFrom)) {
+            $query->where('a.created_at', '>=', $dateFrom);
+        }
+        if (!empty($dateTo)) {
+            $query->where('a.created_at', '<=', $dateTo);
+        }
+
+        return $query->select([
                 DB::raw("CONCAT('request_appointment_', a.id) as id"),
                 'a.customer_id as customerId',
                 DB::raw('COALESCE(ac.name, upr.full_name) as customerName'),
@@ -1771,10 +1793,18 @@ class ActionsAggregatorService
                 'a.user_id as userId',
                 DB::raw("NULL as propertyCategory"),
                 DB::raw("NULL as propertyType"),
+                DB::raw("NULL as city_id"),
                 DB::raw("NULL as city"),
                 DB::raw("NULL as state"),
                 DB::raw("NULL as budgetMin"),
                 DB::raw("NULL as budgetMax"),
+                DB::raw("NULL as propertyRequestStatusId"),
+                DB::raw("NULL as propertyRequestStatusSlug"),
+                DB::raw("NULL as propertyRequestStatusNameAr"),
+                DB::raw("NULL as propertyRequestStatusNameEn"),
+                DB::raw("NULL as districts_id"),
+                DB::raw("NULL as districtAR"),
+                'upr.customers_hub_stage_id as customers_hub_stage_id',
             ]);
     }
 
