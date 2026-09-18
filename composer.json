@@ -77,12 +77,16 @@
     },
     "extra": {
         "laravel": {
-            "dont-discover": []
+            "dont-discover": [
+                "kreativdev/saas-installer"
+            ]
         }
     },
     "autoload": {
         "psr-4": {
             "App\\": "app/",
+            "App\\Domain\\Crm\\": "app/Domain/CRM/",
+            "App\\Http\\Requests\\Admin\\Crm\\": "app/Http/Requests/Admin/CRM/",
             "Database\\Seeders\\": "database/seeders/",
             "Modules\\": "Modules/"
         },
