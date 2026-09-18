@@ -1093,18 +1093,26 @@ Route::prefix('v1')->group(function () {
 
     // --- Employees ---
     Route::middleware(['auth:sanctum'])->group(function () {
-        Route::get('employees/available-roles', [EmployeeController::class, 'availableRoles']);
-        Route::get('employees/available-permissions', [EmployeeController::class, 'availablePermissions']);
-        Route::apiResource('employees', EmployeeController::class);
+        Route::get('employees/available-roles', [EmployeeController::class, 'availableRoles'])->middleware('can:employees.view');
+        Route::get('employees/available-permissions', [EmployeeController::class, 'availablePermissions'])->middleware('can:employees.view');
+        Route::get('employees', [EmployeeController::class, 'index'])->middleware('can:employees.view');
+        Route::post('employees', [EmployeeController::class, 'store'])->middleware('can:employees.create');
+        Route::get('employees/{employee}', [EmployeeController::class, 'show'])->middleware('can:employees.view');
+        Route::match(['put', 'patch'], 'employees/{employee}', [EmployeeController::class, 'update'])->middleware('can:employees.update');
+        Route::delete('employees/{employee}', [EmployeeController::class, 'destroy'])->middleware('can:employees.delete');
     });
 
     // --- Roles ---
     Route::middleware(['auth:sanctum'])->group(function () {
-        Route::apiResource('roles', RoleController::class);
-        Route::get('permissions', [RoleController::class, 'permissions']);
-        Route::post('permissions', [RoleController::class, 'storePermission']);
-        Route::put('permissions/{id}', [RoleController::class, 'updatePermission']);
-        Route::delete('permissions/{id}', [RoleController::class, 'destroyPermission']);
+        Route::get('roles', [RoleController::class, 'index'])->middleware('can:roles.view');
+        Route::post('roles', [RoleController::class, 'store'])->middleware('can:roles.create');
+        Route::get('roles/{role}', [RoleController::class, 'show'])->middleware('can:roles.view');
+        Route::match(['put', 'patch'], 'roles/{role}', [RoleController::class, 'update'])->middleware('can:roles.update');
+        Route::delete('roles/{role}', [RoleController::class, 'destroy'])->middleware('can:roles.delete');
+        Route::get('permissions', [RoleController::class, 'permissions'])->middleware('can:roles.view');
+        Route::post('permissions', [RoleController::class, 'storePermission'])->middleware('can:roles.create');
+        Route::put('permissions/{id}', [RoleController::class, 'updatePermission'])->middleware('can:roles.update');
+        Route::delete('permissions/{id}', [RoleController::class, 'destroyPermission'])->middleware('can:roles.delete');
     });
 });
 
