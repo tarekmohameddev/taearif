@@ -178,8 +178,16 @@ class PageviewController extends BaseApiController
         if (empty($tenantId)) {
             $user = $request->user();
             if ($user) {
+                if (method_exists($user, 'isEmployee') && $user->isEmployee()) {
+                    if (! $user->relationLoaded('tenant')) {
+                        $user->load('tenant');
+                    }
+
+                    $tenantId = $user->tenant?->username;
+                }
+
                 // In Laravel models, `username` is typically an attribute, not a method.
-                $tenantId = $user->username ?? null;
+                $tenantId = $tenantId ?: ($user->username ?? null);
 
                 // Fallback: if it's implemented as a method (rare), call it.
                 if (empty($tenantId) && method_exists($user, 'username')) {
