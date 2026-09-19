@@ -2099,16 +2099,6 @@ class PropertyController extends Controller
             $propertyOwnerId = (int) $property->user_id;
             $tenantId = (int) $owner->id;
 
-            $property->delete();
-
-            // Invalidate cache for this property (all days variants)
-            // Clear both legacy keys and owner-scoped keys
-            foreach ([7, 30, 90, 365] as $days) {
-                Cache::forget("property_api_{$id}_v1_days_{$days}");
-                Cache::forget("property_api_{$id}_owner_{$ownerId}_v1_days_{$days}");
-                Cache::forget("property_api_{$id}_v2_days_{$days}");
-                Cache::forget("property_api_{$id}_owner_{$ownerId}_v2_days_{$days}");
-            }
             $this->deletePropertyAndRelations($property);
             $this->forgetPropertyApiCache($id, $propertyOwnerId);
             PropertyListCacheVersionService::incrementVersion($tenantId);
