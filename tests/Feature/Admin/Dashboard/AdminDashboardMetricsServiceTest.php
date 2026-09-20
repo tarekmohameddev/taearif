@@ -72,6 +72,7 @@ class AdminDashboardMetricsServiceTest extends AdminApiTestCase
         $this->assertSame(7, $dashboard['executiveSummary']['registeredTenantUsers']);
         $this->assertSame(0, $dashboard['executiveSummary']['uniqueDashboardUsersToday']);
         $this->assertSame(0, $dashboard['executiveSummary']['uniqueTenantsOpenedDashboardToday']);
+        $this->assertSame(0, $dashboard['executiveSummary']['uniqueEmployeeDashboardUsersToday']);
         $this->assertSame(3, $dashboard['operationsSnapshot']['activePaidSubscriptions']);
         $this->assertSame(2, $dashboard['operationsSnapshot']['activeTrials']);
         $this->assertSame(1, $dashboard['operationsSnapshot']['freeUsers']);
@@ -120,6 +121,7 @@ class AdminDashboardMetricsServiceTest extends AdminApiTestCase
         $this->assertSame(0, $dashboard['executiveSummary']['registeredTenantUsers']);
         $this->assertSame(0, $dashboard['executiveSummary']['uniqueDashboardUsersToday']);
         $this->assertSame(0, $dashboard['executiveSummary']['uniqueTenantsOpenedDashboardToday']);
+        $this->assertSame(0, $dashboard['executiveSummary']['uniqueEmployeeDashboardUsersToday']);
         $this->assertSame(0, $dashboard['operationsSnapshot']['activePaidSubscriptions']);
         $this->assertSame(0, $dashboard['operationsSnapshot']['activeTrials']);
         $this->assertSame(0, $dashboard['operationsSnapshot']['freeUsers']);
@@ -265,6 +267,9 @@ class AdminDashboardMetricsServiceTest extends AdminApiTestCase
         $response->assertOk();
         $response->assertSee(__('Executive Summary'), false);
         $response->assertSee(__('Active Paid Subscriber Users'), false);
+        $response->assertSee(__('Control Panel Activity Today'), false);
+        $response->assertSee(__('Active Users'), false);
+        $response->assertSee(__('Active Employees'), false);
         $response->assertSee(__('Financial Metrics'), false);
         $response->assertSee(__('Business Breakdowns'), false);
         $response->assertSee('dashboard-chart-data', false);

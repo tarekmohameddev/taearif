@@ -1,7 +1,7 @@
 @extends('admin.layout')
 
 @section('styles')
-    <link rel="stylesheet" href="{{ asset('assets/admin/css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/admin/css/dashboard.css') }}?v={{ filemtime(public_path('assets/admin/css/dashboard.css')) }}">
 @endsection
 
 @php
@@ -65,7 +65,11 @@
                 <div class="row dashboard-grid dashboard-grid-headline">
                     @foreach($headlineCards as $card)
                         <div class="col-sm-6 col-xl-3 d-flex">
-                            @include('admin.partials.dashboard.kpi-card', ['card' => $card, 'size' => 'large'])
+                            @if(($card['type'] ?? null) === 'activity-summary')
+                                @include('admin.partials.dashboard.activity-summary-card', ['card' => $card])
+                            @else
+                                @include('admin.partials.dashboard.kpi-card', ['card' => $card, 'size' => 'large'])
+                            @endif
                         </div>
                     @endforeach
                 </div>

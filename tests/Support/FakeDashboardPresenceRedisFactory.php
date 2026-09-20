@@ -66,6 +66,14 @@ class FakeDashboardPresenceRedisConnection
         return $this->recordResult(1);
     }
 
+    public function zrem(string $key, string $member): int
+    {
+        $removed = isset($this->sets[$key][$member]) ? 1 : 0;
+        unset($this->sets[$key][$member]);
+
+        return $this->recordResult($removed);
+    }
+
     public function zremrangebyscore(string $key, string $min, string $max): int
     {
         $removed = 0;

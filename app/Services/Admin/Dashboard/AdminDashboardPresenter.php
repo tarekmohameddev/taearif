@@ -63,35 +63,35 @@ class AdminDashboardPresenter
 
         return [
             [
-                'label' => __('Dashboard Users Online Now'),
-                'value' => $presence['online_users'],
-                'displayValue' => $available ? number_format((int) ($presence['online_users'] ?? 0)) : '—',
+                'label' => __('Tenant Users Online Now'),
+                'value' => $presence['online_tenant_users'] ?? null,
+                'displayValue' => $available ? number_format((int) ($presence['online_tenant_users'] ?? 0)) : '—',
                 'helper' => $available
-                    ? __('Distinct eligible dashboard accounts active in the last :minutes minutes', ['minutes' => $minutes])
+                    ? __('Distinct eligible tenant-owner accounts active in the last :minutes minutes', ['minutes' => $minutes])
                     : $unavailableHelper,
                 'icon' => 'radio',
                 'tone' => $available ? 'success' : 'neutral',
                 'attributes' => [
                     'data-dashboard-live-card' => 'true',
-                    'data-dashboard-live-key' => 'online_users',
-                    'data-dashboard-live-available-helper' => __('Distinct eligible dashboard accounts active in the last :minutes minutes', ['minutes' => $minutes]),
+                    'data-dashboard-live-key' => 'online_tenant_users',
+                    'data-dashboard-live-available-helper' => __('Distinct eligible tenant-owner accounts active in the last :minutes minutes', ['minutes' => $minutes]),
                     'data-dashboard-live-unavailable-helper' => $unavailableHelper,
                     'data-dashboard-live-unavailable-value' => '—',
                 ],
             ],
             [
-                'label' => __('Tenant Organizations Online Now'),
-                'value' => $presence['online_tenant_organizations'],
-                'displayValue' => $available ? number_format((int) ($presence['online_tenant_organizations'] ?? 0)) : '—',
+                'label' => __('Employees Online Now'),
+                'value' => $presence['online_employees'] ?? null,
+                'displayValue' => $available ? number_format((int) ($presence['online_employees'] ?? 0)) : '—',
                 'helper' => $available
-                    ? __('Distinct tenant organizations with at least one eligible dashboard user active in the last :minutes minutes', ['minutes' => $minutes])
+                    ? __('Distinct eligible employee accounts active in the last :minutes minutes', ['minutes' => $minutes])
                     : $unavailableHelper,
-                'icon' => 'building',
+                'icon' => 'briefcase',
                 'tone' => $available ? 'violet' : 'neutral',
                 'attributes' => [
                     'data-dashboard-live-card' => 'true',
-                    'data-dashboard-live-key' => 'online_tenant_organizations',
-                    'data-dashboard-live-available-helper' => __('Distinct tenant organizations with at least one eligible dashboard user active in the last :minutes minutes', ['minutes' => $minutes]),
+                    'data-dashboard-live-key' => 'online_employees',
+                    'data-dashboard-live-available-helper' => __('Distinct eligible employee accounts active in the last :minutes minutes', ['minutes' => $minutes]),
                     'data-dashboard-live-unavailable-helper' => $unavailableHelper,
                     'data-dashboard-live-unavailable-value' => '—',
                 ],
@@ -125,23 +125,19 @@ class AdminDashboardPresenter
             ];
         }
 
-        if (array_key_exists('uniqueDashboardUsersToday', $executive)) {
+        if (
+            array_key_exists('uniqueDashboardUsersToday', $executive)
+            && array_key_exists('uniqueEmployeeDashboardUsersToday', $executive)
+        ) {
             $cards[] = [
-                'label' => __('Unique Dashboard Users Today'),
-                'value' => $executive['uniqueDashboardUsersToday'],
-                'helper' => __('Authenticated tenant-side users who opened the dashboard today in Riyadh time'),
+                'type' => 'activity-summary',
+                'label' => __('Control Panel Activity Today'),
+                'userValue' => $executive['uniqueDashboardUsersToday'],
+                'employeeValue' => $executive['uniqueEmployeeDashboardUsersToday'],
+                'helper' => __('Active Users includes tenant owners and employees; employees are shown separately'),
+                'meta' => __('Today · Riyadh time'),
                 'icon' => 'activity',
                 'tone' => 'success',
-            ];
-        }
-
-        if (array_key_exists('uniqueTenantsOpenedDashboardToday', $executive)) {
-            $cards[] = [
-                'label' => __('Unique Tenant Organizations Today'),
-                'value' => $executive['uniqueTenantsOpenedDashboardToday'],
-                'helper' => __('Distinct tenant organizations represented by today\'s dashboard users'),
-                'icon' => 'building',
-                'tone' => 'violet',
             ];
         }
 

@@ -68,8 +68,17 @@ class DashboardPresenceService
             $connection->pipeline(function ($pipe) use ($settings, $user, $eligibility, $timestamp, $ttlSeconds): void {
                 $pipe->zadd($settings['users_key'], $timestamp, (string) $user->id);
                 $pipe->zadd($settings['tenant_organizations_key'], $timestamp, (string) $eligibility['tenant_owner_id']);
+                if ($user->isEmployee()) {
+                    $pipe->zadd($settings['employees_key'], $timestamp, (string) $user->id);
+                    $pipe->zrem($settings['tenant_users_key'], (string) $user->id);
+                } else {
+                    $pipe->zadd($settings['tenant_users_key'], $timestamp, (string) $user->id);
+                    $pipe->zrem($settings['employees_key'], (string) $user->id);
+                }
                 $pipe->expire($settings['users_key'], $ttlSeconds);
                 $pipe->expire($settings['tenant_organizations_key'], $ttlSeconds);
+                $pipe->expire($settings['tenant_users_key'], $ttlSeconds);
+                $pipe->expire($settings['employees_key'], $ttlSeconds);
             });
         } catch (Throwable $e) {
             $this->logRuntimeIssueOnce('record', $e);
@@ -100,6 +109,8 @@ class DashboardPresenceService
                 'available' => false,
                 'online_users' => null,
                 'online_tenant_organizations' => null,
+                'online_tenant_users' => null,
+                'online_employees' => null,
                 'window_seconds' => $settings['online_window_seconds'] ?? null,
                 'as_of' => $asOf->toIso8601String(),
                 'definition' => self::DEFINITION,
@@ -114,8 +125,12 @@ class DashboardPresenceService
             $counts = $connection->pipeline(function ($pipe) use ($settings, $cutoff): void {
                 $pipe->zremrangebyscore($settings['users_key'], '-inf', (string) $cutoff);
                 $pipe->zremrangebyscore($settings['tenant_organizations_key'], '-inf', (string) $cutoff);
+                $pipe->zremrangebyscore($settings['tenant_users_key'], '-inf', (string) $cutoff);
+                $pipe->zremrangebyscore($settings['employees_key'], '-inf', (string) $cutoff);
                 $pipe->zcard($settings['users_key']);
                 $pipe->zcard($settings['tenant_organizations_key']);
+                $pipe->zcard($settings['tenant_users_key']);
+                $pipe->zcard($settings['employees_key']);
             });
         } catch (Throwable $e) {
             $this->logRuntimeIssueOnce('snapshot', $e);
@@ -124,6 +139,8 @@ class DashboardPresenceService
                 'available' => false,
                 'online_users' => null,
                 'online_tenant_organizations' => null,
+                'online_tenant_users' => null,
+                'online_employees' => null,
                 'window_seconds' => $settings['online_window_seconds'],
                 'as_of' => $asOf->toIso8601String(),
                 'definition' => self::DEFINITION,
@@ -133,8 +150,10 @@ class DashboardPresenceService
 
         return [
             'available' => true,
-            'online_users' => (int) ($counts[2] ?? 0),
-            'online_tenant_organizations' => (int) ($counts[3] ?? 0),
+            'online_users' => (int) ($counts[4] ?? 0),
+            'online_tenant_organizations' => (int) ($counts[5] ?? 0),
+            'online_tenant_users' => (int) ($counts[6] ?? 0),
+            'online_employees' => (int) ($counts[7] ?? 0),
             'window_seconds' => $settings['online_window_seconds'],
             'as_of' => $asOf->toIso8601String(),
             'definition' => self::DEFINITION,
@@ -151,6 +170,8 @@ class DashboardPresenceService
         $redisConnection = (string) config('dashboard-presence.redis_connection', 'cache');
         $usersKey = trim((string) config('dashboard-presence.users_key', 'presence:dashboard:users'));
         $tenantOrganizationsKey = trim((string) config('dashboard-presence.tenant_organizations_key', 'presence:dashboard:tenant-organizations'));
+        $tenantUsersKey = trim((string) config('dashboard-presence.tenant_users_key', 'presence:dashboard:tenant-users'));
+        $employeesKey = trim((string) config('dashboard-presence.employees_key', 'presence:dashboard:employees'));
 
         if (! $enabled) {
             $this->logConfigurationIssueOnce('disabled', [
@@ -168,7 +189,16 @@ class DashboardPresenceService
         $validWindow = $windowSeconds >= 60 && $windowSeconds <= 900 && $windowSeconds >= ($heartbeatSeconds * 2);
         $validPoll = $adminPollSeconds >= 15 && $adminPollSeconds <= 300;
 
-        if (! $validHeartbeat || ! $validWindow || ! $validPoll || $redisConnection === '' || $usersKey === '' || $tenantOrganizationsKey === '') {
+        if (
+            ! $validHeartbeat
+            || ! $validWindow
+            || ! $validPoll
+            || $redisConnection === ''
+            || $usersKey === ''
+            || $tenantOrganizationsKey === ''
+            || $tenantUsersKey === ''
+            || $employeesKey === ''
+        ) {
             $this->logConfigurationIssueOnce('invalid_configuration', [
                 'heartbeat_seconds' => $heartbeatSeconds,
                 'online_window_seconds' => $windowSeconds,
@@ -192,6 +222,8 @@ class DashboardPresenceService
             'redis_connection' => $redisConnection,
             'users_key' => $usersKey,
             'tenant_organizations_key' => $tenantOrganizationsKey,
+            'tenant_users_key' => $tenantUsersKey,
+            'employees_key' => $employeesKey,
         ];
     }
 

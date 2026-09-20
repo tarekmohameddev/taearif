@@ -72,6 +72,7 @@ class AdminDashboardMetricsService
             $dashboard['executiveSummary']['registeredTenantUsers'] = (int) $canonicalSummary['registeredTenantUsers'];
             $dashboard['executiveSummary']['uniqueDashboardUsersToday'] = (int) $canonicalSummary['uniqueDashboardUsersToday'];
             $dashboard['executiveSummary']['uniqueTenantsOpenedDashboardToday'] = (int) $canonicalSummary['uniqueTenantsOpenedDashboardToday'];
+            $dashboard['executiveSummary']['uniqueEmployeeDashboardUsersToday'] = (int) ($canonicalSummary['uniqueEmployeeDashboardUsersToday'] ?? 0);
             $dashboard['presence'] = $this->presence->snapshot($clock->setTimezone('UTC'));
             $dashboard['operationsSnapshot']['activePaidSubscriptions'] = (int) $membershipSummary->paid_subscriptions;
             $dashboard['operationsSnapshot']['activeTrials'] = (int) $membershipSummary->trials;
