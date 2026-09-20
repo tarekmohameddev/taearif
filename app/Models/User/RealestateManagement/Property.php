@@ -165,6 +165,11 @@ class Property extends Model
 
     public static function storeProperty($userId, $request, $featuredImgName, $floorPlanningImage, $videoImage, $featured, $createdBy = null)
     {
+        // Lifecycle fields and legacy purpose can arrive together. Normalize
+        // each status dimension while preserving explicitly supplied modern
+        // listing fields as authoritative.
+        app(PropertyStatusSyncService::class)->syncArray($request, false);
+
         // Ensure default "other" category exists
         $defaultCategory = ApiUserCategory::firstOrCreate(
             ['slug' => 'other'],
@@ -270,6 +275,8 @@ class Property extends Model
 
     public function updateProperty($requestData)
     {
+        app(PropertyStatusSyncService::class)->syncArray($requestData, false);
+
         if (($requestData['featured'] ?? 0) && !$this->reorder_featured) {
             $last = self::where('featured', 1)->max('reorder_featured');
             $updates['reorder_featured'] = $last ? $last + 1 : 1;

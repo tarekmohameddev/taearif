@@ -6,6 +6,8 @@ use App\Models\User\RealestateManagement\Property;
 
 class PropertyStatusSyncService
 {
+    public const ACCEPTED_PURPOSE_INPUTS = ['sale', 'rent', 'sold', 'rented'];
+
     private static bool $syncing = false;
 
     /**

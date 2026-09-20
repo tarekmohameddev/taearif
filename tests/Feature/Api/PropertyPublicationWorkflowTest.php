@@ -636,4 +636,120 @@ class PropertyPublicationWorkflowTest extends TestCase
         $this->assertSame(1, (int) $draft->status);
         $this->assertNotNull($draft->completed_at);
     }
+
+    /**
+     * @dataProvider acceptedPurposeProvider
+     */
+    public function test_store_accepts_supported_purpose_values_and_persists_canonical_statuses(
+        string $inputPurpose,
+        string $expectedPurpose,
+        string $expectedListingPurpose,
+        string $expectedUnitStatus,
+        string $expectedPropertyStatus
+    ): void {
+        $this->skipIfMissingSchema();
+        [$tenant] = $this->actingAsTenant(['properties.create']);
+
+        $response = $this->postJson('/api/properties', [
+            'title' => 'Purpose create ' . $inputPurpose,
+            'address' => 'Purpose create address ' . $inputPurpose,
+            'description' => 'Purpose create description long enough for ' . $inputPurpose,
+            'featured_image' => 'properties/purpose-create-' . $inputPurpose . '.jpg',
+            'property_type' => 'residential',
+            'purpose' => $inputPurpose,
+            'publish_status' => 'published',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('user_property.purpose', $expectedPurpose);
+
+        $propertyId = (int) $response->json('user_property.id');
+        $this->assertDatabaseHas('user_properties', [
+            'id' => $propertyId,
+            'user_id' => $tenant->id,
+            'purpose' => $expectedPurpose,
+            'listing_purpose' => $expectedListingPurpose,
+            'unit_status' => $expectedUnitStatus,
+            'property_status' => $expectedPropertyStatus,
+        ]);
+    }
+
+    /**
+     * @dataProvider acceptedPurposeProvider
+     */
+    public function test_update_accepts_supported_purpose_values_and_persists_canonical_statuses(
+        string $inputPurpose,
+        string $expectedPurpose,
+        string $expectedListingPurpose,
+        string $expectedUnitStatus,
+        string $expectedPropertyStatus
+    ): void {
+        $this->skipIfMissingSchema();
+        [$tenant, $language] = $this->actingAsTenant(['properties.update']);
+        $property = $this->createProperty($tenant, $language);
+
+        $response = $this->postJson("/api/properties/{$property->id}", [
+            'purpose' => $inputPurpose,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('property.purpose', $expectedPurpose);
+
+        $this->assertDatabaseHas('user_properties', [
+            'id' => $property->id,
+            'user_id' => $tenant->id,
+            'purpose' => $expectedPurpose,
+            'listing_purpose' => $expectedListingPurpose,
+            'unit_status' => $expectedUnitStatus,
+            'property_status' => $expectedPropertyStatus,
+        ]);
+    }
+
+    public function test_store_rejects_unsupported_purpose_value(): void
+    {
+        $this->skipIfMissingSchema();
+        $this->actingAsTenant(['properties.create']);
+
+        $response = $this->postJson('/api/properties', [
+            'publish_status' => 'draft',
+            'purpose' => 'lease',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['purpose']);
+    }
+
+    public function test_update_rejects_unsupported_purpose_without_mutating_property(): void
+    {
+        $this->skipIfMissingSchema();
+        [$tenant, $language] = $this->actingAsTenant(['properties.update']);
+        $property = $this->createProperty($tenant, $language);
+
+        $response = $this->postJson("/api/properties/{$property->id}", [
+            'purpose' => 'lease',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['purpose']);
+
+        $property->refresh();
+        $this->assertSame('sale', $property->purpose);
+        $this->assertSame('sale', $property->listing_purpose);
+        $this->assertSame('available', $property->unit_status);
+    }
+
+    /**
+     * @return array<string, array{string, string, string, string, string}>
+     */
+    public static function acceptedPurposeProvider(): array
+    {
+        return [
+            'sale' => ['sale', 'sale', 'sale', 'available', 'available'],
+            'rent' => ['rent', 'rent', 'rent', 'available', 'available'],
+            'sold' => ['sold', 'sale', 'sale', 'sold', 'sale'],
+            'rented' => ['rented', 'rent', 'rent', 'rented', 'rented'],
+        ];
+    }
 }
