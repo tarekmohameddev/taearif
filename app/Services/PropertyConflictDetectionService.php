@@ -6,6 +6,7 @@ use App\Models\User\Language;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\PropertyContent;
 use App\Rules\PropertyTypeRule;
+use App\Services\Property\PropertyStatusSyncService;
 use App\Support\PropertyCompletionRequirements;
 
 class PropertyConflictDetectionService
@@ -131,11 +132,11 @@ class PropertyConflictDetectionService
         }
 
         if (PropertyCompletionRequirements::valueProvided($data['purpose'] ?? null)
-            && !in_array($data['purpose'], ['sale', 'rent'])) {
+            && !in_array($data['purpose'], PropertyStatusSyncService::ACCEPTED_PURPOSE_INPUTS, true)) {
             $conflicts[] = [
                 'type' => 'validation',
                 'field' => 'purpose',
-                'message' => 'Purpose must be either "sale" or "rent"',
+                'message' => 'Purpose must be one of: "sale", "rent", "sold", or "rented"',
                 'severity' => 'error'
             ];
         }

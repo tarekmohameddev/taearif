@@ -8,6 +8,7 @@ use App\Http\Requests\Concerns\ValidatesSourceBroker;
 use App\Http\Requests\Concerns\ValidatesTenantCustomerId;
 use App\Http\Requests\Concerns\ValidatesTenantProjectId;
 use App\Rules\PropertyTypeRule;
+use App\Services\Property\PropertyStatusSyncService;
 
 class StorePropertyRequest extends BaseApiFormRequest
 {
@@ -62,7 +63,7 @@ class StorePropertyRequest extends BaseApiFormRequest
                 'pricePerMeter' => 'nullable|numeric',
                 'beds' => 'nullable',
                 'bath' => 'nullable',
-                'purpose' => 'nullable',
+                'purpose' => 'nullable|string|in:' . implode(',', PropertyStatusSyncService::ACCEPTED_PURPOSE_INPUTS),
                 'area' => 'nullable',
                 'status' => 'nullable',
                 'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
