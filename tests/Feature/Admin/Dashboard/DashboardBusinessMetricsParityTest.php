@@ -10,6 +10,7 @@ use App\Http\Middleware\RequireActiveMembership;
 use App\Http\Middleware\SetTenantForPermissions;
 use App\Models\User;
 use App\Services\Analytics\DashboardVisitService;
+use App\Services\Admin\Dashboard\AdminDashboardPresenter;
 use App\Services\Admin\AdminDashboardMetricsService;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
@@ -114,6 +115,13 @@ class DashboardBusinessMetricsParityTest extends AdminApiTestCase
 
         $this->assertSame(2, $dashboard['executiveSummary']['uniqueDashboardUsersToday']);
         $this->assertSame(1, $dashboard['executiveSummary']['uniqueTenantsOpenedDashboardToday']);
+        $this->assertSame(2, $dashboard['executiveSummary']['uniqueEmployeeDashboardUsersToday']);
+
+        $cards = app(AdminDashboardPresenter::class)->present($dashboard)['headlineCards'];
+        $activityCard = collect($cards)->firstWhere('type', 'activity-summary');
+
+        $this->assertSame(2, $activityCard['userValue']);
+        $this->assertSame(2, $activityCard['employeeValue']);
     }
 
     /** @test */

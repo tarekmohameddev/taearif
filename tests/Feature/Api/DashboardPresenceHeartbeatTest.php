@@ -29,6 +29,8 @@ class DashboardPresenceHeartbeatTest extends AdminApiTestCase
             'dashboard-presence.redis_connection' => 'cache',
             'dashboard-presence.users_key' => 'presence:dashboard:users',
             'dashboard-presence.tenant_organizations_key' => 'presence:dashboard:tenant-organizations',
+            'dashboard-presence.tenant_users_key' => 'presence:dashboard:tenant-users',
+            'dashboard-presence.employees_key' => 'presence:dashboard:employees',
             'dashboard-presence.admin_poll_seconds' => 30,
             'dashboard-presence.exclude_impersonation' => true,
         ]);
@@ -68,6 +70,8 @@ class DashboardPresenceHeartbeatTest extends AdminApiTestCase
         $this->assertTrue($snapshot['available']);
         $this->assertSame(2, $snapshot['online_users']);
         $this->assertSame(1, $snapshot['online_tenant_organizations']);
+        $this->assertSame(1, $snapshot['online_tenant_users']);
+        $this->assertSame(1, $snapshot['online_employees']);
     }
 
     /** @test */

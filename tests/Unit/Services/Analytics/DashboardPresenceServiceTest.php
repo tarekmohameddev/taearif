@@ -33,6 +33,8 @@ class DashboardPresenceServiceTest extends TestCase
             'dashboard-presence.redis_connection' => 'cache',
             'dashboard-presence.users_key' => 'presence:dashboard:users',
             'dashboard-presence.tenant_organizations_key' => 'presence:dashboard:tenant-organizations',
+            'dashboard-presence.tenant_users_key' => 'presence:dashboard:tenant-users',
+            'dashboard-presence.employees_key' => 'presence:dashboard:employees',
             'dashboard-presence.admin_poll_seconds' => 30,
             'dashboard-presence.exclude_impersonation' => true,
         ]);
@@ -57,6 +59,8 @@ class DashboardPresenceServiceTest extends TestCase
         $this->assertTrue($snapshot['available']);
         $this->assertSame(3, $snapshot['online_users']);
         $this->assertSame(1, $snapshot['online_tenant_organizations']);
+        $this->assertSame(1, $snapshot['online_tenant_users']);
+        $this->assertSame(2, $snapshot['online_employees']);
     }
 
     /** @test */
@@ -71,6 +75,8 @@ class DashboardPresenceServiceTest extends TestCase
 
         $this->assertSame(1, $snapshot['online_users']);
         $this->assertSame(1, $snapshot['online_tenant_organizations']);
+        $this->assertSame(1, $snapshot['online_tenant_users']);
+        $this->assertSame(0, $snapshot['online_employees']);
     }
 
     /** @test */
@@ -86,6 +92,8 @@ class DashboardPresenceServiceTest extends TestCase
 
         $this->assertSame(1, $snapshot['online_users']);
         $this->assertSame(1, $snapshot['online_tenant_organizations']);
+        $this->assertSame(1, $snapshot['online_tenant_users']);
+        $this->assertSame(0, $snapshot['online_employees']);
     }
 
     /** @test */
@@ -100,6 +108,8 @@ class DashboardPresenceServiceTest extends TestCase
         $this->assertTrue($snapshot['available']);
         $this->assertSame(0, $snapshot['online_users']);
         $this->assertSame(0, $snapshot['online_tenant_organizations']);
+        $this->assertSame(0, $snapshot['online_tenant_users']);
+        $this->assertSame(0, $snapshot['online_employees']);
     }
 
     /** @test */
@@ -166,6 +176,8 @@ class DashboardPresenceServiceTest extends TestCase
         $this->assertFalse($disabledAgain['available']);
         $this->assertNull($disabledAgain['online_users']);
         $this->assertNull($disabledAgain['online_tenant_organizations']);
+        $this->assertNull($disabledAgain['online_tenant_users']);
+        $this->assertNull($disabledAgain['online_employees']);
 
         $disabledWarnings = array_values(array_filter(
             $warnings,
@@ -189,6 +201,8 @@ class DashboardPresenceServiceTest extends TestCase
         $this->assertFalse($snapshot['available']);
         $this->assertNull($snapshot['online_users']);
         $this->assertNull($snapshot['online_tenant_organizations']);
+        $this->assertNull($snapshot['online_tenant_users']);
+        $this->assertNull($snapshot['online_employees']);
         $this->assertSame('invalid_configuration', $snapshot['reason']);
 
         $this->service->snapshot();
@@ -222,6 +236,8 @@ class DashboardPresenceServiceTest extends TestCase
         $this->assertFalse($snapshot['available']);
         $this->assertNull($snapshot['online_users']);
         $this->assertNull($snapshot['online_tenant_organizations']);
+        $this->assertNull($snapshot['online_tenant_users']);
+        $this->assertNull($snapshot['online_employees']);
         $this->assertSame('redis_unavailable', $snapshot['reason']);
     }
 

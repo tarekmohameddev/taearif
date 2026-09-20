@@ -72,14 +72,20 @@ class AdminDashboardBusinessMetricsService
         $key = 'admin_dashboard_business_metrics:visits:' . $today;
 
         return $this->remember($key, 60, function () use ($today): array {
-            $summary = DB::table('dashboard_daily_visits')
-                ->where('visited_on', $today)
-                ->selectRaw('COUNT(*) AS unique_dashboard_users_today, COUNT(DISTINCT tenant_owner_id) AS unique_tenants_opened_dashboard_today')
+            $summary = DB::table('dashboard_daily_visits as visits')
+                ->join('users', 'users.id', '=', 'visits.user_id')
+                ->where('visits.visited_on', $today)
+                ->selectRaw(
+                    "COUNT(*) AS unique_dashboard_users_today, "
+                    . "COUNT(DISTINCT visits.tenant_owner_id) AS unique_tenants_opened_dashboard_today, "
+                    . "COUNT(DISTINCT CASE WHEN users.account_type = 'employee' THEN visits.user_id END) AS unique_employee_dashboard_users_today"
+                )
                 ->first();
 
             return [
                 'uniqueDashboardUsersToday' => (int) ($summary->unique_dashboard_users_today ?? 0),
                 'uniqueTenantsOpenedDashboardToday' => (int) ($summary->unique_tenants_opened_dashboard_today ?? 0),
+                'uniqueEmployeeDashboardUsersToday' => (int) ($summary->unique_employee_dashboard_users_today ?? 0),
             ];
         });
     }

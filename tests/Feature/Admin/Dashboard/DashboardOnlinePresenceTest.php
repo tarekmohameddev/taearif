@@ -35,6 +35,8 @@ class DashboardOnlinePresenceTest extends AdminApiTestCase
             'available' => true,
             'online_users' => 17,
             'online_tenant_organizations' => 9,
+            'online_tenant_users' => 10,
+            'online_employees' => 7,
             'window_seconds' => 120,
             'as_of' => '2026-09-08T10:00:00Z',
             'definition' => 'distinct_authenticated_dashboard_accounts',
@@ -60,6 +62,8 @@ class DashboardOnlinePresenceTest extends AdminApiTestCase
             'available' => false,
             'online_users' => null,
             'online_tenant_organizations' => null,
+            'online_tenant_users' => null,
+            'online_employees' => null,
             'window_seconds' => 120,
             'as_of' => '2026-09-08T10:00:00Z',
             'definition' => 'distinct_authenticated_dashboard_accounts',
@@ -85,6 +89,8 @@ class DashboardOnlinePresenceTest extends AdminApiTestCase
             'available' => false,
             'online_users' => null,
             'online_tenant_organizations' => null,
+            'online_tenant_users' => null,
+            'online_employees' => null,
             'window_seconds' => 120,
             'as_of' => '2026-09-08T10:00:00Z',
             'definition' => 'distinct_authenticated_dashboard_accounts',
@@ -95,14 +101,14 @@ class DashboardOnlinePresenceTest extends AdminApiTestCase
 
         $response->assertOk();
         $response->assertSee(__('Live Presence'), false);
-        $response->assertSee(__('Dashboard Users Online Now'), false);
-        $response->assertSee(__('Tenant Organizations Online Now'), false);
+        $response->assertSee(__('Tenant Users Online Now'), false);
+        $response->assertSee(__('Employees Online Now'), false);
         $response->assertSee(__('Live dashboard presence is temporarily unavailable'), false);
         $response->assertSee('data-dashboard-live-presence', false);
-        $response->assertSee('data-dashboard-live-key="online_users"', false);
-        $response->assertSee('data-dashboard-live-key="online_tenant_organizations"', false);
+        $response->assertSee('data-dashboard-live-key="online_tenant_users"', false);
+        $response->assertSee('data-dashboard-live-key="online_employees"', false);
         $this->assertMatchesRegularExpression(
-            '/data-dashboard-live-key="online_users"[^>]*>[\s\S]*?<strong class="dashboard-kpi-value">—<\/strong>/u',
+            '/data-dashboard-live-key="online_tenant_users"[^>]*>[\s\S]*?<strong class="dashboard-kpi-value">—<\/strong>/u',
             $response->getContent()
         );
     }
@@ -117,6 +123,8 @@ class DashboardOnlinePresenceTest extends AdminApiTestCase
             'available' => true,
             'online_users' => 0,
             'online_tenant_organizations' => 0,
+            'online_tenant_users' => 0,
+            'online_employees' => 0,
             'window_seconds' => 120,
             'as_of' => '2026-09-08T10:00:00Z',
             'definition' => 'distinct_authenticated_dashboard_accounts',
@@ -126,10 +134,10 @@ class DashboardOnlinePresenceTest extends AdminApiTestCase
         $response = $this->get(route('admin.dashboard'));
 
         $response->assertOk();
-        $response->assertSee(__('Dashboard Users Online Now'), false);
-        $response->assertSee(__('Tenant Organizations Online Now'), false);
+        $response->assertSee(__('Tenant Users Online Now'), false);
+        $response->assertSee(__('Employees Online Now'), false);
         $response->assertSee(
-            __('Distinct eligible dashboard accounts active in the last :minutes minutes', ['minutes' => 2]),
+            __('Distinct eligible tenant-owner accounts active in the last :minutes minutes', ['minutes' => 2]),
             false
         );
 
@@ -139,19 +147,19 @@ class DashboardOnlinePresenceTest extends AdminApiTestCase
             $html
         );
         $this->assertMatchesRegularExpression(
-            '/data-dashboard-live-key="online_users"[^>]*>[\s\S]*?<strong class="dashboard-kpi-value">0<\/strong>/u',
+            '/data-dashboard-live-key="online_tenant_users"[^>]*>[\s\S]*?<strong class="dashboard-kpi-value">0<\/strong>/u',
             $html
         );
         $this->assertMatchesRegularExpression(
-            '/data-dashboard-live-key="online_tenant_organizations"[^>]*>[\s\S]*?<strong class="dashboard-kpi-value">0<\/strong>/u',
+            '/data-dashboard-live-key="online_employees"[^>]*>[\s\S]*?<strong class="dashboard-kpi-value">0<\/strong>/u',
             $html
         );
         $this->assertDoesNotMatchRegularExpression(
-            '/data-dashboard-live-key="online_users"[^>]*>[\s\S]*?<strong class="dashboard-kpi-value">—<\/strong>/u',
+            '/data-dashboard-live-key="online_tenant_users"[^>]*>[\s\S]*?<strong class="dashboard-kpi-value">—<\/strong>/u',
             $html
         );
         $this->assertDoesNotMatchRegularExpression(
-            '/data-dashboard-live-key="online_tenant_organizations"[^>]*>[\s\S]*?<strong class="dashboard-kpi-value">—<\/strong>/u',
+            '/data-dashboard-live-key="online_employees"[^>]*>[\s\S]*?<strong class="dashboard-kpi-value">—<\/strong>/u',
             $html
         );
     }

@@ -281,6 +281,42 @@
     font-size: .8rem;
 }
 
+.admin-dashboard .dashboard-kpi-activity-summary .dashboard-kpi-label {
+    margin-block-end: .75rem;
+}
+
+.admin-dashboard .dashboard-kpi-split {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .75rem;
+    margin-block-end: .8rem;
+}
+
+.admin-dashboard .dashboard-kpi-split-item {
+    min-width: 0;
+}
+
+.admin-dashboard .dashboard-kpi-split-item + .dashboard-kpi-split-item {
+    padding-inline-start: .75rem;
+    border-inline-start: 1px solid var(--dashboard-border);
+}
+
+.admin-dashboard .dashboard-kpi-split-item span {
+    display: block;
+    margin-block-start: .3rem;
+    color: var(--dashboard-muted);
+    font-size: .72rem;
+    font-weight: 650;
+    line-height: 1.35;
+}
+
+.admin-dashboard .dashboard-kpi-meta {
+    margin: .4rem 0 0;
+    color: var(--dashboard-muted);
+    font-size: .7rem;
+    font-weight: 600;
+}
+
 .admin-dashboard .dashboard-tone-primary {
     --kpi-accent: #6366f1;
     --kpi-soft: rgba(99, 102, 241, .12);
