@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\V2\CustomersHub;
 
+use App\Domain\CustomersHub\Services\CustomersHubNotificationService;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
@@ -310,5 +311,265 @@ class RequestsListStagesTest extends TestCase
         $firstThree = array_slice($actions, 0, 3);
         $sourceIds = array_column($firstThree, 'sourceId');
         $this->assertSame([$id3, $id2, $id1], $sourceIds, 'Default sort should be updatedAt desc for property_request actions');
+    }
+
+    /**
+     * Stub unread property-request source IDs returned by the notification service
+     * (RequestsController always injects them into getList filters).
+     *
+     * @param  list<int>  $sourceIds
+     */
+    private function mockUnreadPropertyRequestSourceIds(array $sourceIds): void
+    {
+        $this->partialMock(CustomersHubNotificationService::class, function ($mock) use ($sourceIds) {
+            $mock->shouldReceive('getUnreadPropertyRequestSourceIds')
+                ->andReturn($sourceIds);
+        });
+    }
+
+    /** @test */
+    public function explicit_updated_at_desc_with_unread_ids_does_not_float_unread_first(): void
+    {
+        $this->requirePropertyRequestTables();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        Sanctum::actingAs($tenant);
+
+        $unreadOlder = $this->createPropertyRequest($tenant->id);
+        $readNewer = $this->createPropertyRequest($tenant->id);
+
+        $now = now();
+        DB::table('users_property_requests')->where('id', $unreadOlder)->update([
+            'updated_at' => $now->copy()->subMinutes(30),
+            'created_at' => $now->copy()->subMinutes(30),
+        ]);
+        DB::table('users_property_requests')->where('id', $readNewer)->update([
+            'updated_at' => $now,
+            'created_at' => $now->copy()->subMinutes(1),
+        ]);
+
+        $this->mockUnreadPropertyRequestSourceIds([$unreadOlder]);
+
+        $res = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'tab' => 'all',
+            'objectTypes' => ['property_request'],
+            'sort_by' => 'updatedAt',
+            'sort_dir' => 'desc',
+            'limit' => 10,
+            'offset' => 0,
+        ]);
+
+        $res->assertOk()->assertJsonPath('status', 'success');
+        $this->assertSame('updatedAt', $res->json('data.pagination.sortBy'));
+        $this->assertSame('desc', $res->json('data.pagination.sortDir'));
+
+        $actions = $res->json('data.actions');
+        $sourceIds = array_column(array_slice($actions, 0, 2), 'sourceId');
+        $this->assertSame(
+            [$readNewer, $unreadOlder],
+            $sourceIds,
+            'Explicit updatedAt sort must ignore unread-first even when unread IDs are present'
+        );
+    }
+
+    /** @test */
+    public function explicit_updated_at_desc_with_no_unread_ids_orders_by_updated_at(): void
+    {
+        $this->requirePropertyRequestTables();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        Sanctum::actingAs($tenant);
+
+        $id1 = $this->createPropertyRequest($tenant->id);
+        $id2 = $this->createPropertyRequest($tenant->id);
+        $id3 = $this->createPropertyRequest($tenant->id);
+
+        $now = now();
+        DB::table('users_property_requests')->where('id', $id1)->update(['updated_at' => $now->copy()->subMinutes(10)]);
+        DB::table('users_property_requests')->where('id', $id2)->update(['updated_at' => $now->copy()->subMinutes(5)]);
+        DB::table('users_property_requests')->where('id', $id3)->update(['updated_at' => $now]);
+
+        $this->mockUnreadPropertyRequestSourceIds([]);
+
+        $res = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'tab' => 'all',
+            'objectTypes' => ['property_request'],
+            'sort_by' => 'updatedAt',
+            'sort_dir' => 'desc',
+            'limit' => 10,
+            'offset' => 0,
+        ]);
+
+        $res->assertOk()->assertJsonPath('status', 'success');
+        $this->assertSame('updatedAt', $res->json('data.pagination.sortBy'));
+        $this->assertSame('desc', $res->json('data.pagination.sortDir'));
+
+        $sourceIds = array_column(array_slice($res->json('data.actions'), 0, 3), 'sourceId');
+        $this->assertSame([$id3, $id2, $id1], $sourceIds);
+    }
+
+    /** @test */
+    public function explicit_created_at_asc_and_desc_report_metadata_and_order(): void
+    {
+        $this->requirePropertyRequestTables();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        Sanctum::actingAs($tenant);
+
+        $oldest = $this->createPropertyRequest($tenant->id);
+        $middle = $this->createPropertyRequest($tenant->id);
+        $newest = $this->createPropertyRequest($tenant->id);
+
+        $now = now();
+        DB::table('users_property_requests')->where('id', $oldest)->update(['created_at' => $now->copy()->subMinutes(30)]);
+        DB::table('users_property_requests')->where('id', $middle)->update(['created_at' => $now->copy()->subMinutes(15)]);
+        DB::table('users_property_requests')->where('id', $newest)->update(['created_at' => $now]);
+
+        $this->mockUnreadPropertyRequestSourceIds([]);
+
+        $resDesc = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'tab' => 'all',
+            'objectTypes' => ['property_request'],
+            'sort_by' => 'createdAt',
+            'sort_dir' => 'desc',
+            'limit' => 10,
+            'offset' => 0,
+        ]);
+
+        $resDesc->assertOk();
+        $this->assertSame('createdAt', $resDesc->json('data.pagination.sortBy'));
+        $this->assertSame('desc', $resDesc->json('data.pagination.sortDir'));
+        $this->assertSame(
+            [$newest, $middle, $oldest],
+            array_column(array_slice($resDesc->json('data.actions'), 0, 3), 'sourceId')
+        );
+
+        $resAsc = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'tab' => 'all',
+            'objectTypes' => ['property_request'],
+            'sort_by' => 'createdAt',
+            'sort_dir' => 'asc',
+            'limit' => 10,
+            'offset' => 0,
+        ]);
+
+        $resAsc->assertOk();
+        $this->assertSame('createdAt', $resAsc->json('data.pagination.sortBy'));
+        $this->assertSame('asc', $resAsc->json('data.pagination.sortDir'));
+        $this->assertSame(
+            [$oldest, $middle, $newest],
+            array_column(array_slice($resAsc->json('data.actions'), 0, 3), 'sourceId')
+        );
+    }
+
+    /** @test */
+    public function default_sort_with_unread_ids_is_unread_first_then_created_at_desc(): void
+    {
+        $this->requirePropertyRequestTables();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        Sanctum::actingAs($tenant);
+
+        $unreadOlder = $this->createPropertyRequest($tenant->id);
+        $readNewest = $this->createPropertyRequest($tenant->id);
+        $readMiddle = $this->createPropertyRequest($tenant->id);
+
+        $now = now();
+        // Unread item is oldest by createdAt — without unread-first it would be last.
+        DB::table('users_property_requests')->where('id', $unreadOlder)->update([
+            'created_at' => $now->copy()->subMinutes(60),
+            'updated_at' => $now->copy()->subMinutes(60),
+        ]);
+        DB::table('users_property_requests')->where('id', $readNewest)->update([
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        DB::table('users_property_requests')->where('id', $readMiddle)->update([
+            'created_at' => $now->copy()->subMinutes(10),
+            'updated_at' => $now->copy()->subMinutes(10),
+        ]);
+
+        $this->mockUnreadPropertyRequestSourceIds([$unreadOlder]);
+
+        $res = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'tab' => 'all',
+            'objectTypes' => ['property_request'],
+            'limit' => 10,
+            'offset' => 0,
+        ]);
+
+        $res->assertOk()->assertJsonPath('status', 'success');
+        $this->assertSame('createdAt', $res->json('data.pagination.sortBy'));
+        $this->assertSame('desc', $res->json('data.pagination.sortDir'));
+
+        $sourceIds = array_column(array_slice($res->json('data.actions'), 0, 3), 'sourceId');
+        $this->assertSame(
+            [$unreadOlder, $readNewest, $readMiddle],
+            $sourceIds,
+            'When sort_by omitted and unread IDs present, unread floats first then createdAt desc'
+        );
+    }
+
+    /** @test */
+    public function identical_updated_at_uses_source_id_desc_as_tiebreaker(): void
+    {
+        $this->requirePropertyRequestTables();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        Sanctum::actingAs($tenant);
+
+        $id1 = $this->createPropertyRequest($tenant->id);
+        $id2 = $this->createPropertyRequest($tenant->id);
+        $id3 = $this->createPropertyRequest($tenant->id);
+
+        $sameUpdatedAt = now()->subMinutes(5)->toDateTimeString();
+        DB::table('users_property_requests')->whereIn('id', [$id1, $id2, $id3])->update([
+            'updated_at' => $sameUpdatedAt,
+        ]);
+
+        $this->mockUnreadPropertyRequestSourceIds([]);
+
+        $res = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'tab' => 'all',
+            'objectTypes' => ['property_request'],
+            'sort_by' => 'updatedAt',
+            'sort_dir' => 'desc',
+            'limit' => 10,
+            'offset' => 0,
+        ]);
+
+        $res->assertOk();
+        $sourceIds = array_column(array_slice($res->json('data.actions'), 0, 3), 'sourceId');
+        // Higher sourceId first for identical primary sort values.
+        $expected = [$id1, $id2, $id3];
+        rsort($expected);
+        $this->assertSame($expected, $sourceIds);
+    }
+
+    /** @test */
+    public function object_types_filter_still_returns_only_property_requests(): void
+    {
+        $this->requirePropertyRequestTables();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        Sanctum::actingAs($tenant);
+
+        $this->createPropertyRequest($tenant->id);
+        $this->mockUnreadPropertyRequestSourceIds([]);
+
+        $res = $this->postJson('/api/v2/customers-hub/requests/list', [
+            'tab' => 'all',
+            'objectTypes' => ['property_request'],
+            'limit' => 50,
+            'offset' => 0,
+        ]);
+
+        $res->assertOk()->assertJsonPath('status', 'success');
+        $actions = $res->json('data.actions');
+        $this->assertIsArray($actions);
+        $this->assertNotEmpty($actions);
+        foreach ($actions as $action) {
+            $this->assertSame('property_request', $action['objectType'] ?? null);
+        }
     }
 }
