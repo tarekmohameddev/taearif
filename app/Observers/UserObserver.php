@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Services\TenantCrmBootstrapService;
 use App\Support\CacheInvalidationHelper;
 use Illuminate\Support\Facades\Cache;
+use App\Services\TenantBrand\TenantBrandRefreshScheduler;
+use App\Services\TenantWebsite\TenantIdentifierNormalizer;
 
 /**
  * Observer for User model cache invalidation.
@@ -36,6 +38,13 @@ class UserObserver
         // If this is a tenant, clear tenant user lookup cache
         if ($user->account_type === 'tenant') {
             CacheInvalidationHelper::clearTenantUserCache($user->id);
+
+            if ($user->isDirty('username')) {
+                $this->invalidateTenantBrand($user, [
+                    $user->getOriginal('username'),
+                    $user->username,
+                ]);
+            }
         }
     }
 
@@ -55,6 +64,7 @@ class UserObserver
         // If this is a tenant, clear tenant user lookup cache
         if ($user->account_type === 'tenant') {
             CacheInvalidationHelper::clearTenantUserCache($user->id);
+            $this->invalidateTenantBrand($user, [$user->username]);
         }
     }
 
@@ -100,5 +110,21 @@ class UserObserver
         if ($user->account_type === 'tenant') {
             CacheInvalidationHelper::clearTenantProfileCachesAuto($userId);
         }
+    }
+
+    private function invalidateTenantBrand(User $user, array $identifiers): void
+    {
+        $normalizer = app(TenantIdentifierNormalizer::class);
+        $normalized = [];
+        foreach ($identifiers as $identifier) {
+            if (is_string($identifier) && trim($identifier) !== '') {
+                $normalized[] = $normalizer->normalize($identifier);
+            }
+        }
+
+        app(TenantBrandRefreshScheduler::class)->invalidateAfterCommit(
+            (int) $user->id,
+            array_values(array_unique($normalized))
+        );
     }
 }

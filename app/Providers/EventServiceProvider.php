@@ -56,6 +56,10 @@ use App\Models\Api\ApiDomainSetting;
 use App\Models\User\BasicSetting;
 use App\Observers\ApiDomainSettingObserver;
 use App\Observers\UserBasicSettingObserver;
+use App\Models\TenantGlobalComponent;
+use App\Models\TenantWebsiteLayout;
+use App\Observers\TenantGlobalComponentBrandObserver;
+use App\Observers\TenantWebsiteLayoutBrandObserver;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -144,5 +148,7 @@ class EventServiceProvider extends ServiceProvider
         // Profile payload dependencies for /api/user
         ApiDomainSetting::observe(ApiDomainSettingObserver::class);
         BasicSetting::observe(UserBasicSettingObserver::class);
+        TenantGlobalComponent::observe(TenantGlobalComponentBrandObserver::class);
+        TenantWebsiteLayout::observe(TenantWebsiteLayoutBrandObserver::class);
     }
 }

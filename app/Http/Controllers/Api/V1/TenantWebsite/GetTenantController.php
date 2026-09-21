@@ -10,10 +10,11 @@ use App\Models\TenantStaticPage;
 use App\Models\TenantGlobalComponent;
 use App\Models\TenantWebsiteLayout;
 use App\Models\TenantSetting;
-use App\Models\Api\ApiDomainSetting;
 use App\Models\Api\GeneralSetting;
 use App\Models\User\BasicSetting;
 use App\Services\Membership\MembershipAccessStateService;
+use App\Services\TenantWebsite\PublicBrandingLogo;
+use App\Services\TenantWebsite\TenantIdentifierLookup;
 
 use App\Http\Requests\Api\V1\TenantWebsite\GetTenantRequest;
 
@@ -21,7 +22,11 @@ class GetTenantController extends Controller
 {
     protected $accessStateService;
 
-    public function __construct(MembershipAccessStateService $accessStateService)
+    public function __construct(
+        MembershipAccessStateService $accessStateService,
+        private TenantIdentifierLookup $tenantIdentifierLookup,
+        private PublicBrandingLogo $publicBrandingLogo
+    )
     {
         $this->accessStateService = $accessStateService;
     }
@@ -29,22 +34,7 @@ class GetTenantController extends Controller
     public function store(GetTenantRequest $request)
     {
         $data = $request->validated();
-        $input = strtolower(trim($data['websiteName']));
-
-        // Try resolving by username first
-        $tenant = User::where('username', $input)->first();
-
-        // If not found, try resolving by custom domain
-        if (!$tenant) {
-            $domain = $this->normalizeDomain($input);
-            $domainRecord = ApiDomainSetting::servable()
-                ->where('custom_name', $domain)
-                ->first();
-
-            if ($domainRecord) {
-                $tenant = $domainRecord->user;
-            }
-        }
+        $tenant = $this->tenantIdentifierLookup->find($data['websiteName']);
         if (!$tenant) {
             return response()->json([], 204);
         }
@@ -78,8 +68,7 @@ class GetTenantController extends Controller
             $basicSetting = BasicSetting::where('user_id', $tenant->id)->first();
             $tenantSetting = TenantSetting::where('user_id', $tenant->id)->first();
 
-            $rawLogo = $basicSetting?->logo ?: $this->extractLogoFromWebsiteData($globals?->data ?? []);
-            $logoUrl = $this->toPublicUrl($rawLogo);
+            $logoUrl = $this->publicBrandingLogo->from($basicSetting, $globals?->data ?? []);
 
             $branding = [
                 'logo' => $logoUrl,
@@ -109,7 +98,7 @@ class GetTenantController extends Controller
             ]);
             $basicSetting = BasicSetting::where('user_id', $tenant->id)->first();
             $branding = [
-                'logo' => $this->toPublicUrl($basicSetting?->logo),
+                'logo' => $this->publicBrandingLogo->from($basicSetting, []),
                 'name' => $basicSetting?->company_name ?: $tenant->username,
                 'websiteBranding' => null,
             ];
@@ -130,87 +119,11 @@ class GetTenantController extends Controller
         }
     }
 
-    private function toPublicUrl(?string $value): ?string
-    {
-        if (!$value) {
-            return null;
-        }
-
-        $value = trim($value);
-        if ($value === '') {
-            return null;
-        }
-
-        // Already absolute
-        if (preg_match('#^https?://#i', $value)) {
-            return $value;
-        }
-
-        // Absolute path on this host
-        if (str_starts_with($value, '/')) {
-            return url($value);
-        }
-
-        // If it's just a filename (common in web onboarding), serve from the public user assets folder.
-        if (!str_contains($value, '/')) {
-            return asset('assets/front/img/user/' . $value);
-        }
-
-        // Otherwise treat as a relative public path.
-        return asset($value);
-    }
-
-    /**
-     * Best-effort fallback: find a logo string inside the seeded website data structure.
-     * We look for known shapes used in templates: companyInfo.logo, logo.image, or a direct logo string.
-     */
-    private function extractLogoFromWebsiteData(array $data): ?string
-    {
-        foreach ($data as $key => $value) {
-            if (is_array($value)) {
-                // companyInfo.logo (string)
-                if (isset($value['companyInfo']) && is_array($value['companyInfo']) && isset($value['companyInfo']['logo']) && is_string($value['companyInfo']['logo'])) {
-                    return $value['companyInfo']['logo'];
-                }
-
-                // logo.image (string)
-                if (isset($value['logo']) && is_array($value['logo']) && isset($value['logo']['image']) && is_string($value['logo']['image'])) {
-                    return $value['logo']['image'];
-                }
-
-                // direct logo (string)
-                if ($key === 'logo' && is_string($value)) {
-                    return $value;
-                }
-
-                $nested = $this->extractLogoFromWebsiteData($value);
-                if ($nested) {
-                    return $nested;
-                }
-            }
-
-            if ($key === 'logo' && is_string($value)) {
-                return $value;
-            }
-        }
-
-        return null;
-    }
-
     private function isMaintenanceMode(User $tenant): bool
     {
         return (bool) (GeneralSetting::where('user_id', $tenant->id)->first()?->maintenance_mode ?? false);
     }
 
-    private function normalizeDomain(string $value): string
-    {
-        // Strip protocol
-        $value = preg_replace('#^https?://#', '', $value);
-        // Strip leading www.
-        $value = preg_replace('#^www\.#', '', $value);
-        // Remove trailing slashes and whitespace
-        return rtrim(trim(strtolower($value)), '/');
-    }
 }
 
 

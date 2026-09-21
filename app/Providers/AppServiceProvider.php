@@ -66,6 +66,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->app->bind(
+            \App\Contracts\TenantBrandVariantRepository::class,
+            \App\Services\TenantBrand\EloquentTenantBrandVariantRepository::class
+        );
+
         // Per-request singleton to avoid repeating the "default language" query
         // across controllers, view composers, and Blade partials.
         $this->app->singleton('defaultLanguage', function () {

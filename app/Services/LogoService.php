@@ -29,12 +29,8 @@ class LogoService
 
             // Handle Logo Upload
             if ($request->hasFile('logo')) {
-                // Delete old logo if exists
-                if ($bss->logo) {
-                    Storage::disk('public')->delete($bss->logo);
-                }
-
-                // Upload new logo
+                // Keep replaced originals for the tenant-brand retention window.
+                // Content-addressed variants may still reference the old bytes.
                 $logoFile = $request->file('logo');
                 $logoFilename = $logoFile->store('logos', 'public');
                 $bss->logo = $logoFilename;
