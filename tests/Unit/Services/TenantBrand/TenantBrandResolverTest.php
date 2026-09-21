@@ -42,7 +42,7 @@ class TenantBrandResolverTest extends TestCase
             '10 branding is trimmed' => [[], '  https://c.io/b.png  ', [], 'https://c.io/b.png'],
             '11 branding placeholder uses legacy' => [[], 'https://c.io/PLACEHOLDER/logo.png', $this->legacy('https://c.io/l.png'), 'https://c.io/l.png'],
             '12 dimension placeholder falls through' => [[], 'https://c.io/logo 200×55.png', [], null],
-            '13 relative upload returns null without fallback' => [$this->header('/uploads/a.png'), 'https://c.io/b.png', [], null],
+            '13 relative upload skips to branding' => [$this->header('/uploads/a.png'), 'https://c.io/b.png', [], 'https://c.io/b.png'],
             '14 default relative logo returns null' => [$this->header('/logo.png'), null, [], null],
             '15 allowlisted http upgrades' => [$this->header('http://cdn.allowlisted.io/a.png'), null, [], 'https://cdn.allowlisted.io/a.png'],
             '16 other http returns null' => [$this->header('http://other.example/a.png'), null, [], null],
@@ -65,6 +65,18 @@ class TenantBrandResolverTest extends TestCase
             'https://c.io/b.png',
             []
         ));
+    }
+
+    public function test_relative_candidates_continue_through_all_sources(): void
+    {
+        $this->assertSame(
+            'https://c.io/legacy.png',
+            $this->resolver->resolve(
+                $this->header('logos/header.png'),
+                '/branding/logo.png',
+                $this->legacy('https://c.io/legacy.png')
+            )
+        );
     }
 
     private function header(mixed $image, mixed $src = null): array

@@ -50,6 +50,15 @@ final class TenantBrandCache
         return new TenantBrandCacheResult(200, $this->encode($this->payloadBuilder->build($tenant)));
     }
 
+    public function rebuild(string $normalizedIdentifier): TenantBrandCacheResult
+    {
+        $redis = Redis::connection('cache');
+        $redis->del($this->payloadKey($normalizedIdentifier));
+        $redis->del($this->negativeKey($normalizedIdentifier));
+
+        return $this->get($normalizedIdentifier);
+    }
+
     private function buildAndStore(string $normalizedIdentifier): TenantBrandCacheResult
     {
         $redis = Redis::connection('cache');
@@ -81,7 +90,7 @@ final class TenantBrandCache
     private function storeNegative(string $identifier): void
     {
         $redis = Redis::connection('cache');
-        $bucket = 'brand-negative-rate:v1:' . gmdate('YmdHi');
+        $bucket = 'brand-negative-rate:v2:' . gmdate('YmdHi');
         $count = (int) $redis->incr($bucket);
         if ($count === 1) {
             $redis->expire($bucket, 120);
@@ -104,21 +113,21 @@ final class TenantBrandCache
 
     private function payloadKey(string $identifier): string
     {
-        return 'brand:v1:' . $identifier;
+        return 'brand:v2:' . $identifier;
     }
 
     private function negativeKey(string $identifier): string
     {
-        return 'brand-negative:v1:' . $identifier;
+        return 'brand-negative:v2:' . $identifier;
     }
 
     private function metadataKey(int $tenantId): string
     {
-        return 'brand-meta:v1:tenant:' . $tenantId;
+        return 'brand-meta:v2:tenant:' . $tenantId;
     }
 
     private function lockKey(string $identifier): string
     {
-        return 'brand-lock:v1:' . $identifier;
+        return 'brand-lock:v2:' . $identifier;
     }
 }

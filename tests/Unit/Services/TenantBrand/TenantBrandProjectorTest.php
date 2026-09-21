@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services\TenantBrand;
 
+use App\Contracts\TenantBrandVariantRepository;
 use App\Services\TenantBrand\TenantBrandContentHasher;
 use App\Services\TenantBrand\TenantBrandProjector;
 use PHPUnit\Framework\TestCase;
@@ -30,7 +31,8 @@ class TenantBrandProjectorTest extends TestCase
     {
         file_put_contents($this->root . DIRECTORY_SEPARATOR . 'logo.png', 'original-logo-bytes');
         $projector = new TenantBrandProjector(
-            new TenantBrandContentHasher(['assets.example.com'], $this->root)
+            new TenantBrandContentHasher(['assets.example.com'], $this->root),
+            $this->variants()
         );
 
         $this->assertSame([
@@ -40,13 +42,50 @@ class TenantBrandProjectorTest extends TestCase
         ], $projector->project('https://assets.example.com/logo.png'));
     }
 
-    public function test_unverified_remote_original_is_not_exposed(): void
+    public function test_remote_original_is_exposed_until_variant_is_ready(): void
     {
-        $projector = new TenantBrandProjector(new TenantBrandContentHasher([], $this->root));
-
-        $this->assertSame(
-            ['logoUrl' => null, 'inline' => null, 'v' => 'none'],
-            $projector->project('https://untrusted.example/logo.png')
+        $projector = new TenantBrandProjector(
+            new TenantBrandContentHasher([], $this->root),
+            $this->variants()
         );
+
+        $url = 'https://untrusted.example/logo.png';
+
+        $this->assertSame([
+            'logoUrl' => $url,
+            'inline' => null,
+            'v' => 'original-' . hash('sha256', $url),
+        ], $projector->project($url));
+    }
+
+    public function test_ready_variant_replaces_interim_original(): void
+    {
+        $url = 'https://assets.example.com/logo.png';
+        file_put_contents($this->root . DIRECTORY_SEPARATOR . 'logo.png', 'source');
+        $variant = [
+            'logoUrl' => 'https://assets.example.com/storage/tenant-brand/hash.webp',
+            'inline' => 'data:image/webp;base64,YQ==',
+            'v' => str_repeat('a', 64),
+        ];
+        $projector = new TenantBrandProjector(
+            new TenantBrandContentHasher(['assets.example.com'], $this->root),
+            $this->variants($variant)
+        );
+
+        $this->assertSame($variant, $projector->project($url));
+    }
+
+    private function variants(?array $ready = null): TenantBrandVariantRepository
+    {
+        return new class($ready) implements TenantBrandVariantRepository {
+            public function __construct(private ?array $ready)
+            {
+            }
+
+            public function findReady(string $sourceUrl, ?string $sourceContentHash): ?array
+            {
+                return $this->ready;
+            }
+        };
     }
 }

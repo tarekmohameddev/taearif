@@ -113,16 +113,16 @@ final class TenantBrandRefreshService
 
     private function payloadKey(string $identifier): string
     {
-        return 'brand:v1:' . $identifier;
+        return 'brand:v2:' . $identifier;
     }
 
     private function negativeKey(string $identifier): string
     {
-        return 'brand-negative:v1:' . $identifier;
+        return 'brand-negative:v2:' . $identifier;
     }
 
     private function metadataKey(int $tenantId): string
     {
-        return 'brand-meta:v1:tenant:' . $tenantId;
+        return 'brand-meta:v2:tenant:' . $tenantId;
     }
 }

@@ -46,6 +46,28 @@ final class TenantBrandPayloadBuilder
         $brandingLogo = $this->publicBrandingLogo->from($basicSetting, $globalData);
         $sourceUrl = $this->resolver->resolve($globalData, $brandingLogo, $layoutData);
 
-        return $this->projector->project($sourceUrl);
+        return $this->projector->project($sourceUrl, (int) $tenant->id);
+    }
+
+    /** @param array{globals?: TenantGlobalComponent|null, layout?: TenantWebsiteLayout|null, basic?: BasicSetting|null} $overrides */
+    public function resolveSource(User $tenant, array $overrides = []): ?string
+    {
+        $globals = array_key_exists('globals', $overrides)
+            ? $overrides['globals']
+            : TenantGlobalComponent::where('user_id', $tenant->id)->first();
+        $layout = array_key_exists('layout', $overrides)
+            ? $overrides['layout']
+            : TenantWebsiteLayout::where('user_id', $tenant->id)->first();
+        $basicSetting = array_key_exists('basic', $overrides)
+            ? $overrides['basic']
+            : BasicSetting::where('user_id', $tenant->id)->first();
+        $globalData = is_array($globals?->data) ? $globals->data : [];
+        $layoutData = is_array($layout?->data) ? $layout->data : [];
+
+        return $this->resolver->resolve(
+            $globalData,
+            $this->publicBrandingLogo->from($basicSetting, $globalData),
+            $layoutData
+        );
     }
 }

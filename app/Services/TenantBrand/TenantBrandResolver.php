@@ -17,10 +17,26 @@ final class TenantBrandResolver
                 continue;
             }
 
+            // Relative values resolve against the frontend tenant origin, not
+            // this API. Skip them and allow the next exposed getTenant source.
+            if ($this->isRelative($candidate)) {
+                continue;
+            }
+
             return $this->urlPolicy->normalize($candidate);
         }
 
         return null;
+    }
+
+    private function isRelative(string $value): bool
+    {
+        if (str_starts_with($value, '//')) {
+            return false;
+        }
+
+        return str_starts_with($value, '/')
+            || preg_match('/^[a-z][a-z0-9+.-]*:/i', $value) !== 1;
     }
 
     /** @return list<string> */
