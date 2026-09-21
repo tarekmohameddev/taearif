@@ -56,7 +56,7 @@ class StatsController extends BaseApiController
             ->where('status', 'active')
             ->count();
 
-        $messagesThisMonth = WaMessageLog::query()
+        $campaignMessagesSentThisMonth = WaMessageLog::query()
             ->where('user_id', $userId)
             ->whereIn('status', ['sent', 'delivered'])
             ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
@@ -65,7 +65,7 @@ class StatsController extends BaseApiController
         return $this->ok([
             'bot_replies_this_month' => $botRepliesThisMonth,
             'active_conversations'   => $activeConversations,
-            'messages_this_month'    => $messagesThisMonth,
+            'campaign_messages_sent_this_month' => $campaignMessagesSentThisMonth,
         ]);
     }
 }
