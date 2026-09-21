@@ -104,7 +104,7 @@ class ProjectPropertyService
             ->where('language_id', $defaultLanguage->id)
             ->first();
 
-        $payload = $this->mergeInheritedProjectLocation($project, $projectContent, $payload);
+        $payload = $this->mergeProjectDefaults($project, $projectContent, $payload);
 
         $effectiveAddress = trim((string) ($payload['address'] ?? ''));
         if ($effectiveAddress === '') {
@@ -129,12 +129,13 @@ class ProjectPropertyService
             &$property
         ): void {
             $propertyData = array_merge([
-                'price' => null,
-                'area' => null,
                 'status' => 0,
                 'latitude' => null,
                 'longitude' => null,
             ], $this->buildPropertyPayload($payload, $projectId));
+            // Nested project units are published inventory by contract.
+            $propertyData['publish_status'] = 'published';
+            $propertyData['status'] = 1;
             $featured = $payload['featured'] ?? false;
             $floorPlanningImage = $payload['floor_planning_image'] ?? null;
 
@@ -156,13 +157,13 @@ class ProjectPropertyService
 
             PropertyContent::storePropertyContent($tenantOwnerId, $property->id, [
                 'language_id' => $defaultLanguage->id,
-                'category_id' => $payload['category_id'] ?? ApiUserCategory::where('slug', 'other')->value('id'),
+                'category_id' => $payload['category_id'],
                 'state_id' => $location['state_id'],
                 'city_id' => $location['city_id'],
                 'title' => $payload['title'],
                 'slug' => str_replace('.', '', Str::slug($payload['title'])),
                 'address' => $payload['address'],
-                'description' => $payload['description'],
+                'description' => $payload['description'] ?? '',
                 'meta_keyword' => $payload['meta_keyword'] ?? null,
                 'meta_description' => $payload['meta_description'] ?? null,
             ]);
@@ -394,7 +395,7 @@ class ProjectPropertyService
         return $language;
     }
 
-    private function mergeInheritedProjectLocation(
+    private function mergeProjectDefaults(
         Project $project,
         ?ProjectContent $projectContent,
         array $payload,
@@ -410,6 +411,25 @@ class ProjectPropertyService
             $out['address'] = trim((string) $projectContent->address);
         } else {
             $out['address'] = $trimmedRequestAddress;
+        }
+
+        if (! array_key_exists('description', $out) || trim((string) $out['description']) === '') {
+            $out['description'] = (string) ($projectContent?->description ?? '');
+        }
+
+        if ((! array_key_exists('state_id', $out) || $out['state_id'] === null || $out['state_id'] === '')
+            && $project->state_id !== null) {
+            $out['state_id'] = $project->state_id;
+        }
+
+        if ((! array_key_exists('district_id', $out) || $out['district_id'] === null || $out['district_id'] === '')
+            && $project->state_id !== null) {
+            $out['district_id'] = $project->state_id;
+        }
+
+        if ((! array_key_exists('city_id', $out) || $out['city_id'] === null || $out['city_id'] === '')
+            && $project->city_id !== null) {
+            $out['city_id'] = $project->city_id;
         }
 
         foreach (['latitude', 'longitude'] as $coord) {

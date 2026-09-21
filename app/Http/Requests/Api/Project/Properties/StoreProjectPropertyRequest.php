@@ -21,22 +21,24 @@ class StoreProjectPropertyRequest extends BaseApiFormRequest
         return array_merge($this->propertyListingStatusRules(), [
             'title' => 'required|max:255',
             'address' => 'nullable|string|max:255',
-            'description' => 'required',
+            'description' => 'nullable|string',
             'featured_image' => 'required|string',
             'gallery' => 'nullable|array',
             'gallery.*' => 'string',
-            'price' => 'nullable|numeric',
+            'price' => 'required|numeric|min:0',
             'pricePerMeter' => 'nullable|numeric',
             'purpose' => 'nullable|in:sale,rent',
-            'area' => 'nullable|numeric',
+            'area' => 'required|numeric|min:0',
+            'beds' => 'nullable|integer|min:0',
+            'bath' => 'nullable|integer|min:0',
             'status' => 'nullable',
             'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
             'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
-            'category_id' => 'nullable|integer',
+            'category_id' => 'required|integer|min:1',
             'advertising_license' => 'nullable|string',
             'featured' => 'nullable|boolean',
             'property_type' => 'prohibited',
             'project_id' => 'prohibited',
-        ], $this->locationRules(true));
+        ], $this->locationRules(false));
     }
 }

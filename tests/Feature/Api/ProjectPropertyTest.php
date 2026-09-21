@@ -146,6 +146,14 @@ class ProjectPropertyTest extends TestCase
         ]);
     }
 
+    private function propertyCategoryId(): int
+    {
+        return (int) ApiUserCategory::query()
+            ->where('type', 'property')
+            ->where('is_active', 1)
+            ->value('id');
+    }
+
     private function createProject(User $tenant): Project
     {
         return Project::query()->create([
@@ -351,6 +359,9 @@ class ProjectPropertyTest extends TestCase
             'address' => 'Block A',
             'description' => 'First new unit after project save',
             'featured_image' => 'properties/orch-unit-1.jpg',
+            'category_id' => $this->propertyCategoryId(),
+            'price' => 100000,
+            'area' => 120,
             'district_id' => $district->id,
             'purpose' => 'sale',
         ])->assertCreated()
@@ -361,6 +372,9 @@ class ProjectPropertyTest extends TestCase
             'address' => 'Block B',
             'description' => 'Second new unit after project save',
             'featured_image' => 'properties/orch-unit-2.jpg',
+            'category_id' => $this->propertyCategoryId(),
+            'price' => 110000,
+            'area' => 125,
             'district_id' => $district->id,
             'purpose' => 'sale',
         ])->assertCreated();
@@ -396,6 +410,9 @@ class ProjectPropertyTest extends TestCase
             'address' => 'Tower 1',
             'description' => 'Project unit description',
             'featured_image' => 'properties/unit-a.jpg',
+            'category_id' => $this->propertyCategoryId(),
+            'price' => 100000,
+            'area' => 120,
             'district_id' => $district->id,
             'purpose' => 'sale',
             'advertising_license' => 'LIC-123',
@@ -432,6 +449,9 @@ class ProjectPropertyTest extends TestCase
             'address' => 'Tower 2',
             'description' => 'Another unit',
             'featured_image' => 'properties/unit-b.jpg',
+            'category_id' => $this->propertyCategoryId(),
+            'price' => 100000,
+            'area' => 120,
             'district_id' => $district->id,
             'city_id' => $district->city_id + 1,
         ]);
@@ -461,6 +481,9 @@ class ProjectPropertyTest extends TestCase
             'title' => 'Unit Inherit',
             'description' => 'Inherited coords and address',
             'featured_image' => 'properties/unit-inherit.jpg',
+            'category_id' => $this->propertyCategoryId(),
+            'price' => 100000,
+            'area' => 120,
             'district_id' => $district->id,
             'purpose' => 'sale',
         ]);
@@ -506,6 +529,9 @@ class ProjectPropertyTest extends TestCase
             'address' => 'Request Address Line',
             'description' => 'Override test',
             'featured_image' => 'properties/unit-override.jpg',
+            'category_id' => $this->propertyCategoryId(),
+            'price' => 100000,
+            'area' => 120,
             'district_id' => $district->id,
             'purpose' => 'sale',
             'latitude' => 25.2048,
@@ -547,6 +573,9 @@ class ProjectPropertyTest extends TestCase
             'title' => 'Unit No Address',
             'description' => 'No usable address',
             'featured_image' => 'properties/unit-no-addr.jpg',
+            'category_id' => $this->propertyCategoryId(),
+            'price' => 100000,
+            'area' => 120,
             'district_id' => $district->id,
             'purpose' => 'sale',
         ]);
@@ -572,6 +601,9 @@ class ProjectPropertyTest extends TestCase
             'title' => 'Unit No Content',
             'description' => 'No project content row',
             'featured_image' => 'properties/unit-no-content.jpg',
+            'category_id' => $this->propertyCategoryId(),
+            'price' => 100000,
+            'area' => 120,
             'district_id' => $district->id,
             'purpose' => 'sale',
         ]);
@@ -597,6 +629,9 @@ class ProjectPropertyTest extends TestCase
             'address' => str_repeat('a', 256),
             'description' => 'Too long',
             'featured_image' => 'properties/unit-long.jpg',
+            'category_id' => $this->propertyCategoryId(),
+            'price' => 100000,
+            'area' => 120,
             'district_id' => $district->id,
             'purpose' => 'sale',
         ]);
@@ -606,6 +641,72 @@ class ProjectPropertyTest extends TestCase
             ->assertJsonPath('message', 'Validation failed');
 
         $this->assertArrayHasKey('address', $response->json('errors'));
+    }
+
+    public function test_create_accepts_frontend_minimal_payload_inherits_project_defaults_and_publishes(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, ['projects.view', 'properties.create']);
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+        $district = $this->createDistrict();
+        $project->update([
+            'state_id' => $district->id,
+            'city_id' => $district->city_id,
+            'latitude' => 24.7136,
+            'longitude' => 46.6753,
+        ]);
+        $languageId = Language::query()
+            ->where('user_id', $tenant->id)
+            ->where('is_default', 1)
+            ->value('id');
+        ProjectContent::query()->create([
+            'user_id' => $tenant->id,
+            'project_id' => $project->id,
+            'language_id' => $languageId,
+            'title' => 'Project defaults',
+            'slug' => 'project-defaults-' . $project->id,
+            'address' => 'Project Address',
+            'description' => 'Project Description',
+        ]);
+
+        $response = $this->postJson("/api/projects/{$project->id}/properties", [
+            'title' => 'Minimal Unit',
+            'featured_image' => 'properties/minimal-unit.jpg',
+            'category_id' => $this->propertyCategoryId(),
+            'price' => 850000,
+            'area' => 120,
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.property.publish_status', 'published')
+            ->assertJsonPath('data.property.address', 'Project Address')
+            ->assertJsonPath('data.property.description', 'Project Description')
+            ->assertJsonPath('data.property.district_id', $district->id)
+            ->assertJsonPath('data.property.city_id', $district->city_id);
+    }
+
+    public function test_create_requires_price_area_and_category(): void
+    {
+        $this->skipIfMissingSchema();
+
+        $tenant = User::factory()->create(['account_type' => 'tenant']);
+        $this->seedTenantContext($tenant);
+        $this->grantPermissions($tenant, ['projects.view', 'properties.create']);
+        Sanctum::actingAs($tenant);
+
+        $project = $this->createProject($tenant);
+        $response = $this->postJson("/api/projects/{$project->id}/properties", [
+            'title' => 'Incomplete Unit',
+            'featured_image' => 'properties/incomplete-unit.jpg',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['price', 'area', 'category_id']);
     }
 
     public function test_attach_existing_property_is_idempotent_and_blocks_other_project(): void
