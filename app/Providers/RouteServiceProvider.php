@@ -56,10 +56,22 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function map()
     {
+        $this->mapTenantBrandRoutes();
         $this->mapApiRoutes();
         $this->mapWebRoutes();
         $this->mapAdminRoutes();
         $this->mapAdminApiRoutes();
+    }
+
+    /**
+     * The brand hot path intentionally bypasses the heavy API middleware group.
+     * Global safety middleware still applies.
+     */
+    protected function mapTenantBrandRoutes(): void
+    {
+        Route::prefix('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/tenant-brand.php'));
     }
 
     /**
