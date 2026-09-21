@@ -65,6 +65,8 @@ composer.lock
 /public/assets/admin/css/*
 !/public/assets/admin/css/dashboard.css
 *.md
+# Shareable frontend integration contract for custom-domain ownership verification.
+!ai/custom-domain-ownership-nextjs/README.md
 database/seeders/RentalDashboardTestSeeder833.php
 database/seeds/RentalDashboardTestSeeder833.php
 
