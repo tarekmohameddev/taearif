@@ -27,4 +27,10 @@ class PageviewServicePathNormalizationTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         PageviewService::normalizePath('//example.test/project/demo');
     }
+
+    public function test_it_rejects_control_characters_in_internal_paths(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        PageviewService::normalizePath("/ar/project/demo\0slug");
+    }
 }

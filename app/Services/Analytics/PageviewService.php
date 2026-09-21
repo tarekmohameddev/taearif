@@ -48,15 +48,6 @@ class PageviewService
         string $pageType,
         ?string $userAgent = null
     ): int {
-        // Skip tracking for bots
-        if ($this->isBot($userAgent)) {
-            Log::debug('Skipping pageview tracking for bot', [
-                'user_agent' => $userAgent,
-                'path' => $path,
-            ]);
-            return 0;
-        }
-
         $normalizedPath = self::normalizePath($path);
         $canonicalSlug = in_array($pageType, ['property', 'project'], true)
             ? ($dynamicSlug ?: $slug)
@@ -65,6 +56,16 @@ class PageviewService
 
         if (in_array($pageType, ['property', 'project'], true)) {
             $this->assertOwnedContent($tenantId, $canonicalSlug, $normalizedPath, $pageType);
+        }
+
+        // Validate the public content identity before silently ignoring bots so
+        // invalid payloads always retain the endpoint's 422 contract.
+        if ($this->isBot($userAgent)) {
+            Log::debug('Skipping pageview tracking for bot', [
+                'user_agent' => $userAgent,
+                'path' => $normalizedPath,
+            ]);
+            return 0;
         }
 
         $dateBucket = Carbon::today()->toDateString();
