@@ -5,6 +5,7 @@ namespace App\Services\Analytics;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
 
 class PageviewService
 {
@@ -56,25 +57,39 @@ class PageviewService
             return 0;
         }
 
-        $dateBucket = Carbon::today()->toDateString();
+        $normalizedPath = self::normalizePath($path);
+        $canonicalSlug = in_array($pageType, ['property', 'project'], true)
+            ? ($dynamicSlug ?: $slug)
+            : $slug;
         $normalizedDynamicSlug = $dynamicSlug ?: null;
 
-        return DB::transaction(function () use ($tenantId, $slug, $normalizedDynamicSlug, $path, $pageType, $dateBucket) {
+        if (in_array($pageType, ['property', 'project'], true)) {
+            $this->assertOwnedContent($tenantId, $canonicalSlug, $normalizedPath, $pageType);
+        }
+
+        $dateBucket = Carbon::today()->toDateString();
+
+        return DB::transaction(function () use ($tenantId, $canonicalSlug, $normalizedDynamicSlug, $normalizedPath, $pageType, $dateBucket) {
             // Try to increment existing record
             $updated = DB::table('pageview_analytics')
                 ->where('tenant_id', $tenantId)
-                ->where('page_slug', $slug)
-                ->where('dynamic_slug', $normalizedDynamicSlug)
+                ->where('page_path', $normalizedPath)
                 ->where('date_bucket', $dateBucket)
                 ->lockForUpdate()
-                ->increment('views_count', 1);
+                ->update([
+                    'page_slug' => $canonicalSlug,
+                    'dynamic_slug' => $normalizedDynamicSlug,
+                    'full_path' => $normalizedPath,
+                    'page_type' => $pageType,
+                    'views_count' => DB::raw('views_count + 1'),
+                    'updated_at' => now(),
+                ]);
 
             if ($updated > 0) {
                 // Record was updated, get the new count
                 $record = DB::table('pageview_analytics')
                     ->where('tenant_id', $tenantId)
-                    ->where('page_slug', $slug)
-                    ->where('dynamic_slug', $normalizedDynamicSlug)
+                    ->where('page_path', $normalizedPath)
                     ->where('date_bucket', $dateBucket)
                     ->first();
 
@@ -87,9 +102,10 @@ class PageviewService
             try {
                 DB::table('pageview_analytics')->insert([
                     'tenant_id' => $tenantId,
-                    'page_slug' => $slug,
+                    'page_slug' => $canonicalSlug,
                     'dynamic_slug' => $normalizedDynamicSlug,
-                    'full_path' => $path,
+                    'full_path' => $normalizedPath,
+                    'page_path' => $normalizedPath,
                     'page_type' => $pageType,
                     'views_count' => 1,
                     'date_bucket' => $dateBucket,
@@ -103,16 +119,21 @@ class PageviewService
                 if ($e->getCode() === '23000' || str_contains($e->getMessage(), 'Duplicate entry')) {
                     $updated = DB::table('pageview_analytics')
                         ->where('tenant_id', $tenantId)
-                        ->where('page_slug', $slug)
-                        ->where('dynamic_slug', $normalizedDynamicSlug)
+                        ->where('page_path', $normalizedPath)
                         ->where('date_bucket', $dateBucket)
-                        ->increment('views_count', 1);
+                        ->update([
+                            'page_slug' => $canonicalSlug,
+                            'dynamic_slug' => $normalizedDynamicSlug,
+                            'full_path' => $normalizedPath,
+                            'page_type' => $pageType,
+                            'views_count' => DB::raw('views_count + 1'),
+                            'updated_at' => now(),
+                        ]);
 
                     if ($updated > 0) {
                         $record = DB::table('pageview_analytics')
                             ->where('tenant_id', $tenantId)
-                            ->where('page_slug', $slug)
-                            ->where('dynamic_slug', $normalizedDynamicSlug)
+                            ->where('page_path', $normalizedPath)
                             ->where('date_bucket', $dateBucket)
                             ->first();
 
@@ -124,6 +145,40 @@ class PageviewService
                 throw $e;
             }
         });
+    }
+
+    public static function normalizePath(string $path): string
+    {
+        if (preg_match('/[\x00-\x1F\x7F]/', $path) || preg_match('/^[a-z][a-z0-9+.-]*:/i', $path) || str_starts_with($path, '//')) {
+            throw new \InvalidArgumentException('The page path must be an internal path.');
+        }
+
+        if (! str_starts_with($path, '/')) {
+            throw new \InvalidArgumentException('The page path must start with a slash.');
+        }
+
+        $path = (string) (parse_url($path, PHP_URL_PATH) ?: '/');
+        $path = preg_replace('#/{2,}#', '/', $path) ?: '/';
+
+        return $path === '/' ? '/' : rtrim($path, '/');
+    }
+
+    private function assertOwnedContent(string $tenantId, string $canonicalSlug, string $path, string $pageType): void
+    {
+        $tenant = DB::table('users')->where('username', $tenantId)->first(['id']);
+        $table = $pageType === 'property' ? 'user_property_contents' : 'user_project_contents';
+
+        $contentExists = $tenant && DB::table($table)
+            ->where('user_id', $tenant->id)
+            ->where('slug', $canonicalSlug)
+            ->exists();
+
+        $segments = array_map('rawurldecode', explode('/', trim($path, '/')));
+        if (! $contentExists || ! in_array($canonicalSlug, $segments, true)) {
+            throw ValidationException::withMessages([
+                'slug' => "The {$pageType} slug does not belong to the tenant or path.",
+            ]);
+        }
     }
 
     /**

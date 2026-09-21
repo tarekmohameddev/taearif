@@ -104,7 +104,10 @@ class Ga4AnalyticsService
                 $rowCount = $response->getRowCount();
                 $pageRowsProcessed = 0;
 
-                foreach ($response->getRows() as $row) {
+                $responseRows = $response->getRows();
+                $returnedRows = count($responseRows);
+
+                foreach ($responseRows as $row) {
                     $dimensionValues = $row->getDimensionValues();
                     $metricValues = $row->getMetricValues();
 
@@ -154,10 +157,10 @@ class Ga4AnalyticsService
                 }
 
                 $totalRowsProcessed += $pageRowsProcessed;
-                $offset += $limit;
+                $offset += $returnedRows;
 
                 // Check if there are more rows to fetch
-                $hasMoreRows = ($rowCount >= $limit);
+                $hasMoreRows = $offset < $rowCount && $returnedRows === $limit;
 
                 if ($hasMoreRows) {
                     Log::info('GA4 pagination: fetching more rows', [
@@ -234,9 +237,9 @@ class Ga4AnalyticsService
                     page_type = COALESCE(VALUES(page_type), page_type),
                     page_slug = COALESCE(NULLIF(VALUES(page_slug), ''), page_slug),
                     full_path = COALESCE(VALUES(full_path), full_path),
-                    views_count = views_count + VALUES(views_count),
-                    sessions_count = sessions_count + VALUES(sessions_count),
-                    users_count = users_count + VALUES(users_count),
+                    views_count = VALUES(views_count),
+                    sessions_count = VALUES(sessions_count),
+                    users_count = VALUES(users_count),
                     updated_at = NOW()
             ";
 

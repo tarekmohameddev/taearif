@@ -12,6 +12,7 @@ use App\Http\Resources\Api\V1\Analytics\PageviewResource;
 use App\Http\Resources\Api\V1\Analytics\TopPageResource;
 use App\Services\Analytics\PageviewService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class PageviewController extends BaseApiController
 {
@@ -40,6 +41,10 @@ class PageviewController extends BaseApiController
                 'views_count' => $viewsCount,
             ], 'Page view tracked successfully');
         } catch (\Exception $e) {
+            if ($e instanceof ValidationException) {
+                throw $e;
+            }
+
             \Log::error('Failed to track pageview', [
                 'error' => $e->getMessage(),
                 'request' => $request->all(),

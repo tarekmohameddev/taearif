@@ -24,7 +24,7 @@ final class ProjectsReportService
 
         // Page visits from pageview_analytics for projects owned by this tenant
         $projectVisits = DB::table('pageview_analytics')
-            ->where('tenant_id', $userId)
+            ->where('tenant_id', $this->analyticsTenantKey($userId))
             ->where('page_type', 'project')
             ->whereBetween('date_bucket', [$start->toDateString(), $end->toDateString()])
             ->sum('views_count');
@@ -114,12 +114,16 @@ final class ProjectsReportService
 
     public function topByVisits(int $userId, ReportDateFilter $filter): array
     {
+        $contentMap = DB::table('user_project_contents')
+            ->where('user_id', $userId)
+            ->select('project_id', 'slug')
+            ->distinct();
+
         $rows = DB::table('pageview_analytics as pa')
-            ->join('user_projects as p', function ($j) use ($userId) {
-                $j->on('pa.page_slug', '=', DB::raw('(SELECT pc.slug FROM user_project_contents pc WHERE pc.project_id = p.id LIMIT 1)'))
-                  ->orWhere('pa.page_path', 'LIKE', DB::raw("CONCAT('%/', p.id, '/%')"));
-            })
-            ->where('pa.tenant_id', $userId)
+            ->joinSub($contentMap, 'pc', 'pc.slug', '=', 'pa.page_slug')
+            ->join('user_projects as p', 'p.id', '=', 'pc.project_id')
+            ->where('p.user_id', $userId)
+            ->where('pa.tenant_id', $this->analyticsTenantKey($userId))
             ->where('pa.page_type', 'project')
             ->whereBetween('pa.date_bucket', [$filter->startDate->toDateString(), $filter->endDate->toDateString()])
             ->selectRaw(
@@ -181,13 +185,19 @@ final class ProjectsReportService
         $projectIds = $projects->pluck('id');
 
         // Get visit counts per project
-        $visits = DB::table('pageview_analytics')
-            ->where('tenant_id', $userId)
+        $contentMap = DB::table('user_project_contents')
+            ->where('user_id', $userId)
+            ->select('project_id', 'slug')
+            ->distinct();
+
+        $visits = DB::table('pageview_analytics as pa')
+            ->joinSub($contentMap, 'pc', 'pc.slug', '=', 'pa.page_slug')
+            ->where('pa.tenant_id', $this->analyticsTenantKey($userId))
             ->where('page_type', 'project')
             ->whereBetween('date_bucket', [$start->toDateString(), $end->toDateString()])
-            ->selectRaw('page_slug, SUM(views_count) as total_views')
-            ->groupBy('page_slug')
-            ->pluck('total_views', 'page_slug')
+            ->selectRaw('pc.project_id, SUM(pa.views_count) as total_views')
+            ->groupBy('pc.project_id')
+            ->pluck('total_views', 'pc.project_id')
             ->toArray();
 
         $rows = $projects->map(function ($p) use ($visits, $userId, $start, $end) {
@@ -205,12 +215,7 @@ final class ProjectsReportService
                     ->count()
                 : 0;
 
-            $visitCount = 0;
-            foreach ($visits as $slug => $v) {
-                if (str_contains((string) $slug, (string) $p->id)) {
-                    $visitCount += (int) $v;
-                }
-            }
+            $visitCount = (int) ($visits[$p->id] ?? 0);
 
             $convRate = $visitCount > 0 ? round($inquiryCount / $visitCount * 100, 2) : 0.0;
 
@@ -232,5 +237,12 @@ final class ProjectsReportService
             'pagination' => ['total' => $total, 'page' => $page, 'limit' => $limit],
             'generated_at' => now()->toISOString(),
         ];
+    }
+
+    private function analyticsTenantKey(int $userId): string
+    {
+        $username = DB::table('users')->where('id', $userId)->value('username');
+
+        return is_string($username) && $username !== '' ? $username : (string) $userId;
     }
 }
