@@ -122,11 +122,11 @@ class PropertyConflictDetectionService
         }
 
         if (PropertyCompletionRequirements::valueProvided($data['area'] ?? null)
-            && (!is_numeric($data['area']) || $data['area'] < 1)) {
+            && (!is_numeric($data['area']) || $data['area'] < 0)) {
             $conflicts[] = [
                 'type' => 'validation',
                 'field' => 'area',
-                'message' => 'Area must be at least 1',
+                'message' => 'Area must be at least 0',
                 'severity' => 'error'
             ];
         }
