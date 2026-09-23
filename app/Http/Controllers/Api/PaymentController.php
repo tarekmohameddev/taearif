@@ -175,6 +175,20 @@ class PaymentController extends Controller
             if ($package->term === 'lifetime') {
                 $amount = $package->price;
                 $period = 1; // For display purposes
+            } elseif ((int) $package->duration_months > 0) {
+                // Fixed-duration package: one payment covering the full duration.
+                $requestedPeriod = (int) ($validated['period'] ?? 1);
+
+                if ($requestedPeriod !== 1) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Fixed-duration packages only accept a single payment (period must be 1).',
+                        'code' => 'FIXED_DURATION_PERIOD_INVALID',
+                    ], 422);
+                }
+
+                $amount = $package->price;
+                $period = 1; // For display purposes
             } else {
                 //  default to 1 if not provided period from request
                 $period = (int) ($validated['period'] ?? 1);
@@ -217,7 +231,9 @@ class PaymentController extends Controller
                 'total_amount' => $amount,
                 'package_price' => $package->price,
                 'period' => $period,
-                'package_term' => $package->term
+                'package_term' => $package->term,
+                'duration_months' => $package->duration_months,
+                'is_fixed_duration' => (int) $package->duration_months > 0
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -269,6 +285,9 @@ class PaymentController extends Controller
                     ? $package->new_features
                     : json_decode($package->new_features, true, JSON_UNESCAPED_UNICODE) ?? [],
                 'is_trial' => (bool) $package->is_trial,
+                'duration_months' => $package->duration_months,
+                'is_fixed_duration' => (int) $package->duration_months > 0,
+                'price_scope' => (int) $package->duration_months > 0 ? 'full_duration' : 'per_period',
                 'cta' => $isCurrent ? 'الخطة الحالية' :  'الترقية',
                 'cta_key' => $isCurrent ? 'current' : 'upgrade',
             ];

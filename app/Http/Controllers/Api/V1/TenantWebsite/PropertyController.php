@@ -260,12 +260,10 @@ class PropertyController extends Controller
         $startDate = Carbon::today()->subDays($days)->toDateString();
         $endDate = Carbon::today()->toDateString();
 
-        $slugs = $properties->getCollection()
-            ->map(fn ($p) => $p->contents->first()?->slug)
-            ->filter()
-            ->unique()
-            ->values()
-            ->toArray();
+        $slugsPerProperty = $properties->getCollection()->mapWithKeys(function ($property) {
+            return [$property->id => $property->contents->pluck('slug')->filter()->unique()->values()->all()];
+        });
+        $slugs = $slugsPerProperty->flatten()->unique()->values()->all();
 
         $viewsBySlug = [];
         if ($slugs !== []) {
@@ -280,10 +278,9 @@ class PropertyController extends Controller
                 ->toArray();
         }
 
-		$items = $properties->getCollection()->map(function ($p) use ($viewsBySlug, $districtsMap) {
+        $items = $properties->getCollection()->map(function ($p) use ($viewsBySlug, $districtsMap) {
             $content = optional($p->contents->first());
-            $slug    = $content?->slug;
-            $views = (int) ($viewsBySlug[$slug] ?? 0);
+            $views = $p->contents->sum(fn ($propertyContent) => (int) ($viewsBySlug[$propertyContent->slug] ?? 0));
 
             return PropertyPublicResource::toListArray($p, $views, $districtsMap, $this->translator);
         });
@@ -321,7 +318,7 @@ class PropertyController extends Controller
 			})
 			->firstOrFail();
 
-        $content = $property->contents->first();
+        $content = $property->contents->firstWhere('slug', $slug);
 
         $districtsMap = collect();
         if ($content && $content->state_id) {

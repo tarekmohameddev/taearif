@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Analytics;
 
+use App\Services\Analytics\PageviewService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class TrackPageViewRequest extends FormRequest
@@ -26,9 +27,36 @@ class TrackPageViewRequest extends FormRequest
             'tenant_id' => 'required|string|max:255',
             'slug' => 'required|string|max:255',
             'dynamic_slug' => 'nullable|string|max:255',
-            'path' => 'required|string|max:500|regex:/^\/.*$/',
+            'path' => [
+                'required',
+                'string',
+                'max:500',
+                'regex:/^\/(?!\/).*$/',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (! is_string($value)) {
+                        return;
+                    }
+
+                    try {
+                        PageviewService::normalizePath($value);
+                    } catch (\InvalidArgumentException) {
+                        $fail('The path must be a valid internal path.');
+                    }
+                },
+            ],
             'page_type' => 'required|string|in:page,post,project,property',
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if (is_string($this->input('path'))) {
+            try {
+                $this->merge(['path' => PageviewService::normalizePath($this->input('path'))]);
+            } catch (\InvalidArgumentException) {
+                // Let the normal validator return a safe 422 response.
+            }
+        }
     }
 
     /**

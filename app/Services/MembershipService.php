@@ -467,6 +467,10 @@ class MembershipService
             return $startDate->copy()->addDays($trialDays);
         }
 
+        if ((int) $package->duration_months > 0) {
+            return $startDate->copy()->addMonthsNoOverflow((int) $package->duration_months);
+        }
+
         return match ($package->term) {
             self::TERM_MONTHLY => $startDate->copy()->addMonths($period),
             self::TERM_YEARLY => $startDate->copy()->addYears($period),
@@ -478,11 +482,16 @@ class MembershipService
     }
 
     /**
-     * Expected charge for a membership checkout (price × period; lifetime ignores period).
+     * Expected charge for a membership checkout (price × period; lifetime and
+     * fixed-duration packages ignore the period and charge full price).
      */
     public function calculateExpectedMembershipAmount(Package $package, int $period = 1): float
     {
         if ($package->term === self::TERM_LIFETIME) {
+            return (float) $package->price;
+        }
+
+        if ((int) $package->duration_months > 0) {
             return (float) $package->price;
         }
 

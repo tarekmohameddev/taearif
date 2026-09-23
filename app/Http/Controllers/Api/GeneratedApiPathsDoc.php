@@ -18,7 +18,22 @@ namespace App\Http\Controllers\Api;
  *             @OA\Property(property="url", type="string"),
  *             @OA\Property(property="platform", type="string"),
  *         )),
- *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object",
+ *             @OA\Property(property="status", type="string", example="success"),
+ *             @OA\Property(property="payment_url", type="string", nullable=true),
+ *             @OA\Property(property="payment_token", type="string", nullable=true),
+ *             @OA\Property(property="total_amount", type="number", format="float"),
+ *             @OA\Property(property="package_price", type="number", format="float"),
+ *             @OA\Property(property="period", type="integer"),
+ *             @OA\Property(property="package_term", type="string"),
+ *             @OA\Property(property="duration_months", type="integer", nullable=true),
+ *             @OA\Property(property="is_fixed_duration", type="boolean"),
+ *             @OA\Property(property="price_scope", type="string", enum={"per_period","full_duration"}),
+ *             @OA\Property(property="message", type="string", nullable=true))),
+ *         @OA\Response(response=422, description="Invalid fixed-duration period", @OA\JsonContent(type="object",
+ *             @OA\Property(property="status", type="string", example="error"),
+ *             @OA\Property(property="code", type="string", example="FIXED_DURATION_PERIOD_INVALID"),
+ *             @OA\Property(property="message", type="string"))),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
  *
@@ -32,7 +47,17 @@ namespace App\Http\Controllers\Api;
  *         operationId="get_affiliate_0",
  *         tags={"Affiliate"},
  *         summary="Index", security={{"sanctum":{}}},
- *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object", @OA\Property(property="status", type="string", example="success"), @OA\Property(property="data", type="object"), @OA\Property(property="message", type="string", nullable=true))),
+ *         @OA\Response(response=200, description="OK", @OA\JsonContent(type="object",
+ *             @OA\Property(property="plans", type="object",
+ *                 @OA\Property(property="plans_monthly", type="array", @OA\Items(type="object",
+ *                     @OA\Property(property="duration_months", type="integer", nullable=true),
+ *                     @OA\Property(property="is_fixed_duration", type="boolean"),
+ *                     @OA\Property(property="price_scope", type="string", enum={"per_period","full_duration"}))),
+ *                 @OA\Property(property="plans_yearly", type="array", @OA\Items(type="object",
+ *                     @OA\Property(property="duration_months", type="integer", nullable=true),
+ *                     @OA\Property(property="is_fixed_duration", type="boolean"),
+ *                     @OA\Property(property="price_scope", type="string", enum={"per_period","full_duration"}))))),
+ *             @OA\Property(property="message", type="string", nullable=true))),
  *         @OA\Response(response=401, description="Unauthenticated")
  *     )
  *

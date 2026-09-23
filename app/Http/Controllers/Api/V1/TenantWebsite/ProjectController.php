@@ -77,12 +77,11 @@ class ProjectController extends Controller
 			->all();
 		$projectUnitBreakdowns = $this->getProjectUnitBreakdowns($projectIds);
 
-        // Collect all slugs for GA4 query
-        $slugs = collect($projects->items())
-            ->map(fn($p) => optional($p->contents->first())?->slug)
-            ->filter()
-            ->values()
-            ->all();
+        // Collect every localized content slug for each project.
+        $slugsPerProject = collect($projects->items())->mapWithKeys(function ($project) {
+            return [$project->id => $project->contents->pluck('slug')->filter()->unique()->values()->all()];
+        });
+        $slugs = $slugsPerProject->flatten()->unique()->values()->all();
 
         // Fetch views from pageview_analytics table (synced from GA4)
         // OPTIMIZED: Query from local database instead of GA4 API for better performance
@@ -92,33 +91,18 @@ class ProjectController extends Controller
                 $days = (int) $request->query('days', 30);
                 $startDate = \Carbon\Carbon::today()->subDays($days)->toDateString();
                 $endDate = \Carbon\Carbon::today()->toDateString();
-                $paths = [];
-                foreach ($slugs as $slug) {
-                    $paths[] = "/project/{$slug}";
-                    $paths[] = "/ar/project/{$slug}";
-                    $paths[] = "/en/project/{$slug}";
-                }
-
-                // Query from pageview_analytics table
                 $viewsData = \Illuminate\Support\Facades\DB::table('pageview_analytics')
                     ->where('tenant_id', $tenant->username)
                     ->where('page_type', 'project')
                     ->whereBetween('date_bucket', [$startDate, $endDate])
-                    ->whereIn('page_path', $paths)
-                    ->select('page_path', \Illuminate\Support\Facades\DB::raw('SUM(views_count) as total_views'))
-                    ->groupBy('page_path')
+                    ->whereIn('page_slug', $slugs)
+                    ->select('page_slug', \Illuminate\Support\Facades\DB::raw('SUM(views_count) as total_views'))
+                    ->groupBy('page_slug')
                     ->get();
 
-                // Map views back to slugs
-                foreach ($viewsData as $data) {
-                    $path = $data->page_path;
-                    $views = (int) $data->total_views;
-                    foreach ($slugs as $slug) {
-                        if (strpos($path, $slug) !== false) {
-                            $viewsBySlug[$slug] = ($viewsBySlug[$slug] ?? 0) + $views;
-                        }
-                    }
-                }
+                $viewsBySlug = $viewsData->pluck('total_views', 'page_slug')
+                    ->map(fn ($views) => (int) $views)
+                    ->all();
             } catch (\Exception $e) {
                 \Log::error('Error fetching project views from pageview_analytics', [
                     'tenant' => $tenant->username,
@@ -166,7 +150,7 @@ class ProjectController extends Controller
                 'videoUrl' => $project->video_url ?? null,
                 'brochure' => $this->resolveMediaUrl($project->brochure),
                 'amenities' => $this->getAmenitiesArray($project),
-                'views' => $viewsBySlug[$slug] ?? 0,
+                'views' => $project->contents->sum(fn ($content) => (int) ($viewsBySlug[$content->slug] ?? 0)),
                 'location' => $this->buildProjectLocation($project, $content?->address ?? '', $districtsMap),
                 'properties' => $project->properties->map(function ($property) {
                     return $this->formatProperty($property);
@@ -380,26 +364,15 @@ class ProjectController extends Controller
 			$days = (int) $request->query('days', 30);
 			$startDate = \Carbon\Carbon::today()->subDays($days)->toDateString();
 			$endDate = \Carbon\Carbon::today()->toDateString();
-			$paths = [
-				"/project/{$slug}",
-				"/ar/project/{$slug}",
-				"/en/project/{$slug}",
-			];
+            $viewsData = \Illuminate\Support\Facades\DB::table('pageview_analytics')
+                ->where('tenant_id', $tenant->username)
+                ->where('page_type', 'project')
+                ->whereBetween('date_bucket', [$startDate, $endDate])
+                ->where('page_slug', $slug)
+                ->selectRaw('SUM(views_count) as total_views')
+                ->get();
 
-			// Query from pageview_analytics table
-			$viewsData = \Illuminate\Support\Facades\DB::table('pageview_analytics')
-				->where('tenant_id', $tenant->username)
-				->where('page_type', 'project')
-				->whereBetween('date_bucket', [$startDate, $endDate])
-				->whereIn('page_path', $paths)
-				->select('page_path', \Illuminate\Support\Facades\DB::raw('SUM(views_count) as total_views'))
-				->groupBy('page_path')
-				->get();
-
-			// Sum views across all path variants
-			foreach ($viewsData as $data) {
-				$views += (int) $data->total_views;
-			}
+            $views = (int) ($viewsData->first()->total_views ?? 0);
 		} catch (\Exception $e) {
 			\Log::error('Error fetching project views from pageview_analytics', [
 				'tenant' => $tenant->username,
@@ -994,4 +967,3 @@ class ProjectController extends Controller
 		return $breakdowns;
 	}
 }
-

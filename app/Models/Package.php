@@ -18,6 +18,7 @@ class Package extends Model
         'slug',
         'price',
         'term',
+        'duration_months',
         'featured',
         'is_trial',
         'trial_days',
@@ -35,6 +36,10 @@ class Package extends Model
         'serial_number',
         'whatsapp_numbers_limit',
         'employees_limit'
+    ];
+
+    protected $casts = [
+        'duration_months' => 'integer',
     ];
 
     public function memberships()
