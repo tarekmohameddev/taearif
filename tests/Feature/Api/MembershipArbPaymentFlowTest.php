@@ -102,6 +102,20 @@ class MembershipArbPaymentFlowTest extends TestCase
         ], $overrides));
     }
 
+    private function createFixedDurationPackage(array $overrides = []): Package
+    {
+        return Package::query()->create(array_merge([
+            'title' => 'Premium Two-Year Plan',
+            'title_en' => 'Premium Two-Year Plan',
+            'slug' => 'premium-two-years-' . Str::random(6),
+            'price' => 996,
+            'term' => 'yearly',
+            'duration_months' => 24,
+            'status' => '1',
+            'is_active' => true,
+        ], $overrides));
+    }
+
     private function encryptTrandata(array $paymentRecord): string
     {
         $controller = new ArbController();
@@ -468,5 +482,350 @@ class MembershipArbPaymentFlowTest extends TestCase
 
         $expiredAffiliate->refresh();
         $this->assertSame(0.0, (float) $expiredAffiliate->pending_amount);
+    }
+
+    private function extractArbPayload(\Illuminate\Http\Client\Request $request): ?array
+    {
+        $payload = json_decode($request->body(), true);
+
+        if (!is_array($payload) || !isset($payload[0]['trandata'])) {
+            return null;
+        }
+
+        $controller = new ArbController();
+        $plain = $controller->decryption($payload[0]['trandata'], self::ARB_RESOURCE_KEY);
+
+        if (!is_string($plain)) {
+            return null;
+        }
+
+        $record = json_decode($plain, true);
+
+        return $record[0] ?? null;
+    }
+
+    /** @test */
+    public function fixed_duration_checkout_charges_exactly_996_and_ignores_browser_prices(): void
+    {
+        $this->requireMembershipPaymentTables();
+        $this->ensureArbGatewayAndLanguage();
+
+        Http::fake([
+            'https://arb.test/init' => Http::response([
+                [
+                    'status' => '1',
+                    'result' => 'PID123:IGNORED://pay.example/checkout',
+                ],
+            ], 200),
+        ]);
+
+        $tenant = User::factory()->create([
+            'account_type' => 'tenant',
+            'tenant_id' => null,
+            'active' => true,
+            'status' => 1,
+        ]);
+        Sanctum::actingAs($tenant);
+
+        $package = $this->createFixedDurationPackage();
+
+        $response = $this->postJson('/api/make-payment', [
+            'package_id' => $package->id,
+            'period' => 1,
+            'price' => 1,
+            'total_amount' => 1,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('total_amount', 996)
+            ->assertJsonPath('package_price', 996)
+            ->assertJsonPath('period', 1)
+            ->assertJsonPath('package_term', 'yearly')
+            ->assertJsonPath('duration_months', 24)
+            ->assertJsonPath('is_fixed_duration', true);
+
+        Http::assertSent(function ($request): bool {
+            $data = $this->extractArbPayload($request);
+
+            return $request->url() === 'https://arb.test/init'
+                && $data !== null
+                && isset($data['amt'], $data['udf5'])
+                && abs((float) $data['amt'] - 996.0) < 0.001
+                && (int) $data['udf5'] === 1;
+        });
+    }
+
+    /** @test */
+    public function fixed_duration_checkout_missing_period_is_normalized_to_one(): void
+    {
+        $this->requireMembershipPaymentTables();
+        $this->ensureArbGatewayAndLanguage();
+
+        Http::fake([
+            'https://arb.test/init' => Http::response([
+                [
+                    'status' => '1',
+                    'result' => 'PID123:IGNORED://pay.example/checkout',
+                ],
+            ], 200),
+        ]);
+
+        $tenant = User::factory()->create([
+            'account_type' => 'tenant',
+            'tenant_id' => null,
+            'active' => true,
+            'status' => 1,
+        ]);
+        Sanctum::actingAs($tenant);
+
+        $package = $this->createFixedDurationPackage();
+
+        $response = $this->postJson('/api/make-payment', [
+            'package_id' => $package->id,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('period', 1)
+            ->assertJsonPath('total_amount', 996);
+
+        Http::assertSent(function ($request): bool {
+            $data = $this->extractArbPayload($request);
+
+            return $data !== null
+                && (int) ($data['udf5'] ?? 0) === 1
+                && abs((float) ($data['amt'] ?? 0) - 996.0) < 0.001;
+        });
+    }
+
+    /** @test */
+    public function fixed_duration_checkout_rejects_period_greater_than_one(): void
+    {
+        $this->requireMembershipPaymentTables();
+        $this->ensureArbGatewayAndLanguage();
+
+        $tenant = User::factory()->create([
+            'account_type' => 'tenant',
+            'tenant_id' => null,
+            'active' => true,
+            'status' => 1,
+        ]);
+        Sanctum::actingAs($tenant);
+
+        $package = $this->createFixedDurationPackage();
+
+        $response = $this->postJson('/api/make-payment', [
+            'package_id' => $package->id,
+            'period' => 2,
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('code', 'FIXED_DURATION_PERIOD_INVALID');
+
+        Http::assertNothingSent();
+    }
+
+    /** @test */
+    public function fixed_duration_callback_amount_996_creates_membership_expiring_after_24_months(): void
+    {
+        $this->requireMembershipPaymentTables();
+        $this->ensureArbGatewayAndLanguage();
+
+        $tenant = User::factory()->create([
+            'account_type' => 'tenant',
+            'tenant_id' => null,
+            'active' => true,
+            'status' => 1,
+        ]);
+        $package = $this->createFixedDurationPackage();
+        $paymentRecord = $this->buildPaymentRecord($tenant, $package, [
+            'transId' => 'ARB-TWOYEAR-996-001',
+            'amt' => 996.0,
+        ]);
+
+        $response = $this->post(
+            '/api/v1/membership/payment/success/arb',
+            ['trandata' => $this->encryptTrandata($paymentRecord)]
+        );
+
+        $response->assertOk();
+        $this->assertStringContainsString('payment_success', $response->getContent());
+
+        $membership = Membership::where('transaction_id', 'ARB-TWOYEAR-996-001')->first();
+        $this->assertNotNull($membership);
+        $this->assertSame(996.0, (float) $membership->price);
+        $this->assertSame(996.0, (float) $membership->package_price);
+        $this->assertSame('arb', $membership->payment_method);
+        $this->assertSame((int) $package->id, (int) $membership->package_id);
+        $this->assertSame(now()->toDateString(), (string) $membership->start_date);
+        $this->assertSame(
+            now()->startOfDay()->addMonthsNoOverflow(24)->toDateString(),
+            (string) $membership->expire_date
+        );
+    }
+
+    /** @test */
+    public function fixed_duration_callback_rejects_wrong_amounts(): void
+    {
+        $this->requireMembershipPaymentTables();
+        $this->ensureArbGatewayAndLanguage();
+
+        $tenant = User::factory()->create([
+            'account_type' => 'tenant',
+            'tenant_id' => null,
+            'active' => true,
+            'status' => 1,
+        ]);
+        $package = $this->createFixedDurationPackage();
+
+        foreach ([1992.0, 1.0] as $wrongAmount) {
+            $paymentRecord = $this->buildPaymentRecord($tenant, $package, [
+                'transId' => 'ARB-TWOYEAR-WRONG-' . (int) $wrongAmount,
+                'amt' => $wrongAmount,
+            ]);
+
+            $response = $this->post(
+                '/api/v1/membership/payment/success/arb',
+                ['trandata' => $this->encryptTrandata($paymentRecord)]
+            );
+
+            $response->assertOk();
+            $this->assertStringContainsString('payment_failed', $response->getContent());
+            $this->assertDatabaseMissing('memberships', [
+                'transaction_id' => 'ARB-TWOYEAR-WRONG-' . (int) $wrongAmount,
+            ]);
+        }
+    }
+
+    /** @test */
+    public function fixed_duration_payment_expires_previous_active_membership(): void
+    {
+        $this->requireMembershipPaymentTables();
+        $this->ensureArbGatewayAndLanguage();
+
+        $tenant = User::factory()->create([
+            'account_type' => 'tenant',
+            'tenant_id' => null,
+            'active' => true,
+            'status' => 1,
+        ]);
+        $package = $this->createFixedDurationPackage();
+
+        $previous = Membership::query()->create([
+            'user_id' => $tenant->id,
+            'package_id' => $package->id,
+            'package_price' => 99,
+            'price' => 99,
+            'currency' => 'SAR',
+            'currency_symbol' => 'SAR',
+            'payment_method' => 'arb',
+            'transaction_id' => 'ARB-PREV-' . uniqid(),
+            'status' => 1,
+            'is_trial' => 0,
+            'trial_days' => 0,
+            'start_date' => now()->subDays(10)->toDateString(),
+            'expire_date' => now()->addDays(10)->toDateString(),
+        ]);
+
+        $paymentRecord = $this->buildPaymentRecord($tenant, $package, [
+            'transId' => 'ARB-TWOYEAR-REPLACE-001',
+            'amt' => 996.0,
+        ]);
+
+        $response = $this->post(
+            '/api/v1/membership/payment/success/arb',
+            ['trandata' => $this->encryptTrandata($paymentRecord)]
+        );
+
+        $response->assertOk();
+        $this->assertStringContainsString('payment_success', $response->getContent());
+
+        $previous->refresh();
+        $this->assertSame(now()->subDay()->toDateString(), (string) $previous->expire_date);
+
+        $this->assertDatabaseHas('memberships', [
+            'user_id' => $tenant->id,
+            'transaction_id' => 'ARB-TWOYEAR-REPLACE-001',
+        ]);
+    }
+
+    /** @test */
+    public function fixed_duration_duplicate_callback_does_not_create_second_membership(): void
+    {
+        $this->requireMembershipPaymentTables();
+        $this->ensureArbGatewayAndLanguage();
+
+        $tenant = User::factory()->create([
+            'account_type' => 'tenant',
+            'tenant_id' => null,
+            'active' => true,
+            'status' => 1,
+        ]);
+        $package = $this->createFixedDurationPackage();
+        $paymentRecord = $this->buildPaymentRecord($tenant, $package, [
+            'transId' => 'ARB-TWOYEAR-DUP-001',
+            'amt' => 996.0,
+        ]);
+
+        $trandata = $this->encryptTrandata($paymentRecord);
+
+        $this->post('/api/v1/membership/payment/success/arb', ['trandata' => $trandata])->assertOk();
+        $this->post('/api/v1/membership/payment/success/arb', ['trandata' => $trandata])->assertOk();
+
+        $this->assertSame(
+            1,
+            Membership::where('transaction_id', 'ARB-TWOYEAR-DUP-001')->count()
+        );
+    }
+
+    /** @test */
+    public function ordinary_yearly_checkout_multiplies_price_by_period(): void
+    {
+        $this->requireMembershipPaymentTables();
+        $this->ensureArbGatewayAndLanguage();
+
+        Http::fake([
+            'https://arb.test/init' => Http::response([
+                [
+                    'status' => '1',
+                    'result' => 'PID123:IGNORED://pay.example/checkout',
+                ],
+            ], 200),
+        ]);
+
+        $tenant = User::factory()->create([
+            'account_type' => 'tenant',
+            'tenant_id' => null,
+            'active' => true,
+            'status' => 1,
+        ]);
+        Sanctum::actingAs($tenant);
+
+        $package = $this->createMembershipPackage([
+            'title' => 'Annual Pro',
+            'price' => 999,
+            'term' => 'yearly',
+        ]);
+
+        $response = $this->postJson('/api/make-payment', [
+            'package_id' => $package->id,
+            'period' => 2,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('total_amount', 1998)
+            ->assertJsonPath('period', 2)
+            ->assertJsonPath('is_fixed_duration', false);
+
+        Http::assertSent(function ($request): bool {
+            $data = $this->extractArbPayload($request);
+
+            return $data !== null
+                && isset($data['amt'], $data['udf5'])
+                && abs((float) $data['amt'] - 1998.0) < 0.001
+                && (int) $data['udf5'] === 2;
+        });
     }
 }
