@@ -247,6 +247,12 @@ Route::prefix(config('admin-api.prefix'))
         Route::put('{user}', [UserController::class, 'update'])
             ->name('update');
 
+        Route::delete('{user}/force', [UserController::class, 'forceDestroy'])
+            ->name('force-destroy');
+
+        Route::post('{user}/restore', [UserController::class, 'restore'])
+            ->name('restore');
+
         Route::delete('{user}', [UserController::class, 'destroy'])
             ->name('destroy');
 

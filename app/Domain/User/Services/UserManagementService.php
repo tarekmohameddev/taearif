@@ -334,6 +334,72 @@ class UserManagementService extends BaseService
     }
 
     /**
+     * Permanently delete a user (including soft-deleted).
+     *
+     * @throws ResourceNotFoundException
+     */
+    public function forceDeleteUser(int $id): bool
+    {
+        $user = $this->getUserByIdWithTrashed($id);
+
+        return $this->executeInTransaction(function () use ($user) {
+            try {
+                $user->tokens()->delete();
+            } catch (\Throwable $e) {
+                // ignore token errors; proceed with delete
+            }
+
+            return (bool) $user->forceDelete();
+        });
+    }
+
+    /**
+     * Restore a soft-deleted user.
+     *
+     * @throws ResourceNotFoundException
+     */
+    public function restoreUser(int $id): User
+    {
+        $user = User::onlyTrashed()
+            ->with(['referrer', 'activeMembership.package', 'memberships'])
+            ->where('id', $id)
+            ->first();
+
+        $user = $this->ensureFound($user, 'Deleted user not found');
+
+        if ($user->account_type !== 'tenant') {
+            throw new ResourceNotFoundException('User not found');
+        }
+
+        return $this->executeInTransaction(function () use ($user) {
+            $user->restore();
+
+            return $user->fresh(['referrer', 'activeMembership.package', 'memberships']);
+        });
+    }
+
+    /**
+     * Get tenant user by ID including soft-deleted rows.
+     *
+     * @throws ResourceNotFoundException
+     */
+    public function getUserByIdWithTrashed(int $id): User
+    {
+        $user = User::withTrashed()
+            ->with(['referrer', 'activeMembership.package', 'memberships'])
+            ->where('id', $id)
+            ->first();
+
+        $user = $this->ensureFound($user, 'User not found');
+
+        if ($user->account_type !== 'tenant') {
+            throw new ResourceNotFoundException('User not found');
+        }
+
+        return $user;
+    }
+
+    /**
      * Change user password
      *
      * @param int $id
@@ -961,6 +1027,13 @@ class UserManagementService extends BaseService
             $featured = filter_var($filters['featured'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
             if ($featured !== null) {
                 $normalized['featured'] = $featured ? 1 : 0;
+            }
+        }
+
+        if (!empty($filters['deleted'])) {
+            $deleted = strtolower((string) $filters['deleted']);
+            if (in_array($deleted, ['only', '1', 'trashed', 'with', 'all'], true)) {
+                $normalized['deleted'] = $deleted;
             }
         }
 

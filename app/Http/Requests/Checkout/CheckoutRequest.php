@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Checkout;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Session;
 use App\Models\Language;
 use Config;
@@ -45,7 +46,7 @@ class CheckoutRequest extends FormRequest
             'company_name' => 'required',
             'username' => 'required',
             'password' => 'required',
-            'email' => 'required|email|unique:users,email',
+            'email' => ['required', 'email', Rule::unique('users', 'email')->whereNull('deleted_at')],
             'phone' => 'required',
             'country' => 'required',
             'price' => 'required',

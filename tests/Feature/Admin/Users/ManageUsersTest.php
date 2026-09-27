@@ -147,11 +147,60 @@ class ManageUsersTest extends AdminApiTestCase
             route('admin.api.users.destroy', $tenant->id)
         );
 
-        $response->assertStatus(204);
+        $response->assertOk()
+            ->assertJsonPath('data.deleted', true)
+            ->assertJsonPath('data.permanent', false);
+
+        $this->assertSoftDeleted('users', [
+            'id' => $tenant->id,
+        ]);
+    }
+
+    /** @test */
+    public function admin_can_permanently_delete_a_user(): void
+    {
+        $this->signInAdmin();
+
+        $tenant = TenantUser::factory()->create([
+            'uuid' => (string) Str::uuid(),
+            'account_type' => 'tenant',
+        ]);
+
+        $tenant->delete();
+
+        $response = $this->deleteJson(
+            route('admin.api.users.force-destroy', $tenant->id)
+        );
+
+        $response->assertOk()
+            ->assertJsonPath('data.deleted', true)
+            ->assertJsonPath('data.permanent', true);
 
         $this->assertDatabaseMissing('users', [
             'id' => $tenant->id,
         ]);
+    }
+
+    /** @test */
+    public function admin_can_restore_a_soft_deleted_user(): void
+    {
+        $this->signInAdmin();
+
+        $tenant = TenantUser::factory()->create([
+            'uuid' => (string) Str::uuid(),
+            'account_type' => 'tenant',
+        ]);
+
+        $tenant->delete();
+
+        $response = $this->postJson(
+            route('admin.api.users.restore', $tenant->id)
+        );
+
+        $response->assertOk()
+            ->assertJsonPath('data.id', $tenant->id);
+
+        $this->assertNull($tenant->fresh()->deleted_at);
     }
 
     /** @test */

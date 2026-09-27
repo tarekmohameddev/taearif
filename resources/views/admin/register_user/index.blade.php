@@ -33,6 +33,75 @@
     .ru-stat-title { font-size: .72rem; color: #6c757d; line-height: 1.25; min-height: 2.5em; }
     .ru-stat-count { font-size: 1.35rem; font-weight: 700; color: #000; line-height: 1.2; }
     .ru-stat-unit  { font-size: .68rem; color: #adb5bd; }
+
+    .ru-toolbar { display: flex; flex-direction: column; gap: .75rem; width: 100%; }
+    .ru-toolbar-top,
+    .ru-toolbar-bottom {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: .5rem .75rem;
+    }
+    .ru-toolbar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .4rem;
+    }
+    .ru-search-form {
+        flex: 1 1 280px;
+        max-width: 480px;
+        margin: 0;
+        display: flex;
+        align-items: stretch;
+        gap: .35rem;
+    }
+    .ru-search-field {
+        position: relative;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    .ru-search-form .form-control {
+        width: 100%;
+        padding-inline-end: 2rem;
+    }
+    .ru-search-clear {
+        position: absolute;
+        inset-inline-end: .35rem;
+        top: 50%;
+        transform: translateY(-50%);
+        border: 0;
+        background: transparent;
+        color: #6c757d;
+        width: 1.6rem;
+        height: 1.6rem;
+        padding: 0;
+        line-height: 1;
+        border-radius: 50%;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+    .ru-search-clear:hover {
+        color: #212529;
+        background: rgba(0, 0, 0, .06);
+    }
+    .ru-search-field.is-filled .ru-search-clear {
+        display: inline-flex;
+    }
+    .ru-search-form .btn {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+    @media (max-width: 767.98px) {
+        .ru-toolbar-top,
+        .ru-toolbar-bottom { align-items: stretch; }
+        .ru-toolbar-actions { width: 100%; }
+        .ru-toolbar-actions .btn { flex: 1 1 auto; }
+        .ru-search-form { max-width: none; width: 100%; }
+    }
 </style>
 @endsection
 
@@ -240,149 +309,83 @@
 
         <div class="card">
             <div class="card-header">
-                <div class="row">
-                    <div class="col-lg-6">
-                        <div class="card-title">
-                            {{ __('Registered Users') }}
+                <div class="ru-toolbar">
+                    <div class="ru-toolbar-top">
+                        <div class="card-title mb-0">
+                            {{ ($showDeleted ?? false) ? __('Deleted Users') : __('Registered Users') }}
+                        </div>
+                        <div class="ru-toolbar-actions">
+                            <button class="btn btn-danger btn-sm d-none bulk-delete" data-href="{{ route('admin.register.user.bulk.delete') }}">
+                                <i class="flaticon-interface-5"></i> {{ __('Delete') }}
+                            </button>
+                            @if ($showDeleted ?? false)
+                                <a href="{{ route('admin.register.user', Arr::except($userListQuery, ['show_deleted', 'page'])) }}" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-users"></i> {{ __('Show Active Users') }}
+                                </a>
+                            @else
+                                <a href="{{ route('admin.register.user', array_merge(Arr::except($userListQuery, ['page']), ['show_deleted' => '1'])) }}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-trash-alt"></i> {{ __('Show Deleted Users') }}
+                                </a>
+                            @endif
+                            <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addUserModal">
+                                <i class="fas fa-plus"></i> {{ __('Add User') }}
+                            </button>
                         </div>
                     </div>
-                    <div class="col-lg-6 mt-2 mt-lg-0">
-                        <button class="btn btn-danger float-lg-right float-none btn-sm ml-2 mt-1 d-none bulk-delete" data-href="{{ route('admin.register.user.bulk.delete') }}"><i class="flaticon-interface-5"></i>
-                            {{ __('Delete') }}</button>
-                        <button class="btn btn-primary float-lg-right float-none btn-sm ml-2 mt-1" data-toggle="modal" data-target="#addUserModal"><i class="fas fa-plus"></i> {{ __('Add User') }}</button>
-                        <form action="{{ route('admin.register.user') }}" method="GET" class="float-lg-right float-none">
+
+                    <div class="ru-toolbar-bottom">
+                        <form action="{{ route('admin.register.user') }}" method="GET" class="ru-search-form" id="ruSearchForm">
                             @foreach ($userListQuery as $filterName => $filterValue)
                                 @if ($filterName !== 'term')
                                     <input type="hidden" name="{{ $filterName }}" value="{{ $filterValue }}">
                                 @endif
                             @endforeach
-                            <input type="text" name="term" class="form-control min-w-250" value="{{ request()->input('term') }}" placeholder="{{ __('Search by name / email / phone number') }}">
-                        </form>
-                    </div>
-
-                    {{-- Filters --}}
-                    <div class="col-lg-12 mt-2">
-                        <div class="float-lg-left float-none">
-                            {{-- Collapse Toggle --}}
-                            <button class="btn btn-sm btn-outline-primary mb-2" type="button" data-toggle="collapse" data-target="#dateFilterCollapse" aria-expanded="false" aria-controls="dateFilterCollapse" id="dateFilterBtn">
-                                <i class="fas fa-calendar mr-1"></i> {{ __('Advanced Filters') }}
-                            </button>
-
-                            {{-- Filters Collapse --}}
-                            <div class="collapse hide" id="dateFilterCollapse">
-                                <form action="{{ route('admin.register.user') }}" method="GET" class="float-lg-right float-none ml-2">
-                                    @if (array_key_exists('term', $userListQuery))
-                                        <input type="hidden" name="term" value="{{ $userListQuery['term'] }}">
-                                    @endif
-                                    @if (array_key_exists('package_id', $userListQuery))
-                                        <input type="hidden" name="package_id" value="{{ $userListQuery['package_id'] }}">
-                                    @endif
-                                    @if (array_key_exists('btn_start_date', $userListQuery))
-                                        <input type="hidden" name="btn_start_date" value="{{ $userListQuery['btn_start_date'] }}">
-                                    @endif
-                                    @if (array_key_exists('btn_end_date', $userListQuery))
-                                        <input type="hidden" name="btn_end_date" value="{{ $userListQuery['btn_end_date'] }}">
-                                    @endif
-                                    <div class="input-group date-range-filter flex-wrap">
-
-                                        {{-- Date From --}}
-                                        <div class="form-group mr-4">
-                                            <label for="start_date" class="small text-muted mb-1">{{ __('From Date') }} ({{ __('optional') }})</label>
-                                            <input type="date" id="start_date" name="start_date" class="form-control form-control-sm" value="{{ request()->input('start_date') }}">
-
-                                            {{-- Date To --}}
-
-                                            <label for="end_date" class="small text-muted mb-1">{{ __('To Date') }} ({{ __('optional') }})</label>
-                                            <input type="date" id="end_date" name="end_date" class="form-control form-control-sm" value="{{ request()->input('end_date') }}">
-                                        </div>
-
-                                        {{-- Subscription Ends From --}}
-                                        <div class="form-group mr-4">
-                                            <label for="subscription_start" class="small text-muted mb-1">{{ __('Subscription Ends From') }} ({{ __('optional') }})</label>
-                                            <input type="date" id="subscription_start" name="subscription_start" class="form-control form-control-sm" value="{{ request()->input('subscription_start') }}">
-
-                                            {{-- Subscription Ends To --}}
-                                            <label for="subscription_end" class="small text-muted mb-1">{{ __('Subscription Ends To') }} ({{ __('optional') }})</label>
-                                            <input type="date" id="subscription_end" name="subscription_end" class="form-control form-control-sm" value="{{ request()->input('subscription_end') }}">
-                                        </div>
-
-                                        {{-- Active Subscription Filter --}}
-                                        <div class="form-group mr-4">
-                                            <label for="active_membership" class="small text-muted mb-1">{{ __('Active Subscription') }}</label>
-                                            <select name="active_membership" id="active_membership" class="form-control form-control-sm">
-                                                <option value="">{{ __('-- All Users --') }}</option>
-                                                <option value="1" {{ request()->input('active_membership') == '1' ? 'selected' : '' }}>
-                                                    {{ __('Only Active Subscribers') }}
-                                                </option>
-                                                <option value="0" {{ request()->input('active_membership') == '0' ? 'selected' : '' }}>
-                                                    {{ __('Only Non-Active / Expired') }}
-                                                </option>
-                                            </select>
-
-                                            {{-- Paid / Trial Filter --}}
-                                            <label for="paid_member" class="small text-muted mb-1">{{ __('Membership_Type') }}</label>
-                                            <select name="paid_member" id="paid_member" class="form-control form-control-sm">
-                                                <option value="">{{ __('-- All Types --') }}</option>
-                                                <option value="paid" {{ request()->input('paid_member') == 'paid'  ? 'selected' : '' }}>
-                                                    {{ __('Paid_Member') }}
-                                                </option>
-                                                <option value="trial" {{ request()->input('paid_member') == 'trial' ? 'selected' : '' }}>
-                                                    {{ __('Free_Trial') }}
-                                                </option>
-                                            </select>
-                                        </div>
-
-                                        {{-- Referrer Dropdown --}}
-                                        <div class="form-group mr-2">
-                                            <label for="referred_by" class="small text-muted mb-1">{{ __('Referred By') }}</label>
-                                            <select name="referred_by" id="referred_by" class="form-control form-control-sm">
-                                                <option value="">{{ __('-- All Referrers --') }}</option>
-                                                @foreach($affiliateUsers as $affUser)
-                                                <option value="{{ $affUser->id }}" {{ request()->input('referred_by') == $affUser->id ? 'selected' : '' }}>
-                                                    {{ $affUser->username }} ({{ $affUser->email }})
-                                                </option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-
-                                        {{-- Actions --}}
-                                        <div class="form-group d-flex align-items-end">
-                                            <button type="submit" class="btn btn-sm btn-primary mr-2">
-                                                <i class="fas fa-filter mr-1"></i> {{ __('Filter') }}
-                                            </button>
-                                            <a href="{{ route('admin.register.user') }}" class="btn btn-sm btn-outline-secondary">
-                                                <i class="fas fa-undo mr-1"></i> {{ __('Reset') }}
-                                            </a>
-                                        </div>
-
-                                    </div>
-                                </form>
+                            <div class="ru-search-field {{ request()->filled('term') ? 'is-filled' : '' }}">
+                                <input type="text" name="term" id="ruSearchTerm" class="form-control form-control-sm" value="{{ request()->input('term') }}" placeholder="{{ __('Search by name / email / phone number') }}" autocomplete="off">
+                                <button type="button" class="ru-search-clear" id="ruSearchClear" title="{{ __('Clear') }}" aria-label="{{ __('Clear') }}">
+                                    <i class="fas fa-times"></i>
+                                </button>
                             </div>
-                        </div>
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="fas fa-search"></i> {{ __('Search') }}
+                            </button>
+                        </form>
+                        <script>
+                            (function () {
+                                var field = document.querySelector('#ruSearchForm .ru-search-field');
+                                var input = document.getElementById('ruSearchTerm');
+                                var clearBtn = document.getElementById('ruSearchClear');
+                                if (!field || !input || !clearBtn) return;
+
+                                var syncClear = function () {
+                                    field.classList.toggle('is-filled', input.value.trim().length > 0);
+                                };
+
+                                input.addEventListener('input', syncClear);
+                                clearBtn.addEventListener('click', function () {
+                                    input.value = '';
+                                    syncClear();
+                                    // Drop term but keep other filters
+                                    var form = document.getElementById('ruSearchForm');
+                                    var termInput = form.querySelector('[name="term"]');
+                                    if (termInput) termInput.disabled = true;
+                                    form.submit();
+                                });
+                            })();
+                        </script>
+                        @php
+                            $advancedFilterActive = collect([
+                                'start_date', 'end_date', 'subscription_start', 'subscription_end',
+                                'active_membership', 'paid_member', 'referred_by', 'has_whatsapp',
+                            ])->contains(fn ($key) => request()->filled($key));
+                        @endphp
+                        <button class="btn btn-sm {{ $advancedFilterActive ? 'btn-primary' : 'btn-outline-primary' }}" type="button" data-toggle="modal" data-target="#advancedFiltersModal" id="dateFilterBtn">
+                            <i class="fas fa-sliders-h"></i> {{ __('Advanced Filters') }}
+                            @if ($advancedFilterActive)
+                                <span class="badge badge-light ml-1">!</span>
+                            @endif
+                        </button>
                     </div>
-
-                    {{-- Local Storage Script --}}
-                    <script>
-                        // When DOM is ready
-                        document.addEventListener('DOMContentLoaded', function() {
-                            const collapse = document.getElementById('dateFilterCollapse');
-                            const btn = document.getElementById('dateFilterBtn');
-
-                            // Get saved state
-                            const isCollapsed = localStorage.getItem('dateFilterCollapsed') === 'false';
-
-                            if (isCollapsed) {
-                                collapse.classList.remove('hide');
-                                collapse.classList.add('show');
-                            }
-
-                            // Save state on toggle
-                            btn.addEventListener('click', function() {
-                                const isCurrentlyCollapsed = !collapse.classList.contains('hide');
-                                localStorage.setItem('dateFilterCollapsed', isCurrentlyCollapsed);
-                            });
-                        });
-                    </script>
                 </div>
             </div>
 
@@ -412,10 +415,15 @@
                         </form>
                         <div class="btn-group btn-group-sm flex-wrap mb-3" role="group">
                             @php
-                                $showAllQuery = Arr::except($userListQuery, ['package_id', 'paid_member', 'page']);
+                                $showAllQuery = Arr::except($userListQuery, ['package_id', 'paid_member', 'has_whatsapp', 'page']);
+                                $whatsappActive = request('has_whatsapp') === '1';
+                                $whatsappQuery = Arr::except($userListQuery, ['has_whatsapp', 'page']);
+                                if (!$whatsappActive) {
+                                    $whatsappQuery['has_whatsapp'] = '1';
+                                }
                             @endphp
                             <a href="{{ route('admin.register.user', $showAllQuery) }}"
-                               class="btn {{ !request()->filled('package_id') ? 'btn-primary' : 'btn-outline-primary' }}">
+                               class="btn {{ !request()->filled('package_id') && !$whatsappActive ? 'btn-primary' : 'btn-outline-primary' }}">
                                 {{ __('Show All') }}
                             </a>
                             @foreach ($packageFilterButtons as $package)
@@ -430,6 +438,11 @@
                                     {{ $package->title }}
                                 </a>
                             @endforeach
+                            <a href="{{ route('admin.register.user', $whatsappQuery) }}"
+                               class="btn {{ $whatsappActive ? 'btn-success' : 'btn-outline-success' }}"
+                               title="{{ __('WhatsApp users') }}">
+                                <i class="fab fa-whatsapp"></i> {{ __('WhatsApp users') }}
+                            </a>
                         </div>
                         @if ($users->total() == 0)
                         <h3 class="text-center">{{ __('NO USER FOUND') }}</h3>
@@ -455,7 +468,16 @@
                                         <td>
                                             <input type="checkbox" class="bulk-check" data-val="{{ $user->id }}">
                                         </td>
-                                        <td>{{ $user->basic_setting?->company_name ?? '—' }}</td>
+                                        <td>
+                                            <span class="d-inline-flex align-items-center">
+                                                {{ $user->basic_setting?->company_name ?? '—' }}
+                                                @if ($user->has_whatsapp_service)
+                                                    <i class="fab fa-whatsapp text-success ml-1"
+                                                       title="{{ __('WhatsApp service active') }} ({{ $user->active_whatsapp_count }})"
+                                                       aria-label="{{ __('WhatsApp service active') }}"></i>
+                                                @endif
+                                            </span>
+                                        </td>
                                         <td class="col-phone">{{ $user->phone }}</td>
                                         <td class="col-website">
                                             <a href="https://{{$user->username}}.taearif.com/ar/" target="_blank">https://{{$user->username}}.taearif.com/ar/</a>
@@ -574,6 +596,17 @@
                                                 <input type="hidden" name="user_id" value="{{ $user->id }}">
                                                 <button type="submit" class="deletebtn"></button>
                                             </form>
+                                            <form id="force-delete-user-form-{{ $user->id }}" class="deleteform d-none" action="{{ route('admin.register.user.force-delete') }}" method="post">
+                                                @csrf
+                                                <input type="hidden" name="user_id" value="{{ $user->id }}">
+                                                <button type="submit" class="deletebtn"></button>
+                                            </form>
+                                            @if ($showDeleted ?? false)
+                                            <form id="restore-user-form-{{ $user->id }}" class="d-none" action="{{ route('admin.register.user.restore') }}" method="post">
+                                                @csrf
+                                                <input type="hidden" name="user_id" value="{{ $user->id }}">
+                                            </form>
+                                            @endif
                                             <form id="maintenance-form-{{ $user->id }}" class="d-none" action="{{ route('admin.register.user.maintenance') }}" method="POST">
                                                 @csrf
                                                 <input type="hidden" name="user_id" value="{{ $user->id }}">
@@ -583,6 +616,14 @@
                                                     {{ __('Actions') }}
                                                 </button>
                                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton-{{ $user->id }}">
+                                                    @if ($showDeleted ?? false)
+                                                    <a href="#" class="dropdown-item text-success" onclick="event.preventDefault(); document.getElementById('restore-user-form-{{ $user->id }}').submit();">
+                                                        {{ __('Restore') }}
+                                                    </a>
+                                                    <a href="#" class="dropdown-item text-danger" onclick="event.preventDefault(); if(confirm(@json(__('Permanently delete this user? This cannot be undone.')))) { document.getElementById('force-delete-user-form-{{ $user->id }}').querySelector('.deletebtn').click(); }">
+                                                        {{ __('Delete Permanently') }}
+                                                    </a>
+                                                    @else
                                                     <a href="{{ route('admin.register.user.secretLogin', $user) }}" target="_blank" class="dropdown-item">
                                                         {{ __('Secret Login') }}
                                                     </a>
@@ -600,6 +641,10 @@
                                                     <a href="#" class="dropdown-item" onclick="event.preventDefault(); document.getElementById('delete-user-form-{{ $user->id }}').querySelector('.deletebtn').click();">
                                                         {{ __('Delete') }}
                                                     </a>
+                                                    <a href="#" class="dropdown-item text-danger" onclick="event.preventDefault(); if(confirm(@json(__('Permanently delete this user? This cannot be undone.')))) { document.getElementById('force-delete-user-form-{{ $user->id }}').querySelector('.deletebtn').click(); }">
+                                                        {{ __('Delete Permanently') }}
+                                                    </a>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </td>
@@ -635,6 +680,131 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Filters Modal -->
+<div class="modal fade" id="advancedFiltersModal" tabindex="-1" role="dialog" aria-labelledby="advancedFiltersModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <form action="{{ route('admin.register.user') }}" method="GET">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="advancedFiltersModalTitle">
+                        <i class="fas fa-sliders-h"></i> {{ __('Advanced Filters') }}
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    @if (array_key_exists('term', $userListQuery))
+                        <input type="hidden" name="term" value="{{ $userListQuery['term'] }}">
+                    @endif
+                    @if (array_key_exists('package_id', $userListQuery))
+                        <input type="hidden" name="package_id" value="{{ $userListQuery['package_id'] }}">
+                    @endif
+                    @if (array_key_exists('btn_start_date', $userListQuery))
+                        <input type="hidden" name="btn_start_date" value="{{ $userListQuery['btn_start_date'] }}">
+                    @endif
+                    @if (array_key_exists('btn_end_date', $userListQuery))
+                        <input type="hidden" name="btn_end_date" value="{{ $userListQuery['btn_end_date'] }}">
+                    @endif
+                    @if (array_key_exists('show_deleted', $userListQuery))
+                        <input type="hidden" name="show_deleted" value="{{ $userListQuery['show_deleted'] }}">
+                    @endif
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="start_date" class="small text-muted mb-1">{{ __('From Date') }} ({{ __('optional') }})</label>
+                                <input type="date" id="start_date" name="start_date" class="form-control form-control-sm" value="{{ request()->input('start_date') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="end_date" class="small text-muted mb-1">{{ __('To Date') }} ({{ __('optional') }})</label>
+                                <input type="date" id="end_date" name="end_date" class="form-control form-control-sm" value="{{ request()->input('end_date') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="subscription_start" class="small text-muted mb-1">{{ __('Subscription Ends From') }} ({{ __('optional') }})</label>
+                                <input type="date" id="subscription_start" name="subscription_start" class="form-control form-control-sm" value="{{ request()->input('subscription_start') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="subscription_end" class="small text-muted mb-1">{{ __('Subscription Ends To') }} ({{ __('optional') }})</label>
+                                <input type="date" id="subscription_end" name="subscription_end" class="form-control form-control-sm" value="{{ request()->input('subscription_end') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="active_membership" class="small text-muted mb-1">{{ __('Active Subscription') }}</label>
+                                <select name="active_membership" id="active_membership" class="form-control form-control-sm">
+                                    <option value="">{{ __('-- All Users --') }}</option>
+                                    <option value="1" {{ request()->input('active_membership') == '1' ? 'selected' : '' }}>
+                                        {{ __('Only Active Subscribers') }}
+                                    </option>
+                                    <option value="0" {{ request()->input('active_membership') == '0' ? 'selected' : '' }}>
+                                        {{ __('Only Non-Active / Expired') }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="paid_member" class="small text-muted mb-1">{{ __('Membership_Type') }}</label>
+                                <select name="paid_member" id="paid_member" class="form-control form-control-sm">
+                                    <option value="">{{ __('-- All Types --') }}</option>
+                                    <option value="paid" {{ request()->input('paid_member') == 'paid'  ? 'selected' : '' }}>
+                                        {{ __('Paid_Member') }}
+                                    </option>
+                                    <option value="trial" {{ request()->input('paid_member') == 'trial' ? 'selected' : '' }}>
+                                        {{ __('Free_Trial') }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="referred_by" class="small text-muted mb-1">{{ __('Referred By') }}</label>
+                                <select name="referred_by" id="referred_by" class="form-control form-control-sm">
+                                    <option value="">{{ __('-- All Referrers --') }}</option>
+                                    @foreach($affiliateUsers as $affUser)
+                                    <option value="{{ $affUser->id }}" {{ request()->input('referred_by') == $affUser->id ? 'selected' : '' }}>
+                                        {{ $affUser->username }} ({{ $affUser->email }})
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="has_whatsapp" class="small text-muted mb-1">
+                                    <i class="fab fa-whatsapp text-success"></i> {{ __('WhatsApp') }}
+                                </label>
+                                <select name="has_whatsapp" id="has_whatsapp" class="form-control form-control-sm">
+                                    <option value="">{{ __('-- All Users --') }}</option>
+                                    <option value="1" {{ request()->input('has_whatsapp') == '1' ? 'selected' : '' }}>
+                                        {{ __('WhatsApp users') }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="{{ route('admin.register.user') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo"></i> {{ __('Reset') }}
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter"></i> {{ __('Filter') }}
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

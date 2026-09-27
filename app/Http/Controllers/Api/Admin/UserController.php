@@ -370,11 +370,52 @@ class UserController extends BaseController
                 [
                     'id' => $userId,
                     'deleted' => true,
+                    'permanent' => false,
                 ],
                 'User soft-deleted successfully.'
             );
         } catch (Throwable $e) {
             return $this->handleException($e, 'Failed to delete user.');
+        }
+    }
+
+    /**
+     * Permanently delete a user (including soft-deleted).
+     * DELETE /api/v1/admin/users/{id}/force
+     */
+    public function forceDestroy(int $userId): JsonResponse
+    {
+        try {
+            $this->userManagementService->forceDeleteUser($userId);
+
+            return $this->successResponse(
+                [
+                    'id' => $userId,
+                    'deleted' => true,
+                    'permanent' => true,
+                ],
+                'User permanently deleted successfully.'
+            );
+        } catch (Throwable $e) {
+            return $this->handleException($e, 'Failed to permanently delete user.');
+        }
+    }
+
+    /**
+     * Restore a soft-deleted user.
+     * POST /api/v1/admin/users/{id}/restore
+     */
+    public function restore(int $userId): JsonResponse
+    {
+        try {
+            $user = $this->userManagementService->restoreUser($userId);
+
+            return $this->successResponse(
+                new UserResource($user),
+                'User restored successfully.'
+            );
+        } catch (Throwable $e) {
+            return $this->handleException($e, 'Failed to restore user.');
         }
     }
 

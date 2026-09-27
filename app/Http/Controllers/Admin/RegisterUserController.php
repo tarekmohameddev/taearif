@@ -76,11 +76,15 @@ class RegisterUserController extends Controller
         $paidMember = $request->input('paid_member');
 
         $users = $this->applyUserFilters(
-            User::where('account_type', 'tenant')->with([
+            $this->tenantUsersBaseQuery($request)->with([
                 'referrer',
                 'basic_setting',
                 'currentMembership.package',
                 'pendingMembership.package',
+            ])->withExists([
+                'whatsappUsers as has_whatsapp_service' => fn ($q) => $q->where('status', 'active'),
+            ])->withCount([
+                'whatsappUsers as active_whatsapp_count' => fn ($q) => $q->where('status', 'active'),
             ]),
             $request
         )->orderBy('id', 'DESC')->paginate(10);
@@ -116,11 +120,13 @@ class RegisterUserController extends Controller
         );
         $statsFiltered = $statsService->counts(
             fn () => $this->applyUserFilters(
-                User::query()->where('account_type', 'tenant'),
+                $this->tenantUsersBaseQuery($request),
                 $request
             ),
             $this->registrationWindow($request)
         );
+
+        $showDeleted = $request->input('show_deleted') === '1';
 
         return view('admin.register_user.index', compact(
             'users',
@@ -134,8 +140,23 @@ class RegisterUserController extends Controller
             'paidMember',
             'userListQuery',
             'packageFilterButtons',
-            'maintenanceFlags'
+            'maintenanceFlags',
+            'showDeleted'
         ));
+    }
+
+    /**
+     * Base tenant query that optionally includes only soft-deleted users.
+     */
+    private function tenantUsersBaseQuery(Request $request)
+    {
+        $query = User::query()->where('account_type', 'tenant');
+
+        if ($request->input('show_deleted') === '1') {
+            return $query->onlyTrashed();
+        }
+
+        return $query;
     }
 
     /**
@@ -244,6 +265,11 @@ class RegisterUserController extends Controller
                 if ($membershipStartTo) {
                     $m->where('start_date', '<=', $membershipStartTo);
                 }
+            });
+        })
+        ->when($request->input('has_whatsapp') === '1', function ($q) {
+            $q->whereHas('whatsappUsers', function ($wa) {
+                $wa->where('status', 'active');
             });
         });
     }
@@ -360,6 +386,14 @@ class RegisterUserController extends Controller
             if ($request->query->has($key)) {
                 $query[$key] = (string) $request->query($key, '');
             }
+        }
+
+        if ($request->query->has('show_deleted')) {
+            $query['show_deleted'] = (string) $request->query('show_deleted', '');
+        }
+
+        if ($request->query->has('has_whatsapp')) {
+            $query['has_whatsapp'] = (string) $request->query('has_whatsapp', '');
         }
 
         return $query;
@@ -611,8 +645,16 @@ class RegisterUserController extends Controller
     {
 
         $rules = [
-            'username' => 'required|alpha_num|unique:users',
-            'email' => 'required|email|unique:users',
+            'username' => [
+                'required',
+                'alpha_num',
+                \Illuminate\Validation\Rule::unique('users', 'username')->whereNull('deleted_at'),
+            ],
+            'email' => [
+                'required',
+                'email',
+                \Illuminate\Validation\Rule::unique('users', 'email')->whereNull('deleted_at'),
+            ],
             'password' => 'required|confirmed',
             'package_id' => 'required',
             'payment_gateway' => 'required',
@@ -1513,7 +1555,38 @@ class RegisterUserController extends Controller
         @unlink(public_path('assets/front/img/user/' . $user->photo));
         $user->delete();
 
-        Session::flash('success', 'User deleted successfully!');
+        Session::flash('success', __('User deleted successfully!'));
+        return back();
+    }
+
+    /**
+     * Permanently delete a user (active or soft-deleted).
+     */
+    public function forceDelete(Request $request)
+    {
+        $user = User::withTrashed()->where('account_type', 'tenant')->findOrFail($request->user_id);
+
+        try {
+            $user->tokens()->delete();
+        } catch (\Throwable $e) {
+            // ignore token cleanup failures
+        }
+
+        $user->forceDelete();
+
+        Session::flash('success', __('User permanently deleted successfully!'));
+        return back();
+    }
+
+    /**
+     * Restore a soft-deleted registered user.
+     */
+    public function restore(Request $request)
+    {
+        $user = User::onlyTrashed()->where('account_type', 'tenant')->findOrFail($request->user_id);
+        $user->restore();
+
+        Session::flash('success', __('User restored successfully!'));
         return back();
     }
 
@@ -2042,7 +2115,7 @@ class RegisterUserController extends Controller
             $user->delete();
         }
 
-        Session::flash('success', 'Users deleted successfully!');
+        Session::flash('success', __('Users deleted successfully!'));
         return "success";
     }
 
