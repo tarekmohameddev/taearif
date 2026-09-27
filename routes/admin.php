@@ -267,6 +267,8 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/user/next-package/change', 'Admin\RegisterUserController@changeNextPackage')->name('user.nextPackage.change');
         Route::post('/user/next-package/add', 'Admin\RegisterUserController@addNextPackage')->name('user.nextPackage.add');
         Route::post('register/user/delete', 'Admin\RegisterUserController@delete')->name('register.user.delete');
+        Route::post('register/user/force-delete', 'Admin\RegisterUserController@forceDelete')->name('register.user.force-delete');
+        Route::post('register/user/restore', 'Admin\RegisterUserController@restore')->name('register.user.restore');
         Route::post('register/user/bulk-delete', 'Admin\RegisterUserController@bulkDelete')->name('register.user.bulk.delete');
         Route::get('register/user/{id}/changePassword', 'Admin\RegisterUserController@changePass')->name('register.user.changePass');
         Route::post('register/user/updatePassword', 'Admin\RegisterUserController@updatePassword')->name('register.user.updatePassword');

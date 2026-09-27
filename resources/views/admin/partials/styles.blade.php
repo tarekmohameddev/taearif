@@ -158,6 +158,7 @@
     }
 
     [dir="rtl"] .sidebar_minimize .main-panel {
+        margin-left: 0 !important;
         margin-right: 75px !important;
         width: calc(100% - 75px) !important;
     }
@@ -544,11 +545,14 @@
 
     .sidebar_minimize .main-panel {
         margin-left: 75px !important;
+        width: calc(100% - 75px) !important;
     }
 
-    [dir="rtl"].sidebar_minimize .main-panel {
+    /* dir is on <html>, sidebar_minimize is on .wrapper — must be a descendant selector */
+    [dir="rtl"] .sidebar_minimize .main-panel {
         margin-left: 0 !important;
         margin-right: 75px !important;
+        width: calc(100% - 75px) !important;
     }
 
     .sidebar_minimize .sidebar .nav > .nav-item > a {
@@ -582,12 +586,33 @@
         top: 0 !important;
         padding-top: var(--header-height) !important;
         z-index: 1035 !important;
+        overflow: hidden !important;
         transition: width var(--transition-smooth), transform var(--transition-smooth);
     }
 
     [dir="rtl"] .sidebar {
         border-right: none !important;
         border-left: 1px solid var(--border-color) !important;
+        left: auto !important;
+        right: 0 !important;
+        transform: none;
+    }
+
+    /* Keep jquery.scrollbar chrome inside the sidebar; hide it when minimized */
+    .sidebar .scroll-element {
+        z-index: 5 !important;
+    }
+
+    .sidebar_minimize .sidebar .scroll-element {
+        display: none !important;
+    }
+
+    .sidebar_minimize .sidebar:hover {
+        width: 75px !important;
+    }
+
+    .sidebar_minimize .sidebar:hover .sidebar-wrapper {
+        width: 100% !important;
     }
 
     .sidebar .sidebar-wrapper {
@@ -1210,35 +1235,52 @@
             right: auto;
         }
 
+        /*
+         * Atlantis ships `.sidebar { transform: translate3d(-270px,0,0) !important }`
+         * for LTR (sidebar on the left). Our admin is RTL with the sidebar on the
+         * right, so that rule slides it into the middle of the page. Override with
+         * !important and park it fully off-screen to the right when closed.
+         */
         [dir="rtl"] .sidebar {
-            transform: translateX(100%);
-            left: auto;
-            right: 0;
+            transform: translateX(100%) !important;
+            left: auto !important;
+            right: 0 !important;
         }
 
-        .sidebar.show {
+        .sidebar.show,
+        .nav_open .sidebar {
+            transform: translateX(0) !important;
+        }
+
+        [dir="rtl"] .nav_open .sidebar,
+        [dir="rtl"] .sidebar.show {
             transform: translateX(0) !important;
         }
 
         .main-panel {
             margin-left: 0 !important;
             margin-right: 0 !important;
+            width: 100% !important;
         }
 
         .logo-header {
             width: 100% !important;
             border: none !important;
         }
-
-        .main-panel {
-            width: 100% !important;
-        }
     }
 
     /* Prevent accidental horizontal shift in RTL */
     [dir="rtl"] .nav_open .main-panel,
     [dir="rtl"] .nav_open .main-header {
-        transform: translate3d(-var(--sidebar-width), 0, 0) !important;
+        transform: translate3d(calc(-1 * var(--sidebar-width)), 0, 0) !important;
+    }
+
+    @media (max-width: 991px) {
+        /* Atlantis pushes main-panel +250px for LTR; reverse for RTL */
+        [dir="rtl"] .nav_open .main-panel,
+        [dir="rtl"] .nav_open .main-header {
+            transform: translate3d(calc(-1 * var(--sidebar-width)), 0, 0) !important;
+        }
     }
 
     /* ========================================

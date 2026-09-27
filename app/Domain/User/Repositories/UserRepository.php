@@ -154,6 +154,16 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
             $query->where('featured', $filters['featured']);
         }
 
+        // Soft-deleted users filter: deleted | active (default) | all
+        if (!empty($filters['deleted'])) {
+            $deleted = strtolower((string) $filters['deleted']);
+            if ($deleted === 'only' || $deleted === '1' || $deleted === 'trashed') {
+                $query->onlyTrashed();
+            } elseif ($deleted === 'with' || $deleted === 'all') {
+                $query->withTrashed();
+            }
+        }
+
         // Subscription status filter
         if (array_key_exists('has_active_subscription', $filters)) {
             if ($filters['has_active_subscription']) {
