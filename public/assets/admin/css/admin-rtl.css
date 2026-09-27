@@ -169,9 +169,12 @@
     margin-left: 0 !important;
 }
 
-/* Sidebar toggled state */
-[dir="rtl"] .sidebar-mini .main-panel {
+/* Sidebar toggled / minimized state (Atlantis uses sidebar_minimize) */
+[dir="rtl"] .sidebar-mini .main-panel,
+[dir="rtl"] .sidebar_minimize .main-panel {
+    margin-left: 0 !important;
     margin-right: 75px !important;
+    width: calc(100% - 75px) !important;
 }
 
 /* Navigation items alignment */
