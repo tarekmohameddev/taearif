@@ -45,6 +45,20 @@ class CallHistoryController extends BaseApiController
         if ($request->filled('end_date')) {
             $query->whereDate('created_at', '<=', $request->input('end_date'));
         }
+        if ($request->filled('client_name')) {
+            $clientName = trim((string) $request->input('client_name'));
+
+            $query->whereHas('customer', function ($customerQuery) use ($clientName) {
+                $customerQuery->where('name', 'like', '%' . $clientName . '%');
+            });
+        }
+        if ($request->filled('client_number')) {
+            $clientNumber = trim((string) $request->input('client_number'));
+
+            $query->whereHas('customer', function ($customerQuery) use ($clientNumber) {
+                $customerQuery->where('phone_number', 'like', '%' . $clientNumber . '%');
+            });
+        }
 
         $perPage = min((int) $request->input('per_page', 20), 100);
         $logs    = $query->paginate($perPage);
