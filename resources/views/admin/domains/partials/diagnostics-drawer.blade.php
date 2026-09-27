@@ -146,6 +146,31 @@
             </div>
         </div>
 
+        @php
+            $timelineStates = [
+                'dns' => in_array($healthCode, ['dns_misconfigured', 'ns_not_pointing', 'ns_mismatch', 'unchecked'], true) ? 'current' : 'done',
+                'verify' => in_array($healthCode, ['unverified', 'ownership_required'], true) ? 'current' : (in_array($healthCode, ['dns_misconfigured', 'ns_not_pointing', 'ns_mismatch', 'unchecked'], true) ? 'pending' : 'done'),
+                'ssl' => in_array($healthCode, ['certificate_pending', 'certificate_error'], true) ? 'current' : (in_array($healthCode, ['linked'], true) ? 'done' : 'pending'),
+                'live' => $healthCode === 'linked' ? 'done' : 'pending',
+            ];
+        @endphp
+        <div class="domain-status-timeline mb-3" aria-label="{{ __('domain_diagnostics.timeline_title') }}">
+            <div class="small font-weight-bold mb-2">{{ __('domain_diagnostics.timeline_title') }}</div>
+            <div class="domain-status-timeline-track">
+                @foreach (['dns' => 'domain_diagnostics.timeline_dns', 'verify' => 'domain_diagnostics.timeline_verify', 'ssl' => 'domain_diagnostics.timeline_ssl', 'live' => 'domain_diagnostics.timeline_live'] as $step => $label)
+                    <div class="domain-status-step domain-status-step--{{ $timelineStates[$step] }}">
+                        <span class="domain-status-step-icon">
+                            @if ($timelineStates[$step] === 'done') <i class="fas fa-check"></i>
+                            @elseif ($timelineStates[$step] === 'current') <i class="fas fa-exclamation"></i>
+                            @else <i class="fas fa-circle"></i>
+                            @endif
+                        </span>
+                        <span class="small">{{ __($label) }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
         @include('admin.domains.partials.registrar-action-plan', ['d' => $d, 'domain' => $domain])
 
         @php
@@ -160,6 +185,10 @@
         @endphp
         @if (($showRepair || $showClaim) && $domainId)
             <div class="domain-diagnostics-actions mb-3 d-flex flex-wrap align-items-center">
+                <button type="button" class="btn btn-outline-secondary btn-sm mr-2 mb-1 refresh-diagnostics"
+                        data-url="{{ route('admin.custom-domain.diagnostics', ['id' => $domainId]) }}">
+                    <i class="fas fa-sync-alt mr-1"></i>{{ __('domain_diagnostics.check_dns') }}
+                </button>
                 @if ($showRepair)
                     <form action="{{ route('admin.custom-domain.repair-verify') }}" method="POST" class="mr-2 mb-1">
                         @csrf
@@ -294,6 +323,16 @@
             </tbody>
         </table>
 
+        <details class="domain-dns-technical-details mb-3">
+            <summary class="domain-dns-technical-summary">
+                <span><i class="fas fa-code mr-1"></i>{{ __('domain_diagnostics.technical_details_title') }}</span>
+                <span class="badge badge-secondary">{{ __('domain_diagnostics.reference_only_badge') }}</span>
+            </summary>
+            <div class="domain-dns-technical-body">
+        <div class="alert alert-light border small" dir="auto">
+            {{ __('domain_diagnostics.technical_details_help') }}
+        </div>
+
         <h6 class="mt-3">{{ __('domain_diagnostics.nameservers') }}</h6>
         <div class="row mb-3">
             @if (($d['dns_mode'] ?? null) === 'vercel_ns')
@@ -384,6 +423,8 @@
                 @endforeach
             </ul>
         @endif
+            </div>
+        </details>
 
         @php $tenantMapping = is_array($d['tenant_mapping'] ?? null) ? $d['tenant_mapping'] : []; @endphp
         <h6 class="mt-3">{{ __('domain_diagnostics.tenant_mapping') }}</h6>
