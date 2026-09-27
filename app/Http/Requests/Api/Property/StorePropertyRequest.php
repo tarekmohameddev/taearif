@@ -9,6 +9,7 @@ use App\Http\Requests\Concerns\ValidatesTenantCustomerId;
 use App\Http\Requests\Concerns\ValidatesTenantProjectId;
 use App\Rules\PropertyTypeRule;
 use App\Services\Property\PropertyStatusSyncService;
+use Illuminate\Validation\Rule;
 
 class StorePropertyRequest extends BaseApiFormRequest
 {
@@ -48,6 +49,7 @@ class StorePropertyRequest extends BaseApiFormRequest
             $this->tenantCustomerIdRules(sometimes: true),
             $this->sourceBrokerRules(),
             [
+                'property_code' => ['nullable', 'string', 'max:100', Rule::unique('user_properties', 'property_code')],
                 'payment_method' => 'nullable',
                 'title' => 'sometimes|nullable|string|max:255',
                 'address' => 'sometimes|nullable|string',

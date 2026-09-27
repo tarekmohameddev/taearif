@@ -36,6 +36,7 @@ class Property extends Model
 
 
     protected $fillable = [
+        'property_code',
         'category_id',
         'region_id',
         'user_id',
