@@ -6,6 +6,12 @@ use App\Http\Controllers\Api\BaseApiController;
 use App\Traits\HandlesApiExceptions;
 use Illuminate\Http\Request;
 use App\Services\Rms\DashboardService;
+use App\Services\Rms\DashboardReadService;
+use App\Http\Requests\Api\V1\Rms\RmsDashboardPaginationRequest;
+use App\Http\Requests\Api\V1\Rms\RmsDashboardPaymentsDueRequest;
+use App\Http\Requests\Api\V1\Rms\RmsDashboardOverduePaymentsRequest;
+use App\Http\Requests\Api\V1\Rms\RmsDashboardExpiringContractsRequest;
+use App\Http\Requests\Api\V1\Rms\RmsDashboardMaintenanceRequest;
 use App\Http\Requests\Api\V1\Rms\RmsDashboardIndexRequest;
 use App\Http\Requests\Api\V1\Rms\PaymentsCollectionsRequest;
 use App\Http\Requests\Api\V1\Rms\PaymentsDueRequest;
@@ -15,10 +21,52 @@ class RmsDashboardController extends BaseApiController
     use HandlesApiExceptions;
 
     protected $dashboardService;
+    protected $dashboardReadService;
 
-    public function __construct(DashboardService $dashboardService)
+    public function __construct(DashboardService $dashboardService, DashboardReadService $dashboardReadService)
     {
         $this->dashboardService = $dashboardService;
+        $this->dashboardReadService = $dashboardReadService;
+    }
+
+    public function stats()
+    {
+        return $this->executeWithExceptionHandling(fn () => $this->success($this->dashboardReadService->stats($this->getUserId())), 'retrieve dashboard stats');
+    }
+
+    public function ongoingRentals(RmsDashboardPaginationRequest $request)
+    {
+        return $this->executeWithExceptionHandling(fn () => $this->success($this->dashboardReadService->ongoingRentals($this->getUserId(), $request->validated())), 'retrieve ongoing rentals');
+    }
+
+    public function paymentsDueSummary()
+    {
+        return $this->executeWithExceptionHandling(fn () => $this->success($this->dashboardReadService->paymentsDueSummary($this->getUserId())), 'retrieve payments due summary');
+    }
+
+    public function paymentsDueList(RmsDashboardPaymentsDueRequest $request)
+    {
+        return $this->executeWithExceptionHandling(fn () => $this->success($this->dashboardReadService->paymentsDueList($this->getUserId(), $request->validated())), 'retrieve payments due');
+    }
+
+    public function overduePaymentsSummary()
+    {
+        return $this->executeWithExceptionHandling(fn () => $this->success($this->dashboardReadService->overduePaymentsSummary($this->getUserId())), 'retrieve overdue payments summary');
+    }
+
+    public function overduePayments(RmsDashboardOverduePaymentsRequest $request)
+    {
+        return $this->executeWithExceptionHandling(fn () => $this->success($this->dashboardReadService->overduePayments($this->getUserId(), $request->validated())), 'retrieve overdue payments');
+    }
+
+    public function expiringContracts(RmsDashboardExpiringContractsRequest $request)
+    {
+        return $this->executeWithExceptionHandling(fn () => $this->success($this->dashboardReadService->expiringContracts($this->getUserId(), $request->validated())), 'retrieve expiring contracts');
+    }
+
+    public function maintenance(RmsDashboardMaintenanceRequest $request)
+    {
+        return $this->executeWithExceptionHandling(fn () => $this->success($this->dashboardReadService->maintenance($this->getUserId(), $request->validated())), 'retrieve maintenance');
     }
 
     public function index(RmsDashboardIndexRequest $request)

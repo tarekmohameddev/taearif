@@ -774,6 +774,14 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::prefix('rms')->middleware(['can:rentals.view'])->group(function () {
         // Dashboard
         Route::get('dashboard', [RmsDashboardController::class, 'index']);
+        Route::get('dashboard/stats', [RmsDashboardController::class, 'stats'])->name('rms.dashboard.stats');
+        Route::get('dashboard/ongoing-rentals', [RmsDashboardController::class, 'ongoingRentals'])->name('rms.dashboard.ongoing-rentals');
+        Route::get('dashboard/payments-due/summary', [RmsDashboardController::class, 'paymentsDueSummary'])->name('rms.dashboard.payments-due.summary');
+        Route::get('dashboard/payments-due', [RmsDashboardController::class, 'paymentsDueList'])->name('rms.dashboard.payments-due');
+        Route::get('dashboard/overdue-payments/summary', [RmsDashboardController::class, 'overduePaymentsSummary'])->name('rms.dashboard.overdue-payments.summary');
+        Route::get('dashboard/overdue-payments', [RmsDashboardController::class, 'overduePayments'])->name('rms.dashboard.overdue-payments');
+        Route::get('dashboard/expiring-contracts', [RmsDashboardController::class, 'expiringContracts'])->name('rms.dashboard.expiring-contracts');
+        Route::get('dashboard/maintenance', [RmsDashboardController::class, 'maintenance'])->name('rms.dashboard.maintenance');
         Route::get('sales-stats', [RmsDashboardController::class, 'salesStats']);
 
         // Filtered Payments Endpoints
