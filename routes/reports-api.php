@@ -55,6 +55,9 @@ Route::prefix('v1/reports')
             Route::get('charts/import-history',          [PropertiesReportController::class, 'importHistory']);
             Route::get('tables/top-listings',            [PropertiesReportController::class, 'topListings']);
             Route::get('tables/agent-performance',       [PropertiesReportController::class, 'agentPerformance']);
+            Route::get('outcomes/summary',               [PropertiesReportController::class, 'outcomesSummary']);
+            Route::get('charts/by-unit-category',        [PropertiesReportController::class, 'byUnitCategory']);
+            Route::get('transactions/value-summary',     [PropertiesReportController::class, 'transactionValueSummary']);
         });
 
         // ── 5. Platform Overview ──────────────────────────────────────────────

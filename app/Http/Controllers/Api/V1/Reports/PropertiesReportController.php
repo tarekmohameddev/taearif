@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Api\V1\Reports;
 
 use App\Domain\Reports\DTOs\ReportFilters;
 use App\Domain\Reports\Services\PropertiesReportService;
+use App\Domain\Reports\Services\PropertyOutcomeReportService;
+use App\Domain\Reports\Services\PropertyTransactionValueReportService;
 use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\Api\V1\Reports\ReportFilterRequest;
 use App\Traits\HandlesApiExceptions;
@@ -14,7 +16,28 @@ class PropertiesReportController extends BaseApiController
 {
     use HandlesApiExceptions;
 
-    public function __construct(protected PropertiesReportService $service) {}
+    public function __construct(protected PropertiesReportService $service, protected PropertyOutcomeReportService $outcomeService, protected PropertyTransactionValueReportService $transactionService) {}
+
+    public function outcomesSummary(ReportFilterRequest $request)
+    {
+        return $this->executeWithExceptionHandling(function () use ($request) {
+            return $this->success($this->outcomeService->outcomes((int) $request->attributes->get('report_user_id'), ReportFilters::fromRequest($request)));
+        }, 'retrieve property outcomes report');
+    }
+
+    public function byUnitCategory(ReportFilterRequest $request)
+    {
+        return $this->executeWithExceptionHandling(function () use ($request) {
+            return $this->success($this->outcomeService->categories((int) $request->attributes->get('report_user_id'), ReportFilters::fromRequest($request)));
+        }, 'retrieve property unit categories report');
+    }
+
+    public function transactionValueSummary(ReportFilterRequest $request)
+    {
+        return $this->executeWithExceptionHandling(function () use ($request) {
+            return $this->success($this->transactionService->summary((int) $request->attributes->get('report_user_id'), ReportFilters::fromRequest($request)));
+        }, 'retrieve property transaction values report');
+    }
 
     public function summary(ReportFilterRequest $request)
     {

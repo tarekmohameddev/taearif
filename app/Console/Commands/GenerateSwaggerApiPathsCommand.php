@@ -1330,6 +1330,37 @@ PHP;
                     ' *         @OA\\Response(response=503, description="Mutation guard or provider detach failed")',
                 ],
             ],
+            'GET /v1/reports/properties/outcomes/summary' => [
+                'summary' => 'Current sold and rented property-unit outcome snapshot',
+                'response_lines' => [
+                    ' *         @OA\Response(response=200, description="Snapshot in Asia/Riyadh", @OA\JsonContent(type="object",',
+                    ' *             @OA\Property(property="sold", type="object"), @OA\Property(property="rented", type="object"),',
+                    ' *             @OA\Property(property="total_outcome_units", type="integer"), @OA\Property(property="data_quality", type="object"),',
+                    ' *             @OA\Property(property="as_of", type="string", format="date-time"), @OA\Property(property="timezone", type="string", example="Asia/Riyadh")',
+                    ' *         )),',
+                    ' *         @OA\Response(response=401, description="Unauthenticated"), @OA\Response(response=403, description="Forbidden")',
+                ],
+            ],
+            'GET /v1/reports/properties/charts/by-unit-category' => [
+                'summary' => 'Current unit-category inventory snapshot; date filters do not change the snapshot',
+                'response_lines' => [
+                    ' *         @OA\Response(response=200, description="Snapshot in Asia/Riyadh", @OA\JsonContent(type="object",',
+                    ' *             @OA\Property(property="data", type="array", @OA\Items(type="object")), @OA\Property(property="total_units", type="integer"),',
+                    ' *             @OA\Property(property="as_of", type="string", format="date-time"), @OA\Property(property="timezone", type="string", example="Asia/Riyadh")',
+                    ' *         )),',
+                    ' *         @OA\Response(response=401, description="Unauthenticated"), @OA\Response(response=403, description="Forbidden")',
+                ],
+            ],
+            'GET /v1/reports/properties/transactions/value-summary' => [
+                'summary' => 'Completed sales, contracted rentals, and collected rent ledger values grouped by currency',
+                'response_lines' => [
+                    ' *         @OA\Response(response=200, description="Transaction values with decimal-string amounts and quality counters", @OA\JsonContent(type="object",',
+                    ' *             @OA\Property(property="currencies", type="array", @OA\Items(type="object")), @OA\Property(property="data_quality", type="object"),',
+                    ' *             @OA\Property(property="period", type="object"), @OA\Property(property="generated_at", type="string", format="date-time")',
+                    ' *         )),',
+                    ' *         @OA\Response(response=401, description="Unauthenticated"), @OA\Response(response=403, description="Forbidden")',
+                ],
+            ],
         ];
 
         return $map[$key] ?? null;
