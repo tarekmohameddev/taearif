@@ -395,6 +395,8 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     // Draft/Incomplete Properties Management - MUST be before /properties/{id} to avoid route conflict
     Route::get   ('/properties/drafts',                   [PropertyController::class, 'listDrafts'])->middleware('can:properties.view');
     Route::get   ('/properties/drafts/{id}',              [PropertyController::class, 'showDraft'])->middleware('can:properties.view');
+    Route::put   ('/properties/{id}/share-link',          [\App\Http\Controllers\Api\property\PropertyShareController::class, 'store'])->middleware('can:properties.update');
+    Route::delete('/properties/{id}/share-link',          [\App\Http\Controllers\Api\property\PropertyShareController::class, 'destroy'])->middleware('can:properties.update');
     Route::patch ('/properties/drafts/{id}',              [PropertyController::class, 'updateDraft'])->middleware('can:properties.update');
     Route::post  ('/properties/drafts/{id}/complete',     [PropertyController::class, 'completeDraft'])->middleware('can:properties.create');
     Route::post  ('/properties/drafts/bulk-complete',     [PropertyController::class, 'bulkCompleteDrafts'])->middleware('can:properties.create');
@@ -1405,6 +1407,7 @@ Route::post('v1/whatsapp/webhook/verify', [WhatsAppWebhookController::class, 've
 
 // Direct public route for property categories (bypassing tenant.resolve middleware)
 Route::get('v1/tenant-website/{tenantId}/properties/categories/direct', [PropertyController::class, 'properties_categories']);
+Route::get('v1/tenant-website/{tenantId}/property-previews/{token}', [\App\Http\Controllers\Api\V1\TenantWebsite\PropertyPreviewController::class, 'show'])->middleware('throttle:api');
 
 // =============================================================================
 // CUSTOMERS HUB API (v2) - Unified Customer Management System

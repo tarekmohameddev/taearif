@@ -36,6 +36,7 @@ class Property extends Model
 
 
     protected $fillable = [
+        'share_token',
         'property_code',
         'category_id',
         'region_id',
@@ -84,6 +85,10 @@ class Property extends Model
         'validation_errors',
         'import_batch_id',
         'completed_at',
+    ];
+
+    protected $hidden = [
+        'share_token',
     ];
 
     protected static function booted(): void
