@@ -172,6 +172,17 @@ class PropertyListStatusFieldsTest extends TestCase
             'unit_status' => 'available',
             'publish_status' => 'published',
         ]);
+        $property->contents()->first()->update(['city_id' => 123456, 'state_id' => 654321]);
+        $property->contents()->create([
+            'user_id' => $tenant->id,
+            'language_id' => Language::query()->where('user_id', $tenant->id)->where('is_default', 1)->value('id'),
+            'title' => 'List Unit Secondary ' . $property->id,
+            'slug' => 'list-unit-secondary-' . $property->id,
+            'address' => 'Secondary Riyadh Test Address',
+            'description' => 'Secondary Test Description',
+            'city_id' => 999999,
+            'state_id' => 888888,
+        ]);
 
         PropertyListCacheVersionService::incrementVersion($tenant->id);
 
@@ -189,8 +200,24 @@ class PropertyListStatusFieldsTest extends TestCase
         $this->assertSame('published', $row['publish_status']);
         $this->assertSame('sale', $row['purpose']);
         $this->assertSame('sale', $row['transaction_type']);
+        $this->assertSame(123456, $row['city_id']);
+        $this->assertSame(654321, $row['district_id']);
         $this->assertSame('tower-alpha', $row['building']['slug']);
         $this->assertSame('Tower Alpha', $row['building']['name']);
+
+        $fieldsResponse = $this->getJson('/api/properties?per_page=50&include_filters=0&fields=id,city_id,district_id');
+        $fieldsRow = collect($fieldsResponse->json('data.properties'))->firstWhere('id', $property->id);
+        $this->assertSame([
+            'id' => $property->id,
+            'city_id' => 123456,
+            'district_id' => 654321,
+        ], $fieldsRow);
+
+        $joinedResponse = $this->getJson('/api/properties?search=List%20Unit&per_page=50&include_filters=0');
+        $joinedRow = collect($joinedResponse->json('data.properties'))->firstWhere('id', $property->id);
+        $this->assertSame('list-unit-' . $property->id, $joinedRow['slug']);
+        $this->assertSame(123456, $joinedRow['city_id']);
+        $this->assertSame(654321, $joinedRow['district_id']);
     }
 
     public function test_index_filters_by_unit_status_listing_purpose_publish_status_and_building_id(): void
