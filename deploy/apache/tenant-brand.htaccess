@@ -1,0 +1,4 @@
+<IfModule mod_headers.c>
+    Header always set Cache-Control "public, max-age=31536000, immutable"
+    Header always set X-Content-Type-Options "nosniff"
+</IfModule>

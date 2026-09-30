@@ -2366,7 +2366,7 @@ class PropertyController extends Controller
         // Only eager load contents if we won't be using a JOIN
         if (!$willNeedContentJoin) {
             $eagerLoadRelations['contents'] = function($q) {
-                $q->select('id', 'property_id', 'title', 'slug', 'address', 'description')
+                $q->select('id', 'property_id', 'title', 'slug', 'address', 'description', 'city_id', 'state_id')
                   ->whereNotNull('title')
                   ->where('title', '!=', '')
                   ->whereNotNull('address')
@@ -2977,6 +2977,7 @@ class PropertyController extends Controller
         $requestedFields = $request->input('fields');
         $allowedFields = [
             'id', 'visits', 'title', 'address', 'slug', 'price', 'property_type', 'beds', 'bath',
+            'city_id', 'district_id',
             'area', 'purpose', 'transaction_type', 'listing_purpose', 'unit_status', 'publish_status',
             'property_status', 'features', 'status', 'featured_image', 'featured',
             'show_reservations', 'created_at', 'updated_at', 'payment_method', 'creator',
@@ -2996,14 +2997,27 @@ class PropertyController extends Controller
         // OPTIMIZED: Use content from JOIN if available, otherwise use eager loaded relationship
         // NOTE: Content validation is already done in the whereHas('contents') filter before pagination (lines 2074-2081)
         // No need to filter again here as it would cause pagination count mismatch
-        $formattedProperties = $properties->getCollection()->map(function ($property) use ($viewsBySlug, $fieldsToInclude, $hasContentJoin) {
+        $joinedContentLocations = collect();
+        if ($hasContentJoin) {
+            $contentIds = $properties->getCollection()->pluck('content_id')->filter()->unique()->values();
+            if ($contentIds->isNotEmpty()) {
+                $joinedContentLocations = DB::table('user_property_contents')
+                    ->whereIn('id', $contentIds)
+                    ->get(['id', 'title', 'slug', 'address', 'description', 'city_id', 'state_id'])
+                    ->keyBy('id');
+            }
+        }
+
+        $formattedProperties = $properties->getCollection()->map(function ($property) use ($viewsBySlug, $fieldsToInclude, $hasContentJoin, $joinedContentLocations) {
             // Use content from JOIN if available (when filtering by city/district/search)
-            if ($hasContentJoin && isset($property->content_slug)) {
-                $content = (object) [
+            if ($hasContentJoin && isset($property->content_id)) {
+                $content = $joinedContentLocations->get($property->content_id) ?? (object) [
                     'title' => $property->content_title ?? null,
                     'slug' => $property->content_slug ?? null,
                     'address' => $property->content_address ?? null,
                     'description' => $property->content_description ?? null,
+                    'city_id' => null,
+                    'state_id' => null,
                 ];
             } else {
                 // Fallback to eager loaded relationship

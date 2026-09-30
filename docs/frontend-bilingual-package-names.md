@@ -83,6 +83,9 @@ New: `package.name_ar`, `package.name_en`.
 | `name_en` | English title (may be `null`) |
 | `billing` | Hardcoded Arabic (`شهريًا` / `سنويًا` / `تجريبي`) |
 | `billing_key` | `monthly` \| `yearly` \| `trial` \| `null` |
+| `duration_months` | `null` for ordinary packages; the fixed duration in months (e.g. `24`) for a fixed-duration package |
+| `is_fixed_duration` | `true` only when `duration_months` is set; the price is the total price for the full duration |
+| `price_scope` | `per_period` (ordinary) \| `full_duration` (fixed-duration) |
 | `cta` | Hardcoded Arabic (`الخطة الحالية` / `الترقية`) |
 | `cta_key` | `current` \| `upgrade` |
 
@@ -96,10 +99,32 @@ Use `billing_key` / `cta_key` if you want to translate billing/cta in the SPA la
   "name_en": "Monthly Package",
   "billing": "شهريًا",
   "billing_key": "monthly",
+  "duration_months": null,
+  "is_fixed_duration": false,
+  "price_scope": "per_period",
   "cta": "الترقية",
   "cta_key": "upgrade"
 }
 ```
+
+Fixed-duration example (two-year package, listed under `plans_yearly`):
+
+```json
+{
+  "id": 0,
+  "name": "الباقة المميزة لمدة سنتين",
+  "name_ar": "الباقة المميزة لمدة سنتين",
+  "name_en": "Premium Two-Year Plan",
+  "price": "996.00",
+  "billing": "سنويًا",
+  "billing_key": "yearly",
+  "duration_months": 24,
+  "is_fixed_duration": true,
+  "price_scope": "full_duration"
+}
+```
+
+The ID is illustrative — use the ID returned by the API; never hard-code it.
 
 ### 4. Membership package on user profile (auth)
 

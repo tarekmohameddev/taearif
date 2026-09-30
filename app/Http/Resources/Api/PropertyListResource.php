@@ -57,6 +57,8 @@ class PropertyListResource extends JsonResource
             'title' => $content->title ?? 'No Title',
             'address' => $content->address ?? 'No Address',
             'slug' => $content->slug ?? null,
+            'city_id' => $content->city_id ?? null,
+            'district_id' => $content->state_id ?? null,
             'price' => $property->price,
             'property_type' => $property->property_type,
             'beds' => $property->beds,
