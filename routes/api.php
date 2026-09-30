@@ -395,6 +395,8 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     // Draft/Incomplete Properties Management - MUST be before /properties/{id} to avoid route conflict
     Route::get   ('/properties/drafts',                   [PropertyController::class, 'listDrafts'])->middleware('can:properties.view');
     Route::get   ('/properties/drafts/{id}',              [PropertyController::class, 'showDraft'])->middleware('can:properties.view');
+    Route::put   ('/properties/{id}/share-link',          [\App\Http\Controllers\Api\property\PropertyShareController::class, 'store'])->middleware('can:properties.update');
+    Route::delete('/properties/{id}/share-link',          [\App\Http\Controllers\Api\property\PropertyShareController::class, 'destroy'])->middleware('can:properties.update');
     Route::patch ('/properties/drafts/{id}',              [PropertyController::class, 'updateDraft'])->middleware('can:properties.update');
     Route::post  ('/properties/drafts/{id}/complete',     [PropertyController::class, 'completeDraft'])->middleware('can:properties.create');
     Route::post  ('/properties/drafts/bulk-complete',     [PropertyController::class, 'bulkCompleteDrafts'])->middleware('can:properties.create');
@@ -774,6 +776,14 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::prefix('rms')->middleware(['can:rentals.view'])->group(function () {
         // Dashboard
         Route::get('dashboard', [RmsDashboardController::class, 'index']);
+        Route::get('dashboard/stats', [RmsDashboardController::class, 'stats'])->name('rms.dashboard.stats');
+        Route::get('dashboard/ongoing-rentals', [RmsDashboardController::class, 'ongoingRentals'])->name('rms.dashboard.ongoing-rentals');
+        Route::get('dashboard/payments-due/summary', [RmsDashboardController::class, 'paymentsDueSummary'])->name('rms.dashboard.payments-due.summary');
+        Route::get('dashboard/payments-due', [RmsDashboardController::class, 'paymentsDueList'])->name('rms.dashboard.payments-due');
+        Route::get('dashboard/overdue-payments/summary', [RmsDashboardController::class, 'overduePaymentsSummary'])->name('rms.dashboard.overdue-payments.summary');
+        Route::get('dashboard/overdue-payments', [RmsDashboardController::class, 'overduePayments'])->name('rms.dashboard.overdue-payments');
+        Route::get('dashboard/expiring-contracts', [RmsDashboardController::class, 'expiringContracts'])->name('rms.dashboard.expiring-contracts');
+        Route::get('dashboard/maintenance', [RmsDashboardController::class, 'maintenance'])->name('rms.dashboard.maintenance');
         Route::get('sales-stats', [RmsDashboardController::class, 'salesStats']);
 
         // Filtered Payments Endpoints
@@ -1397,6 +1407,7 @@ Route::post('v1/whatsapp/webhook/verify', [WhatsAppWebhookController::class, 've
 
 // Direct public route for property categories (bypassing tenant.resolve middleware)
 Route::get('v1/tenant-website/{tenantId}/properties/categories/direct', [PropertyController::class, 'properties_categories']);
+Route::get('v1/tenant-website/{tenantId}/property-previews/{token}', [\App\Http\Controllers\Api\V1\TenantWebsite\PropertyPreviewController::class, 'show'])->middleware('throttle:api');
 
 // =============================================================================
 // CUSTOMERS HUB API (v2) - Unified Customer Management System

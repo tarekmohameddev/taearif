@@ -6,7 +6,6 @@ namespace App\Domain\Reports\Services;
 
 use App\Domain\Reports\DTOs\ReportFilters;
 use App\Domain\Reports\Support\WhatsAppNumberFilter;
-use App\Models\WaAutomationRule;
 use App\Models\WaCampaign;
 use App\Models\WaNumber;
 use App\Models\WaTemplate;
@@ -28,7 +27,9 @@ final class WhatsAppReportService
             return $this->emptySummary();
         }
 
-        $convBase = DB::table('wa_conversation_states')->where('user_id', $userId);
+        $convBase = DB::table('wa_conversation_states')
+            ->where('user_id', $userId)
+            ->whereBetween('last_message_time', [$start, $end]);
         $this->applyNumber($convBase, $waNumberId);
         $conversations = [
             'total'    => (clone $convBase)->count(),
@@ -76,14 +77,17 @@ final class WhatsAppReportService
             $templatesByStatus[$key] = ($templatesByStatus[$key] ?? 0) + (int) $row->cnt;
         }
 
+        // The rule counters are cumulative snapshots. There is no dated automation
+        // execution table in the current schema, so they cannot be used for a
+        // period-specific report.
         $rulesQuery = DB::table('wa_automation_rules')->where('user_id', $userId);
         $this->applyNumber($rulesQuery, $waNumberId);
         $automationRules = $rulesQuery
             ->selectRaw('COUNT(*) as total, SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active, SUM(triggered_count) as triggered, SUM(success_count) as successes')
             ->first();
 
-        $automationTriggered = (int) ($automationRules->triggered ?? 0);
-        $automationSuccesses = (int) ($automationRules->successes ?? 0);
+        $automationTriggered = 0;
+        $automationSuccesses = 0;
         $automationSuccessRate = $automationTriggered > 0
             ? round($automationSuccesses / $automationTriggered * 100, 2)
             : 0.0;
@@ -92,7 +96,7 @@ final class WhatsAppReportService
             ->where('user_id', $userId)
             ->where('transaction_type', 'usage')
             ->where('status', 'completed')
-            ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->whereBetween('created_at', [$start, $end])
             ->selectRaw('SUM(ABS(credits_amount)) as used')
             ->first();
 
@@ -247,26 +251,9 @@ final class WhatsAppReportService
             return ['data' => [], 'generated_at' => now()->toISOString()];
         }
 
-        $query = WaAutomationRule::where('user_id', $userId);
-        if ($waNumberId !== null) {
-            $query->where('wa_number_id', $waNumberId);
-        }
-
-        $rows = $query
-            ->get(['name', 'trigger', 'triggered_count', 'success_count'])
-            ->map(function ($r) {
-                $successRate = $r->triggered_count > 0
-                    ? round($r->success_count / $r->triggered_count * 100, 2)
-                    : 0.0;
-
-                return [
-                    'rule_name'       => $r->name,
-                    'trigger_type'    => $r->trigger,
-                    'times_triggered' => (int) $r->triggered_count,
-                    'success_rate'    => $successRate,
-                ];
-            })
-            ->toArray();
+        // wa_automation_rules only contains cumulative counters. No dated
+        // execution/log table exists to produce period-specific results.
+        $rows = [];
 
         return ['data' => $rows, 'generated_at' => now()->toISOString()];
     }
@@ -283,6 +270,7 @@ final class WhatsAppReportService
 
         $query = DB::table('wa_conversation_states')->where('user_id', $userId);
         $this->applyNumber($query, $waNumberId);
+        $query->whereBetween('last_message_time', [$filter->date->startDate, $filter->date->endDate]);
         $rows = $query
             ->selectRaw('status, COUNT(*) as count')
             ->groupBy('status')
@@ -314,6 +302,7 @@ final class WhatsAppReportService
             ->join('users as u', 'u.id', '=', 'wcs.assigned_agent_id')
             ->where('wcs.user_id', $userId)
             ->whereNotNull('wcs.assigned_agent_id');
+        $query->whereBetween('wcs.last_message_time', [$filter->date->startDate, $filter->date->endDate]);
         if ($waNumberId !== null) {
             $query->where('wcs.wa_number_id', $waNumberId);
         }
@@ -371,11 +360,12 @@ final class WhatsAppReportService
         $total = $numbers->count();
         $paged = $numbers->forPage($page, $limit);
 
-        $rows = $paged->map(function ($n) use ($userId) {
+        $rows = $paged->map(function ($n) use ($userId, $filter) {
             $activeConvs = DB::table('wa_conversation_states')
                 ->where('wa_number_id', $n->id)
                 ->where('user_id', $userId)
                 ->where('status', 'active')
+                ->whereBetween('last_message_time', [$filter->date->startDate, $filter->date->endDate])
                 ->count();
 
             return [

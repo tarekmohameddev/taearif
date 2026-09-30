@@ -72,6 +72,7 @@ class PropertyPublicResource
 
         return [
             'id' => (string) $p->id,
+            'property_code' => $p->property_code,
             'slug' => $slug,
             'title' => $content?->title ?? '',
             'district' => $districtStr,
@@ -136,6 +137,7 @@ class PropertyPublicResource
 
         $data = [
             'id' => (string) $property->id,
+            'property_code' => $property->property_code,
             'slug' => $content?->slug ?? '',
             'title' => $content?->title ?? '',
             'district' => $districtStr,

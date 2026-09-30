@@ -36,6 +36,8 @@ class Property extends Model
 
 
     protected $fillable = [
+        'share_token',
+        'property_code',
         'category_id',
         'region_id',
         'user_id',
@@ -83,6 +85,10 @@ class Property extends Model
         'validation_errors',
         'import_batch_id',
         'completed_at',
+    ];
+
+    protected $hidden = [
+        'share_token',
     ];
 
     protected static function booted(): void
@@ -287,6 +293,7 @@ class Property extends Model
         };
 
         return $this->update([
+            'property_code' => $pick('property_code', $this->property_code),
             'region_id' => $pick('region_id', $this->region_id),
             'featured_image' => $pick('featured_image', $this->featured_image),
             'floor_planning_image' => $pick('floor_planning_image', $this->floor_planning_image),

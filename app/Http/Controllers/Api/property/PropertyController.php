@@ -1366,6 +1366,7 @@ class PropertyController extends Controller
             }
 
             $propertyData = $request->only([
+                'property_code',
                 'region_id',
                 'price',
                 'pricePerMeter',
@@ -2452,6 +2453,8 @@ class PropertyController extends Controller
             // PERFORMANCE: Require minimum 3 characters for wildcard searches to prevent slow queries
             $minWildcardLength = 3;
             $propertiesQuery->where(function ($q) use ($searchTerm, $contentJoinAlias, $minWildcardLength, $numericId) {
+                $q->where('user_properties.property_code', $searchTerm)
+                    ->orWhere(function ($q) use ($searchTerm, $contentJoinAlias, $minWildcardLength) {
                 // Use prefix matching (can use indexes) and wildcard search for flexibility
                 $q->where(function ($subQ) use ($searchTerm, $contentJoinAlias, $minWildcardLength) {
                     // Prefix matching can use indexes (term%)
@@ -2464,6 +2467,7 @@ class PropertyController extends Controller
                         $subQ->orWhere($contentJoinAlias . '.title', 'like', "%{$searchTerm}%");
                     }
                 });
+                    });
 
                 if ($numericId !== null) {
                     $q->orWhere('user_properties.id', $numericId);
