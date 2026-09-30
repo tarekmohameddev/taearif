@@ -2977,7 +2977,7 @@ class PropertyController extends Controller
         $requestedFields = $request->input('fields');
         $allowedFields = [
             'id', 'visits', 'title', 'address', 'slug', 'price', 'property_type', 'beds', 'bath',
-            'city_id', 'district_id',
+            'city', 'district',
             'area', 'purpose', 'transaction_type', 'listing_purpose', 'unit_status', 'publish_status',
             'property_status', 'features', 'status', 'featured_image', 'featured',
             'show_reservations', 'created_at', 'updated_at', 'payment_method', 'creator',
@@ -3008,7 +3008,19 @@ class PropertyController extends Controller
             }
         }
 
-        $formattedProperties = $properties->getCollection()->map(function ($property) use ($viewsBySlug, $fieldsToInclude, $hasContentJoin, $joinedContentLocations) {
+        $pageContents = $properties->getCollection()->map(function ($property) use ($hasContentJoin, $joinedContentLocations) {
+            return $hasContentJoin
+                ? $joinedContentLocations->get($property->content_id)
+                : $property->contents->first();
+        });
+        $citiesById = \App\Models\User\UserCity::query()
+            ->whereIn('id', $pageContents->pluck('city_id')->filter()->unique())
+            ->get(['id', 'name_ar', 'name_en'])->keyBy('id');
+        $districtsById = \App\Models\User\UserDistrict::query()
+            ->whereIn('id', $pageContents->pluck('state_id')->filter()->unique())
+            ->get(['id', 'name_ar', 'name_en'])->keyBy('id');
+
+        $formattedProperties = $properties->getCollection()->map(function ($property) use ($viewsBySlug, $fieldsToInclude, $hasContentJoin, $joinedContentLocations, $citiesById, $districtsById) {
             // Use content from JOIN if available (when filtering by city/district/search)
             if ($hasContentJoin && isset($property->content_id)) {
                 $content = $joinedContentLocations->get($property->content_id) ?? (object) [
@@ -3037,6 +3049,8 @@ class PropertyController extends Controller
                 ->additional([
                     'visits' => (int) ($viewsBySlug[$analyticsSlug] ?? 0),
                     'content' => $content,
+                    'city' => $citiesById->get($content->city_id ?? null),
+                    'district' => $districtsById->get($content->state_id ?? null),
                 ])
                 ->resolve();
 

@@ -57,8 +57,16 @@ class PropertyListResource extends JsonResource
             'title' => $content->title ?? 'No Title',
             'address' => $content->address ?? 'No Address',
             'slug' => $content->slug ?? null,
-            'city_id' => $content->city_id ?? null,
-            'district_id' => $content->state_id ?? null,
+            'city' => ($city = $this->additional['city'] ?? null) ? [
+                'id' => $city->id,
+                'name' => $city->name_ar,
+                'name_en' => $city->name_en,
+            ] : null,
+            'district' => ($district = $this->additional['district'] ?? null) ? [
+                'id' => $district->id,
+                'name' => $district->name_ar,
+                'name_en' => $district->name_en,
+            ] : null,
             'price' => $property->price,
             'property_type' => $property->property_type,
             'beds' => $property->beds,
