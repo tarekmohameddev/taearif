@@ -22,6 +22,7 @@ class Sale extends Model
         'user_id',
         'contract_id',
         'sale_price',
+        'currency',
         'sale_date',
         'status',
     ];

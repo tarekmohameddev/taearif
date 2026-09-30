@@ -41,6 +41,7 @@ class PropertyResource extends JsonResource
 
         return array_merge([
             'id' => $property->id,
+            'property_code' => $property->property_code,
             'project_id' => $property->project_id,
             'project' => $projectData,
             'payment_method' => $property->payment_method,
