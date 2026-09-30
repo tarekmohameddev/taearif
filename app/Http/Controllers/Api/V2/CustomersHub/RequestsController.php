@@ -450,7 +450,65 @@ class RequestsController extends ApiController
             ];
         });
 
+        $this->appendSmartMatchState($payload, $userId, $viewerId);
+
         return $this->success($payload);
+    }
+
+    /**
+     * Add non-cached Smart Match run/read state to property-request actions.
+     * Keeping this outside the list cache ensures rematches immediately become unread.
+     */
+    private function appendSmartMatchState(array &$payload, int $tenantId, int $accountUserId): void
+    {
+        $actions = $payload['actions'] ?? null;
+        if (!$actions instanceof \Illuminate\Support\Collection || $actions->isEmpty()) {
+            return;
+        }
+
+        $requestIds = $actions->filter(fn ($item) => ($item->objectType ?? null) === 'property_request')
+            ->pluck('sourceId')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all();
+        if ($requestIds === []) {
+            return;
+        }
+
+        $latestIds = DB::table('property_request_smart_match_runs')
+            ->select('property_request_id', DB::raw('MAX(id) as latest_run_id'))
+            ->where('tenant_id', $tenantId)
+            ->whereIn('property_request_id', $requestIds)
+            ->groupBy('property_request_id');
+        $runs = DB::table('property_request_smart_match_runs as runs')
+            ->joinSub($latestIds, 'latest', function ($join) {
+                $join->on('runs.id', '=', 'latest.latest_run_id');
+            })
+            ->get(['runs.property_request_id', 'runs.id', 'runs.match_count', 'runs.completed_at'])
+            ->keyBy(fn ($run) => (int) $run->property_request_id);
+        $reads = DB::table('property_request_smart_match_reads')
+            ->where('tenant_id', $tenantId)
+            ->where('account_user_id', $accountUserId)
+            ->whereIn('property_request_id', $requestIds)
+            ->get(['property_request_id', 'last_read_match_run_id', 'read_at'])
+            ->keyBy(fn ($read) => (int) $read->property_request_id);
+
+        $actions->each(function ($item) use ($runs, $reads): void {
+            if (($item->objectType ?? null) !== 'property_request') {
+                $item->smartMatch = null;
+                return;
+            }
+            $requestId = (int) ($item->sourceId ?? 0);
+            $run = $runs->get($requestId);
+            $read = $reads->get($requestId);
+            $isRead = $run !== null && $read !== null
+                && (int) $read->last_read_match_run_id === (int) $run->id;
+
+            $item->smartMatch = [
+                'hasBeenRun' => $run !== null,
+                'hasMatches' => $run !== null && (int) $run->match_count > 0,
+                'isReadByCurrentAccount' => $isRead,
+                'latestRunAt' => $run?->completed_at ? Carbon::parse($run->completed_at)->toIso8601String() : null,
+                'readAt' => $isRead && $read?->read_at ? Carbon::parse($read->read_at)->toIso8601String() : null,
+            ];
+        });
     }
 
     /**
@@ -1651,6 +1709,51 @@ class RequestsController extends ApiController
             'property_ids'           => $propertyRequest->property_ids,
             'project_ids'            => $propertyRequest->toArray()['project_ids'],
             'message'                => 'Request updated. Matching will run automatically.',
+        ]);
+    }
+
+    /** Mark the latest completed Smart Match run as read by this authenticated account only. */
+    public function markSmartMatchesRead(Request $request, string $requestId): JsonResponse
+    {
+        $tenantId = $this->getTenantUserId($request);
+        $propertyRequest = $this->resolvePropertyRequestForMatching($requestId, $tenantId);
+        if ($propertyRequest === null) {
+            return $this->error('Request not found', 404);
+        }
+
+        $run = DB::table('property_request_smart_match_runs')
+            ->where('tenant_id', $tenantId)
+            ->where('property_request_id', $propertyRequest->id)
+            ->orderByDesc('id')
+            ->first(['id']);
+
+        if ($run === null) {
+            return $this->success([
+                'request_id' => $requestId,
+                'is_read_by_current_account' => false,
+                'read_at' => null,
+            ]);
+        }
+
+        $readAt = now();
+        DB::table('property_request_smart_match_reads')->updateOrInsert(
+            [
+                'tenant_id' => $tenantId,
+                'property_request_id' => $propertyRequest->id,
+                'account_user_id' => (int) $request->user()->id,
+            ],
+            [
+                'last_read_match_run_id' => (int) $run->id,
+                'read_at' => $readAt,
+                'updated_at' => $readAt,
+                'created_at' => $readAt,
+            ]
+        );
+
+        return $this->success([
+            'request_id' => $requestId,
+            'is_read_by_current_account' => true,
+            'read_at' => $readAt->toIso8601String(),
         ]);
     }
 
