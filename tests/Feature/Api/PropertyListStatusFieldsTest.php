@@ -9,6 +9,8 @@ use App\Models\Membership;
 use App\Models\Package;
 use App\Models\User;
 use App\Models\User\Language;
+use App\Models\User\UserCity;
+use App\Models\User\UserDistrict;
 use App\Models\User\RealestateManagement\ApiUserCategory;
 use App\Models\User\RealestateManagement\Project;
 use App\Models\User\RealestateManagement\Property;
@@ -29,7 +31,7 @@ class PropertyListStatusFieldsTest extends TestCase
 
     private function skipIfMissingSchema(): void
     {
-        foreach (['users', 'user_properties', 'user_property_contents', 'buildings', 'user_projects', 'api_permissions', 'api_model_has_permissions', 'memberships', 'packages', 'user_languages'] as $table) {
+        foreach (['users', 'user_properties', 'user_property_contents', 'user_cities', 'user_districts', 'buildings', 'user_projects', 'api_permissions', 'api_model_has_permissions', 'memberships', 'packages', 'user_languages'] as $table) {
             if (! Schema::hasTable($table)) {
                 $this->markTestSkipped("Missing DB table: {$table}.");
             }
@@ -172,7 +174,22 @@ class PropertyListStatusFieldsTest extends TestCase
             'unit_status' => 'available',
             'publish_status' => 'published',
         ]);
-        $property->contents()->first()->update(['city_id' => 123456, 'state_id' => 654321]);
+        $city = UserCity::query()->create([
+            'name_ar' => 'الرياض',
+            'name_en' => 'Riyadh',
+            'country_id' => 1,
+            'region_id' => 1,
+        ]);
+        $district = UserDistrict::query()->create([
+            'name_ar' => 'حي الملقا',
+            'name_en' => 'Al Malqa',
+            'city_id' => $city->id,
+            'city_name_ar' => 'الرياض',
+            'city_name_en' => 'Riyadh',
+            'country_name_ar' => 'السعودية',
+            'country_name_en' => 'Saudi Arabia',
+        ]);
+        $property->contents()->first()->update(['city_id' => $city->id, 'state_id' => $district->id]);
         $property->contents()->create([
             'user_id' => $tenant->id,
             'language_id' => Language::query()->where('user_id', $tenant->id)->where('is_default', 1)->value('id'),
@@ -200,24 +217,26 @@ class PropertyListStatusFieldsTest extends TestCase
         $this->assertSame('published', $row['publish_status']);
         $this->assertSame('sale', $row['purpose']);
         $this->assertSame('sale', $row['transaction_type']);
-        $this->assertSame(123456, $row['city_id']);
-        $this->assertSame(654321, $row['district_id']);
+        $this->assertSame(['id' => $city->id, 'name' => 'الرياض', 'name_en' => 'Riyadh'], $row['city']);
+        $this->assertSame(['id' => $district->id, 'name' => 'حي الملقا', 'name_en' => 'Al Malqa'], $row['district']);
+        $this->assertArrayNotHasKey('city_id', $row);
+        $this->assertArrayNotHasKey('district_id', $row);
         $this->assertSame('tower-alpha', $row['building']['slug']);
         $this->assertSame('Tower Alpha', $row['building']['name']);
 
-        $fieldsResponse = $this->getJson('/api/properties?per_page=50&include_filters=0&fields=id,city_id,district_id');
+        $fieldsResponse = $this->getJson('/api/properties?per_page=50&include_filters=0&fields=id,city,district');
         $fieldsRow = collect($fieldsResponse->json('data.properties'))->firstWhere('id', $property->id);
         $this->assertSame([
             'id' => $property->id,
-            'city_id' => 123456,
-            'district_id' => 654321,
+            'city' => ['id' => $city->id, 'name' => 'الرياض', 'name_en' => 'Riyadh'],
+            'district' => ['id' => $district->id, 'name' => 'حي الملقا', 'name_en' => 'Al Malqa'],
         ], $fieldsRow);
 
         $joinedResponse = $this->getJson('/api/properties?search=List%20Unit&per_page=50&include_filters=0');
         $joinedRow = collect($joinedResponse->json('data.properties'))->firstWhere('id', $property->id);
         $this->assertSame('list-unit-' . $property->id, $joinedRow['slug']);
-        $this->assertSame(123456, $joinedRow['city_id']);
-        $this->assertSame(654321, $joinedRow['district_id']);
+        $this->assertSame($city->id, $joinedRow['city']['id']);
+        $this->assertSame($district->id, $joinedRow['district']['id']);
     }
 
     public function test_index_filters_by_unit_status_listing_purpose_publish_status_and_building_id(): void
