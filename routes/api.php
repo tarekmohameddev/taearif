@@ -1438,6 +1438,7 @@ Route::prefix('v2/customers-hub')->middleware(['auth:sanctum'])->group(function 
         // Matching V2 endpoints (must be before /{requestId})
         Route::get('/{requestId}/matches', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'matches']);
         Route::post('/{requestId}/complete-data', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'completeData']);
+        Route::patch('/{requestId}/matches/read', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'markSmartMatchesRead']);
         Route::patch('/{requestId}/read', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'markRead']);
         Route::patch('/{requestId}/unread', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'markUnread']);
         Route::patch('/{requestId}/ignore', [\App\Http\Controllers\Api\V2\CustomersHub\RequestsController::class, 'ignore']);

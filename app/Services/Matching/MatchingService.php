@@ -10,6 +10,7 @@ use App\Support\DTO\MatchResult;
 use App\Support\DTO\UnifiedRequest;
 use App\Support\PhoneNormalizer;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class MatchingService
@@ -104,6 +105,7 @@ class MatchingService
                 'request_id' => $requestId,
             ]);
             $this->logNoCandidateDiagnostics($unified);
+            $this->completeWebPropertyRequestMatchRun($unified, $requestId, []);
             return [];
         }
 
@@ -161,6 +163,8 @@ class MatchingService
             }
         }
 
+        $this->completeWebPropertyRequestMatchRun($unified, $requestId, array_keys($results));
+
         Log::info('MatchingService: persisted matches summary', [
             'source' => $source,
             'request_id' => $requestId,
@@ -170,6 +174,35 @@ class MatchingService
         ]);
 
         return array_values($results);
+    }
+
+    /** Persist a completed web property-request run, including runs with no matches. */
+    private function completeWebPropertyRequestMatchRun(UnifiedRequest $request, int $requestId, array $propertyIds): void
+    {
+        if ($request->source !== 'web' || empty($request->userId)) {
+            return;
+        }
+
+        DB::transaction(function () use ($request, $requestId, $propertyIds): void {
+            $staleMatches = DB::table('property_matches')
+                ->where('user_id', $request->userId)
+                ->where('request_type', 'web')
+                ->where('request_id', $requestId);
+            if ($propertyIds !== []) {
+                $staleMatches->whereNotIn('property_id', $propertyIds);
+            }
+            $staleMatches->delete();
+
+            $now = now();
+            DB::table('property_request_smart_match_runs')->insert([
+                'tenant_id' => $request->userId,
+                'property_request_id' => $requestId,
+                'match_count' => count($propertyIds),
+                'completed_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        });
     }
 
     private function computeDbScore(UnifiedRequest $u, $p): int
