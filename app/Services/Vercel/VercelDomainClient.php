@@ -252,8 +252,11 @@ class VercelDomainClient
     public function removeApexAndWww(string $apex): void
     {
         $apex = $this->normalizeApex($apex);
-        $this->removeDomain($apex);
+        // The www hostname may redirect to (or otherwise depend on) the apex.
+        // Vercel rejects deleting the apex while that dependent project domain
+        // still exists, so always detach www first.
         $this->removeDomain('www.' . $apex);
+        $this->removeDomain($apex);
     }
 
     /**

@@ -740,6 +740,7 @@ class RequestsController extends ApiController
             $propertyRequestId = (int) $action['sourceId'];
             $unreadCategories = $this->notificationService->buildUnreadCategoriesBreakdown($viewerId, $propertyRequestId);
             $this->notificationService->markPropertyRequestNotificationsRead($viewerId, $propertyRequestId);
+            $this->markLatestSmartMatchRunRead($userId, $propertyRequestId, $viewerId);
 
             $action['unreadCategories'] = $unreadCategories;
             $action['isUnread'] = false;
@@ -1721,26 +1722,47 @@ class RequestsController extends ApiController
             return $this->error('Request not found', 404);
         }
 
+        $readState = $this->markLatestSmartMatchRunRead(
+            $tenantId,
+            (int) $propertyRequest->id,
+            (int) $request->user()->id
+        );
+
+        return $this->success([
+            'request_id' => $requestId,
+            ...$readState,
+        ]);
+    }
+
+    /**
+     * Persist the latest Smart Match run seen by an account.
+     *
+     * @return array{is_read_by_current_account: bool, read_at: ?string}
+     */
+    private function markLatestSmartMatchRunRead(
+        int $tenantId,
+        int $propertyRequestId,
+        int $accountUserId
+    ): array {
         $run = DB::table('property_request_smart_match_runs')
             ->where('tenant_id', $tenantId)
-            ->where('property_request_id', $propertyRequest->id)
+            ->where('property_request_id', $propertyRequestId)
             ->orderByDesc('id')
             ->first(['id']);
 
         if ($run === null) {
-            return $this->success([
-                'request_id' => $requestId,
+            return [
                 'is_read_by_current_account' => false,
                 'read_at' => null,
-            ]);
+            ];
         }
 
         $readAt = now();
         DB::table('property_request_smart_match_reads')->updateOrInsert(
             [
                 'tenant_id' => $tenantId,
-                'property_request_id' => $propertyRequest->id,
-                'account_user_id' => (int) $request->user()->id,
+                'property_request_id' => $propertyRequestId,
+                'account_user_id' => $accountUserId,
             ],
             [
                 'last_read_match_run_id' => (int) $run->id,
@@ -1750,11 +1772,10 @@ class RequestsController extends ApiController
             ]
         );
 
-        return $this->success([
-            'request_id' => $requestId,
+        return [
             'is_read_by_current_account' => true,
             'read_at' => $readAt->toIso8601String(),
-        ]);
+        ];
     }
 
     /**

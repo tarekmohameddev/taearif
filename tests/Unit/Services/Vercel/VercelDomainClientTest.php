@@ -355,6 +355,25 @@ class VercelDomainClientTest extends TestCase
     }
 
     /** @test */
+    public function remove_apex_and_www_removes_www_before_apex(): void
+    {
+        $removed = [];
+
+        Http::fake(function (Request $request) use (&$removed) {
+            if ($request->method() === 'DELETE') {
+                $path = (string) parse_url($request->url(), PHP_URL_PATH);
+                $removed[] = rawurldecode((string) basename($path));
+            }
+
+            return Http::response([], 204);
+        });
+
+        $this->client->removeApexAndWww('Example.COM');
+
+        $this->assertSame(['www.example.com', 'example.com'], $removed);
+    }
+
+    /** @test */
     public function get_domain_config_preserves_ranked_dns_recommendation_groups(): void
     {
         Http::fake([

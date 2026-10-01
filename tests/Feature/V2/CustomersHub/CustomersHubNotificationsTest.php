@@ -494,4 +494,44 @@ class CustomersHubNotificationsTest extends TestCase
             app(CustomersHubNotificationService::class)->unreadCountForViewer($tenant->id, 'property_request')
         );
     }
+
+    /** @test */
+    public function show_marks_the_latest_smart_match_run_read_for_the_current_account(): void
+    {
+        $this->requireNotificationTables();
+        foreach (['property_request_smart_match_runs', 'property_request_smart_match_reads'] as $table) {
+            if (!Schema::hasTable($table)) {
+                $this->markTestSkipped("{$table} table required. Run migrations.");
+            }
+        }
+
+        $tenant = User::factory()->create(['account_type' => 'tenant', 'tenant_id' => null]);
+        $employee = User::factory()->create([
+            'account_type' => 'employee',
+            'tenant_id' => $tenant->id,
+            'active' => true,
+        ]);
+        $this->grantPermissions($employee, $tenant, ['customers_hub_requests.view']);
+
+        $propertyRequestId = $this->createPropertyRequestForUser($tenant->id);
+        $runId = (int) DB::table('property_request_smart_match_runs')->insertGetId([
+            'tenant_id' => $tenant->id,
+            'property_request_id' => $propertyRequestId,
+            'match_count' => 1,
+            'completed_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Sanctum::actingAs($employee);
+        $this->getJson("/api/v2/customers-hub/requests/property_request_{$propertyRequestId}")
+            ->assertOk();
+
+        $this->assertDatabaseHas('property_request_smart_match_reads', [
+            'tenant_id' => $tenant->id,
+            'property_request_id' => $propertyRequestId,
+            'account_user_id' => $employee->id,
+            'last_read_match_run_id' => $runId,
+        ]);
+    }
 }

@@ -761,6 +761,82 @@
         font-size: 0.85em;
         word-break: break-all;
     }
+    .domain-registrar-plan .card-header .text-muted {
+        color: rgba(255, 255, 255, 0.82) !important;
+    }
+    .domain-registrar-plan-table tbody tr.table-success td,
+    .domain-registrar-plan-table tbody tr.table-danger td {
+        border-color: rgba(0, 0, 0, 0.08);
+    }
+    .domain-dns-technical-details {
+        border: 1px solid #dee2e6;
+        border-radius: .25rem;
+        background: #f8f9fa;
+    }
+    .domain-dns-technical-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        padding: .75rem 1rem;
+        cursor: pointer;
+        font-weight: 600;
+        list-style: none;
+    }
+    .domain-dns-technical-summary::-webkit-details-marker { display: none; }
+    .domain-dns-technical-body {
+        padding: 0 1rem 1rem;
+        border-top: 1px solid #dee2e6;
+    }
+    .domain-status-timeline {
+        padding: .75rem 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: .25rem;
+        background: #fff;
+    }
+    .domain-status-timeline-track {
+        display: flex;
+        align-items: flex-start;
+        gap: .35rem;
+    }
+    .domain-status-step {
+        flex: 1;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        color: #6c757d;
+    }
+    .domain-status-step:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: 12px;
+        left: calc(50% + 14px);
+        right: calc(-50% + 14px);
+        height: 2px;
+        background: #dee2e6;
+    }
+    .domain-status-step-icon {
+        z-index: 1;
+        width: 24px;
+        height: 24px;
+        line-height: 24px;
+        margin-bottom: .3rem;
+        border-radius: 50%;
+        background: #e9ecef;
+        color: #6c757d;
+        font-size: .7rem;
+    }
+    .domain-status-step--done { color: #28a745; }
+    .domain-status-step--done .domain-status-step-icon { background: #28a745; color: #fff; }
+    .domain-status-step--current { color: #856404; }
+    .domain-status-step--current .domain-status-step-icon { background: #ffc107; color: #212529; }
+    @media (max-width: 576px) {
+        .domain-status-timeline-track { gap: .1rem; }
+        .domain-status-step { font-size: .75rem; }
+        .domain-status-step:not(:last-child)::after { left: calc(50% + 12px); right: calc(-50% + 12px); }
+    }
 
     /* ---- Reconciliation panel ---- */
     .domain-reconciliation-panel > .recon-header {
@@ -1324,6 +1400,55 @@
             }, 'html').fail(function () {
                 $body.html('<div class="alert alert-danger mb-0">' + diagnosticsLoadFailed + '</div>');
             });
+        });
+
+        function copyText(value, successMessage, failureMessage) {
+            var fallback = function () {
+                var $input = jQuery('<textarea>').val(value).css({position: 'fixed', opacity: 0}).appendTo('body');
+                $input[0].select();
+                var ok = false;
+                try { ok = document.execCommand('copy'); } catch (err) {}
+                $input.remove();
+                return ok;
+            };
+            var result = navigator.clipboard && window.isSecureContext
+                ? navigator.clipboard.writeText(value).then(function () { return true; }).catch(function () { return fallback(); })
+                : Promise.resolve(fallback());
+            result.then(function (ok) {
+                if (typeof swal !== 'undefined') {
+                    swal(ok ? successMessage : failureMessage, { timer: 1600, buttons: false });
+                } else {
+                    window.alert(ok ? successMessage : failureMessage);
+                }
+            });
+        }
+
+        jQuery(document).on('click', '.copy-dns-value', function () {
+            var $button = jQuery(this);
+            copyText($button.data('copy-value') || '', $button.data('copy-success'), $button.data('copy-failure'));
+        });
+
+        jQuery(document).on('click', '.copy-dns-all', function () {
+            var lines = [];
+            jQuery(this).closest('.domain-registrar-plan').find('.dns-plan-row').each(function () {
+                lines.push(jQuery(this).data('copy-line'));
+            });
+            copyText(lines.join('\n'), jQuery(this).data('copy-success'), jQuery(this).data('copy-failure'));
+        });
+
+        jQuery(document).on('click', '.refresh-diagnostics', function () {
+            var $button = jQuery(this);
+            var $body = jQuery('#domainDiagnosticsModalBody');
+            $button.prop('disabled', true).addClass('disabled');
+            $body.html('<p class="text-muted mb-0"><i class="fas fa-sync-alt fa-spin mr-1"></i>' + diagnosticsLoading + '</p>');
+            jQuery.get($button.data('url'), function (html) { $body.html(html); }, 'html')
+                .fail(function () { $body.html('<div class="alert alert-danger mb-0">' + diagnosticsLoadFailed + '</div>'); });
+        });
+
+        jQuery(document).on('change', '.dns-provider-guide-select', function () {
+            var provider = jQuery(this).val();
+            jQuery(this).closest('.card-body').find('.dns-provider-guide-text').addClass('d-none');
+            jQuery(this).closest('.card-body').find('.dns-provider-guide-text[data-provider="' + provider + '"]').removeClass('d-none');
         });
     });
 </script>
