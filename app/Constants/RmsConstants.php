@@ -98,6 +98,7 @@ class RmsConstants
     const PAYMENT_METHOD_ONLINE_PAYMENT = 'online_payment';
     const PAYMENT_METHOD_CHECK = 'check';
     const PAYMENT_METHOD_OTHER = 'other';
+    const PAYMENT_METHOD_NAJIZ = 'najiz';
 
     const PAYMENT_METHODS = [
         self::PAYMENT_METHOD_CASH,
@@ -106,6 +107,7 @@ class RmsConstants
         self::PAYMENT_METHOD_ONLINE_PAYMENT,
         self::PAYMENT_METHOD_CHECK,
         self::PAYMENT_METHOD_OTHER,
+        self::PAYMENT_METHOD_NAJIZ,
     ];
 
     // ========================================

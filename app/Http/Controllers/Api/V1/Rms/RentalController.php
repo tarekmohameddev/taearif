@@ -514,7 +514,7 @@ class RentalController extends BaseApiController
                 'notes' => $paymentData['notes'] ?? ($data['notes'] ?? null),
                 'bank_name' => $data['bank_name'] ?? null,
                 'receipt_image_path' => $data['receipt_image_path'] ?? null,
-                'transfer_to' => $data['transfer_to'],
+                'transfer_to' => $data['transfer_to'] ?? null,
             ]);
         })->toArray();
 

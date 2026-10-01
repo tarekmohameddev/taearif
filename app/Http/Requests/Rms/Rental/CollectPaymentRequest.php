@@ -50,7 +50,6 @@ class CollectPaymentRequest extends BaseApiFormRequest
             'notes' => 'nullable|string|max:255',
             'bank_name' => 'nullable|string|max:100',
             'receipt_image_path' => 'nullable|string|max:500',
-            'transfer_to' => ['required', RmsConstants::validationRule(RmsConstants::TRANSFER_TO_OPTIONS)],
         ];
     }
 
@@ -92,8 +91,6 @@ class CollectPaymentRequest extends BaseApiFormRequest
             'notes.max' => 'Notes cannot exceed 255 characters.',
             'bank_name.max' => 'Bank name cannot exceed 100 characters.',
             'receipt_image_path.max' => 'Receipt image path is too long.',
-            'transfer_to.required' => 'Please specify the transfer destination.',
-            'transfer_to.in' => 'Invalid transfer destination selected.',
         ];
     }
 
@@ -108,7 +105,6 @@ class CollectPaymentRequest extends BaseApiFormRequest
             'payment_method' => 'payment method',
             'payment_date' => 'payment date',
             'bank_name' => 'bank name',
-            'transfer_to' => 'transfer destination',
         ];
     }
 
