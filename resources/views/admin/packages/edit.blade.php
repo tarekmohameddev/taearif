@@ -90,6 +90,19 @@
                                     </div>
                                 </div>
                                 <div class="form-group">
+                                    <label class="form-label">{{ __('Admin only') }} *</label>
+                                    <div class="selectgroup w-100">
+                                        <label class="selectgroup-item">
+                                            <input type="radio" name="admin_only" value="1" class="selectgroup-input" {{ $package->admin_only ? 'checked' : '' }}>
+                                            <span class="selectgroup-button">{{ __('Yes') }}</span>
+                                        </label>
+                                        <label class="selectgroup-item">
+                                            <input type="radio" name="admin_only" value="0" class="selectgroup-input" {{ !$package->admin_only ? 'checked' : '' }}>
+                                            <span class="selectgroup-button">{{ __('No') }}</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
                                     <label for="title">{{ __('Package title (Arabic)') }}*</label>
                                     <input id="title" type="text" class="form-control" name="title"
                                         value="{{ $package->title }}" placeholder="{{ __('Enter name') }}">
@@ -120,6 +133,8 @@
                                             {{ __('yearly') }}</option>
                                         <option value="lifetime" {{ $package->term == 'lifetime' ? 'selected' : '' }}>
                                             {{ __('lifetime') }}</option>
+                                        <option value="trial" {{ $package->term == 'trial' ? 'selected' : '' }}>
+                                            {{ __('trial') }}</option>
                                     </select>
                                     <p id="errterm" class="mb-0 text-danger em"></p>
                                 </div>

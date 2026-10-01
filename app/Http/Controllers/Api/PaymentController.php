@@ -162,6 +162,7 @@ class PaymentController extends Controller
                 ->where('id', $validated['package_id'])
                 ->where('is_active', true)
                 ->where('status', '1')
+                ->where('admin_only', false)
                 ->first();
 
             if (!$package) {
@@ -248,7 +249,9 @@ class PaymentController extends Controller
         $user = Auth::user();
 
         $packages = Cache::remember('payment_active_packages', 3600, function () {
-            return Package::where('is_active', true)->get();
+            return Package::where('is_active', true)
+                ->where('status', '1')
+                ->get();
         });
         $packageIds = $packages->pluck('id')->all();
         $userActivePackageIds = Membership::where('user_id', $user->id)
@@ -268,6 +271,8 @@ class PaymentController extends Controller
                 'name' => $package->getDisplayTitle('ar'),
                 'name_ar' => $package->getDisplayTitle('ar'),
                 'name_en' => $package->getDisplayTitleEn(),
+                'status' => (string) $package->status,
+                'admin_only' => (bool) $package->admin_only,
                 'price' => '' . number_format($package->price, 2),
                 'billing' => match ($package->term) {
                     'monthly' => 'شهريًا',

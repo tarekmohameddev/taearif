@@ -3,6 +3,12 @@
 @php
     use App\Models\Language;
     $selLang = Language::where('code', request()->input('language'))->first();
+    $packageDisplayLocale = app()->getLocale();
+    $isArabicPackageView = str_starts_with($packageDisplayLocale, 'ar');
+    $packageCurrencyCode = strtoupper(trim($bex->base_currency_text ?? 'SAR'));
+    $packageCurrencyLabel = $isArabicPackageView && $packageCurrencyCode === 'SAR'
+        ? 'ر.س'
+        : $packageCurrencyCode;
 @endphp
 @section('styles')
     <style>
@@ -13,6 +19,87 @@
         .employees-limit-box.employees-limit-none,
         .v-card-box.vcrd-none {
             display: none !important;
+        }
+
+        .package-price {
+            direction: ltr;
+            unicode-bidi: isolate;
+            white-space: nowrap;
+        }
+
+        .package-mobile-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .package-mobile-card {
+            padding: 1rem;
+            border: 1px solid #e7eaf0;
+            border-radius: .75rem;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(31, 45, 61, .06);
+            text-align: start;
+        }
+
+        .package-mobile-card__header,
+        .package-mobile-card__meta,
+        .package-mobile-card__actions {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        .package-mobile-card__header {
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .package-mobile-card__title {
+            margin: 0;
+            color: #2f374b;
+            font-size: 1rem;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        .package-mobile-card__meta {
+            flex-wrap: wrap;
+            margin-top: .5rem;
+        }
+
+        .package-mobile-card__price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding: .75rem;
+            border-radius: .5rem;
+            background: #f7f8fa;
+        }
+
+        .package-mobile-card__price-label {
+            color: #6c757d;
+            font-size: .8125rem;
+        }
+
+        .package-mobile-card__price {
+            color: #1f2937;
+            font-size: 1.125rem;
+            font-weight: 700;
+        }
+
+        .package-mobile-card__actions {
+            margin-top: 1rem;
+        }
+
+        .package-mobile-card__actions > a,
+        .package-mobile-card__actions > form,
+        .package-mobile-card__actions button {
+            flex: 1 1 0;
+        }
+
+        .package-mobile-card__actions button {
+            width: 100%;
         }
 
         @if (!empty($selLang) && $selLang->rtl == 1)
@@ -73,7 +160,7 @@
                             @if (count($packages) == 0)
                                 <h3 class="text-center">{{ __('NO PACKAGE FOUND YET') }}</h3>
                             @else
-                                <div class="table-responsive">
+                                <div class="table-responsive d-none d-md-block">
                                     <table class="table table-striped mt-3" id="basic-datatables">
                                         <thead>
                                             <tr>
@@ -93,7 +180,11 @@
                                                         <input type="checkbox" class="bulk-check"
                                                             data-val="{{ $package->id }}">
                                                     </td>
-                                                    @php $displayTitle = $package->getDisplayTitle('ar'); @endphp
+                                                    @php
+                                                        $displayTitle = $isArabicPackageView
+                                                            ? $package->getDisplayTitle($packageDisplayLocale)
+                                                            : $package->getDisplayTitleEn();
+                                                    @endphp
                                                     <td>{{ strlen($displayTitle) > 30 ? mb_substr($displayTitle, 0, 30, 'UTF-8') . '...' : $displayTitle }}
                                                         @unless($package->isTrialPackage())
                                                         <span
@@ -102,9 +193,9 @@
                                                     </td>
                                                     <td>
                                                         @if ($package->price == 0)
-                                                            {{ __('Free') }}
+                                                            <span class="badge badge-success">{{ __('Free') }}</span>
                                                         @else
-                                                            {{ format_price($package->price) }}
+                                                            <span class="package-price">{{ $package->price }} {{ $packageCurrencyLabel }}</span>
                                                         @endif
 
                                                     </td>
@@ -147,6 +238,56 @@
                                         </tbody>
                                     </table>
                                 </div>
+
+                                <div class="package-mobile-list d-md-none mt-3">
+                                    @foreach ($packages as $package)
+                                        @php
+                                            $displayTitle = $isArabicPackageView
+                                                ? $package->getDisplayTitle($packageDisplayLocale)
+                                                : $package->getDisplayTitleEn();
+                                        @endphp
+                                        <article class="package-mobile-card">
+                                            <div class="package-mobile-card__header">
+                                                <div>
+                                                    <h5 class="package-mobile-card__title">{{ $displayTitle }}</h5>
+                                                    <div class="package-mobile-card__meta">
+                                                        @unless ($package->isTrialPackage())
+                                                            <span class="badge text-capitalize @if ($package->term == 'monthly') badge-info @elseif ($package->term == 'yearly') badge-primary @else badge-success @endif">
+                                                                {{ __($package->term) }}
+                                                            </span>
+                                                        @endunless
+                                                    </div>
+                                                </div>
+                                                <span class="badge {{ $package->status == 1 ? 'badge-success' : 'badge-danger' }}">
+                                                    {{ $package->status == 1 ? __('Active') : __('Deactive') }}
+                                                </span>
+                                            </div>
+
+                                            <div class="package-mobile-card__price-row">
+                                                <span class="package-mobile-card__price-label">{{ __('Cost') }}</span>
+                                                @if ($package->price == 0)
+                                                    <span class="badge badge-success">{{ __('Free') }}</span>
+                                                @else
+                                                    <span class="package-mobile-card__price package-price">{{ $package->price }} {{ $packageCurrencyLabel }}</span>
+                                                @endif
+                                            </div>
+
+                                            <div class="package-mobile-card__actions">
+                                                <a class="btn btn-secondary btn-sm"
+                                                    href="{{ route('admin.package.edit', $package->id) . '?language=' . request()->input('language') }}">
+                                                    <i class="fas fa-edit"></i> {{ __('Edit') }}
+                                                </a>
+                                                <form class="deleteform" action="{{ route('admin.package.delete') }}" method="post">
+                                                    @csrf
+                                                    <input type="hidden" name="package_id" value="{{ $package->id }}">
+                                                    <button type="submit" class="btn btn-danger btn-sm deletebtn">
+                                                        <i class="fas fa-trash"></i> {{ __('Delete') }}
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </article>
+                                    @endforeach
+                                </div>
                             @endif
                         </div>
                     </div>
@@ -188,6 +329,19 @@
                             <p id="erricon" class="mb-0 text-danger em"></p>
                         </div>
                         <div class="form-group">
+                            <label class="form-label">{{ __('Admin only') }} *</label>
+                            <div class="selectgroup w-100">
+                                <label class="selectgroup-item">
+                                    <input type="radio" name="admin_only" value="1" class="selectgroup-input">
+                                    <span class="selectgroup-button">{{ __('Yes') }}</span>
+                                </label>
+                                <label class="selectgroup-item">
+                                    <input type="radio" name="admin_only" value="0" class="selectgroup-input" checked>
+                                    <span class="selectgroup-button">{{ __('No') }}</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
                             <label for="title">{{ __('Package title (Arabic)') }}*</label>
                             <input id="title" type="text" class="form-control" name="title"
                                 placeholder="{{ __('Enter Package title') }}" value="">
@@ -221,6 +375,7 @@
                                 <option value="monthly">{{ __('monthly') }}</option>
                                 <option value="yearly">{{ __('yearly') }}</option>
                                 <option value="lifetime">{{ __('lifetime') }}</option>
+                                <option value="trial">{{ __('trial') }}</option>
                             </select>
                             <p id="errterm" class="mb-0 text-danger em"></p>
                         </div>
