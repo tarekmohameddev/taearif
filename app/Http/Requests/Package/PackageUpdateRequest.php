@@ -30,6 +30,7 @@ class PackageUpdateRequest extends FormRequest
             'price' => 'required',
             'term' => 'required',
             'serial_number' => 'required|integer',
+            'admin_only' => 'nullable|boolean',
             'trial_days' => $this->is_trial == "1" ? 'required' : '',
             'video_size_limit' => is_array($this->features) && in_array('Course Management', $this->features) ? 'required|integer' : '',
             'file_size_limit' => is_array($this->features) && in_array('Course Management', $this->features) ? 'required|integer' : '',

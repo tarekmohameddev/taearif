@@ -295,7 +295,7 @@
                             @unless($currPackage->isTrialPackage())
                             <span class="badge badge-secondary badge-xs mr-2">{{ __($currPackage->term) }}</span>
                             @endunless
-                            <button type="submit" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#editCurrentPackage"><i class="far fa-edit"></i></button>
+                            <button type="button" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#editCurrentPackage-{{ $user->id }}"><i class="far fa-edit"></i></button>
                             <form action="{{route('admin.user.currPackage.remove')}}" class="d-inline-block deleteform" method="POST">
                                 @csrf
                                 <input type="hidden" name="user_id" value="{{$user->id}}">
@@ -326,7 +326,7 @@
                             </p>
 
                         @else
-                            <a data-target="#addCurrentPackage" data-toggle="modal" class="btn btn-xs btn-primary text-white"><i class="fas fa-plus"></i> {{ __('Add Package') }}</a>
+                                <a data-target="#addCurrentPackage-{{ $user->id }}" data-toggle="modal" class="btn btn-xs btn-primary text-white"><i class="fas fa-plus"></i> {{ __('Add Package') }}</a>
                         @endif
                     </div>
                 </div>

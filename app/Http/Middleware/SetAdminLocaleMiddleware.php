@@ -7,7 +7,11 @@ use Closure;
 class SetAdminLocaleMiddleware
 {
     /**
-     * Ensure admin panel uses Arabic locale so all __() strings resolve from ar.json.
+     * Keep the locale selected by SetLangMiddleware for admin requests.
+     *
+     * SetLangMiddleware validates the requested language and stores it in the
+     * session before this middleware runs. Do not overwrite that selection here,
+     * otherwise the language switcher can never change the admin away from Arabic.
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  \Closure  $next
@@ -16,9 +20,10 @@ class SetAdminLocaleMiddleware
     public function handle($request, Closure $next)
     {
         if ($request->is('admin') || $request->is('admin/*')) {
-            app()->setLocale('ar');
-            if (session()->has('lang') && session()->get('lang') !== 'ar') {
-                session()->put('lang', 'ar');
+            $locale = app()->getLocale();
+
+            if ($locale && session()->get('lang') !== $locale) {
+                session()->put('lang', $locale);
             }
         }
 

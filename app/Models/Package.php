@@ -23,6 +23,7 @@ class Package extends Model
         'is_trial',
         'trial_days',
         'status',
+        'admin_only',
         'is_active',
         'new_features',
         'features',
@@ -40,6 +41,7 @@ class Package extends Model
 
     protected $casts = [
         'duration_months' => 'integer',
+        'admin_only' => 'boolean',
     ];
 
     public function memberships()

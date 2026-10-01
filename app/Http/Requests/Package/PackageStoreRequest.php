@@ -30,6 +30,7 @@ class PackageStoreRequest extends FormRequest
             'term' => 'required',
             'price' => 'required',
             'status' => 'required',
+            'admin_only' => 'nullable|boolean',
             'serial_number' => 'required|integer',
             'trial_days' => 'required_if:is_trial,1',
             'video_size_limit' => is_array($this->features) && in_array('Course Management', $this->features) ? 'required|integer' : '',

@@ -106,7 +106,15 @@ class RegisterUserController extends Controller
         $online = PaymentGateway::query()->where('status', 1)->get();
         $offline = OfflineGateway::where('status', 1)->get();
         $gateways = $online->merge($offline);
-        $packages = Package::query()->where('status', '1')->get();
+        // The legacy package screen uses `status`, while newer Credit
+        // Management packages use `is_active`. Admins must be able to assign
+        // either kind of active package from the user details page.
+        $packages = Package::query()
+            ->where(function ($query) {
+                $query->where('status', '1')
+                    ->orWhere('is_active', 1);
+            })
+            ->get();
         $packageFilterButtons = $this->packageFilterButtons($packages);
 
         $statsService = app(RegisterUserStatsService::class);
@@ -439,7 +447,14 @@ class RegisterUserController extends Controller
     public function view($id)
     {
         $user = User::findOrFail($id);
-        $packages = Package::query()->where('status', '1')->get();
+        // Support both legacy packages (`status`) and newer Credit
+        // Management packages (`is_active`) for manual admin assignment.
+        $packages = Package::query()
+            ->where(function ($query) {
+                $query->where('status', '1')
+                    ->orWhere('is_active', 1);
+            })
+            ->get();
 
         $online = PaymentGateway::query()->where('status', 1)->get();
         $offline = OfflineGateway::where('status', 1)->get();
