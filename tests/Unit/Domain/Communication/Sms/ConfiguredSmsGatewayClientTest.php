@@ -19,7 +19,7 @@ class ConfiguredSmsGatewayClientTest extends TestCase
     }
 
     /** @test */
-    public function send_text_returns_noop_success_when_provider_null_or_noop(): void
+    public function send_text_fails_closed_when_provider_is_not_registered(): void
     {
         Config::set('communication.sms.provider', null);
         Config::set('communication.enabled', true);
@@ -28,10 +28,9 @@ class ConfiguredSmsGatewayClientTest extends TestCase
         $client = new ConfiguredSmsGatewayClient();
         $result = $client->sendText('+966501234567', 'Hello', null, []);
 
-        $this->assertTrue($result->success);
-        $this->assertNotNull($result->gatewayMessageId);
-        $this->assertStringStartsWith('noop-', $result->gatewayMessageId);
-        $this->assertSame('noop', $result->provider);
+        $this->assertFalse($result->success);
+        $this->assertNull($result->gatewayMessageId);
+        $this->assertSame('unconfigured', $result->provider);
     }
 
     /** @test */
@@ -45,18 +44,18 @@ class ConfiguredSmsGatewayClientTest extends TestCase
         $result = $client->sendText('+966501234567', 'Hello', null, []);
 
         $this->assertFalse($result->success);
-        $this->assertSame('sms_disabled', $result->error);
+        $this->assertSame('sms_gateway_unavailable', $result->error);
     }
 
     /** @test */
-    public function verify_webhook_signature_returns_true_for_valid_hmac(): void
+    public function verify_webhook_signature_fails_closed_without_registered_provider(): void
     {
         Config::set('communication.sms.webhook_secret', 'secret');
         $raw = '{"gateway_message_id":"x","status":"delivered"}';
         $sig = hash_hmac('sha256', $raw, 'secret');
         $headers = ['X-SMS-Signature' => $sig];
 
-        $this->assertTrue($this->client->verifyWebhookSignature($raw, $headers, 'secret'));
+        $this->assertFalse($this->client->verifyWebhookSignature($raw, $headers, 'secret'));
     }
 
     /** @test */
@@ -69,15 +68,13 @@ class ConfiguredSmsGatewayClientTest extends TestCase
     }
 
     /** @test */
-    public function parse_delivery_webhook_returns_single_record_for_flat_payload(): void
+    public function parse_delivery_webhook_returns_no_records_without_registered_provider(): void
     {
         $payload = [
             'gateway_message_id' => 'msg-1',
             'status' => 'delivered',
         ];
         $records = $this->client->parseDeliveryWebhook($payload);
-        $this->assertCount(1, $records);
-        $this->assertSame('msg-1', $records[0]['gateway_message_id']);
-        $this->assertSame('delivered', $records[0]['status']);
+        $this->assertCount(0, $records);
     }
 }

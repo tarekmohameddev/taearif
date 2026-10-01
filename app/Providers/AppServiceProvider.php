@@ -110,6 +110,7 @@ class AppServiceProvider extends ServiceProvider
             \App\Domain\Communication\Sms\Contracts\SmsGatewayClient::class,
             \App\Domain\Communication\Sms\Services\Gateways\ConfiguredSmsGatewayClient::class
         );
+        $this->app->bind(\App\Domain\Communication\Sms\Contracts\SmsGatewayReadiness::class, \App\Domain\Communication\Sms\Services\Gateways\ConfiguredSmsGatewayClient::class);
         $this->app->bind(
             \App\Domain\Communication\Sms\Contracts\SmsDispatcher::class,
             \App\Domain\Communication\Sms\Services\SmsDispatcherService::class

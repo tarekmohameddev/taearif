@@ -142,9 +142,9 @@ class MessageController extends BaseApiController
         $idempotencyKey = trim((string) request()->header('Idempotency-Key', '')) ?: Str::uuid()->toString();
         $validated = $request->validated();
         $tenantOwnerId = (int) auth()->user()->tenantOwnerId();
-        $template = $this->templateService->findForUser($tenantOwnerId, (int) $validated['template_id']);
+        $template = $this->templateService->findApprovedForUser($tenantOwnerId, (int) $validated['template_id']);
         if (! $template) {
-            return response()->json(['status' => 'error', 'code' => 'WA_TEMPLATE_NOT_FOUND', 'message' => 'Template not found.'], 404);
+            return response()->json(['status' => 'error', 'code' => 'WA_TEMPLATE_NOT_AVAILABLE', 'message' => 'Approved active template not found.'], 404);
         }
 
         $state = $this->conversationService->findForUserByConversationOrStateId($tenantOwnerId, $id);
@@ -153,7 +153,12 @@ class MessageController extends BaseApiController
         }
 
         $variables = $validated['variables'] ?? [];
-        $content = $this->templateService->renderContent($template, $variables);
+        try {
+            $this->templateService->buildTemplateComponentParameters($template, $variables);
+            $content = $this->templateService->renderContent($template, $variables);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['status' => 'error', 'code' => 'WA_TEMPLATE_VARIABLES_INVALID', 'message' => $e->getMessage()], 422);
+        }
 
         $dto = new SendMessageDto(
             userId: $tenantOwnerId,
@@ -182,6 +187,8 @@ class MessageController extends BaseApiController
             return response()->json(['status' => 'error', 'code' => strtoupper((string) $e->reason), 'message' => $e->getMessage()], 409);
         } catch (ProviderSendFailedException $e) {
             return response()->json(['status' => 'error', 'code' => 'PROVIDER_SEND_FAILED', 'message' => $e->getMessage()], 502);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['status' => 'error', 'code' => 'WA_TEMPLATE_INVALID', 'message' => $e->getMessage()], 422);
         }
 
         // Human agent sent template via CRM — pause the bot according to tenant config.

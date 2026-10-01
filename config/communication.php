@@ -16,6 +16,8 @@ return [
     'sms' => [
         'enabled' => env('COMMUNICATION_SMS_ENABLED', false),
         'provider' => env('COMMUNICATION_SMS_PROVIDER', null),
+        // Map a provider key to a concrete SmsGatewayDriver class. Credentials belong in deployment config.
+        'drivers' => [],
         'queue' => env('COMMUNICATION_SMS_QUEUE', 'communication'),
         'default_country_code' => env('COMMUNICATION_SMS_DEFAULT_COUNTRY_CODE', '966'),
         'webhook_secret' => env('COMMUNICATION_SMS_WEBHOOK_SECRET', ''),

@@ -76,7 +76,7 @@ class SmsDispatcherService implements SmsDispatcher
         $result = $this->gatewayClient->sendText(
             $log->recipient_phone,
             $log->message,
-            null,
+            data_get($log->meta, 'from'),
             ['log_id' => $log->id, 'campaign_id' => $log->campaign_id]
         );
 
@@ -88,6 +88,7 @@ class SmsDispatcherService implements SmsDispatcher
                     'status' => 'sent',
                     'gateway_message_id' => $result->gatewayMessageId,
                     'provider' => $result->provider,
+                    'meta' => json_encode(array_merge((array) $log->meta, ['provider_sender_id' => $result->senderId]), JSON_THROW_ON_ERROR),
                     'error_message' => null,
                     'sent_at' => now(),
                     'updated_at' => now(),

@@ -17,6 +17,7 @@ class Kernel extends ConsoleKernel
 
         Commands\ExpiredUser::class,
         \App\Console\Commands\ProcessRmsReminders::class,
+        \App\Console\Commands\ProcessRmsPaymentReminders::class,
         \App\Console\Commands\SeedGlobalPermissions::class,
         \App\Console\Commands\HealthCheck::class,
         \App\Console\Commands\SendSubscriptionExpirationReminders::class,
@@ -63,6 +64,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('app:expire-trials')->daily();
         $schedule->command('app:verify-pending-payments')->everyThirtyMinutes();
         $schedule->command('reminders:process')->dailyAt('04:00')->timezone('Asia/Riyadh');
+        $schedule->command('rms:process-payment-reminders')->everyMinute()->withoutOverlapping()->onOneServer();
         $schedule->command('app:expire-rentals')->dailyAt('00:05')->timezone('Asia/Riyadh');
         $schedule->command('health:check --auto')->dailyAt('03:55')->timezone('Asia/Riyadh');
 

@@ -11,6 +11,7 @@ final class SmsGatewaySendResult
         public readonly ?string $error = null,
         public readonly array $rawResponse = [],
         public readonly bool $isTransientFailure = false,
+        public readonly ?string $senderId = null,
     ) {}
 }
 

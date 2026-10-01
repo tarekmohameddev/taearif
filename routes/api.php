@@ -774,6 +774,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\RequireActiveMembership:
 // --- V1: RMS / PMS / Property requests / Employee / CRM / Marketing / Credits ---
 Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::prefix('rms')->middleware(['can:rentals.view'])->group(function () {
+        Route::get('payment-reminder-automation', [\App\Http\Controllers\Api\V1\Rms\PaymentReminderAutomationController::class, 'show']);
+        Route::put('payment-reminder-automation', [\App\Http\Controllers\Api\V1\Rms\PaymentReminderAutomationController::class, 'update'])->middleware('can:rentals.update');
+        Route::get('payment-reminder-automation/logs', [\App\Http\Controllers\Api\V1\Rms\PaymentReminderAutomationController::class, 'logs']);
         // Dashboard
         Route::get('dashboard', [RmsDashboardController::class, 'index']);
         Route::get('dashboard/stats', [RmsDashboardController::class, 'stats'])->name('rms.dashboard.stats');

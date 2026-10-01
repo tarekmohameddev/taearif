@@ -7,8 +7,10 @@ use App\Domain\Communication\DTOs\ProviderDispatchResult;
 use App\Domain\Communication\Exceptions\ProviderSendFailedException;
 use App\Domain\Communication\WhatsApp\Services\WhatsAppChannelSender;
 use App\Domain\Communication\WhatsApp\Services\WhatsAppServiceDispatchAdapter;
+use App\Domain\Communication\WhatsApp\Services\WhatsAppTemplateService;
 use App\Models\Message;
 use App\Models\WaNumber;
+use App\Models\WaTemplate;
 use Illuminate\Support\Facades\Log;
 
 class MessageDispatcherImpl implements MessageDispatcher
@@ -16,6 +18,7 @@ class MessageDispatcherImpl implements MessageDispatcher
     public function __construct(
         private readonly WhatsAppServiceDispatchAdapter $whatsAppServiceAdapter,
         private readonly WhatsAppChannelSender $whatsAppChannelSender,
+        private readonly WhatsAppTemplateService $templateService,
         private readonly ?DeliveryAttemptRecorder $deliveryAttemptRecorder = null
     ) {}
 
@@ -47,12 +50,22 @@ class MessageDispatcherImpl implements MessageDispatcher
         $result = null;
         try {
             if ($waNumberId !== null && $waNumberId > 0) {
-                $waNumber = WaNumber::find($waNumberId);
+                $waNumber = WaNumber::where('id', $waNumberId)->where('user_id', $message->user_id)->first();
                 if (! $waNumber) {
                     $message->update(['status' => 'failed']);
                     throw new ProviderSendFailedException('WhatsApp number not found for dispatch.');
                 }
-                $result = $this->whatsAppChannelSender->send($waNumber, $phone, $content);
+                if (! empty($meta['is_template'])) {
+                    if (strtolower((string) $waNumber->provider) !== 'meta') {
+                        throw new ProviderSendFailedException('Approved WhatsApp templates can only be dispatched through Meta.');
+                    }
+                    $template = $this->templateService->findApprovedForUser((int) $message->user_id, (int) ($meta['template_id'] ?? 0));
+                    if (! $template) throw new ProviderSendFailedException('Approved WhatsApp template is no longer available.');
+                    $components = $this->templateService->buildTemplateComponentParameters($template, is_array($meta['template_variables'] ?? null) ? $meta['template_variables'] : []);
+                    $result = $this->whatsAppChannelSender->sendTemplate($waNumber, $phone, (string) $template->name, (string) ($template->language ?: 'en'), $components);
+                } else {
+                    $result = $this->whatsAppChannelSender->send($waNumber, $phone, $content);
+                }
             } else {
                 if (($meta['source'] ?? null) === 'ai') {
                     $message->update(['status' => 'failed']);

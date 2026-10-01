@@ -27,7 +27,7 @@ class SmsSingleMessageService
     /**
      * @return array<string, mixed>
      */
-    public function send(int $userId, string $idempotencyKey, string $recipientPhone, string $content): array
+    public function send(int $userId, string $idempotencyKey, string $recipientPhone, string $content, ?string $from = null): array
     {
         $phone = $this->recipientResolver->normalizePhone($recipientPhone);
         if ($phone === null) {
@@ -42,6 +42,7 @@ class SmsSingleMessageService
         $payload = [
             'recipient_phone' => $phone,
             'content' => $trimmed,
+            'from' => $from,
         ];
 
         $start = $this->idempotencyService->start($userId, $idempotencyKey, SmsEndpoints::SEND_SINGLE, $payload);
@@ -61,7 +62,7 @@ class SmsSingleMessageService
         $row = $start->row;
         $referenceId = (string) $row->id;
 
-        DB::transaction(function () use ($userId, $phone, $trimmed, $cost, $referenceId, &$log): void {
+        DB::transaction(function () use ($userId, $phone, $trimmed, $cost, $referenceId, $from, &$log): void {
             $this->creditService->deduct($userId, $cost, 'sms_single', $referenceId);
 
             $log = SmsMessageLog::create([
@@ -72,7 +73,7 @@ class SmsSingleMessageService
                 'recipient_name' => null,
                 'message' => $trimmed,
                 'status' => 'pending',
-                'meta' => ['source' => 'sms_single_api'],
+                'meta' => ['source' => 'sms_single_api', 'from' => $from],
             ]);
         });
 
@@ -90,6 +91,7 @@ class SmsSingleMessageService
             'recipient_phone' => (string) $log->recipient_phone,
             'gateway_message_id' => $log->gateway_message_id,
             'provider' => $log->provider,
+            'sender_id' => data_get($log->meta, 'provider_sender_id'),
             'sent_at' => $log->sent_at?->toISOString(),
         ];
 

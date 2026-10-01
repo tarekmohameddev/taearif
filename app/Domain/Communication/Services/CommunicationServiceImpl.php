@@ -17,6 +17,8 @@ use App\Domain\Communication\Exceptions\UnsupportedChannelException;
 use App\Domain\Communication\Exceptions\WaNumberNotActiveException;
 use App\Domain\Communication\Exceptions\WaNumberNotFoundException;
 use App\Domain\Communication\Support\CommunicationEndpoints;
+use App\Domain\Communication\WhatsApp\Services\WaPricingResolver;
+use App\Domain\Communication\WhatsApp\Services\WhatsAppTemplateService;
 use App\Models\Api\marketing\UserCredit;
 use App\Models\Conversation;
 use App\Models\Message;
@@ -24,6 +26,7 @@ use App\Models\User;
 use App\Models\WaConversationState;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 
 class CommunicationServiceImpl implements CommunicationService
 {
@@ -31,6 +34,8 @@ class CommunicationServiceImpl implements CommunicationService
         private readonly IdempotencyService $idempotencyService,
         private readonly CreditService $creditService,
         private readonly MessageDispatcher $messageDispatcher,
+        private readonly WhatsAppTemplateService $templateService,
+        private readonly WaPricingResolver $waPricingResolver,
     ) {}
 
     public function recordInboundMessage(
@@ -391,6 +396,7 @@ class CommunicationServiceImpl implements CommunicationService
         }
 
         $meta = is_array($dto->extraMeta) ? $dto->extraMeta : [];
+        $template = null;
         if ($dto->waNumberId !== null) {
             $waNumber = \App\Models\WaNumber::where('id', $dto->waNumberId)->where('user_id', $dto->userId)->first();
             if (! $waNumber) {
@@ -400,6 +406,15 @@ class CommunicationServiceImpl implements CommunicationService
                 throw new WaNumberNotActiveException($dto->waNumberId);
             }
             $meta['wa_number_id'] = $dto->waNumberId;
+        }
+        if ($dto->templateId !== null) {
+            $template = $this->templateService->findApprovedForUser($dto->userId, $dto->templateId);
+            if (! $template) throw new InvalidArgumentException('WA_TEMPLATE_NOT_FOUND_OR_NOT_APPROVED');
+            // Validate all template placeholders before charging credits or creating a message.
+            $this->templateService->buildTemplateComponentParameters($template, $dto->variables ?? []);
+            $meta['is_template'] = true;
+            $meta['template_id'] = (int) $template->id;
+            $meta['template_variables'] = $dto->variables ?? [];
         }
 
         $endpoint = $dto->endpointSignature ?? CommunicationEndpoints::SEND_MESSAGE;
@@ -416,6 +431,10 @@ class CommunicationServiceImpl implements CommunicationService
             $payload['variables'] = $dto->variables ?? [];
         }
 
+        $cost = $template
+            ? max(0, $this->waPricingResolver->creditsForTemplateCategory($template->category))
+            : UserCredit::getCostForMessageType('whatsapp');
+
         $result = $this->idempotencyService->start($dto->userId, $idempotencyKey, $endpoint, $payload);
 
         if ($result->mode === IdempotencyStartResult::MODE_REPLAY && $result->message !== null) {
@@ -426,7 +445,6 @@ class CommunicationServiceImpl implements CommunicationService
             throw new IdempotencyConflictException($result->reason);
         }
 
-        $cost = UserCredit::getCostForMessageType('whatsapp');
         if (!$this->creditService->hasSufficientCredits($dto->userId, $cost)) {
             throw new InsufficientCreditsException($dto->userId, $cost);
         }
@@ -437,7 +455,7 @@ class CommunicationServiceImpl implements CommunicationService
 
         $message = null;
         DB::transaction(function () use ($dto, $cost, $referenceType, $referenceId, $conversation, $meta, &$message) {
-            $this->creditService->deduct($dto->userId, $cost, $referenceType, $referenceId);
+            if ($cost > 0) $this->creditService->deduct($dto->userId, $cost, $referenceType, $referenceId);
 
             $message = Message::create([
                 'conversation_id' => $conversation->id,
@@ -458,7 +476,7 @@ class CommunicationServiceImpl implements CommunicationService
             $this->messageDispatcher->dispatch($message);
         } catch (\Throwable $e) {
             DB::transaction(function () use ($dto, $cost, $referenceType, $referenceId, $idempotencyRow, $e) {
-                $this->creditService->refund($dto->userId, $cost, $referenceType, $referenceId);
+                if ($cost > 0) $this->creditService->refund($dto->userId, $cost, $referenceType, $referenceId);
                 $this->idempotencyService->fail($idempotencyRow, $e->getMessage());
             });
             throw $e;
